@@ -26,26 +26,6 @@ app.get("/tasks", async (req, res) => {
     res.status(500).send(err.message);
   }
 });
-// CREATE a task
-app.post("/tasks", async (req, res) => {
-  try {
-    const { title, description } = req.body;
-
-    if (!title) {
-      return res.status(400).json({ error: "Title is required" });
-    }
-
-    const result = await pool.query(
-      "INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING *",
-      [title, description]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("❌ POST /tasks error:", err.message);
-    res.status(500).send(err.message);
-  }
-});
 
 // ADD new task
 app.post("/tasks", async (req, res) => {
