@@ -43,14 +43,44 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
-// Migration
-const initSqlPath = path.resolve("./init.sql");
+// --- RUN MIGRATION (create / fix tasks table) ---
 async function runMigration() {
-  if (!fs.existsSync(initSqlPath)) return;
-  const initSql = fs.readFileSync(initSqlPath, "utf8");
-  await pool.query(initSql);
+  console.log("🔄 Running DB migration...");
+
+  try {
+    // Αν δεν υπάρχει πίνακας tasks, τον δημιουργεί
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY
+      );
+    `);
+
+    // Αν λείπουν οι στήλες, τις προσθέτει
+    await pool.query(`
+      ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS title TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS description TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+    `);
+
+    console.log("✅ Migration completed successfully!");
+  } catch (err) {
+    console.error("❌ Migration failed!");
+    console.error(err);
+    process.exit(1); // σταματάει το deploy αν κάτι πάει στραβά
+  }
 }
+
 await runMigration();
+
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
