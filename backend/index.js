@@ -59,6 +59,40 @@ app.post("/tasks", async (req, res) => {
     res.status(500).send(err.message);
   }
 });
+// UPDATE task status (mark as done)
+app.patch("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `UPDATE tasks SET status = 'Done' WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rowCount === 0) return res.status(404).json({ error: "Task not found" });
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// DELETE task
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `DELETE FROM tasks WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rowCount === 0) return res.status(404).json({ error: "Task not found" });
+    res.json({ message: "Task deleted" });
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 
 // UPDATE a task
 app.put("/tasks/:id", async (req, res) => {
