@@ -22,61 +22,35 @@ app.get("/tasks", async (req, res) => {
     const result = await pool.query("SELECT * FROM tasks ORDER BY id ASC");
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /tasks error:", err.message);
     res.status(500).send(err.message);
   }
 });
 
-// ADD new task
+// CREATE a task
 app.post("/tasks", async (req, res) => {
   try {
     const { title, description } = req.body;
-
-    if (!title) {
-      return res.status(400).json({ error: "Title is required" });
-    }
+    if (!title) return res.status(400).json({ error: "Title required" });
 
     const result = await pool.query(
       "INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING *",
       [title, description || null]
     );
-    res.json(result.rows[0]);
 
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("❌ POST /tasks error:", err.message);
     res.status(500).send(err.message);
   }
 });
 
-
-// --- RUN MIGRATION ---
+// Migration
 const initSqlPath = path.resolve("./init.sql");
-
 async function runMigration() {
-  console.log("🔄 Checking for database init script...");
-
-  if (!fs.existsSync(initSqlPath)) {
-    console.log("⚠️ No init.sql found — skipping migration.");
-    return;
-  }
-
-  try {
-    console.log("🔄 Running DB migration from init.sql...");
-    const initSql = fs.readFileSync(initSqlPath, "utf8");
-    await pool.query(initSql);
-    console.log("✅ Migration completed successfully!");
-  } catch (err) {
-    console.error("❌ Migration failed!");
-    console.error(err);
-    process.exit(1); // Stop deployment to show error clearly in Render
-  }
+  if (!fs.existsSync(initSqlPath)) return;
+  const initSql = fs.readFileSync(initSqlPath, "utf8");
+  await pool.query(initSql);
 }
-
 await runMigration();
-// -------------------------------------
 
 const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
