@@ -7,18 +7,67 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <h1>ASTIR Task Manager</h1>
+  
+  <input id="title" placeholder="Task Title">
+  <input id="description" placeholder="Description">
+  <button onclick="addTask()">Add Task</button>
 
-  <form id="taskForm">
-    <input type="text" id="title" placeholder="Task Title" required>
-    <input type="text" id="description" placeholder="Description">
-    <button type="submit">Add Task</button>
-  </form>
+  <div id="taskList"></div>
 
-  <ul id="taskList"></ul>
+  <script>
+    const API_URL = "https://astir-backend.onrender.com";
 
-  <script src="app.js"></script>
+    // UPDATED renderTasks
+    function renderTasks(tasks) {
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
+
+      tasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = "task-item";
+        item.innerHTML = `
+          <span class="${task.status === 'Done' ? 'done' : ''}">
+            ${task.title} — ${task.description || ""}
+          </span>
+          <button onclick="markDone(${task.id})">✔</button>
+          <button onclick="deleteTask(${task.id})">🗑</button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function markDone(id) {
+      await fetch(API_URL + "/tasks/" + id, { method: "PATCH" });
+      loadTasks();
+    }
+
+    async function deleteTask(id) {
+      await fetch(API_URL + "/tasks/" + id, { method: "DELETE" });
+      loadTasks();
+    }
+
+    // ⚠ Ο υπόλοιπος υπάρχων κώδικας μένει όπως είναι:
+    // addTask(), loadTasks() κτλ.
+
+    loadTasks();
+  </script>
+
+  <style>
+    .done {
+      color: green;
+      text-decoration: line-through;
+    }
+    .task-item {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
 </body>
+
 </html>
 
