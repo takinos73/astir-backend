@@ -26,6 +26,23 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
+// GET task by ID
+app.get("/tasks/:id", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM tasks WHERE id = $1", [
+      req.params.id,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 // CREATE a task
 app.post("/tasks", async (req, res) => {
   try {
@@ -43,19 +60,58 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
+// UPDATE a task
+app.put("/tasks/:id", async (req, res) => {
+  try {
+    const { title, description, status } = req.body;
+
+    const result = await pool.query(
+      `UPDATE tasks 
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           status = COALESCE($3, status)
+       WHERE id = $4
+       RETURNING *`,
+      [title, description, status, req.params.id]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "Task not found" });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// DELETE a task
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM tasks WHERE id = $1 RETURNING *",
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "Task not found" });
+
+    res.json({ message: "Task deleted successfully" });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 // --- RUN MIGRATION (create / fix tasks table) ---
 async function runMigration() {
   console.log("🔄 Running DB migration...");
 
   try {
-    // Αν δεν υπάρχει πίνακας tasks, τον δημιουργεί
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY
       );
     `);
 
-    // Αν λείπουν οι στήλες, τις προσθέτει
     await pool.query(`
       ALTER TABLE tasks
       ADD COLUMN IF NOT EXISTS title TEXT;
@@ -68,6 +124,11 @@ async function runMigration() {
 
     await pool.query(`
       ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Pending';
+    `);
+
+    await pool.query(`
+      ALTER TABLE tasks
       ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
     `);
 
@@ -75,12 +136,12 @@ async function runMigration() {
   } catch (err) {
     console.error("❌ Migration failed!");
     console.error(err);
-    process.exit(1); // σταματάει το deploy αν κάτι πάει στραβά
+    process.exit(1);
   }
 }
 
 await runMigration();
 
-
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
