@@ -55,9 +55,9 @@ await pool.query(`
       const unit = row["Unit"] || null;
       const task = row["Task"] || null;
       const type = row["Type"] || null;
-      const qty = row["Qty"] || null;
-      const duration = row["Duration(min)"] || null;
-      const freq = row["Frequency(hours)"] || null;
+      const qty = (row["Qty"] && !isNaN(row["Qty"])) ? Number(row["Qty"]) : null;
+      const duration = (row["Duration(min)"] && !isNaN(row["Duration(min)"])) ? Number(row["Duration(min)"]) : null;
+      const freq = (row["Frequency(hours)"] && !isNaN(row["Frequency(hours)"])) ? Number(row["Frequency(hours)"]) : null;
       const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
       const status = row["Status"] || "Planned";
 
