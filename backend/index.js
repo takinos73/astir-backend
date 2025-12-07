@@ -163,28 +163,25 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// UPDATE task (Mark as Done)
+// UPDATE task status (mark as done)
 app.patch("/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { status } = req.body;
 
-    const result = await pool.query(
-      `UPDATE maintenance_tasks 
-       SET status = 'Done', updated_at = NOW() 
-       WHERE id = $1 
-       RETURNING *`,
-      [id]
-    );
+    const result = await pool.query(`
+      UPDATE maintenance_tasks
+      SET status = $1
+      WHERE id = $2
+      RETURNING *
+    `, [status, id]);
 
-    if (result.rowCount === 0) {
+    if (result.rowCount === 0)
       return res.status(404).json({ error: "Task not found" });
-    }
 
     res.json(result.rows[0]);
-
   } catch (err) {
-    console.error("❌ PATCH /tasks error:", err.message);
-    res.status(500).send(err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
