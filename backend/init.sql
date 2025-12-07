@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS machines (
 -- Safety: ensure SN exists
 ALTER TABLE machines
 ADD COLUMN IF NOT EXISTS sn TEXT;
+ALTER TABLE machines
+ADD CONSTRAINT unique_machine_name UNIQUE(name);
 
 -- Insert initial machine records (safe insert)
 INSERT INTO machines (name) VALUES
