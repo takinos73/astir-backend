@@ -1,15 +1,25 @@
--- Create machines table first
+-- Create machines table
 CREATE TABLE IF NOT EXISTS machines (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     sn TEXT
 );
 
--- Add SN column if missing (safety)
+-- Safety: ensure SN exists
 ALTER TABLE machines
 ADD COLUMN IF NOT EXISTS sn TEXT;
 
--- Create maintenance_tasks table (linked to machines)
+-- Insert initial machine records (safe insert)
+INSERT INTO machines (name) VALUES
+('PMC250'),
+('PMC300'),
+('PMC500'),
+('PTC027')
+ON CONFLICT (name) DO NOTHING;
+
+--------------------------------------------------
+
+-- Create maintenance tasks table
 CREATE TABLE IF NOT EXISTS maintenance_tasks (
     id SERIAL PRIMARY KEY,
     machine_id INTEGER REFERENCES machines(id) ON DELETE CASCADE,
