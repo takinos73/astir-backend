@@ -17,6 +17,18 @@
       text-align: center;
     }
 
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+
+    select {
+      padding: 8px;
+      font-size: 15px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -34,17 +46,43 @@
       color: white;
     }
 
-    .status-ok { background: #b9ffb9; }     /* Green */
-    .status-warn { background: #fff6a5; }  /* Yellow */
-    .status-bad { background: #ffbaba; }   /* Red */
+    button {
+      padding: 6px 10px;
+      background: #007b00;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #009b00;
+    }
+
+    .status-ok { background: #b9ffb9; }
+    .status-warn { background: #fff6a5; }
+    .status-bad { background: #ffbaba; }
   </style>
 </head>
 <body>
   <h1>Maintenance Tasks</h1>
+
+  <div class="filters">
+    <select id="machineFilter">
+      <option value="all">All Machines</option>
+    </select>
+
+    <select id="statusFilter">
+      <option value="all">All Status</option>
+      <option value="Planned">Planned</option>
+      <option value="Done">Done</option>
+    </select>
+  </div>
+
   <table id="tasksTable">
     <thead>
       <tr>
-        <th>ID</th>
         <th>Machine</th>
         <th>Section</th>
         <th>Unit</th>
@@ -52,46 +90,66 @@
         <th>Type</th>
         <th>Due Date</th>
         <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <script>
-    const API = "https://astir-backend.onrender.com";
+<script>
+  const API = "https://astir-backend.onrender.com";
+  let tasksData = [];
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "-";
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("el-GR");
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("el-GR");
+  }
+
+  function getStatusClass(dueDate, status) {
+    if (status === "Done") return "status-ok";
+    if (!dueDate) return "";
+    const today = new Date();
+    const date = new Date(dueDate);
+    const diffDays = Math.ceil((date - today) / (1000*60*60*24));
+    if (diffDays < 0) return "status-bad";
+    if (diffDays <= 7) return "status-warn";
+    return "status-ok";
+  }
+
+  async function markDone(id) {
+    const res = await fetch(`${API}/tasks/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "Done" }),
+    });
+
+    if (res.ok) {
+      const task = tasksData.find(t => t.id === id);
+      task.status = "Done";
+      renderTable();
+    } else {
+      alert("Failed to update task!");
     }
+  }
 
-    function getStatusClass(dueDate, status) {
-      if (status === "Done") return "status-ok";
-      if (!dueDate) return "";
+  function renderTable() {
+    const machineFilter = document.getElementById("machineFilter").value;
+    const statusFilter = document.getElementById("statusFilter").value;
 
-      const today = new Date();
-      const date = new Date(dueDate);
-      const diffDays = Math.ceil((date - today) / (1000*60*60*24));
+    const tableBody = document.querySelector("#tasksTable tbody");
+    tableBody.innerHTML = "";
 
-      if (diffDays < 0) return "status-bad";  
-      if (diffDays <= 7) return "status-warn"; 
-      return "status-ok";
-    }
-
-    async function loadTasks() {
-      const res = await fetch(`${API}/tasks`);
-      const tasks = await res.json();
-
-      const tableBody = document.querySelector("#tasksTable tbody");
-      tableBody.innerHTML = "";
-
-      tasks.forEach(t => {
+    tasksData
+      .filter(t =>
+        (machineFilter === "all" || t.machine_name === machineFilter) &&
+        (statusFilter === "all" || t.status === statusFilter)
+      )
+      .forEach(t => {
         const row = document.createElement("tr");
         row.className = getStatusClass(t.due_date, t.status);
 
         row.innerHTML = `
-          <td>${t.id}</td>
           <td>${t.machine_name}</td>
           <td>${t.section || "-"}</td>
           <td>${t.unit || "-"}</td>
@@ -99,12 +157,42 @@
           <td>${t.type || "-"}</td>
           <td>${formatDate(t.due_date)}</td>
           <td>${t.status}</td>
+          <td>
+            ${t.status !== "Done"
+              ? `<button onclick="markDone(${t.id})">✔ Done</button>`
+              : "✓"}
+          </td>
         `;
         tableBody.appendChild(row);
       });
-    }
+  }
 
-    loadTasks();
-  </script>
+  async function loadFilters() {
+    const res = await fetch(`${API}/machines`);
+    const machines = await res.json();
+    const select = document.getElementById("machineFilter");
+
+    machines.forEach(m => {
+      const option = document.createElement("option");
+      option.value = m.name;
+      option.textContent = m.name;
+      select.appendChild(option);
+    });
+  }
+
+  async function loadTasks() {
+    const res = await fetch(`${API}/tasks`);
+    tasksData = await res.json();
+    renderTable();
+  }
+
+  document.getElementById("machineFilter").addEventListener("change", renderTable);
+  document.getElementById("statusFilter").addEventListener("change", renderTable);
+
+  loadFilters();
+  loadTasks();
+</script>
+
 </body>
 </html>
+
