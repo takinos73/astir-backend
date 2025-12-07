@@ -19,7 +19,23 @@ app.get("/", (req, res) => {
 // GET all tasks
 app.get("/tasks", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM tasks ORDER BY id ASC");
+    const result = await pool.query(`
+  SELECT 
+    mt.id,
+    m.name AS machine,
+    mt.section,
+    mt.unit,
+    mt.task,
+    mt.type,
+    mt.qty,
+    mt.duration_min,
+    mt.frequency_hours,
+    mt.due_date,
+    mt.status
+  FROM maintenance_tasks mt
+  JOIN machines m ON mt.machine_id = m.id
+  ORDER BY mt.id ASC
+`);
     res.json(result.rows);
   } catch (err) {
     res.status(500).send(err.message);
