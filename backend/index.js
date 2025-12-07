@@ -145,6 +145,19 @@ async function runMigration() {
     process.exit(1);
   }
 }
+// GET all machines
+app.get("/machines", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, name, sn, section, unit
+      FROM machines
+      ORDER BY id ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 
 await runMigration();
 
