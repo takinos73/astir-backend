@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Correct Excel path (same folder as index.js)
+// 🔹 Το Excel είναι στο root του project (όπως φαίνεται από το GitHub)
 const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
 
 // Test route
@@ -20,32 +20,29 @@ app.get("/", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
-// Import Excel to database
+// 🔁 IMPORT Excel → DB
 app.post("/import", async (req, res) => {
   try {
-
-// Ensure UNIQUE constraint exists (Postgres safe)
-await pool.query(`
-  DO $$
-  BEGIN
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_constraint 
-      WHERE conname = 'unique_machine_name'
-    ) THEN
-      ALTER TABLE machines
-      ADD CONSTRAINT unique_machine_name UNIQUE(name);
-    END IF;
-  END$$;
-`);
-
+    console.log("📄 Excel path:", excelFilePath);
+    console.log("📌 Working directory:", process.cwd());
 
     if (!fs.existsSync(excelFilePath)) {
+      console.error("❌ Excel not found!");
       return res.status(404).json({ error: "Excel file not found!" });
     }
 
-    const workbook = XLSX.readFile(excelFilePath);
+    // Διαβάζουμε με cellDates:true ώστε, όπου μπορεί, να δίνει ήδη Date objects
+    const workbook = XLSX.readFile(excelFilePath, { cellDates: true });
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
+
+    console.log(`📥 Rows detected: ${rows.length}`);
+
+    // ⚠️ ΠΡΟΑΙΡΕΤΙΚΟ:
+    // Αν ΘΕΛΕΙΣ κάθε import να ξεκινά σε καθαρό πίνακα:
+    await pool.query(
+      "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
+    );
 
     for (const row of rows) {
       if (!row["Machine"] || !row["Task"]) continue;
@@ -55,22 +52,66 @@ await pool.query(`
       const unit = row["Unit"] || null;
       const task = row["Task"] || null;
       const type = row["Type"] || null;
-      const qty = (row["Qty"] && !isNaN(row["Qty"])) ? Number(row["Qty"]) : null;
-      const duration = (row["Duration(min)"] && !isNaN(row["Duration(min)"])) ? Number(row["Duration(min)"]) : null;
-      const freq = (row["Frequency(hours)"] && !isNaN(row["Frequency(hours)"])) ? Number(row["Frequency(hours)"]) : null;
-      const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
+
+      // 🔹 Ασφαλής μετατροπή αριθμητικών πεδίων
+      const toNumberOrNull = (value) => {
+        if (value === undefined || value === null) return null;
+        if (typeof value === "string" && value.trim() === "-") return null;
+        const n = Number(value);
+        return Number.isNaN(n) ? null : n;
+      };
+
+      const qty = toNumberOrNull(row["Qty"]);
+      const duration = toNumberOrNull(row["Duration(min)"]);
+      const freq = toNumberOrNull(row["Frequency(hours)"]);
+
+      // 🔹 Σωστό parsing DueDate
+      let due = null;
+      const rawDue = row["DueDate"];
+
+      if (rawDue) {
+        if (rawDue instanceof Date) {
+          // Ήδη σωστό Date από XLSX (λόγω cellDates:true)
+          due = rawDue;
+        } else if (typeof rawDue === "number") {
+          // Excel serial number → days since 1899-12-30
+          const excelEpoch = Date.UTC(1899, 11, 30); // 30/12/1899
+          const ms = excelEpoch + rawDue * 24 * 60 * 60 * 1000;
+          due = new Date(ms);
+        } else if (typeof rawDue === "string") {
+          // Αν ποτέ έρθει σαν "dd/mm/yy"
+          const parts = rawDue.split(/[\/\-\.]/).map((p) => p.trim());
+          if (parts.length === 3) {
+            let [d, m, y] = parts.map(Number);
+            if (y < 100) y += 2000; // π.χ. 25 → 2025
+            due = new Date(Date.UTC(y, m - 1, d));
+          }
+        }
+      }
+
       const status = row["Status"] || "Planned";
 
-      const machineRes = await pool.query(
+      // 🔹 Insert / get machine_id με ασφαλή τρόπο
+      const insertMachineRes = await pool.query(
         `INSERT INTO machines (name)
          VALUES ($1)
-         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+         ON CONFLICT (name) DO NOTHING
          RETURNING id`,
         [machine]
       );
 
-      const machineId = machineRes.rows[0].id;
+      let machineId;
+      if (insertMachineRes.rows.length > 0) {
+        machineId = insertMachineRes.rows[0].id;
+      } else {
+        const existing = await pool.query(
+          "SELECT id FROM machines WHERE name = $1",
+          [machine]
+        );
+        machineId = existing.rows[0].id;
+      }
 
+      // 🔹 Insert task
       await pool.query(
         `INSERT INTO maintenance_tasks
         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
@@ -79,14 +120,15 @@ await pool.query(`
       );
     }
 
+    console.log("✅ Import completed!");
     res.json({ message: "Data imported successfully!" });
-
   } catch (err) {
+    console.error("❌ Import ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET endpoints
+// GET machines
 app.get("/machines", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
@@ -96,9 +138,12 @@ app.get("/machines", async (req, res) => {
   }
 });
 
+// GET maintenance tasks
 app.get("/tasks", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM maintenance_tasks ORDER BY id ASC");
+    const result = await pool.query(
+      "SELECT * FROM maintenance_tasks ORDER BY id ASC"
+    );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -107,3 +152,4 @@ app.get("/tasks", async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
