@@ -24,11 +24,20 @@ app.get("/", (req, res) => {
 app.post("/import", async (req, res) => {
   try {
 
-    // Ensure machines.name is unique before inserting
-    await pool.query(`
+// Ensure UNIQUE constraint exists (Postgres safe)
+await pool.query(`
+  DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint 
+      WHERE conname = 'unique_machine_name'
+    ) THEN
       ALTER TABLE machines
-      ADD CONSTRAINT IF NOT EXISTS unique_machine_name UNIQUE(name);
-    `);
+      ADD CONSTRAINT unique_machine_name UNIQUE(name);
+    END IF;
+  END$$;
+`);
+
 
     if (!fs.existsSync(excelFilePath)) {
       return res.status(404).json({ error: "Excel file not found!" });
