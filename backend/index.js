@@ -4,18 +4,17 @@ import dotenv from "dotenv";
 import pool from "./db.js";
 
 dotenv.config();
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Test route
+// Root test
 app.get("/", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
 /****************************************
- *          GET ALL MAINTENANCE TASKS
+ * GET ALL MAINTENANCE TASKS
  ****************************************/
 app.get("/tasks", async (req, res) => {
   try {
@@ -32,21 +31,22 @@ app.get("/tasks", async (req, res) => {
         mt.duration_min,
         mt.frequency_hours,
         mt.due_date,
-        mt.status
+        mt.status,
+        mt.created_at
       FROM maintenance_tasks mt
       LEFT JOIN machines m ON mt.machine_id = m.id
-      ORDER BY mt.id ASC
+      ORDER BY mt.id ASC;
     `);
 
     res.json(result.rows);
   } catch (err) {
-    console.error("GET /tasks error", err);
+    console.error("GET /tasks error:", err);
     res.status(500).send(err.message);
   }
 });
 
 /****************************************
- *               GET TASK BY ID
+ * GET A SPECIFIC TASK
  ****************************************/
 app.get("/tasks/:id", async (req, res) => {
   try {
@@ -55,7 +55,7 @@ app.get("/tasks/:id", async (req, res) => {
       [req.params.id]
     );
 
-    if (result.rows.length === 0)
+    if (result.rowCount === 0)
       return res.status(404).json({ error: "Task not found" });
 
     res.json(result.rows[0]);
@@ -65,12 +65,12 @@ app.get("/tasks/:id", async (req, res) => {
 });
 
 /****************************************
- *              UPDATE STATUS TO DONE
+ * UPDATE STATUS
  ****************************************/
 app.patch("/tasks/:id", async (req, res) => {
   try {
     const result = await pool.query(
-      `UPDATE maintenance_tasks 
+      `UPDATE maintenance_tasks
        SET status = 'Done'
        WHERE id = $1
        RETURNING *`,
@@ -87,7 +87,7 @@ app.patch("/tasks/:id", async (req, res) => {
 });
 
 /****************************************
- *          DELETE MAINTENANCE TASK
+ * DELETE TASK
  ****************************************/
 app.delete("/tasks/:id", async (req, res) => {
   try {
@@ -106,22 +106,37 @@ app.delete("/tasks/:id", async (req, res) => {
 });
 
 /****************************************
- *                MIGRATION
+ * GET MACHINES
+ ****************************************/
+app.get("/machines", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, name, sn
+      FROM machines
+      ORDER BY id ASC
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+/****************************************
+ * MIGRATION
  ****************************************/
 async function runMigration() {
-  console.log("🔄 Running DB migration...");
+  console.log("🔄 Running migration...");
 
   try {
-    // Machines
     await pool.query(`
       CREATE TABLE IF NOT EXISTS machines (
         id SERIAL PRIMARY KEY,
-        name TEXT,
+        name TEXT UNIQUE,
         sn TEXT
       );
     `);
 
-    // Maintenance Tasks
     await pool.query(`
       CREATE TABLE IF NOT EXISTS maintenance_tasks (
         id SERIAL PRIMARY KEY,
@@ -134,39 +149,17 @@ async function runMigration() {
         duration_min REAL,
         frequency_hours REAL,
         due_date TIMESTAMPTZ,
-        status TEXT DEFAULT 'Pending'
+        status TEXT DEFAULT 'Planned',
+        created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-  await pool.query(`
-  ALTER TABLE machines
-  ADD COLUMN IF NOT EXISTS section TEXT;
-`);
 
-await pool.query(`
-  ALTER TABLE machines
-  ADD COLUMN IF NOT EXISTS unit TEXT;
-`);
-
-    console.log("✅ Migration completed!");
+    console.log("✔ Migration OK!");
   } catch (err) {
     console.error("❌ Migration failed");
     console.error(err);
-    process.exit(1);
   }
 }
-// GET all machines
-app.get("/machines", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT id, name, sn, section, unit
-      FROM machines
-      ORDER BY id ASC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
 
 await runMigration();
 
