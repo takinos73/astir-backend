@@ -56,7 +56,7 @@ app.get("/tasks", async (req, res) => {
 // IMPORT Excel
 app.post("/import", async (req, res) => {
   try {
-    const excelPath = path.resolve("./backend/Maint_web.xlsx");
+    const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
     console.log("📄 Reading Excel:", excelPath);
 
     if (!fs.existsSync(excelPath)) {
