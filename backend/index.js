@@ -21,8 +21,13 @@ app.get("/", (req, res) => {
 });
 
 // Import Excel to database
-app.post("/import", async (req, res) => {
+app.post("/import", async (req, res) => {  
   try {
+        // Ensure machine name is unique
+    await pool.query(`
+      ALTER TABLE machines
+      ADD CONSTRAINT IF NOT EXISTS unique_machine_name UNIQUE(name);
+    `);
     if (!fs.existsSync(excelFilePath)) {
       return res.status(404).json({ error: "Excel file not found!" });
     }
