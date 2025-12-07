@@ -12,8 +12,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Excel file path (root of project)
-const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
+// Excel file path (inside backend folder on Render)
+const excelFilePath = path.join(process.cwd(), "backend", "Maint_web.xlsx");
 
 // Test route
 app.get("/", (req, res) => {
@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 // IMPORT Excel to DB
 app.post("/import", async (req, res) => {
   try {
-    console.log("🔍 Checking file:", excelFilePath);
+    console.log("📄 Excel path:", excelFilePath);
 
     if (!fs.existsSync(excelFilePath)) {
       console.error("❌ Excel not found!");
@@ -34,9 +34,11 @@ app.post("/import", async (req, res) => {
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    console.log(`📥 Reading rows: ${rows.length}`);
+    console.log(`📥 Rows detected: ${rows.length}`);
 
     for (const row of rows) {
+      if (!row["Machine"] || !row["Task"]) continue;
+
       const machine = row["Machine"];
       const section = row["Section"] || null;
       const unit = row["Unit"] || null;
@@ -48,7 +50,6 @@ app.post("/import", async (req, res) => {
       const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
       const status = row["Status"] || "Planned";
 
-      // Insert machine
       const machineRes = await pool.query(
         `INSERT INTO machines (name)
          VALUES ($1)
@@ -58,23 +59,24 @@ app.post("/import", async (req, res) => {
       );
       const machineId = machineRes.rows[0].id;
 
-      // Insert task
       await pool.query(
-        `INSERT INTO maintenance_tasks 
+        `INSERT INTO maintenance_tasks
         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [machineId, section, unit, task, type, qty, duration, freq, due, status]
       );
     }
 
+    console.log("✅ Import completed!");
     res.json({ message: "Data imported successfully!" });
+
   } catch (err) {
-    console.error("❌ Import ERROR:", err.message);
+    console.error("❌ Import ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Test GET machines
+// GET machines
 app.get("/machines", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
@@ -84,7 +86,7 @@ app.get("/machines", async (req, res) => {
   }
 });
 
-// Test GET maintenance tasks
+// GET maintenance tasks
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM maintenance_tasks ORDER BY id ASC");
@@ -96,4 +98,3 @@ app.get("/tasks", async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
