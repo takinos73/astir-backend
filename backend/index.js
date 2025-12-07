@@ -137,6 +137,15 @@ async function runMigration() {
         status TEXT DEFAULT 'Pending'
       );
     `);
+  await pool.query(`
+  ALTER TABLE machines
+  ADD COLUMN IF NOT EXISTS section TEXT;
+`);
+
+await pool.query(`
+  ALTER TABLE machines
+  ADD COLUMN IF NOT EXISTS unit TEXT;
+`);
 
     console.log("✅ Migration completed!");
   } catch (err) {
