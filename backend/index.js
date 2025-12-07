@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Excel file path (inside backend folder on Render)
+// Excel file path 
 const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
 
 // Test route
@@ -24,6 +24,23 @@ app.get("/", (req, res) => {
 app.post("/import", async (req, res) => {
   try {
     console.log("📄 Excel path:", excelFilePath);
+    console.log("📌 Working directory:", process.cwd());
+
+try {
+  console.log("📂 Root files:", fs.readdirSync(process.cwd()));
+} catch(e) {
+  console.log("⚠ Cannot list root directory", e.message);
+}
+
+try {
+  console.log("📂 Backend folder:", fs.readdirSync(path.join(process.cwd(), "backend")));
+} catch(e) {
+  console.log("⚠ Backend folder missing:", e.message);
+}
+
+console.log("🔍 Checking Excel path:", excelFilePath);
+console.log("📄 Exists?", fs.existsSync(excelFilePath));
+
 
     if (!fs.existsSync(excelFilePath)) {
       console.error("❌ Excel not found!");
