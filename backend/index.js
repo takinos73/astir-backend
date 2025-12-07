@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Excel file path (inside backend folder on Render)
-const excelFilePath = path.join(process.cwd(), "backend", "Maint_web.xlsx");
+const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
 
 // Test route
 app.get("/", (req, res) => {
