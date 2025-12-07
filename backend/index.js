@@ -125,43 +125,83 @@ app.get("/machines", async (req, res) => {
 /****************************************
  * MIGRATION
  ****************************************/
+// --- RUN MIGRATION (fix maintenance table) ---
 async function runMigration() {
-  console.log("🔄 Running migration...");
+  console.log("🔄 Running DB migration for maintenance_tasks...");
 
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS machines (
-        id SERIAL PRIMARY KEY,
-        name TEXT UNIQUE,
-        sn TEXT
-      );
-    `);
-
+    // Create table if missing
     await pool.query(`
       CREATE TABLE IF NOT EXISTS maintenance_tasks (
-        id SERIAL PRIMARY KEY,
-        machine_id INT REFERENCES machines(id),
-        section TEXT,
-        unit TEXT,
-        task TEXT,
-        type TEXT,
-        qty REAL,
-        duration_min REAL,
-        frequency_hours REAL,
-        due_date TIMESTAMPTZ,
-        status TEXT DEFAULT 'Planned',
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        id SERIAL PRIMARY KEY
       );
     `);
 
-    console.log("✔ Migration OK!");
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS machine_id INTEGER;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS section TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS unit TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS task TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS type TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS qty TEXT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS duration_min FLOAT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS frequency_hours FLOAT;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS due_date DATE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Planned';
+    `);
+
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+    `);
+
+    console.log("✅ maintenance_tasks migration OK!");
   } catch (err) {
-    console.error("❌ Migration failed");
+    console.error("❌ Migration failed!");
     console.error(err);
+    process.exit(1);
   }
 }
 
 await runMigration();
+
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
