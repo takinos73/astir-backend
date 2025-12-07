@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Excel file path 
+// Correct Excel path (same folder as index.js)
 const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
 
 // Test route
@@ -20,38 +20,16 @@ app.get("/", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
-// IMPORT Excel to DB
+// Import Excel to database
 app.post("/import", async (req, res) => {
   try {
-    console.log("📄 Excel path:", excelFilePath);
-    console.log("📌 Working directory:", process.cwd());
-
-try {
-  console.log("📂 Root files:", fs.readdirSync(process.cwd()));
-} catch(e) {
-  console.log("⚠ Cannot list root directory", e.message);
-}
-
-try {
-  console.log("📂 Backend folder:", fs.readdirSync(path.join(process.cwd(), "backend")));
-} catch(e) {
-  console.log("⚠ Backend folder missing:", e.message);
-}
-
-console.log("🔍 Checking Excel path:", excelFilePath);
-console.log("📄 Exists?", fs.existsSync(excelFilePath));
-
-
     if (!fs.existsSync(excelFilePath)) {
-      console.error("❌ Excel not found!");
       return res.status(404).json({ error: "Excel file not found!" });
     }
 
     const workbook = XLSX.readFile(excelFilePath);
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
-
-    console.log(`📥 Rows detected: ${rows.length}`);
 
     for (const row of rows) {
       if (!row["Machine"] || !row["Task"]) continue;
@@ -74,6 +52,7 @@ console.log("📄 Exists?", fs.existsSync(excelFilePath));
          RETURNING id`,
         [machine]
       );
+
       const machineId = machineRes.rows[0].id;
 
       await pool.query(
@@ -84,16 +63,14 @@ console.log("📄 Exists?", fs.existsSync(excelFilePath));
       );
     }
 
-    console.log("✅ Import completed!");
     res.json({ message: "Data imported successfully!" });
 
   } catch (err) {
-    console.error("❌ Import ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET machines
+// GET endpoints
 app.get("/machines", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
@@ -103,7 +80,6 @@ app.get("/machines", async (req, res) => {
   }
 });
 
-// GET maintenance tasks
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM maintenance_tasks ORDER BY id ASC");
