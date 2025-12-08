@@ -192,34 +192,40 @@
   document.getElementById("machineFilter").addEventListener("change", renderTable);
   document.getElementById("statusFilter").addEventListener("change", renderTable);
 
-  // 💾 EXPORT Snapshotasync function restoreSnapshot() {
-  const fileInput = document.getElementById("snapshotFile");
-  const file = fileInput.files[0];
-
-  if (!file) {
-    alert("Please select a snapshot file!");
+  // 💾 EXPORT Snapshotasync 
+async function exportSnapshot() {
+  const nameInput = prompt("Enter snapshot name:", "Backup");
+  if (!nameInput || !nameInput.trim()) {
+    alert("Snapshot name is required!");
     return;
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch(`${API}/snapshot/restore`, {
-    method: "POST",
-    body: formData
-  });
+  const res = await fetch(`${API}/snapshot/export`);
 
   if (!res.ok) {
-    const err = await res.json();
-    alert("Restore failed: " + err.error);
+    alert("Export failed!");
     return;
   }
 
-  alert("Restore Completed!");
-  loadTasks();
+  const data = await res.json();
+
+  const cleanName = nameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `snapshot_${cleanName}_${timestamp}.json`;
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(link.href);
 }
   document.getElementById("exportSnapshot").addEventListener("click", () => {
-    window.location.href = `${API}/snapshot/export`;
+  window.location.href = `${API}/snapshot/export`;
   });
 
   // 🔄 RESTORE Snapshot from File
