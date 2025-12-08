@@ -22,6 +22,7 @@
       gap: 15px;
       margin-bottom: 15px;
       justify-content: center;
+      align-items: center;
     }
 
     select {
@@ -79,12 +80,9 @@
       <option value="Done">Done</option>
     </select>
 
-    <div style="margin-top:20px;">
-      <button id="exportSnapshot">📦 Export Snapshot</button>
-      <input type="file" id="snapshotFile" accept="application/json">
+    <button id="exportSnapshot">📦 Export Snapshot</button>
+    <input type="file" id="snapshotFile" accept="application/json">
     <button id="restoreSnapshot">♻ Restore Snapshot</button>
-</div>
-
   </div>
 
   <table id="tasksTable">
@@ -195,63 +193,49 @@
 
   document.getElementById("machineFilter").addEventListener("change", renderTable);
   document.getElementById("statusFilter").addEventListener("change", renderTable);
-  function exportSnapshot() {
-  window.location.href = `${API}/snapshot/export`;
-}
 
-function openRestoreModal() {
-  document.getElementById("restoreModal").style.display = "flex";
-}
+  // 💾 EXPORT Snapshot
+  document.getElementById("exportSnapshot").addEventListener("click", () => {
+    window.location.href = `${API}/snapshot/export`;
+  });
 
-function closeRestoreModal() {
-  document.getElementById("restoreModal").style.display = "none";
-}
-
-async function restoreSnapshot() {
-  const snapshotText = document.getElementById("snapshotInput").value;
-  if (!snapshotText) {
-    alert("Paste a valid snapshot first!");
-    return;
-  }
-
-  try {
-    const jsonData = JSON.parse(snapshotText);
-
-    const res = await fetch(`${API}/snapshot/restore`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(jsonData)
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      alert("Restore failed: " + err.error);
+  // 🔄 RESTORE Snapshot from File
+  document.getElementById("restoreSnapshot").addEventListener("click", () => {
+    const input = document.getElementById("snapshotFile");
+    if (!input.files.length) {
+      alert("Please select a Snapshot JSON file!");
       return;
     }
 
-    alert("Restore Completed!");
-    closeRestoreModal();
-    loadTasks(); // refresh table
+    const file = input.files[0];
+    const reader = new FileReader();
 
-  } catch (err) {
-    alert("Invalid JSON: " + err.message);
-  }
-}
+    reader.onload = async (event) => {
+      try {
+        const snapshotData = JSON.parse(event.target.result);
+
+        const res = await fetch(`${API}/snapshot/restore`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(snapshotData),
+        });
+
+        if (!res.ok) throw new Error("Restore failed!");
+
+        alert("Snapshot restored successfully!");
+        loadTasks();
+      } catch (err) {
+        alert("Invalid snapshot file!");
+        console.error(err);
+      }
+    };
+
+    reader.readAsText(file);
+  });
 
   loadFilters();
   loadTasks();
 </script>
-  <div id="restoreModal" class="modal" style="display:none; position:fixed; 
-    top:0; left:0; width:100%; height:100%; 
-    background:rgba(0,0,0,0.6); justify-content:center; align-items:center;">
-  <div style="background:#fff; padding:20px; border-radius:10px; width:500px;">
-    <h3>Restore Snapshot</h3>
-    <textarea id="snapshotInput" placeholder="Paste snapshot JSON here..." 
-      style="width:100%; height:200px;"></textarea><br><br>
-    <button onclick="restoreSnapshot()">Restore</button>
-    <button onclick="closeRestoreModal()">Cancel</button>
-  </div>
-</div>
 
 </body>
 </html>
