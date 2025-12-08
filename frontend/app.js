@@ -59,6 +59,7 @@ function buildRow(task) {
   tr.innerHTML = `
     <td>${task.machine_name}</td>
     <td>${task.task}</td>
+    <td>${task.type || "-"}</td> <!-- 👈 ΝΕΟ -->
     <td>${formatDate(task.due_date)}</td>
     <td>${statusPill(task)}</td>
     <td>
