@@ -1,39 +1,203 @@
+/* ASTIR CMMS – Industrial Dark UI */
+
+:root {
+  --bg-main: #0f1115;
+  --bg-card: #181b22;
+  --bg-card-alt: #1f242e;
+  --text-main: #f5f7fa;
+  --text-muted: #a4acb8;
+  --border-subtle: #272b35;
+  --accent: #4ea8ff;
+  --danger: #ff5c5c;
+  --warn: #ffd15c;
+  --ok: #4fd18b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  max-width: 500px;
-  margin: auto;
+  font-family: system-ui, sans-serif;
+  background: #0a0c10;
+  margin: 0;
   padding: 20px;
+  color: var(--text-main);
 }
 
-h1 {
-  text-align: center;
+.app-shell {
+  max-width: 1280px;
+  margin: auto;
 }
 
-form {
+/* HEADER */
+
+.app-header {
+  background: #10131a;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.app-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pill {
+  padding: 4px 10px;
+  background: #141821;
+  border-radius: 15px;
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+
+.snapshot-note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* KPI ROW */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kpi-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* CONTROLS */
+
+.controls-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
-input {
-  flex: 1;
-  padding: 8px;
-}
-
-button {
-  padding: 8px;
+select,
+.btn-secondary {
+  padding: 7px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 13px;
   cursor: pointer;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+.btn-secondary:hover {
+  background: #222838;
 }
 
-li {
-  background: #f4f4f4;
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 4px;
+/* TABLE */
+
+.table-card {
+  background: var(--bg-card);
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  background: #131721;
+  padding: 8px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+td {
+  padding: 8px;
+  border-top: 1px solid #22252d;
+}
+
+/* STATUS PILL */
+
+.status-pill {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.status-overdue {
+  background: var(--danger);
+}
+
+.status-soon {
+  background: var(--warn);
+  color: #472f00;
+}
+
+.status-done {
+  background: var(--ok);
+  color: #032012;
+}
+
+/* BUTTON */
+
+.btn-table {
+  background: var(--ok);
+  color: #032012;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-table:hover {
+  background: #5ceb9e;
+}
+
+/* HOVER */
+
+tbody tr:hover {
+  background: #131520;
 }
 
