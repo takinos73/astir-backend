@@ -184,6 +184,125 @@ app.patch("/tasks/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+import fs from "fs";   // το έχεις ήδη
+import path from "path"; // το έχεις ήδη
+
+// ...
+
+// EXPORT SNAPSHOT
+app.get("/snapshot/export", async (req, res) => {
+  try {
+    // 1. Παίρνουμε όλα τα machines
+    const machinesRes = await pool.query("SELECT * FROM machines ORDER BY id ASC");
+    const machines = machinesRes.rows;
+
+    // 2. Παίρνουμε όλα τα tasks, μαζί με όνομα μηχανής
+    const tasksRes = await pool.query(`
+      SELECT 
+        mt.id,
+        m.name AS machine_name,
+        mt.section,
+        mt.unit,
+        mt.task,
+        mt.type,
+        mt.qty,
+        mt.duration_min,
+        mt.frequency_hours,
+        mt.due_date,
+        mt.status,
+        mt.created_at
+      FROM maintenance_tasks mt
+      JOIN machines m ON m.id = mt.machine_id
+      ORDER BY mt.id ASC
+    `);
+    const tasks = tasksRes.rows;
+
+    // 3. Φτιάχνουμε snapshot object
+    const snapshot = {
+      version: 1,
+      created_at: new Date().toISOString(),
+      machines,
+      tasks
+    };
+
+    const json = JSON.stringify(snapshot, null, 2);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `astir_snapshot_${timestamp}.json`;
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(json);
+  } catch (err) {
+    console.error("❌ Snapshot export error:", err);
+    res.status(500).json({ error: "Snapshot export failed" });
+  }
+});
+// RESTORE SNAPSHOT
+app.post("/snapshot/restore", async (req, res) => {
+  const snapshot = req.body;
+
+  if (!snapshot || !snapshot.machines || !snapshot.tasks) {
+    return res.status(400).json({ error: "Invalid snapshot format" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Καθαρίζουμε στοιχεία (tasks πρώτα λόγω foreign key)
+    await client.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+    await client.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
+
+    // 2. Εισάγουμε μηχανές
+    const machineIdByName = new Map();
+
+    for (const m of snapshot.machines) {
+      const resInsert = await client.query(
+        `INSERT INTO machines (name, sn)
+         VALUES ($1, $2)
+         RETURNING id`,
+        [m.name, m.sn || null]
+      );
+      machineIdByName.set(m.name, resInsert.rows[0].id);
+    }
+
+    // 3. Εισάγουμε tasks
+    for (const t of snapshot.tasks) {
+      const machineId = machineIdByName.get(t.machine_name);
+      if (!machineId) continue; // ασφάλεια
+
+      await client.query(
+        `INSERT INTO maintenance_tasks
+        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          machineId,
+          t.section || null,
+          t.unit || null,
+          t.task,
+          t.type || null,
+          t.qty || null,
+          t.duration_min || null,
+          t.frequency_hours || null,
+          t.due_date ? new Date(t.due_date) : null,
+          t.status || "Planned",
+          t.created_at ? new Date(t.created_at) : new Date()
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "Snapshot restored successfully" });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ Snapshot restore error:", err);
+    res.status(500).json({ error: "Snapshot restore failed" });
+  } finally {
+    client.release();
+  }
+});
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
