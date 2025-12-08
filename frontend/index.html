@@ -79,10 +79,11 @@
       <option value="Done">Done</option>
     </select>
 
-    <div class="actions">
-      <button onclick="exportSnapshot()">📦 Export Snapshot</button>
-      <button onclick="openRestoreModal()">♻ Restore Snapshot</button>
-    </div>
+    <div style="margin-top:20px;">
+      <button id="exportSnapshot">📦 Export Snapshot</button>
+      <input type="file" id="snapshotFile" accept="application/json">
+    <button id="restoreSnapshot">♻ Restore Snapshot</button>
+</div>
 
   </div>
 
