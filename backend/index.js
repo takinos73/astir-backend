@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // 📌 Serve Frontend static files
-const frontendPath = path.join(process.cwd(), "frontend");
+const frontendPath = path.join(process.cwd(), "..", "frontend");
 app.use(express.static(frontendPath));
 
 // Excel file path
