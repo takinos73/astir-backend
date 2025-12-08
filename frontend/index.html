@@ -137,7 +137,6 @@
       alert("Failed to update task!");
     }
   }
-
   function renderTable() {
     const machineFilter = document.getElementById("machineFilter").value;
     const statusFilter = document.getElementById("statusFilter").value;
@@ -171,7 +170,6 @@
         tableBody.appendChild(row);
       });
   }
-
   async function loadFilters() {
     const res = await fetch(`${API}/machines`);
     const machines = await res.json();
@@ -194,44 +192,38 @@
   document.getElementById("machineFilter").addEventListener("change", renderTable);
   document.getElementById("statusFilter").addEventListener("change", renderTable);
 
-  // 💾 EXPORT Snapshot
+  // 💾 EXPORT Snapshotasync function restoreSnapshot() {
+  const fileInput = document.getElementById("snapshotFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please select a snapshot file!");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API}/snapshot/restore`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert("Restore failed: " + err.error);
+    return;
+  }
+
+  alert("Restore Completed!");
+  loadTasks();
+}
   document.getElementById("exportSnapshot").addEventListener("click", () => {
     window.location.href = `${API}/snapshot/export`;
   });
 
   // 🔄 RESTORE Snapshot from File
-  document.getElementById("restoreSnapshot").addEventListener("click", () => {
-    const input = document.getElementById("snapshotFile");
-    if (!input.files.length) {
-      alert("Please select a Snapshot JSON file!");
-      return;
-    }
-
-    const file = input.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async (event) => {
-      try {
-        const snapshotData = JSON.parse(event.target.result);
-
-        const res = await fetch(`${API}/snapshot/restore`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(snapshotData),
-        });
-
-        if (!res.ok) throw new Error("Restore failed!");
-
-        alert("Snapshot restored successfully!");
-        loadTasks();
-      } catch (err) {
-        alert("Invalid snapshot file!");
-        console.error(err);
-      }
-    };
-
-    reader.readAsText(file);
-  });
+ 
 
   loadFilters();
   loadTasks();
