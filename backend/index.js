@@ -86,5 +86,168 @@ app.post("/import", async (req, res) => {
       );
     }
 
-    res.json({ message: "Import
+    res.json({ message: "Import completed!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// -------------------
+// GET Machines
+// -------------------
+app.get("/machines", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------
+// GET Tasks
+// -------------------
+app.get("/tasks", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        mt.id,
+        m.name AS machine_name,
+        mt.section,
+        mt.unit,
+        mt.task,
+        mt.type,
+        mt.qty,
+        mt.duration_min,
+        mt.frequency_hours,
+        mt.due_date,
+        mt.status
+      FROM maintenance_tasks mt
+      JOIN machines m ON m.id = mt.machine_id
+      ORDER BY mt.id ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------
+// UPDATE Task Status
+// -------------------
+app.patch("/tasks/:id", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE maintenance_tasks
+       SET status = 'Done'
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id]
+    );
+    if (!result.rows.length)
+      return res.status(404).json({ error: "Task not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------
+// SNAPSHOT Export
+// -------------------
+app.get("/snapshot/export", async (req, res) => {
+  try {
+    const machines = (await pool.query("SELECT * FROM machines")).rows;
+    const tasks = (
+      await pool.query(`
+      SELECT 
+        mt.*, m.name AS machine_name 
+      FROM maintenance_tasks mt
+      JOIN machines m ON m.id = mt.machine_id
+    `)
+    ).rows;
+
+    const snapshot = {
+      version: 1,
+      created_at: new Date().toISOString(),
+      machines,
+      tasks,
+    };
+
+    const filename = `snapshot_${Date.now()}.json`;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+    res.send(JSON.stringify(snapshot, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: "Snapshot export failed" });
+  }
+});
+
+// -------------------
+// SNAPSHOT Restore
+// -------------------
+app.post("/snapshot/restore", async (req, res) => {
+  try {
+    const { machines, tasks } = req.body;
+
+    if (!machines || !tasks) {
+      return res.status(400).json({ error: "Invalid snapshot format" });
+    }
+
+    await pool.query(
+      "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
+    );
+    await pool.query(
+      "TRUNCATE TABLE machines RESTART IDENTITY CASCADE;"
+    );
+
+    for (const m of machines) {
+      await pool.query(
+        `INSERT INTO machines (name, sn) VALUES ($1, $2)`,
+        [m.name, m.sn || null]
+      );
+    }
+
+    for (const t of tasks) {
+      await pool.query(
+        `INSERT INTO maintenance_tasks (
+          machine_id, section, unit, task, type,
+          qty, duration_min, frequency_hours, due_date, status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          t.machine_id,
+          t.section,
+          t.unit,
+          t.task,
+          t.type,
+          t.qty,
+          t.duration_min,
+          t.frequency_hours,
+          t.due_date,
+          t.status,
+        ]
+      );
+    }
+
+    res.json({ message: "Restore completed!" });
+  } catch (err) {
+    console.error("Restore ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------
+// Serve frontend for ANY unknown route (last)
+// -------------------
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+// -------------------
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
