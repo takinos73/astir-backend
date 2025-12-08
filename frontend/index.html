@@ -102,116 +102,104 @@
   </table>
 
 <script>
-  const API = "https://astir-backend.onrender.com";
-  let tasksData = [];
+const API = "https://astir-backend.onrender.com";
+let tasksData = [];
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("el-GR");
-  }
+// 🗓 Format date
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("el-GR");
+}
 
-  function getStatusClass(dueDate, status) {
-    if (status === "Done") return "status-ok";
-    if (!dueDate) return "";
-    const today = new Date();
-    const date = new Date(dueDate);
-    const diffDays = Math.ceil((date - today) / (1000*60*60*24));
-    if (diffDays < 0) return "status-bad";
-    if (diffDays <= 7) return "status-warn";
-    return "status-ok";
-  }
+// 🎨 Status colors
+function getStatusClass(dueDate, status) {
+  if (status === "Done") return "status-ok";
+  if (!dueDate) return "";
+  const today = new Date();
+  const date = new Date(dueDate);
+  const diff = Math.ceil((date - today) / (1000*60*60*24));
+  if (diff < 0) return "status-bad";
+  if (diff <= 7) return "status-warn";
+  return "status-ok";
+}
 
-  async function markDone(id) {
-    const res = await fetch(`${API}/tasks/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "Done" }),
-    });
+// ✔ Mark as Done
+async function markDone(id) {
+  const res = await fetch(`${API}/tasks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "Done" }),
+  });
 
-    if (res.ok) {
-      const task = tasksData.find(t => t.id === id);
-      task.status = "Done";
-      renderTable();
-    } else {
-      alert("Failed to update task!");
-    }
-  }
-  function renderTable() {
-    const machineFilter = document.getElementById("machineFilter").value;
-    const statusFilter = document.getElementById("statusFilter").value;
-
-    const tableBody = document.querySelector("#tasksTable tbody");
-    tableBody.innerHTML = "";
-
-    tasksData
-      .filter(t =>
-        (machineFilter === "all" || t.machine_name === machineFilter) &&
-        (statusFilter === "all" || t.status === statusFilter)
-      )
-      .forEach(t => {
-        const row = document.createElement("tr");
-        row.className = getStatusClass(t.due_date, t.status);
-
-        row.innerHTML = `
-          <td>${t.machine_name}</td>
-          <td>${t.section || "-"}</td>
-          <td>${t.unit || "-"}</td>
-          <td>${t.task}</td>
-          <td>${t.type || "-"}</td>
-          <td>${formatDate(t.due_date)}</td>
-          <td>${t.status}</td>
-          <td>
-            ${t.status !== "Done"
-              ? `<button onclick="markDone(${t.id})">✔ Done</button>`
-              : "✓"}
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
-  }
-  async function loadFilters() {
-    const res = await fetch(`${API}/machines`);
-    const machines = await res.json();
-    const select = document.getElementById("machineFilter");
-
-    machines.forEach(m => {
-      const option = document.createElement("option");
-      option.value = m.name;
-      option.textContent = m.name;
-      select.appendChild(option);
-    });
-  }
-
-  async function loadTasks() {
-    const res = await fetch(`${API}/tasks`);
-    tasksData = await res.json();
+  if (res.ok) {
+    const t = tasksData.find(x => x.id === id);
+    t.status = "Done";
     renderTable();
   }
+}
 
-  document.getElementById("machineFilter").addEventListener("change", renderTable);
-  document.getElementById("statusFilter").addEventListener("change", renderTable);
+// 📋 Render Data
+function renderTable() {
+  const machineFilter = document.getElementById("machineFilter").value;
+  const statusFilter = document.getElementById("statusFilter").value;
+  const tableBody = document.querySelector("#tasksTable tbody");
+  tableBody.innerHTML = "";
 
-  // 💾 EXPORT Snapshotasync 
+  tasksData
+    .filter(t =>
+      (machineFilter === "all" || t.machine_name === machineFilter) &&
+      (statusFilter === "all" || t.status === statusFilter)
+    )
+    .forEach(t => {
+      const row = document.createElement("tr");
+      row.className = getStatusClass(t.due_date, t.status);
+      row.innerHTML = `
+        <td>${t.machine_name}</td>
+        <td>${t.section || "-"}</td>
+        <td>${t.unit || "-"}</td>
+        <td>${t.task}</td>
+        <td>${t.type || "-"}</td>
+        <td>${formatDate(t.due_date)}</td>
+        <td>${t.status}</td>
+        <td>${t.status !== "Done"
+          ? `<button onclick="markDone(${t.id})">✔ Done</button>`
+          : "✓"}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+}
+
+// 🔽 Filters Load
+async function loadFilters() {
+  const res = await fetch(`${API}/machines`);
+  const machines = await res.json();
+  const select = document.getElementById("machineFilter");
+  machines.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.name;
+    opt.textContent = m.name;
+    select.appendChild(opt);
+  });
+}
+
+// 🔽 Tasks Load
+async function loadTasks() {
+  const res = await fetch(`${API}/tasks`);
+  tasksData = await res.json();
+  renderTable();
+}
+
+// 📦 Export Snapshot — USER NAMED FILE
 async function exportSnapshot() {
   const nameInput = prompt("Enter snapshot name:", "Backup");
-  if (!nameInput || !nameInput.trim()) {
-    alert("Snapshot name is required!");
-    return;
-  }
+  if (!nameInput || !nameInput.trim()) return;
 
   const res = await fetch(`${API}/snapshot/export`);
-
-  if (!res.ok) {
-    alert("Export failed!");
-    return;
-  }
-
   const data = await res.json();
 
-  const cleanName = nameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `snapshot_${cleanName}_${timestamp}.json`;
+  const clean = nameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+  const time = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `snapshot_${clean}_${time}.json`;
 
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json"
@@ -221,18 +209,38 @@ async function exportSnapshot() {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-
-  URL.revokeObjectURL(link.href);
 }
-  document.getElementById("exportSnapshot").addEventListener("click", () => {
-  window.location.href = `${API}/snapshot/export`;
+
+// ♻ Restore Snapshot from file
+document.getElementById("snapshotFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const text = await file.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { return alert("Invalid snapshot file!"); }
+
+  const res = await fetch(`${API}/snapshot/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(json)
   });
 
-  // 🔄 RESTORE Snapshot from File
- 
-
-  loadFilters();
+  if (!res.ok) return alert("Restore failed!");
+  
+  alert("Snapshot restored!");
   loadTasks();
+});
+
+// 📌 Event Listeners
+document.getElementById("exportSnapshot").addEventListener("click", exportSnapshot);
+document.getElementById("machineFilter").addEventListener("change", renderTable);
+document.getElementById("statusFilter").addEventListener("change", renderTable);
+
+// 🚀 Init
+loadFilters();
+loadTasks();
 </script>
 
 </body>
