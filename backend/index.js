@@ -12,34 +12,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔹 Το Excel είναι στο root του project (όπως φαίνεται από το GitHub)
+// Excel file path
 const excelFilePath = path.join(process.cwd(), "Maint_web.xlsx");
 
+// -------------------
 // Test route
+// -------------------
 app.get("/", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
-// 🔁 IMPORT Excel → DB
+// -------------------
+// IMPORT Excel to DB
+// -------------------
 app.post("/import", async (req, res) => {
   try {
-    console.log("📄 Excel path:", excelFilePath);
-    console.log("📌 Working directory:", process.cwd());
-
     if (!fs.existsSync(excelFilePath)) {
-      console.error("❌ Excel not found!");
       return res.status(404).json({ error: "Excel file not found!" });
     }
 
-    // Διαβάζουμε με cellDates:true ώστε, όπου μπορεί, να δίνει ήδη Date objects
     const workbook = XLSX.readFile(excelFilePath, { cellDates: true });
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    console.log(`📥 Rows detected: ${rows.length}`);
-
-    // ⚠️ ΠΡΟΑΙΡΕΤΙΚΟ:
-    // Αν ΘΕΛΕΙΣ κάθε import να ξεκινά σε καθαρό πίνακα:
     await pool.query(
       "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
     );
@@ -48,51 +43,8 @@ app.post("/import", async (req, res) => {
       if (!row["Machine"] || !row["Task"]) continue;
 
       const machine = row["Machine"];
-      const section = row["Section"] || null;
-      const unit = row["Unit"] || null;
-      const task = row["Task"] || null;
-      const type = row["Type"] || null;
 
-      // 🔹 Ασφαλής μετατροπή αριθμητικών πεδίων
-      const toNumberOrNull = (value) => {
-        if (value === undefined || value === null) return null;
-        if (typeof value === "string" && value.trim() === "-") return null;
-        const n = Number(value);
-        return Number.isNaN(n) ? null : n;
-      };
-
-      const qty = toNumberOrNull(row["Qty"]);
-      const duration = toNumberOrNull(row["Duration(min)"]);
-      const freq = toNumberOrNull(row["Frequency(hours)"]);
-
-      // 🔹 Σωστό parsing DueDate
-      let due = null;
-      const rawDue = row["DueDate"];
-
-      if (rawDue) {
-        if (rawDue instanceof Date) {
-          // Ήδη σωστό Date από XLSX (λόγω cellDates:true)
-          due = rawDue;
-        } else if (typeof rawDue === "number") {
-          // Excel serial number → days since 1899-12-30
-          const excelEpoch = Date.UTC(1899, 11, 30); // 30/12/1899
-          const ms = excelEpoch + rawDue * 24 * 60 * 60 * 1000;
-          due = new Date(ms);
-        } else if (typeof rawDue === "string") {
-          // Αν ποτέ έρθει σαν "dd/mm/yy"
-          const parts = rawDue.split(/[\/\-\.]/).map((p) => p.trim());
-          if (parts.length === 3) {
-            let [d, m, y] = parts.map(Number);
-            if (y < 100) y += 2000; // π.χ. 25 → 2025
-            due = new Date(Date.UTC(y, m - 1, d));
-          }
-        }
-      }
-
-      const status = row["Status"] || "Planned";
-
-      // 🔹 Insert / get machine_id με ασφαλή τρόπο
-      const insertMachineRes = await pool.query(
+      const insertMachine = await pool.query(
         `INSERT INTO machines (name)
          VALUES ($1)
          ON CONFLICT (name) DO NOTHING
@@ -100,35 +52,43 @@ app.post("/import", async (req, res) => {
         [machine]
       );
 
-      let machineId;
-      if (insertMachineRes.rows.length > 0) {
-        machineId = insertMachineRes.rows[0].id;
-      } else {
-        const existing = await pool.query(
-          "SELECT id FROM machines WHERE name = $1",
-          [machine]
-        );
-        machineId = existing.rows[0].id;
-      }
+      let machineId = insertMachine.rows.length
+        ? insertMachine.rows[0].id
+        : (await pool.query("SELECT id FROM machines WHERE name=$1", [machine]))
+            .rows[0].id;
 
-      // 🔹 Insert task
+      const due = row["DueDate"]
+        ? new Date(row["DueDate"])
+        : null;
+
       await pool.query(
         `INSERT INTO maintenance_tasks
         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [machineId, section, unit, task, type, qty, duration, freq, due, status]
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          machineId,
+          row["Section"] || null,
+          row["Unit"] || null,
+          row["Task"],
+          row["Type"] || null,
+          row["Qty"] || null,
+          row["Duration(min)"] || null,
+          row["Frequency(hours)"] || null,
+          due,
+          row["Status"] || "Planned",
+        ]
       );
     }
 
-    console.log("✅ Import completed!");
-    res.json({ message: "Data imported successfully!" });
+    res.json({ message: "Import completed!" });
   } catch (err) {
-    console.error("❌ Import ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET machines
+// -------------------
+// GET Machines
+// -------------------
 app.get("/machines", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
@@ -138,55 +98,136 @@ app.get("/machines", async (req, res) => {
   }
 });
 
-// GET maintenance tasks
+// -------------------
+// GET Tasks
+// -------------------
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
-  SELECT 
-    mt.id,
-    m.name AS machine_name,
-    mt.section,
-    mt.unit,
-    mt.task,
-    mt.type,
-    mt.qty,
-    mt.duration_min,
-    mt.frequency_hours,
-    mt.due_date,
-    mt.status
-  FROM maintenance_tasks mt
-  JOIN machines m ON m.id = mt.machine_id
-  ORDER BY mt.id ASC
-`);
+      SELECT 
+        mt.id,
+        m.name AS machine_name,
+        mt.section,
+        mt.unit,
+        mt.task,
+        mt.type,
+        mt.qty,
+        mt.duration_min,
+        mt.frequency_hours,
+        mt.due_date,
+        mt.status
+      FROM maintenance_tasks mt
+      JOIN machines m ON m.id = mt.machine_id
+      ORDER BY mt.id ASC
+    `);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-// UPDATE task status (mark as done)
+
+// -------------------
+// UPDATE Task Status
+// -------------------
 app.patch("/tasks/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const result = await pool.query(`
-      UPDATE maintenance_tasks
-      SET status = $1
-      WHERE id = $2
-      RETURNING *
-    `, [status, id]);
-
-    if (result.rowCount === 0)
-      return res.status(404).json({ error: "Task not found" });
-
+    const result = await pool.query(
+      `UPDATE maintenance_tasks
+       SET status = 'Done'
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-import fs from "fs";   // το έχεις ήδη
-import path from "path"; // το έχεις ήδη
 
+// -------------------
+// SNAPSHOT Export
+// -------------------
+app.get("/snapshot/export", async (req, res) => {
+  try {
+    const machines = (await pool.query("SELECT * FROM machines")).rows;
+    const tasks = (await pool.query(`
+      SELECT 
+        mt.*, m.name AS machine_name 
+      FROM maintenance_tasks mt
+      JOIN machines m ON m.id = mt.machine_id
+    `)).rows;
+
+    const snapshot = {
+      version: 1,
+      created_at: new Date().toISOString(),
+      machines,
+      tasks
+    };
+
+    const filename = `snapshot_${Date.now()}.json`;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(snapshot, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: "Snapshot export failed" });
+  }
+});
+
+// -------------------
+// SNAPSHOT Restore
+// -------------------
+app.post("/snapshot/restore", async (req, res) => {
+  const snapshot = req.body;
+  if (!snapshot.tasks || !snapshot.machines)
+    return res.status(400).json({ error: "Invalid snapshot!" });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("TRUNCATE maintenance_tasks RESTART IDENTITY CASCADE;");
+    await client.query("TRUNCATE machines RESTART IDENTITY CASCADE;");
+
+    const idMap = {};
+
+    for (const m of snapshot.machines) {
+      const resM = await client.query(
+        `INSERT INTO machines (name, sn) VALUES ($1,$2) RETURNING id`,
+        [m.name, m.sn || null]
+      );
+      idMap[m.name] = resM.rows[0].id;
+    }
+
+    for (const t of snapshot.tasks) {
+      await client.query(
+        `INSERT INTO maintenance_tasks
+         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          idMap[t.machine_name],
+          t.section,
+          t.unit,
+          t.task,
+          t.type,
+          t.qty,
+          t.duration_min,
+          t.frequency_hours,
+          t.due_date,
+          t.status,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "Snapshot restored!" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "Snapshot restore failed" });
+  } finally {
+    client.release();
+  }
+});
+
+// -------------------
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
