@@ -5,6 +5,8 @@ import pool from "./db.js";
 import fs from "fs";
 import path from "path";
 import XLSX from "xlsx";
+import multer from "multer";
+const upload = multer();
 
 dotenv.config();
 
@@ -177,34 +179,38 @@ app.get("/snapshot/export", async (req, res) => {
 // -------------------
 // SNAPSHOT Restore
 // -------------------
-app.post("/snapshot/restore", async (req, res) => {
-  const snapshot = req.body;
-  if (!snapshot.tasks || !snapshot.machines)
-    return res.status(400).json({ error: "Invalid snapshot!" });
-
-  const client = await pool.connect();
+app.post("/snapshot/restore", upload.single("file"), async (req, res) => {
   try {
-    await client.query("BEGIN");
-    await client.query("TRUNCATE maintenance_tasks RESTART IDENTITY CASCADE;");
-    await client.query("TRUNCATE machines RESTART IDENTITY CASCADE;");
-
-    const idMap = {};
-
-    for (const m of snapshot.machines) {
-      const resM = await client.query(
-        `INSERT INTO machines (name, sn) VALUES ($1,$2) RETURNING id`,
-        [m.name, m.sn || null]
-      );
-      idMap[m.name] = resM.rows[0].id;
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    for (const t of snapshot.tasks) {
-      await client.query(
-        `INSERT INTO maintenance_tasks
-         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    const jsonString = req.file.buffer.toString("utf8");
+    const data = JSON.parse(jsonString);
+
+    const { machines, tasks } = data;
+    if (!machines || !tasks) {
+      return res.status(400).json({ error: "Invalid snapshot format" });
+    }
+
+    await pool.query("BEGIN");
+    await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+    await pool.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
+
+    for (const m of machines) {
+      await pool.query(`INSERT INTO machines (name, sn) VALUES ($1, $2)`, [
+        m.name,
+        m.sn,
+      ]);
+    }
+
+    for (const t of tasks) {
+      await pool.query(
+        `INSERT INTO maintenance_tasks 
+        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
-          idMap[t.machine_name],
+          t.machine_id,
           t.section,
           t.unit,
           t.task,
@@ -218,13 +224,12 @@ app.post("/snapshot/restore", async (req, res) => {
       );
     }
 
-    await client.query("COMMIT");
-    res.json({ message: "Snapshot restored!" });
+    await pool.query("COMMIT");
+    res.json({ message: "Snapshot restored successfully!" });
+
   } catch (err) {
-    await client.query("ROLLBACK");
-    res.status(500).json({ error: "Snapshot restore failed" });
-  } finally {
-    client.release();
+    await pool.query("ROLLBACK");
+    res.status(500).json({ error: err.message });
   }
 });
 
