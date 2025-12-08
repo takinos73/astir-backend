@@ -179,59 +179,44 @@ app.get("/snapshot/export", async (req, res) => {
 // -------------------
 // SNAPSHOT Restore
 // -------------------
-app.post("/snapshot/restore", upload.single("file"), async (req, res) => {
+app.post("/snapshot/restore", async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    const { machines, tasks } = req.body;
 
-    const jsonString = req.file.buffer.toString("utf8");
-    const data = JSON.parse(jsonString);
-
-    const { machines, tasks } = data;
     if (!machines || !tasks) {
       return res.status(400).json({ error: "Invalid snapshot format" });
     }
 
-    await pool.query("BEGIN");
     await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
     await pool.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
 
     for (const m of machines) {
-      await pool.query(`INSERT INTO machines (name, sn) VALUES ($1, $2)`, [
-        m.name,
-        m.sn,
-      ]);
+      await pool.query(
+        `INSERT INTO machines (name, sn) VALUES ($1, $2)`,
+        [m.name, m.sn || null]
+      );
     }
 
     for (const t of tasks) {
       await pool.query(
-        `INSERT INTO maintenance_tasks 
-        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        `INSERT INTO maintenance_tasks (
+          machine_id, section, unit, task, type,
+          qty, duration_min, frequency_hours, due_date, status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
-          t.machine_id,
-          t.section,
-          t.unit,
-          t.task,
-          t.type,
-          t.qty,
-          t.duration_min,
-          t.frequency_hours,
-          t.due_date,
-          t.status,
+          t.machine_id, t.section, t.unit, t.task, t.type,
+          t.qty, t.duration_min, t.frequency_hours, t.due_date, t.status
         ]
       );
     }
 
-    await pool.query("COMMIT");
-    res.json({ message: "Snapshot restored successfully!" });
-
+    res.json({ message: "Restore completed!" });
   } catch (err) {
-    await pool.query("ROLLBACK");
+    console.error("Restore ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // -------------------
 const PORT = process.env.PORT || 10000;
