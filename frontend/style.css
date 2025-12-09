@@ -164,28 +164,34 @@ td {
   border-radius: 8px;
   font-size: 12px;
   font-weight: bold;
+  color: #000;
 }
 
 /* DONE - green */
 .status-pill.status-done {
   background: #b9ffb9;
-  color: #006600;
+  color: #005500;
 }
 
 /* OVERDUE - red */
 .status-pill.status-overdue {
   background: #ffbaba;
-  color: #900;
+  color: #5a0000;
 }
 
-/* DUE SOON - yellow */
+/* DUE SOON - bright yellow */
 .status-pill.status-soon {
   background: #fff6a5;
-  color: #8a6d00;
+  color: #6b5200;
 }
 
+/* UNKNOWN DATE */
+.status-pill.status-unknown {
+  background: #c0c0c0;
+  color: #222;
+}
 
-/* BUTTON */
+/* BUTTONS */
 
 .btn-table {
   background: var(--ok);
@@ -201,11 +207,29 @@ td {
   background: #5ceb9e;
 }
 
-/* HOVER */
+.btn-undo,
+.btn-cancel {
+  background: #444;
+  color: #f9fafb;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-undo:hover,
+.btn-cancel:hover {
+  background: #6b7280;
+}
+
+/* ROW HOVER */
 
 tbody tr:hover {
   background: #131520;
 }
+
+/* MODAL */
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -238,35 +262,7 @@ tbody tr:hover {
   gap: 10px;
 }
 
-.btn-cancel {
-  background: #444;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.btn-undo {
-  background: #444;
-  color: #f9fafb;
-  padding: 5px 10px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  margin-bottom: 2px;
-}
-
-.btn-undo:hover {
-  background: #6b7280;
-}
-
-.tech-meta {
+tech-meta {
   font-size: 11px;
   color: #9ca3af;
 }
-
-
-
-
-
