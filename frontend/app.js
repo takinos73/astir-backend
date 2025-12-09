@@ -118,6 +118,7 @@ function renderTable() {
   const statusFilter = document.getElementById("statusFilter").value;
 
   const filtered = tasksData
+    .filter(t => activeLine === "all" || t.line_code === activeLine)
     .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
     .filter(t => {
       const st = getDueState(t);
@@ -328,4 +329,43 @@ document.getElementById("statusFilter").addEventListener("change", renderTable);
 
 // 🚀 Init
 loadFilters();
+let activeLine = "all"; // Default filter
+
+async function loadLines() {
+  const res = await fetch(`${API}/lines`);
+  const lines = await res.json();
+
+  const tabs = document.getElementById("lineTabs");
+  tabs.innerHTML = "";
+
+  // Add ALL
+  const allTab = document.createElement("div");
+  allTab.textContent = "ALL";
+  allTab.className = "line-tab active";
+  allTab.onclick = () => setActiveLine("all");
+  tabs.appendChild(allTab);
+
+  lines.forEach(line => {
+    const tab = document.createElement("div");
+    tab.textContent = line.code;
+    tab.className = "line-tab";
+    tab.onclick = () => setActiveLine(line.code);
+    tabs.appendChild(tab);
+  });
+}
+
+function setActiveLine(lineCode) {
+  activeLine = lineCode;
+
+  // UI highlight
+  document.querySelectorAll(".line-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.textContent === lineCode);
+    if (lineCode === "all") {
+      tab.classList.toggle("active", tab.textContent === "ALL");
+    }
+  });
+
+  renderTable();
+}
+
 loadTasks();
