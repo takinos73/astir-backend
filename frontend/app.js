@@ -45,10 +45,10 @@ function statusPill(task) {
     cls += " status-done";
   } else if (st === "overdue") {
     txt = "Overdue";
-    cls += " status-overdue";
+    cls += "status-overdue";
   } else if (st === "soon") {
     txt = "Due Soon";
-    cls += " status-soon";
+    cls += "status-soon";
   }
 
   return `<span class="${cls}">${txt}</span>`;
@@ -74,9 +74,7 @@ function buildRow(task) {
         task.status === "Done"
           ? `
             <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
-            <div class="tech-meta">
-              ✔ ${task.completed_by || "—"}
-            </div>
+            <div class="tech-meta">✔ ${task.completed_by || "—"}</div>
           `
           : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
       }
@@ -92,11 +90,11 @@ function updateKpis() {
   const total = tasksData.length;
   let overdue = 0;
   let soon = 0;
-  let done = 0;
+  let doneCount = 0;
 
   tasksData.forEach(t => {
     if (t.status === "Done") {
-      done++;
+      doneCount++;
       return;
     }
     const state = getDueState(t);
@@ -107,7 +105,7 @@ function updateKpis() {
   document.getElementById("kpiTotal").textContent = total;
   document.getElementById("kpiOverdue").textContent = overdue;
   document.getElementById("kpiSoon").textContent = soon;
-  document.getElementById("kpiDone").textContent = done;
+  document.getElementById("kpiDone").textContent = doneCount;
 }
 
 // 🔽 Render Table
@@ -128,7 +126,6 @@ function renderTable() {
       if (statusFilter === "Done") return t.status === "Done";
       return true;
     })
-    // 🏆 Supervisor priority: Overdue first
     .sort((a, b) => {
       const da = getDueState(a);
       const db = getDueState(b);
@@ -145,6 +142,8 @@ async function loadFilters() {
   const res = await fetch(`${API}/machines`);
   const list = await res.json();
   const select = document.getElementById("machineFilter");
+  select.innerHTML = `<option value="all">All Machines</option>`;
+
   list.forEach(m => {
     const o = document.createElement("option");
     o.value = m.name;
@@ -162,7 +161,7 @@ async function loadTasks() {
   renderTable();
 }
 
-// ✔ Ask for technician name (modal)
+// ✔ Modal handling
 
 function askTechnician(id) {
   pendingTaskId = id;
@@ -172,7 +171,6 @@ function askTechnician(id) {
 document.getElementById("cancelDone").onclick = () => {
   document.getElementById("modalOverlay").style.display = "none";
   document.getElementById("technicianInput").value = "";
-  pendingTaskId = null;
 };
 
 document.getElementById("confirmDone").onclick = () => {
@@ -181,17 +179,13 @@ document.getElementById("confirmDone").onclick = () => {
     alert("Παρακαλώ εισάγετε όνομα τεχνικού");
     return;
   }
-
-  if (!pendingTaskId) return;
-
   markDone(pendingTaskId, name);
 
   document.getElementById("modalOverlay").style.display = "none";
   document.getElementById("technicianInput").value = "";
-  pendingTaskId = null;
 };
 
-// ✔ Mark Task Done
+// ✔ Mark Done
 
 async function markDone(id, name) {
   const res = await fetch(`${API}/tasks/${id}`, {
@@ -201,15 +195,13 @@ async function markDone(id, name) {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("Update failed:", res.status, text);
-    alert("Update failed!");
+    alert("Update failed");
     return;
   }
 
   const updated = await res.json();
-
   const task = tasksData.find(t => t.id === id);
+
   if (task) {
     task.status = updated.status;
     task.completed_by = updated.completed_by;
@@ -220,7 +212,7 @@ async function markDone(id, name) {
   renderTable();
 }
 
-// ↩ Undo Task
+// ↩ Undo
 
 async function undoTask(id) {
   const res = await fetch(`${API}/tasks/${id}/undo`, {
@@ -228,26 +220,24 @@ async function undoTask(id) {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("Undo failed:", res.status, text);
-    alert("Undo failed!");
+    alert("Undo failed");
     return;
   }
 
   const updated = await res.json();
-
   const t = tasksData.find(t => t.id === id);
+
   if (t) {
     t.status = updated.status;
-    t.completed_at = updated.completed_at;
     t.completed_by = updated.completed_by;
+    t.completed_at = updated.completed_at;
   }
 
   updateKpis();
   renderTable();
 }
 
-// 📦 Snapshot Export
+// 📦 Snapshot
 
 async function exportSnapshot() {
   const name = prompt("Snapshot name:", "Backup");
@@ -256,17 +246,17 @@ async function exportSnapshot() {
   const res = await fetch(`${API}/snapshot/export`);
   const data = await res.json();
 
-  const time = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `${name}_${time}.json`;
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const fname = `${name}_${ts}.json`;
 
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fname;
+  link.click();
 }
 
 // ♻ Load Snapshot File
@@ -290,8 +280,7 @@ document.getElementById("snapshotFile").addEventListener("change", async e => {
 
 async function restoreSnapshot() {
   if (!pendingSnapshotJson) return alert("Load snapshot first!");
-
-  if (!confirm("Are you sure? This will overwrite the DB!")) return;
+  if (!confirm("Are you sure? This will overwrite DB!")) return;
 
   const res = await fetch(`${API}/snapshot/restore`, {
     method: "POST",
@@ -304,56 +293,39 @@ async function restoreSnapshot() {
     return;
   }
 
-  alert("DB restored from snapshot!");
-  loadTasks();
-}async function importExcel() {
-  const fileInput = document.getElementById("excelFile");
-  const file = fileInput.files[0];
-  
-  if (!file) return alert("Select an Excel file first!");
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch(`${API}/importExcel`, {
-    method: "POST",
-    body: formData
-  });
-
-  if (!res.ok) {
-    return alert("Excel import failed!");
-  }
-
-  alert("Excel imported successfully!");
+  alert("DB restored!");
   loadTasks();
 }
 
-// Event Listener
-document.getElementById("importExcelBtn").addEventListener("click", importExcel);
+// 📥 Import Excel Upload
 
+async function importExcel() {
+  const file = document.getElementById("excelFile").files[0];
+  if (!file) return alert("Select Excel file first!");
 
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(`${API}/importExcel`, {
+    method: "POST",
+    body: fd,
+  });
+
+  if (!res.ok) return alert("Excel import failed!");
+
+  alert("Excel imported!");
+  loadTasks();
+}
+
+document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
 
 // 🔗 Event Listeners
 
-document
-  .getElementById("exportSnapshot")
-  .addEventListener("click", exportSnapshot);
-
-document
-  .getElementById("restoreSnapshot")
-  .addEventListener("click", restoreSnapshot);
-
-document
-  .getElementById("machineFilter")
-  .addEventListener("change", renderTable);
-
-document
-  .getElementById("statusFilter")
-  .addEventListener("change", renderTable);
+document.getElementById("exportSnapshot").addEventListener("click", exportSnapshot);
+document.getElementById("restoreSnapshot").addEventListener("click", restoreSnapshot);
+document.getElementById("machineFilter").addEventListener("change", renderTable);
+document.getElementById("statusFilter").addEventListener("change", renderTable);
 
 // 🚀 Init
-
 loadFilters();
 loadTasks();
-
-
