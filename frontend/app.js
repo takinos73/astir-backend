@@ -4,6 +4,28 @@ const API = "https://astir-backend.onrender.com";
 let tasksData = [];
 let pendingSnapshotJson = null;
 
+let pendingTaskId = null;
+
+function askTechnician(id) {
+  pendingTaskId = id;
+  document.getElementById("modalOverlay").style.display = "flex";
+}
+
+document.getElementById("cancelDone").onclick = () => {
+  document.getElementById("modalOverlay").style.display = "none";
+  pendingTaskId = null;
+};
+
+document.getElementById("confirmDone").onclick = () => {
+  const name = document.getElementById("technicianInput").value.trim();
+  if (!name) return alert("Παρακαλώ εισάγετε όνομα!");
+
+  markDone(pendingTaskId, name);
+  document.getElementById("modalOverlay").style.display = "none";
+  document.getElementById("technicianInput").value = "";
+};
+
+
 // 📌 Helpers
 
 function formatDate(dateStr) {
@@ -156,19 +178,22 @@ async function loadTasks() {
 
 // ✔ Mark Task Done
 
-async function markDone(id) {
+async function markDone(id, name) {
   const res = await fetch(`${API}/tasks/${id}`, {
     method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ completed_by: name }),
   });
 
-  if (res.ok) {
-    const task = tasksData.find(t => t.id === id);
-    if (task) task.status = "Done";
-    updateKpis();
-    renderTable();
-  } else {
-    alert("Failed to update!");
-  }
+  if (!res.ok) return alert("Update failed!");
+
+  const upd = tasksData.find(t => t.id === id);
+  upd.status = "Done";
+  upd.completed_by = name;
+  upd.completed_at = new Date().toISOString();
+
+  updateKpis();
+  renderTable();
 }
 
 // 📦 Snapshot Export
