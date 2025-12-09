@@ -155,6 +155,39 @@ td {
   padding: 8px;
   border-top: 1px solid #22252d;
 }
+/* Line Tabs */
+.line-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.line-tab {
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+  transition: 0.15s;
+}
+
+.line-tab:hover {
+  background: #222838;
+  color: var(--text-main);
+}
+
+/* Active Line */
+.line-tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: bold;
+}
+
 
 /* STATUS PILL */
 
