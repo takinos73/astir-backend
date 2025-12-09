@@ -367,5 +367,6 @@ function setActiveLine(lineCode) {
 
   renderTable();
 }
-
 loadTasks();
+loadLines();
+
