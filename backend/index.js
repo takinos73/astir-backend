@@ -29,109 +29,82 @@ app.get("/api", (req, res) => {
 });
 
 // -------------------
-// IMPORT Excel to DB (with Lines)
+// IMPORT Excel from UI Upload (multipart/form-data)
 // -------------------
-app.post("/import", async (req, res) => {
+
+function toNumber(val) {
+  if (!val || val === "-" || val === "—") return null;
+  const n = Number(val);
+  return isNaN(n) ? null : n;
+}
+
+app.post("/importExcel", upload.single("file"), async (req, res) => {
   try {
-    if (!fs.existsSync(excelFilePath)) {
-      return res.status(404).json({ error: "Excel file not found!" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const workbook = XLSX.readFile(excelFilePath, { cellDates: true });
+    const buffer = req.file.buffer;
+    const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    // Σβήνουμε μόνο tasks, κρατάμε machines & lines
-    await pool.query(
-      "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
-    );
+    // Reset tables
+    await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+    await pool.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
+    await pool.query("TRUNCATE TABLE lines RESTART IDENTITY CASCADE;");
 
     for (const row of rows) {
       if (!row["Machine"] || !row["Task"]) continue;
 
-      // --- Line handling ---
-      let lineCode = row["Line"];
-      if (!lineCode || !String(lineCode).trim()) {
-        lineCode = "OTHER"; // επιλογή Γ που διάλεξες
-      } else {
-        lineCode = String(lineCode).trim();
-      }
+      // Handle Line (default OTHER)
+      let lineCode = row["Line"]?.trim() || "OTHER";
 
-      // Δημιουργία / εύρεση line
-      const lineResult = await pool.query(
+      const lineRes = await pool.query(
         `INSERT INTO lines (code, name)
          VALUES ($1, $1)
          ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
          RETURNING id`,
         [lineCode]
       );
-      const lineId = lineResult.rows[0].id;
+      const lineId = lineRes.rows[0].id;
 
-      // --- Machine handling ---
-      const machineName = row["Machine"];
-
-      // Αν υπάρχει ήδη, ενημερώνουμε line_id
-      const existingMachine = await pool.query(
-        "SELECT id, line_id FROM machines WHERE name = $1",
-        [machineName]
+      // Handle Machine
+      const machineRes = await pool.query(
+        `INSERT INTO machines (name, line_id)
+         VALUES ($1, $2)
+         ON CONFLICT (name)
+         DO UPDATE SET line_id = EXCLUDED.line_id
+         RETURNING id`,
+        [row["Machine"], lineId]
       );
+      const machineId = machineRes.rows[0].id;
 
-      let machineId;
-
-      if (existingMachine.rows.length) {
-        machineId = existingMachine.rows[0].id;
-
-        // αν δεν έχει γραμμή ή είναι άλλη, την ενημερώνουμε
-        if (
-          existingMachine.rows[0].line_id === null ||
-          existingMachine.rows[0].line_id !== lineId
-        ) {
-          await pool.query(
-            "UPDATE machines SET line_id = $2 WHERE id = $1",
-            [machineId, lineId]
-          );
-        }
-      } else {
-        // Νέο μηχάνημα με line_id
-        const inserted = await pool.query(
-          `INSERT INTO machines (name, line_id)
-           VALUES ($1, $2)
-           ON CONFLICT (name) DO UPDATE SET line_id = EXCLUDED.line_id
-           RETURNING id`,
-          [machineName, lineId]
-        );
-        machineId = inserted.rows[0].id;
-      }
-
-      // --- Due Date ---
-      const due = row["DueDate"]
-        ? new Date(row["DueDate"])
-        : null;
-
-      // --- Task insert ---
+      // Insert Task
       await pool.query(
         `INSERT INTO maintenance_tasks
-        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
           machineId,
           row["Section"] || null,
           row["Unit"] || null,
           row["Task"],
           row["Type"] || null,
-          row["Qty"] || null,
-          row["Duration(min)"] || null,
-          row["Frequency(hours)"] || null,
-          due,
-          row["Status"] || "Planned",
+          toNumber(row["Qty"]),
+          toNumber(row["Duration(min)"]),
+          toNumber(row["Frequency(hours)"]),
+          row["DueDate"] ? new Date(row["DueDate"]) : null,
+          row["Status"]?.trim() || "Planned",
         ]
       );
     }
 
-    res.json({ message: "Import completed with lines!" });
+    res.json({ message: "Excel imported successfully!" });
+
   } catch (err) {
-    console.error("IMPORT ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("IMPORT from UI ERROR:", err.message);
+    res.status(500).json({ error: "Import failed!", details: err.message });
   }
 });
 
