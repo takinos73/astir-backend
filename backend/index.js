@@ -88,6 +88,7 @@ app.post("/import", async (req, res) => {
 
     res.json({ message: "Import completed!" });
   } catch (err) {
+    console.error("IMPORT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -100,12 +101,13 @@ app.get("/machines", async (req, res) => {
     const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
     res.json(result.rows);
   } catch (err) {
+    console.error("GET /machines ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ---------------------------------------------------
-// TEMP MIGRATIONS FOR DATABASE UPDATE (REMOVE AFTER EXECUTION)
+// TEMP MIGRATIONS FOR DATABASE UPDATE (SAFE TO LEAVE)
 // ---------------------------------------------------
 
 // Add completed_by column
@@ -117,7 +119,7 @@ app.get("/migrate/addCompletedBy", async (req, res) => {
     `);
     res.json({ message: "Migration completed: completed_by added" });
   } catch (err) {
-    console.error("MIGRATION ERROR:", err.message);
+    console.error("MIGRATION ERROR (completed_by):", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -131,7 +133,7 @@ app.get("/migrate/addCompletedAt", async (req, res) => {
     `);
     res.json({ message: "Migration completed: completed_at added" });
   } catch (err) {
-    console.error("MIGRATION ERROR:", err.message);
+    console.error("MIGRATION ERROR (completed_at):", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -145,7 +147,7 @@ app.get("/migrate/addUpdatedAt", async (req, res) => {
     `);
     res.json({ message: "Migration completed: updated_at added" });
   } catch (err) {
-    console.error("MIGRATION ERROR:", err.message);
+    console.error("MIGRATION ERROR (updated_at):", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -176,6 +178,36 @@ app.get("/tasks", async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
+    console.error("GET /tasks ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------
+// UPDATE Task Status + Technician + Timestamp
+// -------------------
+app.patch("/tasks/:id", async (req, res) => {
+  const { completed_by } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE maintenance_tasks
+       SET status = 'Done',
+           completed_at = NOW(),
+           completed_by = $2,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id, completed_by]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("PATCH /tasks/:id ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -202,7 +234,7 @@ app.patch("/tasks/:id/undo", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("UNDO PATCH ERROR:", err.message);
+    console.error("PATCH /tasks/:id/undo ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -238,6 +270,7 @@ app.get("/snapshot/export", async (req, res) => {
     );
     res.send(JSON.stringify(snapshot, null, 2));
   } catch (err) {
+    console.error("SNAPSHOT EXPORT ERROR:", err);
     res.status(500).json({ error: "Snapshot export failed" });
   }
 });
@@ -293,7 +326,7 @@ app.post("/snapshot/restore", async (req, res) => {
 
     res.json({ message: "Restore completed!" });
   } catch (err) {
-    console.error("Restore ERROR:", err);
+    console.error("SNAPSHOT RESTORE ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -310,4 +343,5 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on port ${PORT}`)
 );
+
 
