@@ -136,16 +136,23 @@ app.get("/tasks", async (req, res) => {
 // UPDATE Task Status
 // -------------------
 app.patch("/tasks/:id", async (req, res) => {
+  const { completed_by } = req.body;
+
   try {
     const result = await pool.query(
       `UPDATE maintenance_tasks
-       SET status = 'Done'
+       SET status = 'Done',
+           completed_at = NOW(),
+           completed_by = $2,
+           updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [req.params.id]
+      [req.params.id, completed_by]
     );
+
     if (!result.rows.length)
       return res.status(404).json({ error: "Task not found" });
+
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
