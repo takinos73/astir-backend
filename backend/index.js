@@ -133,7 +133,8 @@ app.get("/tasks", async (req, res) => {
 });
 
 // -------------------
-// UPDATE Task Status
+// -------------------
+// UPDATE Task Status + Technician + Timestamp
 // -------------------
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
@@ -150,14 +151,18 @@ app.patch("/tasks/:id", async (req, res) => {
       [req.params.id, completed_by]
     );
 
-    if (!result.rows.length)
+    if (!result.rows.length) {
       return res.status(404).json({ error: "Task not found" });
+    }
 
     res.json(result.rows[0]);
+
   } catch (err) {
+    console.error("PATCH ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // -------------------
 // SNAPSHOT Export
@@ -190,19 +195,6 @@ app.get("/snapshot/export", async (req, res) => {
     res.send(JSON.stringify(snapshot, null, 2));
   } catch (err) {
     res.status(500).json({ error: "Snapshot export failed" });
-  }
-});
-// TEMP MIGRATION: Add completed_by column if missing
-app.get("/migrate/addCompletedBy", async (req, res) => {
-  try {
-    await pool.query(`
-      ALTER TABLE maintenance_tasks
-      ADD COLUMN IF NOT EXISTS completed_by TEXT;
-    `);
-
-    res.json({ message: "Migration completed: completed_by column added" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
