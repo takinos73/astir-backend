@@ -1,9 +1,11 @@
 // ASTIR CMMS UI v2 - Supervisor Dashboard
 
 const API = "https://astir-backend.onrender.com";
+
 let tasksData = [];
 let pendingSnapshotJson = null;
 let pendingTaskId = null;
+let activeLine = "all"; // Current line filter
 
 // 📌 Helpers
 
@@ -45,10 +47,10 @@ function statusPill(task) {
     cls += " status-done";
   } else if (st === "overdue") {
     txt = "Overdue";
-    cls += " status-overdue";   // 👈 ΠΡΟΣΟΧΗ: έχει κενό
+    cls += " status-overdue";
   } else if (st === "soon") {
     txt = "Due Soon";
-    cls += " status-soon";      // 👈 ΠΡΟΣΟΧΗ: έχει κενό
+    cls += " status-soon";
   }
 
   return `<span class="${cls}">${txt}</span>`;
@@ -56,9 +58,11 @@ function statusPill(task) {
 
 function buildRow(task) {
   const tr = document.createElement("tr");
+  const lineLabel = task.line_code || "OTHER";
 
   tr.innerHTML = `
     <td>${task.machine_name}</td>
+    <td>${lineLabel}</td>
     <td>${task.section || "-"}</td>
     <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
@@ -108,6 +112,33 @@ function updateKpis() {
   document.getElementById("kpiDone").textContent = doneCount;
 }
 
+// 🔽 Machine filter options based on activeLine
+
+function rebuildMachineFilter() {
+  const select = document.getElementById("machineFilter");
+  if (!select) return;
+
+  const machinesSet = new Set();
+
+  tasksData.forEach(t => {
+    if (activeLine === "all" || t.line_code === activeLine) {
+      machinesSet.add(t.machine_name);
+    }
+  });
+
+  const machines = Array.from(machinesSet).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  select.innerHTML = `<option value="all">All Machines</option>`;
+  machines.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+}
+
 // 🔽 Render Table
 
 function renderTable() {
@@ -137,20 +168,46 @@ function renderTable() {
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
-// 🔁 Load Machines
+// 🔁 Load Lines (for tabs)
 
-async function loadFilters() {
-  const res = await fetch(`${API}/machines`);
-  const list = await res.json();
-  const select = document.getElementById("machineFilter");
-  select.innerHTML = `<option value="all">All Machines</option>`;
+async function loadLines() {
+  const res = await fetch(`${API}/lines`);
+  const lines = await res.json();
 
-  list.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m.name;
-    o.textContent = m.name;
-    select.appendChild(o);
+  const tabs = document.getElementById("lineTabs");
+  if (!tabs) return;
+  tabs.innerHTML = "";
+
+  // ALL tab
+  const allTab = document.createElement("div");
+  allTab.textContent = "ALL";
+  allTab.className = "line-tab active";
+  allTab.onclick = () => setActiveLine("all");
+  tabs.appendChild(allTab);
+
+  lines.forEach(line => {
+    const tab = document.createElement("div");
+    tab.textContent = line.code;
+    tab.className = "line-tab";
+    tab.onclick = () => setActiveLine(line.code);
+    tabs.appendChild(tab);
   });
+}
+
+function setActiveLine(lineCode) {
+  activeLine = lineCode;
+
+  document.querySelectorAll(".line-tab").forEach(tab => {
+    const label = tab.textContent;
+    const shouldBeActive =
+      (lineCode === "all" && label === "ALL") ||
+      (lineCode !== "all" && label === lineCode);
+
+    tab.classList.toggle("active", shouldBeActive);
+  });
+
+  rebuildMachineFilter();
+  renderTable();
 }
 
 // 🔁 Load Tasks
@@ -159,6 +216,7 @@ async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
   updateKpis();
+  rebuildMachineFilter();
   renderTable();
 }
 
@@ -312,61 +370,41 @@ async function importExcel() {
     body: fd,
   });
 
-  if (!res.ok) return alert("Excel import failed!");
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("Import error:", txt);
+    return alert("Excel import failed!");
+  }
 
   alert("Excel imported!");
-  loadTasks();
+  // reload everything (lines & tasks)
+  await loadLines();
+  await loadTasks();
 }
 
-document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
+document
+  .getElementById("importExcelBtn")
+  ?.addEventListener("click", importExcel);
 
 // 🔗 Event Listeners
 
-document.getElementById("exportSnapshot").addEventListener("click", exportSnapshot);
-document.getElementById("restoreSnapshot").addEventListener("click", restoreSnapshot);
-document.getElementById("machineFilter").addEventListener("change", renderTable);
-document.getElementById("statusFilter").addEventListener("change", renderTable);
+document
+  .getElementById("exportSnapshot")
+  .addEventListener("click", exportSnapshot);
+
+document
+  .getElementById("restoreSnapshot")
+  .addEventListener("click", restoreSnapshot);
+
+document
+  .getElementById("machineFilter")
+  .addEventListener("change", renderTable);
+
+document
+  .getElementById("statusFilter")
+  .addEventListener("change", renderTable);
 
 // 🚀 Init
-loadFilters();
-let activeLine = "all"; // Default filter
-
-async function loadLines() {
-  const res = await fetch(`${API}/lines`);
-  const lines = await res.json();
-
-  const tabs = document.getElementById("lineTabs");
-  tabs.innerHTML = "";
-
-  // Add ALL
-  const allTab = document.createElement("div");
-  allTab.textContent = "ALL";
-  allTab.className = "line-tab active";
-  allTab.onclick = () => setActiveLine("all");
-  tabs.appendChild(allTab);
-
-  lines.forEach(line => {
-    const tab = document.createElement("div");
-    tab.textContent = line.code;
-    tab.className = "line-tab";
-    tab.onclick = () => setActiveLine(line.code);
-    tabs.appendChild(tab);
-  });
-}
-
-function setActiveLine(lineCode) {
-  activeLine = lineCode;
-
-  // UI highlight
-  document.querySelectorAll(".line-tab").forEach(tab => {
-    tab.classList.toggle("active", tab.textContent === lineCode);
-    if (lineCode === "all") {
-      tab.classList.toggle("active", tab.textContent === "ALL");
-    }
-  });
-
-  renderTable();
-}
-loadTasks();
 loadLines();
+loadTasks();
 
