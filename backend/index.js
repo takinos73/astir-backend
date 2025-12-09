@@ -80,6 +80,20 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// TEMP Migration: Add line column to machines table
+app.get("/migrate/addLine", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE machines
+      ADD COLUMN IF NOT EXISTS line TEXT;
+    `);
+    res.json({ message: "Migration OK — line column added!" });
+  } catch (err) {
+    console.error("Migration error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ----------------------------
 // GET Machines (with Lines)
