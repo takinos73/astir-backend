@@ -159,25 +159,31 @@ td {
 /* STATUS PILL */
 
 .status-pill {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  color: #fff;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.status-overdue {
-  background: var(--danger);
+/* DONE - green */
+.status-pill.status-done {
+  background: #b9ffb9;
+  color: #006600;
 }
 
-.status-soon {
-  background: var(--warn);
-  color: #472f00;
+/* OVERDUE - red */
+.status-pill.status-overdue {
+  background: #ffbaba;
+  color: #900;
 }
 
-.status-done {
-  background: var(--ok);
-  color: #032012;
+/* DUE SOON - yellow */
+.status-pill.status-soon {
+  background: #fff6a5;
+  color: #8a6d00;
 }
+
 
 /* BUTTON */
 
@@ -259,31 +265,7 @@ tbody tr:hover {
   font-size: 11px;
   color: #9ca3af;
 }
-.status-pill {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-}
 
-/* DONE - green */
-.status-pill.status-done {
-  background: #b9ffb9;
-  color: #006600;
-}
-
-/* OVERDUE - red */
-.status-pill.status-overdue {
-  background: #ffbaba;
-  color: #900;
-}
-
-/* DUE SOON - yellow */
-.status-pill.status-soon {
-  background: #fff6a5;
-  color: #8a6d00;
-}
 
 
 
