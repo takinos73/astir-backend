@@ -29,7 +29,7 @@ app.get("/api", (req, res) => {
 });
 
 // -------------------
-// IMPORT Excel to DB
+// IMPORT Excel to DB (with Lines)
 // -------------------
 app.post("/import", async (req, res) => {
   try {
@@ -41,6 +41,7 @@ app.post("/import", async (req, res) => {
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
+    // Σβήνουμε μόνο tasks, κρατάμε machines & lines
     await pool.query(
       "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
     );
@@ -48,25 +49,66 @@ app.post("/import", async (req, res) => {
     for (const row of rows) {
       if (!row["Machine"] || !row["Task"]) continue;
 
-      const machine = row["Machine"];
+      // --- Line handling ---
+      let lineCode = row["Line"];
+      if (!lineCode || !String(lineCode).trim()) {
+        lineCode = "OTHER"; // επιλογή Γ που διάλεξες
+      } else {
+        lineCode = String(lineCode).trim();
+      }
 
-      const insertMachine = await pool.query(
-        `INSERT INTO machines (name)
-         VALUES ($1)
-         ON CONFLICT (name) DO NOTHING
+      // Δημιουργία / εύρεση line
+      const lineResult = await pool.query(
+        `INSERT INTO lines (code, name)
+         VALUES ($1, $1)
+         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
          RETURNING id`,
-        [machine]
+        [lineCode]
+      );
+      const lineId = lineResult.rows[0].id;
+
+      // --- Machine handling ---
+      const machineName = row["Machine"];
+
+      // Αν υπάρχει ήδη, ενημερώνουμε line_id
+      const existingMachine = await pool.query(
+        "SELECT id, line_id FROM machines WHERE name = $1",
+        [machineName]
       );
 
-      let machineId = insertMachine.rows.length
-        ? insertMachine.rows[0].id
-        : (await pool.query("SELECT id FROM machines WHERE name=$1", [machine]))
-            .rows[0].id;
+      let machineId;
 
+      if (existingMachine.rows.length) {
+        machineId = existingMachine.rows[0].id;
+
+        // αν δεν έχει γραμμή ή είναι άλλη, την ενημερώνουμε
+        if (
+          existingMachine.rows[0].line_id === null ||
+          existingMachine.rows[0].line_id !== lineId
+        ) {
+          await pool.query(
+            "UPDATE machines SET line_id = $2 WHERE id = $1",
+            [machineId, lineId]
+          );
+        }
+      } else {
+        // Νέο μηχάνημα με line_id
+        const inserted = await pool.query(
+          `INSERT INTO machines (name, line_id)
+           VALUES ($1, $2)
+           ON CONFLICT (name) DO UPDATE SET line_id = EXCLUDED.line_id
+           RETURNING id`,
+          [machineName, lineId]
+        );
+        machineId = inserted.rows[0].id;
+      }
+
+      // --- Due Date ---
       const due = row["DueDate"]
         ? new Date(row["DueDate"])
         : null;
 
+      // --- Task insert ---
       await pool.query(
         `INSERT INTO maintenance_tasks
         (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
@@ -86,12 +128,13 @@ app.post("/import", async (req, res) => {
       );
     }
 
-    res.json({ message: "Import completed!" });
+    res.json({ message: "Import completed with lines!" });
   } catch (err) {
     console.error("IMPORT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // -------------------
 // GET Machines
@@ -105,6 +148,23 @@ app.get("/machines", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// -------------------
+// GET Lines (for UI tabs)
+// -------------------
+app.get("/lines", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, code, name, description
+      FROM lines
+      ORDER BY code ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET /lines ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ---------------------------------------------------
 // TEMP MIGRATIONS FOR DATABASE UPDATE (SAFE TO LEAVE)
@@ -151,9 +211,51 @@ app.get("/migrate/addUpdatedAt", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ---------------------------------------------------
+// MIGRATION: Init lines table + line_id on machines
+// ---------------------------------------------------
+app.get("/migrate/initLines", async (req, res) => {
+  try {
+    // 1) Δημιουργία πίνακα lines (αν δεν υπάρχει)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS lines (
+        id SERIAL PRIMARY KEY,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT,
+        description TEXT
+      );
+    `);
+
+    // 2) Προσθήκη line_id στα machines
+    await pool.query(`
+      ALTER TABLE machines
+      ADD COLUMN IF NOT EXISTS line_id INTEGER REFERENCES lines(id) ON DELETE SET NULL;
+    `);
+
+    // 3) Seed default γραμμών L1..L7 + OTHER
+    await pool.query(`
+      INSERT INTO lines (code, name)
+      VALUES 
+        ('L1', 'L1'),
+        ('L2', 'L2'),
+        ('L3', 'L3'),
+        ('L4', 'L4'),
+        ('L5', 'L5'),
+        ('L6', 'L6'),
+        ('L7', 'L7'),
+        ('OTHER', 'Other')
+      ON CONFLICT (code) DO NOTHING;
+    `);
+
+    res.json({ message: "Lines & line_id migration completed" });
+  } catch (err) {
+    console.error("MIGRATION initLines ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // -------------------
-// GET Tasks (Audit included)
+// GET Tasks (with line info)
 // -------------------
 app.get("/tasks", async (req, res) => {
   try {
@@ -171,9 +273,12 @@ app.get("/tasks", async (req, res) => {
         mt.due_date,
         mt.status,
         mt.completed_at,
-        mt.completed_by
+        mt.completed_by,
+        l.code AS line_code,
+        l.name AS line_name
       FROM maintenance_tasks mt
       JOIN machines m ON m.id = mt.machine_id
+      LEFT JOIN lines l ON m.line_id = l.id
       ORDER BY mt.id ASC
     `);
     res.json(result.rows);
@@ -182,6 +287,7 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // -------------------
 // UPDATE Task Status + Technician + Timestamp
