@@ -192,6 +192,19 @@ app.get("/snapshot/export", async (req, res) => {
     res.status(500).json({ error: "Snapshot export failed" });
   }
 });
+// TEMP MIGRATION: Add completed_by column if missing
+app.get("/migrate/addCompletedBy", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS completed_by TEXT;
+    `);
+
+    res.json({ message: "Migration completed: completed_by column added" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // -------------------
 // SNAPSHOT Restore
