@@ -21,7 +21,7 @@ ON CONFLICT (name) DO NOTHING;
 
 --------------------------------------------------
 
--- Create maintenance tasks table
+-- -- Create maintenance tasks table
 CREATE TABLE IF NOT EXISTS maintenance_tasks (
     id SERIAL PRIMARY KEY,
     machine_id INTEGER REFERENCES machines(id) ON DELETE CASCADE,
@@ -35,9 +35,10 @@ CREATE TABLE IF NOT EXISTS maintenance_tasks (
     due_date TIMESTAMPTZ,
     status TEXT DEFAULT 'Planned',
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ   -- 👈 ΝΕΟ ΠΕΔΙΟ
 );
-ALTER TABLE maintenance_tasks
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+
 
 
