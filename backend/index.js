@@ -226,51 +226,42 @@ app.get("/migrate/initLines", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// -------------------
-// IMPORT Excel from UI Upload (multipart/form-data)
-// -------------------
+// 📥 Import Excel - with LINE Support
 app.post("/importExcel", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-    const buffer = req.file.buffer;
-    const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
+    const workbook = XLSX.read(req.file.buffer, { cellDates: true });
     const sheet = workbook.Sheets["MasterPlan"];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
+    console.log("Excel Rows:", rows.length);
+
     await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+    // We do NOT truncate machines now — avoiding orphan tasks for now
 
     for (const row of rows) {
       if (!row["Machine"] || !row["Task"]) continue;
 
-      // Line Handling
-      let lineCode = row["Line"]?.trim() || "OTHER";
+      const machine = row["Machine"];
+      const line = row["Line"] || null;
 
-      const lineResult = await pool.query(
-        `INSERT INTO lines (code, name)
-         VALUES ($1, $1)
-         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
-         RETURNING id`,
-        [lineCode]
-      );
-      const lineId = lineResult.rows[0].id;
-
-      // Machine handling
-      const machineResult = await pool.query(
-        `INSERT INTO machines (name, line_id)
+      // 🟩 Insert machine if not exists
+      const insertMachine = await pool.query(
+        `INSERT INTO machines (name, line)
          VALUES ($1, $2)
-         ON CONFLICT (name) DO UPDATE SET line_id = EXCLUDED.line_id
+         ON CONFLICT (name) DO UPDATE SET line = EXCLUDED.line
          RETURNING id`,
-        [row["Machine"], lineId]
+        [machine, line]
       );
-      const machineId = machineResult.rows[0].id;
 
-      // Task create
+      const machineId = insertMachine.rows[0].id;
+
+      const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
+
       await pool.query(
         `INSERT INTO maintenance_tasks
-        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+          (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
           machineId,
@@ -281,19 +272,20 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
           row["Qty"] || null,
           row["Duration(min)"] || null,
           row["Frequency(hours)"] || null,
-          row["DueDate"] ? new Date(row["DueDate"]) : null,
-          row["Status"] || "Planned",
+          due,
+          row["Status"] || "Planned"
         ]
       );
     }
 
-    res.json({ message: "Excel imported successfully!" });
+    console.log("Excel Import Completed");
+    res.json({ message: "Excel import completed!" });
+
   } catch (err) {
-    console.error("IMPORT from UI ERROR:", err);
-    res.status(500).json({ error: "Import failed!" });
+    console.error("IMPORT from UI ERROR:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
-
 
 // -------------------
 // GET Tasks (with line info)
