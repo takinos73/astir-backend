@@ -240,5 +240,25 @@ tbody tr:hover {
   border-radius: 6px;
   cursor: pointer;
 }
+.btn-undo {
+  background: #444;
+  color: #f9fafb;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.btn-undo:hover {
+  background: #6b7280;
+}
+
+.tech-meta {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
 
 
