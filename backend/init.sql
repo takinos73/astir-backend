@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS maintenance_tasks (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ   -- 👈 ΝΕΟ ΠΕΔΙΟ
 );
+ALTER TABLE maintenance_tasks
+ADD COLUMN IF NOT EXISTS completed_by TEXT;
+
 
 
 
