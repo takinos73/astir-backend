@@ -3,27 +3,7 @@
 const API = "https://astir-backend.onrender.com";
 let tasksData = [];
 let pendingSnapshotJson = null;
-
 let pendingTaskId = null;
-
-function askTechnician(id) {
-  pendingTaskId = id;
-  document.getElementById("modalOverlay").style.display = "flex";
-}
-
-document.getElementById("cancelDone").onclick = () => {
-  document.getElementById("modalOverlay").style.display = "none";
-  pendingTaskId = null;
-};
-
-document.getElementById("confirmDone").onclick = () => {
-  const name = document.getElementById("technicianInput").value.trim();
-  if (!name) return alert("Παρακαλώ εισάγετε όνομα!");
-
-  markDone(pendingTaskId, name);
-  document.getElementById("modalOverlay").style.display = "none";
-  document.getElementById("technicianInput").value = "";
-};
 
 // 📌 Helpers
 
@@ -80,12 +60,16 @@ function buildRow(task) {
   tr.innerHTML = `
     <td>${task.machine_name}</td>
     <td>${task.section || "-"}</td>
-    <td>${task.unit || "-"}</td> <!-- 👈 ΝΕΟ -->
+    <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
-    <td>${task.type || "-"}</td> 
-    <td>${formatDate(task.due_date)}</td>
+    <td>${task.type || "-"}</td>
+    <td>${
+      task.status === "Done" && task.completed_at
+        ? "Completed: " + formatDate(task.completed_at)
+        : formatDate(task.due_date)
+    }</td>
     <td>${statusPill(task)}</td>
-    <<td>
+    <td>
       ${
         task.status === "Done"
           ? `
@@ -97,14 +81,10 @@ function buildRow(task) {
           : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
       }
     </td>
-
   `;
 
   return tr;
 }
-
-
-
 
 // 📈 KPIs
 
@@ -113,8 +93,6 @@ function updateKpis() {
   let overdue = 0;
   let soon = 0;
   let done = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   tasksData.forEach(t => {
     if (t.status === "Done") {
@@ -184,6 +162,35 @@ async function loadTasks() {
   renderTable();
 }
 
+// ✔ Ask for technician name (modal)
+
+function askTechnician(id) {
+  pendingTaskId = id;
+  document.getElementById("modalOverlay").style.display = "flex";
+}
+
+document.getElementById("cancelDone").onclick = () => {
+  document.getElementById("modalOverlay").style.display = "none";
+  document.getElementById("technicianInput").value = "";
+  pendingTaskId = null;
+};
+
+document.getElementById("confirmDone").onclick = () => {
+  const name = document.getElementById("technicianInput").value.trim();
+  if (!name) {
+    alert("Παρακαλώ εισάγετε όνομα τεχνικού");
+    return;
+  }
+
+  if (!pendingTaskId) return;
+
+  markDone(pendingTaskId, name);
+
+  document.getElementById("modalOverlay").style.display = "none";
+  document.getElementById("technicianInput").value = "";
+  pendingTaskId = null;
+};
+
 // ✔ Mark Task Done
 
 async function markDone(id, name) {
@@ -193,29 +200,42 @@ async function markDone(id, name) {
     body: JSON.stringify({ completed_by: name }),
   });
 
-  if (!res.ok) return alert("Update failed!");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error("Update failed:", res.status, text);
+    alert("Update failed!");
+    return;
+  }
 
-  const upd = tasksData.find(t => t.id === id);
-  upd.status = "Done";
-  upd.completed_by = name;
-  upd.completed_at = new Date().toISOString();
+  const updated = await res.json();
+
+  const task = tasksData.find(t => t.id === id);
+  if (task) {
+    task.status = updated.status;
+    task.completed_by = updated.completed_by;
+    task.completed_at = updated.completed_at;
+  }
 
   updateKpis();
   renderTable();
 }
+
+// ↩ Undo Task
+
 async function undoTask(id) {
   const res = await fetch(`${API}/tasks/${id}/undo`, {
     method: "PATCH",
   });
 
   if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error("Undo failed:", res.status, text);
     alert("Undo failed!");
     return;
   }
 
   const updated = await res.json();
 
-  // ενημερώνουμε το τοπικό αντικείμενο στη μνήμη
   const t = tasksData.find(t => t.id === id);
   if (t) {
     t.status = updated.status;
@@ -279,7 +299,11 @@ async function restoreSnapshot() {
     body: JSON.stringify(pendingSnapshotJson),
   });
 
-  if (!res.ok) return alert("Restore failed!");
+  if (!res.ok) {
+    alert("Restore failed!");
+    return;
+  }
+
   alert("DB restored from snapshot!");
   loadTasks();
 }
@@ -306,4 +330,5 @@ document
 
 loadFilters();
 loadTasks();
+
 
