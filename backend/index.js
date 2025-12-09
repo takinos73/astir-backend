@@ -135,6 +135,7 @@ app.get("/migrate/addCompletedAt", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 // Add updated_at column
 app.get("/migrate/addUpdatedAt", async (req, res) => {
   try {
@@ -150,7 +151,7 @@ app.get("/migrate/addUpdatedAt", async (req, res) => {
 });
 
 // -------------------
-// GET Tasks
+// GET Tasks (Audit included)
 // -------------------
 app.get("/tasks", async (req, res) => {
   try {
@@ -166,7 +167,9 @@ app.get("/tasks", async (req, res) => {
         mt.duration_min,
         mt.frequency_hours,
         mt.due_date,
-        mt.status
+        mt.status,
+        mt.completed_at,
+        mt.completed_by
       FROM maintenance_tasks mt
       JOIN machines m ON m.id = mt.machine_id
       ORDER BY mt.id ASC
@@ -177,7 +180,6 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// -------------------
 // -------------------
 // UPDATE Task Status + Technician + Timestamp
 // -------------------
@@ -208,9 +210,8 @@ app.patch("/tasks/:id", async (req, res) => {
   }
 });
 
-
 // -------------------
-// SNAPSHOT Export
+// SNAPSHOT Export (full audit)
 // -------------------
 app.get("/snapshot/export", async (req, res) => {
   try {
@@ -218,14 +219,15 @@ app.get("/snapshot/export", async (req, res) => {
     const tasks = (
       await pool.query(`
       SELECT 
-        mt.*, m.name AS machine_name 
+        mt.*,
+        m.name AS machine_name
       FROM maintenance_tasks mt
       JOIN machines m ON m.id = mt.machine_id
     `)
     ).rows;
 
     const snapshot = {
-      version: 1,
+      version: 2,
       created_at: new Date().toISOString(),
       machines,
       tasks,
@@ -244,7 +246,7 @@ app.get("/snapshot/export", async (req, res) => {
 });
 
 // -------------------
-// SNAPSHOT Restore
+// SNAPSHOT Restore (keep audit)
 // -------------------
 app.post("/snapshot/restore", async (req, res) => {
   try {
@@ -272,8 +274,9 @@ app.post("/snapshot/restore", async (req, res) => {
       await pool.query(
         `INSERT INTO maintenance_tasks (
           machine_id, section, unit, task, type,
-          qty, duration_min, frequency_hours, due_date, status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          qty, duration_min, frequency_hours, due_date, status,
+          completed_at, completed_by
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           t.machine_id,
           t.section,
@@ -285,6 +288,8 @@ app.post("/snapshot/restore", async (req, res) => {
           t.frequency_hours,
           t.due_date,
           t.status,
+          t.completed_at,
+          t.completed_by
         ]
       );
     }
@@ -308,3 +313,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on port ${PORT}`)
 );
+
