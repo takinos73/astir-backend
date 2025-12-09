@@ -306,7 +306,32 @@ async function restoreSnapshot() {
 
   alert("DB restored from snapshot!");
   loadTasks();
+}async function importExcel() {
+  const fileInput = document.getElementById("excelFile");
+  const file = fileInput.files[0];
+  
+  if (!file) return alert("Select an Excel file first!");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API}/importExcel`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!res.ok) {
+    return alert("Excel import failed!");
+  }
+
+  alert("Excel imported successfully!");
+  loadTasks();
 }
+
+// Event Listener
+document.getElementById("importExcelBtn").addEventListener("click", importExcel);
+
+
 
 // 🔗 Event Listeners
 
