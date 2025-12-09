@@ -135,7 +135,19 @@ app.get("/migrate/addCompletedAt", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+// Add updated_at column
+app.get("/migrate/addUpdatedAt", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+    `);
+    res.json({ message: "Migration completed: updated_at added" });
+  } catch (err) {
+    console.error("MIGRATION ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // -------------------
 // GET Tasks
