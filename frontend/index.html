@@ -72,8 +72,10 @@
   <div class="filters">
     <select id="machineFilter">
       <option value="all">All Machines</option>
+      <input type="file" id="excelFile" accept=".xlsx">
+      <button id="importExcelBtn">📥 Import Excel</button>
     </select>
-
+    
     <select id="statusFilter">
       <option value="all">All Status</option>
       <option value="Planned">Planned</option>
@@ -170,15 +172,15 @@ function renderTable() {
 }
 
 // 🔽 Filters Load
-async function loadFilters() {
+  async function loadFilters() {
   const res = await fetch(`${API}/machines`);
   const machines = await res.json();
   const select = document.getElementById("machineFilter");
   machines.forEach(m => {
-    const opt = document.createElement("option");
-    opt.value = m.name;
-    opt.textContent = m.name;
-    select.appendChild(opt);
+  const opt = document.createElement("option");
+  opt.value = m.name;
+  opt.textContent = m.name;
+  select.appendChild(opt);
   });
 }
 
