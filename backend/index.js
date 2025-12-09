@@ -104,6 +104,39 @@ app.get("/machines", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------
+// TEMP MIGRATIONS FOR DATABASE UPDATE (REMOVE AFTER EXECUTION)
+// ---------------------------------------------------
+
+// Add completed_by column
+app.get("/migrate/addCompletedBy", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS completed_by TEXT;
+    `);
+    res.json({ message: "Migration completed: completed_by added" });
+  } catch (err) {
+    console.error("MIGRATION ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add completed_at column
+app.get("/migrate/addCompletedAt", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE maintenance_tasks
+      ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+    `);
+    res.json({ message: "Migration completed: completed_at added" });
+  } catch (err) {
+    console.error("MIGRATION ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // -------------------
 // GET Tasks
 // -------------------
