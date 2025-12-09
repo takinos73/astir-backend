@@ -87,16 +87,19 @@ function buildRow(task) {
     <td>${formatDate(task.due_date)}</td>
     <td>${statusPill(task)}</td>
     <td>
-      ${
-        task.status === "Done"
-          ? `<span style="color:#555;font-size:12px;">✓ Done</span>`
-          : `<button class="btn-table" onclick="markDone(${task.id})">✔ Done</button>`
-      }
-    </td>
+  ${
+    task.status === "Done"
+      ? `<span style="color:#888;">✔ ${task.completed_by || "—"}</span>`
+      : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
+  }
+</td>
   `;
 
   return tr;
 }
+
+
+
 
 // 📈 KPIs
 
