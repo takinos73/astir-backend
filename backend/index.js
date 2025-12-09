@@ -181,21 +181,19 @@ app.get("/tasks", async (req, res) => {
 });
 
 // -------------------
-// UPDATE Task Status + Technician + Timestamp
+// UNDO Task (back to Planned, clear audit)
 // -------------------
-app.patch("/tasks/:id", async (req, res) => {
-  const { completed_by } = req.body;
-
+app.patch("/tasks/:id/undo", async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE maintenance_tasks
-       SET status = 'Done',
-           completed_at = NOW(),
-           completed_by = $2,
+       SET status = 'Planned',
+           completed_at = NULL,
+           completed_by = NULL,
            updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [req.params.id, completed_by]
+      [req.params.id]
     );
 
     if (!result.rows.length) {
@@ -203,9 +201,8 @@ app.patch("/tasks/:id", async (req, res) => {
     }
 
     res.json(result.rows[0]);
-
   } catch (err) {
-    console.error("PATCH ERROR:", err.message);
+    console.error("UNDO PATCH ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
