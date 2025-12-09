@@ -14,18 +14,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 📌 Serve Frontend build
 const frontendPath = path.join(process.cwd(), "..", "frontend");
 app.use(express.static(frontendPath));
 
-// Test route
+// TEST
 app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
-// ----------------------------
-// 📥 IMPORT Excel (UI Upload)
-// ----------------------------
+// ----------------------------------------------
+// TEMP MIGRATION ❗ Run once then remove it
+// ----------------------------------------------
+app.get("/migrate/addLine", async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE machines
+      ADD COLUMN IF NOT EXISTS line TEXT;
+    `);
+    res.json({ message: "Migration successful: 'line' column added" });
+  } catch (err) {
+    console.error("Migration ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------
+// 📥 IMPORT Excel from UI
+// ----------------------------------------------
 app.post("/importExcel", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -41,6 +56,7 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
 
       const machine = row["Machine"];
       const line = row["Line"] || null;
+      const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
 
       const insertMachine = await pool.query(
         `INSERT INTO machines (name, line)
@@ -52,11 +68,10 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
 
       const machineId = insertMachine.rows[0].id;
 
-      const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
-
       await pool.query(
         `INSERT INTO maintenance_tasks
-          (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+        (machine_id, section, unit, task, type, qty, duration_min,
+         frequency_hours, due_date, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
           machineId,
@@ -80,40 +95,26 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// TEMP Migration: Add line column to machines table
-app.get("/migrate/addLine", async (req, res) => {
-  try {
-    await pool.query(`
-      ALTER TABLE machines
-      ADD COLUMN IF NOT EXISTS line TEXT;
-    `);
-    res.json({ message: "Migration OK — line column added!" });
-  } catch (err) {
-    console.error("Migration error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
 
-
-// ----------------------------
-// GET Machines (with Lines)
-// ----------------------------
+// ----------------------------------------------
+// GET Machines
+// ----------------------------------------------
 app.get("/machines", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM machines ORDER BY id ASC");
+    const result = await pool.query(`SELECT * FROM machines ORDER BY id ASC`);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ----------------------------
-// GET Tasks
-// ----------------------------
+// ----------------------------------------------
+// GET Tasks with line field
+// ----------------------------------------------
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT
         mt.id,
         m.name AS machine_name,
         m.line,
@@ -138,9 +139,9 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// ----------------------------
-// ✔ Mark Task Done
-// ----------------------------
+// ----------------------------------------------
+// ✔ Mark Done
+// ----------------------------------------------
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
 
@@ -156,19 +157,19 @@ app.patch("/tasks/:id", async (req, res) => {
       [req.params.id, completed_by]
     );
 
-    if (!result.rows.length)
-      return res.status(404).json({ error: "Task not found" });
+    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
 
     res.json(result.rows[0]);
+
   } catch (err) {
-    console.error("PATCH DONE ERROR:", err.message);
+    console.error("PATCH ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ----------------------------
+// ----------------------------------------------
 // ↩ Undo Task
-// ----------------------------
+// ----------------------------------------------
 app.patch("/tasks/:id/undo", async (req, res) => {
   try {
     const result = await pool.query(
@@ -182,37 +183,36 @@ app.patch("/tasks/:id/undo", async (req, res) => {
       [req.params.id]
     );
 
-    if (!result.rows.length)
-      return res.status(404).json({ error: "Task not found" });
+    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
 
     res.json(result.rows[0]);
+
   } catch (err) {
     console.error("UNDO ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ----------------------------
+// ----------------------------------------------
 // Snapshot Export
-// ----------------------------
+// ----------------------------------------------
 app.get("/snapshot/export", async (req, res) => {
   try {
     const machines = (await pool.query("SELECT * FROM machines")).rows;
     const tasks = (
       await pool.query(`
-      SELECT mt.*, m.name AS machine_name, m.line
-      FROM maintenance_tasks mt
-      JOIN machines m ON m.id = mt.machine_id`)
+        SELECT mt.*, m.name AS machine_name, m.line
+        FROM maintenance_tasks mt
+        JOIN machines m ON m.id = mt.machine_id
+      `)
     ).rows;
 
-    const snapshot = {
+    res.json({
       version: 1,
       created_at: new Date().toISOString(),
       machines,
       tasks
-    };
-
-    res.json(snapshot);
+    });
 
   } catch (err) {
     console.error("Snapshot export failed:", err.message);
@@ -220,36 +220,39 @@ app.get("/snapshot/export", async (req, res) => {
   }
 });
 
-// ----------------------------
+// ----------------------------------------------
 // Snapshot Restore
-// ----------------------------
+// ----------------------------------------------
 app.post("/snapshot/restore", async (req, res) => {
   try {
     const { machines, tasks } = req.body;
-    if (!machines || !tasks)
+    if (!machines || !tasks) {
       return res.status(400).json({ error: "Invalid snapshot format" });
+    }
 
     await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
     await pool.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
 
     for (const m of machines) {
       await pool.query(
-        `INSERT INTO machines (name, line, sn) VALUES ($1, $2, $3)`,
+        `INSERT INTO machines (name, line, sn)
+         VALUES ($1, $2, $3)`,
         [m.name, m.line || null, m.sn || null]
       );
     }
 
     for (const t of tasks) {
       await pool.query(
-        `INSERT INTO maintenance_tasks(
-          machine_id, section, unit, task, type, qty, duration_min,
-          frequency_hours, due_date, status, completed_by, completed_at
+        `INSERT INTO maintenance_tasks (
+          machine_id, section, unit, task, type,
+          qty, duration_min, frequency_hours,
+          due_date, status, completed_by, completed_at
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           t.machine_id, t.section, t.unit, t.task, t.type,
-          t.qty, t.duration_min, t.frequency_hours, t.due_date,
-          t.status, t.completed_by || null, t.completed_at || null
+          t.qty, t.duration_min, t.frequency_hours,
+          t.due_date, t.status, t.completed_by || null, t.completed_at || null
         ]
       );
     }
@@ -262,14 +265,11 @@ app.post("/snapshot/restore", async (req, res) => {
   }
 });
 
-// ----------------------------
-// SPA fallback → index.html
-// ----------------------------
+// SPA fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(frontendPath, "index_v2.html"));
 });
 
-// ----------------------------
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on port ${PORT}`)
