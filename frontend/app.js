@@ -25,7 +25,6 @@ document.getElementById("confirmDone").onclick = () => {
   document.getElementById("technicianInput").value = "";
 };
 
-
 // 📌 Helpers
 
 function formatDate(dateStr) {
@@ -86,13 +85,19 @@ function buildRow(task) {
     <td>${task.type || "-"}</td> 
     <td>${formatDate(task.due_date)}</td>
     <td>${statusPill(task)}</td>
-    <td>
-  ${
-    task.status === "Done"
-      ? `<span style="color:#888;">✔ ${task.completed_by || "—"}</span>`
-      : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
-  }
-</td>
+    <<td>
+      ${
+        task.status === "Done"
+          ? `
+            <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
+            <div class="tech-meta">
+              ✔ ${task.completed_by || "—"}
+            </div>
+          `
+          : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
+      }
+    </td>
+
   `;
 
   return tr;
@@ -194,6 +199,29 @@ async function markDone(id, name) {
   upd.status = "Done";
   upd.completed_by = name;
   upd.completed_at = new Date().toISOString();
+
+  updateKpis();
+  renderTable();
+}
+async function undoTask(id) {
+  const res = await fetch(`${API}/tasks/${id}/undo`, {
+    method: "PATCH",
+  });
+
+  if (!res.ok) {
+    alert("Undo failed!");
+    return;
+  }
+
+  const updated = await res.json();
+
+  // ενημερώνουμε το τοπικό αντικείμενο στη μνήμη
+  const t = tasksData.find(t => t.id === id);
+  if (t) {
+    t.status = updated.status;
+    t.completed_at = updated.completed_at;
+    t.completed_by = updated.completed_by;
+  }
 
   updateKpis();
   renderTable();
