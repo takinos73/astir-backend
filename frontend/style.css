@@ -259,6 +259,32 @@ tbody tr:hover {
   font-size: 11px;
   color: #9ca3af;
 }
+.status-pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* DONE - green */
+.status-pill.status-done {
+  background: #b9ffb9;
+  color: #006600;
+}
+
+/* OVERDUE - red */
+.status-pill.status-overdue {
+  background: #ffbaba;
+  color: #900;
+}
+
+/* DUE SOON - yellow */
+.status-pill.status-soon {
+  background: #fff6a5;
+  color: #8a6d00;
+}
+
 
 
 
