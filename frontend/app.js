@@ -45,10 +45,10 @@ function statusPill(task) {
     cls += " status-done";
   } else if (st === "overdue") {
     txt = "Overdue";
-    cls += "status-overdue";
+    cls += " status-overdue";   // 👈 ΠΡΟΣΟΧΗ: έχει κενό
   } else if (st === "soon") {
     txt = "Due Soon";
-    cls += "status-soon";
+    cls += " status-soon";      // 👈 ΠΡΟΣΟΧΗ: έχει κενό
   }
 
   return `<span class="${cls}">${txt}</span>`;
