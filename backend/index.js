@@ -253,6 +253,74 @@ app.get("/migrate/initLines", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// -------------------
+// IMPORT Excel from UI Upload (multipart/form-data)
+// -------------------
+app.post("/importExcel", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const buffer = req.file.buffer;
+    const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
+    const sheet = workbook.Sheets["MasterPlan"];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+
+    for (const row of rows) {
+      if (!row["Machine"] || !row["Task"]) continue;
+
+      // Line Handling
+      let lineCode = row["Line"]?.trim() || "OTHER";
+
+      const lineResult = await pool.query(
+        `INSERT INTO lines (code, name)
+         VALUES ($1, $1)
+         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+         RETURNING id`,
+        [lineCode]
+      );
+      const lineId = lineResult.rows[0].id;
+
+      // Machine handling
+      const machineResult = await pool.query(
+        `INSERT INTO machines (name, line_id)
+         VALUES ($1, $2)
+         ON CONFLICT (name) DO UPDATE SET line_id = EXCLUDED.line_id
+         RETURNING id`,
+        [row["Machine"], lineId]
+      );
+      const machineId = machineResult.rows[0].id;
+
+      // Task create
+      await pool.query(
+        `INSERT INTO maintenance_tasks
+        (machine_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          machineId,
+          row["Section"] || null,
+          row["Unit"] || null,
+          row["Task"],
+          row["Type"] || null,
+          row["Qty"] || null,
+          row["Duration(min)"] || null,
+          row["Frequency(hours)"] || null,
+          row["DueDate"] ? new Date(row["DueDate"]) : null,
+          row["Status"] || "Planned",
+        ]
+      );
+    }
+
+    res.json({ message: "Excel imported successfully!" });
+  } catch (err) {
+    console.error("IMPORT from UI ERROR:", err);
+    res.status(500).json({ error: "Import failed!" });
+  }
+});
+
 
 // -------------------
 // GET Tasks (with line info)
