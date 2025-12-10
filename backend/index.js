@@ -116,25 +116,26 @@ app.get("/machines", async (req, res) => {
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT
-        mt.id,
-        m.name AS machine_name,
-        m.line,
-        mt.section,
-        mt.unit,
-        mt.task,
-        mt.type,
-        mt.qty,
-        mt.duration_min,
-        mt.frequency_hours,
-        mt.due_date,
-        mt.status,
-        mt.completed_by,
-        mt.completed_at
-      FROM maintenance_tasks mt
-      JOIN machines m ON m.id = mt.machine_id
-      ORDER BY mt.id ASC
-    `);
+  SELECT 
+    mt.id,
+    m.name AS machine_name,
+    mt.line,
+    mt.section,
+    mt.unit,
+    mt.task,
+    mt.type,
+    mt.qty,
+    mt.duration_min,
+    mt.frequency_hours,
+    mt.due_date,
+    mt.status,
+    mt.completed_by,
+    mt.completed_at
+  FROM maintenance_tasks mt
+  JOIN machines m ON m.id = mt.machine_id
+  ORDER BY mt.id ASC
+`);
+
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
