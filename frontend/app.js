@@ -58,36 +58,34 @@ function statusPill(task) {
 
 function buildRow(task) {
   const tr = document.createElement("tr");
-  const lineLabel = task.line_code || "OTHER";
 
   tr.innerHTML = `
-  <td>${task.machine_name}</td>
-  <td>${task.line || "-"}</td>
-  <td>${task.section || "-"}</td>
-  <td>${task.unit || "-"}</td>
-  <td>${task.task}</td>
-  <td>${task.type || "-"}</td>
-  <td>${
-    task.status === "Done" && task.completed_at
-      ? "Completed: " + formatDate(task.completed_at)
-      : formatDate(task.due_date)
-  }</td>
-  <td>${statusPill(task)}</td>
-  <td>
-    ${
-      task.status === "Done"
-        ? `
-          <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
-          <div class="tech-meta">✔ ${task.completed_by || "—"}</div>
-        `
-        : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
-    }
-  </td>
-`;
-
-
+    <td>${task.machine_name}</td>
+    <td>${task.line || "-"}</td>
+    <td>${task.section || "-"}</td>
+    <td>${task.unit || "-"}</td>
+    <td>${task.task}</td>
+    <td>${task.type || "-"}</td>
+    <td>${
+      task.status === "Done" && task.completed_at
+        ? "Completed: " + formatDate(task.completed_at)
+        : formatDate(task.due_date)
+    }</td>
+    <td>${statusPill(task)}</td>
+    <td>
+      ${
+        task.status === "Done"
+          ? `
+            <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
+            <div class="tech-meta">✔ ${task.completed_by || "—"}</div>
+          `
+          : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
+      }
+    </td>
+  `;
   return tr;
 }
+
 
 // 📈 KPIs
 
