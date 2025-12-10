@@ -68,22 +68,25 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
       const machineId = insertMachine.rows[0].id;
 
       await pool.query(
-        `INSERT INTO maintenance_tasks
-        (machine_id, section, unit, task, type, qty, duration_min,
-         frequency_hours, due_date, status)
+        (await pool.query(
+  `INSERT INTO maintenance_tasks
+    (machine_id, line, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status)
+
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
-          machineId,
-          row["Section"] || null,
-          row["Unit"] || null,
-          row["Task"],
-          row["Type"] || null,
-          row["Qty"] || null,
-          row["Duration(min)"] || null,
-          row["Frequency(hours)"] || null,
-          due,
-          row["Status"] || "Planned"
-        ]
+  machineId,
+  row["Line"] || null,
+  row["Section"] || null,
+  row["Unit"] || null,
+  row["Task"],
+  row["Type"] || null,
+  row["Qty"] || null,
+  row["Duration(min)"] || null,
+  row["Frequency(hours)"] || null,
+  due,
+  row["Status"] || "Planned",
+]
+
       );
     }
 
