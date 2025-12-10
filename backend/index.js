@@ -22,21 +22,20 @@ app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
-// ----------------------------------------------
-// TEMP MIGRATION ❗ Run once then remove it
-// ----------------------------------------------
-app.get("/migrate/addLine", async (req, res) => {
+// TEMP MIGRATION: Add 'line' column to maintenance_tasks
+app.get("/migrate/addLineToTasks", async (req, res) => {
   try {
     await pool.query(`
-      ALTER TABLE machines
+      ALTER TABLE maintenance_tasks
       ADD COLUMN IF NOT EXISTS line TEXT;
     `);
-    res.json({ message: "Migration successful: 'line' column added" });
+    res.json({ message: "Migration OK — line column added to tasks!" });
   } catch (err) {
     console.error("Migration ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ----------------------------------------------
 // 📥 IMPORT Excel from UI
