@@ -314,7 +314,10 @@ async function restoreSnapshot() {
   }
 
   alert("DB restored!");
-  loadTasks();
+document.getElementById("snapshotStatus").textContent =
+  `Snapshot Active: ${loadedSnapshotName}`;
+loadTasks();
+
 }
 
 // 📥 Import Excel Upload
