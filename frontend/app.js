@@ -61,7 +61,6 @@ function buildRow(task) {
 
   tr.innerHTML = `
     <td>${task.machine_name}</td>
-    <td>${task.line || "-"}</td>
     <td>${task.section || "-"}</td>
     <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
@@ -85,7 +84,6 @@ function buildRow(task) {
   `;
   return tr;
 }
-
 
 // 📈 KPIs
 
@@ -120,14 +118,12 @@ function rebuildMachineFilter() {
   const machinesSet = new Set();
 
   tasksData.forEach(t => {
-    if (activeLine === "all" || t.line_code === activeLine) {
+    if (activeLine === "all" || t.line === activeLine) {
       machinesSet.add(t.machine_name);
     }
   });
 
-  const machines = Array.from(machinesSet).sort((a, b) =>
-    a.localeCompare(b)
-  );
+  const machines = Array.from(machinesSet).sort((a, b) => a.localeCompare(b));
 
   select.innerHTML = `<option value="all">All Machines</option>`;
   machines.forEach(name => {
@@ -148,9 +144,8 @@ function renderTable() {
   const statusFilter = document.getElementById("statusFilter").value;
 
   const filtered = tasksData
-    .filter(t => activeLine === "all" || t.line_code === activeLine)
-    .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
     .filter(t => activeLine === "all" || t.line === activeLine)
+    .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
     .filter(t => {
       const st = getDueState(t);
       if (statusFilter === "Overdue") return st === "overdue";
@@ -168,7 +163,7 @@ function renderTable() {
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
-// 🔁 Load Lines (for tabs)
+// 🔁 Load Lines
 
 async function loadLines() {
   const res = await fetch(`${API}/lines`);
@@ -215,6 +210,7 @@ function setActiveLine(lineCode) {
 async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
+
   updateKpis();
   rebuildMachineFilter();
   renderTable();
@@ -377,7 +373,6 @@ async function importExcel() {
   }
 
   alert("Excel imported!");
-  // reload everything (lines & tasks)
   await loadLines();
   await loadTasks();
 }
@@ -388,32 +383,17 @@ document
 
 // 🔗 Event Listeners
 
-document
-  .getElementById("exportSnapshot")
+document.getElementById("exportSnapshot")
   .addEventListener("click", exportSnapshot);
 
-document
-  .getElementById("restoreSnapshot")
+document.getElementById("restoreSnapshot")
   .addEventListener("click", restoreSnapshot);
 
-document
-  .getElementById("machineFilter")
+document.getElementById("machineFilter")
   .addEventListener("change", renderTable);
 
-document
-  .getElementById("statusFilter")
+document.getElementById("statusFilter")
   .addEventListener("change", renderTable);
-
-document.querySelectorAll(".line-tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    activeLine = btn.dataset.line;
-    renderTable();
-  });
-});
-
 
 // 🚀 Init
 loadLines();
