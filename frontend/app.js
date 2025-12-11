@@ -6,6 +6,8 @@ let tasksData = [];
 let pendingSnapshotJson = null;
 let pendingTaskId = null;
 let activeLine = "all"; // Current line filter
+let loadedSnapshotName = null;
+
 
 // 📌 Helpers
 
@@ -281,13 +283,18 @@ document.getElementById("snapshotFile").addEventListener("change", async e => {
   try {
     const txt = await file.text();
     pendingSnapshotJson = JSON.parse(txt);
+
+    loadedSnapshotName = file.name;
+
     document.getElementById("snapshotStatus").textContent =
-      "Snapshot loaded — OK";
+      `Snapshot Loaded: ${loadedSnapshotName}`;
+
   } catch {
     alert("Invalid file!");
     pendingSnapshotJson = null;
   }
 });
+
 
 // ♻ Restore Snapshot
 
