@@ -163,48 +163,6 @@ function renderTable() {
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
-// 🔁 Load Lines
-
-async function loadLines() {
-  const res = await fetch(`${API}/lines`);
-  const lines = await res.json();
-
-  const tabs = document.getElementById("lineTabs");
-  if (!tabs) return;
-  tabs.innerHTML = "";
-
-  // ALL tab
-  const allTab = document.createElement("div");
-  allTab.textContent = "ALL";
-  allTab.className = "line-tab active";
-  allTab.onclick = () => setActiveLine("all");
-  tabs.appendChild(allTab);
-
-  lines.forEach(line => {
-    const tab = document.createElement("div");
-    tab.textContent = line.code;
-    tab.className = "line-tab";
-    tab.onclick = () => setActiveLine(line.code);
-    tabs.appendChild(tab);
-  });
-}
-
-function setActiveLine(lineCode) {
-  activeLine = lineCode;
-
-  document.querySelectorAll(".line-tab").forEach(tab => {
-    const label = tab.textContent;
-    const shouldBeActive =
-      (lineCode === "all" && label === "ALL") ||
-      (lineCode !== "all" && label === lineCode);
-
-    tab.classList.toggle("active", shouldBeActive);
-  });
-
-  rebuildMachineFilter();
-  renderTable();
-}
-
 // 🔁 Load Tasks
 
 async function loadTasks() {
@@ -373,7 +331,6 @@ async function importExcel() {
   }
 
   alert("Excel imported!");
-  await loadLines();
   await loadTasks();
 }
 
@@ -383,19 +340,35 @@ document
 
 // 🔗 Event Listeners
 
-document.getElementById("exportSnapshot")
+document
+  .getElementById("exportSnapshot")
   .addEventListener("click", exportSnapshot);
 
-document.getElementById("restoreSnapshot")
+document
+  .getElementById("restoreSnapshot")
   .addEventListener("click", restoreSnapshot);
 
-document.getElementById("machineFilter")
+document
+  .getElementById("machineFilter")
   .addEventListener("change", renderTable);
 
-document.getElementById("statusFilter")
+document
+  .getElementById("statusFilter")
   .addEventListener("change", renderTable);
+
+// Line tabs listeners
+document.querySelectorAll(".line-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".line-tab").forEach(b =>
+      b.classList.remove("active")
+    );
+    btn.classList.add("active");
+
+    activeLine = btn.dataset.line;
+    rebuildMachineFilter();
+    renderTable();
+  });
+});
 
 // 🚀 Init
-loadLines();
 loadTasks();
-
