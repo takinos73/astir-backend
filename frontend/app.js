@@ -150,6 +150,7 @@ function renderTable() {
   const filtered = tasksData
     .filter(t => activeLine === "all" || t.line_code === activeLine)
     .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
+    .filter(t => activeLine === "all" || t.line === activeLine)
     .filter(t => {
       const st = getDueState(t);
       if (statusFilter === "Overdue") return st === "overdue";
@@ -402,6 +403,17 @@ document
 document
   .getElementById("statusFilter")
   .addEventListener("change", renderTable);
+
+document.querySelectorAll(".line-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    activeLine = btn.dataset.line;
+    renderTable();
+  });
+});
+
 
 // 🚀 Init
 loadLines();
