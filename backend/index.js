@@ -201,19 +201,20 @@ app.get("/snapshot/export", async (req, res) => {
     const machines = (await pool.query("SELECT * FROM machines")).rows;
     const tasks = (
       await pool.query(`
-        SELECT mt.*, m.name AS machine_name, m.line
+        SELECT 
+          mt.*,              -- περιλαμβάνει mt.line
+          m.name AS machine_name
         FROM maintenance_tasks mt
         JOIN machines m ON m.id = mt.machine_id
       `)
     ).rows;
 
     res.json({
-      version: 1,
+      version: 2,
       created_at: new Date().toISOString(),
       machines,
-      tasks
+      tasks,
     });
-
   } catch (err) {
     console.error("Snapshot export failed:", err.message);
     res.status(500).json({ error: err.message });
@@ -226,41 +227,83 @@ app.get("/snapshot/export", async (req, res) => {
 app.post("/snapshot/restore", async (req, res) => {
   try {
     const { machines, tasks } = req.body;
+
     if (!machines || !tasks) {
       return res.status(400).json({ error: "Invalid snapshot format" });
     }
 
-    await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
-    await pool.query("TRUNCATE TABLE machines RESTART IDENTITY CASCADE;");
+    // Καθαρίζουμε τους πίνακες
+    await pool.query(
+      "TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;"
+    );
+    await pool.query(
+      "TRUNCATE TABLE machines RESTART IDENTITY CASCADE;"
+    );
+
+    // Εισάγουμε μηχανές και κρατάμε map name -> id
+    const machineIdMap = new Map();
 
     for (const m of machines) {
-      await pool.query(
+      const result = await pool.query(
         `INSERT INTO machines (name, line, sn)
-         VALUES ($1, $2, $3)`,
+         VALUES ($1, $2, $3)
+         RETURNING id`,
         [m.name, m.line || null, m.sn || null]
       );
+      machineIdMap.set(m.name, result.rows[0].id);
     }
 
+    // Εισάγουμε tasks με σωστό machine_id + line
     for (const t of tasks) {
+      const machineId = machineIdMap.get(t.machine_name);
+
+      if (!machineId) {
+        console.warn(
+          "Snapshot restore: no machine for task",
+          t.machine_name,
+          t.id
+        );
+        continue; // ή throw, ανάλογα πόσο αυστηρά το θες
+      }
+
       await pool.query(
         `INSERT INTO maintenance_tasks (
-          machine_id, section, unit, task, type,
-          qty, duration_min, frequency_hours,
-          due_date, status, completed_by, completed_at
+          machine_id,
+          line,
+          section,
+          unit,
+          task,
+          type,
+          qty,
+          duration_min,
+          frequency_hours,
+          due_date,
+          status,
+          completed_by,
+          completed_at
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [
-          t.machine_id, t.section, t.unit, t.task, t.type,
-          t.qty, t.duration_min, t.frequency_hours,
-          t.due_date, t.status, t.completed_by || null, t.completed_at || null
+          machineId,
+          t.line || null,
+          t.section,
+          t.unit,
+          t.task,
+          t.type,
+          t.qty,
+          t.duration_min,
+          t.frequency_hours,
+          t.due_date,
+          t.status,
+          t.completed_by || null,
+          t.completed_at || null,
         ]
       );
     }
 
     res.json({ message: "Restore completed!" });
-
   } catch (err) {
-    console.error("Restore ERROR:", err.message);
+    console.error("Restore ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
