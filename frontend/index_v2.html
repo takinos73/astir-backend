@@ -10,7 +10,7 @@
 </head>
 
 <body>
-
+  
   <!-- Modal Inside Body ✔ -->
   <div id="modalOverlay" class="modal-overlay">
     <div class="modal-box">
@@ -67,8 +67,18 @@
     </section>
 
     <!-- Line Tabs -->
-<section class="line-tabs" id="lineTabs"></section>
-
+<div class="line-tabs" id="lineTabs">
+  <button data-line="all" class="line-tab active">ALL</button>
+  <button data-line="L1" class="line-tab">L1</button>
+  <button data-line="L2" class="line-tab">L2</button>
+  <button data-line="L3" class="line-tab">L3</button>
+  <button data-line="L4" class="line-tab">L4</button>
+  <button data-line="L5" class="line-tab">L5</button>
+  <button data-line="L6" class="line-tab">L6</button>
+  <button data-line="L7" class="line-tab">L7</button>
+</div> 
+    
+    <!-- Machine Filters -->
    <section class="controls-row">
   <select id="machineFilter">
     <option value="all">All Machines</option>
@@ -98,8 +108,7 @@
       <table id="tasksTable">
         <<thead>
           <tr>
-            <th>Machine</th>
-            <th>Line</th> <!-- NEW -->
+            <th>Machine</th>            
             <th>Section</th>
             <th>Unit</th>
             <th>Task</th>
