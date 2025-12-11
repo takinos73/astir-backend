@@ -299,3 +299,31 @@ tech-meta {
   font-size: 11px;
   color: #9ca3af;
 }
+.line-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.line-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #1f242e;
+  color: #cfd6e3;
+  border: 1px solid #2c313d;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.line-tab:hover {
+  background: #2b3240;
+}
+
+.line-tab.active {
+  background: #4ea8ff;
+  color: #061825;
+  border-color: #4ea8ff;
+  font-weight: bold;
+}
+
