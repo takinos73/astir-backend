@@ -482,3 +482,5 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 ===================== */
 wireFilterListeners();
 loadTasks();
+loadPdfPreview(); // ΜΙΑ ΦΟΡΑ ΜΟΝΟ
+
