@@ -142,27 +142,38 @@ function rebuildMachineFilter() {
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
-  const mf = document.getElementById("machineFilter").value;
-  const sf = document.getElementById("statusFilter").value;
+  const machineFilter = document.getElementById("machineFilter")?.value || "all";
+  const statusFilter = document.getElementById("statusFilter")?.value || "all";
 
-  tasksData
+  const filtered = tasksData
+    // ✅ LINE FILTER — ΤΟ ΚΡΙΣΙΜΟ
     .filter(t => activeLine === "all" || t.line === activeLine)
-    .filter(t => mf === "all" || t.machine_name === mf)
+
+    // ✅ MACHINE FILTER
+    .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
+
+    // ✅ STATUS FILTER
     .filter(t => {
-      const st = getDueState(t);
-      if (sf === "Overdue") return st === "overdue";
-      if (sf === "Planned") return t.status === "Planned";
-      if (sf === "Done") return t.status === "Done";
+      if (statusFilter === "all") return true;
+      if (statusFilter === "Planned") return t.status === "Planned";
+      if (statusFilter === "Done") return t.status === "Done";
+      if (statusFilter === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
+
+    // ✅ PRIORITY SORT
     .sort((a, b) => {
       const order = { overdue: 0, soon: 1, ok: 2, done: 3 };
       return order[getDueState(a)] - order[getDueState(b)];
-    })
-    .forEach(t => tbody.appendChild(buildRow(t)));
+    });
+
+  filtered.forEach(task => tbody.appendChild(buildRow(task)));
 }
+
 
 /* =====================
    Load data
