@@ -33,93 +33,131 @@
       </div>
       <div class="app-header-meta">
         <div class="pill">
-          <span class="pill-indicator"></span>
           Backend Live: PostgreSQL • Render
         </div>
-         <span class="snapshot-note" id="snapshotStatus">
-            No snapshot loaded
+        <span class="snapshot-note" id="snapshotStatus">
+          No snapshot loaded
         </span>
+      </div>
     </header>
 
-    <!-- KPIs -->
-    <section class="kpi-strip">
-      <article class="kpi-card">
-        <span class="kpi-label">Total</span>
-        <span id="kpiTotal" class="kpi-value">0</span>
-      </article>
-      <article class="kpi-card">
-        <span class="kpi-label">Overdue</span>
-        <span id="kpiOverdue" class="kpi-value">0</span>
-      </article>
-      <article class="kpi-card">
-        <span class="kpi-label">Due ≤ 7 days</span>
-        <span id="kpiSoon" class="kpi-value">0</span>
-      </article>
-      <article class="kpi-card">
-        <span class="kpi-label">Completed</span>
-        <span id="kpiDone" class="kpi-value">0</span>
-      </article>
+    <!-- Main Tabs -->
+    <section class="main-tabs">
+      <button class="main-tab active" data-tab="tasks">Tasks</button>
+      <button class="main-tab" data-tab="docs">Documentation</button>
+      <!-- μελλοντικά: <button class="main-tab" data-tab="reports">Reports</button> -->
     </section>
 
-    <!-- Line Tabs -->
-    <section class="line-tabs-row">
-      <div class="line-tabs" id="lineTabs">
-        <button class="line-tab active" data-line="all">ALL</button>
-        <button class="line-tab" data-line="L1">L1</button>
-        <button class="line-tab" data-line="L2">L2</button>
-        <button class="line-tab" data-line="L3">L3</button>
-        <button class="line-tab" data-line="L4">L4</button>
-        <button class="line-tab" data-line="L5">L5</button>
-        <button class="line-tab" data-line="L6">L6</button>
-        <button class="line-tab" data-line="L7">L7</button>
+    <!-- TAB: TASKS -->
+    <div id="tab-tasks">
+      <!-- KPIs -->
+      <section class="kpi-strip">
+        <article class="kpi-card">
+          <span class="kpi-label">Total</span>
+          <span id="kpiTotal" class="kpi-value">0</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-label">Overdue</span>
+          <span id="kpiOverdue" class="kpi-value">0</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-label">Due ≤ 7 days</span>
+          <span id="kpiSoon" class="kpi-value">0</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-label">Completed</span>
+          <span id="kpiDone" class="kpi-value">0</span>
+        </article>
+      </section>
+
+      <!-- Line Tabs -->
+      <section class="line-tabs-row">
+        <div class="line-tabs" id="lineTabs">
+          <button class="line-tab active" data-line="all">ALL</button>
+          <button class="line-tab" data-line="L1">L1</button>
+          <button class="line-tab" data-line="L2">L2</button>
+          <button class="line-tab" data-line="L3">L3</button>
+          <button class="line-tab" data-line="L4">L4</button>
+          <button class="line-tab" data-line="L5">L5</button>
+          <button class="line-tab" data-line="L6">L6</button>
+          <button class="line-tab" data-line="L7">L7</button>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="controls-row">
+        <select id="machineFilter">
+          <option value="all">All Machines</option>
+        </select>
+
+        <select id="statusFilter">
+          <option value="all">All Status</option>
+          <option value="Overdue">Overdue Only</option>
+          <option value="Planned">Planned Only</option>
+          <option value="Done">Completed Only</option>
+        </select>
+
+        <label class="btn-secondary">
+          📂 Upload Excel
+          <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />
+        </label>
+        <button class="btn-secondary" id="importExcelBtn">📥 Import Excel</button>
+
+        <button class="btn-secondary" id="exportSnapshot">📦 Export Snapshot</button>
+        <label class="btn-secondary" for="snapshotFile">
+          ♻ Load Snapshot
+          <input type="file" id="snapshotFile" accept="application/json" hidden />
+        </label>
+        <button class="btn-secondary" id="restoreSnapshot">Restore</button>
+      </section>
+
+      <!-- Task Table -->
+      <div class="table-card">
+        <table id="tasksTable">
+          <thead>
+            <tr>
+              <th>Machine</th>
+              <th>Section</th>
+              <th>Unit</th>
+              <th>Task</th>
+              <th>Type</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-    </section>
-
-    <!-- Filters -->
-    <section class="controls-row">
-      <select id="machineFilter">
-        <option value="all">All Machines</option>
-      </select>
-
-      <select id="statusFilter">
-        <option value="all">All Status</option>
-        <option value="Overdue">Overdue Only</option>
-        <option value="Planned">Planned Only</option>
-        <option value="Done">Completed Only</option>
-      </select>
-
-      <label class="btn-secondary">
-        📂 Upload
-        <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />
-      </label>
-      <button class="btn-secondary" id="importExcelBtn">📥 Import Excel</button>
-
-      <button class="btn-secondary" id="exportSnapshot">📦 Export Snapshot</button>
-      <label class="btn-secondary" for="snapshotFile">
-        ♻ Load Snapshot
-        <input type="file" id="snapshotFile" accept="application/json" hidden />
-      </label>
-      <button class="btn-secondary" id="restoreSnapshot">Restore</button>
-    </section>
-
-    <!-- Task Table -->
-    <div class="table-card">
-      <table id="tasksTable">
-        <thead>
-          <tr>
-            <th>Machine</th>
-            <th>Section</th>
-            <th>Unit</th>
-            <th>Task</th>
-            <th>Type</th>
-            <th>Due Date</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
     </div>
+
+    <!-- TAB: DOCUMENTATION -->
+    <div id="tab-docs" style="display: none;">
+      <section class="docs-header">
+        <h2>Documentation – MasterPlan</h2>
+        <p class="docs-subtitle">
+          Εδώ προβάλλεται το επίσημο MasterPlan PDF του εργοστασίου.
+        </p>
+      </section>
+
+      <section class="docs-controls">
+        <label class="btn-secondary">
+          📤 Upload MasterPlan PDF
+          <input type="file" id="pdfInput" accept="application/pdf" hidden />
+        </label>
+        <button class="btn-secondary" id="openPdfBtn">📄 Προβολή PDF</button>
+      </section>
+
+      <section class="docs-viewer-wrapper">
+        <iframe
+          id="pdfViewer"
+          class="docs-viewer"
+          src=""
+          title="MasterPlan PDF"
+        ></iframe>
+      </section>
+    </div>
+
   </div>
 
   <script src="app.js"></script>
