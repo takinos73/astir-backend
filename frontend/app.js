@@ -459,7 +459,6 @@ function wireFilterListeners() {
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    // active state
     document.querySelectorAll(".main-tab").forEach(t =>
       t.classList.remove("active")
     );
@@ -467,16 +466,19 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
     const selected = tab.dataset.tab;
 
-    // show / hide tabs
-    const tasksTab = document.getElementById("tab-tasks");
-    const docsTab = document.getElementById("tab-docs");
-    const reportsTab = document.getElementById("tab-reports");
+    document.getElementById("tab-tasks").style.display =
+      selected === "tasks" ? "block" : "none";
 
-    if (tasksTab) tasksTab.style.display = selected === "tasks" ? "block" : "none";
-    if (docsTab) docsTab.style.display = selected === "docs" ? "block" : "none";
-    if (reportsTab) reportsTab.style.display = selected === "reports" ? "block" : "none";
+    document.getElementById("tab-docs").style.display =
+      selected === "docs" ? "block" : "none";
+
+    // ✅ ΤΟ ΚΡΙΣΙΜΟ
+    if (selected === "docs") {
+      loadPdfPreview();
+    }
   });
 });
+
 
 /* =====================
    Init
