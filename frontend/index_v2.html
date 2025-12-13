@@ -31,6 +31,26 @@
     </div>
   </div>
 </div>
+  <!-- Add Task Modal -->
+<div id="addTaskOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide">
+    <h3>New Non-Planned Task</h3>
+
+    <input id="nt-line" placeholder="Line (L1…)" />
+    <input id="nt-machine" placeholder="Machine" />
+    <input id="nt-section" placeholder="Section" />
+    <input id="nt-unit" placeholder="Unit" />
+    <input id="nt-task" placeholder="Task description" />
+    <input id="nt-type" placeholder="Type (Breakdown / Repair)" />
+    <input id="nt-due" type="date" />
+    <textarea id="nt-notes" placeholder="Notes"></textarea>
+
+    <div class="modal-actions">
+      <button id="saveTaskBtn" class="btn-table">Save</button>
+      <button id="cancelAddTask" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
   
 <body>
 
@@ -139,6 +159,8 @@
         </label>
         <button class="btn-secondary" id="restoreSnapshot">Restore</button>
       </section>
+
+      <button class="btn-secondary" id="addTaskBtn">➕ New Task</button>
 
       <!-- TASK TABLE -->
       <div class="table-card">
