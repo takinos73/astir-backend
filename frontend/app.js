@@ -150,13 +150,8 @@ function renderTable() {
   const statusFilter = document.getElementById("statusFilter")?.value || "all";
 
   const filtered = tasksData
-    // ✅ LINE FILTER — ΤΟ ΚΡΙΣΙΜΟ
     .filter(t => activeLine === "all" || t.line === activeLine)
-
-    // ✅ MACHINE FILTER
     .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
-
-    // ✅ STATUS FILTER
     .filter(t => {
       if (statusFilter === "all") return true;
       if (statusFilter === "Planned") return t.status === "Planned";
@@ -164,8 +159,6 @@ function renderTable() {
       if (statusFilter === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
-
-    // ✅ PRIORITY SORT
     .sort((a, b) => {
       const order = { overdue: 0, soon: 1, ok: 2, done: 3 };
       return order[getDueState(a)] - order[getDueState(b)];
@@ -174,17 +167,23 @@ function renderTable() {
   filtered.forEach(task => tbody.appendChild(buildRow(task)));
 }
 
-
 /* =====================
    Load data
 ===================== */
 
 async function loadTasks() {
-  const res = await fetch(`${API}/tasks`);
-  tasksData = await res.json();
-  updateKpis();
-  rebuildMachineFilter();
-  renderTable();
+  try {
+    const res = await fetch(`${API}/tasks`);
+    if (!res.ok) throw new Error("Failed to load tasks");
+
+    tasksData = await res.json();
+    updateKpis();
+    rebuildMachineFilter();
+    renderTable();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load tasks from server");
+  }
 }
 
 /* =====================
@@ -198,6 +197,7 @@ function askTechnician(id) {
 
 document.getElementById("cancelDone").onclick = () => {
   document.getElementById("modalOverlay").style.display = "none";
+  pendingTaskId = null;
 };
 
 document.getElementById("confirmDone").onclick = async () => {
@@ -211,6 +211,8 @@ document.getElementById("confirmDone").onclick = async () => {
   });
 
   if (!res.ok) return alert("Update failed");
+
+  pendingTaskId = null;
   document.getElementById("modalOverlay").style.display = "none";
   loadTasks();
 };
@@ -229,6 +231,12 @@ function viewTask(id) {
   const t = tasksData.find(x => x.id === id);
   if (!t) return;
 
+  const overlay = document.getElementById("viewTaskOverlay");
+  if (!overlay) {
+    console.warn("viewTaskOverlay not found");
+    return;
+  }
+
   document.getElementById("vt-machine").textContent = t.machine_name;
   document.getElementById("vt-line").textContent = t.line || "-";
   document.getElementById("vt-section").textContent = t.section || "-";
@@ -241,51 +249,11 @@ function viewTask(id) {
   document.getElementById("vt-at").textContent =
     t.completed_at ? formatDate(t.completed_at) : "-";
 
-  document.getElementById("viewTaskOverlay").style.display = "flex";
+  overlay.style.display = "flex";
 }
 
 document.getElementById("closeViewTask").onclick = () => {
   document.getElementById("viewTaskOverlay").style.display = "none";
-};
-
-/* =====================
-   STEP 2A – Add Non-Planned Task
-===================== */
-
-document.getElementById("addTaskBtn").onclick = () => {
-  document.getElementById("addTaskOverlay").style.display = "flex";
-};
-
-document.getElementById("cancelAddTask").onclick = () => {
-  document.getElementById("addTaskOverlay").style.display = "none";
-};
-
-document.getElementById("saveTaskBtn").onclick = async () => {
-  const payload = {
-    line: document.getElementById("nt-line").value,
-    machine_name: document.getElementById("nt-machine").value,
-    section: document.getElementById("nt-section").value,
-    unit: document.getElementById("nt-unit").value,
-    task: document.getElementById("nt-task").value,
-    type: document.getElementById("nt-type").value,
-    due_date: document.getElementById("nt-due").value,
-    notes: document.getElementById("nt-notes").value
-  };
-
-  if (!payload.machine_name || !payload.task) {
-    return alert("Machine & task required");
-  }
-
-  const res = await fetch(`${API}/tasks`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) return alert("Create failed");
-
-  document.getElementById("addTaskOverlay").style.display = "none";
-  loadTasks();
 };
 
 /* =====================
