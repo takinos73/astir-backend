@@ -380,5 +380,25 @@ tech-meta {
 .docs-controls {
   margin-bottom: 6px;   /* ήταν μεγάλο */
 }
+.modal-wide {
+  width: 520px;
+  max-width: 90%;
+}
+
+.task-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  font-size: 13px;
+  margin: 14px 0;
+}
+
+.task-view-grid div {
+  background: #141821;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #272b35;
+}
+
 
 
