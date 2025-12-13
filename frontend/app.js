@@ -451,8 +451,27 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 });
 
 /* =====================
-   Init
+   Filter listeners (FIX refresh)
 ===================== */
 
-loadTasks();
+function wireFilterListeners() {
+  const statusEl = document.getElementById("statusFilter");
+  const machineEl = document.getElementById("machineFilter");
 
+  // όταν αλλάζει status -> άμεσο redraw
+  statusEl?.addEventListener("change", () => {
+    renderTable();
+  });
+
+  // όταν αλλάζει μηχανή -> άμεσο redraw (το είχες, αλλά το αφήνω safe)
+  machineEl?.addEventListener("change", () => {
+    renderTable();
+  });
+}
+
+
+/* =====================
+   Init
+===================== */
+wireFilterListeners();
+loadTasks();
