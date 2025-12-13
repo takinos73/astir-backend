@@ -419,22 +419,6 @@ document.getElementById("openPdfBtn")?.addEventListener("click", openPdfViewer);
    Main tabs (Tasks / Docs)
 ===================== */
 
-document.querySelectorAll(".main-tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-
-    const selected = tab.dataset.tab;
-
-    const tasksPane = document.getElementById("tab-tasks");
-    const docsPane = document.getElementById("tab-docs");
-
-    if (tasksPane) tasksPane.style.display = selected === "tasks" ? "block" : "none";
-    if (docsPane) docsPane.style.display = selected === "docs" ? "block" : "none";
-
-    if (selected === "docs") loadPdfPreview();
-  });
-});
 
 /* =====================
    Line tabs
@@ -469,6 +453,30 @@ function wireFilterListeners() {
   });
 }
 
+/* =====================
+   Main Tabs Switching
+===================== */
+
+document.querySelectorAll(".main-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    // active state
+    document.querySelectorAll(".main-tab").forEach(t =>
+      t.classList.remove("active")
+    );
+    tab.classList.add("active");
+
+    const selected = tab.dataset.tab;
+
+    // show / hide tabs
+    const tasksTab = document.getElementById("tab-tasks");
+    const docsTab = document.getElementById("tab-docs");
+    const reportsTab = document.getElementById("tab-reports");
+
+    if (tasksTab) tasksTab.style.display = selected === "tasks" ? "block" : "none";
+    if (docsTab) docsTab.style.display = selected === "docs" ? "block" : "none";
+    if (reportsTab) reportsTab.style.display = selected === "reports" ? "block" : "none";
+  });
+});
 
 /* =====================
    Init
