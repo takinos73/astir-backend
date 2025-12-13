@@ -328,7 +328,7 @@ tech-meta {
 }
 
 .docs-viewer-wrapper {
-  margin-top: 12px;
+  margin-top: 6px;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
@@ -340,4 +340,12 @@ tech-meta {
   height: 360px;        /* 👈 ΤΟ ΚΛΕΙΔΙ */
   border: none;
 }
+.docs-header {
+  margin-bottom: 6px;   /* ήταν μεγάλο */
+}
+
+.docs-controls {
+  margin-bottom: 6px;   /* ήταν μεγάλο */
+}
+
 
