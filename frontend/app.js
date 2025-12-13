@@ -12,6 +12,10 @@ let loadedSnapshotName = null;
    Helpers
 ===================== */
 
+function norm(v) {
+  return (v ?? "").toString().trim().toUpperCase();
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("el-GR");
@@ -123,13 +127,17 @@ function rebuildMachineFilter() {
   const select = document.getElementById("machineFilter");
   if (!select) return;
 
+  const act = norm(activeLine);
+
   const machines = [
     ...new Set(
       tasksData
-        .filter(t => activeLine === "all" || t.line === activeLine)
+        .filter(t => act === "ALL" || act === "ALL " || activeLine === "all" || norm(t.line) === act)
         .map(t => t.machine_name)
     )
-  ].sort();
+  ]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 
   select.innerHTML = `<option value="all">All Machines</option>`;
   machines.forEach(m => {
@@ -146,12 +154,26 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  const machineFilter = document.getElementById("machineFilter")?.value || "all";
+  const machineFilterRaw = document.getElementById("machineFilter")?.value || "all";
   const statusFilter = document.getElementById("statusFilter")?.value || "all";
 
+  const act = norm(activeLine);
+  const mf = norm(machineFilterRaw);
+
   const filtered = tasksData
-    .filter(t => activeLine === "all" || t.line === activeLine) // ✅ only task.line
-    .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
+    // ✅ LINE FILTER (normalized)
+    .filter(t => {
+      if (activeLine === "all") return true;
+      return norm(t.line) === act;
+    })
+
+    // ✅ MACHINE FILTER (normalized)
+    .filter(t => {
+      if (machineFilterRaw === "all") return true;
+      return norm(t.machine_name) === mf;
+    })
+
+    // ✅ STATUS FILTER
     .filter(t => {
       if (statusFilter === "all") return true;
       if (statusFilter === "Planned") return t.status === "Planned";
@@ -159,9 +181,11 @@ function renderTable() {
       if (statusFilter === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
+
+    // ✅ PRIORITY SORT
     .sort((a, b) => {
-      const order = { overdue: 0, soon: 1, ok: 2, done: 3 };
-      return order[getDueState(a)] - order[getDueState(b)];
+      const order = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
+      return (order[getDueState(a)] ?? 99) - (order[getDueState(b)] ?? 99);
     });
 
   filtered.forEach(task => tbody.appendChild(buildRow(task)));
@@ -177,6 +201,7 @@ async function loadTasks() {
     if (!res.ok) throw new Error("Failed to load tasks");
 
     tasksData = await res.json();
+
     updateKpis();
     rebuildMachineFilter();
     renderTable();
@@ -225,7 +250,7 @@ async function undoTask(id) {
 }
 
 /* =====================
-   View Task (STEP 1)
+   View Task
 ===================== */
 
 function viewTask(id) {
@@ -286,7 +311,7 @@ async function importExcel() {
 
     alert("Excel imported successfully!");
 
-    // 🔁 RESET UI STATE
+    // RESET UI STATE
     activeLine = "all";
     document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
     document.querySelector('.line-tab[data-line="all"]')?.classList.add("active");
@@ -301,7 +326,6 @@ async function importExcel() {
   }
 }
 
-// ✅ MISSING in your file: bind Import button
 document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
 
 /* =====================
@@ -359,12 +383,10 @@ function loadPdfPreview() {
   const iframe = document.getElementById("pdfViewer");
   if (!iframe) return;
 
-  // inline preview (cache-bust)
   iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
 }
 
 function openPdfViewer() {
-  // open full size in new tab
   window.open(`${API}/documentation/masterplan?t=${Date.now()}`, "_blank");
 }
 
@@ -387,7 +409,7 @@ async function uploadPdf() {
   }
 
   alert("PDF uploaded!");
-  loadPdfPreview(); // refresh small iframe preview
+  loadPdfPreview();
 }
 
 document.getElementById("pdfInput")?.addEventListener("change", uploadPdf);
@@ -410,7 +432,6 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     if (tasksPane) tasksPane.style.display = selected === "tasks" ? "block" : "none";
     if (docsPane) docsPane.style.display = selected === "docs" ? "block" : "none";
 
-    // when opening docs, ensure preview loads
     if (selected === "docs") loadPdfPreview();
   });
 });
@@ -420,13 +441,13 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 ===================== */
 
 document.querySelectorAll(".line-tab").forEach(btn => {
-  btn.onclick = () => {
+  btn.addEventListener("click", () => {
     document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    activeLine = btn.dataset.line;
+    activeLine = btn.dataset.line; // keep raw, compare normalized in filters
     rebuildMachineFilter();
     renderTable();
-  };
+  });
 });
 
 /* =====================
@@ -434,5 +455,4 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 ===================== */
 
 loadTasks();
-// optional: if user lands directly on docs tab later, load will be triggered there
 
