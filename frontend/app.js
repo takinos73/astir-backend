@@ -465,6 +465,25 @@ async function uploadPdf() {
 
 document.getElementById("pdfInput")?.addEventListener("change", uploadPdf);
 document.getElementById("openPdfBtn")?.addEventListener("click", refreshPdfViewer);
+function closeViewTask() {
+  const ov = document.getElementById("viewTaskOverlay");
+  if (ov) ov.style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Close button
+  document.getElementById("closeViewTask")?.addEventListener("click", closeViewTask);
+
+  // Click outside modal closes (overlay click)
+  document.getElementById("viewTaskOverlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "viewTaskOverlay") closeViewTask();
+  });
+
+  // ESC closes
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeViewTask();
+  });
+});
 
 // 🚀 Init
 loadTasks();
