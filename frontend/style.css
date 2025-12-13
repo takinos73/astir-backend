@@ -376,6 +376,17 @@ tech-meta {
 .docs-header {
   margin-bottom: 6px;   /* ήταν μεγάλο */
 }
+.docs-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.docs-hint {
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  opacity: 0.8;
+}
 
 .docs-controls {
   margin-bottom: 6px;   /* ήταν μεγάλο */
