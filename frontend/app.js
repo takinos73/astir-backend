@@ -472,13 +472,10 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     document.getElementById("tab-docs").style.display =
       selected === "docs" ? "block" : "none";
 
-    // ✅ ΤΟ ΚΡΙΣΙΜΟ
-    if (selected === "docs") {
-      loadPdfPreview();
-    }
+    document.getElementById("tab-reports").style.display =
+      selected === "reports" ? "block" : "none";
   });
 });
-
 
 /* =====================
    Init
