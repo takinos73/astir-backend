@@ -64,21 +64,15 @@ function buildRow(task) {
     <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
     <td>${task.type || "-"}</td>
-    <td>
-  <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
-
-  ${
-    task.status === "Done"
-      ? `
-        <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
-        <div class="tech-meta">✔ ${task.completed_by || "—"}</div>
-      `
-      : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
-  }
-</td>
-
+    <td>${
+      task.status === "Done" && task.completed_at
+        ? "Completed: " + formatDate(task.completed_at)
+        : formatDate(task.due_date)
+    }</td>
     <td>${statusPill(task)}</td>
     <td>
+      <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
+
       ${
         task.status === "Done"
           ? `
@@ -89,8 +83,10 @@ function buildRow(task) {
       }
     </td>
   `;
+
   return tr;
 }
+
 
 // 📈 KPIs
 function updateKpis() {
