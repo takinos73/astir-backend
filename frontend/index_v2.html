@@ -92,6 +92,7 @@
     <section class="main-tabs">
       <button class="main-tab active" data-tab="tasks">Tasks</button>
       <button class="main-tab" data-tab="docs">Documentation</button>
+      <button class="main-tab" data-tab="reports">Reports</button>
     </section>
 
     <!-- ===================== -->
@@ -212,6 +213,90 @@
       </section>
 
     </div>
+    <!-- TAB: REPORTS -->
+<div id="tab-reports" style="display: none;">
+  <section class="reports-header">
+    <h2>Reports</h2>
+    <p class="reports-subtitle">
+      Δημιουργία αναφορών συντήρησης και export σε PDF.
+    </p>
+  </section>
+
+  <section class="reports-card">
+    <div class="reports-grid">
+
+      <!-- Report Type -->
+      <div class="field">
+        <label for="reportType">Report Type</label>
+        <select id="reportType">
+          <option value="status">Maintenance Status Report</option>
+          <option value="overdue">Overdue Tasks Report</option>
+          <option value="technician">Completed by Technician</option>
+          <option value="nonplanned">Non-Planned Tasks Report</option>
+        </select>
+      </div>
+
+      <!-- Date range -->
+      <div class="field">
+        <label for="dateFrom">From</label>
+        <input id="dateFrom" type="date" />
+      </div>
+
+      <div class="field">
+        <label for="dateTo">To</label>
+        <input id="dateTo" type="date" />
+      </div>
+
+      <!-- Line -->
+      <div class="field">
+        <label for="reportLine">Line</label>
+        <select id="reportLine">
+          <option value="all">ALL</option>
+          <option value="L1">L1</option>
+          <option value="L2">L2</option>
+          <option value="L3">L3</option>
+          <option value="L4">L4</option>
+          <option value="L5">L5</option>
+          <option value="L6">L6</option>
+          <option value="L7">L7</option>
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="field">
+        <label for="reportStatus">Status</label>
+        <select id="reportStatus">
+          <option value="all">ALL</option>
+          <option value="planned">Planned</option>
+          <option value="done">Done</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+
+      <!-- Technician (hidden for now; θα το ενεργοποιήσουμε στο STEP B) -->
+      <div class="field field-hidden" id="fieldTechnician">
+        <label for="reportTechnician">Technician</label>
+        <input id="reportTechnician" type="text" placeholder="π.χ. Giorgos" />
+      </div>
+
+    </div>
+
+    <!-- Preview -->
+    <div class="reports-preview" id="reportsPreview">
+      <div class="preview-title">Preview</div>
+      <div class="preview-lines" id="previewLines">Lines: ALL</div>
+      <div class="preview-dates" id="previewDates">Period: —</div>
+      <div class="preview-type" id="previewType">Report: Maintenance Status Report</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="reports-actions">
+      <button class="btn-primary" id="generatePdfBtn">📄 Generate PDF</button>
+      <button class="btn-secondary" id="resetReportBtn">Reset</button>
+    </div>
+  </section>
+</div>
+
 
   </div>
 
