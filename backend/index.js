@@ -221,6 +221,66 @@ app.get("/snapshot/export", async (req, res) => {
   }
 });
 
+// ----------------------------
+// ➕ Create NON-PLANNED task
+// ----------------------------
+app.post("/tasks", async (req, res) => {
+  try {
+    const {
+      line,
+      machine_name,
+      section,
+      unit,
+      task,
+      type,
+      due_date,
+      notes
+    } = req.body;
+
+    if (!machine_name || !task) {
+      return res.status(400).json({ error: "Machine & task required" });
+    }
+
+    // ensure machine exists
+    const m = await pool.query(
+      `INSERT INTO machines (name)
+       VALUES ($1)
+       ON CONFLICT (name) DO NOTHING
+       RETURNING id`,
+      [machine_name]
+    );
+
+    const machineId =
+      m.rows[0]?.id ||
+      (await pool.query(`SELECT id FROM machines WHERE name=$1`, [machine_name]))
+        .rows[0].id;
+
+    const result = await pool.query(
+      `INSERT INTO maintenance_tasks
+        (machine_id, line, section, unit, task, type, due_date, status, is_planned, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'Planned',false,$8)
+       RETURNING *`,
+      [
+        machineId,
+        line,
+        section,
+        unit,
+        task,
+        type,
+        due_date || null,
+        notes || null
+      ]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("CREATE TASK ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // ----------------------------------------------
 // Snapshot Restore
 // ----------------------------------------------
