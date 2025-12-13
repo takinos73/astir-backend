@@ -399,6 +399,124 @@ tech-meta {
   border-radius: 6px;
   border: 1px solid #272b35;
 }
+/* =========================
+   MAIN TABS
+========================= */
+.main-tabs{
+  display:flex;
+  gap:10px;
+  margin: 12px 0 16px;
+}
+
+.main-tab{
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.main-tab:hover{
+  background: #222838;
+}
+
+.main-tab.active{
+  border-color: rgba(78,168,255,.6);
+  box-shadow: 0 0 0 2px rgba(78,168,255,.15) inset;
+}
+
+/* =========================
+   REPORTS TAB
+========================= */
+.reports-header h2{
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.reports-subtitle{
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.reports-card{
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.reports-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.field label{
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.field input,
+.field select{
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.field-hidden{
+  display:none;
+}
+
+.reports-preview{
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-subtle);
+  background: #10131a;
+}
+
+.preview-title{
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.reports-actions{
+  display:flex;
+  gap: 10px;
+  margin-top: 14px;
+  justify-content:flex-end;
+}
+
+.btn-primary{
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(78,168,255,.5);
+  background: rgba(78,168,255,.15);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-primary:hover{
+  background: rgba(78,168,255,.22);
+}
+
 
 
 
