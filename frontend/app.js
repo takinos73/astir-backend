@@ -404,9 +404,8 @@ document.querySelectorAll(".main-tab").forEach((tab) => {
 
 // 📄 PDF viewer
 function refreshPdfViewer() {
-  const iframe = document.getElementById("pdfViewer");
-  if (!iframe) return;
-  iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
+  const url = `${API}/documentation/masterplan`;
+  window.open(url, "_blank");
 }
 
 async function uploadPdf() {
