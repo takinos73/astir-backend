@@ -9,7 +9,8 @@
 </head>
 
 <body>
-  <!-- Modal για τεχνικό -->
+
+  <!-- Modal για ολοκλήρωση εργασίας -->
   <div id="modalOverlay" class="modal-overlay">
     <div class="modal-box">
       <h3>Ολοκλήρωση Εργασίας</h3>
@@ -23,6 +24,8 @@
   </div>
 
   <div class="app-shell">
+
+    <!-- HEADER -->
     <header class="app-header">
       <div class="app-header-main">
         <div class="app-title">
@@ -41,15 +44,17 @@
       </div>
     </header>
 
-    <!-- Main Tabs -->
+    <!-- MAIN TABS -->
     <section class="main-tabs">
       <button class="main-tab active" data-tab="tasks">Tasks</button>
       <button class="main-tab" data-tab="docs">Documentation</button>
-      <!-- μελλοντικά: <button class="main-tab" data-tab="reports">Reports</button> -->
     </section>
 
+    <!-- ===================== -->
     <!-- TAB: TASKS -->
+    <!-- ===================== -->
     <div id="tab-tasks">
+
       <!-- KPIs -->
       <section class="kpi-strip">
         <article class="kpi-card">
@@ -70,9 +75,9 @@
         </article>
       </section>
 
-      <!-- Line Tabs -->
+      <!-- LINE TABS -->
       <section class="line-tabs-row">
-        <div class="line-tabs" id="lineTabs">
+        <div class="line-tabs">
           <button class="line-tab active" data-line="all">ALL</button>
           <button class="line-tab" data-line="L1">L1</button>
           <button class="line-tab" data-line="L2">L2</button>
@@ -84,7 +89,7 @@
         </div>
       </section>
 
-      <!-- Filters -->
+      <!-- FILTERS -->
       <section class="controls-row">
         <select id="machineFilter">
           <option value="all">All Machines</option>
@@ -104,14 +109,14 @@
         <button class="btn-secondary" id="importExcelBtn">📥 Import Excel</button>
 
         <button class="btn-secondary" id="exportSnapshot">📦 Export Snapshot</button>
-        <label class="btn-secondary" for="snapshotFile">
+        <label class="btn-secondary">
           ♻ Load Snapshot
           <input type="file" id="snapshotFile" accept="application/json" hidden />
         </label>
         <button class="btn-secondary" id="restoreSnapshot">Restore</button>
       </section>
 
-      <!-- Task Table -->
+      <!-- TASK TABLE -->
       <div class="table-card">
         <table id="tasksTable">
           <thead>
@@ -131,12 +136,15 @@
       </div>
     </div>
 
+    <!-- ===================== -->
     <!-- TAB: DOCUMENTATION -->
+    <!-- ===================== -->
     <div id="tab-docs" style="display: none;">
+
       <section class="docs-header">
         <h2>Documentation – MasterPlan</h2>
         <p class="docs-subtitle">
-          Εδώ προβάλλεται το επίσημο MasterPlan PDF του εργοστασίου.
+          Επίσημο MasterPlan PDF του εργοστασίου
         </p>
       </section>
 
@@ -156,10 +164,12 @@
           title="MasterPlan PDF"
         ></iframe>
       </section>
+
     </div>
 
   </div>
 
+  <!-- JS -->
   <script src="app.js"></script>
 </body>
 </html>
