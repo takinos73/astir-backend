@@ -307,6 +307,43 @@ app.post("/snapshot/restore", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ----------------------------------------------
+// Documentation: Upload MasterPlan PDF
+// ----------------------------------------------
+app.post("/documentation/upload", upload.single("pdf"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Αποθήκευση PDF σε τοπικό φάκελο "docs"
+    const docsPath = path.join(process.cwd(), "docs");
+    if (!fs.existsSync(docsPath)) {
+      fs.mkdirSync(docsPath);
+    }
+
+    const filePath = path.join(docsPath, "MasterPlan.pdf");
+    fs.writeFileSync(filePath, req.file.buffer);
+
+    res.json({ message: "PDF uploaded successfully" });
+  } catch (err) {
+    console.error("DOCUMENT UPLOAD ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------
+// Documentation: Serve MasterPlan PDF
+// ----------------------------------------------
+app.get("/documentation/masterplan", (req, res) => {
+  const filePath = path.join(process.cwd(), "docs", "MasterPlan.pdf");
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("MasterPlan PDF not found");
+  }
+
+  res.sendFile(filePath);
+});
 
 // SPA fallback
 app.get("*", (req, res) => {
