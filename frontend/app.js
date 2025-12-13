@@ -64,11 +64,19 @@ function buildRow(task) {
     <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
     <td>${task.type || "-"}</td>
-    <td>${
-      task.status === "Done" && task.completed_at
-        ? "Completed: " + formatDate(task.completed_at)
-        : formatDate(task.due_date)
-    }</td>
+    <td>
+  <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
+
+  ${
+    task.status === "Done"
+      ? `
+        <button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>
+        <div class="tech-meta">✔ ${task.completed_by || "—"}</div>
+      `
+      : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
+  }
+</td>
+
     <td>${statusPill(task)}</td>
     <td>
       ${
@@ -401,6 +409,27 @@ document.querySelectorAll(".main-tab").forEach((tab) => {
     if (docsTab) docsTab.style.display = selected === "docs" ? "block" : "none";
   });
 });
+// 📄 View Task
+function viewTask(id) {
+  const t = tasksData.find(x => x.id === id);
+  if (!t) return;
+
+  document.getElementById("vt-machine").textContent = t.machine_name;
+  document.getElementById("vt-line").textContent = t.line || "-";
+  document.getElementById("vt-section").textContent = t.section || "-";
+  document.getElementById("vt-unit").textContent = t.unit || "-";
+  document.getElementById("vt-task").textContent = t.task;
+  document.getElementById("vt-type").textContent = t.type || "-";
+  document.getElementById("vt-due").textContent = formatDate(t.due_date);
+  document.getElementById("vt-status").textContent = t.status;
+  document.getElementById("vt-by").textContent = t.completed_by || "-";
+  document.getElementById("vt-at").textContent = t.completed_at
+    ? formatDate(t.completed_at)
+    : "-";
+
+  document.getElementById("viewTaskOverlay").style.display = "flex";
+}
+
 
 // 📄 PDF viewer
 
