@@ -2,16 +2,13 @@
 
 const API = "https://astir-backend.onrender.com";
 
-let loadedSnapshotName = null; // για το label snapshot (το έχουμε ήδη λογικά)
+let loadedSnapshotName = null; // label snapshot
 let tasksData = [];
 let pendingSnapshotJson = null;
 let pendingTaskId = null;
 let activeLine = "all"; // Current line filter
-let loadedSnapshotName = null;
-
 
 // 📌 Helpers
-
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("el-GR");
@@ -39,7 +36,6 @@ function getDueState(task) {
 }
 
 // 🎨 UI Builders
-
 function statusPill(task) {
   const st = getDueState(task);
   let txt = "Planned";
@@ -89,14 +85,13 @@ function buildRow(task) {
 }
 
 // 📈 KPIs
-
 function updateKpis() {
   const total = tasksData.length;
   let overdue = 0;
   let soon = 0;
   let doneCount = 0;
 
-  tasksData.forEach(t => {
+  tasksData.forEach((t) => {
     if (t.status === "Done") {
       doneCount++;
       return;
@@ -106,21 +101,25 @@ function updateKpis() {
     if (state === "soon") soon++;
   });
 
-  document.getElementById("kpiTotal").textContent = total;
-  document.getElementById("kpiOverdue").textContent = overdue;
-  document.getElementById("kpiSoon").textContent = soon;
-  document.getElementById("kpiDone").textContent = doneCount;
+  const elTotal = document.getElementById("kpiTotal");
+  const elOverdue = document.getElementById("kpiOverdue");
+  const elSoon = document.getElementById("kpiSoon");
+  const elDone = document.getElementById("kpiDone");
+
+  if (elTotal) elTotal.textContent = total;
+  if (elOverdue) elOverdue.textContent = overdue;
+  if (elSoon) elSoon.textContent = soon;
+  if (elDone) elDone.textContent = doneCount;
 }
 
 // 🔽 Machine filter options based on activeLine
-
 function rebuildMachineFilter() {
   const select = document.getElementById("machineFilter");
   if (!select) return;
 
   const machinesSet = new Set();
 
-  tasksData.forEach(t => {
+  tasksData.forEach((t) => {
     if (activeLine === "all" || t.line === activeLine) {
       machinesSet.add(t.machine_name);
     }
@@ -129,7 +128,7 @@ function rebuildMachineFilter() {
   const machines = Array.from(machinesSet).sort((a, b) => a.localeCompare(b));
 
   select.innerHTML = `<option value="all">All Machines</option>`;
-  machines.forEach(name => {
+  machines.forEach((name) => {
     const opt = document.createElement("option");
     opt.value = name;
     opt.textContent = name;
@@ -138,18 +137,22 @@ function rebuildMachineFilter() {
 }
 
 // 🔽 Render Table
-
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
-  const machineFilter = document.getElementById("machineFilter").value;
-  const statusFilter = document.getElementById("statusFilter").value;
+  const machineFilterEl = document.getElementById("machineFilter");
+  const statusFilterEl = document.getElementById("statusFilter");
+
+  const machineFilter = machineFilterEl ? machineFilterEl.value : "all";
+  const statusFilter = statusFilterEl ? statusFilterEl.value : "all";
 
   const filtered = tasksData
-    .filter(t => activeLine === "all" || t.line === activeLine)
-    .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
-    .filter(t => {
+    .filter((t) => activeLine === "all" || t.line === activeLine)
+    .filter((t) => machineFilter === "all" || t.machine_name === machineFilter)
+    .filter((t) => {
       const st = getDueState(t);
       if (statusFilter === "Overdue") return st === "overdue";
       if (statusFilter === "Planned") return t.status === "Planned";
@@ -159,15 +162,14 @@ function renderTable() {
     .sort((a, b) => {
       const da = getDueState(a);
       const db = getDueState(b);
-      const order = { overdue: 0, soon: 1, ok: 2, done: 3 };
-      return order[da] - order[db];
+      const order = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
+      return (order[da] ?? 9) - (order[db] ?? 9);
     });
 
-  filtered.forEach(t => tbody.appendChild(buildRow(t)));
+  filtered.forEach((t) => tbody.appendChild(buildRow(t)));
 }
 
 // 🔁 Load Tasks
-
 async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
@@ -178,31 +180,45 @@ async function loadTasks() {
 }
 
 // ✔ Modal handling
-
 function askTechnician(id) {
   pendingTaskId = id;
-  document.getElementById("modalOverlay").style.display = "flex";
+  const modal = document.getElementById("modalOverlay");
+  if (modal) modal.style.display = "flex";
 }
 
-document.getElementById("cancelDone").onclick = () => {
-  document.getElementById("modalOverlay").style.display = "none";
-  document.getElementById("technicianInput").value = "";
-};
+const cancelBtn = document.getElementById("cancelDone");
+if (cancelBtn) {
+  cancelBtn.onclick = () => {
+    const modal = document.getElementById("modalOverlay");
+    if (modal) modal.style.display = "none";
+    const input = document.getElementById("technicianInput");
+    if (input) input.value = "";
+    pendingTaskId = null;
+  };
+}
 
-document.getElementById("confirmDone").onclick = () => {
-  const name = document.getElementById("technicianInput").value.trim();
-  if (!name) {
-    alert("Παρακαλώ εισάγετε όνομα τεχνικού");
-    return;
-  }
-  markDone(pendingTaskId, name);
+const confirmBtn = document.getElementById("confirmDone");
+if (confirmBtn) {
+  confirmBtn.onclick = () => {
+    const input = document.getElementById("technicianInput");
+    const name = (input ? input.value : "").trim();
 
-  document.getElementById("modalOverlay").style.display = "none";
-  document.getElementById("technicianInput").value = "";
-};
+    if (!name) {
+      alert("Παρακαλώ εισάγετε όνομα τεχνικού");
+      return;
+    }
+    if (!pendingTaskId) return;
+
+    markDone(pendingTaskId, name);
+
+    const modal = document.getElementById("modalOverlay");
+    if (modal) modal.style.display = "none";
+    if (input) input.value = "";
+    pendingTaskId = null;
+  };
+}
 
 // ✔ Mark Done
-
 async function markDone(id, name) {
   const res = await fetch(`${API}/tasks/${id}`, {
     method: "PATCH",
@@ -211,12 +227,14 @@ async function markDone(id, name) {
   });
 
   if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("Update failed:", res.status, txt);
     alert("Update failed");
     return;
   }
 
   const updated = await res.json();
-  const task = tasksData.find(t => t.id === id);
+  const task = tasksData.find((t) => t.id === id);
 
   if (task) {
     task.status = updated.status;
@@ -229,19 +247,18 @@ async function markDone(id, name) {
 }
 
 // ↩ Undo
-
 async function undoTask(id) {
-  const res = await fetch(`${API}/tasks/${id}/undo`, {
-    method: "PATCH",
-  });
+  const res = await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
 
   if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("Undo failed:", res.status, txt);
     alert("Undo failed");
     return;
   }
 
   const updated = await res.json();
-  const t = tasksData.find(t => t.id === id);
+  const t = tasksData.find((x) => x.id === id);
 
   if (t) {
     t.status = updated.status;
@@ -254,7 +271,6 @@ async function undoTask(id) {
 }
 
 // 📦 Snapshot
-
 async function exportSnapshot() {
   const name = prompt("Snapshot name:", "Backup");
   if (!name) return;
@@ -276,29 +292,29 @@ async function exportSnapshot() {
 }
 
 // ♻ Load Snapshot File
+const snapshotFile = document.getElementById("snapshotFile");
+if (snapshotFile) {
+  snapshotFile.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-document.getElementById("snapshotFile").addEventListener("change", async e => {
-  const file = e.target.files[0];
-  if (!file) return;
+    try {
+      const txt = await file.text();
+      pendingSnapshotJson = JSON.parse(txt);
 
-  try {
-    const txt = await file.text();
-    pendingSnapshotJson = JSON.parse(txt);
+      loadedSnapshotName = file.name;
 
-    loadedSnapshotName = file.name;
-
-    document.getElementById("snapshotStatus").textContent =
-      `Snapshot Loaded: ${loadedSnapshotName}`;
-
-  } catch {
-    alert("Invalid file!");
-    pendingSnapshotJson = null;
-  }
-});
-
+      const label = document.getElementById("snapshotStatus");
+      if (label) label.textContent = `Snapshot Loaded: ${loadedSnapshotName}`;
+    } catch {
+      alert("Invalid file!");
+      pendingSnapshotJson = null;
+      loadedSnapshotName = null;
+    }
+  });
+}
 
 // ♻ Restore Snapshot
-
 async function restoreSnapshot() {
   if (!pendingSnapshotJson) return alert("Load snapshot first!");
   if (!confirm("Are you sure? This will overwrite DB!")) return;
@@ -310,21 +326,26 @@ async function restoreSnapshot() {
   });
 
   if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("Restore failed:", res.status, txt);
     alert("Restore failed!");
     return;
   }
 
   alert("DB restored!");
-document.getElementById("snapshotStatus").textContent =
-  `Snapshot Active: ${loadedSnapshotName}`;
-loadTasks();
 
+  const label = document.getElementById("snapshotStatus");
+  if (label && loadedSnapshotName) {
+    label.textContent = `Snapshot Active: ${loadedSnapshotName}`;
+  }
+
+  await loadTasks();
 }
 
 // 📥 Import Excel Upload
-
 async function importExcel() {
-  const file = document.getElementById("excelFile").files[0];
+  const fileInput = document.getElementById("excelFile");
+  const file = fileInput?.files?.[0];
   if (!file) return alert("Select Excel file first!");
 
   const fd = new FormData();
@@ -337,7 +358,7 @@ async function importExcel() {
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    console.error("Import error:", txt);
+    console.error("Import error:", res.status, txt);
     return alert("Excel import failed!");
   }
 
@@ -345,67 +366,51 @@ async function importExcel() {
   await loadTasks();
 }
 
-document
-  .getElementById("importExcelBtn")
-  ?.addEventListener("click", importExcel);
+document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
 
 // 🔗 Event Listeners
-
-document
-  .getElementById("exportSnapshot")
-  .addEventListener("click", exportSnapshot);
-
-document
-  .getElementById("restoreSnapshot")
-  .addEventListener("click", restoreSnapshot);
-
-document
-  .getElementById("machineFilter")
-  .addEventListener("change", renderTable);
-
-document
-  .getElementById("statusFilter")
-  .addEventListener("change", renderTable);
+document.getElementById("exportSnapshot")?.addEventListener("click", exportSnapshot);
+document.getElementById("restoreSnapshot")?.addEventListener("click", restoreSnapshot);
+document.getElementById("machineFilter")?.addEventListener("change", renderTable);
+document.getElementById("statusFilter")?.addEventListener("change", renderTable);
 
 // Line tabs listeners
-document.querySelectorAll(".line-tab").forEach(btn => {
+document.querySelectorAll(".line-tab").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".line-tab").forEach(b =>
-      b.classList.remove("active")
-    );
+    document.querySelectorAll(".line-tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
 
-    activeLine = btn.dataset.line;
+    activeLine = btn.dataset.line || "all";
     rebuildMachineFilter();
     renderTable();
   });
 });
+
 // Main tabs (Tasks / Documentation)
-document.querySelectorAll(".main-tab").forEach(tab => {
+document.querySelectorAll(".main-tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".main-tab").forEach(t =>
-      t.classList.remove("active")
-    );
+    document.querySelectorAll(".main-tab").forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
 
     const selected = tab.dataset.tab;
 
-    document.getElementById("tab-tasks").style.display =
-      selected === "tasks" ? "block" : "none";
+    const tasksTab = document.getElementById("tab-tasks");
+    const docsTab = document.getElementById("tab-docs");
 
-    document.getElementById("tab-docs").style.display =
-      selected === "docs" ? "block" : "none";
+    if (tasksTab) tasksTab.style.display = selected === "tasks" ? "block" : "none";
+    if (docsTab) docsTab.style.display = selected === "docs" ? "block" : "none";
   });
 });
+
+// 📄 PDF viewer
 function refreshPdfViewer() {
   const iframe = document.getElementById("pdfViewer");
   if (!iframe) return;
-  // Χρησιμοποιούμε API ώστε να δουλεύει και σε Render
   iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
 }
 
 async function uploadPdf() {
-  const file = document.getElementById("pdfInput").files[0];
+  const file = document.getElementById("pdfInput")?.files?.[0];
   if (!file) return alert("Επίλεξε ένα PDF πρώτα!");
 
   const fd = new FormData();
@@ -418,7 +423,7 @@ async function uploadPdf() {
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    console.error("PDF upload error:", txt);
+    console.error("PDF upload error:", res.status, txt);
     return alert("PDF upload failed!");
   }
 
@@ -426,12 +431,9 @@ async function uploadPdf() {
   refreshPdfViewer();
 }
 
-// Event listeners για PDF controls
-document.getElementById("pdfInput")
-  ?.addEventListener("change", uploadPdf);
-
-document.getElementById("openPdfBtn")
-  ?.addEventListener("click", refreshPdfViewer);
+document.getElementById("pdfInput")?.addEventListener("change", uploadPdf);
+document.getElementById("openPdfBtn")?.addEventListener("click", refreshPdfViewer);
 
 // 🚀 Init
 loadTasks();
+
