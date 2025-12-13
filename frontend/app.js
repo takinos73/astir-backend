@@ -403,11 +403,17 @@ document.querySelectorAll(".main-tab").forEach((tab) => {
 });
 
 // 📄 PDF viewer
+
 function loadPdfPreview() {
   const iframe = document.getElementById("pdfViewer");
   if (!iframe) return;
 
   iframe.src = `${API}/documentation/masterplan`;
+}
+
+function refreshPdfViewer() {
+  const url = `${API}/documentation/masterplan`;
+  window.open(url, "_blank");
 }
 
 async function uploadPdf() {
