@@ -8,6 +8,30 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 
+<!-- View Task Modal -->
+<div id="viewTaskOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide">
+    <h3>Task Details</h3>
+
+    <div class="task-view-grid">
+      <div><strong>Machine:</strong> <span id="vt-machine"></span></div>
+      <div><strong>Line:</strong> <span id="vt-line"></span></div>
+      <div><strong>Section:</strong> <span id="vt-section"></span></div>
+      <div><strong>Unit:</strong> <span id="vt-unit"></span></div>
+      <div><strong>Task:</strong> <span id="vt-task"></span></div>
+      <div><strong>Type:</strong> <span id="vt-type"></span></div>
+      <div><strong>Due Date:</strong> <span id="vt-due"></span></div>
+      <div><strong>Status:</strong> <span id="vt-status"></span></div>
+      <div><strong>Completed By:</strong> <span id="vt-by"></span></div>
+      <div><strong>Completed At:</strong> <span id="vt-at"></span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="closeViewTask" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+  
 <body>
 
   <!-- Modal για ολοκλήρωση εργασίας -->
