@@ -257,6 +257,58 @@ document.getElementById("closeViewTask").onclick = () => {
 };
 
 /* =====================
+   Import Excel
+===================== */
+
+async function importExcel() {
+  const fileInput = document.getElementById("excelFile");
+  const file = fileInput?.files?.[0];
+
+  if (!file) {
+    alert("Επίλεξε αρχείο Excel πρώτα");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch(`${API}/importExcel`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(txt || "Import failed");
+    }
+
+    alert("Excel imported successfully!");
+
+    // 🔁 RESET UI STATE (ΑΠΑΡΑΙΤΗΤΟ)
+    activeLine = "all";
+
+    document.querySelectorAll(".line-tab").forEach(b =>
+      b.classList.remove("active")
+    );
+    document
+      .querySelector('.line-tab[data-line="all"]')
+      ?.classList.add("active");
+
+    document.getElementById("machineFilter").value = "all";
+    document.getElementById("statusFilter").value = "all";
+
+    // 🔄 Reload data
+    await loadTasks();
+
+  } catch (err) {
+    console.error("IMPORT ERROR:", err);
+    alert("Excel import failed");
+  }
+}
+
+
+/* =====================
    Snapshot
 ===================== */
 
