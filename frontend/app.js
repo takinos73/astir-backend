@@ -150,7 +150,7 @@ function renderTable() {
   const statusFilter = document.getElementById("statusFilter")?.value || "all";
 
   const filtered = tasksData
-    .filter(t => activeLine === "all" || t.line === activeLine)
+    .filter(t => activeLine === "all" || t.line === activeLine) // ✅ only task.line
     .filter(t => machineFilter === "all" || t.machine_name === machineFilter)
     .filter(t => {
       if (statusFilter === "all") return true;
@@ -195,14 +195,15 @@ function askTechnician(id) {
   document.getElementById("modalOverlay").style.display = "flex";
 }
 
-document.getElementById("cancelDone").onclick = () => {
+document.getElementById("cancelDone")?.addEventListener("click", () => {
   document.getElementById("modalOverlay").style.display = "none";
   pendingTaskId = null;
-};
+});
 
-document.getElementById("confirmDone").onclick = async () => {
+document.getElementById("confirmDone")?.addEventListener("click", async () => {
   const name = document.getElementById("technicianInput").value.trim();
   if (!name) return alert("Δώσε όνομα τεχνικού");
+  if (!pendingTaskId) return;
 
   const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
     method: "PATCH",
@@ -215,7 +216,7 @@ document.getElementById("confirmDone").onclick = async () => {
   pendingTaskId = null;
   document.getElementById("modalOverlay").style.display = "none";
   loadTasks();
-};
+});
 
 async function undoTask(id) {
   const res = await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
@@ -252,9 +253,9 @@ function viewTask(id) {
   overlay.style.display = "flex";
 }
 
-document.getElementById("closeViewTask").onclick = () => {
+document.getElementById("closeViewTask")?.addEventListener("click", () => {
   document.getElementById("viewTaskOverlay").style.display = "none";
-};
+});
 
 /* =====================
    Import Excel
@@ -279,40 +280,35 @@ async function importExcel() {
     });
 
     if (!res.ok) {
-      const txt = await res.text();
+      const txt = await res.text().catch(() => "");
       throw new Error(txt || "Import failed");
     }
 
     alert("Excel imported successfully!");
 
-    // 🔁 RESET UI STATE (ΑΠΑΡΑΙΤΗΤΟ)
+    // 🔁 RESET UI STATE
     activeLine = "all";
-
-    document.querySelectorAll(".line-tab").forEach(b =>
-      b.classList.remove("active")
-    );
-    document
-      .querySelector('.line-tab[data-line="all"]')
-      ?.classList.add("active");
+    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
+    document.querySelector('.line-tab[data-line="all"]')?.classList.add("active");
 
     document.getElementById("machineFilter").value = "all";
     document.getElementById("statusFilter").value = "all";
 
-    // 🔄 Reload data
     await loadTasks();
-
   } catch (err) {
     console.error("IMPORT ERROR:", err);
     alert("Excel import failed");
   }
 }
 
+// ✅ MISSING in your file: bind Import button
+document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
 
 /* =====================
    Snapshot
 ===================== */
 
-document.getElementById("snapshotFile").addEventListener("change", async e => {
+document.getElementById("snapshotFile")?.addEventListener("change", async e => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -322,7 +318,7 @@ document.getElementById("snapshotFile").addEventListener("change", async e => {
     `Snapshot Loaded: ${loadedSnapshotName}`;
 });
 
-document.getElementById("exportSnapshot").onclick = async () => {
+document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
   const name = prompt("Snapshot name:", "Backup");
   if (!name) return;
 
@@ -337,21 +333,87 @@ document.getElementById("exportSnapshot").onclick = async () => {
   a.href = URL.createObjectURL(blob);
   a.download = `${name}_${Date.now()}.json`;
   a.click();
-};
+});
 
-document.getElementById("restoreSnapshot").onclick = async () => {
+document.getElementById("restoreSnapshot")?.addEventListener("click", async () => {
   if (!pendingSnapshotJson) return alert("Load snapshot first");
 
-  await fetch(`${API}/snapshot/restore`, {
+  const res = await fetch(`${API}/snapshot/restore`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(pendingSnapshotJson)
   });
 
+  if (!res.ok) return alert("Restore failed");
+
   document.getElementById("snapshotStatus").textContent =
-    `Snapshot Active: ${loadedSnapshotName}`;
+    `Snapshot Active: ${loadedSnapshotName || "Loaded snapshot"}`;
   loadTasks();
-};
+});
+
+/* =====================
+   Documentation (PDF)
+===================== */
+
+function loadPdfPreview() {
+  const iframe = document.getElementById("pdfViewer");
+  if (!iframe) return;
+
+  // inline preview (cache-bust)
+  iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
+}
+
+function openPdfViewer() {
+  // open full size in new tab
+  window.open(`${API}/documentation/masterplan?t=${Date.now()}`, "_blank");
+}
+
+async function uploadPdf() {
+  const file = document.getElementById("pdfInput")?.files?.[0];
+  if (!file) return alert("Επίλεξε PDF πρώτα!");
+
+  const fd = new FormData();
+  fd.append("pdf", file);
+
+  const res = await fetch(`${API}/documentation/upload`, {
+    method: "POST",
+    body: fd
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("PDF upload error:", res.status, txt);
+    return alert("PDF upload failed!");
+  }
+
+  alert("PDF uploaded!");
+  loadPdfPreview(); // refresh small iframe preview
+}
+
+document.getElementById("pdfInput")?.addEventListener("change", uploadPdf);
+document.getElementById("openPdfBtn")?.addEventListener("click", openPdfViewer);
+
+/* =====================
+   Main tabs (Tasks / Docs)
+===================== */
+
+document.querySelectorAll(".main-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    const selected = tab.dataset.tab;
+
+    const tasksPane = document.getElementById("tab-tasks");
+    const docsPane = document.getElementById("tab-docs");
+
+    if (tasksPane) tasksPane.style.display = selected === "tasks" ? "block" : "none";
+    if (docsPane) docsPane.style.display = selected === "docs" ? "block" : "none";
+
+    // when opening docs, ensure preview loads
+    if (selected === "docs") loadPdfPreview();
+  });
+});
 
 /* =====================
    Line tabs
@@ -359,9 +421,7 @@ document.getElementById("restoreSnapshot").onclick = async () => {
 
 document.querySelectorAll(".line-tab").forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll(".line-tab").forEach(b =>
-      b.classList.remove("active")
-    );
+    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     activeLine = btn.dataset.line;
     rebuildMachineFilter();
@@ -374,4 +434,5 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 ===================== */
 
 loadTasks();
+// optional: if user lands directly on docs tab later, load will be triggered there
 
