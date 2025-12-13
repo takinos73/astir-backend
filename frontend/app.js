@@ -2,6 +2,7 @@
 
 const API = "https://astir-backend.onrender.com";
 
+let loadedSnapshotName = null; // για το label snapshot (το έχουμε ήδη λογικά)
 let tasksData = [];
 let pendingSnapshotJson = null;
 let pendingTaskId = null;
@@ -379,6 +380,58 @@ document.querySelectorAll(".line-tab").forEach(btn => {
     renderTable();
   });
 });
+// Main tabs (Tasks / Documentation)
+document.querySelectorAll(".main-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".main-tab").forEach(t =>
+      t.classList.remove("active")
+    );
+    tab.classList.add("active");
+
+    const selected = tab.dataset.tab;
+
+    document.getElementById("tab-tasks").style.display =
+      selected === "tasks" ? "block" : "none";
+
+    document.getElementById("tab-docs").style.display =
+      selected === "docs" ? "block" : "none";
+  });
+});
+function refreshPdfViewer() {
+  const iframe = document.getElementById("pdfViewer");
+  if (!iframe) return;
+  // Χρησιμοποιούμε API ώστε να δουλεύει και σε Render
+  iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
+}
+
+async function uploadPdf() {
+  const file = document.getElementById("pdfInput").files[0];
+  if (!file) return alert("Επίλεξε ένα PDF πρώτα!");
+
+  const fd = new FormData();
+  fd.append("pdf", file);
+
+  const res = await fetch(`${API}/documentation/upload`, {
+    method: "POST",
+    body: fd,
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("PDF upload error:", txt);
+    return alert("PDF upload failed!");
+  }
+
+  alert("PDF uploaded successfully!");
+  refreshPdfViewer();
+}
+
+// Event listeners για PDF controls
+document.getElementById("pdfInput")
+  ?.addEventListener("change", uploadPdf);
+
+document.getElementById("openPdfBtn")
+  ?.addEventListener("click", refreshPdfViewer);
 
 // 🚀 Init
 loadTasks();
