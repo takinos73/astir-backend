@@ -40,6 +40,11 @@ CREATE TABLE IF NOT EXISTS maintenance_tasks (
 );
 ALTER TABLE maintenance_tasks
 ADD COLUMN IF NOT EXISTS completed_by TEXT;
+ALTER TABLE maintenance_tasks
+ADD COLUMN IF NOT EXISTS is_planned BOOLEAN DEFAULT true;
+ALTER TABLE maintenance_tasks
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
 
 
 
