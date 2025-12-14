@@ -474,6 +474,9 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
     document.getElementById("tab-reports").style.display =
       selected === "reports" ? "block" : "none";
+
+     document.getElementById("tab-assets").style.display =
+      selected === "assets" ? "block" : "none";
   });
 });
 
