@@ -114,9 +114,9 @@ getEl("saveAssetBtn")?.addEventListener("click", async () => {
   serial_number: document.getElementById("assetSn").value
 };
 
-  if (!payload.line || !payload.machine || !payload.sn) {
-    return alert("Συμπλήρωσε όλα τα πεδία");
-  }
+  if (!payload.line || !payload.model || !payload.serial_number) {
+  return alert("Συμπλήρωσε όλα τα πεδία");
+}
 
   try {
     const res = await fetch(`${API}/assets`, {
