@@ -193,6 +193,54 @@ app.patch("/tasks/:id/undo", async (req, res) => {
   }
 });
 
+//----------------------------------------------
+// ASSETS
+//----------------------------------------------
+
+app.get("/assets", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM assets
+      ORDER BY line, model, serial_number
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/assets", async (req, res) => {
+  const { line, model, serial_number } = req.body;
+
+  if (!line || !model || !serial_number) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO assets (line, model, serial_number)
+      VALUES ($1,$2,$3)
+      RETURNING *
+      `,
+      [line, model, serial_number]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/assets/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM assets WHERE id=$1", [req.params.id]);
+    res.json({ message: "Asset deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ----------------------------------------------
 // Snapshot Export
 // ----------------------------------------------
