@@ -94,6 +94,26 @@ app.post("/importExcel", upload.single("file"), async (req, res) => {
   }
 });
 
+// ⚠️ TEMP MIGRATION — ASSETS (RUN ONCE)
+app.get("/migrate/assets", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS assets (
+        id SERIAL PRIMARY KEY,
+        line TEXT NOT NULL,
+        model TEXT NOT NULL,
+        serial_number TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (model, serial_number)
+      );
+    `);
+
+    res.json({ message: "Assets table created OK" });
+  } catch (err) {
+    console.error("ASSETS MIGRATION ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ----------------------------------------------
 // GET Machines
