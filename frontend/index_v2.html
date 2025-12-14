@@ -90,9 +90,11 @@
 
     <!-- MAIN TABS -->
     <section class="main-tabs">
+      <button class="main-tab" data-tab="assets">Assets</button>
       <button class="main-tab active" data-tab="tasks">Tasks</button>
-      <button class="main-tab" data-tab="docs">Documentation</button>
       <button class="main-tab" data-tab="reports">Reports</button>
+      <button class="main-tab" data-tab="docs">Documentation</button>
+      
     </section>
 
     <!-- ===================== -->
@@ -213,6 +215,37 @@
       </section>
 
     </div>
+<!-- TAB: ASSETS -->
+<div id="tab-assets" style="display:none;">
+
+  <section class="assets-header">
+    <h2>Assets Management</h2>
+    <p class="docs-subtitle">
+      Διαχείριση μηχανών & Serial Numbers ανά γραμμή
+    </p>
+  </section>
+
+  <section class="controls-row">
+    <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
+  </section>
+
+  <div class="table-card">
+    <table id="assetsTable">
+      <thead>
+        <tr>
+          <th>Line</th>
+          <th>Machine</th>
+          <th>Serial Number</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</div>
+
+    
     <!-- TAB: REPORTS -->
 <div id="tab-reports" style="display: none;">
   <section class="reports-header">
@@ -302,6 +335,38 @@
 
   <!-- JS -->
   <script src="app.js"></script>
+  <!-- ADD ASSET MODAL -->
+<div id="addAssetOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Add Asset</h3>
+
+    <select id="assetLine">
+      <option value="">Select Line</option>
+      <option>L1</option><option>L2</option><option>L3</option>
+      <option>L4</option><option>L5</option><option>L6</option><option>L7</option>
+    </select>
+
+    <select id="assetMachine">
+      <option value="">Select Machine</option>
+      <option>PMC250</option>
+      <option>PMC300</option>
+      <option>PMC500</option>
+      <option>PTC027</option>
+    </select>
+
+    <input
+      type="text"
+      id="assetSn"
+      placeholder="Serial Number"
+    />
+
+    <div class="modal-actions">
+      <button class="btn-table" id="saveAssetBtn">💾 Save</button>
+      <button class="btn-cancel" id="cancelAssetBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 
