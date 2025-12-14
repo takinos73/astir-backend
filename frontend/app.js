@@ -42,10 +42,41 @@ function getDueState(task) {
   return "ok";
 }
 
+function getEl(id) {
+  return document.getElementById(id);
+}
+
+function showTab(tabId, isVisible) {
+  const el = getEl(tabId);
+  if (!el) return;
+  el.style.display = isVisible ? "block" : "none";
+}
+
+/* =====================
+   ASSETS (UI)
+===================== */
+
 async function loadAssets() {
-  const res = await fetch(`${API}/assets`);
-  assetsData = await res.json();
-  renderAssetsTable();
+  try {
+    const res = await fetch(`${API}/assets`);
+    if (!res.ok) throw new Error("Failed to load assets");
+    assetsData = await res.json();
+    renderAssetsTable();
+  } catch (err) {
+    console.error("ASSETS LOAD ERROR:", err);
+    // δεν κάνουμε alert για να μην ενοχλεί, αλλά μπορείς να το αλλάξεις
+  }
+}
+
+// Fallback mapping: supports either {line,machine,sn} OR {line,model,serial_number}
+function assetLine(a) {
+  return a.line ?? a.line_code ?? a.lineCode ?? "-";
+}
+function assetMachine(a) {
+  return a.machine ?? a.model ?? a.machine_name ?? "-";
+}
+function assetSn(a) {
+  return a.sn ?? a.serial_number ?? a.serialNumber ?? "-";
 }
 
 function renderAssetsTable() {
@@ -57,9 +88,9 @@ function renderAssetsTable() {
   assetsData.forEach(a => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${a.line}</td>
-      <td>${a.machine}</td>
-      <td>${a.sn}</td>
+      <td>${assetLine(a)}</td>
+      <td>${assetMachine(a)}</td>
+      <td>${assetSn(a)}</td>
       <td>
         <button class="btn-undo" onclick="deleteAsset(${a.id})">🗑 Remove</button>
       </td>
@@ -68,9 +99,66 @@ function renderAssetsTable() {
   });
 }
 
+getEl("addAssetBtn")?.addEventListener("click", () => {
+  getEl("addAssetOverlay").style.display = "flex";
+});
+
+getEl("cancelAssetBtn")?.addEventListener("click", () => {
+  getEl("addAssetOverlay").style.display = "none";
+});
+
+getEl("saveAssetBtn")?.addEventListener("click", async () => {
+  const payload = {
+    line: getEl("assetLine")?.value,
+    machine: getEl("assetMachine")?.value,
+    sn: getEl("assetSn")?.value?.trim()
+  };
+
+  if (!payload.line || !payload.machine || !payload.sn) {
+    return alert("Συμπλήρωσε όλα τα πεδία");
+  }
+
+  try {
+    const res = await fetch(`${API}/assets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("CREATE ASSET ERROR:", res.status, txt);
+      return alert("Create asset failed");
+    }
+
+    getEl("addAssetOverlay").style.display = "none";
+    getEl("assetSn").value = "";
+    await loadAssets();
+  } catch (err) {
+    console.error("CREATE ASSET ERROR:", err);
+    alert("Create asset failed");
+  }
+});
+
+async function deleteAsset(id) {
+  if (!confirm("Delete this asset?")) return;
+
+  try {
+    const res = await fetch(`${API}/assets/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("DELETE ASSET ERROR:", res.status, txt);
+      return alert("Delete failed");
+    }
+    await loadAssets();
+  } catch (err) {
+    console.error("DELETE ASSET ERROR:", err);
+    alert("Delete failed");
+  }
+}
 
 /* =====================
-   UI builders
+   UI builders (TASKS)
 ===================== */
 
 function statusPill(task) {
@@ -141,61 +229,18 @@ function updateKpis() {
     if (st === "soon") soon++;
   });
 
-  document.getElementById("kpiTotal").textContent = tasksData.length;
-  document.getElementById("kpiOverdue").textContent = overdue;
-  document.getElementById("kpiSoon").textContent = soon;
-  document.getElementById("kpiDone").textContent = done;
+  getEl("kpiTotal").textContent = tasksData.length;
+  getEl("kpiOverdue").textContent = overdue;
+  getEl("kpiSoon").textContent = soon;
+  getEl("kpiDone").textContent = done;
 }
-
-document.getElementById("addAssetBtn")?.addEventListener("click", () => {
-  document.getElementById("addAssetOverlay").style.display = "flex";
-});
-
-document.getElementById("cancelAssetBtn")?.addEventListener("click", () => {
-  document.getElementById("addAssetOverlay").style.display = "none";
-});
-
-document.getElementById("saveAssetBtn")?.addEventListener("click", async () => {
-  const payload = {
-    line: document.getElementById("assetLine").value,
-    machine: document.getElementById("assetMachine").value,
-    sn: document.getElementById("assetSn").value
-  };
-
-  if (!payload.line || !payload.machine || !payload.sn) {
-    return alert("Συμπλήρωσε όλα τα πεδία");
-  }
-
-  const res = await fetch(`${API}/assets`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) return alert("Create asset failed");
-
-  document.getElementById("addAssetOverlay").style.display = "none";
-  loadAssets();
-});
-async function deleteAsset(id) {
-  if (!confirm("Delete this asset?")) return;
-
-  const res = await fetch(`${API}/assets/${id}`, {
-    method: "DELETE"
-  });
-
-  if (!res.ok) return alert("Delete failed");
-
-  loadAssets();
-}
-
 
 /* =====================
-   Filters & render
+   Filters & render (TASKS)
 ===================== */
 
 function rebuildMachineFilter() {
-  const select = document.getElementById("machineFilter");
+  const select = getEl("machineFilter");
   if (!select) return;
 
   const act = norm(activeLine);
@@ -203,7 +248,7 @@ function rebuildMachineFilter() {
   const machines = [
     ...new Set(
       tasksData
-        .filter(t => act === "ALL" || act === "ALL " || activeLine === "all" || norm(t.line) === act)
+        .filter(t => (activeLine === "all" ? true : norm(t.line) === act))
         .map(t => t.machine_name)
     )
   ]
@@ -225,26 +270,15 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  const machineFilterRaw = document.getElementById("machineFilter")?.value || "all";
-  const statusFilter = document.getElementById("statusFilter")?.value || "all";
+  const machineFilterRaw = getEl("machineFilter")?.value || "all";
+  const statusFilter = getEl("statusFilter")?.value || "all";
 
   const act = norm(activeLine);
   const mf = norm(machineFilterRaw);
 
   const filtered = tasksData
-    // ✅ LINE FILTER (normalized)
-    .filter(t => {
-      if (activeLine === "all") return true;
-      return norm(t.line) === act;
-    })
-
-    // ✅ MACHINE FILTER (normalized)
-    .filter(t => {
-      if (machineFilterRaw === "all") return true;
-      return norm(t.machine_name) === mf;
-    })
-
-    // ✅ STATUS FILTER
+    .filter(t => (activeLine === "all" ? true : norm(t.line) === act))
+    .filter(t => (machineFilterRaw === "all" ? true : norm(t.machine_name) === mf))
     .filter(t => {
       if (statusFilter === "all") return true;
       if (statusFilter === "Planned") return t.status === "Planned";
@@ -252,8 +286,6 @@ function renderTable() {
       if (statusFilter === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
-
-    // ✅ PRIORITY SORT
     .sort((a, b) => {
       const order = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
       return (order[getDueState(a)] ?? 99) - (order[getDueState(b)] ?? 99);
@@ -263,7 +295,7 @@ function renderTable() {
 }
 
 /* =====================
-   Load data
+   Load data (TASKS)
 ===================== */
 
 async function loadTasks() {
@@ -288,16 +320,19 @@ async function loadTasks() {
 
 function askTechnician(id) {
   pendingTaskId = id;
-  document.getElementById("modalOverlay").style.display = "flex";
+  getEl("modalOverlay").style.display = "flex";
+  getEl("technicianInput").value = "";
+  getEl("technicianInput")?.focus?.();
 }
 
-document.getElementById("cancelDone")?.addEventListener("click", () => {
-  document.getElementById("modalOverlay").style.display = "none";
+getEl("cancelDone")?.addEventListener("click", () => {
+  getEl("modalOverlay").style.display = "none";
+  getEl("technicianInput").value = "";
   pendingTaskId = null;
 });
 
-document.getElementById("confirmDone")?.addEventListener("click", async () => {
-  const name = document.getElementById("technicianInput").value.trim();
+getEl("confirmDone")?.addEventListener("click", async () => {
+  const name = getEl("technicianInput").value.trim();
   if (!name) return alert("Δώσε όνομα τεχνικού");
   if (!pendingTaskId) return;
 
@@ -310,7 +345,8 @@ document.getElementById("confirmDone")?.addEventListener("click", async () => {
   if (!res.ok) return alert("Update failed");
 
   pendingTaskId = null;
-  document.getElementById("modalOverlay").style.display = "none";
+  getEl("modalOverlay").style.display = "none";
+  getEl("technicianInput").value = "";
   loadTasks();
 });
 
@@ -328,29 +364,28 @@ function viewTask(id) {
   const t = tasksData.find(x => x.id === id);
   if (!t) return;
 
-  const overlay = document.getElementById("viewTaskOverlay");
+  const overlay = getEl("viewTaskOverlay");
   if (!overlay) {
     console.warn("viewTaskOverlay not found");
     return;
   }
 
-  document.getElementById("vt-machine").textContent = t.machine_name;
-  document.getElementById("vt-line").textContent = t.line || "-";
-  document.getElementById("vt-section").textContent = t.section || "-";
-  document.getElementById("vt-unit").textContent = t.unit || "-";
-  document.getElementById("vt-task").textContent = t.task;
-  document.getElementById("vt-type").textContent = t.type || "-";
-  document.getElementById("vt-due").textContent = formatDate(t.due_date);
-  document.getElementById("vt-status").textContent = t.status;
-  document.getElementById("vt-by").textContent = t.completed_by || "-";
-  document.getElementById("vt-at").textContent =
-    t.completed_at ? formatDate(t.completed_at) : "-";
+  getEl("vt-machine").textContent = t.machine_name;
+  getEl("vt-line").textContent = t.line || "-";
+  getEl("vt-section").textContent = t.section || "-";
+  getEl("vt-unit").textContent = t.unit || "-";
+  getEl("vt-task").textContent = t.task;
+  getEl("vt-type").textContent = t.type || "-";
+  getEl("vt-due").textContent = formatDate(t.due_date);
+  getEl("vt-status").textContent = t.status;
+  getEl("vt-by").textContent = t.completed_by || "-";
+  getEl("vt-at").textContent = t.completed_at ? formatDate(t.completed_at) : "-";
 
   overlay.style.display = "flex";
 }
 
-document.getElementById("closeViewTask")?.addEventListener("click", () => {
-  document.getElementById("viewTaskOverlay").style.display = "none";
+getEl("closeViewTask")?.addEventListener("click", () => {
+  getEl("viewTaskOverlay").style.display = "none";
 });
 
 /* =====================
@@ -358,7 +393,7 @@ document.getElementById("closeViewTask")?.addEventListener("click", () => {
 ===================== */
 
 async function importExcel() {
-  const fileInput = document.getElementById("excelFile");
+  const fileInput = getEl("excelFile");
   const file = fileInput?.files?.[0];
 
   if (!file) {
@@ -387,8 +422,8 @@ async function importExcel() {
     document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
     document.querySelector('.line-tab[data-line="all"]')?.classList.add("active");
 
-    document.getElementById("machineFilter").value = "all";
-    document.getElementById("statusFilter").value = "all";
+    getEl("machineFilter").value = "all";
+    getEl("statusFilter").value = "all";
 
     await loadTasks();
   } catch (err) {
@@ -397,23 +432,22 @@ async function importExcel() {
   }
 }
 
-document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
+getEl("importExcelBtn")?.addEventListener("click", importExcel);
 
 /* =====================
    Snapshot
 ===================== */
 
-document.getElementById("snapshotFile")?.addEventListener("change", async e => {
+getEl("snapshotFile")?.addEventListener("change", async e => {
   const file = e.target.files[0];
   if (!file) return;
 
   pendingSnapshotJson = JSON.parse(await file.text());
   loadedSnapshotName = file.name;
-  document.getElementById("snapshotStatus").textContent =
-    `Snapshot Loaded: ${loadedSnapshotName}`;
+  getEl("snapshotStatus").textContent = `Snapshot Loaded: ${loadedSnapshotName}`;
 });
 
-document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
+getEl("exportSnapshot")?.addEventListener("click", async () => {
   const name = prompt("Snapshot name:", "Backup");
   if (!name) return;
 
@@ -430,7 +464,7 @@ document.getElementById("exportSnapshot")?.addEventListener("click", async () =>
   a.click();
 });
 
-document.getElementById("restoreSnapshot")?.addEventListener("click", async () => {
+getEl("restoreSnapshot")?.addEventListener("click", async () => {
   if (!pendingSnapshotJson) return alert("Load snapshot first");
 
   const res = await fetch(`${API}/snapshot/restore`, {
@@ -441,8 +475,7 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
 
   if (!res.ok) return alert("Restore failed");
 
-  document.getElementById("snapshotStatus").textContent =
-    `Snapshot Active: ${loadedSnapshotName || "Loaded snapshot"}`;
+  getEl("snapshotStatus").textContent = `Snapshot Active: ${loadedSnapshotName || "Loaded snapshot"}`;
   loadTasks();
 });
 
@@ -451,9 +484,8 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
 ===================== */
 
 function loadPdfPreview() {
-  const iframe = document.getElementById("pdfViewer");
+  const iframe = getEl("pdfViewer");
   if (!iframe) return;
-
   iframe.src = `${API}/documentation/masterplan?t=${Date.now()}`;
 }
 
@@ -462,7 +494,7 @@ function openPdfViewer() {
 }
 
 async function uploadPdf() {
-  const file = document.getElementById("pdfInput")?.files?.[0];
+  const file = getEl("pdfInput")?.files?.[0];
   if (!file) return alert("Επίλεξε PDF πρώτα!");
 
   const fd = new FormData();
@@ -483,13 +515,8 @@ async function uploadPdf() {
   loadPdfPreview();
 }
 
-document.getElementById("pdfInput")?.addEventListener("change", uploadPdf);
-document.getElementById("openPdfBtn")?.addEventListener("click", openPdfViewer);
-
-/* =====================
-   Main tabs (Tasks / Docs)
-===================== */
-
+getEl("pdfInput")?.addEventListener("change", uploadPdf);
+getEl("openPdfBtn")?.addEventListener("click", openPdfViewer);
 
 /* =====================
    Line tabs
@@ -499,29 +526,22 @@ document.querySelectorAll(".line-tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    activeLine = btn.dataset.line; // keep raw, compare normalized in filters
+    activeLine = btn.dataset.line; // raw
     rebuildMachineFilter();
     renderTable();
   });
 });
 
 /* =====================
-   Filter listeners (FIX refresh)
+   Filter listeners (refresh fix)
 ===================== */
 
 function wireFilterListeners() {
-  const statusEl = document.getElementById("statusFilter");
-  const machineEl = document.getElementById("machineFilter");
+  const statusEl = getEl("statusFilter");
+  const machineEl = getEl("machineFilter");
 
-  // όταν αλλάζει status -> άμεσο redraw
-  statusEl?.addEventListener("change", () => {
-    renderTable();
-  });
-
-  // όταν αλλάζει μηχανή -> άμεσο redraw (το είχες, αλλά το αφήνω safe)
-  machineEl?.addEventListener("change", () => {
-    renderTable();
-  });
+  statusEl?.addEventListener("change", () => renderTable());
+  machineEl?.addEventListener("change", () => renderTable());
 }
 
 /* =====================
@@ -530,32 +550,32 @@ function wireFilterListeners() {
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".main-tab").forEach(t =>
-      t.classList.remove("active")
-    );
+    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
     const selected = tab.dataset.tab;
 
-    document.getElementById("tab-tasks").style.display =
-      selected === "tasks" ? "block" : "none";
+    showTab("tab-tasks", selected === "tasks");
+    showTab("tab-docs", selected === "docs");
+    showTab("tab-assets", selected === "assets");
+    showTab("tab-reports", selected === "reports"); // safe even if missing
 
-    document.getElementById("tab-docs").style.display =
-      selected === "docs" ? "block" : "none";
-
-    document.getElementById("tab-reports").style.display =
-      selected === "reports" ? "block" : "none";
-
-     document.getElementById("tab-assets").style.display =
-      selected === "assets" ? "block" : "none";
+    // όταν μπαίνουμε docs, refresh preview 1 φορά (optional)
+    if (selected === "docs") {
+      loadPdfPreview();
+    }
+    if (selected === "assets") {
+      loadAssets();
+    }
   });
 });
 
 /* =====================
    Init
 ===================== */
+
 wireFilterListeners();
 loadTasks();
-loadPdfPreview(); // ΜΙΑ ΦΟΡΑ ΜΟΝΟ
+loadPdfPreview(); // μία φορά
 loadAssets();
 
