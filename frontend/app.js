@@ -109,10 +109,10 @@ getEl("cancelAssetBtn")?.addEventListener("click", () => {
 
 getEl("saveAssetBtn")?.addEventListener("click", async () => {
   const payload = {
-    line: getEl("assetLine")?.value,
-    machine: getEl("assetMachine")?.value,
-    sn: getEl("assetSn")?.value?.trim()
-  };
+  line: document.getElementById("assetLine").value,
+  model: document.getElementById("assetMachine").value,
+  serial_number: document.getElementById("assetSn").value
+};
 
   if (!payload.line || !payload.machine || !payload.sn) {
     return alert("Συμπλήρωσε όλα τα πεδία");
