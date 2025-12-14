@@ -3,6 +3,7 @@
 const API = "https://astir-backend.onrender.com";
 
 let tasksData = [];
+let assetsData = [];
 let pendingTaskId = null;
 let pendingSnapshotJson = null;
 let activeLine = "all";
@@ -40,6 +41,33 @@ function getDueState(task) {
   if (d <= 7) return "soon";
   return "ok";
 }
+
+async function loadAssets() {
+  const res = await fetch(`${API}/assets`);
+  assetsData = await res.json();
+  renderAssetsTable();
+}
+
+function renderAssetsTable() {
+  const tbody = document.querySelector("#assetsTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  assetsData.forEach(a => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${a.line}</td>
+      <td>${a.machine}</td>
+      <td>${a.sn}</td>
+      <td>
+        <button class="btn-undo" onclick="deleteAsset(${a.id})">🗑 Remove</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 
 /* =====================
    UI builders
@@ -118,6 +146,49 @@ function updateKpis() {
   document.getElementById("kpiSoon").textContent = soon;
   document.getElementById("kpiDone").textContent = done;
 }
+
+document.getElementById("addAssetBtn")?.addEventListener("click", () => {
+  document.getElementById("addAssetOverlay").style.display = "flex";
+});
+
+document.getElementById("cancelAssetBtn")?.addEventListener("click", () => {
+  document.getElementById("addAssetOverlay").style.display = "none";
+});
+
+document.getElementById("saveAssetBtn")?.addEventListener("click", async () => {
+  const payload = {
+    line: document.getElementById("assetLine").value,
+    machine: document.getElementById("assetMachine").value,
+    sn: document.getElementById("assetSn").value
+  };
+
+  if (!payload.line || !payload.machine || !payload.sn) {
+    return alert("Συμπλήρωσε όλα τα πεδία");
+  }
+
+  const res = await fetch(`${API}/assets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) return alert("Create asset failed");
+
+  document.getElementById("addAssetOverlay").style.display = "none";
+  loadAssets();
+});
+async function deleteAsset(id) {
+  if (!confirm("Delete this asset?")) return;
+
+  const res = await fetch(`${API}/assets/${id}`, {
+    method: "DELETE"
+  });
+
+  if (!res.ok) return alert("Delete failed");
+
+  loadAssets();
+}
+
 
 /* =====================
    Filters & render
@@ -486,4 +557,5 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 wireFilterListeners();
 loadTasks();
 loadPdfPreview(); // ΜΙΑ ΦΟΡΑ ΜΟΝΟ
+loadAssets();
 
