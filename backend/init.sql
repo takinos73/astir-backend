@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS maintenance_tasks (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE maintenance_tasks
+ADD COLUMN IF NOT EXISTS asset_id INTEGER REFERENCES assets(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_tasks_asset_id ON maintenance_tasks(asset_id);
+
 
 /* =====================================================
    SAFETY INDEXES
