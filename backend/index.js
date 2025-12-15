@@ -66,170 +66,223 @@ app.get("/migrate/addLineToTasks", async (req, res) => {
 });
 
 // ----------------------------------------------
-// 📥 IMPORT Excel PREVIEW (dry-run, no DB write)
-// Sheet: Tasks_Import (preferred) OR MasterPlan (fallback)
-// Required columns: Line, Machine, SerialNumber, Task
+// 📥 IMPORT Excel (PREVIEW + COMMIT) με Asset SN
 // ----------------------------------------------
 app.post("/importExcel/preview", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const workbook = XLSX.read(req.file.buffer, { cellDates: true });
-    const sheet =
-      workbook.Sheets["Tasks_Import"] ||
-      workbook.Sheets["MasterPlan"] ||
-      workbook.Sheets[workbook.SheetNames[0]];
+    const sheet = workbook.Sheets["MasterPlan"];
+    if (!sheet) return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
 
-    if (!sheet) return res.status(400).json({ error: "No sheet found" });
+    // defval: "" ώστε να μην γυρνάει undefined keys
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" }); // keep blanks
-    // assets map
-    const assets = (await pool.query(
-      `SELECT id, line, model, serial_number FROM assets`
-    )).rows;
+    const preview = await buildImportPreview(rows);
+    return res.json(preview);
+  } catch (err) {
+    console.error("IMPORT PREVIEW ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    const assetMap = new Map();
-    for (const a of assets) {
-      const key = `${asUpper(a.line)}|${asUpper(a.model)}|${asUpper(a.serial_number)}`;
-      assetMap.set(key, a.id);
+app.post("/importExcel/commit", upload.single("file"), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const workbook = XLSX.read(req.file.buffer, { cellDates: true });
+    const sheet = workbook.Sheets["MasterPlan"];
+    if (!sheet) return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
+
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+    // 1) Preview validation first (αν έχει errors -> STOP)
+    const preview = await buildImportPreview(rows);
+    if (preview.summary.errors > 0) {
+      return res.status(400).json({
+        error: "Import blocked: fix errors first",
+        preview
+      });
     }
 
-    const errors = [];
-    const preview = [];
+    // 2) COMMIT (overwrite per asset_id)
+    await client.query("BEGIN");
 
-    // Excel header is row 1, data starts row 2
-    rows.forEach((r, idx) => {
-      const excelRow = idx + 2;
+    // Group rows by asset_id ώστε να κάνουμε overwrite ανά asset
+    const groups = new Map(); // asset_id -> [row]
+    for (const r of preview.rows) {
+      if (r.status !== "ok") continue;
+      if (!groups.has(r.asset_id)) groups.set(r.asset_id, []);
+      groups.get(r.asset_id).push(r.cleaned); // cleaned row data
+    }
 
-      const line = asUpper(r["Line"]);
-      const machine = asUpper(r["Machine"]);
-      const sn = asUpper(r["SerialNumber"]);
-      const section = asText(r["Section"]) || null;
-      const unit = asText(r["Unit"]) || null;
-      const task = asText(r["Task"]);
-      const type = asText(r["Type"]) || null;
+    // Overwrite strategy B:
+    // Για κάθε asset: delete planned tasks (ή όλα) και insert τα νέα
+    for (const [assetId, tasks] of groups.entries()) {
+      await client.query(
+        `DELETE FROM maintenance_tasks
+         WHERE asset_id = $1 AND is_planned = true`,
+        [assetId]
+      );
 
-      const freq = parseMaybeNumber(r["FrequencyHours"]);
-      const dur = parseMaybeNumber(r["DurationMin"]);
-      const due = parseMaybeDate(r["DueDate"]);
-
-      const rowErrors = [];
-
-      if (!line) rowErrors.push({ row: excelRow, field: "Line", message: "Missing Line" });
-      if (!machine) rowErrors.push({ row: excelRow, field: "Machine", message: "Missing Machine" });
-      if (!sn) rowErrors.push({ row: excelRow, field: "SerialNumber", message: "Missing SerialNumber" });
-      if (!task) rowErrors.push({ row: excelRow, field: "Task", message: "Missing Task" });
-
-      if (Number.isNaN(freq)) rowErrors.push({ row: excelRow, field: "FrequencyHours", message: "Invalid number" });
-      if (Number.isNaN(dur)) rowErrors.push({ row: excelRow, field: "DurationMin", message: "Invalid number" });
-      if (Number.isNaN(due)) rowErrors.push({ row: excelRow, field: "DueDate", message: "Invalid date" });
-
-      let asset_id = null;
-      if (line && machine && sn) {
-        const key = `${line}|${machine}|${sn}`;
-        const found = assetMap.get(key);
-        if (!found) {
-          rowErrors.push({
-            row: excelRow,
-            field: "SerialNumber",
-            message: `Asset not found for (${line}/${machine}/${sn})`
-          });
-        } else {
-          asset_id = found;
-        }
+      for (const t of tasks) {
+        await client.query(
+          `INSERT INTO maintenance_tasks
+            (asset_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status, is_planned, notes)
+           VALUES
+            ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11)`,
+          [
+            assetId,
+            t.section,
+            t.unit,
+            t.task,
+            t.type,
+            t.qty,
+            t.duration_min,
+            t.frequency_hours,
+            t.due_date,
+            t.status,
+            t.notes
+          ]
+        );
       }
+    }
 
-      const ok = rowErrors.length === 0;
+    await client.query("COMMIT");
 
-      if (!ok) errors.push(...rowErrors);
+    res.json({
+      message: "Excel import committed (overwrite planned tasks per asset)",
+      summary: preview.summary
+    });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("IMPORT COMMIT ERROR:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 
-      preview.push({
-        row: excelRow,
-        ok,
-        line,
-        machine,
-        serial_number: sn,
-        asset_id,           // <-- used by confirm
+// -----------------------------
+// Helpers για import preview
+// -----------------------------
+function cleanStr(v) {
+  return (v ?? "").toString().trim();
+}
+
+function cleanUpper(v) {
+  return cleanStr(v).toUpperCase();
+}
+
+// δέχεται "", "-", null -> null
+function cleanNumber(v) {
+  const s = cleanStr(v);
+  if (!s || s === "-") return null;
+  const n = Number(s.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function cleanDate(v) {
+  if (!v) return null;
+  // όταν είναι Excel Date θα έρθει ως Date (cellDates: true)
+  if (v instanceof Date && !isNaN(v)) return v;
+  // fallback: αν έρθει string
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+async function buildImportPreview(rows) {
+  const out = [];
+  let ok = 0, errors = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const excelRowNumber = i + 2; // header = 1, data starts row 2 (όπως screenshot)
+
+    const line = cleanUpper(rows[i]["Line"]);
+    const machine = cleanUpper(rows[i]["Machine"]);
+    // Εσύ το έχεις σαν Serial_number
+    const sn = cleanUpper(rows[i]["Serial_number"]);
+
+    const section = cleanStr(rows[i]["Section"]) || null;
+    const unit = cleanStr(rows[i]["Unit"]) || null;
+    const task = cleanStr(rows[i]["Task"]);
+    const type = cleanStr(rows[i]["Type"]) || null;
+    const qty = cleanNumber(rows[i]["Qty"]);
+    const duration_min = cleanNumber(rows[i]["Duration(min)"]);
+    const frequency_hours = cleanNumber(rows[i]["Frequency(hours)"]);
+    const due_date = cleanDate(rows[i]["DueDate"]);
+    const status = cleanStr(rows[i]["Status"]) || "Planned";
+
+    // Basic required validation
+    if (!line || !machine || !sn || !task) {
+      errors++;
+      out.push({
+        row: excelRowNumber,
+        status: "error",
+        error: "Missing required fields (Line / Machine / Serial_number / Task)"
+      });
+      continue;
+    }
+
+    // Asset lookup
+    const assetRes = await pool.query(
+      `SELECT id
+       FROM assets
+       WHERE UPPER(line) = $1
+         AND UPPER(model) = $2
+         AND UPPER(serial_number) = $3
+       LIMIT 1`,
+      [line, machine, sn]
+    );
+
+    if (!assetRes.rows.length) {
+      errors++;
+      out.push({
+        row: excelRowNumber,
+        status: "error",
+        error: `Asset not found: ${line} / ${machine} / ${sn}`
+      });
+      continue;
+    }
+
+    const asset_id = assetRes.rows[0].id;
+
+    // numeric validation (αν θες να είναι υποχρεωτικά, πες μου)
+    // εδώ απλά τα καθαρίζουμε και αφήνουμε null αν άκυρα
+    ok++;
+    out.push({
+      row: excelRowNumber,
+      status: "ok",
+      asset_id,
+      line,
+      machine,
+      serial_number: sn,
+      cleaned: {
         section,
         unit,
         task,
         type,
-        frequency_hours: freq === null ? null : Math.round(freq),
-        duration_min: dur === null ? null : Math.round(dur),
-        due_date: due === null ? null : due.toISOString(),
-      });
+        qty,
+        duration_min,
+        frequency_hours,
+        due_date,
+        status,
+        notes: null
+      }
     });
-
-    // remove completely empty rows (optional)
-    const meaningful = preview.filter(p =>
-      p.line || p.machine || p.serial_number || p.task || p.section || p.unit || p.type
-    );
-
-    const okCount = meaningful.filter(p => p.ok).length;
-    const errCount = meaningful.length - okCount;
-
-    res.json({
-      valid: errCount === 0,
-      total: meaningful.length,
-      okCount,
-      errCount,
-      errors,
-      preview: meaningful
-    });
-
-  } catch (err) {
-    console.error("IMPORT PREVIEW ERROR:", err.message);
-    res.status(500).json({ error: err.message });
   }
-});
-// ----------------------------------------------
-// ✅ CONFIRM Import (DB write)
-// Body: { rows: [previewRowObjects...] }
-// Inserts only rows with ok=true and asset_id present
-// ----------------------------------------------
-app.post("/importExcel/confirm", async (req, res) => {
-  try {
-    const { rows } = req.body || {};
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return res.status(400).json({ error: "No rows provided" });
-    }
 
-    // Insert only ok rows
-    const okRows = rows.filter(r => r && r.ok === true && r.asset_id);
-
-    if (okRows.length === 0) {
-      return res.status(400).json({ error: "No valid rows to import" });
-    }
-
-    let inserted = 0;
-
-    for (const r of okRows) {
-      await pool.query(
-        `INSERT INTO maintenance_tasks
-          (asset_id, section, unit, task, type, duration_min, frequency_hours, due_date, status, is_planned, notes)
-         VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,'Planned', true, NULL)`,
-        [
-          r.asset_id,
-          r.section || null,
-          r.unit || null,
-          r.task,
-          r.type || null,
-          r.duration_min ?? null,
-          r.frequency_hours ?? null,
-          r.due_date ? new Date(r.due_date) : null
-        ]
-      );
-      inserted++;
-    }
-
-    res.json({ message: "Import confirmed", inserted });
-
-  } catch (err) {
-    console.error("IMPORT CONFIRM ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
+  return {
+    summary: {
+      total: rows.length,
+      ok,
+      errors
+    },
+    rows: out
+  };
+}
 
 
 
