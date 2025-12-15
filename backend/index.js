@@ -50,25 +50,6 @@ app.get("/api", (req, res) => {
    HELPERS
 ===================================================== */
 
-function cleanStr(v) {
-  return (v ?? "").toString().trim();
-}
-function cleanUpper(v) {
-  return cleanStr(v).toUpperCase();
-}
-function cleanNumber(v) {
-  const s = cleanStr(v);
-  if (!s || s === "-") return null;
-  const n = Number(s.replace(",", "."));
-  return Number.isFinite(n) ? n : null;
-}
-function cleanDate(v) {
-  if (!v) return null;
-  if (v instanceof Date && !isNaN(v)) return v;
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
-}
-
 async function findLineIdByCode(client, codeUpper) {
   // assumes lines table has column "code" with values L1..L7
   const r = await client.query(
