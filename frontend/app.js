@@ -8,6 +8,7 @@ let pendingTaskId = null;
 let pendingSnapshotJson = null;
 let activeLine = "all";
 let loadedSnapshotName = null;
+let importExcelFile = null;
 
 /* =====================
    Helpers
@@ -397,6 +398,7 @@ let lastPreviewRows = null; // κρατά τα preview rows για confirm
 async function importExcel() {
   const fileInput = document.getElementById("excelFile");
   const file = fileInput?.files?.[0];
+  importExcelFile = file;
   if (!file) return alert("Select Excel file first!");
 
   const fd = new FormData();
@@ -457,16 +459,39 @@ document.getElementById("confirmImportBtn").disabled = summary.errors > 0;
   document.getElementById("importPreviewOverlay").style.display = "flex";
 }
 
+let importExcelFile = null; // GLOBAL
+
 async function confirmImport() {
-  if (!Array.isArray(lastPreviewRows) || lastPreviewRows.length === 0) {
+  if (!importExcelFile) {
     return alert("No preview data");
   }
 
-  const res = await fetch(`${API}/importExcel/confirm`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rows: lastPreviewRows })
-  });
+  const fd = new FormData();
+  fd.append("file", importExcelFile);
+
+  try {
+    const res = await fetch(`${API}/importExcel/commit`, {
+      method: "POST",
+      body: fd
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(txt);
+    }
+
+    const out = await res.json();
+    alert(`✅ Import completed! Inserted: ${out.inserted}`);
+
+    document.getElementById("importPreviewOverlay").style.display = "none";
+    importExcelFile = null;
+
+    await loadTasks();
+  } catch (err) {
+    console.error(err);
+    alert("Import failed");
+  }
+}
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
