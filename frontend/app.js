@@ -392,47 +392,105 @@ getEl("closeViewTask")?.addEventListener("click", () => {
    Import Excel
 ===================== */
 
+let lastPreviewRows = null; // κρατά τα preview rows για confirm
+
 async function importExcel() {
-  const fileInput = getEl("excelFile");
+  const fileInput = document.getElementById("excelFile");
   const file = fileInput?.files?.[0];
+  if (!file) return alert("Select Excel file first!");
 
-  if (!file) {
-    alert("Επίλεξε αρχείο Excel πρώτα");
-    return;
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(`${API}/importExcel/preview`, {
+    method: "POST",
+    body: fd
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("PREVIEW ERROR:", res.status, txt);
+    return alert("Import preview failed!");
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
+  const data = await res.json();
+  lastPreviewRows = data.preview || [];
 
-  try {
-    const res = await fetch(`${API}/importExcel`, {
-      method: "POST",
-      body: formData
-    });
+  // Fill UI
+  document.getElementById("importSummary").textContent =
+    data.valid
+      ? `✅ OK: ${data.okCount}/${data.total} rows ready.`
+      : `❌ Errors: ${data.errCount} rows failed. Fix Excel and re-upload.`;
 
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      throw new Error(txt || "Import failed");
-    }
+  const tbody = document.querySelector("#importPreviewTable tbody");
+  tbody.innerHTML = "";
 
-    alert("Excel imported successfully!");
+  // build quick error map by row
+  const errByRow = new Map();
+  (data.errors || []).forEach(e => {
+    const k = e.row;
+    const prev = errByRow.get(k) || [];
+    prev.push(`${e.field}: ${e.message}`);
+    errByRow.set(k, prev);
+  });
 
-    // RESET UI STATE
-    activeLine = "all";
-    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
-    document.querySelector('.line-tab[data-line="all"]')?.classList.add("active");
+  (data.preview || []).forEach(r => {
+    const tr = document.createElement("tr");
+    const errText = (errByRow.get(r.row) || []).join(" | ");
+    tr.innerHTML = `
+      <td>${r.row}</td>
+      <td>${r.line || "-"}</td>
+      <td>${r.machine || "-"}</td>
+      <td>${r.serial_number || "-"}</td>
+      <td>${r.task || "-"}</td>
+      <td>${r.ok ? "OK" : "ERROR"}</td>
+      <td style="text-align:left;">${errText}</td>
+    `;
+    if (!r.ok) tr.style.opacity = "0.7";
+    tbody.appendChild(tr);
+  });
 
-    getEl("machineFilter").value = "all";
-    getEl("statusFilter").value = "all";
+  // Enable/disable confirm
+  document.getElementById("confirmImportBtn").disabled = !data.valid;
 
-    await loadTasks();
-  } catch (err) {
-    console.error("IMPORT ERROR:", err);
-    alert("Excel import failed");
-  }
+  // show modal
+  document.getElementById("importPreviewOverlay").style.display = "flex";
 }
 
-getEl("importExcelBtn")?.addEventListener("click", importExcel);
+async function confirmImport() {
+  if (!Array.isArray(lastPreviewRows) || lastPreviewRows.length === 0) {
+    return alert("No preview data");
+  }
+
+  const res = await fetch(`${API}/importExcel/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rows: lastPreviewRows })
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error("CONFIRM ERROR:", res.status, txt);
+    return alert("Confirm import failed!");
+  }
+
+  const out = await res.json();
+  alert(`Import completed! Inserted: ${out.inserted}`);
+
+  document.getElementById("importPreviewOverlay").style.display = "none";
+  lastPreviewRows = null;
+
+  await loadTasks(); // refresh tasks table
+}
+
+// Buttons
+document.getElementById("importExcelBtn")?.addEventListener("click", importExcel);
+document.getElementById("confirmImportBtn")?.addEventListener("click", confirmImport);
+document.getElementById("closeImportPreviewBtn")?.addEventListener("click", () => {
+document.getElementById("importPreviewOverlay").style.display = "none";
+});
+
+
 
 /* =====================
    Snapshot
