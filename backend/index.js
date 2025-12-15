@@ -429,81 +429,103 @@ app.post("/importExcel/preview", uploadMem.single("file"), async (req, res) => {
 // COMMIT (overwrite planned tasks per asset)
 app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
   const client = await pool.connect();
+
   try {
-    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
     const workbook = XLSX.read(req.file.buffer, { cellDates: true });
     const sheet = workbook.Sheets["MasterPlan"];
-    if (!sheet) return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
+    if (!sheet) {
+      return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
+    }
 
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    // validate first
+    // 🔍 PREVIEW / VALIDATION
     const preview = await buildImportPreview(rows);
     if (preview.summary.errors > 0) {
       return res.status(400).json({
-        error: "Import blocked: fix errors first",
+        error: "Import blocked – fix errors first",
         preview,
       });
     }
 
-    // group ok rows by asset_id
-    const groups = new Map(); // assetId -> cleaned tasks[]
-    for (const r of preview.rows) {
-      if (r.status !== "ok") continue;
-      if (!groups.has(r.asset_id)) groups.set(r.asset_id, []);
-      groups.get(r.asset_id).push(r.cleaned);
-    }
-
     await client.query("BEGIN");
 
-    for (const [assetId, tasks] of groups.entries()) {
-      // Overwrite strategy B: delete planned tasks for this asset
-      await client.query(
-        `DELETE FROM maintenance_tasks WHERE asset_id=$1 AND is_planned=true`,
-        [assetId]
-      );
+    // 🔑 μοναδικά assets που επηρεάζονται
+    const assetIds = [
+      ...new Set(preview.rows.map(r => r.asset_id)),
+    ];
 
-      for (const t of tasks) {
-        await client.query(
-          `
-          INSERT INTO maintenance_tasks
-            (asset_id, section, unit, task, type, qty, duration_min, frequency_hours, due_date, status, is_planned, notes)
-          VALUES
-            ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11)
-          `,
-          [
-            assetId,
-            t.section,
-            t.unit,
-            t.task,
-            t.type,
-            t.qty,
-            t.duration_min,
-            t.frequency_hours,
-            t.due_date,
-            t.status,
-            t.notes,
-          ]
-        );
-      }
+    // 🧹 DELETE planned tasks ONLY for these assets
+    await client.query(
+      `
+      DELETE FROM maintenance_tasks
+      WHERE asset_id = ANY($1)
+        AND status = 'Planned'
+        AND is_planned = true
+      `,
+      [assetIds]
+    );
+
+    // ➕ INSERT new tasks
+    for (const row of preview.rows) {
+      const c = row.cleaned;
+
+      await client.query(
+        `
+        INSERT INTO maintenance_tasks (
+          asset_id,
+          section,
+          unit,
+          task,
+          type,
+          qty,
+          duration_min,
+          frequency_hours,
+          due_date,
+          status,
+          is_planned,
+          notes
+        )
+        VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11
+        )
+        `,
+        [
+          row.asset_id,
+          c.section,
+          c.unit,
+          c.task,
+          c.type,
+          c.qty,
+          c.duration_min,
+          c.frequency_hours,
+          c.due_date,
+          c.status || "Planned",
+          c.notes || null,
+        ]
+      );
     }
 
     await client.query("COMMIT");
 
     res.json({
-      message: "Excel import committed (overwrite planned tasks per asset)",
+      message: "Import completed successfully",
       summary: preview.summary,
-      overwritten_assets: groups.size,
     });
+
   } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
-    console.error("IMPORT COMMIT ERROR:", err.message);
+    await client.query("ROLLBACK");
+    console.error("IMPORT COMMIT ERROR:", err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
 });
+
 
 // Keep legacy endpoint name for your UI button (calls COMMIT)
 app.post("/importExcel", uploadMem.single("file"), async (req, res) => {
