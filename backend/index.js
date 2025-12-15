@@ -50,15 +50,6 @@ app.get("/api", (req, res) => {
    HELPERS
 ===================================================== */
 
-async function findLineIdByCode(client, codeUpper) {
-  // assumes lines table has column "code" with values L1..L7
-  const r = await client.query(
-    `SELECT id FROM lines WHERE UPPER(code) = $1 LIMIT 1`,
-    [codeUpper]
-  );
-  return r.rows[0]?.id ?? null;
-}
-
 async function findAssetId(client, lineCode, model, serial) {
   // Your schema: assets(line_id FK), model, serial_number UNIQUE
   const r = await client.query(
