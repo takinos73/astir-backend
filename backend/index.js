@@ -47,27 +47,6 @@ app.get("/api", (req, res) => {
 });
 
 /* =====================================================
-   HELPERS
-===================================================== */
-
-async function findAssetId(client, lineCode, model, serial) {
-  // Your schema: assets(line_id FK), model, serial_number UNIQUE
-  const r = await client.query(
-    `
-    SELECT a.id
-    FROM assets a
-    JOIN lines l ON l.id = a.line_id
-    WHERE UPPER(l.code) = $1
-      AND UPPER(a.model) = $2
-      AND UPPER(a.serial_number) = $3
-    LIMIT 1
-    `,
-    [cleanUpper(lineCode), cleanUpper(model), cleanUpper(serial)]
-  );
-  return r.rows[0]?.id ?? null;
-}
-
-/* =====================================================
    TASKS
    - maintenance_tasks is assumed to have:
      id, asset_id (FK), section, unit, task, type, qty, duration_min, frequency_hours,
