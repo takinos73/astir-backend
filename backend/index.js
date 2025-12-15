@@ -313,6 +313,58 @@ app.delete("/assets/:id", async (req, res) => {
 });
 
 /* =====================================================
+   IMPORT HELPERS
+===================================================== */
+
+function cleanStr(v) {
+  if (v === undefined || v === null) return null;
+  const s = v.toString().trim();
+  return s === "" ? null : s;
+}
+
+function cleanUpper(v) {
+  if (!v) return null;
+  return v.toString().trim().toUpperCase();
+}
+
+function cleanNumber(v) {
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function cleanDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+async function findLineIdByCode(client, code) {
+  const r = await client.query(
+    "SELECT id FROM lines WHERE code=$1",
+    [code]
+  );
+  return r.rows[0]?.id || null;
+}
+
+async function findAssetId(client, lineCode, model, serial) {
+  const r = await client.query(
+    `
+    SELECT a.id
+    FROM assets a
+    JOIN lines l ON l.id = a.line_id
+    WHERE l.code = $1
+      AND a.model = $2
+      AND a.serial_number = $3
+      AND a.active = true
+    `,
+    [lineCode, model, serial]
+  );
+  return r.rows[0]?.id || null;
+}
+
+
+/* =====================================================
    IMPORT EXCEL — Preview + Commit (Overwrite planned tasks per asset)
    Excel headers expected:
    Line, Machine, Serial_number, Section, Unit, Task, Type, Qty, Duration(min), Frequency(hours), DueDate, Status
