@@ -5,6 +5,7 @@ import pool from "./db.js";
 import fs from "fs";
 import path from "path";
 import XLSX from "xlsx";
+import crypto from "crypto";
 import multer from "multer";
 const upload = multer();
 
@@ -16,6 +17,34 @@ app.use(express.json());
 
 const frontendPath = path.join(process.cwd(), "..", "frontend");
 app.use(express.static(frontendPath));
+
+function asText(v) {
+  return (v ?? "").toString().trim();
+}
+
+function asUpper(v) {
+  return asText(v).toUpperCase();
+}
+
+function parseMaybeNumber(v) {
+  if (v === null || v === undefined) return null;
+  const s = asText(v);
+  if (!s) return null;
+  // επιτρέπουμε decimal με τελεία ή κόμμα
+  const n = Number(s.replace(",", "."));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function parseMaybeDate(v) {
+  if (!v) return null;
+  // XLSX μπορεί να δώσει Date object ή string
+  if (v instanceof Date && !isNaN(v.getTime())) return v;
+  const s = asText(v);
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? NaN : d;
+}
+
 
 // TEST
 app.get("/api", (req, res) => {
@@ -36,63 +65,172 @@ app.get("/migrate/addLineToTasks", async (req, res) => {
   }
 });
 
-// 📥 IMPORT Excel from UI
 // ----------------------------------------------
-app.post("/importExcel", upload.single("file"), async (req, res) => {
+// 📥 IMPORT Excel PREVIEW (dry-run, no DB write)
+// Sheet: Tasks_Import (preferred) OR MasterPlan (fallback)
+// Required columns: Line, Machine, SerialNumber, Task
+// ----------------------------------------------
+app.post("/importExcel/preview", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const workbook = XLSX.read(req.file.buffer, { cellDates: true });
-    const sheet = workbook.Sheets["MasterPlan"];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    const sheet =
+      workbook.Sheets["Tasks_Import"] ||
+      workbook.Sheets["MasterPlan"] ||
+      workbook.Sheets[workbook.SheetNames[0]];
 
-    await pool.query("TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;");
+    if (!sheet) return res.status(400).json({ error: "No sheet found" });
 
-    for (const row of rows) {
-      if (!row["Machine"] || !row["Task"]) continue;
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" }); // keep blanks
+    // assets map
+    const assets = (await pool.query(
+      `SELECT id, line, model, serial_number FROM assets`
+    )).rows;
 
-      const machine = row["Machine"];
-      const line = row["Line"] || null;
-      const due = row["DueDate"] ? new Date(row["DueDate"]) : null;
-
-      const insertMachine = await pool.query(
-        `INSERT INTO machines (name, line)
-         VALUES ($1, $2)
-         ON CONFLICT (name) DO UPDATE SET line = EXCLUDED.line
-         RETURNING id`,
-        [machine, line]
-      );
-
-      const machineId = insertMachine.rows[0].id;
-
-      await pool.query(
-  `INSERT INTO maintenance_tasks
-    (machine_id, line, section, unit, task, type,
-     qty, duration_min, frequency_hours, due_date, status)
-   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-  [
-    machineId,
-    row["Line"] || null,
-    row["Section"] || null,
-    row["Unit"] || null,
-    row["Task"],
-    row["Type"] || null,
-    row["Qty"] || null,
-    row["Duration(min)"] || null,
-    row["Frequency(hours)"] || null,
-    due,
-    row["Status"] || "Planned"
-  ]
-);
+    const assetMap = new Map();
+    for (const a of assets) {
+      const key = `${asUpper(a.line)}|${asUpper(a.model)}|${asUpper(a.serial_number)}`;
+      assetMap.set(key, a.id);
     }
 
-    res.json({ message: "Excel import completed!" });
+    const errors = [];
+    const preview = [];
+
+    // Excel header is row 1, data starts row 2
+    rows.forEach((r, idx) => {
+      const excelRow = idx + 2;
+
+      const line = asUpper(r["Line"]);
+      const machine = asUpper(r["Machine"]);
+      const sn = asUpper(r["SerialNumber"]);
+      const section = asText(r["Section"]) || null;
+      const unit = asText(r["Unit"]) || null;
+      const task = asText(r["Task"]);
+      const type = asText(r["Type"]) || null;
+
+      const freq = parseMaybeNumber(r["FrequencyHours"]);
+      const dur = parseMaybeNumber(r["DurationMin"]);
+      const due = parseMaybeDate(r["DueDate"]);
+
+      const rowErrors = [];
+
+      if (!line) rowErrors.push({ row: excelRow, field: "Line", message: "Missing Line" });
+      if (!machine) rowErrors.push({ row: excelRow, field: "Machine", message: "Missing Machine" });
+      if (!sn) rowErrors.push({ row: excelRow, field: "SerialNumber", message: "Missing SerialNumber" });
+      if (!task) rowErrors.push({ row: excelRow, field: "Task", message: "Missing Task" });
+
+      if (Number.isNaN(freq)) rowErrors.push({ row: excelRow, field: "FrequencyHours", message: "Invalid number" });
+      if (Number.isNaN(dur)) rowErrors.push({ row: excelRow, field: "DurationMin", message: "Invalid number" });
+      if (Number.isNaN(due)) rowErrors.push({ row: excelRow, field: "DueDate", message: "Invalid date" });
+
+      let asset_id = null;
+      if (line && machine && sn) {
+        const key = `${line}|${machine}|${sn}`;
+        const found = assetMap.get(key);
+        if (!found) {
+          rowErrors.push({
+            row: excelRow,
+            field: "SerialNumber",
+            message: `Asset not found for (${line}/${machine}/${sn})`
+          });
+        } else {
+          asset_id = found;
+        }
+      }
+
+      const ok = rowErrors.length === 0;
+
+      if (!ok) errors.push(...rowErrors);
+
+      preview.push({
+        row: excelRow,
+        ok,
+        line,
+        machine,
+        serial_number: sn,
+        asset_id,           // <-- used by confirm
+        section,
+        unit,
+        task,
+        type,
+        frequency_hours: freq === null ? null : Math.round(freq),
+        duration_min: dur === null ? null : Math.round(dur),
+        due_date: due === null ? null : due.toISOString(),
+      });
+    });
+
+    // remove completely empty rows (optional)
+    const meaningful = preview.filter(p =>
+      p.line || p.machine || p.serial_number || p.task || p.section || p.unit || p.type
+    );
+
+    const okCount = meaningful.filter(p => p.ok).length;
+    const errCount = meaningful.length - okCount;
+
+    res.json({
+      valid: errCount === 0,
+      total: meaningful.length,
+      okCount,
+      errCount,
+      errors,
+      preview: meaningful
+    });
 
   } catch (err) {
-    console.error("IMPORT from UI ERROR:", err.message);
+    console.error("IMPORT PREVIEW ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+// ----------------------------------------------
+// ✅ CONFIRM Import (DB write)
+// Body: { rows: [previewRowObjects...] }
+// Inserts only rows with ok=true and asset_id present
+// ----------------------------------------------
+app.post("/importExcel/confirm", async (req, res) => {
+  try {
+    const { rows } = req.body || {};
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: "No rows provided" });
+    }
+
+    // Insert only ok rows
+    const okRows = rows.filter(r => r && r.ok === true && r.asset_id);
+
+    if (okRows.length === 0) {
+      return res.status(400).json({ error: "No valid rows to import" });
+    }
+
+    let inserted = 0;
+
+    for (const r of okRows) {
+      await pool.query(
+        `INSERT INTO maintenance_tasks
+          (asset_id, section, unit, task, type, duration_min, frequency_hours, due_date, status, is_planned, notes)
+         VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8,'Planned', true, NULL)`,
+        [
+          r.asset_id,
+          r.section || null,
+          r.unit || null,
+          r.task,
+          r.type || null,
+          r.duration_min ?? null,
+          r.frequency_hours ?? null,
+          r.due_date ? new Date(r.due_date) : null
+        ]
+      );
+      inserted++;
+    }
+
+    res.json({ message: "Import confirmed", inserted });
+
+  } catch (err) {
+    console.error("IMPORT CONFIRM ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // ----------------------------------------------
