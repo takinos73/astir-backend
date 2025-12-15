@@ -416,42 +416,42 @@ async function importExcel() {
   const data = await res.json();
   lastPreviewRows = data.preview || [];
 
-  // Fill UI
-  document.getElementById("importSummary").textContent =
-    data.valid
-      ? `✅ OK: ${data.okCount}/${data.total} rows ready.`
-      : `❌ Errors: ${data.errCount} rows failed. Fix Excel and re-upload.`;
+  // ===============================
+// Fill Import Preview UI (FIXED)
+// ===============================
 
-  const tbody = document.querySelector("#importPreviewTable tbody");
-  tbody.innerHTML = "";
+const summary = data.summary || { total: 0, ok: 0, errors: 0 };
 
-  // build quick error map by row
-  const errByRow = new Map();
-  (data.errors || []).forEach(e => {
-    const k = e.row;
-    const prev = errByRow.get(k) || [];
-    prev.push(`${e.field}: ${e.message}`);
-    errByRow.set(k, prev);
-  });
+const summaryEl = document.getElementById("importSummary");
+summaryEl.textContent =
+  summary.errors > 0
+    ? `❌ Errors: ${summary.errors}/${summary.total} rows failed. Fix Excel and re-upload.`
+    : `✅ OK: ${summary.ok}/${summary.total} rows ready.`;
 
-  (data.preview || []).forEach(r => {
-    const tr = document.createElement("tr");
-    const errText = (errByRow.get(r.row) || []).join(" | ");
-    tr.innerHTML = `
-      <td>${r.row}</td>
-      <td>${r.line || "-"}</td>
-      <td>${r.machine || "-"}</td>
-      <td>${r.serial_number || "-"}</td>
-      <td>${r.task || "-"}</td>
-      <td>${r.ok ? "OK" : "ERROR"}</td>
-      <td style="text-align:left;">${errText}</td>
-    `;
-    if (!r.ok) tr.style.opacity = "0.7";
-    tbody.appendChild(tr);
-  });
+// table
+const tbody = document.querySelector("#importPreviewTable tbody");
+tbody.innerHTML = "";
 
-  // Enable/disable confirm
-  document.getElementById("confirmImportBtn").disabled = !data.valid;
+(data.rows || []).forEach(r => {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td>${r.row}</td>
+    <td>${r.key?.line || "-"}</td>
+    <td>${r.key?.machine || "-"}</td>
+    <td>${r.key?.serial_number || "-"}</td>
+    <td>${r.cleaned?.task || "-"}</td>
+    <td>${r.status === "ok" ? "OK" : "ERROR"}</td>
+    <td style="text-align:left;">${r.error || ""}</td>
+  `;
+
+  if (r.status !== "ok") tr.style.opacity = "0.6";
+  tbody.appendChild(tr);
+});
+
+// enable / disable confirm
+document.getElementById("confirmImportBtn").disabled = summary.errors > 0;
+
 
   // show modal
   document.getElementById("importPreviewOverlay").style.display = "flex";
