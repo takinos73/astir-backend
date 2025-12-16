@@ -706,7 +706,7 @@ app.get("/documentation/masterplan", async (req, res) => {
 
 app.get("*", (req, res) => {
   // change this if your entry file name differs
-  res.sendFile(path.join(frontendPath, "index.html"));
+  res.sendFile(path.join(frontendPath, "index_v2.html"));
 });
 
 /* =====================================================
