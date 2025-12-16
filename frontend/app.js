@@ -73,7 +73,13 @@ function statusPill(task) {
 function buildRow(task) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td>${task.machine_name}</td>
+    <td class="machine-cell">
+        <div class="machine-name">${task.machine_name}</div>
+        ${task.serial_number
+        ? `<div class="machine-sn">SN: ${task.serial_number}</div>`
+        : ""
+     }
+    </td>
     <td>${task.section || "-"}</td>
     <td>${task.unit || "-"}</td>
     <td>${task.task}</td>
