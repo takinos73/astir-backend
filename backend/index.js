@@ -57,31 +57,26 @@ app.get("/api", (req, res) => {
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT
-        mt.id,
-        mt.section,
-        mt.unit,
-        mt.task,
-        mt.type,
-        mt.qty,
-        mt.duration_min,
-        mt.frequency_hours,
-        mt.due_date,
-        mt.status,
-        mt.completed_by,
-        mt.completed_at,
-        mt.is_planned,
-        mt.notes,
+  SELECT
+    mt.id,
+    mt.task,
+    mt.status,
+    mt.due_date,
+    mt.completed_at,
+    mt.completed_by,
+    mt.section,
+    mt.unit,
+    mt.type,
 
-        a.id AS asset_id,
-        a.model AS machine_name,
-        a.serial_number,
-        l.code AS line
-      FROM maintenance_tasks mt
-      JOIN assets a ON a.id = mt.asset_id
-      JOIN lines  l ON l.id = a.line_id
-      ORDER BY mt.id ASC
-    `);
+    a.model AS machine_name,
+    l.code AS line_code   -- ⭐ ΑΠΑΡΑΙΤΗΤΟ ΓΙΑ UI FILTER
+
+  FROM maintenance_tasks mt
+  JOIN assets a ON a.id = mt.asset_id
+  JOIN lines l ON l.id = a.line_id
+  ORDER BY mt.id ASC
+`);
+
     res.json(result.rows);
   } catch (err) {
     console.error("GET /tasks ERROR:", err.message);
