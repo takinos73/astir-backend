@@ -166,6 +166,18 @@ function renderTable() {
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
+/* =====================
+   FILTER EVENTS
+===================== */
+
+getEl("machineFilter")?.addEventListener("change", () => {
+  renderTable();
+});
+
+getEl("statusFilter")?.addEventListener("change", () => {
+  renderTable();
+});
+
 
 /* =====================
    LOAD TASKS
