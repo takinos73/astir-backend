@@ -222,7 +222,7 @@ app.post("/assets", async (req, res) => {
       `
       INSERT INTO assets (line_id, model, serial_number, description, active)
       VALUES ($1,$2,$3,$4,$5)
-      ON CONFLICT (serial_number)
+      ON CONFLICT (model, serial_number) DO NOTHING
       DO UPDATE SET
         line_id = EXCLUDED.line_id,
         model = EXCLUDED.model,
