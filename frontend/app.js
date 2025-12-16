@@ -209,22 +209,45 @@ function rebuildMachineFilter() {
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
-  const mf = getEl("machineFilter").value;
-  const sf = getEl("statusFilter").value;
+  const machineFilter = getEl("machineFilter")?.value || "all";
+  const statusFilter = getEl("statusFilter")?.value || "all";
+  const act = norm(activeLine);
 
-  tasksData
-    .filter(t => mf === "all" || t.machine_name === mf)
+  const filtered = tasksData
+    // LINE FILTER
     .filter(t => {
-      if (sf === "all") return true;
-      if (sf === "Planned") return t.status === "Planned";
-      if (sf === "Done") return t.status === "Done";
-      if (sf === "Overdue") return getDueState(t) === "overdue";
+      if (activeLine === "all") return true;
+      return norm(t.line) === act;
+    })
+
+    // MACHINE FILTER
+    .filter(t => {
+      if (machineFilter === "all") return true;
+      return t.machine_name === machineFilter;
+    })
+
+    // STATUS FILTER
+    .filter(t => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "Planned") return t.status === "Planned";
+      if (statusFilter === "Done") return t.status === "Done";
+      if (statusFilter === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
-    .forEach(t => tbody.appendChild(buildRow(t)));
+
+    // SORT: overdue → soon → ok → done
+    .sort((a, b) => {
+      const order = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
+      return order[getDueState(a)] - order[getDueState(b)];
+    });
+
+  filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
+
 
 /* =====================
    TASK ACTIONS
