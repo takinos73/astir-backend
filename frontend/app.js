@@ -1,4 +1,4 @@
-// ASTIR CMMS UI v2 - Supervisor Dashboard
+// ASTIR CMMS UI v2 – Supervisor Dashboard
 const API = "https://astir-backend.onrender.com";
 
 /* =====================
@@ -6,8 +6,8 @@ const API = "https://astir-backend.onrender.com";
 ===================== */
 let tasksData = [];
 let assetsData = [];
-let pendingTaskId = null;
 let activeLine = "all";
+let pendingTaskId = null;
 let importExcelFile = null;
 
 /* =====================
@@ -21,21 +21,21 @@ function norm(v) {
   return (v ?? "").toString().trim().toUpperCase();
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("el-GR");
+function formatDate(d) {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("el-GR");
 }
 
 function diffDays(from, to) {
   return Math.ceil((to - from) / (1000 * 60 * 60 * 24));
 }
 
-function getDueState(task) {
-  if (task.status === "Done") return "done";
-  if (!task.due_date) return "unknown";
+function getDueState(t) {
+  if (t.status === "Done") return "done";
+  if (!t.due_date) return "unknown";
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(task.due_date); due.setHours(0,0,0,0);
+  const due = new Date(t.due_date); due.setHours(0,0,0,0);
   const d = diffDays(today, due);
 
   if (d < 0) return "overdue";
@@ -44,19 +44,18 @@ function getDueState(task) {
 }
 
 /* =====================
-   🔑 SINGLE SOURCE OF TRUTH FOR LINE
+   🔑 SINGLE SOURCE OF LINE
 ===================== */
-function taskLine(task) {
-  const candidates = [
-    task.line,
-    task.line_code,
-    task.asset_line,
-    task?.asset?.line,
-    task?.asset?.line_code,
-    task?.asset?.line?.code
-  ];
-  const v = candidates.find(x => x && String(x).trim() !== "");
-  return norm(v || "");
+function taskLine(t) {
+  return norm(
+    t.line ||
+    t.line_code ||
+    t.asset_line ||
+    t?.asset?.line ||
+    t?.asset?.line_code ||
+    t?.asset?.line?.code ||
+    ""
+  );
 }
 
 /* =====================
@@ -67,73 +66,44 @@ async function loadAssets() {
   assetsData = await res.json();
 }
 
-getEl("addAssetBtn")?.addEventListener("click", () => {
-  getEl("addAssetOverlay").style.display = "flex";
-});
-
-getEl("cancelAssetBtn")?.addEventListener("click", () => {
-  getEl("addAssetOverlay").style.display = "none";
-});
-
-getEl("saveAssetBtn")?.addEventListener("click", async () => {
-  const payload = {
-    line: getEl("assetLine").value,
-    model: getEl("assetMachine").value,
-    serial_number: getEl("assetSn").value
-  };
-
-  if (!payload.line || !payload.model || !payload.serial_number) {
-    return alert("Συμπλήρωσε όλα τα πεδία");
-  }
-
-  await fetch(`${API}/assets`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  getEl("addAssetOverlay").style.display = "none";
-  getEl("assetSn").value = "";
-  loadAssets();
-});
-
 /* =====================
-   TASKS UI
+   TASKS – UI
 ===================== */
-function statusPill(task) {
-  const st = getDueState(task);
+function statusPill(t) {
+  const st = getDueState(t);
   let cls = "status-pill", txt = "Planned";
 
-  if (task.status === "Done") { cls += " status-done"; txt = "Done"; }
+  if (t.status === "Done") { cls += " status-done"; txt = "Done"; }
   else if (st === "overdue") { cls += " status-overdue"; txt = "Overdue"; }
   else if (st === "soon") { cls += " status-soon"; txt = "Due Soon"; }
 
   return `<span class="${cls}">${txt}</span>`;
 }
 
-function buildRow(task) {
+function buildRow(t) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td>${task.machine_name}</td>
-    <td>${task.section || "-"}</td>
-    <td>${task.unit || "-"}</td>
-    <td>${task.task}</td>
-    <td>${task.type || "-"}</td>
-    <td>${formatDate(task.due_date)}</td>
-    <td>${statusPill(task)}</td>
+    <td>${t.machine_name}</td>
+    <td>${t.section || "-"}</td>
+    <td>${t.unit || "-"}</td>
+    <td>${t.task}</td>
+    <td>${t.type || "-"}</td>
+    <td>${formatDate(t.due_date)}</td>
+    <td>${statusPill(t)}</td>
     <td>
-      <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
+      <button class="btn-secondary" onclick="viewTask(${t.id})">👁 View</button>
       ${
-        task.status === "Done"
-          ? `<button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>`
-          : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
+        t.status === "Done"
+          ? `<button class="btn-undo" onclick="undoTask(${t.id})">↩ Undo</button>`
+          : `<button class="btn-table" onclick="askTechnician(${t.id})">✔ Done</button>`
       }
-    </td>`;
+    </td>
+  `;
   return tr;
 }
 
 /* =====================
-   LOAD + FILTER TASKS
+   LOAD TASKS
 ===================== */
 async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
@@ -142,6 +112,9 @@ async function loadTasks() {
   renderTable();
 }
 
+/* =====================
+   FILTERS
+===================== */
 function rebuildMachineFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
@@ -188,7 +161,7 @@ function renderTable() {
 }
 
 /* =====================
-   LINE TABS (🔥 FIXED)
+   LINE TABS (FIXED)
 ===================== */
 document.addEventListener("click", e => {
   const btn = e.target.closest(".line-tab");
@@ -203,18 +176,24 @@ document.addEventListener("click", e => {
 });
 
 /* =====================
-   EXCEL IMPORT (FIXED)
+   STATUS / MACHINE CHANGE
+===================== */
+getEl("statusFilter")?.addEventListener("change", renderTable);
+getEl("machineFilter")?.addEventListener("change", renderTable);
+
+/* =====================
+   EXCEL IMPORT (WORKING)
 ===================== */
 getEl("importExcelBtn")?.addEventListener("click", async () => {
   const file = getEl("excelFile")?.files?.[0];
-  if (!file) return alert("Select Excel first");
+  if (!file) return alert("Επίλεξε Excel πρώτα");
 
   importExcelFile = file;
   const fd = new FormData();
   fd.append("file", file);
 
   const res = await fetch(`${API}/importExcel/preview`, { method: "POST", body: fd });
-  if (!res.ok) return alert("Preview failed");
+  if (!res.ok) return alert("Import preview failed");
 
   const data = await res.json();
   const tbody = document.querySelector("#importPreviewTable tbody");
@@ -234,7 +213,8 @@ getEl("importExcelBtn")?.addEventListener("click", async () => {
       <td>${r.key.serial_number}</td>
       <td>${r.cleaned.task}</td>
       <td>${r.status}</td>
-      <td>${r.error || ""}</td>`;
+      <td>${r.error || ""}</td>
+    `;
     tbody.appendChild(tr);
   });
 
@@ -243,7 +223,7 @@ getEl("importExcelBtn")?.addEventListener("click", async () => {
 });
 
 getEl("confirmImportBtn")?.addEventListener("click", async () => {
-  if (!importExcelFile) return alert("No file");
+  if (!importExcelFile) return;
 
   const fd = new FormData();
   fd.append("file", importExcelFile);
