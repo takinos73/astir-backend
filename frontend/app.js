@@ -21,7 +21,7 @@ function norm(v) {
 }
 
 function taskLine(t) {
-  return (t.line || "").toString().trim().toUpperCase();
+  return (t.line_code || "").toString().trim().toUpperCase();
 }
 
 function formatDate(d) {
