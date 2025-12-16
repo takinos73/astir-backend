@@ -16,6 +16,9 @@ let importExcelFile = null; // 👈 ΜΟΝΟ ΜΙΑ ΦΟΡΑ
 /* =====================
    HELPERS
 ===================== */
+function taskLine(task) {
+  return task.line_code || task.line || "";
+}
 function getEl(id) {
   return document.getElementById(id);
 }
@@ -194,17 +197,30 @@ function updateKpis() {
 function rebuildMachineFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
+
+  const act = norm(activeLine);
+
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
-  [...new Set(tasksData.map(t => t.machine_name))]
+  const machines = [
+    ...new Set(
+      tasksData
+        .filter(t => {
+          if (activeLine === "all") return true;
+          return norm(taskLine(t)) === act;
+        })
+        .map(t => t.machine_name)
+    )
+  ]
     .filter(Boolean)
-    .sort()
-    .forEach(m => {
-      const o = document.createElement("option");
-      o.value = m;
-      o.textContent = m;
-      sel.appendChild(o);
-    });
+    .sort((a, b) => a.localeCompare(b));
+
+  machines.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m;
+    o.textContent = m;
+    sel.appendChild(o);
+  });
 }
 
 function renderTable() {
@@ -220,9 +236,9 @@ function renderTable() {
   const filtered = tasksData
     // LINE FILTER
     .filter(t => {
-      if (activeLine === "all") return true;
-      return norm(t.line) === act;
-    })
+  if (activeLine === "all") return true;
+  return norm(taskLine(t)) === act;
+})
 
     // MACHINE FILTER
     .filter(t => {
