@@ -230,13 +230,17 @@ async function undoTask(id) {
 }
 
 /* =====================
-   ASSETS (LIST ONLY)
+   ASSETS (CRUD)
 ===================== */
 
 async function loadAssets() {
-  const res = await fetch(`${API}/assets`);
-  assetsData = await res.json();
-  renderAssetsTable();
+  try {
+    const res = await fetch(`${API}/assets`);
+    assetsData = await res.json();
+    renderAssetsTable();
+  } catch (err) {
+    console.error("Failed to load assets", err);
+  }
 }
 
 function renderAssetsTable() {
@@ -244,16 +248,90 @@ function renderAssetsTable() {
   if (!tbody) return;
 
   tbody.innerHTML = "";
+
+  if (assetsData.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="4" style="text-align:center;">No assets</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
   assetsData.forEach(a => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${a.line || "-"}</td>
       <td>${a.model || "-"}</td>
       <td>${a.serial_number || "-"}</td>
+      <td>
+        <button class="btn-danger" onclick="deleteAsset(${a.id})">🗑 Delete</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+/* =====================
+   ADD ASSET
+===================== */
+
+getEl("addAssetBtn")?.addEventListener("click", () => {
+  getEl("addAssetOverlay").style.display = "flex";
+});
+
+getEl("cancelAssetBtn")?.addEventListener("click", () => {
+  getEl("addAssetOverlay").style.display = "none";
+});
+
+getEl("saveAssetBtn")?.addEventListener("click", async () => {
+  const line = getEl("assetLine").value;
+  const model = getEl("assetMachine").value;
+  const sn = getEl("assetSn").value.trim();
+
+  if (!line || !model || !sn) {
+    return alert("Συμπλήρωσε όλα τα πεδία");
+  }
+
+  try {
+    await fetch(`${API}/assets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        line,
+        model,
+        serial_number: sn
+      })
+    });
+
+    getEl("addAssetOverlay").style.display = "none";
+    getEl("assetSn").value = "";
+
+    loadAssets();
+  } catch (err) {
+    alert("Failed to save asset");
+    console.error(err);
+  }
+});
+
+/* =====================
+   DELETE ASSET
+===================== */
+
+async function deleteAsset(id) {
+  if (!confirm("Διαγραφή asset;")) return;
+
+  try {
+    await fetch(`${API}/assets/${id}`, { method: "DELETE" });
+    loadAssets();
+  } catch (err) {
+    alert("Failed to delete asset");
+    console.error(err);
+  }
+}
+getEl("addAssetBtn")?.addEventListener("click", () => {
+  console.log("ADD ASSET CLICKED");
+  getEl("addAssetOverlay").style.display = "flex";
+});
+
 
 /* =====================
    IMPORT EXCEL (PREVIEW + COMMIT)
