@@ -17,8 +17,9 @@ let importExcelFile = null; // 👈 ΜΟΝΟ ΜΙΑ ΦΟΡΑ
    HELPERS
 ===================== */
 function taskLine(task) {
-  return task.line_code || task.line || "";
+  return task.line || task.line_code || task.asset_line || "";
 }
+
 function getEl(id) {
   return document.getElementById(id);
 }
@@ -199,17 +200,14 @@ function rebuildMachineFilter() {
   if (!sel) return;
 
   const act = norm(activeLine);
-
-  // reset
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
-  // machines ONLY from current line
   const machines = [
     ...new Set(
       tasksData
         .filter(t => {
           if (activeLine === "all") return true;
-          return norm(t.line) === act;
+          return norm(taskLine(t)) === act;
         })
         .map(t => t.machine_name)
     )
@@ -225,7 +223,6 @@ function rebuildMachineFilter() {
   });
 }
 
-
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
@@ -238,7 +235,7 @@ function renderTable() {
 
   const filtered = tasksData
     // LINE FILTER
-    .filter(t => {
+      .filter(t => {
   if (activeLine === "all") return true;
   return norm(taskLine(t)) === act;
 })
