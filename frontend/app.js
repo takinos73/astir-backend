@@ -190,6 +190,7 @@ getEl("statusFilter")?.addEventListener("change", () => {
 async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
+   console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
   updateKpis();
   rebuildMachineFilter();
   renderTable();
