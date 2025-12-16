@@ -200,14 +200,16 @@ function rebuildMachineFilter() {
 
   const act = norm(activeLine);
 
+  // reset
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
+  // machines ONLY from current line
   const machines = [
     ...new Set(
       tasksData
         .filter(t => {
           if (activeLine === "all") return true;
-          return norm(taskLine(t)) === act;
+          return norm(t.line) === act;
         })
         .map(t => t.machine_name)
     )
@@ -222,6 +224,7 @@ function rebuildMachineFilter() {
     sel.appendChild(o);
   });
 }
+
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
