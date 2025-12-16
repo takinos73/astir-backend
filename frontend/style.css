@@ -527,6 +527,19 @@ tech-meta {
 .btn-primary:hover{
   background: rgba(78,168,255,.22);
 }
+.machine-cell {
+  line-height: 1.2;
+}
+
+.machine-name {
+  font-weight: 500;
+}
+
+.machine-sn {
+  font-size: 0.8em;
+  color: #666;
+}
+
 
 
 
