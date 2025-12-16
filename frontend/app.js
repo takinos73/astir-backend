@@ -235,6 +235,39 @@ getEl("confirmImportBtn")?.addEventListener("click", async () => {
 });
 
 /* =====================
+   MAIN TABS (Tasks / Assets / Docs / Reports)
+===================== */
+
+document.querySelectorAll(".main-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    // active state στο UI
+    document.querySelectorAll(".main-tab").forEach(t =>
+      t.classList.remove("active")
+    );
+    tab.classList.add("active");
+
+    const selected = tab.dataset.tab;
+
+    // hide all
+    const tabs = ["tasks", "assets", "docs", "reports"];
+    tabs.forEach(t => {
+      const el = document.getElementById(`tab-${t}`);
+      if (el) el.style.display = "none";
+    });
+
+    // show selected
+    const activeEl = document.getElementById(`tab-${selected}`);
+    if (activeEl) activeEl.style.display = "block";
+
+    // lazy load assets
+    if (selected === "assets") {
+      loadAssets();
+    }
+  });
+});
+
+
+/* =====================
    INIT
 ===================== */
 loadTasks();
