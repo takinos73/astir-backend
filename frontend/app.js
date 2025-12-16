@@ -1,21 +1,20 @@
-// ASTIR CMMS UI v2 – Supervisor Dashboard
+// ASTIR CMMS UI v2 - Supervisor Dashboard
+
 const API = "https://astir-backend.onrender.com";
 
-/* =====================
-   GLOBAL STATE
-===================== */
 let tasksData = [];
 let assetsData = [];
 let activeLine = "all";
 let pendingTaskId = null;
+let pendingSnapshotJson = null;
+let loadedSnapshotName = null;
 let importExcelFile = null;
 
 /* =====================
-   HELPERS
+   Helpers
 ===================== */
-function getEl(id) {
-  return document.getElementById(id);
-}
+
+const getEl = id => document.getElementById(id);
 
 function norm(v) {
   return (v ?? "").toString().trim().toUpperCase();
@@ -26,76 +25,67 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("el-GR");
 }
 
-function diffDays(from, to) {
-  return Math.ceil((to - from) / (1000 * 60 * 60 * 24));
+function diffDays(a, b) {
+  return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
 }
 
 function getDueState(t) {
   if (t.status === "Done") return "done";
   if (!t.due_date) return "unknown";
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(t.due_date); due.setHours(0,0,0,0);
-  const d = diffDays(today, due);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(t.due_date);
+  due.setHours(0, 0, 0, 0);
 
+  const d = diffDays(today, due);
   if (d < 0) return "overdue";
   if (d <= 7) return "soon";
   return "ok";
 }
 
 /* =====================
-   🔑 SINGLE SOURCE OF LINE
+   TASK TABLE
 ===================== */
-function taskLine(t) {
-  return norm(
-    t.line ||
-    t.line_code ||
-    t.asset_line ||
-    t?.asset?.line ||
-    t?.asset?.line_code ||
-    t?.asset?.line?.code ||
-    ""
-  );
-}
 
-/* =====================
-   ASSETS
-===================== */
-async function loadAssets() {
-  const res = await fetch(`${API}/assets`);
-  assetsData = await res.json();
-}
+function statusPill(task) {
+  const st = getDueState(task);
+  let cls = "status-pill";
+  let txt = "Planned";
 
-/* =====================
-   TASKS – UI
-===================== */
-function statusPill(t) {
-  const st = getDueState(t);
-  let cls = "status-pill", txt = "Planned";
-
-  if (t.status === "Done") { cls += " status-done"; txt = "Done"; }
-  else if (st === "overdue") { cls += " status-overdue"; txt = "Overdue"; }
-  else if (st === "soon") { cls += " status-soon"; txt = "Due Soon"; }
-
+  if (task.status === "Done") {
+    cls += " status-done";
+    txt = "Done";
+  } else if (st === "overdue") {
+    cls += " status-overdue";
+    txt = "Overdue";
+  } else if (st === "soon") {
+    cls += " status-soon";
+    txt = "Due Soon";
+  }
   return `<span class="${cls}">${txt}</span>`;
 }
 
-function buildRow(t) {
+function buildRow(task) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td>${t.machine_name}</td>
-    <td>${t.section || "-"}</td>
-    <td>${t.unit || "-"}</td>
-    <td>${t.task}</td>
-    <td>${t.type || "-"}</td>
-    <td>${formatDate(t.due_date)}</td>
-    <td>${statusPill(t)}</td>
+    <td>${task.machine_name}</td>
+    <td>${task.section || "-"}</td>
+    <td>${task.unit || "-"}</td>
+    <td>${task.task}</td>
+    <td>${task.type || "-"}</td>
+    <td>${
+      task.status === "Done"
+        ? "Completed: " + formatDate(task.completed_at)
+        : formatDate(task.due_date)
+    }</td>
+    <td>${statusPill(task)}</td>
     <td>
-      <button class="btn-secondary" onclick="viewTask(${t.id})">👁 View</button>
+      <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
       ${
-        t.status === "Done"
-          ? `<button class="btn-undo" onclick="undoTask(${t.id})">↩ Undo</button>`
-          : `<button class="btn-table" onclick="askTechnician(${t.id})">✔ Done</button>`
+        task.status === "Done"
+          ? `<button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>`
+          : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
       }
     </td>
   `;
@@ -103,51 +93,64 @@ function buildRow(t) {
 }
 
 /* =====================
-   LOAD TASKS
+   KPIs
 ===================== */
-async function loadTasks() {
-  const res = await fetch(`${API}/tasks`);
-  tasksData = await res.json();
-  rebuildMachineFilter();
-  renderTable();
+
+function updateKpis() {
+  let overdue = 0, soon = 0, done = 0;
+
+  tasksData.forEach(t => {
+    if (t.status === "Done") return done++;
+    const st = getDueState(t);
+    if (st === "overdue") overdue++;
+    if (st === "soon") soon++;
+  });
+
+  getEl("kpiTotal").textContent = tasksData.length;
+  getEl("kpiOverdue").textContent = overdue;
+  getEl("kpiSoon").textContent = soon;
+  getEl("kpiDone").textContent = done;
 }
 
 /* =====================
    FILTERS
 ===================== */
+
 function rebuildMachineFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
 
-  const act = norm(activeLine);
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
-  [...new Set(
-    tasksData
-      .filter(t => act === "ALL" || taskLine(t) === act)
-      .map(t => t.machine_name)
-  )]
+  const machines = [
+    ...new Set(
+      tasksData
+        .filter(t => activeLine === "all" || norm(t.line) === norm(activeLine))
+        .map(t => t.machine_name)
+    )
+  ]
     .filter(Boolean)
-    .sort()
-    .forEach(m => {
-      const o = document.createElement("option");
-      o.value = m;
-      o.textContent = m;
-      sel.appendChild(o);
-    });
+    .sort();
+
+  machines.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m;
+    o.textContent = m;
+    sel.appendChild(o);
+  });
 }
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
+
   tbody.innerHTML = "";
 
-  const mf = getEl("machineFilter")?.value || "all";
-  const sf = getEl("statusFilter")?.value || "all";
-  const act = norm(activeLine);
+  const mf = getEl("machineFilter").value;
+  const sf = getEl("statusFilter").value;
 
   const filtered = tasksData
-    .filter(t => act === "ALL" || taskLine(t) === act)
+    .filter(t => activeLine === "all" || norm(t.line) === norm(activeLine))
     .filter(t => mf === "all" || t.machine_name === mf)
     .filter(t => {
       if (sf === "all") return true;
@@ -155,121 +158,182 @@ function renderTable() {
       if (sf === "Done") return t.status === "Done";
       if (sf === "Overdue") return getDueState(t) === "overdue";
       return true;
+    })
+    .sort((a, b) => {
+      const o = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
+      return (o[getDueState(a)] ?? 99) - (o[getDueState(b)] ?? 99);
     });
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
 /* =====================
-   LINE TABS (FIXED)
+   LOAD TASKS
 ===================== */
-document.addEventListener("click", e => {
-  const btn = e.target.closest(".line-tab");
-  if (!btn) return;
 
-  document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-
-  activeLine = btn.dataset.line || "all";
+async function loadTasks() {
+  const res = await fetch(`${API}/tasks`);
+  tasksData = await res.json();
+  updateKpis();
   rebuildMachineFilter();
   renderTable();
+}
+
+/* =====================
+   TASK ACTIONS
+===================== */
+
+function askTechnician(id) {
+  pendingTaskId = id;
+  getEl("modalOverlay").style.display = "flex";
+}
+
+getEl("cancelDone")?.addEventListener("click", () => {
+  getEl("modalOverlay").style.display = "none";
+  pendingTaskId = null;
 });
 
-/* =====================
-   STATUS / MACHINE CHANGE
-===================== */
-getEl("statusFilter")?.addEventListener("change", renderTable);
-getEl("machineFilter")?.addEventListener("change", renderTable);
+getEl("confirmDone")?.addEventListener("click", async () => {
+  const name = getEl("technicianInput").value.trim();
+  if (!name) return alert("Δώσε όνομα");
+
+  await fetch(`${API}/tasks/${pendingTaskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ completed_by: name })
+  });
+
+  getEl("modalOverlay").style.display = "none";
+  loadTasks();
+});
+
+async function undoTask(id) {
+  await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
+  loadTasks();
+}
 
 /* =====================
-   EXCEL IMPORT (WORKING)
+   ASSETS (LIST ONLY)
 ===================== */
-getEl("importExcelBtn")?.addEventListener("click", async () => {
-  const file = getEl("excelFile")?.files?.[0];
-  if (!file) return alert("Επίλεξε Excel πρώτα");
+
+async function loadAssets() {
+  const res = await fetch(`${API}/assets`);
+  assetsData = await res.json();
+  renderAssetsTable();
+}
+
+function renderAssetsTable() {
+  const tbody = document.querySelector("#assetsTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  assetsData.forEach(a => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${a.line || "-"}</td>
+      <td>${a.model || "-"}</td>
+      <td>${a.serial_number || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* =====================
+   IMPORT EXCEL (PREVIEW + COMMIT)
+===================== */
+
+async function importExcel() {
+  const file = getEl("excelFile").files[0];
+  if (!file) return alert("Select Excel");
 
   importExcelFile = file;
   const fd = new FormData();
   fd.append("file", file);
 
   const res = await fetch(`${API}/importExcel/preview`, { method: "POST", body: fd });
-  if (!res.ok) return alert("Import preview failed");
-
   const data = await res.json();
-  const tbody = document.querySelector("#importPreviewTable tbody");
-  tbody.innerHTML = "";
 
-  getEl("importSummary").textContent =
-    data.summary.errors > 0
-      ? `❌ Errors: ${data.summary.errors}/${data.summary.total}`
-      : `✅ OK: ${data.summary.ok}/${data.summary.total}`;
+  const tbody = getEl("importPreviewTable").querySelector("tbody");
+  tbody.innerHTML = "";
 
   data.rows.forEach(r => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.row}</td>
-      <td>${r.key.line}</td>
-      <td>${r.key.machine}</td>
-      <td>${r.key.serial_number}</td>
-      <td>${r.cleaned.task}</td>
+      <td>${r.key?.line}</td>
+      <td>${r.key?.machine}</td>
+      <td>${r.key?.serial_number}</td>
+      <td>${r.cleaned?.task}</td>
       <td>${r.status}</td>
       <td>${r.error || ""}</td>
     `;
     tbody.appendChild(tr);
   });
 
+  getEl("importSummary").textContent =
+    data.summary.errors > 0
+      ? `❌ Errors: ${data.summary.errors}`
+      : `✅ Ready: ${data.summary.ok}`;
+
   getEl("confirmImportBtn").disabled = data.summary.errors > 0;
   getEl("importPreviewOverlay").style.display = "flex";
-});
+}
 
-getEl("confirmImportBtn")?.addEventListener("click", async () => {
-  if (!importExcelFile) return;
-
+async function confirmImport() {
   const fd = new FormData();
   fd.append("file", importExcelFile);
 
   await fetch(`${API}/importExcel/commit`, { method: "POST", body: fd });
   getEl("importPreviewOverlay").style.display = "none";
-  importExcelFile = null;
   loadTasks();
+}
+
+getEl("importExcelBtn")?.addEventListener("click", importExcel);
+getEl("confirmImportBtn")?.addEventListener("click", confirmImport);
+getEl("closeImportPreviewBtn")?.addEventListener("click", () => {
+  getEl("importPreviewOverlay").style.display = "none";
 });
 
 /* =====================
-   MAIN TABS (Tasks / Assets / Docs / Reports)
+   LINE TABS
+===================== */
+
+document.querySelectorAll(".line-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".line-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeLine = btn.dataset.line;
+    rebuildMachineFilter();
+    renderTable();
+  });
+});
+
+/* =====================
+   MAIN TABS
 ===================== */
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    // active state στο UI
-    document.querySelectorAll(".main-tab").forEach(t =>
-      t.classList.remove("active")
-    );
+    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
-    const selected = tab.dataset.tab;
-
-    // hide all
-    const tabs = ["tasks", "assets", "docs", "reports"];
-    tabs.forEach(t => {
-      const el = document.getElementById(`tab-${t}`);
+    ["tasks", "assets", "docs", "reports"].forEach(t => {
+      const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
 
-    // show selected
-    const activeEl = document.getElementById(`tab-${selected}`);
-    if (activeEl) activeEl.style.display = "block";
+    const sel = tab.dataset.tab;
+    const active = getEl(`tab-${sel}`);
+    if (active) active.style.display = "block";
 
-    // lazy load assets
-    if (selected === "assets") {
-      loadAssets();
-    }
+    if (sel === "assets") loadAssets();
   });
 });
-
 
 /* =====================
    INIT
 ===================== */
+
 loadTasks();
-loadAssets();
+
 
