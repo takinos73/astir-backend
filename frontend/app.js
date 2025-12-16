@@ -221,7 +221,7 @@ function renderTable() {
     // LINE FILTER
     .filter(t => {
       if (activeLine === "all") return true;
-      return norm(t.line) === act;
+      return norm(t.line_code) === act;
     })
 
     // MACHINE FILTER
