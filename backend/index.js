@@ -220,17 +220,17 @@ app.post("/assets", async (req, res) => {
     // serial_number UNIQUE -> upsert style
     const result = await client.query(
   `
-  INSERT INTO assets (line_id, model, serial_number, description, active)
+  INSERT INTO assets (line, model, serial_number, description, active)
   VALUES ($1,$2,$3,$4,$5)
   ON CONFLICT (model, serial_number)
   DO UPDATE SET
-    line_id = EXCLUDED.line_id,
+    line = EXCLUDED.line,
     description = EXCLUDED.description,
     active = EXCLUDED.active
   RETURNING *
   `,
   [
-    lineId,
+    cleanUpper(line),          // 👈 ΕΔΩ
     cleanStr(model),
     cleanStr(serial_number),
     description || null,
