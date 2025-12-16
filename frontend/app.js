@@ -20,6 +20,10 @@ function norm(v) {
   return (v ?? "").toString().trim().toUpperCase();
 }
 
+function taskLine(t) {
+  return (t.line || "").toString().trim().toUpperCase();
+}
+
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
@@ -125,7 +129,7 @@ function rebuildMachineFilter() {
   const machines = [
     ...new Set(
       tasksData
-        .filter(t => activeLine === "all" || norm(t.line) === norm(activeLine))
+        .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
         .map(t => t.machine_name)
     )
   ]
@@ -150,7 +154,7 @@ function renderTable() {
   const sf = getEl("statusFilter").value;
 
   const filtered = tasksData
-    .filter(t => activeLine === "all" || norm(t.line) === norm(activeLine))
+    .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
     .filter(t => mf === "all" || t.machine_name === mf)
     .filter(t => {
       if (sf === "all") return true;
