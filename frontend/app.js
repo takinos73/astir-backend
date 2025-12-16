@@ -222,6 +222,49 @@ function rebuildMachineFilter() {
     sel.appendChild(o);
   });
 }
+function taskLine(task) {
+  // flat fields
+  const candidates = [
+    task?.line,
+    task?.line_code,
+    task?.lineCode,
+    task?.asset_line,
+    task?.assetLine,
+    task?.line?.code,
+    task?.line?.Code,
+    // nested asset -> line
+    task?.asset?.line,
+    task?.asset?.line_code,
+    task?.asset?.lineCode,
+    task?.asset?.line?.code,
+    task?.asset?.line?.Code,
+    // sometimes backend sends "code" directly
+    task?.code,
+    task?.lineCodeText,
+  ];
+
+  const v = candidates.find(x => x !== undefined && x !== null && `${x}`.trim() !== "");
+  return (v ?? "").toString().trim();
+}
+function setActiveLine(lineCode) {
+  activeLine = lineCode;
+
+  document.querySelectorAll(".line-tab").forEach(b => {
+    b.classList.toggle("active", b.dataset.line === lineCode);
+  });
+
+  rebuildMachineFilter();
+  renderTable();
+}
+
+// Event delegation (δουλεύει ΠΑΝΤΑ)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".line-tab");
+  if (!btn) return;
+
+  const line = btn.dataset.line || "all";
+  setActiveLine(line);
+});
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
@@ -359,7 +402,7 @@ async function confirmImport() {
 getEl("importExcelBtn")?.addEventListener("click", importExcel);
 getEl("confirmImportBtn")?.addEventListener("click", confirmImport);
 getEl("closeImportPreviewBtn")?.addEventListener("click", () => {
-  getEl("importPreviewOverlay").style.display = "none";
+getEl("importPreviewOverlay").style.display = "none";
 });
 
 loadTasks();
