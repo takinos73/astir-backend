@@ -205,10 +205,7 @@ function rebuildMachineFilter() {
   const machines = [
     ...new Set(
       tasksData
-        .filter(t => {
-          if (activeLine === "all") return true;
-          return norm(taskLine(t)) === act;
-        })
+        .filter(t => activeLine === "all" || taskLine(t) === act)
         .map(t => t.machine_name)
     )
   ]
@@ -222,6 +219,7 @@ function rebuildMachineFilter() {
     sel.appendChild(o);
   });
 }
+
 function taskLine(task) {
   // flat fields
   const candidates = [
@@ -280,7 +278,7 @@ function renderTable() {
     // LINE FILTER
       .filter(t => {
   if (activeLine === "all") return true;
-  return norm(taskLine(t)) === act;
+  return taskLine(t) === norm(activeLine);
 })
 
     // MACHINE FILTER
