@@ -472,10 +472,17 @@ async function deleteAsset(id) {
     console.error(err);
   }
 }
-getEl("addAssetBtn")?.addEventListener("click", () => {
-  console.log("ADD ASSET CLICKED");
+getEl("addAssetBtn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+
+  if (!hasRole("planner", "admin")) {
+    alert("You are not allowed to add assets");
+    return;
+  }
+
   getEl("addAssetOverlay").style.display = "flex";
 });
+
 
 
 /* =====================
