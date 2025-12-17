@@ -12,16 +12,6 @@ let loadedSnapshotName = null;
 let importExcelFile = null;
 
 
-/* =====================
-   CURRENT USER (TEMP)
-   Later replaced by login
-===================== */
-const CURRENT_USER = {
-  name: "Director",
-  role: "planner" // technician | planner | admin
-};
-// 🔧 TEMP TEST
-//CURRENT_USER.role = "technician";
 
 /* =====================
    Helpers
