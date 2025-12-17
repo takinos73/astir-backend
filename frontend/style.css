@@ -328,9 +328,9 @@ tbody tr:hover {
   gap: 10px;
 }
 
-tech-meta {
-  font-size: 11px;
-  color: #9ca3af;
+.tech-meta{
+  font-size:11px;
+  color:#9ca3af;
 }
 .line-tabs {
   display: flex;
@@ -598,9 +598,12 @@ tech-meta {
 
 /* ===== META ===== */
 
-.task-view-meta {
-  margin-top: 6px;
-  justify-content: flex-start;
+.task-view-meta{
+  display:flex;
+  gap:10px;
+  justify-content:flex-start;
+  align-items:center;
+  margin-top:6px;
 }
 
 .badge {
@@ -623,9 +626,12 @@ tech-meta {
 
 /* ===== DETAILS ===== */
 
-.task-view-details {
-  grid-template-columns: repeat(2, 1fr);
-  max-width: 480px;
+.task-view-details{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px 14px;
+  max-width:480px;
+  margin-top:20px;
 }
 
 .task-view-details > div {
