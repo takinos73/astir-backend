@@ -589,7 +589,7 @@ loadTasks();
 function applyRoleVisibility() {
   if (!hasRole("planner", "admin")) {
 
-    // Excel Import
+    // Excel Import (legacy id – αν υπάρχει)
     const importBtn = document.getElementById("importExcelBtn");
     if (importBtn) importBtn.style.display = "none";
 
@@ -597,13 +597,18 @@ function applyRoleVisibility() {
     const addTaskBtn = document.getElementById("addTaskBtn");
     if (addTaskBtn) addTaskBtn.style.display = "none";
 
-    // Assets admin actions
+    // Assets admin actions (old)
     document.querySelectorAll(".asset-admin-only")
+      .forEach(el => el.style.display = "none");
+
+    // ✅ NEW: hide all admin-only elements (Upload Excel κ.λπ.)
+    document.querySelectorAll(".admin-only")
       .forEach(el => el.style.display = "none");
   }
 }
 
 applyRoleVisibility();
+
 
 
 
