@@ -20,7 +20,7 @@ const CURRENT_USER = {
   role: "planner" // technician | planner | admin
 };
 // 🔧 TEMP TEST
-// CURRENT_USER.role = "technician";
+CURRENT_USER.role = "technician";
 
 /* =====================
    Helpers
