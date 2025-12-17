@@ -61,11 +61,39 @@ function getDueState(t) {
 }
 
 /* =====================
+   CURRENT USER (DEV)
+===================== */
+const CURRENT_USER = {
+  name: "Dev User",
+  role: "planner" // technician | planner | admin
+};
+
+
+/* =====================
    ROLE HELPERS
 ===================== */
 function hasRole(...roles) {
   return roles.includes(CURRENT_USER.role);
 }
+
+
+/* =====================
+   DEV LOGIN AS ROLE
+===================== */
+function loginAsRole() {
+  const role = document.getElementById("roleSelect").value;
+
+  CURRENT_USER.role = role;
+
+  // Re-apply UI visibility
+  applyRoleVisibility();
+
+  alert(`Logged in as ${role}`);
+}
+
+document.getElementById("loginAsRoleBtn")
+  ?.addEventListener("click", loginAsRole);
+
 
 /* =====================
    TASK TABLE
