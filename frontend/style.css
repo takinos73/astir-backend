@@ -539,6 +539,26 @@ tech-meta {
   font-size: 0.8em;
   color: #666;
 }
+/* Excel Import Modal scrolling fix */
+.import-modal {
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.import-modal-body {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 6px;
+}
+
+.import-modal-footer {
+  flex-shrink: 0;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
 
 
 
