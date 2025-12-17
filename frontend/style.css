@@ -643,6 +643,42 @@ tbody tr:hover {
   letter-spacing: 0.5px;
 }
 
+/* =========================
+   FIXES — Task View Modal
+   (place at END of file)
+========================= */
+
+/* tech-meta was missing "." */
+.tech-meta{
+  font-size:11px;
+  color:#9ca3af;
+}
+
+/* meta needs flex for justify-content to work */
+.task-view-meta{
+  display:flex;
+  gap:10px;
+  justify-content:flex-start;
+  align-items:center;
+  margin-top:6px;
+}
+
+/* details needs grid for grid-template-columns to work */
+.task-view-details{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px 14px;
+  max-width:480px;
+  margin-top:20px;
+}
+
+/* optional: badges look nicer inline */
+.badge{
+  display:inline-flex;
+  align-items:center;
+}
+
+
 
 
 
