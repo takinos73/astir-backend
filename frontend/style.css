@@ -623,16 +623,24 @@ tech-meta {
 }
 
 /* ===== DETAILS ===== */
+
 .task-view-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  margin-top: 18px;
+  gap: 16px;
+}
+
+.task-view-details > div {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 12px;
+  border-radius: 8px;
 }
 
 .task-view-details label {
-  font-size: 0.75em;
-  color: #9aa4b2;
+  font-size: 0.7em;
+  letter-spacing: 0.5px;
 }
+
 
 
 
