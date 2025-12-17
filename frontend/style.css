@@ -591,22 +591,23 @@ tech-meta {
 
 /* ===== TASK TITLE ===== */
 .task-view-title {
-  font-size: 1.3em;
-  font-weight: 500;
-  margin: 12px 0 6px;
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 16px 0 10px;
+  max-width: 100%;
 }
 
 /* ===== META ===== */
+
 .task-view-meta {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .badge {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.8em;
+  padding: 6px 12px;
+  font-size: 0.75em;
+  opacity: 0.9;
 }
 
 .badge-type {
