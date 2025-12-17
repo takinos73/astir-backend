@@ -147,7 +147,6 @@ function updateKpis() {
    VIEW TASK MODAL
 ===================== */
 
-// Open Task View
 function viewTask(taskId) {
   const task = tasksData.find(t => t.id === taskId);
   if (!task) return;
@@ -210,6 +209,14 @@ function viewTask(taskId) {
       <div>${task.duration_min ? task.duration_min + " min" : "-"}</div>
     </div>
   </div>
+  ${task.status === "Done" ? `
+  <div class="task-view-completed">
+    ✔ Completed<br>
+    <span>Done by <strong>${task.completed_by || "-"}</strong></span>
+    <span> • ${task.completed_at ? formatDate(task.completed_at) : ""}</span>
+  </div>
+` : ""}
+
 `;
 
   document.getElementById("taskViewOverlay").style.display = "flex";
