@@ -574,6 +574,65 @@ tech-meta {
 .task-view-section p {
   margin: 2px 0;
 }
+/* ===== ASSET ===== */
+.task-view-asset {
+  margin-bottom: 14px;
+}
+
+.asset-main {
+  font-size: 1.6em;
+  font-weight: 600;
+}
+
+.asset-sub {
+  color: #9aa4b2;
+  font-size: 0.9em;
+}
+
+/* ===== TASK TITLE ===== */
+.task-view-title {
+  font-size: 1.3em;
+  font-weight: 500;
+  margin: 12px 0 6px;
+}
+
+/* ===== META ===== */
+.task-view-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8em;
+}
+
+.badge-type {
+  background: #2b3a55;
+}
+
+.badge-status {
+  background: #1f6f5c;
+}
+
+.badge-date {
+  background: #3a3a3a;
+}
+
+/* ===== DETAILS ===== */
+.task-view-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.task-view-details label {
+  font-size: 0.75em;
+  color: #9aa4b2;
+}
+
 
 
 
