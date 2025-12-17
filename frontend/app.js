@@ -144,6 +144,50 @@ function updateKpis() {
 }
 
 /* =====================
+   VIEW TASK MODAL
+===================== */
+
+// Open Task View
+function viewTask(taskId) {
+  const task = tasksData.find(t => t.id === taskId);
+  if (!task) return;
+
+  const el = document.getElementById("taskViewContent");
+
+  el.innerHTML = `
+    <div class="task-view-section">
+      <h4>Asset</h4>
+      <p><strong>${task.machine_name}</strong></p>
+      ${task.serial_number ? `<p>SN: ${task.serial_number}</p>` : ""}
+      <p>Line: ${task.line_code}</p>
+    </div>
+
+    <div class="task-view-section">
+      <h4>Task</h4>
+      <p><strong>${task.task}</strong></p>
+      <p>Type: ${task.type || "-"}</p>
+      <p>Status: ${task.status}</p>
+      <p>Due date: ${formatDate(task.due_date)}</p>
+    </div>
+
+    <div class="task-view-section">
+      <h4>Details</h4>
+      <p>Section: ${task.section || "-"}</p>
+      <p>Unit: ${task.unit || "-"}</p>
+      <p>Frequency: ${task.frequency_hours ? task.frequency_hours + " h" : "-"}</p>
+      <p>Duration: ${task.duration_min ? task.duration_min + " min" : "-"}</p>
+    </div>
+  `;
+
+  document.getElementById("taskViewOverlay").style.display = "flex";
+}
+
+// Close modal
+function closeTaskView() {
+  document.getElementById("taskViewOverlay").style.display = "none";
+}
+
+/* =====================
    FILTERS
 ===================== */
 
