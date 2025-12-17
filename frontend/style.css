@@ -559,6 +559,23 @@ tech-meta {
   justify-content: space-between;
 }
 
+.task-view-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.task-view-section h4 {
+  margin-bottom: 6px;
+  color: #9aa4b2;
+  font-size: 0.9em;
+}
+
+.task-view-section p {
+  margin: 2px 0;
+}
+
+
 
 
 
