@@ -591,17 +591,16 @@ tech-meta {
 
 /* ===== TASK TITLE ===== */
 .task-view-title {
-  font-size: 1.5em;
+  margin-top: 12px;
+  font-size: 1.4em;
   font-weight: 600;
-  margin: 16px 0 10px;
-  max-width: 100%;
 }
 
 /* ===== META ===== */
 
 .task-view-meta {
-  gap: 10px;
-  margin-bottom: 18px;
+  margin-top: 6px;
+  justify-content: flex-start;
 }
 
 .badge {
@@ -625,15 +624,12 @@ tech-meta {
 /* ===== DETAILS ===== */
 
 .task-view-details {
-  margin-top: 18px;
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 480px;
 }
 
 .task-view-details > div {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 10px 12px;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
 }
 
 .task-view-details label {
