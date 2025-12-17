@@ -308,7 +308,6 @@ async function findAssetId(client, lineCode, model, serial) {
   return r.rows[0]?.id || null;
 }
 
-
 /* =====================================================
    IMPORT EXCEL — Preview + Commit (Overwrite planned tasks per asset)
    Excel headers expected:
@@ -420,7 +419,7 @@ app.post("/importExcel/preview", uploadMem.single("file"), async (req, res) => {
   }
 });
 
-// COMMIT (overwrite planned tasks per asset)
+// COMMIT
 app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
   const client = await pool.connect();
 
@@ -437,7 +436,6 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
 
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    // 🔍 PREVIEW / VALIDATION
     const preview = await buildImportPreview(rows);
     if (preview.summary.errors > 0) {
       return res.status(400).json({
@@ -448,12 +446,8 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
 
     await client.query("BEGIN");
 
-    // 🔑 μοναδικά assets που επηρεάζονται
-    const assetIds = [
-      ...new Set(preview.rows.map(r => r.asset_id)),
-    ];
+    const assetIds = [...new Set(preview.rows.map(r => r.asset_id))];
 
-    // 🧹 DELETE planned tasks ONLY for these assets
     await client.query(
       `
       DELETE FROM maintenance_tasks
@@ -464,7 +458,6 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
       [assetIds]
     );
 
-    // ➕ INSERT new tasks
     for (const row of preview.rows) {
       const c = row.cleaned;
 
@@ -487,6 +480,8 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
         VALUES (
           $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11
         )
+        ON CONFLICT ON CONSTRAINT unique_preventive_task
+        DO NOTHING
         `,
         [
           row.asset_id,
@@ -520,10 +515,8 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
   }
 });
 
-
-// Keep legacy endpoint name for your UI button (calls COMMIT)
+// Legacy endpoint
 app.post("/importExcel", uploadMem.single("file"), async (req, res) => {
-  // For backward compatibility: treat /importExcel as commit
   req.url = "/importExcel/commit";
   return app._router.handle(req, res, () => {});
 });
