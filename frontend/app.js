@@ -405,8 +405,10 @@ function renderAssetsTable() {
 ===================== */
 
 // Open Add Asset modal
-getEl("addAssetBtn")?.addEventListener("click", () => {
-  // ROLE GUARD — only planner / admin
+getEl("addAssetBtn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopImmediatePropagation(); // 🔥 ΣΤΑΜΑΤΑ ΟΛΑ ΤΑ ΑΛΛΑ LISTENERS
+
   if (!hasRole("planner", "admin")) {
     alert("You are not allowed to add assets");
     return;
