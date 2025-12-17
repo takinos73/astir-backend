@@ -1,4 +1,5 @@
 // ASTIR CMMS UI v2 - Supervisor Dashboard
+console.log("APP.JS LOADED");
 
 const API = "https://astir-backend.onrender.com";
 
@@ -81,6 +82,8 @@ function hasRole(...roles) {
    DEV LOGIN AS ROLE
 ===================== */
 function loginAsRole() {
+   console.log("LOGIN CLICKED");
+
   const role = document.getElementById("roleSelect").value;
 
   CURRENT_USER.role = role;
@@ -609,6 +612,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 /* =====================
    INIT
 ===================== */
+console.log("BEFORE LOAD TASKS");
 
 loadTasks();
 /* =====================
