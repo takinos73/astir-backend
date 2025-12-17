@@ -70,26 +70,47 @@ function statusPill(task) {
   return `<span class="${cls}">${txt}</span>`;
 }
 
+/* =====================================================
+   BUILD TASK TABLE ROW
+   - Renders one task row in the Tasks table
+   - View button calls viewTask(task.id)
+   - Done / Undo handled separately
+===================================================== */
 function buildRow(task) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
+    <!-- MACHINE / ASSET -->
     <td class="machine-cell">
-        <div class="machine-name">${task.machine_name}</div>
-        ${task.serial_number
+      <div class="machine-name">${task.machine_name}</div>
+      ${task.serial_number
         ? `<div class="machine-sn">SN: ${task.serial_number}</div>`
         : ""
-     }
+      }
     </td>
+
+    <!-- SECTION -->
     <td>${task.section || "-"}</td>
+
+    <!-- UNIT -->
     <td>${task.unit || "-"}</td>
+
+    <!-- TASK DESCRIPTION -->
     <td>${task.task}</td>
+
+    <!-- TYPE -->
     <td>${task.type || "-"}</td>
+
+    <!-- DATE (Due or Completed) -->
     <td>${
       task.status === "Done"
         ? "Completed: " + formatDate(task.completed_at)
         : formatDate(task.due_date)
     }</td>
+
+    <!-- STATUS -->
     <td>${statusPill(task)}</td>
+
+    <!-- ACTIONS -->
     <td>
       <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
       ${
