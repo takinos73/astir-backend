@@ -464,6 +464,12 @@ getEl("saveAssetBtn")?.addEventListener("click", async () => {
 ===================== */
 
 async function deleteAsset(id) {
+  // ROLE GUARD — only planner / admin
+  if (!hasRole("planner", "admin")) {
+    alert("You are not allowed to delete assets");
+    return;
+  }
+
   if (!confirm("Διαγραφή asset;")) return;
 
   try {
@@ -474,17 +480,6 @@ async function deleteAsset(id) {
     console.error(err);
   }
 }
-getEl("addAssetBtn")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  if (!hasRole("planner", "admin")) {
-    alert("You are not allowed to add assets");
-    return;
-  }
-
-  getEl("addAssetOverlay").style.display = "flex";
-});
-
 
 
 /* =====================
