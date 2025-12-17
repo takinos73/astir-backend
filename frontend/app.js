@@ -402,15 +402,30 @@ function renderAssetsTable() {
    ADD ASSET
 ===================== */
 
+// Open Add Asset modal
 getEl("addAssetBtn")?.addEventListener("click", () => {
+  // ROLE GUARD — only planner / admin
+  if (!hasRole("planner", "admin")) {
+    alert("You are not allowed to add assets");
+    return;
+  }
+
   getEl("addAssetOverlay").style.display = "flex";
 });
 
+// Cancel Add Asset
 getEl("cancelAssetBtn")?.addEventListener("click", () => {
   getEl("addAssetOverlay").style.display = "none";
 });
 
+// Save Asset
 getEl("saveAssetBtn")?.addEventListener("click", async () => {
+  // ROLE GUARD — extra safety
+  if (!hasRole("planner", "admin")) {
+    alert("Not allowed");
+    return;
+  }
+
   const line = getEl("assetLine").value;
   const model = getEl("assetMachine").value;
   const sn = getEl("assetSn").value.trim();
