@@ -69,35 +69,43 @@
 
   <div class="app-shell">
 
-    <!-- Import Preview Modal -->
+  <!-- IMPORT PREVIEW MODAL -->
+    
 <div id="importPreviewOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box modal-wide">
+  <div class="modal-box modal-wide import-modal">
+
     <h3>Excel Import Preview</h3>
     <div id="importSummary" class="docs-subtitle"></div>
 
-    <div class="table-card" style="margin-top:10px;">
-      <table id="importPreviewTable">
-        <thead>
-          <tr>
-            <th>Excel Row</th>
-            <th>Line</th>
-            <th>Machine</th>
-            <th>S.N</th>
-            <th>Task</th>
-            <th>Status</th>
-            <th>Error</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <!-- SCROLLABLE BODY -->
+    <div class="import-modal-body">
+      <div class="table-card">
+        <table id="importPreviewTable">
+          <thead>
+            <tr>
+              <th>Excel Row</th>
+              <th>Line</th>
+              <th>Machine</th>
+              <th>S.N</th>
+              <th>Task</th>
+              <th>Status</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="modal-actions" style="margin-top:12px;">
+    <!-- FIXED FOOTER -->
+    <div class="import-modal-footer">
       <button id="confirmImportBtn" class="btn-table">✅ Confirm Import</button>
       <button id="closeImportPreviewBtn" class="btn-cancel">Close</button>
     </div>
+
   </div>
 </div>
+
 
 
     <!-- HEADER -->
