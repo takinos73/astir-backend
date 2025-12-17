@@ -609,24 +609,27 @@ loadTasks();
    APPLY ROLE VISIBILITY
 ===================== */
 function applyRoleVisibility() {
-  if (!hasRole("planner", "admin")) {
 
-    // Excel Import (legacy id – αν υπάρχει)
-    const importBtn = document.getElementById("importExcelBtn");
-    if (importBtn) importBtn.style.display = "none";
+  const isAdmin = hasRole("planner", "admin");
 
-    // Add Task (manual)
-    const addTaskBtn = document.getElementById("addTaskBtn");
-    if (addTaskBtn) addTaskBtn.style.display = "none";
+  // Admin-only elements (generic)
+  document.querySelectorAll(".admin-only")
+    .forEach(el => {
+      el.style.display = isAdmin ? "" : "none";
+    });
 
-    // Assets admin actions (old)
-    document.querySelectorAll(".asset-admin-only")
-      .forEach(el => el.style.display = "none");
+  // Asset admin actions (legacy)
+  document.querySelectorAll(".asset-admin-only")
+    .forEach(el => {
+      el.style.display = isAdmin ? "" : "none";
+    });
 
-    // ✅ NEW: hide all admin-only elements (Upload Excel κ.λπ.)
-    document.querySelectorAll(".admin-only")
-      .forEach(el => el.style.display = "none");
-  }
+  // Optional: specific buttons by id (αν υπάρχουν)
+  const addTaskBtn = document.getElementById("addTaskBtn");
+  if (addTaskBtn) addTaskBtn.style.display = isAdmin ? "" : "none";
+
+  const importBtn = document.getElementById("importExcelBtn");
+  if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
 
 applyRoleVisibility();
