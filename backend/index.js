@@ -67,7 +67,11 @@ app.get("/tasks", async (req, res) => {
         mt.section,
         mt.unit,
         mt.type,
-
+        mt.frequency_hours,
+        mt.duration_min,
+        mt.qty,
+        mt.notes,
+        
         a.model AS machine_name,
         a.serial_number,          -- ⭐ SERIAL NUMBER
         l.code AS line_code       -- ⭐ ΑΠΑΡΑΙΤΗΤΟ ΓΙΑ UI FILTER
