@@ -10,6 +10,16 @@ let pendingSnapshotJson = null;
 let loadedSnapshotName = null;
 let importExcelFile = null;
 
+
+/* =====================
+   CURRENT USER (TEMP)
+   Later replaced by login
+===================== */
+const CURRENT_USER = {
+  name: "Director",
+  role: "planner" // technician | planner | admin
+};
+
 /* =====================
    Helpers
 ===================== */
@@ -46,6 +56,13 @@ function getDueState(t) {
   if (d < 0) return "overdue";
   if (d <= 7) return "soon";
   return "ok";
+}
+
+/* =====================
+   ROLE HELPERS
+===================== */
+function hasRole(...roles) {
+  return roles.includes(CURRENT_USER.role);
 }
 
 /* =====================
@@ -449,6 +466,10 @@ getEl("addAssetBtn")?.addEventListener("click", () => {
 ===================== */
 
 async function importExcel() {
+   if (!hasRole("planner", "admin")) {
+    alert("Not allowed");
+    return;
+  }
   const file = getEl("excelFile").files[0];
   if (!file) return alert("Select Excel");
 
@@ -541,5 +562,29 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 ===================== */
 
 loadTasks();
+/* =====================
+   APPLY ROLE VISIBILITY
+===================== */
+function applyRoleVisibility() {
+  // Excel Import
+  if (!hasRole("planner", "admin")) {
+    const importBtn = document.getElementById("importExcelBtn");
+    if (importBtn) importBtn.style.display = "none";
+  }
+
+  // Add Task (manual)
+  if (!hasRole("planner", "admin")) {
+    const addTaskBtn = document.getElementById("addTaskBtn");
+    if (addTaskBtn) addTaskBtn.style.display = "none";
+  }
+
+  // Assets edit / add (αν υπάρχουν)
+  if (!hasRole("planner", "admin")) {
+    document.querySelectorAll(".asset-admin-only")
+      .forEach(el => el.style.display = "none");
+  }
+}
+applyRoleVisibility();
+
 
 
