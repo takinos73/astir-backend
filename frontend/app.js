@@ -587,25 +587,24 @@ loadTasks();
    APPLY ROLE VISIBILITY
 ===================== */
 function applyRoleVisibility() {
-  // Excel Import
   if (!hasRole("planner", "admin")) {
+
+    // Excel Import
     const importBtn = document.getElementById("importExcelBtn");
     if (importBtn) importBtn.style.display = "none";
-  }
 
-  // Add Task (manual)
-  if (!hasRole("planner", "admin")) {
+    // Add Task (manual)
     const addTaskBtn = document.getElementById("addTaskBtn");
     if (addTaskBtn) addTaskBtn.style.display = "none";
-  }
 
-  // Assets edit / add (αν υπάρχουν)
-  if (!hasRole("planner", "admin")) {
+    // Assets admin actions
     document.querySelectorAll(".asset-admin-only")
       .forEach(el => el.style.display = "none");
   }
 }
+
 applyRoleVisibility();
+
 
 
 
