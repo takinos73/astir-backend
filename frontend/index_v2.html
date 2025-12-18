@@ -26,6 +26,33 @@
   </div>
 </div>
 
+  <!-- =====================
+     HISTORY MODAL
+===================== -->
+<div id="historyOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide">
+    <h3>📜 Task Execution History</h3>
+
+    <div class="table-card" style="max-height:60vh; overflow:auto;">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Asset</th>
+            <th>Task</th>
+            <th>Executed By</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeHistory()">Close</button>
+    </div>
+  </div>
+</div>
+
   <!-- Add Task Modal -->
 <div id="addTaskOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-wide">
@@ -215,6 +242,9 @@
       </section>
 
       <button class="btn-secondary admin-only"" id="addTaskBtn">➕ New Task</button>
+      <button class="btn-secondary" onclick="openHistory()">
+        📜 View History
+      </button>
 
       <!-- TASK TABLE -->
       <div class="table-card">
