@@ -244,23 +244,7 @@ function viewTask(taskId) {
 
   el.innerHTML = `
 
-  /* =====================
-   HISTORY MODAL
-===================== */
-function openHistory() {
-  loadHistory(); // refresh every time
-  getEl("historyOverlay").style.display = "flex";
-}
-
-function closeHistory() {
-  getEl("historyOverlay").style.display = "none";
-}
-
-// Bind button
-getEl("openHistoryBtn")?.addEventListener("click", openHistory);
-
-
-  <!-- =====================
+   <!-- =====================
        ASSET HEADER
   ====================== -->
   <div class="task-view-asset">
@@ -332,6 +316,21 @@ getEl("openHistoryBtn")?.addEventListener("click", openHistory);
 function closeTaskView() {
   document.getElementById("taskViewOverlay").style.display = "none";
 }
+/* =====================
+   HISTORY MODAL (GLOBAL)
+===================== */
+function openHistory() {
+  loadHistory(); // always refresh
+  getEl("historyOverlay").style.display = "flex";
+}
+
+function closeHistory() {
+  getEl("historyOverlay").style.display = "none";
+}
+
+getEl("openHistoryBtn")?.addEventListener("click", openHistory);
+getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
+
 
 /* =====================
    FILTERS
