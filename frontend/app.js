@@ -30,6 +30,15 @@ function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
+/* =====================
+   DATE TIME FORMATTER
+===================== */
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleString("el-GR");
+}
+
 
 function diffDays(a, b) {
   return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
