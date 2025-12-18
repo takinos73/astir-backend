@@ -361,19 +361,38 @@ getEl("cancelDone")?.addEventListener("click", () => {
   pendingTaskId = null;
 });
 
+/* =====================
+   CONFIRM TASK DONE
+===================== */
 getEl("confirmDone")?.addEventListener("click", async () => {
   const name = getEl("technicianInput").value.trim();
   if (!name) return alert("Δώσε όνομα");
 
-  await fetch(`${API}/tasks/${pendingTaskId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ completed_by: name })
-  });
+  try {
+    const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed_by: name })
+    });
 
-  getEl("modalOverlay").style.display = "none";
-  loadTasks();
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to complete task");
+    }
+
+    // close modal & cleanup
+    getEl("modalOverlay").style.display = "none";
+    getEl("technicianInput").value = "";
+
+    // reload tasks (θα εμφανιστεί και το next preventive)
+    loadTasks();
+
+  } catch (err) {
+    alert(err.message);
+    console.error("CONFIRM DONE ERROR:", err);
+  }
 });
+
 
 async function undoTask(id) {
   await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
