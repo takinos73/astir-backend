@@ -132,31 +132,84 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
-// Mark done + technician + timestamp
+/* =====================
+   COMPLETE TASK + CREATE NEXT PREVENTIVE
+===================== */
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
+  const { id } = req.params;
+
+  const client = await pool.connect();
 
   try {
-    const result = await pool.query(
+    await client.query("BEGIN");
+
+    // 1️⃣ Mark task as Done
+    const doneResult = await client.query(
       `
       UPDATE maintenance_tasks
-      SET status='Done',
-          completed_by=$2,
-          completed_at=NOW(),
-          updated_at=NOW()
-      WHERE id=$1
+      SET
+        status = 'Done',
+        completed_by = $2,
+        completed_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $1
       RETURNING *
       `,
-      [req.params.id, completed_by || null]
+      [id, completed_by || null]
     );
 
-    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
-    res.json(result.rows[0]);
+    if (!doneResult.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    const task = doneResult.rows[0];
+
+    // 2️⃣ If preventive → create next task
+    if (task.frequency_hours && task.frequency_hours > 0) {
+
+      const nextDue = new Date(task.due_date);
+      nextDue.setHours(nextDue.getHours() + task.frequency_hours);
+
+      await client.query(
+        `
+        INSERT INTO maintenance_tasks (
+          asset_id,
+          section,
+          unit,
+          task,
+          type,
+          frequency_hours,
+          due_date,
+          status
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,'Planned')
+        `,
+        [
+          task.asset_id,
+          task.section,
+          task.unit,
+          task.task,
+          task.type,
+          task.frequency_hours,
+          nextDue
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ success: true });
+
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("PATCH /tasks/:id ERROR:", err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
+
 
 // Undo to planned
 app.patch("/tasks/:id/undo", async (req, res) => {
