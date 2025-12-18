@@ -201,8 +201,10 @@ app.get("/assets", async (req, res) => {
         a.active
       FROM assets a
       JOIN lines l ON l.id = a.line_id
+      WHERE a.active = true
       ORDER BY l.code, a.model, a.serial_number
     `);
+
     res.json(result.rows);
   } catch (err) {
     console.error("GET /assets ERROR:", err.message);
