@@ -327,6 +327,73 @@ tbody tr:hover {
   display: flex;
   gap: 10px;
 }
+#historyTable td,
+#historyTable th {
+  vertical-align: middle;
+  padding: 10px 12px;
+}
+#historyTable th:nth-child(1),
+#historyTable td:nth-child(1) {
+  width: 160px; /* Date */
+}
+
+#historyTable th:nth-child(4),
+#historyTable td:nth-child(4) {
+  width: 140px; /* Executed by */
+  text-align: center;
+}
+#historyTable td small {
+  color: #aaa;
+  font-size: 0.75em;
+}
+
+#historyTable td strong {
+  font-weight: 600;
+}
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.8em;
+}
+#historyTable td:last-child button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#historyTable td:nth-child(1) {
+  font-size: 0.85em;
+  color: #b5b5b5;
+  white-space: nowrap;
+}
+#historyTable td:nth-child(2) strong {
+  font-size: 1em;
+}
+
+#historyTable td:nth-child(2) small {
+  font-size: 0.75em;
+  color: #9aa3ad;
+}
+
+
+#historyTable th:last-child,
+#historyTable td:last-child {
+  width: 90px; /* View */
+  text-align: center;
+}
+#historyTable td:nth-child(3) strong {
+  display: block;
+  font-size: 0.95em;
+}
+
+#historyTable td:nth-child(3) small {
+  font-size: 0.75em;
+  color: #a0a0a0;
+}
+#historyTable td:nth-child(4) {
+  text-align: center;
+  font-weight: 500;
+  color: #d0d0d0;
+}
+
 
 .tech-meta{
   font-size:11px;
