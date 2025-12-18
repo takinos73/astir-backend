@@ -133,7 +133,7 @@ app.post("/tasks", async (req, res) => {
 });
 
 /* =====================
-   COMPLETE TASK + CREATE NEXT PREVENTIVE
+   COMPLETE PREVENTIVE TASK (ROTATE)
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
@@ -144,59 +144,40 @@ app.patch("/tasks/:id", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1️⃣ Mark task as Done
-    const doneResult = await client.query(
-      `
-      UPDATE maintenance_tasks
-      SET
-        status = 'Done',
-        completed_by = $2,
-        completed_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-      `,
-      [id, completed_by || null]
+    // 1️⃣ Fetch task
+    const taskRes = await client.query(
+      `SELECT * FROM maintenance_tasks WHERE id = $1`,
+      [id]
     );
 
-    if (!doneResult.rows.length) {
+    if (!taskRes.rows.length) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const task = doneResult.rows[0];
+    const task = taskRes.rows[0];
 
-    // 2️⃣ If preventive → create next task
+    // 2️⃣ Calculate next due (if preventive)
+    let nextDue = null;
     if (task.frequency_hours && task.frequency_hours > 0) {
-
-      const nextDue = new Date(task.due_date);
+      nextDue = new Date(task.due_date);
       nextDue.setHours(nextDue.getHours() + task.frequency_hours);
-
-      await client.query(
-        `
-        INSERT INTO maintenance_tasks (
-          asset_id,
-          section,
-          unit,
-          task,
-          type,
-          frequency_hours,
-          due_date,
-          status
-        )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,'Planned')
-        `,
-        [
-          task.asset_id,
-          task.section,
-          task.unit,
-          task.task,
-          task.type,
-          task.frequency_hours,
-          nextDue
-        ]
-      );
     }
+
+    // 3️⃣ Update SAME task (no INSERT!)
+    await client.query(
+      `
+      UPDATE maintenance_tasks
+      SET
+        status = 'Planned',
+        due_date = COALESCE($2, due_date),
+        completed_by = $3,
+        completed_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [id, nextDue, completed_by || null]
+    );
 
     await client.query("COMMIT");
     res.json({ success: true });
