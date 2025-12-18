@@ -133,7 +133,7 @@ app.post("/tasks", async (req, res) => {
 });
 
 /* =====================
-   COMPLETE PREVENTIVE TASK (ROTATE)
+   COMPLETE PREVENTIVE TASK (ROTATE + HISTORY)
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
@@ -157,14 +157,27 @@ app.patch("/tasks/:id", async (req, res) => {
 
     const task = taskRes.rows[0];
 
-    // 2️⃣ Calculate next due (if preventive)
+    // 2️⃣ Log execution (HISTORY)
+    await client.query(
+      `
+      INSERT INTO task_executions (
+        task_id,
+        asset_id,
+        executed_by
+      )
+      VALUES ($1, $2, $3)
+      `,
+      [task.id, task.asset_id, completed_by || null]
+    );
+
+    // 3️⃣ Calculate next due (if preventive)
     let nextDue = null;
     if (task.frequency_hours && task.frequency_hours > 0) {
       nextDue = new Date(task.due_date);
       nextDue.setHours(nextDue.getHours() + task.frequency_hours);
     }
 
-    // 3️⃣ Update SAME task (no INSERT!)
+    // 4️⃣ Rotate SAME task (no INSERT)
     await client.query(
       `
       UPDATE maintenance_tasks
@@ -190,7 +203,6 @@ app.patch("/tasks/:id", async (req, res) => {
     client.release();
   }
 });
-
 
 // Undo to planned
 app.patch("/tasks/:id/undo", async (req, res) => {
