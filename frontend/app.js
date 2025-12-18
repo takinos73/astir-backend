@@ -409,14 +409,19 @@ function renderAssetsTable() {
 
   assetsData.forEach(a => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${a.line || "-"}</td>
-      <td>${a.model || "-"}</td>
-      <td>${a.serial_number || "-"}</td>
-      <td>
-        <button class="btn-danger" onclick="deleteAsset(${a.id})">🗑 Delete</button>
-      </td>
-    `;
+    // μέσα στο forEach(a => { ... })
+      tr.innerHTML = `
+        <td>${a.line || "-"}</td>
+        <td>${a.model || "-"}</td>
+        <td>${a.serial_number || "-"}</td>
+        <td class="asset-admin-only">
+         <button class="btn-warning"
+            onclick="deactivateAsset(${a.id})">
+      🚫 Deactivate
+    </button>
+  </td>
+`;
+
     tbody.appendChild(tr);
   });
 }
@@ -502,6 +507,29 @@ async function deleteAsset(id) {
   }
 }
 
+/* =====================
+   DEACTIVATE ASSET
+===================== */
+async function deactivateAsset(id) {
+  // ROLE GUARD
+  if (!hasRole("planner", "admin")) {
+    alert("You are not allowed to deactivate assets");
+    return;
+  }
+
+  if (!confirm("Deactivate this asset?")) return;
+
+  try {
+    await fetch(`${API}/assets/${id}/deactivate`, {
+      method: "PATCH"
+    });
+
+    loadAssets();
+  } catch (err) {
+    alert("Failed to deactivate asset");
+    console.error(err);
+  }
+}
 
 /* =====================
    IMPORT EXCEL (PREVIEW + COMMIT)
