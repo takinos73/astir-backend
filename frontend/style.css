@@ -372,6 +372,30 @@ tbody tr:hover {
   font-size: 0.75em;
   color: #9aa3ad;
 }
+#historyTable th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8em;
+  letter-spacing: 0.5px;
+  color: #9fa6b2;
+}
+/* DATE */
+#historyTable th:nth-child(1),
+#historyTable td:nth-child(1) {
+  text-align: center;
+}
+
+/* EXECUTED BY */
+#historyTable th:nth-child(4),
+#historyTable td:nth-child(4) {
+  text-align: center;
+}
+
+/* ACTION (αν υπάρχει) */
+#historyTable th:last-child,
+#historyTable td:last-child {
+  text-align: center;
+}
 
 
 #historyTable th:last-child,
