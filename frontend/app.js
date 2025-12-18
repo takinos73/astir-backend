@@ -164,6 +164,46 @@ function buildRow(task) {
 }
 
 /* =====================
+   LOAD TASK HISTORY
+===================== */
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API}/executions`);
+    const history = await res.json();
+    renderHistoryTable(history);
+  } catch (err) {
+    console.error("LOAD HISTORY ERROR:", err);
+  }
+}
+
+function renderHistoryTable(data) {
+  const tbody = document.querySelector("#historyTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  data.forEach(h => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${formatDateTime(h.executed_at)}</td>
+      <td>
+        <strong>${h.machine}</strong><br>
+        <small>SN: ${h.serial_number} | ${h.line}</small>
+      </td>
+      <td>
+        <div><strong>${h.task}</strong></div>
+        <small>${h.section} / ${h.unit}</small>
+      </td>
+      <td>${h.executed_by || "-"}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+/* =====================
    KPIs
 ===================== */
 
@@ -652,6 +692,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 console.log("BEFORE LOAD TASKS");
 
 loadTasks();
+loadHistory();
 /* =====================
    APPLY ROLE VISIBILITY
 ===================== */
