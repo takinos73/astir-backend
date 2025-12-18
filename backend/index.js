@@ -216,35 +216,66 @@ app.post("/assets", async (req, res) => {
   const { line, model, serial_number, description, active } = req.body;
 
   if (!line || !model || !serial_number) {
-    return res.status(400).json({ error: "Missing fields: line, model, serial_number" });
+    return res.status(400).json({ error: "Missing fields" });
   }
 
   const client = await pool.connect();
+
   try {
     const lineId = await findLineIdByCode(client, cleanUpper(line));
-    if (!lineId) return res.status(400).json({ error: `Line not found: ${line}` });
+    if (!lineId) {
+      return res.status(400).json({ error: `Line not found: ${line}` });
+    }
 
-    // serial_number UNIQUE -> upsert style
+    // 🔍 Check if asset already exists
+    const existing = await client.query(
+      `
+      SELECT id, active
+      FROM assets
+      WHERE model = $1 AND serial_number = $2
+      `,
+      [cleanStr(model), cleanStr(serial_number)]
+    );
+
+    // ♻ Inactive → Reactivate
+    if (existing.rows.length > 0 && existing.rows[0].active === false) {
+      const reactivated = await client.query(
+        `
+        UPDATE assets
+        SET active = true,
+            line_id = $1,
+            description = $2
+        WHERE id = $3
+        RETURNING *
+        `,
+        [lineId, description || null, existing.rows[0].id]
+      );
+
+      return res.json({
+        reactivated: true,
+        asset: reactivated.rows[0]
+      });
+    }
+
+    // ❌ Already active
+    if (existing.rows.length > 0) {
+      return res.status(409).json({
+        error: "Asset already exists and is active"
+      });
+    }
+
+    // ➕ New asset
     const result = await client.query(
-  `
-  INSERT INTO assets (line_id, model, serial_number, description, active)
-  VALUES ($1,$2,$3,$4,$5)
-  ON CONFLICT (line_id, model, serial_number)
-  DO UPDATE SET
-    description = EXCLUDED.description,
-    active = EXCLUDED.active
-  RETURNING *
-  `,
-  [
-    lineId,
-    cleanStr(model),
-    cleanStr(serial_number),
-    description || null,
-    typeof active === "boolean" ? active : true,
-  ]
-);
+      `
+      INSERT INTO assets (line_id, model, serial_number, description, active)
+      VALUES ($1, $2, $3, $4, true)
+      RETURNING *
+      `,
+      [lineId, cleanStr(model), cleanStr(serial_number), description || null]
+    );
 
     res.json(result.rows[0]);
+
   } catch (err) {
     console.error("POST /assets ERROR:", err.message);
     res.status(500).json({ error: err.message });
@@ -252,6 +283,7 @@ app.post("/assets", async (req, res) => {
     client.release();
   }
 });
+
 
 app.delete("/assets/:id", async (req, res) => {
   try {
