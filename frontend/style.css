@@ -392,10 +392,13 @@ tbody tr:hover {
   margin-bottom: 6px;   /* ήταν μεγάλο */
 }
 .modal-wide {
-  width: 720px;
+  width: 520px;
   max-width: 90%;
 }
-
+.modal-history {
+  width: 95%;
+  max-width: 1400px;
+}
 .task-view-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -410,6 +413,7 @@ tbody tr:hover {
   border-radius: 6px;
   border: 1px solid #272b35;
 }
+
 /* =========================
    MAIN TABS
 ========================= */
