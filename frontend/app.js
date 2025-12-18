@@ -243,6 +243,19 @@ function viewTask(taskId) {
   const el = document.getElementById("taskViewContent");
 
   el.innerHTML = `
+
+  /* =====================
+   HISTORY MODAL
+===================== */
+function openHistory() {
+  loadHistory(); // refresh κάθε φορά
+  getEl("historyOverlay").style.display = "flex";
+}
+
+function closeHistory() {
+  getEl("historyOverlay").style.display = "none";
+}
+
   <!-- =====================
        ASSET HEADER
   ====================== -->
