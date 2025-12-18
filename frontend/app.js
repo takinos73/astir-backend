@@ -429,18 +429,19 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       throw new Error(err.error || "Failed to complete task");
     }
 
-    // close modal & cleanup
     getEl("modalOverlay").style.display = "none";
     getEl("technicianInput").value = "";
 
-    // reload tasks (θα εμφανιστεί και το next preventive)
+    // 🔄 REFRESH BOTH
     loadTasks();
+    loadHistory();
 
   } catch (err) {
     alert(err.message);
     console.error("CONFIRM DONE ERROR:", err);
   }
 });
+
 
 
 async function undoTask(id) {
