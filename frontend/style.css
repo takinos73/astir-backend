@@ -786,6 +786,88 @@ tbody tr:hover {
   color: #cfd8dc;
 }
 
+/* =========================
+   FINAL FIX — HISTORY TABLE
+   (place at VERY END)
+========================= */
+
+#historyTable {
+  table-layout: fixed;
+}
+
+/* BASE */
+#historyTable th,
+#historyTable td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+/* HEADERS */
+#historyTable th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: #9fa6b2;
+  background: #131721;
+  text-transform: uppercase;
+}
+
+/* COLUMN ALIGNMENT */
+
+/* DATE */
+#historyTable th:nth-child(1),
+#historyTable td:nth-child(1) {
+  width: 170px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.85em;
+  color: #b5b5b5;
+}
+
+/* ASSET */
+#historyTable th:nth-child(2),
+#historyTable td:nth-child(2) {
+  text-align: left;
+}
+
+/* TASK */
+#historyTable th:nth-child(3),
+#historyTable td:nth-child(3) {
+  text-align: left;
+}
+
+/* EXECUTED BY */
+#historyTable th:nth-child(4),
+#historyTable td:nth-child(4) {
+  width: 140px;
+  text-align: center;
+  font-weight: 500;
+  color: #d0d0d0;
+}
+
+/* ASSET TEXT */
+#historyTable td:nth-child(2) strong {
+  display: block;
+  font-size: 1em;
+}
+
+#historyTable td:nth-child(2) small {
+  font-size: 0.75em;
+  color: #9aa3ad;
+}
+
+/* TASK TEXT */
+#historyTable td:nth-child(3) strong {
+  display: block;
+  font-size: 0.95em;
+}
+
+#historyTable td:nth-child(3) small {
+  font-size: 0.75em;
+  color: #a0a0a0;
+}
+
+
 
 
 
