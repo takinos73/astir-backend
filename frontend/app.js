@@ -248,13 +248,17 @@ function viewTask(taskId) {
    HISTORY MODAL
 ===================== */
 function openHistory() {
-  loadHistory(); // refresh κάθε φορά
+  loadHistory(); // refresh every time
   getEl("historyOverlay").style.display = "flex";
 }
 
 function closeHistory() {
   getEl("historyOverlay").style.display = "none";
 }
+
+// Bind button
+getEl("openHistoryBtn")?.addEventListener("click", openHistory);
+
 
   <!-- =====================
        ASSET HEADER
