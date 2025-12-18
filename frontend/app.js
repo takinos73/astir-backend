@@ -12,7 +12,6 @@ let loadedSnapshotName = null;
 let importExcelFile = null;
 
 
-
 /* =====================
    Helpers
 ===================== */
@@ -170,6 +169,7 @@ async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
     const history = await res.json();
+    console.log("HISTORY DATA:", history); // 👈
     renderHistoryTable(history);
   } catch (err) {
     console.error("LOAD HISTORY ERROR:", err);
