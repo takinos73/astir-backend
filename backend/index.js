@@ -261,6 +261,34 @@ app.delete("/assets/:id", async (req, res) => {
   }
 });
 
+/* =====================
+   DEACTIVATE ASSET
+===================== */
+app.patch("/assets/:id/deactivate", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE assets
+      SET active = false
+      WHERE id = $1
+      RETURNING *
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Asset not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("DEACTIVATE ASSET ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
