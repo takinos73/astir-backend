@@ -592,7 +592,7 @@ tbody tr:hover { background: #131520; }
   ========================= */
 
   body.print-planned .app-header,
-  body.print-planned #tab-tasks {
+  body.print-planned #tasksTable {
     display: block !important;
   }
 
