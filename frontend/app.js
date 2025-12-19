@@ -425,16 +425,7 @@ function renderTable() {
     .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
 
     // MACHINE FILTER
-    .filter(t => mf === "all" || t.machine_name === mf)
-
-    // STATUS FILTER
-   // .filter(t => {
-   //   if (sf === "all") return true;
-  //    if (sf === "Planned") return t.status === "Planned";
-   //   if (sf === "Done") return t.status === "Done";
-    //  if (sf === "Overdue") return getDueState(t) === "overdue";
-   //   return true;
-   // })
+    .filter(t => mf === "all" || t.machine_name === mf)   
 
     // DATE FILTER (NEW)
     .filter(t => {
@@ -475,12 +466,6 @@ function renderTable() {
 
 getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
-});
-
-//getEl("statusFilter")?.addEventListener("change", () => {
-  //renderTable();
-//});
-
 
 /* =====================
    LOAD TASKS
