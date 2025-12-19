@@ -522,4 +522,13 @@ tbody tr:hover { background: #131520; }
   padding-left: 12px;
 }
 
+/* =====================
+   ASSET FILTER DROPDOWN SCROLL
+===================== */
+#machineFilter {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+
 
