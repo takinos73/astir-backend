@@ -575,11 +575,20 @@ tbody tr:hover { background: #131520; }
   .machine-name {
     font-weight: bold;
   }
-
   .task-name {
     font-weight: 600;
   }
 }
+   @media print {
+  #tasksTable {
+    display: none;
+  }
+
+  #historyTable {
+    display: table;
+  }
+}
+
 
 
 }
