@@ -11,7 +11,6 @@ let pendingSnapshotJson = null;
 let loadedSnapshotName = null;
 let importExcelFile = null;
 let activeDateFilter = "all";
-let historyData = [];
 
 
 /* =====================
@@ -32,102 +31,6 @@ function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
-
-/* =====================
-   Print schedule
-===================== */
-function buildPrintPlannedTable() {
-  const tbody = document.querySelector("#printPlannedTable tbody");
-  tbody.innerHTML = "";
-
-  const rows = window.currentVisibleTasks || [];
-
-  rows.forEach(t => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        ${t.machine_name}<br>
-        <small>SN: ${t.serial_number} | ${t.line_code}</small>
-      </td>
-      <td>${t.section || "-"}</td>
-      <td>${t.unit || "-"}</td>
-      <td>${t.task}</td>
-      <td>${t.type || "-"}</td>
-      <td>${formatDate(t.due_date)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function printPlannedTasks() {
-  buildPrintPlannedTable();
-
-  document.body.classList.add("print-planned");
-
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove("print-planned");
-      }, 500);
-    }, 50);
-  });
-}
-
-function buildPrintHistoryTable() {
-  const tbody = document.querySelector("#printHistoryTable tbody");
-  if (!tbody) {
-    console.error("printHistoryTable tbody not found");
-    return;
-  }
-
-  tbody.innerHTML = "";
-
-  historyData.forEach(h => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${formatDateTime(h.executed_at)}</td>
-      <td>
-        <strong>${h.machine_name || h.machine || "-"}</strong><br>
-        <small>SN: ${h.serial_number || "-"} | ${h.line_code || h.line || "-"}</small>
-      </td>
-      <td>
-        <strong>${h.task || "-"}</strong><br>
-        <small>${h.section || "-"} / ${h.unit || "-"}</small>
-      </td>
-      <td>${h.executed_by || "-"}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  console.log("PRINT HISTORY rows:", historyData.length);
-}
-
-async function printHistory() {
-  // 1) ensure latest data
-  await loadHistory();
-
-  // 2) build print-only table
-  buildPrintHistoryTable();
-
-  // 3) activate print mode
-  document.body.classList.remove("print-planned");
-  document.body.classList.add("print-history");
-
-  // 4) wait layout then print
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove("print-history");
-      }, 500);
-    }, 50);
-  });
-}
-
-
-
-
 /* =====================
    DATE TIME FORMATTER
 ===================== */
@@ -319,16 +222,12 @@ async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
     const history = await res.json();
-
-    historyData = Array.isArray(history) ? history : [];   // ✅ ΚΡΙΣΙΜΟ
-
-    console.log("HISTORY DATA:", historyData);
-    renderHistoryTable(historyData);
+    console.log("HISTORY DATA:", history); // 👈
+    renderHistoryTable(history);
   } catch (err) {
     console.error("LOAD HISTORY ERROR:", err);
   }
 }
-
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
@@ -469,8 +368,6 @@ function openHistory() {
   loadHistory(); // always refresh
   getEl("historyOverlay").style.display = "flex";
 }
-getEl("printHistoryBtn")?.addEventListener("click", printHistory);
-
 
 function closeHistory() {
   getEl("historyOverlay").style.display = "none";
@@ -478,6 +375,7 @@ function closeHistory() {
 
 getEl("openHistoryBtn")?.addEventListener("click", openHistory);
 getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
+
 
 /* =====================
    FILTERS
@@ -559,7 +457,6 @@ function renderTable() {
     });
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
-   window.currentVisibleTasks = filtered;
 }
 
 
@@ -943,10 +840,4 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
-
-
-
-
-
-
 
