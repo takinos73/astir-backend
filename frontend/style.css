@@ -586,6 +586,21 @@ tbody tr:hover { background: #131520; }
   font-weight: 600;
 }
 /* =====================
+   ASSET COLUMN STYLING
+===================== */
+
+.asset-main {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.asset-sn {
+  font-size: 11px;
+  color: #8a8f9c;
+  line-height: 1.2;
+}
+
+/* =====================
    TAB TASKS – FIX CLICK LAYER
 ===================== */
 
