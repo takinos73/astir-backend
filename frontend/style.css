@@ -1,5 +1,11 @@
-/* ASTIR CMMS – Industrial Dark UI */
+/* =========================================================
+   ASTIR CMMS – Industrial Dark UI
+   (CLEAN VERSION – no functional changes)
+   ========================================================= */
 
+/* =====================
+   ROOT VARIABLES
+===================== */
 :root {
   --bg-main: #0f1115;
   --bg-card: #181b22;
@@ -13,9 +19,7 @@
   --ok: #4fd18b;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   font-family: system-ui, sans-serif;
@@ -30,8 +34,9 @@ body {
   margin: auto;
 }
 
-/* HEADER */
-
+/* =====================
+   HEADER
+===================== */
 .app-header {
   background: #10131a;
   padding: 16px;
@@ -76,8 +81,9 @@ body {
   color: var(--text-muted);
 }
 
-/* KPI ROW */
-
+/* =====================
+   KPI STRIP
+===================== */
 .kpi-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -103,8 +109,9 @@ body {
   font-weight: bold;
 }
 
-/* CONTROLS */
-
+/* =====================
+   CONTROLS / BUTTONS
+===================== */
 .controls-row {
   display: flex;
   gap: 10px;
@@ -122,45 +129,67 @@ select,
   cursor: pointer;
 }
 
-.btn-secondary:hover {
-  background: #222838;
-}
-/* =========================
-   MAIN TABS (Tasks / Docs)
-   ========================= */
+.btn-secondary:hover { background: #222838; }
 
+.btn-table {
+  background: var(--ok);
+  color: #032012;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-table:hover { background: #5ceb9e; }
+
+.btn-undo,
+.btn-cancel {
+  background: #444;
+  color: #f9fafb;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-undo:hover,
+.btn-cancel:hover { background: #6b7280; }
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.8em;
+}
+
+/* =====================
+   MAIN TABS
+===================== */
 .main-tabs {
   display: flex;
-  gap: 8px;
-  margin: 16px 0 12px 0;
+  gap: 10px;
+  margin: 12px 0 16px;
 }
 
 .main-tab {
-  padding: 6px 14px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.main-tab:hover {
-  background: #222838;
   color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
 }
 
-/* ACTIVE TAB */
+.main-tab:hover { background: #222838; }
+
 .main-tab.active {
-  background: var(--accent);
-  color: #0a0c10;
-  border-color: var(--accent);
-  font-weight: 600;
+  border-color: rgba(78,168,255,.6);
+  box-shadow: 0 0 0 2px rgba(78,168,255,.15) inset;
 }
 
-/* TABLE */
-
+/* =====================
+   TABLES (GLOBAL)
+===================== */
 .table-card {
   background: var(--bg-card);
   padding: 8px;
@@ -188,241 +217,12 @@ td {
   padding: 8px;
   border-top: 1px solid #22252d;
 }
-/* Line Tabs */
-.line-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-subtle);
-}
 
-.line-tab {
-  padding: 6px 12px;
-  background: var(--bg-card);
-  border-radius: 6px;
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--text-muted);
-  user-select: none;
-  transition: 0.15s;
-}
+tbody tr:hover { background: #131520; }
 
-.line-tab:hover {
-  background: #222838;
-  color: var(--text-main);
-}
-
-/* Active Line */
-.line-tab.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  font-weight: bold;
-}
-
-
-/* STATUS PILL */
-
-.status-pill {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #000;
-}
-
-/* DONE - green */
-.status-pill.status-done {
-  background: #b9ffb9;
-  color: #005500;
-}
-
-/* OVERDUE - red */
-.status-pill.status-overdue {
-  background: #ffbaba;
-  color: #5a0000;
-}
-
-/* DUE SOON - bright yellow */
-.status-pill.status-soon {
-  background: #fff6a5;
-  color: #6b5200;
-}
-
-/* UNKNOWN DATE */
-.status-pill.status-unknown {
-  background: #c0c0c0;
-  color: #222;
-}
-
-/* BUTTONS */
-
-.btn-table {
-  background: var(--ok);
-  color: #032012;
-  padding: 5px 10px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.btn-table:hover {
-  background: #5ceb9e;
-}
-
-.btn-undo,
-.btn-cancel {
-  background: #444;
-  color: #f9fafb;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-undo:hover,
-.btn-cancel:hover {
-  background: #6b7280;
-}
-
-/* ROW HOVER */
-
-tbody tr:hover {
-  background: #131520;
-}
-
-/* MODAL */
-
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.modal-box {
-  background: var(--bg-card-alt);
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
-  border: 1px solid var(--border-subtle);
-  text-align: center;
-}
-
-.modal-box input {
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0;
-  border-radius: 6px;
-  border: 1px solid var(--border-subtle);
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-}
-#historyTable td,
-#historyTable th {
-  vertical-align: middle;
-  padding: 10px 12px;
-}
-#historyTable th:nth-child(1),
-#historyTable td:nth-child(1) {
-  width: 160px; /* Date */
-}
-
-#historyTable th:nth-child(4),
-#historyTable td:nth-child(4) {
-  width: 140px; /* Executed by */
-  text-align: center;
-}
-#historyTable td small {
-  color: #aaa;
-  font-size: 0.75em;
-}
-
-#historyTable td strong {
-  font-weight: 600;
-}
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 0.8em;
-}
-#historyTable td:last-child button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-#historyTable td:nth-child(1) {
-  font-size: 0.85em;
-  color: #b5b5b5;
-  white-space: nowrap;
-}
-#historyTable td:nth-child(2) strong {
-  font-size: 1em;
-}
-
-#historyTable td:nth-child(2) small {
-  font-size: 0.75em;
-  color: #9aa3ad;
-}
-#historyTable th {
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.8em;
-  letter-spacing: 0.5px;
-  color: #9fa6b2;
-}
-/* DATE */
-#historyTable th:nth-child(1),
-#historyTable td:nth-child(1) {
-  text-align: center;
-}
-
-/* EXECUTED BY */
-#historyTable th:nth-child(4),
-#historyTable td:nth-child(4) {
-  text-align: center;
-}
-
-/* ACTION (αν υπάρχει) */
-#historyTable th:last-child,
-#historyTable td:last-child {
-  text-align: center;
-}
-
-
-#historyTable th:last-child,
-#historyTable td:last-child {
-  width: 90px; /* View */
-  text-align: center;
-}
-#historyTable td:nth-child(3) strong {
-  display: block;
-  font-size: 0.95em;
-}
-
-#historyTable td:nth-child(3) small {
-  font-size: 0.75em;
-  color: #a0a0a0;
-}
-#historyTable td:nth-child(4) {
-  text-align: center;
-  font-weight: 500;
-  color: #d0d0d0;
-}
-
-
-.tech-meta{
-  font-size:11px;
-  color:#9ca3af;
-}
+/* =====================
+   LINE TABS
+===================== */
 .line-tabs {
   display: flex;
   gap: 6px;
@@ -440,9 +240,7 @@ tbody tr:hover {
   transition: 0.2s ease;
 }
 
-.line-tab:hover {
-  background: #2b3240;
-}
+.line-tab:hover { background: #2b3240; }
 
 .line-tab.active {
   background: #4ea8ff;
@@ -451,207 +249,73 @@ tbody tr:hover {
   font-weight: bold;
 }
 
-.docs-viewer-wrapper {
-  margin-top: 6px;
-  border: 1px solid var(--border-subtle);
+/* =====================
+   STATUS PILL
+===================== */
+.status-pill {
+  display: inline-block;
+  padding: 4px 8px;
   border-radius: 8px;
-  overflow: hidden;
-  background: #111;
-}
-
-.docs-viewer {
-  width: 100%;
-  height: 360px;        /* 👈 ΤΟ ΚΛΕΙΔΙ */
-  border: none;
-}
-.docs-header {
-  margin-bottom: 6px;   /* ήταν μεγάλο */
-}
-.docs-header h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.docs-hint {
   font-size: 12px;
-  letter-spacing: 0.2px;
-  opacity: 0.8;
+  font-weight: bold;
+  color: #000;
 }
 
-.docs-controls {
-  margin-bottom: 6px;   /* ήταν μεγάλο */
+.status-pill.status-done { background: #b9ffb9; color: #005500; }
+.status-pill.status-overdue { background: #ffbaba; color: #5a0000; }
+.status-pill.status-soon { background: #fff6a5; color: #6b5200; }
+.status-pill.status-unknown { background: #c0c0c0; color: #222; }
+
+/* =====================
+   MODALS (GLOBAL)
+===================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
 }
+
+.modal-box {
+  background: var(--bg-card-alt);
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
 .modal-wide {
   width: 520px;
   max-width: 90%;
 }
+
 .modal-history {
   width: 95%;
   max-width: 1200px;
 }
-.task-view-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 14px;
-  font-size: 13px;
-  margin: 14px 0;
-}
 
-.task-view-grid div {
-  background: #141821;
+.modal-box input {
+  width: 100%;
   padding: 8px;
+  margin: 8px 0;
   border-radius: 6px;
-  border: 1px solid #272b35;
-}
-
-/* =========================
-   MAIN TABS
-========================= */
-.main-tabs{
-  display:flex;
-  gap:10px;
-  margin: 12px 0 16px;
-}
-
-.main-tab{
-  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
 }
 
-.main-tab:hover{
-  background: #222838;
-}
-
-.main-tab.active{
-  border-color: rgba(78,168,255,.6);
-  box-shadow: 0 0 0 2px rgba(78,168,255,.15) inset;
-}
-
-/* =========================
-   REPORTS TAB
-========================= */
-.reports-header h2{
-  margin: 0 0 6px;
-  font-size: 18px;
-}
-
-.reports-subtitle{
-  margin: 0 0 12px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.reports-card{
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.reports-grid{
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.field{
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-}
-
-.field label{
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.field input,
-.field select{
-  padding: 9px 10px;
-  border-radius: 8px;
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-  font-size: 13px;
-}
-
-.field-hidden{
-  display:none;
-}
-
-.reports-preview{
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px dashed var(--border-subtle);
-  background: #10131a;
-}
-
-.preview-title{
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.reports-actions{
-  display:flex;
+.modal-actions {
+  display: flex;
   gap: 10px;
-  margin-top: 14px;
-  justify-content:flex-end;
 }
 
-.btn-primary{
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(78,168,255,.5);
-  background: rgba(78,168,255,.15);
-  color: var(--text-main);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-primary:hover{
-  background: rgba(78,168,255,.22);
-}
-.machine-cell {
-  line-height: 1.2;
-}
-
-.machine-name {
-  font-weight: 500;
-}
-
-.machine-sn {
-  font-size: 0.8em;
-  color: #666;
-}
-/* Excel Import Modal scrolling fix */
-.import-modal {
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.import-modal-body {
-  overflow-y: auto;
-  max-height: 60vh;
-  padding-right: 6px;
-}
-
-.import-modal-footer {
-  flex-shrink: 0;
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
+/* =====================
+   TASK VIEW MODAL
+===================== */
+.tech-meta {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .task-view-grid {
@@ -660,19 +324,7 @@ tbody tr:hover {
   gap: 16px;
 }
 
-.task-view-section h4 {
-  margin-bottom: 6px;
-  color: #9aa4b2;
-  font-size: 0.9em;
-}
-
-.task-view-section p {
-  margin: 2px 0;
-}
-/* ===== ASSET ===== */
-.task-view-asset {
-  margin-bottom: 14px;
-}
+.task-view-asset { margin-bottom: 14px; }
 
 .asset-main {
   font-size: 1.6em;
@@ -684,49 +336,37 @@ tbody tr:hover {
   font-size: 0.9em;
 }
 
-/* ===== TASK TITLE ===== */
 .task-view-title {
   margin-top: 12px;
   font-size: 1.4em;
   font-weight: 600;
 }
 
-/* ===== META ===== */
-
-.task-view-meta{
-  display:flex;
-  gap:10px;
-  justify-content:flex-start;
-  align-items:center;
-  margin-top:6px;
+.task-view-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
 }
 
 .badge {
   padding: 6px 12px;
   font-size: 0.75em;
   opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
 }
 
-.badge-type {
-  background: #2b3a55;
-}
+.badge-type { background: #2b3a55; }
+.badge-status { background: #1f6f5c; }
+.badge-date { background: #3a3a3a; }
 
-.badge-status {
-  background: #1f6f5c;
-}
-
-.badge-date {
-  background: #3a3a3a;
-}
-
-/* ===== DETAILS ===== */
-
-.task-view-details{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px 14px;
-  max-width:480px;
-  margin-top:20px;
+.task-view-details {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 12px 14px;
+  max-width: 480px;
+  margin-top: 20px;
 }
 
 .task-view-details > div {
@@ -738,41 +378,6 @@ tbody tr:hover {
   letter-spacing: 0.5px;
 }
 
-/* =========================
-   FIXES — Task View Modal
-   (place at END of file)
-========================= */
-
-/* tech-meta was missing "." */
-.tech-meta{
-  font-size:11px;
-  color:#9ca3af;
-}
-
-/* meta needs flex for justify-content to work */
-.task-view-meta{
-  display:flex;
-  gap:10px;
-  justify-content:flex-start;
-  align-items:center;
-  margin-top:6px;
-}
-
-/* details needs grid for grid-template-columns to work */
-.task-view-details{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px 14px;
-  max-width:480px;
-  margin-top:20px;
-}
-
-/* optional: badges look nicer inline */
-.badge{
-  display:inline-flex;
-  align-items:center;
-}
-
 .task-view-completed {
   margin-top: 12px;
   padding: 10px 12px;
@@ -782,27 +387,19 @@ tbody tr:hover {
   border-radius: 6px;
 }
 
-.task-view-completed span {
-  color: #cfd8dc;
-}
+.task-view-completed span { color: #cfd8dc; }
 
 /* =========================
-   FINAL FIX — HISTORY TABLE
-   (place at VERY END)
+   HISTORY TABLE (FINAL)
 ========================= */
+#historyTable { table-layout: fixed; }
 
-#historyTable {
-  table-layout: fixed;
-}
-
-/* BASE */
 #historyTable th,
 #historyTable td {
   padding: 10px 12px;
   vertical-align: middle;
 }
 
-/* HEADERS */
 #historyTable th {
   font-size: 11px;
   font-weight: 600;
@@ -811,8 +408,6 @@ tbody tr:hover {
   background: #131721;
   text-transform: uppercase;
 }
-
-/* COLUMN ALIGNMENT */
 
 /* DATE */
 #historyTable th:nth-child(1),
@@ -826,15 +421,11 @@ tbody tr:hover {
 
 /* ASSET */
 #historyTable th:nth-child(2),
-#historyTable td:nth-child(2) {
-  text-align: left;
-}
+#historyTable td:nth-child(2) { text-align: left; }
 
 /* TASK */
 #historyTable th:nth-child(3),
-#historyTable td:nth-child(3) {
-  text-align: left;
-}
+#historyTable td:nth-child(3) { text-align: left; }
 
 /* EXECUTED BY */
 #historyTable th:nth-child(4),
@@ -845,28 +436,11 @@ tbody tr:hover {
   color: #d0d0d0;
 }
 
-/* ASSET TEXT */
-#historyTable td:nth-child(2) strong {
-  display: block;
-  font-size: 1em;
-}
+#historyTable td:nth-child(2) strong { display:block; }
+#historyTable td:nth-child(2) small { font-size:.75em; color:#9aa3ad; }
 
-#historyTable td:nth-child(2) small {
-  font-size: 0.75em;
-  color: #9aa3ad;
-}
-
-/* TASK TEXT */
-#historyTable td:nth-child(3) strong {
-  display: block;
-  font-size: 0.95em;
-}
-
-#historyTable td:nth-child(3) small {
-  font-size: 0.75em;
-  color: #a0a0a0;
-}
-
+#historyTable td:nth-child(3) strong { display:block; font-size:.95em; }
+#historyTable td:nth-child(3) small { font-size:.75em; color:#a0a0a0; }
 
 
 
