@@ -444,57 +444,42 @@ tbody tr:hover { background: #131520; }
 
 /* =========================
    IMPORT EXCEL PREVIEW MODAL
-   FINAL WORKING SCROLL FIX
+   WORKING SCROLL (RESTORED)
 ========================= */
 
-#importPreviewOverlay .import-modal {
-  max-height: 90vh;
+/* το modal συνολικά */
+.import-modal {
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
 }
 
-/* τίτλος + summary = σταθερά */
-#importPreviewOverlay h3,
-#importPreviewOverlay #importSummary {
-  flex: 0 0 auto;
-}
-
-/* 🔑 ΑΥΤΟ ΕΙΧΕ ΧΑΘΕΙ */
-#importPreviewOverlay .import-modal-body {
-  flex: 1 1 auto;
-  overflow: hidden;        /* δεν σκρολάρει το body */
+/* 🔑 ΕΔΩ ΓΙΝΕΤΑΙ ΤΟ SCROLL (όπως στο backup) */
+.import-modal-body {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 6px;
   margin-top: 10px;
 }
 
-/* 🔑 ΤΟ SCROLL ΓΙΝΕΤΑΙ ΕΔΩ */
-#importPreviewOverlay .import-modal-body .table-card {
-  height: 100%;
-  overflow-y: auto;
+/* table να γεμίζει σωστά */
+.import-modal-body .table-card {
+  margin: 0;
 }
 
-/* κουμπιά πάντα κάτω */
-#importPreviewOverlay .modal-actions {
-  flex: 0 0 auto;
+/* footer / actions πάντα κάτω */
+.import-modal-footer,
+.modal-actions {
+  flex-shrink: 0;
   margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
 }
 
-/* sticky header (προαιρετικό αλλά ωραίο) */
+/* sticky header (προαιρετικό, αλλά δεν σπάει τίποτα) */
 #importPreviewTable thead th {
   position: sticky;
   top: 0;
   z-index: 2;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
