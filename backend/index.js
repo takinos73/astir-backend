@@ -68,7 +68,6 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
-        mt.duration_minutes,
 
         a.model AS machine_name,
         a.serial_number,
@@ -88,6 +87,7 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Create NON-planned task from UI (STEP 2A)
 app.post("/tasks", async (req, res) => {
