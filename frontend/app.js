@@ -723,9 +723,10 @@ async function loadTasks() {
   tasksData = await res.json();
    console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
    //populateAssetFilter();   // ⭐ εδώ
+   
+   updateKpis();
    buildAssetDropdown();
-   initAssetDropdown();
-   updateKpis();   
+   initAssetDropdown();      
    renderTable();
 }
 
