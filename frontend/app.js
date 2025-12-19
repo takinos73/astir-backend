@@ -35,20 +35,37 @@ function formatDate(d) {
 /* =====================
    Print schedule
 ===================== */
+function buildPrintPlannedTable() {
+  const tbody = document.querySelector("#printPlannedTable tbody");
+  tbody.innerHTML = "";
+
+  const planned = tasksData.filter(t => t.status === "Planned");
+
+  planned.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${t.machine_name}<br><small>SN: ${t.serial_number}</small></td>
+      <td>${t.section || "-"}</td>
+      <td>${t.unit || "-"}</td>
+      <td>${t.task}</td>
+      <td>${t.type || "-"}</td>
+      <td>${formatDate(t.due_date)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 function printPlannedTasks() {
-  document.body.classList.remove("print-history");
+  buildPrintPlannedTable();
+
   document.body.classList.add("print-planned");
 
-  // force browser to apply styles BEFORE print
   requestAnimationFrame(() => {
     setTimeout(() => {
       window.print();
-
-      // cleanup AFTER print
       setTimeout(() => {
         document.body.classList.remove("print-planned");
       }, 500);
-
     }, 50);
   });
 }
