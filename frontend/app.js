@@ -435,9 +435,11 @@ function initAssetDropdown() {
   if (!dropdown || !btn || !menu) return;
 
   // open / close
-  btn.addEventListener("click", () => {
-    dropdown.classList.toggle("open");
-  });
+  btn.addEventListener("click", e => {
+  e.stopPropagation();                 // 🔑 ΤΟ FIX
+  dropdown.classList.toggle("open");
+});
+
 
   // option click
   menu.addEventListener("click", e => {
