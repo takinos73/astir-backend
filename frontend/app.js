@@ -5,7 +5,7 @@ const API = "https://astir-backend.onrender.com";
 
 let tasksData = [];
 let assetsData = [];
-let activeLine = "all";
+//let activeLine = "all";
 let pendingTaskId = null;
 let pendingSnapshotJson = null;
 let loadedSnapshotName = null;
@@ -422,7 +422,7 @@ function renderTable() {
 
   const filtered = tasksData
     // LINE FILTER
-    .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
+    //.filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
 
     // MACHINE FILTER
     .filter(t => {if (mf === "all") return true;return `${t.machine_name}||${t.serial_number}` === mf;})  
