@@ -830,21 +830,29 @@ function applyRoleVisibility() {
 }
 applyRoleVisibility();
 
+// =====================
+// DATE FILTER BUTTONS
+// =====================
+document.addEventListener("DOMContentLoaded", () => {
 
-document.querySelectorAll(".date-filter-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    activeDateFilter = btn.dataset.filter;
+  const btns = document.querySelectorAll(".date-filter-btn");
+  console.log("Date filter buttons found:", btns.length);
 
-    console.log("Date filter:", activeDateFilter); // 🔍 DEBUG
+  btns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeDateFilter = btn.dataset.filter;
 
-    document.querySelectorAll(".date-filter-btn")
-      .forEach(b => b.classList.remove("active"));
+      console.log("Date filter clicked:", activeDateFilter);
 
-    btn.classList.add("active");
+      btns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
 
-    renderTable();
+      renderTable();
+    });
   });
+
 });
+
 
 
 
