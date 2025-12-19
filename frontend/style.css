@@ -444,28 +444,50 @@ tbody tr:hover { background: #131520; }
 
 /* =========================
    IMPORT EXCEL PREVIEW MODAL
-   (SCROLL FIX - REQUIRED)
+   SCROLL (HARD FIX)
+   Put this at the VERY END
 ========================= */
 
-/* κάνει το modal πιο ψηλό */
+#importPreviewOverlay {
+  align-items: flex-start;           /* να μην κόβεται πάνω/κάτω */
+  padding: 24px 12px;
+  overflow: auto;                    /* αν το modal ξεπεράσει, σκρολάρει το overlay */
+}
+
 #importPreviewOverlay .modal-box {
+  width: 95%;
+  max-width: 1400px;                 /* πιο “φαρδύ” αν θες */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;                  /* ⭐ ΚΛΕΙΔΙ: επιβάλλει εσωτερικό scroll */
 }
 
-/* το table card να σκρολάρει */
+/* summary να μη “τρώει” ύψος */
+#importPreviewOverlay #importSummary {
+  flex: 0 0 auto;
+}
+
+/* το table container να είναι το scroll area */
 #importPreviewOverlay .table-card {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 10px;
+  flex: 1 1 auto;
+  min-height: 240px;
+  overflow: auto;                    /* ⭐ εδώ γίνεται το scroll */
 }
 
-/* κρατά τα κουμπιά πάντα ορατά */
+/* κουμπιά πάντα ορατά */
 #importPreviewOverlay .modal-actions {
+  flex: 0 0 auto;
   margin-top: 12px;
-  flex-shrink: 0;
 }
+
+/* προαιρετικά: sticky header στο table για να βλέπεις τα columns */
+#importPreviewTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 
 
 
