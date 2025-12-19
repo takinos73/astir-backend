@@ -381,6 +381,51 @@ getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
 /* =====================
    FILTERS
 ===================== */
+function buildAssetDropdown() {
+  const menu = getEl("assetDropdownMenu");
+  const btn = getEl("assetDropdownBtn");
+
+  if (!menu || !btn) return;
+
+  menu.innerHTML = "";
+
+  const map = new Map();
+
+  tasksData.forEach(t => {
+    if (!t.machine_name || !t.serial_number) return;
+
+    const key = `${t.machine_name}||${t.serial_number}`;
+    if (map.has(key)) return;
+
+    map.set(key, {
+      value: key,
+      label: `${t.machine_name} (${t.serial_number})`
+    });
+  });
+
+  const assets = Array.from(map.values()).sort((a, b) =>
+    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
+  );
+
+  // All Machines option
+  const all = document.createElement("div");
+  all.className = "asset-option active";
+  all.textContent = "All Machines";
+  all.dataset.value = "all";
+  menu.appendChild(all);
+
+  btn.textContent = "All Machines";
+  activeAssetFilter = "all";
+
+  assets.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "asset-option";
+    div.textContent = a.label;
+    div.dataset.value = a.value;
+    menu.appendChild(div);
+  });
+}
+
 
 function initAssetDropdown() {
   const dropdown = getEl("assetDropdown");
