@@ -382,6 +382,46 @@ getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
    FILTERS
 ===================== */
 
+function initAssetDropdown() {
+  const dropdown = getEl("assetDropdown");
+  const btn = getEl("assetDropdownBtn");
+  const menu = getEl("assetDropdownMenu");
+
+  if (!dropdown || !btn || !menu) return;
+
+  // open / close
+  btn.addEventListener("click", () => {
+    dropdown.classList.toggle("open");
+  });
+
+  // option click
+  menu.addEventListener("click", e => {
+    const opt = e.target.closest(".asset-option");
+    if (!opt) return;
+
+    activeAssetFilter = opt.dataset.value;
+    btn.textContent = opt.textContent;
+
+    menu.querySelectorAll(".asset-option")
+      .forEach(o => o.classList.remove("active"));
+    opt.classList.add("active");
+
+    dropdown.classList.remove("open");
+    renderTable();
+  });
+
+  // click outside
+  document.addEventListener("click", e => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  // default
+  activeAssetFilter = "all";
+}
+
+
 function getFilteredTasksForPrint() {
 
   const today = new Date();
@@ -638,9 +678,10 @@ async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
    console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
-   populateAssetFilter();   // ⭐ εδώ
-   updateKpis();
-   populateAssetFilter();
+   //populateAssetFilter();   // ⭐ εδώ
+   buildAssetDropdown();
+   initAssetDropdown();
+   updateKpis();   
    renderTable();
 }
 
