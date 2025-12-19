@@ -418,26 +418,37 @@ function getFilteredTasksForPrint() {
     });
 }
 
-
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
 
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
-  const seen = new Set();
+  const map = new Map();
 
+  // Συλλογή μοναδικών assets
   tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
     const key = `${t.machine_name}||${t.serial_number}`;
-    if (seen.has(key)) return;
-    seen.add(key);
+    if (map.has(key)) return;
 
+    map.set(key, {
+      value: key,
+      label: `${t.machine_name} (${t.serial_number})`
+    });
+  });
+
+  // 🔹 SORT με βάση το label (ASSET)
+  const sortedAssets = Array.from(map.values()).sort((a, b) =>
+    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
+  );
+
+  // Δημιουργία options
+  sortedAssets.forEach(a => {
     const opt = document.createElement("option");
-    opt.value = key;
-    opt.textContent = `${t.machine_name} (${t.serial_number})`;
-
+    opt.value = a.value;
+    opt.textContent = a.label;
     sel.appendChild(opt);
   });
 }
