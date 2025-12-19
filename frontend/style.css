@@ -444,6 +444,31 @@ tbody tr:hover { background: #131520; }
 
 /* =========================
    IMPORT EXCEL PREVIEW MODAL
+   (SCROLL FIX - REQUIRED)
+========================= */
+
+/* κάνει το modal πιο ψηλό */
+#importPreviewOverlay .modal-box {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* το table card να σκρολάρει */
+#importPreviewOverlay .table-card {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+/* κρατά τα κουμπιά πάντα ορατά */
+#importPreviewOverlay .modal-actions {
+  margin-top: 12px;
+  flex-shrink: 0;
+}
+
+/* =========================
+   IMPORT EXCEL PREVIEW MODAL
    SCROLL (HARD FIX)
    Put this at the VERY END
 ========================= */
