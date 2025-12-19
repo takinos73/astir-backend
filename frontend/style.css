@@ -584,5 +584,14 @@ tbody tr:hover { background: #131520; }
   color: #061825;
   font-weight: 600;
 }
+/* =====================
+   TAB TASKS – FIX CLICK LAYER
+===================== */
+
+#tab-tasks {
+  position: relative;
+  z-index: 1;
+}
+
 
 
