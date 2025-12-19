@@ -492,34 +492,34 @@ tbody tr:hover { background: #131520; }
 }
 
 /* =========================
-   TOP RIGHT ADMIN TOOLS
+   MAIN TABS + TOP TOOLS
 ========================= */
 
-.app-header {
+.main-tabs {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
 }
 
-.top-tools {
-   display: flex;
-   gap: 8px;
-   align-items: center;
-   border-left: 1px solid rgba(255,255,255,0.08);
-   padding-left: 12px;
+/* σπρώχνει τα tools δεξιά */
+.main-tabs .top-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.top-tools .btn-secondary,
-.top-tools .btn-danger {
-  font-size: 0.85em;
+/* λίγο πιο compact look */
+.main-tabs .top-tools .btn-secondary {
+  font-size: 0.8em;
   padding: 6px 10px;
   opacity: 0.9;
 }
 
-.top-tools .btn-secondary:hover,
-.top-tools .btn-danger:hover {
-  opacity: 1;
+/* optional: οπτικός διαχωρισμός */
+.main-tabs .top-tools {
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding-left: 12px;
 }
 
 
