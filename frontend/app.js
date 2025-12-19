@@ -828,8 +828,24 @@ function applyRoleVisibility() {
   const importBtn = document.getElementById("importExcelBtn");
   if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
-
 applyRoleVisibility();
+let activeDateFilter = "all";
+
+document.querySelectorAll(".date-filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeDateFilter = btn.dataset.filter;
+
+    console.log("Date filter:", activeDateFilter); // 🔍 DEBUG
+
+    document.querySelectorAll(".date-filter-btn")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    renderTable();
+  });
+});
+
 
 
 
