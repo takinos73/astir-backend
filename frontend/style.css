@@ -491,3 +491,35 @@ tbody tr:hover { background: #131520; }
   z-index: 2;
 }
 
+/* =========================
+   TOP RIGHT ADMIN TOOLS
+========================= */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.top-tools {
+   display: flex;
+   gap: 8px;
+   align-items: center;
+   border-left: 1px solid rgba(255,255,255,0.08);
+   padding-left: 12px;
+}
+
+.top-tools .btn-secondary,
+.top-tools .btn-danger {
+  font-size: 0.85em;
+  padding: 6px 10px;
+  opacity: 0.9;
+}
+
+.top-tools .btn-secondary:hover,
+.top-tools .btn-danger:hover {
+  opacity: 1;
+}
+
+
