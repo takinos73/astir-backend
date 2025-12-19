@@ -571,6 +571,16 @@ tbody tr:hover { background: #131520; }
     font-weight: bold;
     margin-bottom: 12px;
   }
+   @media print {
+  .machine-name {
+    font-weight: bold;
+  }
+
+  .task-name {
+    font-weight: 600;
+  }
+}
+
 
 }
 
