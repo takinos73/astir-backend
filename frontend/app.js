@@ -497,6 +497,13 @@ function renderTable() {
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
+function getAssetFilterLabel() {
+  const sel = getEl("machineFilter");
+  if (!sel || sel.value === "all") return "ALL MACHINES";
+
+  return sel.options[sel.selectedIndex].text;
+}
+
 function printTasks() {
   const tasks = getFilteredTasksForPrint();
 
@@ -530,7 +537,8 @@ function printTasks() {
       <h2>Maintenance Tasks Schedule</h2>
       <div class="meta">
         Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
-        Φίλτρο: ${activeDateFilter.toUpperCase()}
+        Περίοδος: ${activeDateFilter.toUpperCase()}<br>
+        Asset: ${getAssetFilterLabel()}
       </div>
 
       <table>
