@@ -39,12 +39,15 @@ function buildPrintPlannedTable() {
   const tbody = document.querySelector("#printPlannedTable tbody");
   tbody.innerHTML = "";
 
-  const planned = tasksData.filter(t => t.status === "Planned");
+  const rows = window.currentVisibleTasks || [];
 
-  planned.forEach(t => {
+  rows.forEach(t => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${t.machine_name}<br><small>SN: ${t.serial_number}</small></td>
+      <td>
+        ${t.machine_name}<br>
+        <small>SN: ${t.serial_number} | ${t.line_code}</small>
+      </td>
       <td>${t.section || "-"}</td>
       <td>${t.unit || "-"}</td>
       <td>${t.task}</td>
@@ -505,6 +508,7 @@ function renderTable() {
     });
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
+   window.currentVisibleTasks = filtered;
 }
 
 
