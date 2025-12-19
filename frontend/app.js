@@ -381,29 +381,29 @@ getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
    FILTERS
 ===================== */
 
-function rebuildMachineFilter() {
+function populateAssetFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
 
   sel.innerHTML = `<option value="all">All Machines</option>`;
 
-  const machines = [
-    ...new Set(
-      tasksData
-        .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
-        .map(t => t.machine_name)
-    )
-  ]
-    .filter(Boolean)
-    .sort();
+  const seen = new Set();
 
-  machines.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m;
-    o.textContent = m;
-    sel.appendChild(o);
+  tasksData.forEach(t => {
+    if (!t.machine_name || !t.serial_number) return;
+
+    const key = `${t.machine_name}||${t.serial_number}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = `${t.machine_name} (${t.serial_number})`;
+
+    sel.appendChild(opt);
   });
 }
+
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
@@ -477,9 +477,10 @@ async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
    console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
-  updateKpis();
-  rebuildMachineFilter();
-  renderTable();
+   populateAssetFilter();   // ⭐ εδώ
+   updateKpis();
+   rebuildMachineFilter();
+   renderTable();
 }
 
 /* =====================
