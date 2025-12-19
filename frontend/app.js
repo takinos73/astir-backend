@@ -98,6 +98,40 @@ document.getElementById("loginAsRoleBtn")
 
 
 /* =====================
+   Date Filters
+===================== */
+
+function applyDateFilter(tasks) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  return tasks.filter(t => {
+    if (!t.due_date) return false;
+
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
+
+    switch (activeDateFilter) {
+      case "today":
+        return due.getTime() === today.getTime();
+
+      case "week":
+        return due >= today && due <= weekEnd;
+
+      case "overdue":
+        return due < today;
+
+      default: // "all"
+        return true;
+    }
+  });
+}
+
+
+/* =====================
    TASK TABLE
 ===================== */
 
@@ -380,9 +414,20 @@ function renderTable() {
   const mf = getEl("machineFilter").value;
   const sf = getEl("statusFilter").value;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
   const filtered = tasksData
+    // LINE FILTER
     .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
+
+    // MACHINE FILTER
     .filter(t => mf === "all" || t.machine_name === mf)
+
+    // STATUS FILTER
     .filter(t => {
       if (sf === "all") return true;
       if (sf === "Planned") return t.status === "Planned";
@@ -390,6 +435,31 @@ function renderTable() {
       if (sf === "Overdue") return getDueState(t) === "overdue";
       return true;
     })
+
+    // DATE FILTER (NEW)
+    .filter(t => {
+      if (activeDateFilter === "all") return true;
+      if (!t.due_date) return false;
+
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+
+      if (activeDateFilter === "today") {
+        return due.getTime() === today.getTime();
+      }
+
+      if (activeDateFilter === "week") {
+        return due >= today && due <= weekEnd;
+      }
+
+      if (activeDateFilter === "overdue") {
+        return due < today;
+      }
+
+      return true;
+    })
+
+    // SORT (kept as-is)
     .sort((a, b) => {
       const o = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
       return (o[getDueState(a)] ?? 99) - (o[getDueState(b)] ?? 99);
@@ -397,6 +467,8 @@ function renderTable() {
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
+
+
 /* =====================
    FILTER EVENTS
 ===================== */
