@@ -425,7 +425,7 @@ function renderTable() {
     .filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
 
     // MACHINE FILTER
-    .filter(t => mf === "all" || t.machine_name === mf)   
+    .filter(t => {if (mf === "all") return true;return `${t.machine_name}||${t.serial_number}` === mf;})  
 
     // DATE FILTER (NEW)
     .filter(t => {
