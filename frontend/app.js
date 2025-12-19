@@ -36,6 +36,8 @@ function formatDate(d) {
    Print schedule
 ===================== */
 getEl("printScheduleBtn")?.addEventListener("click", () => {
+  document.body.classList.remove("print-history");
+  document.body.classList.add("print-planned");
   window.print();
 });
 
@@ -377,6 +379,11 @@ function openHistory() {
   loadHistory(); // always refresh
   getEl("historyOverlay").style.display = "flex";
 }
+getEl("printHistoryBtn")?.addEventListener("click", () => {
+  document.body.classList.remove("print-planned");
+  document.body.classList.add("print-history");
+  window.print();
+});
 
 function closeHistory() {
   getEl("historyOverlay").style.display = "none";
