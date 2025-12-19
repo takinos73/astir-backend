@@ -261,7 +261,7 @@ tbody tr:hover { background: #131520; }
   color: #000;
 }
 
-.status-pill.status-done { background: #b9ffb9; color: #005500; }
+.status-pill.status-done { background: #4ea8ff; color: #061825; }
 .status-pill.status-overdue { background: #ffbaba; color: #5a0000; }
 .status-pill.status-soon { background: #fff6a5; color: #6b5200; }
 .status-pill.status-unknown { background: #c0c0c0; color: #222; }
