@@ -479,7 +479,7 @@ async function loadTasks() {
    console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
    populateAssetFilter();   // ⭐ εδώ
    updateKpis();
-   rebuildMachineFilter();
+   populateAssetFilter();
    renderTable();
 }
 
