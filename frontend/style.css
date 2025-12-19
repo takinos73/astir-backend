@@ -248,6 +248,12 @@ tbody tr:hover { background: #131520; }
   border-color: #4ea8ff;
   font-weight: bold;
 }
+.filter-btn.active {
+  background: #4ea8ff;
+  color: #061825;
+  font-weight: 600;
+}
+
 
 /* =====================
    STATUS PILL
