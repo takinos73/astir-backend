@@ -573,12 +573,16 @@ tbody tr:hover { background: #131520; }
   }
 @media print {
 
+  /* =========================
+     GLOBAL RESET
+  ========================= */
+
   body {
-    background: #fff;
-    color: #000;
+    background: #fff !important;
+    color: #000 !important;
   }
 
-  /* default: hide everything */
+  /* hide EVERYTHING by default */
   body > * {
     display: none !important;
   }
@@ -586,19 +590,39 @@ tbody tr:hover { background: #131520; }
   /* =========================
      PRINT PLANNED TASKS
   ========================= */
+
+  body.print-planned .app-header,
+  body.print-planned #tab-tasks {
+    display: block !important;
+  }
+
+  /* κρύβουμε KPIs στο print (προαιρετικό αλλά σωστό) */
+  body.print-planned .kpi-strip {
+    display: none !important;
+  }
+
   body.print-planned #tasksTable {
     display: table !important;
     width: 100%;
+    border-collapse: collapse;
   }
 
-  body.print-planned .app-header {
-    display: block !important;
-    margin-bottom: 16px;
+  body.print-planned #tasksTable th,
+  body.print-planned #tasksTable td {
+    border: 1px solid #000;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  body.print-planned #tasksTable th {
+    background: #eee;
+    font-weight: bold;
   }
 
   /* =========================
      PRINT HISTORY
   ========================= */
+
   body.print-history .app-header,
   body.print-history #historyOverlay {
     display: block !important;
@@ -620,12 +644,10 @@ tbody tr:hover { background: #131520; }
   body.print-history #historyTable {
     display: table !important;
     width: 100%;
+    border-collapse: collapse;
   }
 
 }
-
-
-
 
 
 
