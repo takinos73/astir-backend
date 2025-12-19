@@ -522,29 +522,3 @@ tbody tr:hover { background: #131520; }
   padding-left: 12px;
 }
 
-/* =====================
-   CUSTOM ASSET DROPDOWN – SCROLL FIX
-===================== */
-
-.asset-dropdown {
-  position: relative;
-  width: 260px;
-}
-
-.asset-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  width: 100%;
-
-  max-height: 220px;      /* 🔥 αυτό ενεργοποιεί το scroll */
-  overflow-y: auto;       /* 🔥 αυτό δείχνει scrollbar */
-
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  z-index: 2000;
-
-  /* 🔑 σιγουρεύει ότι δεν κληρονομεί περιορισμούς */
-  box-sizing: border-box;
-}
