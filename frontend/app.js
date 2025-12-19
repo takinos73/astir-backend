@@ -381,6 +381,44 @@ getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
    FILTERS
 ===================== */
 
+function getFilteredTasksForPrint() {
+  const mf = getEl("machineFilter").value;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  return tasksData
+    .filter(t => {
+      if (mf === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === mf;
+    })
+    .filter(t => {
+      if (activeDateFilter === "all") return true;
+      if (!t.due_date) return false;
+
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+
+      if (activeDateFilter === "today") {
+        return due.getTime() === today.getTime();
+      }
+
+      if (activeDateFilter === "week") {
+        return due >= today && due <= weekEnd;
+      }
+
+      if (activeDateFilter === "overdue") {
+        return due < today;
+      }
+
+      return true;
+    });
+}
+
+
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
@@ -459,6 +497,78 @@ function renderTable() {
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
+function printTasks() {
+  const tasks = getFilteredTasksForPrint();
+
+  if (tasks.length === 0) {
+    alert("No tasks to print");
+    return;
+  }
+
+  let html = `
+    <html>
+    <head>
+      <title>Maintenance Tasks</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin-bottom: 5px; }
+        .meta { margin-bottom: 15px; font-size: 12px; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+          border: 1px solid #999;
+          padding: 6px 8px;
+          font-size: 12px;
+        }
+        th { background: #eee; }
+      </style>
+    </head>
+    <body>
+      <h2>Maintenance Task Schedule</h2>
+      <div class="meta">
+        Date: ${new Date().toLocaleDateString("el-GR")}<br>
+        Filter: ${activeDateFilter.toUpperCase()}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Machine</th>
+            <th>Section</th>
+            <th>Unit</th>
+            <th>Task</th>
+            <th>Type</th>
+            <th>Due Date</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  tasks.forEach(t => {
+    html += `
+      <tr>
+        <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
+        <td>${t.section || "-"}</td>
+        <td>${t.unit || "-"}</td>
+        <td>${t.task}</td>
+        <td>${t.type || "-"}</td>
+        <td>${formatDate(t.due_date)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const win = window.open("", "_blank");
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
+}
 
 /* =====================
    FILTER EVENTS
@@ -817,6 +927,8 @@ function applyRoleVisibility() {
   if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
 applyRoleVisibility();
+
+getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
 // =====================
 // DATE FILTER BUTTONS
