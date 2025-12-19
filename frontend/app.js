@@ -11,6 +11,7 @@ let pendingSnapshotJson = null;
 let loadedSnapshotName = null;
 let importExcelFile = null;
 let activeDateFilter = "all";
+let activeAssetFilter = "all";
 
 
 /* =====================
