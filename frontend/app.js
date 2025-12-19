@@ -412,7 +412,7 @@ function renderTable() {
   tbody.innerHTML = "";
 
   const mf = getEl("machineFilter").value;
-  const sf = getEl("statusFilter").value;
+  //const sf = getEl("statusFilter").value;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -428,13 +428,13 @@ function renderTable() {
     .filter(t => mf === "all" || t.machine_name === mf)
 
     // STATUS FILTER
-    .filter(t => {
-      if (sf === "all") return true;
-      if (sf === "Planned") return t.status === "Planned";
-      if (sf === "Done") return t.status === "Done";
-      if (sf === "Overdue") return getDueState(t) === "overdue";
-      return true;
-    })
+   // .filter(t => {
+   //   if (sf === "all") return true;
+  //    if (sf === "Planned") return t.status === "Planned";
+   //   if (sf === "Done") return t.status === "Done";
+    //  if (sf === "Overdue") return getDueState(t) === "overdue";
+   //   return true;
+   // })
 
     // DATE FILTER (NEW)
     .filter(t => {
@@ -477,9 +477,9 @@ getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
 });
 
-getEl("statusFilter")?.addEventListener("change", () => {
-  renderTable();
-});
+//getEl("statusFilter")?.addEventListener("change", () => {
+  //renderTable();
+//});
 
 
 /* =====================
