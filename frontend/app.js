@@ -383,7 +383,6 @@ getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
 ===================== */
 
 function getFilteredTasksForPrint() {
-  const mf = getEl("machineFilter").value;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -392,10 +391,13 @@ function getFilteredTasksForPrint() {
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   return tasksData
+    // ASSET FILTER (CUSTOM DROPDOWN)
     .filter(t => {
-      if (mf === "all") return true;
-      return `${t.machine_name}||${t.serial_number}` === mf;
+      if (activeAssetFilter === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
     })
+
+    // DATE FILTER
     .filter(t => {
       if (activeDateFilter === "all") return true;
       if (!t.due_date) return false;
@@ -418,6 +420,7 @@ function getFilteredTasksForPrint() {
       return true;
     });
 }
+
 
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
