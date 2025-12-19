@@ -176,7 +176,7 @@ function buildRow(task) {
     <td class="machine-cell">
       <div class="machine-name">${task.machine_name}</div>
       ${task.serial_number
-        ? `<div class="machine-sn">SN: ${task.serial_number}</div>`
+        ? `<div class="machine-sn"><small>${task.serial_number}</small></div>`
         : ""
       }
     </td>
@@ -215,6 +215,7 @@ function buildRow(task) {
   `;
   return tr;
 }
+
 
 /* =====================
    LOAD TASK HISTORY
