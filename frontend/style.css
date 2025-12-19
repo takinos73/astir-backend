@@ -571,21 +571,32 @@ tbody tr:hover { background: #131520; }
     font-weight: bold;
     margin-bottom: 12px;
   }
- @media print {
+@media print {
 
-  /* κρύβουμε ΟΛΑ τα modals */
-  .modal-overlay {
+  /* reset positioning για ΟΛΑ */
+  * {
+    position: static !important;
+  }
+
+  /* κρύβουμε ό,τι δεν θέλουμε */
+  .modal-overlay:not(#historyOverlay),
+  .main-tabs,
+  .top-tools,
+  .controls-row,
+  .kpi-row,
+  .btn-secondary,
+  .btn-table {
     display: none !important;
   }
 
-  /* ✨ ΕΚΤΟΣ από το History */
+  /* history modal ΜΠΑΙΝΕΙ ΣΤΟ FLOW */
   #historyOverlay {
     display: block !important;
-    position: static !important;
     background: none !important;
   }
 
   #historyOverlay .modal-box {
+    display: block !important;
     width: 100% !important;
     max-width: none !important;
     box-shadow: none !important;
@@ -593,17 +604,20 @@ tbody tr:hover { background: #131520; }
     padding: 0 !important;
   }
 
-  /* κρύβουμε main table */
-  #tasksTable {
-    display: none !important;
+  /* το header να προηγείται */
+  .app-header,
+  .app-header * {
+    display: block !important;
   }
 
-  /* δείχνουμε history table */
+  /* history table */
   #historyTable {
     display: table !important;
     width: 100%;
+    margin-top: 16px;
   }
 }
+
 
 
 
