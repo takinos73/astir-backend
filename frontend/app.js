@@ -76,6 +76,11 @@ function printPlannedTasks() {
 
 function buildPrintHistoryTable() {
   const tbody = document.querySelector("#printHistoryTable tbody");
+  if (!tbody) {
+    console.error("printHistoryTable tbody not found");
+    return;
+  }
+
   tbody.innerHTML = "";
 
   historyData.forEach(h => {
@@ -83,25 +88,33 @@ function buildPrintHistoryTable() {
     tr.innerHTML = `
       <td>${formatDateTime(h.executed_at)}</td>
       <td>
-        ${h.machine_name}<br>
-        <small>SN: ${h.serial_number} | ${h.line_code}</small>
+        <strong>${h.machine_name || h.machine || "-"}</strong><br>
+        <small>SN: ${h.serial_number || "-"} | ${h.line_code || h.line || "-"}</small>
       </td>
       <td>
-        ${h.task}<br>
-        <small>${h.section || ""} / ${h.unit || ""}</small>
+        <strong>${h.task || "-"}</strong><br>
+        <small>${h.section || "-"} / ${h.unit || "-"}</small>
       </td>
       <td>${h.executed_by || "-"}</td>
     `;
     tbody.appendChild(tr);
   });
+
+  console.log("PRINT HISTORY rows:", historyData.length);
 }
 
-function printHistory() {
+async function printHistory() {
+  // 1) ensure latest data
+  await loadHistory();
+
+  // 2) build print-only table
   buildPrintHistoryTable();
 
+  // 3) activate print mode
   document.body.classList.remove("print-planned");
   document.body.classList.add("print-history");
 
+  // 4) wait layout then print
   requestAnimationFrame(() => {
     setTimeout(() => {
       window.print();
@@ -111,6 +124,7 @@ function printHistory() {
     }, 50);
   });
 }
+
 
 
 
