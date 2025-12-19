@@ -35,11 +35,24 @@ function formatDate(d) {
 /* =====================
    Print schedule
 ===================== */
-getEl("printScheduleBtn")?.addEventListener("click", () => {
+function printPlannedTasks() {
   document.body.classList.remove("print-history");
   document.body.classList.add("print-planned");
-  window.print();
-});
+
+  // force browser to apply styles BEFORE print
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+
+      // cleanup AFTER print
+      setTimeout(() => {
+        document.body.classList.remove("print-planned");
+      }, 500);
+
+    }, 50);
+  });
+}
+
 
 
 /* =====================
