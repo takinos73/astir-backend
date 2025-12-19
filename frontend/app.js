@@ -73,6 +73,44 @@ function printPlannedTasks() {
   });
 }
 
+function buildPrintHistoryTable() {
+  const tbody = document.querySelector("#printHistoryTable tbody");
+  tbody.innerHTML = "";
+
+  historyData.forEach(h => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${formatDateTime(h.executed_at)}</td>
+      <td>
+        ${h.machine_name}<br>
+        <small>SN: ${h.serial_number} | ${h.line_code}</small>
+      </td>
+      <td>
+        ${h.task}<br>
+        <small>${h.section || ""} / ${h.unit || ""}</small>
+      </td>
+      <td>${h.executed_by || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function printHistory() {
+  buildPrintHistoryTable();
+
+  document.body.classList.remove("print-planned");
+  document.body.classList.add("print-history");
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("print-history");
+      }, 500);
+    }, 50);
+  });
+}
+
 
 
 /* =====================
