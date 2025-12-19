@@ -53,7 +53,7 @@ app.get("/api", (req, res) => {
      due_date, status, completed_by, completed_at, updated_at, is_planned, notes
 ===================================================== */
 
-// GET active tasks (sorted by due date)
+// GET active tasks (Planned + Overdue), sorted by due date
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -78,7 +78,7 @@ app.get("/tasks", async (req, res) => {
       JOIN assets a ON a.id = mt.asset_id
       JOIN lines l ON l.id = a.line_id
 
-      WHERE mt.status <> 'Done'
+      WHERE mt.status IN ('Planned', 'Overdue')
       ORDER BY mt.due_date ASC
     `);
 
