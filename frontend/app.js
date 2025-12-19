@@ -102,19 +102,28 @@ document.getElementById("loginAsRoleBtn")
 
 function statusPill(task) {
   const st = getDueState(task);
+
   let cls = "status-pill";
   let txt = "Planned";
 
   if (task.status === "Done") {
     cls += " status-done";
     txt = "Done";
-  } else if (st === "overdue") {
+  } 
+  else if (st === "overdue") {
     cls += " status-overdue";
     txt = "Overdue";
-  } else if (st === "soon") {
+  } 
+  else if (st === "soon") {
     cls += " status-soon";
     txt = "Due Soon";
+  } 
+  else {
+    // ⭐ ΕΔΩ Η ΔΙΟΡΘΩΣΗ
+    cls += " status-planned";
+    txt = "Planned";
   }
+
   return `<span class="${cls}">${txt}</span>`;
 }
 
