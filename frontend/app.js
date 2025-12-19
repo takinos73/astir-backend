@@ -11,6 +11,7 @@ let pendingSnapshotJson = null;
 let loadedSnapshotName = null;
 let importExcelFile = null;
 let activeDateFilter = "all";
+let historyData = [];
 
 
 /* =====================
@@ -304,12 +305,16 @@ async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
     const history = await res.json();
-    console.log("HISTORY DATA:", history); // 👈
-    renderHistoryTable(history);
+
+    historyData = Array.isArray(history) ? history : [];   // ✅ ΚΡΙΣΙΜΟ
+
+    console.log("HISTORY DATA:", historyData);
+    renderHistoryTable(historyData);
   } catch (err) {
     console.error("LOAD HISTORY ERROR:", err);
   }
 }
+
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
