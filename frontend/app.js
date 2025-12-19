@@ -31,6 +31,15 @@ function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
+
+/* =====================
+   Print schedule
+===================== */
+getEl("printScheduleBtn")?.addEventListener("click", () => {
+  window.print();
+});
+
+
 /* =====================
    DATE TIME FORMATTER
 ===================== */
