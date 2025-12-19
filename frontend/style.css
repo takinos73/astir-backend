@@ -573,50 +573,83 @@ tbody tr:hover { background: #131520; }
   }
 @media print {
 
-  /* reset positioning για ΟΛΑ */
-  * {
-    position: static !important;
+  /* =========================
+     GLOBAL RESET
+  ========================= */
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
   }
 
-  /* κρύβουμε ό,τι δεν θέλουμε */
-  .modal-overlay:not(#historyOverlay),
-  .main-tabs,
-  .top-tools,
-  .controls-row,
-  .kpi-row,
-  .btn-secondary,
-  .btn-table {
+  * {
+    box-shadow: none !important;
+  }
+
+  /* =========================
+     HIDE EVERYTHING BY DEFAULT
+  ========================= */
+
+  body > * {
     display: none !important;
   }
 
-  /* history modal ΜΠΑΙΝΕΙ ΣΤΟ FLOW */
+  /* =========================
+     SHOW ONLY HEADER + HISTORY
+  ========================= */
+
+  .app-header,
   #historyOverlay {
     display: block !important;
+  }
+
+  /* header normal flow */
+  .app-header {
+    position: static !important;
+    margin-bottom: 20px;
+  }
+
+  /* =========================
+     HISTORY MODAL → NORMAL FLOW
+  ========================= */
+
+  #historyOverlay {
+    position: static !important;
     background: none !important;
   }
 
   #historyOverlay .modal-box {
-    display: block !important;
+    position: static !important;
     width: 100% !important;
     max-width: none !important;
-    box-shadow: none !important;
     border: none !important;
+    box-shadow: none !important;
     padding: 0 !important;
   }
 
-  /* το header να προηγείται */
-  .app-header,
-  .app-header * {
-    display: block !important;
-  }
+  /* =========================
+     HISTORY TABLE
+  ========================= */
 
-  /* history table */
   #historyTable {
     display: table !important;
     width: 100%;
-    margin-top: 16px;
+    border-collapse: collapse;
+  }
+
+  #historyTable th,
+  #historyTable td {
+    border: 1px solid #000;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  #historyTable th {
+    background: #eee;
+    font-weight: bold;
   }
 }
+
 
 
 
