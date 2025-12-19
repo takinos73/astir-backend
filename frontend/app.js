@@ -829,7 +829,7 @@ function applyRoleVisibility() {
   if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
 applyRoleVisibility();
-let activeDateFilter = "all";
+
 
 document.querySelectorAll(".date-filter-btn").forEach(btn => {
   btn.addEventListener("click", () => {
