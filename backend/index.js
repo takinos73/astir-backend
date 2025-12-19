@@ -53,7 +53,7 @@ app.get("/api", (req, res) => {
      due_date, status, completed_by, completed_at, updated_at, is_planned, notes
 ===================================================== */
 
-// GET tasks (includes line code + asset serial)
+// GET active tasks (sorted by due date)
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -68,18 +68,18 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
-        mt.duration_min,
-        mt.qty,
-        mt.notes,
-        
+        mt.duration_minutes,
+
         a.model AS machine_name,
-        a.serial_number,          -- ⭐ SERIAL NUMBER
-        l.code AS line_code       -- ⭐ ΑΠΑΡΑΙΤΗΤΟ ΓΙΑ UI FILTER
+        a.serial_number,
+        l.code AS line_code
 
       FROM maintenance_tasks mt
       JOIN assets a ON a.id = mt.asset_id
       JOIN lines l ON l.id = a.line_id
-      ORDER BY mt.id ASC
+
+      WHERE mt.status <> 'Done'
+      ORDER BY mt.due_date ASC
     `);
 
     res.json(result.rows);
