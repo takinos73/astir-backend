@@ -384,7 +384,9 @@ function closeHistory() {
 
 getEl("openHistoryBtn")?.addEventListener("click", openHistory);
 getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
-
+getEl("printHistoryBtn")?.addEventListener("click", () => {
+  window.print();
+});
 
 /* =====================
    FILTERS
