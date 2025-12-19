@@ -510,7 +510,11 @@ function printTasks() {
     <head>
       <title>Maintenance Tasks</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+        body { font-family: Arial, sans-serif; padding: 0; }
         h2 { margin-bottom: 5px; }
         .meta { margin-bottom: 15px; font-size: 12px; color: #555; }
         table { width: 100%; border-collapse: collapse; }
@@ -523,10 +527,10 @@ function printTasks() {
       </style>
     </head>
     <body>
-      <h2>Maintenance Task Schedule</h2>
+      <h2>Maintenance Tasks Schedule</h2>
       <div class="meta">
-        Date: ${new Date().toLocaleDateString("el-GR")}<br>
-        Filter: ${activeDateFilter.toUpperCase()}
+        Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
+        Φίλτρο: ${activeDateFilter.toUpperCase()}
       </div>
 
       <table>
@@ -538,6 +542,7 @@ function printTasks() {
             <th>Task</th>
             <th>Type</th>
             <th>Due Date</th>
+            <th>✔</th>
           </tr>
         </thead>
         <tbody>
@@ -552,6 +557,7 @@ function printTasks() {
         <td>${t.task}</td>
         <td>${t.type || "-"}</td>
         <td>${formatDate(t.due_date)}</td>
+        <td></td>
       </tr>
     `;
   });
@@ -563,12 +569,31 @@ function printTasks() {
     </html>
   `;
 
-  const win = window.open("", "_blank");
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  win.print();
+  // 🔹 HIDDEN IFRAME PRINT (NO NEW TAB)
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  // cleanup
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
 }
+
 
 /* =====================
    FILTER EVENTS
