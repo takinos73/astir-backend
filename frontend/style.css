@@ -528,6 +528,7 @@ tbody tr:hover { background: #131520; }
 .asset-dropdown {
   position: relative;
   width: 260px;
+  z-index: 50;   /* 🔑 απαραίτητο */
 }
 
 .asset-dropdown-btn {
