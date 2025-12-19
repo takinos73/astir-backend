@@ -497,7 +497,6 @@ function populateAssetFilter() {
   });
 }
 
-
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
