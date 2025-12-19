@@ -466,6 +466,8 @@ function renderTable() {
 
 getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
+});
+
 
 /* =====================
    LOAD TASKS
