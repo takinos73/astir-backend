@@ -571,29 +571,41 @@ tbody tr:hover { background: #131520; }
     font-weight: bold;
     margin-bottom: 12px;
   }
+/* =========================
+   PRINT – HISTORY (FINAL FIX)
+========================= */
+
 @media print {
 
+  /* reset – hide everything */
   body > * {
     display: none !important;
   }
 
-  body.print-planned #print-planned-container {
+  /* show ONLY history print container */
+  body.print-history #print-history-container {
     display: block !important;
   }
 
-  #printPlannedTable {
+  body.print-history #print-history-container h2 {
+    margin-bottom: 12px;
+  }
+
+  body.print-history #printHistoryTable {
     width: 100%;
     border-collapse: collapse;
   }
 
-  #printPlannedTable th,
-  #printPlannedTable td {
+  body.print-history #printHistoryTable th,
+  body.print-history #printHistoryTable td {
     border: 1px solid #000;
     padding: 6px;
     font-size: 11px;
+    vertical-align: top;
   }
 
-  #printPlannedTable th {
+  body.print-history #printHistoryTable th {
     background: #eee;
+    font-weight: bold;
   }
 }
