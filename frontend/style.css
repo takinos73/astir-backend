@@ -582,22 +582,37 @@ tbody tr:hover { background: #131520; }
     color: #000 !important;
   }
 
-  /* hide EVERYTHING by default */
+  /* κρύβουμε ΤΑ ΠΑΝΤΑ */
   body > * {
     display: none !important;
+  }
+
+  /* =========================
+     ΚΟΙΝΑ (και στα 2 prints)
+  ========================= */
+
+  body.print-planned .app-header,
+  body.print-history .app-header {
+    display: block !important;
+    position: static !important;
+    margin-bottom: 20px;
   }
 
   /* =========================
      PRINT PLANNED TASKS
   ========================= */
 
-  body.print-planned .app-header,
-  body.print-planned #tasksTable {
+  body.print-planned #tab-tasks {
     display: block !important;
   }
 
-  /* κρύβουμε KPIs στο print (προαιρετικό αλλά σωστό) */
-  body.print-planned .kpi-strip {
+  /* κρύβουμε ό,τι δεν είναι πίνακας */
+  body.print-planned .kpi-strip,
+  body.print-planned .controls-row,
+  body.print-planned .main-tabs,
+  body.print-planned .top-tools,
+  body.print-planned #addTaskBtn,
+  body.print-planned #openHistoryBtn {
     display: none !important;
   }
 
@@ -623,12 +638,8 @@ tbody tr:hover { background: #131520; }
      PRINT HISTORY
   ========================= */
 
-  body.print-history .app-header,
   body.print-history #historyOverlay {
     display: block !important;
-  }
-
-  body.print-history #historyOverlay {
     position: static !important;
     background: none !important;
   }
@@ -636,8 +647,8 @@ tbody tr:hover { background: #131520; }
   body.print-history #historyOverlay .modal-box {
     width: 100% !important;
     max-width: none !important;
-    box-shadow: none !important;
     border: none !important;
+    box-shadow: none !important;
     padding: 0 !important;
   }
 
@@ -647,8 +658,16 @@ tbody tr:hover { background: #131520; }
     border-collapse: collapse;
   }
 
+  body.print-history #historyTable th,
+  body.print-history #historyTable td {
+    border: 1px solid #000;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  body.print-history #historyTable th {
+    background: #eee;
+    font-weight: bold;
+  }
+
 }
-
-
-
-
