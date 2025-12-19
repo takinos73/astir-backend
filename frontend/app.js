@@ -460,7 +460,7 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  const mf = getEl("machineFilter").value;
+  //const mf = getEl("machineFilter").value;
   //const sf = getEl("statusFilter").value;
 
   const today = new Date();
@@ -474,7 +474,10 @@ function renderTable() {
     //.filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
 
     // MACHINE FILTER
-    .filter(t => {if (mf === "all") return true;return `${t.machine_name}||${t.serial_number}` === mf;})  
+    .filter(t => {
+            if (activeAssetFilter === "all") return true;
+           return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
+     })  
 
     // DATE FILTER (NEW)
     .filter(t => {
