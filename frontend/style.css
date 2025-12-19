@@ -252,19 +252,34 @@ tbody tr:hover { background: #131520; }
 /* =====================
    STATUS PILL
 ===================== */
-.status-pill {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #000;
+
+function statusPill(task) {
+  const st = getDueState(task);
+
+  let cls = "status-pill";
+  let txt = "Planned";
+
+  if (task.status === "Done") {
+    cls += " status-done";
+    txt = "Done";
+  } 
+  else if (st === "overdue") {
+    cls += " status-overdue";
+    txt = "Overdue";
+  } 
+  else if (st === "soon") {
+    cls += " status-soon";
+    txt = "Due Soon";
+  } 
+  else {
+    // ⭐ ΕΔΩ Η ΔΙΟΡΘΩΣΗ
+    cls += " status-planned";
+    txt = "Planned";
+  }
+
+  return `<span class="${cls}">${txt}</span>`;
 }
 
-.status-pill.status-done { background: #4ea8ff; color: #061825; }
-.status-pill.status-overdue { background: #ffbaba; color: #5a0000; }
-.status-pill.status-soon { background: #fff6a5; color: #6b5200; }
-.status-pill.status-unknown { background: #c0c0c0; color: #222; }
 
 /* =====================
    MODALS (GLOBAL)
