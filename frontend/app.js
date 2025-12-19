@@ -202,15 +202,16 @@ function renderHistoryTable(data) {
       </td>
       <td>
         <div><strong>${h.task}</strong></div>
-        <small>${h.section} / ${h.unit}</small>
+           <small> ${h.section || ""}
+                ${h.section && h.unit ? " / " : ""}
+                ${h.unit || ""}
+           </small>
       </td>
       <td>${h.executed_by || "-"}</td>
     `;
-
     tbody.appendChild(tr);
   });
 }
-
 
 /* =====================
    KPIs
