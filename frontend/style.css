@@ -546,20 +546,20 @@ tbody tr:hover { background: #131520; }
   }
 
   /* κρατάμε ΜΟΝΟ τον πίνακα */
-  #tasksTable {
+  #table-card {
     display: table;
     width: 100%;
     border-collapse: collapse;
   }
 
-  #tasksTable th,
-  #tasksTable td {
+  #table-card th,
+  #table-card td {
     border: 1px solid #000;
     padding: 6px;
     font-size: 11px;
   }
 
-  #tasksTable th {
+  #table-card th {
     background: #eee;
     font-weight: bold;
   }
