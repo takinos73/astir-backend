@@ -571,27 +571,40 @@ tbody tr:hover { background: #131520; }
     font-weight: bold;
     margin-bottom: 12px;
   }
-   @media print {
-  .machine-name {
-    font-weight: bold;
+ @media print {
+
+  /* κρύβουμε ΟΛΑ τα modals */
+  .modal-overlay {
+    display: none !important;
   }
-  .task-name {
-    font-weight: 600;
+
+  /* ✨ ΕΚΤΟΣ από το History */
+  #historyOverlay {
+    display: block !important;
+    position: static !important;
+    background: none !important;
   }
-}
-   @media print {
+
+  #historyOverlay .modal-box {
+    width: 100% !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* κρύβουμε main table */
   #tasksTable {
-    display: none;
+    display: none !important;
   }
 
+  /* δείχνουμε history table */
   #historyTable {
-    display: table;
+    display: table !important;
+    width: 100%;
   }
 }
 
-
-
-}
 
 
 
