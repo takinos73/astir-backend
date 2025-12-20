@@ -787,11 +787,23 @@ getEl("confirmDone")?.addEventListener("click", async () => {
 ==============================*/
 
 async function loadCompletedKpi() {
-  const res = await fetch(`${API}/executions/count`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API}/executions/count`);
+    const data = await res.json();
 
-  getEl("kpiCompleted").textContent = data.completed;
+    const el = document.getElementById("kpiDone");
+    if (!el) {
+      console.warn("kpiDone not found (tab not active yet)");
+      return;
+    }
+
+    el.textContent = data.completed;
+  } catch (err) {
+    console.error("Failed to load completed KPI", err);
+  }
 }
+
+
 
 
 async function undoTask(id) {
