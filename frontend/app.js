@@ -724,14 +724,17 @@ getEl("machineFilter")?.addEventListener("change", () => {
 async function loadTasks() {
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
-   console.log("SAMPLE TASK:", tasksData[0]); // 👈 ΕΔΩ
-   //populateAssetFilter();   // ⭐ εδώ
-   
-   updateKpis();
-   buildAssetDropdown();
-   initAssetDropdown();      
-   renderTable();
+
+  console.log("SAMPLE TASK:", tasksData[0]);
+
+  updateKpis();          // Total / Overdue / Soon (active tasks)
+  loadCompletedKpi();    // ✅ Completed from task_executions
+
+  buildAssetDropdown();
+  initAssetDropdown();
+  renderTable();
 }
+
 
 /* =====================
    TASK ACTIONS
@@ -779,6 +782,16 @@ getEl("confirmDone")?.addEventListener("click", async () => {
   }
 });
 
+/* ===========================
+   LOAD TASK DONE from HISTORY
+==============================*/
+
+async function loadCompletedKpi() {
+  const res = await fetch(`${API}/executions/count`);
+  const data = await res.json();
+
+  getEl("kpiCompleted").textContent = data.completed;
+}
 
 
 async function undoTask(id) {

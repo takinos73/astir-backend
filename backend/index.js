@@ -261,6 +261,24 @@ app.get("/executions", async (req, res) => {
   }
 });
 
+/*================================================
+ COMPLETED KPI
+ ================================================*/
+ 
+app.get("/executions/count", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT COUNT(*)::int AS completed
+      FROM task_executions
+    `);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("GET /executions/count ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 /* =====================================================
    ASSETS
