@@ -161,6 +161,23 @@ select,
   font-size: 0.8em;
 }
 
+/* Warning / Deactivate button */
+.btn-warning {
+  background: #f59b9b;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.btn-warning:hover {
+  background: #fecaca;
+}
+
+
 /* =====================
    MAIN TABS
 ===================== */
@@ -332,11 +349,12 @@ tbody tr:hover { background: #131520; }
   gap: 16px;
 }
 
-.task-view-asset { margin-bottom: 14px; }
+.task-view-asset { margin-bottom: 14px;}
 
 .asset-main {
   font-size: 1.6em;
   font-weight: 600;
+  
 }
 
 .asset-sub {
@@ -599,6 +617,21 @@ tbody tr:hover { background: #131520; }
   color: #8a8f9c;
   line-height: 1.2;
 }
+/* Assets table – limit width */
+#tab-assets .table-card {
+  max-width: 600px;
+  margin: 0;
+}
+
+#tab-assets .btn-warning {
+  max-width: 100px;
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+
+
 
 /* =====================
    TAB TASKS – FIX CLICK LAYER
