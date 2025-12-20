@@ -1073,16 +1073,13 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 // =====================
 // DATE FILTER BUTTONS
 // =====================
-document.addEventListener("DOMContentLoaded", () => {
-
+(function initDateFilters() {
   const btns = document.querySelectorAll(".date-filter-btn");
-  console.log("Date filter buttons found:", btns.length);
+  if (!btns.length) return;
 
   btns.forEach(btn => {
     btn.addEventListener("click", () => {
       activeDateFilter = btn.dataset.filter;
-
-      console.log("Date filter clicked:", activeDateFilter);
 
       btns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
@@ -1090,6 +1087,6 @@ document.addEventListener("DOMContentLoaded", () => {
       renderTable();
     });
   });
+})();
 
-});
 

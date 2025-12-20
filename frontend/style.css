@@ -608,6 +608,19 @@ tbody tr:hover { background: #131520; }
   position: relative;
   z-index: 1;
 }
+/* ACTIONS column – force vertical layout */
+td:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  white-space: normal;
+}
+/* Date filter buttons – active state */
+.date-filter-btn.active {
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.6);
+}
+
 
 
 
