@@ -131,6 +131,23 @@ function applyDateFilter(tasks) {
   });
 }
 
+/* =====================
+    SEARCH HIGHLIGHT
+===================== */
+
+function highlight(text, q) {
+  if (!q) return text || "";
+  if (!text) return "";
+
+  const safeQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // escape regex
+  const regex = new RegExp(`(${safeQ})`, "gi");
+
+  return text.toString().replace(
+    regex,
+    `<span class="search-highlight">$1</span>`
+  );
+}
+
 
 /* =====================
    TASK TABLE
@@ -169,29 +186,35 @@ function statusPill(task) {
    - View button calls viewTask(task.id)
    - Done / Undo handled separately
 ===================================================== */
+
 function buildRow(task) {
   const tr = document.createElement("tr");
+
+  // 🔍 current search query (used for highlight)
+  const q = document.getElementById("taskSearch")?.value || "";
+
   tr.innerHTML = `
     <!-- MACHINE / ASSET -->
     <td class="machine-cell">
-      <div class="machine-name">${task.machine_name}</div>
-      ${task.serial_number
-        ? `<div class="machine-sn"><small>${task.serial_number}</small></div>`
-        : ""
+      <div class="machine-name">${highlight(task.machine_name || "", q)}</div>
+      ${
+        task.serial_number
+          ? `<div class="machine-sn"><small>${highlight(task.serial_number, q)}</small></div>`
+          : ""
       }
     </td>
 
     <!-- SECTION -->
-    <td>${task.section || "-"}</td>
+    <td>${task.section ? highlight(task.section, q) : "-"}</td>
 
     <!-- UNIT -->
-    <td>${task.unit || "-"}</td>
+    <td>${task.unit ? highlight(task.unit, q) : "-"}</td>
 
     <!-- TASK DESCRIPTION -->
-    <td>${task.task}</td>
+    <td>${highlight(task.task || "", q)}</td>
 
     <!-- TYPE -->
-    <td>${task.type || "-"}</td>
+    <td>${task.type ? highlight(task.type, q) : "-"}</td>
 
     <!-- DATE (Due or Completed) -->
     <td>${
@@ -213,6 +236,7 @@ function buildRow(task) {
       }
     </td>
   `;
+
   return tr;
 }
 
