@@ -877,6 +877,10 @@ async function loadAssets() {
     assetsData = await res.json();
      console.log("ASSETS SAMPLE:", assetsData[0]); // 👈 ΕΔΩ
     populateAssetLineFilter(); // 👈 ΝΕΟ
+    const sel = document.getElementById("assetLineFilter");
+    if (sel) {
+      sel.onchange = renderAssetsTable;   // 👈 ΕΔΩ
+    }
     renderAssetsTable();
   } catch (err) {
     console.error("Failed to load assets", err);
@@ -1040,9 +1044,6 @@ function populateAssetLineFilter() {
     sel.appendChild(opt);
   });
 }
-document
-  .getElementById("assetLineFilter")
-  ?.addEventListener("change", renderAssetsTable);
 
 
 /* =====================
