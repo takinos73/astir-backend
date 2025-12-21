@@ -1114,6 +1114,116 @@ function populateAssetLineFilter() {
   });
 }
 
+/* =====================
+   LOAD REPORTS TAB
+===================== */
+function loadReports() {
+  // Populate dynamic lines
+  populateReportLines();
+
+  // Initial preview render
+  updateReportsPreview();
+
+  // Initial technician field visibility
+  const type = document.getElementById("reportType")?.value;
+  const techField = document.getElementById("fieldTechnician");
+  if (techField) {
+    techField.style.display = type === "technician" ? "flex" : "none";
+  }
+}
+/* =====================
+   REPORT LINES (C)
+===================== */
+function populateReportLines() {
+  const sel = document.getElementById("reportLine");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="all">ALL</option>`;
+
+  if (!Array.isArray(assetsData)) return;
+
+  const lines = [...new Set(
+    assetsData.map(a => a.line).filter(Boolean)
+  )];
+
+  lines.sort().forEach(line => {
+    const opt = document.createElement("option");
+    opt.value = line;
+    opt.textContent = line;
+    sel.appendChild(opt);
+  });
+}
+
+/* =====================
+   REPORTS PREVIEW (B)
+===================== */
+function updateReportsPreview() {
+  const type = document.getElementById("reportType")?.value || "status";
+  const from = document.getElementById("dateFrom")?.value;
+  const to = document.getElementById("dateTo")?.value;
+  const line = document.getElementById("reportLine")?.value || "all";
+
+  const typeMap = {
+    status: "Maintenance Status Report",
+    overdue: "Overdue Tasks Report",
+    technician: "Completed by Technician",
+    nonplanned: "Non-Planned Tasks Report"
+  };
+
+  document.getElementById("previewType").textContent =
+    `Report: ${typeMap[type] || type}`;
+
+  document.getElementById("previewLines").textContent =
+    `Lines: ${line.toUpperCase()}`;
+
+  document.getElementById("previewDates").textContent =
+    from || to
+      ? `Period: ${from || "—"} → ${to || "—"}`
+      : "Period: ALL";
+}
+[
+  "reportType",
+  "dateFrom",
+  "dateTo",
+  "reportLine",
+  "reportStatus",
+  "reportTechnician"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", updateReportsPreview);
+  document.getElementById(id)?.addEventListener("input", updateReportsPreview);
+});
+
+/* =====================
+   REPORT TYPE LOGIC (A)
+===================== */
+document.getElementById("reportType")?.addEventListener("change", e => {
+  const type = e.target.value;
+  const techField = document.getElementById("fieldTechnician");
+  if (!techField) return;
+
+  techField.style.display = type === "technician" ? "flex" : "none";
+});
+/* =====================
+   OPEN REPORTS TAB
+===================== */
+document.getElementById("reportsTabBtn")?.addEventListener("click", () => {
+  // Κλείσε όλα τα tabs
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+    tab.style.display = "none";
+  });
+
+  // Άνοιξε το Reports tab
+  const reportsTab = document.getElementById("tab-reports");
+  if (reportsTab) {
+    reportsTab.style.display = "block";
+  }
+
+  // 🔥 ΚΡΙΣΙΜΟ: φόρτωσε Reports logic
+  loadReports();
+});
+
+
+
 
 /*================================
    IMPORT EXCEL (PREVIEW + COMMIT)
@@ -1195,21 +1305,32 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
+    // active tab style
     document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
+    // hide all tabs
     ["tasks", "assets", "docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
 
+    // show selected tab
     const sel = tab.dataset.tab;
     const active = getEl(`tab-${sel}`);
     if (active) active.style.display = "block";
 
-    if (sel === "assets") loadAssets();
+    // 🔹 TAB-SPECIFIC LOADERS
+    if (sel === "assets") {
+      loadAssets();
+    }
+
+    if (sel === "reports") {
+      loadReports();   // 👈 ΤΟ ΚΡΙΣΙΜΟ
+    }
   });
 });
+
 
 /* =====================
    INIT
