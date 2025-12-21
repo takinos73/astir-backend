@@ -123,6 +123,7 @@ body {
   min-width: 260px;
   border: 1px solid #ccc;
   border-radius: 6px;
+}
 
 select,
 .btn-secondary {

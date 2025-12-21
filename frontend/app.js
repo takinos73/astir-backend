@@ -616,7 +616,7 @@ function renderTable() {
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   const filtered = tasksData
-  // SEARCH FILTER  
+    
   .filter(t => matchesSearch(t, q))
 
 
@@ -771,15 +771,6 @@ function printTasks() {
 getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
 });
-/* =====================
-   TASK SEARCH (LIVE)
-===================== */
-document
-  .getElementById("taskSearch")
-  ?.addEventListener("input", () => {
-    renderTable();
-  });
-
 
 
 /* =====================
