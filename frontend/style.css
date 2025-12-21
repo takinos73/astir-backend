@@ -633,7 +633,7 @@ tbody tr:hover { background: #131520; }
 }
 /* Assets table – limit width */
 #tab-assets .table-card {
-  max-width: 600px;
+  max-width: 800;
   margin: 0;
 }
 
