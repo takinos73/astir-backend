@@ -854,6 +854,7 @@ async function loadAssets() {
   try {
     const res = await fetch(`${API}/assets`);
     assetsData = await res.json();
+    populateAssetLineFilter(); // 👈 ΕΔΩ (σωστό σημείο)
     renderAssetsTable();
   } catch (err) {
     console.error("Failed to load assets", err);
@@ -996,6 +997,28 @@ async function deactivateAsset(id) {
     console.error(err);
   }
 }
+/*=======================
+    POPULATE ASSET LINE FILTER
+ ======================*/
+
+function populateAssetLineFilter() {
+  const sel = document.getElementById("assetLineFilter");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="all">All</option>`;
+
+  const lines = [...new Set(
+    assetsData.map(a => a.line).filter(Boolean)
+  )];
+
+  lines.sort().forEach(line => {
+    const opt = document.createElement("option");
+    opt.value = line;
+    opt.textContent = line;
+    sel.appendChild(opt);
+  });
+}
+
 
 /* =====================
    IMPORT EXCEL (PREVIEW + COMMIT)

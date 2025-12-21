@@ -26,9 +26,6 @@
   </div>
 </div>
 
-  <!-- =====================
-     HISTORY MODAL
-===================== -->
 <!-- =====================
      HISTORY MODAL
 ===================== -->
@@ -195,12 +192,12 @@
       <button class="main-tab" data-tab="reports">Reports</button>
       <button class="main-tab" data-tab="docs">Documentation</button>
 
-      <!-- 🔧 ADMIN / TOOLS -->      
-      <div class="top-tools">
-        <label class="btn-secondary admin-only">
+    <!-- 🔧 ADMIN / TOOLS -->      
+    <div class="top-tools">
+      <label class="btn-secondary admin-only">
           📂 Upload Excel
-          <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />
-        </label> 
+        <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />
+      </label> 
         <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import Excel</button>
         <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
         <label class="btn-secondary admin-only">♻ Load Snapshot  <input type="file" id="snapshotFile" accept="application/json" hidden /></label>
@@ -284,7 +281,6 @@
       </div>
     </div>
 
-
     
     <!-- ===================== -->
     <!-- TAB: DOCUMENTATION -->
@@ -329,8 +325,14 @@
   <section class="controls-row">
     <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
   </section>
+  <div class="filter-group">
+    <label for="assetLineFilter">Line:</label>
+    <select id="assetLineFilter">
+      <option value="all">All</option>
+    </select>
+  </div>
 
-  <div class="table-card">
+  <div class="table-card assets-scroll">
     <table id="assetsTable">
       <thead>
         <tr>
