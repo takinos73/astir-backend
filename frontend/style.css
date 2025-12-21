@@ -634,9 +634,12 @@ tbody tr:hover { background: #131520; }
   display: flex;
   flex-direction: column;
 }
+#assetsTable tbody tr {
+  height: 52px;
+}
 
 .assets-scroll {
-  max-height: 60vh;
+  max-height: calc(6 * 52px); /* 6 rows */
   overflow-y: auto;
 }
 .filter-group {

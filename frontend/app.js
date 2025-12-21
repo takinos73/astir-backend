@@ -854,6 +854,7 @@ async function loadAssets() {
   try {
     const res = await fetch(`${API}/assets`);
     assetsData = await res.json();
+     console.log("ASSETS SAMPLE:", assetsData[0]); // 👈 ΕΔΩ
     populateAssetLineFilter(); // 👈 ΕΔΩ (σωστό σημείο)
     renderAssetsTable();
   } catch (err) {
