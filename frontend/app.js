@@ -1238,7 +1238,6 @@ document.getElementById("reportsTabBtn")?.addEventListener("click", () => {
 /* =====================
    STATUS REPORT – DATA
 ===================== */
-
 function getFilteredTasksForStatusReport() {
   const from = document.getElementById("dateFrom")?.value;
   const to = document.getElementById("dateTo")?.value;
@@ -1246,22 +1245,25 @@ function getFilteredTasksForStatusReport() {
   const status = document.getElementById("reportStatus")?.value || "all";
 
   const fromDate = from ? new Date(from) : null;
+  if (fromDate) {
+    fromDate.setHours(0, 0, 0, 0);
+  }
+
   const toDate = to ? new Date(to) : null;
-  if (toDate) toDate.setHours(23, 59, 59, 999);
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return tasksData
-    // 🔒 ΜΟΝΟ PLANNED TASKS
-    .filter(t => t.is_planned === true)
 
     // LINE FILTER
     .filter(t => {
       if (line === "all") return true;
       return t.line_code === line || t.line === line;
     })
-
 
     // DATE FILTER (due_date)
     .filter(t => {
@@ -1291,6 +1293,8 @@ function getFilteredTasksForStatusReport() {
       return true;
     });
 }
+
+
 /* =====================
    STATUS REPORT – PDF
 ===================== */
