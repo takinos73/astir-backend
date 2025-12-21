@@ -557,6 +557,27 @@ function populateAssetFilter() {
     sel.appendChild(opt);
   });
 }
+/* =====================
+   ASSET LINE FILTER (Assets Tab)
+===================== */
+function populateAssetLineFilter() {
+  const sel = document.getElementById("assetLineFilter");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="all">All</option>`;
+
+  const lines = [...new Set(
+    assetsData.map(a => a.line).filter(Boolean)
+  )];
+
+  lines.sort().forEach(line => {
+    const opt = document.createElement("option");
+    opt.value = line;       // π.χ. "L1"
+    opt.textContent = line;
+    sel.appendChild(opt);
+  });
+}
+
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
@@ -855,7 +876,7 @@ async function loadAssets() {
     const res = await fetch(`${API}/assets`);
     assetsData = await res.json();
      console.log("ASSETS SAMPLE:", assetsData[0]); // 👈 ΕΔΩ
-    populateAssetLineFilter(); // 👈 ΕΔΩ (σωστό σημείο)
+    populateAssetLineFilter(); // 👈 ΝΕΟ
     renderAssetsTable();
   } catch (err) {
     console.error("Failed to load assets", err);
@@ -1019,6 +1040,9 @@ function populateAssetLineFilter() {
     sel.appendChild(opt);
   });
 }
+document
+  .getElementById("assetLineFilter")
+  ?.addEventListener("change", renderAssetsTable);
 
 
 /* =====================
@@ -1078,7 +1102,7 @@ async function confirmImport() {
 getEl("importExcelBtn")?.addEventListener("click", importExcel);
 getEl("confirmImportBtn")?.addEventListener("click", confirmImport);
 getEl("closeImportPreviewBtn")?.addEventListener("click", () => {
-  getEl("importPreviewOverlay").style.display = "none";
+getEl("importPreviewOverlay").style.display = "none";
 });
 
 /* =====================
