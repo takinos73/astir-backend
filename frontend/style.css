@@ -131,7 +131,6 @@ body {
   border-radius: 3px;
 }
 
-
 select,
 .btn-secondary {
   padding: 7px 10px;
@@ -663,8 +662,6 @@ tbody tr:hover { background: #131520; }
   margin-left: auto;
 }
 
-
-
 /* =====================
    TAB TASKS – FIX CLICK LAYER
 ===================== */
@@ -685,6 +682,106 @@ td:last-child {
   border: 1px solid #3b82f6;
   box-shadow: 0 0 0 1px rgba(59,130,246,0.6);
 }
+/* =====================
+   REPORTS TAB
+===================== */
+
+.reports-header {
+  margin-bottom: 20px;
+}
+
+.reports-header h2 {
+  margin-bottom: 4px;
+}
+
+.reports-subtitle {
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* Card */
+.reports-card {
+  background: #14161c;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 1100px;
+}
+
+/* Grid */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Fields */
+.reports-card .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reports-card label {
+  font-size: 12px;
+  color: #bbb;
+}
+
+.reports-card input,
+.reports-card select {
+  background: #0f1116;
+  border: 1px solid #2a2d36;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.reports-card input::placeholder {
+  color: #666;
+}
+
+/* Hidden field */
+.field-hidden {
+  display: none;
+}
+
+/* Preview */
+.reports-preview {
+  background: #0f1116;
+  border: 1px dashed #2a2d36;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.preview-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.preview-lines,
+.preview-dates,
+.preview-type {
+  color: #ccc;
+  margin-bottom: 2px;
+}
+
+/* Actions */
+.reports-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.reports-actions .btn-primary {
+  padding: 8px 14px;
+}
+
+.reports-actions .btn-secondary {
+  padding: 8px 14px;
+}
+
 
 
 

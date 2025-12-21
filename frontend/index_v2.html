@@ -86,14 +86,12 @@
     <input id="nt-type" placeholder="Type (Breakdown / Repair)" />
     <input id="nt-due" type="date" />
     <textarea id="nt-notes" placeholder="Notes"></textarea>
-
     <div class="modal-actions">
       <button id="saveTaskBtn" class="btn-table">Save</button>
       <button id="cancelAddTask" class="btn-cancel">Cancel</button>
     </div>
   </div>
-</div>
-  
+</div>  
 <body>
 
   <!-- Modal για ολοκλήρωση εργασίας -->
@@ -147,8 +145,6 @@
 
   </div>
 </div>
-
-
     <!-- HEADER -->
     <header class="app-header">
       <div class="app-header-main">
@@ -166,9 +162,11 @@
           No snapshot loaded
         </span>
       </div>
+
     <!-- =====================
      DEV LOGIN (ROLE SWITCH)
       ===================== -->
+
 <div id="devLogin" style="display:flex; gap:8px; align-items:center;">
   <span style="opacity:0.7;">👤 Role:</span>
 
@@ -182,7 +180,6 @@
     Login
   </button>
 </div>
-
   </header>
 
     <!-- MAIN TABS -->
@@ -202,8 +199,7 @@
         <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
         <label class="btn-secondary admin-only">♻ Load Snapshot  <input type="file" id="snapshotFile" accept="application/json" hidden /></label>
         <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
-        </div>
-      
+        </div>      
     </section>
 
     <!-- ===================== -->
@@ -229,9 +225,7 @@
           <span class="kpi-label">Completed</span>
           <span id="kpiDone" class="kpi-value">0</span>
         </article>
-      </section>
-
-  
+      </section>  
 
       <!-- FILTERS -->
 
@@ -348,9 +342,7 @@
       <tbody></tbody>
     </table>
   </div>
-
 </div>
-
     
     <!-- TAB: REPORTS -->
 <div id="tab-reports" style="display: none;">
