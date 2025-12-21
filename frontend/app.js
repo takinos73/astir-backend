@@ -1117,9 +1117,6 @@ function populateAssetLineFilter() {
 /* =====================
    LOAD REPORTS TAB
 ===================== */
-/* =====================
-   LOAD REPORTS TAB
-===================== */
 async function loadReports() {
   // 🔴 αν δεν έχουμε assets, φόρτωσέ τα πρώτα
   if (!Array.isArray(assetsData) || assetsData.length === 0) {
@@ -1234,6 +1231,179 @@ document.getElementById("reportsTabBtn")?.addEventListener("click", () => {
   loadReports();
 });
 
+/* =====================
+   STATUS REPORT – DATA
+===================== */
+
+function getFilteredTasksForStatusReport() {
+  const from = document.getElementById("dateFrom")?.value;
+  const to = document.getElementById("dateTo")?.value;
+  const line = document.getElementById("reportLine")?.value || "all";
+  const status = document.getElementById("reportStatus")?.value || "all";
+
+  const fromDate = from ? new Date(from) : null;
+  const toDate = to ? new Date(to) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return tasksData
+    // 🔒 ΜΟΝΟ PLANNED TASKS
+    .filter(t => t.is_planned === true)
+
+    // LINE FILTER
+    .filter(t => line === "all" || t.line === line)
+
+    // DATE FILTER (due_date)
+    .filter(t => {
+      if (!t.due_date) return false;
+      const due = new Date(t.due_date);
+      if (fromDate && due < fromDate) return false;
+      if (toDate && due > toDate) return false;
+      return true;
+    })
+
+    // STATUS FILTER
+    .filter(t => {
+      if (status === "all") return true;
+
+      if (status === "planned") {
+        return t.status === "Planned" && new Date(t.due_date) >= today;
+      }
+
+      if (status === "overdue") {
+        return t.status !== "Done" && new Date(t.due_date) < today;
+      }
+
+      if (status === "done") {
+        return t.status === "Done";
+      }
+
+      return true;
+    });
+}
+/* =====================
+   STATUS REPORT – PDF
+===================== */
+function generateStatusReportPdf() {
+  const tasks = getFilteredTasksForStatusReport();
+
+  if (tasks.length === 0) {
+    alert("No tasks found for this report");
+    return;
+  }
+
+  const from = document.getElementById("dateFrom")?.value || "—";
+  const to = document.getElementById("dateTo")?.value || "—";
+  const line = document.getElementById("reportLine")?.value || "ALL";
+  const status = document.getElementById("reportStatus")?.value || "ALL";
+
+  let html = `
+    <html>
+    <head>
+      <title>Maintenance Status Report</title>
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h2 { margin-bottom: 6px; }
+        .meta { margin-bottom: 14px; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+          border: 1px solid #999;
+          padding: 6px 8px;
+          vertical-align: top;
+        }
+        th { background: #eee; }
+        .sn { font-size: 11px; color: #666; }
+        .status-planned { color: #1e88e5; font-weight: bold; }
+        .status-overdue { color: #c62828; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+
+      <h2>Maintenance Status Report</h2>
+
+      <div class="meta">
+        Date: ${new Date().toLocaleDateString("el-GR")}<br>
+        Period: ${from} → ${to}<br>
+        Line: ${line.toUpperCase()}<br>
+        Status: ${status.toUpperCase()}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Machine</th>
+            <th>Section</th>
+            <th>Unit</th>
+            <th>Task</th>
+            <th>Type</th>
+            <th>Due Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  tasks.forEach(t => {
+    const due = new Date(t.due_date);
+    const isOverdue = due < new Date() && t.status !== "Done";
+
+    html += `
+      <tr>
+        <td>
+          ${t.machine_name}<br>
+          <span class="sn">${t.serial_number || ""}</span>
+        </td>
+        <td>${t.section || "-"}</td>
+        <td>${t.unit || "-"}</td>
+        <td>${t.task}</td>
+        <td>${t.type || "-"}</td>
+        <td>${due.toLocaleDateString("el-GR")}</td>
+        <td class="${isOverdue ? "status-overdue" : "status-planned"}">
+          ${isOverdue ? "Overdue" : "Planned"}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Hidden iframe print
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
+document.getElementById("generatePdfBtn")?.addEventListener("click", () => {
+  const type = document.getElementById("reportType")?.value;
+
+  if (type === "status") {
+    generateStatusReportPdf();
+  } else {
+    alert("This report type is not implemented yet.");
+  }
+});
 
 
 
