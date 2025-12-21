@@ -117,6 +117,12 @@ body {
   gap: 10px;
   margin-bottom: 12px;
 }
+.task-search {
+  margin-left: auto;        /* 👈 πάει δεξιά */
+  padding: 8px 10px;
+  min-width: 260px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 
 select,
 .btn-secondary {

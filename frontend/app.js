@@ -491,7 +491,6 @@ function initAssetDropdown() {
   activeAssetFilter = "all";
 }
 
-
 function getFilteredTasksForPrint() {
 
   const today = new Date();
@@ -531,7 +530,6 @@ function getFilteredTasksForPrint() {
     });
 }
 
-
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
@@ -566,6 +564,20 @@ function populateAssetFilter() {
     sel.appendChild(opt);
   });
 }
+// Search matching
+function matchesSearch(task, q) {
+  if (!q) return true;
+  const s = q.toLowerCase();
+
+  return (
+    (task.task || "").toLowerCase().includes(s) ||
+    (task.machine_name || "").toLowerCase().includes(s) ||
+    (task.serial_number || "").toLowerCase().includes(s) ||
+    (task.section || "").toLowerCase().includes(s) ||
+    (task.unit || "").toLowerCase().includes(s)
+  );
+}
+
 /* =====================
    ASSET LINE FILTER (Assets Tab)
 ===================== */
@@ -594,8 +606,8 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  //const mf = getEl("machineFilter").value;
-  //const sf = getEl("statusFilter").value;
+  const q = document.getElementById("taskSearch")?.value || "";
+
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -604,8 +616,9 @@ function renderTable() {
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   const filtered = tasksData
-    // LINE FILTER
-    //.filter(t => activeLine === "all" || taskLine(t) === norm(activeLine))
+  // SEARCH FILTER  
+  .filter(t => matchesSearch(t, q))
+
 
     // MACHINE FILTER
     .filter(t => {
@@ -758,6 +771,15 @@ function printTasks() {
 getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
 });
+/* =====================
+   TASK SEARCH (LIVE)
+===================== */
+document
+  .getElementById("taskSearch")
+  ?.addEventListener("input", () => {
+    renderTable();
+  });
+
 
 
 /* =====================
