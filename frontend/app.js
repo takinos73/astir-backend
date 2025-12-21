@@ -1117,24 +1117,36 @@ function populateAssetLineFilter() {
 /* =====================
    LOAD REPORTS TAB
 ===================== */
-function loadReports() {
-  // Populate dynamic lines
+/* =====================
+   LOAD REPORTS TAB
+===================== */
+async function loadReports() {
+  // 🔴 αν δεν έχουμε assets, φόρτωσέ τα πρώτα
+  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+    await loadAssets();
+  }
+
+  // Γ: populate dynamic lines
   populateReportLines();
 
-  // Initial preview render
+  // Β: initial preview render
   updateReportsPreview();
 
-  // Initial technician field visibility
+  // Α: initial technician field visibility
   const type = document.getElementById("reportType")?.value;
   const techField = document.getElementById("fieldTechnician");
   if (techField) {
     techField.style.display = type === "technician" ? "flex" : "none";
   }
 }
+
 /* =====================
    REPORT LINES (C)
 ===================== */
 function populateReportLines() {
+
+  console.log("REPORT LINES assetsData =", assetsData);
+
   const sel = document.getElementById("reportLine");
   if (!sel) return;
 
