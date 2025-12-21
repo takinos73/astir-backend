@@ -771,6 +771,13 @@ function printTasks() {
 getEl("machineFilter")?.addEventListener("change", () => {
   renderTable();
 });
+document
+  .getElementById("taskSearch")
+  ?.addEventListener("input", (e) => {
+    console.log("SEARCH INPUT:", e.target.value);
+    renderTable();
+  });
+
 
 
 /* =====================
