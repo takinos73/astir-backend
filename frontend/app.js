@@ -842,7 +842,7 @@ async function undoExecution(executionId) {
   loadCompletedKpi();
 }
 
-// 👇 ΚΡΙΣΙΜΟ: κάνε τη function global
+// 👇 ΑΠΑΡΑΙΤΗΤΟ (λόγω type="module")
 window.undoExecution = undoExecution;
 
 
