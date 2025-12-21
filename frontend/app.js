@@ -683,11 +683,22 @@ function renderTable() {
 }
 
 function getAssetFilterLabel() {
-  const sel = getEl("machineFilter");
-  if (!sel || sel.value === "all") return "ALL MACHINES";
+  if (activeAssetFilter === "all" || !activeAssetFilter) {
+    return "ALL MACHINES";
+  }
 
-  return sel.options[sel.selectedIndex].text;
+  // expected format: "PMC250||437063"
+  const [machine, serial] = activeAssetFilter.split("||");
+
+  if (!machine) return "ALL MACHINES";
+
+  return serial
+    ? `${machine} (${serial})`
+    : machine;
 }
+/* =====================
+    PRINT TASKS
+===================== */
 
 function printTasks() {
   const tasks = getFilteredTasksForPrint();
