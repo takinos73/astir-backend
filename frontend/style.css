@@ -114,7 +114,7 @@ body {
 ===================== */
 .controls-row {
   display: flex;
-  gap: 10px;
+  gap: 120px;
   margin-bottom: 12px;
 }
 .task-search {
