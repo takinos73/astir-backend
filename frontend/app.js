@@ -696,9 +696,9 @@ function getAssetFilterLabel() {
     ? `${machine} (${serial})`
     : machine;
 }
-/* =====================
+ /* =====================
     PRINT TASKS
-===================== */
+  ===================== */
 
 function printTasks() {
   const tasks = getFilteredTasksForPrint();
