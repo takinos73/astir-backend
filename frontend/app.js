@@ -823,6 +823,30 @@ async function undoTask(id) {
 }
 
 /* =====================
+   UNDO TASK EXECUTION
+===================== */
+async function undoExecution(executionId) {
+  if (!hasRole("admin", "planner")) {
+    alert("You are not allowed to undo executions");
+    return;
+  }
+
+  if (!confirm("Undo this execution and restore previous schedule?")) return;
+
+  await fetch(`${API}/executions/${executionId}/undo`, {
+    method: "POST"
+  });
+
+  loadHistory();
+  loadTasks();
+  loadCompletedKpi();
+}
+
+// 👇 ΚΡΙΣΙΜΟ: κάνε τη function global
+window.undoExecution = undoExecution;
+
+
+/* =====================
    ASSETS (CRUD)
 ===================== */
 
