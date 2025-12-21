@@ -242,22 +242,35 @@ function renderHistoryTable(data) {
 
     tr.innerHTML = `
       <td>${formatDateTime(h.executed_at)}</td>
+
       <td>
         <strong>${h.machine}</strong><br>
         <small>SN: ${h.serial_number} | ${h.line}</small>
       </td>
+
       <td>
         <div><strong>${h.task}</strong></div>
-           <small> ${h.section || ""}
-                ${h.section && h.unit ? " / " : ""}
-                ${h.unit || ""}
-           </small>
+        <small>
+          ${h.section || ""}
+          ${h.section && h.unit ? " / " : ""}
+          ${h.unit || ""}
+        </small>
       </td>
+
       <td>${h.executed_by || "-"}</td>
+
+      <td>
+        <button class="btn-undo"
+          onclick="undoExecution(${h.id})">
+          ↩ Undo
+        </button>
+      </td>
     `;
+
     tbody.appendChild(tr);
   });
 }
+
 
 /* =====================
    KPIs
@@ -802,8 +815,6 @@ async function loadCompletedKpi() {
     console.error("Failed to load completed KPI", err);
   }
 }
-
-
 
 
 async function undoTask(id) {

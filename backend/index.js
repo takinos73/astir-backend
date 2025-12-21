@@ -163,11 +163,12 @@ app.patch("/tasks/:id", async (req, res) => {
       INSERT INTO task_executions (
         task_id,
         asset_id,
-        executed_by
-      )
-      VALUES ($1, $2, $3)
+        executed_by,
+        prev_due_date
+  )
+  VALUES ($1, $2, $3, $4)
       `,
-      [task.id, task.asset_id, completed_by || null]
+      [task.id, task.asset_id, completed_by || null, task.due_date]
     );
 
     // 3️⃣ Calculate next due (if preventive)
@@ -203,6 +204,72 @@ app.patch("/tasks/:id", async (req, res) => {
     client.release();
   }
 });
+
+/* =====================
+   UNDO TASK EXECUTION (RESTORE SCHEDULE)
+===================== */
+
+app.post("/executions/:id/undo", async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ Fetch execution
+    const execRes = await client.query(
+      `
+      SELECT id, task_id, prev_due_date
+      FROM task_executions
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    if (!execRes.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Execution not found" });
+    }
+
+    const exec = execRes.rows[0];
+
+    if (!exec.prev_due_date) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Cannot undo: missing prev_due_date" });
+    }
+
+    // 2️⃣ Restore task schedule
+    await client.query(
+      `
+      UPDATE maintenance_tasks
+      SET
+        due_date = $2,
+        completed_at = NULL,
+        completed_by = NULL,
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [exec.task_id, exec.prev_due_date]
+    );
+
+    // 3️⃣ Delete execution (history)
+    await client.query(
+      `DELETE FROM task_executions WHERE id = $1`,
+      [exec.id]
+    );
+
+    await client.query("COMMIT");
+    res.json({ success: true });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("UNDO execution ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 
 // Undo to planned
 app.patch("/tasks/:id/undo", async (req, res) => {
@@ -264,7 +331,7 @@ app.get("/executions", async (req, res) => {
 /*================================================
  COMPLETED KPI
  ================================================*/
- 
+
 app.get("/executions/count", async (req, res) => {
   try {
     const { rows } = await pool.query(`

@@ -29,6 +29,9 @@
   <!-- =====================
      HISTORY MODAL
 ===================== -->
+<!-- =====================
+     HISTORY MODAL
+===================== -->
 <div id="historyOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-history">
     <h3>📜 Task Execution History</h3>
@@ -41,9 +44,28 @@
             <th>Asset</th>
             <th>Task</th>
             <th>Executed By</th>
+            <th>Actions</th> <!-- 👈 UNDO -->
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+          <!-- Rows rendered by JS -->
+          <!--
+          <tr>
+            <td>13/01/2025 10:32</td>
+            <td>
+              MACHINE A<br>
+              <small>SN-12345</small>
+            </td>
+            <td>Lubrication</td>
+            <td>John</td>
+            <td>
+              <button class="btn-undo" onclick="undoExecution(12)">
+                ↩ Undo
+              </button>
+            </td>
+          </tr>
+          -->
+        </tbody>
       </table>
     </div>
 
@@ -52,6 +74,7 @@
     </div>
   </div>
 </div>
+
 
   <!-- Add Task Modal -->
 <div id="addTaskOverlay" class="modal-overlay" style="display:none;">
