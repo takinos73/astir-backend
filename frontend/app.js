@@ -891,30 +891,35 @@ function renderAssetsTable() {
   const tbody = document.querySelector("#assetsTable tbody");
   if (!tbody) return;
 
+  const selectedLine =
+    document.getElementById("assetLineFilter")?.value || "all";
+
   tbody.innerHTML = "";
 
-  if (assetsData.length === 0) {
+  const filteredAssets = assetsData.filter(a =>
+    selectedLine === "all" || a.line === selectedLine
+  );
+
+  if (filteredAssets.length === 0) {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td colspan="4" style="text-align:center;">No assets</td>`;
     tbody.appendChild(tr);
     return;
   }
 
-  assetsData.forEach(a => {
+  filteredAssets.forEach(a => {
     const tr = document.createElement("tr");
-    // μέσα στο forEach(a => { ... })
-      tr.innerHTML = `
-        <td>${a.line || "-"}</td>
-        <td>${a.model || "-"}</td>
-        <td>${a.serial_number || "-"}</td>
-        <td class="asset-admin-only">
-         <button class="btn-warning"
-            onclick="deactivateAsset(${a.id})">
-      🚫 Deactivate
-    </button>
-  </td>
-`;
-
+    tr.innerHTML = `
+      <td>${a.line || "-"}</td>
+      <td>${a.model || "-"}</td>
+      <td>${a.serial_number || "-"}</td>
+      <td class="asset-admin-only">
+        <button class="btn-warning"
+          onclick="deactivateAsset(${a.id})">
+          🚫 Deactivate
+        </button>
+      </td>
+    `;
     tbody.appendChild(tr);
   });
 }
