@@ -379,17 +379,26 @@ function closeTaskView() {
 /* =====================
    HISTORY MODAL (GLOBAL)
 ===================== */
+
 function openHistory() {
   loadHistory(); // always refresh
-  getEl("historyOverlay").style.display = "flex";
+  const overlay = getEl("historyOverlay");
+  overlay.style.display = "flex";
+  overlay.style.pointerEvents = "auto"; // 👈 ΚΡΙΣΙΜΟ
 }
+
 
 function closeHistory() {
   getEl("historyOverlay").style.display = "none";
 }
 
 getEl("openHistoryBtn")?.addEventListener("click", openHistory);
-getEl("closeHistoryBtn")?.addEventListener("click", closeHistory);
+getEl("closeHistoryBtn")
+  ?.addEventListener("click", () => {
+    const overlay = getEl("historyOverlay");
+    overlay.style.display = "none";
+    overlay.style.pointerEvents = "none"; // 👈 ΚΡΙΣΙΜΟ
+  });
 
 
 /* =====================
@@ -1028,9 +1037,9 @@ async function deactivateAsset(id) {
     console.error(err);
   }
 }
-/*=======================
+/*============================
     POPULATE ASSET LINE FILTER
- ======================*/
+ ============================*/
 
 function populateAssetLineFilter() {
   const sel = document.getElementById("assetLineFilter");
@@ -1051,9 +1060,9 @@ function populateAssetLineFilter() {
 }
 
 
-/* =====================
+/*================================
    IMPORT EXCEL (PREVIEW + COMMIT)
-===================== */
+ =================================*/
 
 async function importExcel() {
    if (!hasRole("planner", "admin")) {
@@ -1187,6 +1196,7 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 // =====================
 // DATE FILTER BUTTONS
 // =====================
+
 (function initDateFilters() {
   const btns = document.querySelectorAll(".date-filter-btn");
   if (!btns.length) return;
