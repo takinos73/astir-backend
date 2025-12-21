@@ -1171,6 +1171,10 @@ function updateReportsPreview() {
   const from = document.getElementById("dateFrom")?.value;
   const to = document.getElementById("dateTo")?.value;
   const line = document.getElementById("reportLine")?.value || "all";
+  const status = document.getElementById("reportStatus")?.value || "all";
+  document.getElementById("previewStatus").textContent =
+  `Status: ${status.toUpperCase()}`;
+
 
   const typeMap = {
     status: "Maintenance Status Report",
@@ -1253,7 +1257,11 @@ function getFilteredTasksForStatusReport() {
     .filter(t => t.is_planned === true)
 
     // LINE FILTER
-    .filter(t => line === "all" || t.line === line)
+    .filter(t => {
+      if (line === "all") return true;
+      return t.line_code === line || t.line === line;
+    })
+
 
     // DATE FILTER (due_date)
     .filter(t => {
