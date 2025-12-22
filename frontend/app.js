@@ -1426,7 +1426,9 @@ function generateStatusReportPdf() {
    COMPLETED REPORT – PDF
 ===================== */
 function generateCompletedReportPdf() {
+
   const data = getFilteredExecutionsForReport();
+  const totalsByTech = getExecutionTotalsByTechnician(data);
 
   if (!Array.isArray(data) || data.length === 0) {
     alert("No completed tasks found for this report");
@@ -1440,6 +1442,7 @@ function generateCompletedReportPdf() {
       <style>
         body { font-family: Arial, sans-serif; }
         h2 { margin-bottom: 6px; }
+        h3 { margin: 12px 0 6px; }
         .meta { font-size: 12px; margin-bottom: 12px; color: #555; }
         table { width: 100%; border-collapse: collapse; }
         th, td {
@@ -1453,6 +1456,7 @@ function generateCompletedReportPdf() {
     <body>
 
       <h2>Completed Tasks Report</h2>
+
       <div class="meta">
         Period:
         ${document.getElementById("dateFrom")?.value || "—"}
@@ -1460,6 +1464,28 @@ function generateCompletedReportPdf() {
         ${document.getElementById("dateTo")?.value || "—"}<br>
         Line: ${document.getElementById("reportLine")?.value.toUpperCase()}
       </div>
+
+      <h3>Summary by Technician</h3>
+      <table style="margin-bottom:15px;">
+        <thead>
+          <tr>
+            <th>Technician</th>
+            <th>Completed Tasks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(totalsByTech)
+            .map(
+              ([tech, count]) => `
+                <tr>
+                  <td>${tech}</td>
+                  <td style="text-align:center;">${count}</td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
 
       <table>
         <thead>
@@ -1513,6 +1539,7 @@ function generateCompletedReportPdf() {
   }, 1000);
 }
 
+
 /* =====================
    COMPLETED REPORT – DATA
 ===================== */
@@ -1553,6 +1580,22 @@ function getFilteredExecutionsForReport() {
     return true;
   });
 }
+
+/* =====================
+   COMPLETED REPORT – TOTALS BY TECHNICIAN
+===================== */
+function getExecutionTotalsByTechnician(data) {
+  const totals = {};
+
+  data.forEach(e => {
+    const tech = e.executed_by || "—";
+    totals[tech] = (totals[tech] || 0) + 1;
+  });
+
+  return totals;
+}
+
+
 
 
 
