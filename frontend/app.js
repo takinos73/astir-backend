@@ -1422,6 +1422,139 @@ function generateStatusReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+/* =====================
+   COMPLETED REPORT – PDF
+===================== */
+function generateCompletedReportPdf() {
+  const data = getFilteredExecutionsForReport();
+
+  if (!Array.isArray(data) || data.length === 0) {
+    alert("No completed tasks found for this report");
+    return;
+  }
+
+  let html = `
+    <html>
+    <head>
+      <title>Completed Tasks Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; }
+        h2 { margin-bottom: 6px; }
+        .meta { font-size: 12px; margin-bottom: 12px; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+          border: 1px solid #999;
+          padding: 6px 8px;
+          font-size: 12px;
+        }
+        th { background: #eee; }
+      </style>
+    </head>
+    <body>
+
+      <h2>Completed Tasks Report</h2>
+      <div class="meta">
+        Period:
+        ${document.getElementById("dateFrom")?.value || "—"}
+        →
+        ${document.getElementById("dateTo")?.value || "—"}<br>
+        Line: ${document.getElementById("reportLine")?.value.toUpperCase()}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Line</th>
+            <th>Machine</th>
+            <th>Task</th>
+            <th>Technician</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  data.forEach(e => {
+    html += `
+      <tr>
+        <td>${formatDateTime(e.executed_at)}</td>
+        <td>${e.line}</td>
+        <td>${e.machine}<br><small>${e.serial_number || ""}</small></td>
+        <td>${e.task}</td>
+        <td>${e.executed_by || "-"}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
+
+/* =====================
+   COMPLETED REPORT – DATA
+===================== */
+
+function getFilteredExecutionsForReport() {
+  const from = document.getElementById("dateFrom")?.value;
+  const to = document.getElementById("dateTo")?.value;
+  const line = document.getElementById("reportLine")?.value || "all";
+  const technician = document
+    .getElementById("reportTechnician")
+    ?.value
+    ?.trim()
+    .toLowerCase();
+
+  const fromDate = from ? new Date(from) : null;
+  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+
+  const toDate = to ? new Date(to) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  return executionsData.filter(e => {
+    if (!e.executed_at) return false;
+
+    const execDate = new Date(e.executed_at);
+
+    if (fromDate && execDate < fromDate) return false;
+    if (toDate && execDate > toDate) return false;
+
+    if (line !== "all" && e.line !== line) return false;
+
+    if (
+      technician &&
+      !e.executed_by?.toLowerCase().includes(technician)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+
 
 document.getElementById("generatePdfBtn")
   ?.addEventListener("click", () => {
