@@ -1453,9 +1453,9 @@ function generateCompletedReportPdf() {
         th { background: #eee; }
         /* COLUMN WIDTHS */
         th.col-date, td.col-date { width: 10%; }
-        th.col-line, td.col-line { width: 8%; }
-        th.col-machine, td.col-machine { width: 22%; }
-        th.col-secunit, td.col-secunit { width: 12%; }
+        th.col-line, td.col-line { width: 7%; }
+        th.col-machine, td.col-machine { width: 12%; }
+        th.col-secunit, td.col-secunit { width: 22%; }
         th.col-task, td.col-task { width: 32%; }
         th.col-tech, td.col-tech { width: 20%; }
       </style>
