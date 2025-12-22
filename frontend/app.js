@@ -12,6 +12,7 @@ let loadedSnapshotName = null;
 let importExcelFile = null;
 let activeDateFilter = "all";
 let activeAssetFilter = "all";
+let executionsData = [];
 
 
 /* =====================
@@ -247,13 +248,15 @@ function buildRow(task) {
 async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
-    const history = await res.json();
-    console.log("HISTORY DATA:", history); // 👈
-    renderHistoryTable(history);
+    executionsData = await res.json();   // 👈 ΚΡΙΣΙΜΟ: cache για reports
+    console.log("HISTORY DATA:", executionsData);
+
+    renderHistoryTable(executionsData);
   } catch (err) {
     console.error("LOAD HISTORY ERROR:", err);
   }
 }
+
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
@@ -930,6 +933,18 @@ async function undoExecution(executionId) {
 // 👇 ΑΠΑΡΑΙΤΗΤΟ (λόγω type="module")
 window.undoExecution = undoExecution;
 
+/* =====================
+   LOAD EXECUTIONS (HISTORY CACHE)
+===================== */
+async function loadExecutions() {
+  try {
+    const res = await fetch(`${API}/executions`);
+    executionsData = await res.json();
+    console.log("EXECUTIONS LOADED:", executionsData.length);
+  } catch (err) {
+    console.error("Failed to load executions", err);
+  }
+}
 
 /* =====================
    ASSETS (CRUD)
@@ -1499,32 +1514,33 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    // active tab style
-    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
+    // Active state
+    document.querySelectorAll(".main-tab")
+      .forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
-    // hide all tabs
+    // Hide all tabs
     ["tasks", "assets", "docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
 
-    // show selected tab
+    // Show selected tab
     const sel = tab.dataset.tab;
     const active = getEl(`tab-${sel}`);
     if (active) active.style.display = "block";
 
-    // 🔹 TAB-SPECIFIC LOADERS
+    // Tab-specific loaders
     if (sel === "assets") {
       loadAssets();
     }
 
     if (sel === "reports") {
-      loadReports();   // 👈 ΤΟ ΚΡΙΣΙΜΟ
+      loadHistory();   // 👈 γεμίζει executionsData
+      loadReports();   // 👈 populate lines + preview
     }
   });
 });
-
 
 /* =====================
    INIT
