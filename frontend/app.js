@@ -1451,6 +1451,12 @@ function generateCompletedReportPdf() {
           font-size: 12px;
         }
         th { background: #eee; }
+        /* COLUMN WIDTHS */
+        th.col-date, td.col-date { width: 10%; }
+        th.col-line, td.col-line { width: 8%; }
+        th.col-machine, td.col-machine { width: 22%; }
+        th.col-task, td.col-task { width: 40%; }
+        th.col-tech, td.col-tech { width: 20%; }
       </style>
     </head>
     <body>
@@ -1490,11 +1496,11 @@ function generateCompletedReportPdf() {
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Line</th>
-            <th>Machine</th>
-            <th>Task</th>
-            <th>Technician</th>
+            <th class="col-date">Date</th>
+            <th class="col-line">Line</th>
+            <th class="col-machine">Machine</th>
+            <th class="col-task">Task</th>
+            <th class="col-tech">Technician</th>
           </tr>
         </thead>
         <tbody>
@@ -1503,11 +1509,11 @@ function generateCompletedReportPdf() {
   data.forEach(e => {
     html += `
       <tr>
-        <td>${formatDateTime(e.executed_at)}</td>
-        <td>${e.line}</td>
-        <td>${e.machine}<br><small>${e.serial_number || ""}</small></td>
-        <td>${e.task}</td>
-        <td>${e.executed_by || "-"}</td>
+        <td class="col-date">${new Date(e.executed_at).toLocaleDateString("el-GR")}</td>
+        <td class="col-line">${e.line}</td>
+        <td class="col-machine">${e.machine}<br><small>${e.serial_number || ""}</small></td>
+        <td class="col-task">${e.task}</td>
+        <td class="col-tech">${e.executed_by || "-"}</td> 
       </tr>
     `;
   });
