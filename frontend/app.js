@@ -1422,16 +1422,25 @@ function generateStatusReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
-document.getElementById("generatePdfBtn")?.addEventListener("click", () => {
-  const type = document.getElementById("reportType")?.value;
 
-  if (type === "status") {
-    generateStatusReportPdf();
-  } else {
-    alert("This report type is not implemented yet.");
-  }
+document.getElementById("generatePdfBtn")
+  ?.addEventListener("click", () => {
+    const type = document.getElementById("reportType")?.value;
+    console.log("REPORT TYPE CLICK =", type); // 👈 DEBUG
+
+    switch (type) {
+      case "status":
+        generateStatusReportPdf();
+        break;
+
+      case "technician":
+        generateCompletedReportPdf();
+        break;
+
+      default:
+        alert(`Report type "${type}" is not implemented yet.`);
+    }
 });
-
 
 
 /*================================
