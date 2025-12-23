@@ -913,37 +913,40 @@ taskTypeSelect?.addEventListener("change", e => {
 
   /* =====================
    SAVE TASK (PLANNED / UNPLANNED)
-  ===================== */
-  document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
+===================== */
+document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
-  const typeSelect = document.getElementById("taskPlannedType");
-  const isPlanned = typeSelect?.value === "planned";
+  const isPlanned =
+    document.getElementById("taskPlannedType")?.value === "planned";
 
-  // Collect values
+  const assetId = document.getElementById("nt-asset")?.value;
+
+  if (!assetId) {
+    alert("Asset is required");
+    return;
+  }
+
+  const taskDesc = document.getElementById("nt-task")?.value?.trim();
+  if (!taskDesc) {
+    alert("Task description is required");
+    return;
+  }
+
   const payload = {
-    line: document.getElementById("nt-line")?.value || null,
-    machine_name: document.getElementById("nt-machine")?.value || null,
+    asset_id: assetId,
     section: document.getElementById("nt-section")?.value || null,
     unit: document.getElementById("nt-unit")?.value || null,
-    task: document.getElementById("nt-task")?.value,
+    task: taskDesc,
     type: document.getElementById("nt-type")?.value || null,
     notes: document.getElementById("nt-notes")?.value || null,
 
-    // 🔑 CORE FLAGS
     is_planned: isPlanned,
     status: isPlanned ? "Planned" : "Done",
 
-    // Dates
     due_date: isPlanned
       ? document.getElementById("nt-due")?.value
       : new Date().toISOString()
   };
-
-  // Basic validation
-  if (!payload.task) {
-    alert("Task description is required");
-    return;
-  }
 
   try {
     const res = await fetch(`${API}/tasks`, {
@@ -960,12 +963,12 @@ taskTypeSelect?.addEventListener("change", e => {
     // Close modal
     document.getElementById("addTaskOverlay").style.display = "none";
 
-    // Reset form (basic)
+    // Reset form
     document.querySelectorAll(
-      "#addTaskModal input, #addTaskModal textarea"
+      "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
     ).forEach(el => el.value = "");
 
-    // Reload tasks
+    // Refresh tasks
     loadTasks();
 
   } catch (err) {

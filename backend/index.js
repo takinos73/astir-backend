@@ -88,28 +88,71 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
+  /*================================
+   Create task (Planned or Unplanned)
+  =================================*/
 
-// Create NON-planned task from UI (STEP 2A)
 app.post("/tasks", async (req, res) => {
-  const { line, machine_name, serial_number, section, unit, task, type, due_date, notes } = req.body;
 
-  if (!line || !machine_name || !serial_number || !task) {
-    return res.status(400).json({ error: "Missing fields: line, machine_name, serial_number, task" });
+  const {
+    asset_id,
+    line,
+    machine_name,
+    serial_number,
+    section,
+    unit,
+    task,
+    type,
+    due_date,
+    notes,
+    is_planned,
+    status
+  } = req.body;
+
+  if (!task) {
+    return res.status(400).json({ error: "Task description is required" });
   }
 
   const client = await pool.connect();
+
   try {
-    const assetId = await findAssetId(client, line, machine_name, serial_number);
+    let assetId = asset_id || null;
+
+    // 🔁 BACKWARD COMPATIBILITY (old UI / imports)
     if (!assetId) {
-      return res.status(400).json({ error: `Asset not found: ${line}/${machine_name}/${serial_number}` });
+      if (!line || !machine_name || !serial_number) {
+        return res.status(400).json({
+          error: "asset_id OR (line, machine_name, serial_number) required"
+        });
+      }
+
+      assetId = await findAssetId(client, line, machine_name, serial_number);
+      if (!assetId) {
+        return res.status(400).json({
+          error: `Asset not found: ${line}/${machine_name}/${serial_number}`
+        });
+      }
     }
 
-    const ins = await client.query(
+    // 🔒 Validate asset exists
+    const assetCheck = await client.query(
+      "SELECT id FROM assets WHERE id = $1",
+      [assetId]
+    );
+
+    if (!assetCheck.rows.length) {
+      return res.status(400).json({ error: "Invalid asset_id" });
+    }
+
+    const plannedFlag = is_planned !== false; // default true
+    const finalStatus = status || (plannedFlag ? "Planned" : "Done");
+
+    const insertTask = await client.query(
       `
       INSERT INTO maintenance_tasks
         (asset_id, section, unit, task, type, due_date, status, is_planned, notes)
       VALUES
-        ($1, $2, $3, $4, $5, $6, 'Planned', false, $7)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
       `,
       [
@@ -119,11 +162,29 @@ app.post("/tasks", async (req, res) => {
         task,
         type || null,
         due_date ? new Date(due_date) : null,
-        notes || null,
+        finalStatus,
+        plannedFlag,
+        notes || null
       ]
     );
 
-    res.json(ins.rows[0]);
+    const newTask = insertTask.rows[0];
+
+    // 🔥 AUTO-HISTORY FOR UNPLANNED
+    if (plannedFlag === false) {
+      await client.query(
+        `
+        INSERT INTO task_executions
+          (task_id, asset_id, executed_by)
+        VALUES
+          ($1, $2, NULL)
+        `,
+        [newTask.id, assetId]
+      );
+    }
+
+    res.json(newTask);
+
   } catch (err) {
     console.error("POST /tasks ERROR:", err.message);
     res.status(500).json({ error: err.message });
