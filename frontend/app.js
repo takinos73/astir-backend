@@ -928,70 +928,42 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   }
 });
 
-/* ==============================
-   SAVE TASK (PLANNED / UNPLANNED)
-================================== */
-document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
+/* =====================
+   OPEN ADD TASK MODAL
+===================== */
+document.getElementById("addTaskBtn")?.addEventListener("click", e => {
+  e.preventDefault();
 
+  const overlay = document.getElementById("addTaskOverlay");
+  if (!overlay) return;
+
+  // reset type to Planned (default)
   const typeSelect = document.getElementById("taskPlannedType");
-  const isPlanned = typeSelect?.value === "planned";
+  if (typeSelect) typeSelect.value = "planned";
 
-  // Collect values
-  const payload = {
-    line: document.getElementById("nt-line")?.value || null,
-    machine_name: document.getElementById("nt-machine")?.value || null,
-    section: document.getElementById("nt-section")?.value || null,
-    unit: document.getElementById("nt-unit")?.value || null,
-    task: document.getElementById("nt-task")?.value,
-    type: document.getElementById("nt-type")?.value || null,
-    notes: document.getElementById("nt-notes")?.value || null,
+  // reset title
+  const title = document.getElementById("addTaskTitle");
+  if (title) title.textContent = "New Planned Task";
 
-    // 🔑 CORE FLAGS
-    is_planned: isPlanned,
-    status: isPlanned ? "Planned" : "Done",
+  // show planned-only fields
+  document.querySelectorAll(".planned-only").forEach(el => {
+    el.style.display = "block";
+  });
 
-    // Dates
-    due_date: isPlanned
-      ? document.getElementById("nt-due")?.value
-      : new Date().toISOString()
-  };
+  // remove unplanned visual state
+  document
+    .getElementById("addTaskModal")
+    ?.classList.remove("unplanned-mode");
 
-  // Basic validation
-  if (!payload.task) {
-    alert("Task description is required");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to save task");
-    }
-
-    // Close modal
-    document.getElementById("addTaskOverlay").style.display = "none";
-
-    // Reset form (basic)
-    document.querySelectorAll(
-      "#addTaskModal input, #addTaskModal textarea"
-    ).forEach(el => el.value = "");
-
-    // Reload tasks
-    loadTasks();
-
-  } catch (err) {
-    console.error("SAVE TASK ERROR:", err);
-    alert(err.message);
-  }
+  overlay.style.display = "flex";
 });
-
-
+  /* =====================
+    CANCEL ADD TASK
+  ===================== */ 
+    
+document.getElementById("cancelAddTask")?.addEventListener("click", () => {
+  document.getElementById("addTaskOverlay").style.display = "none";
+});
 
 /* =====================
    TASK ACTIONS
