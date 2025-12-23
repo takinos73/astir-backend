@@ -318,6 +318,53 @@ function updateKpis() {
   getEl("kpiSoon").textContent = soon;
   getEl("kpiDone").textContent = done;
 }
+/* =====================
+   POPULATE ADD TASK LINES
+===================== */
+function populateAddTaskLines() {
+  const sel = document.getElementById("nt-line");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Select Line</option>`;
+
+  if (!Array.isArray(assetsData)) return;
+
+  const lines = [...new Set(
+    assetsData.map(a => a.line).filter(Boolean)
+  )];
+
+  lines.sort().forEach(line => {
+    const opt = document.createElement("option");
+    opt.value = line;
+    opt.textContent = line;
+    sel.appendChild(opt);
+  });
+}
+/* =====================
+   POPULATE ASSETS BY LINE (ADD TASK)
+===================== */
+document.getElementById("nt-line")?.addEventListener("change", e => {
+  const line = e.target.value;
+  const assetSel = document.getElementById("nt-asset");
+  if (!assetSel) return;
+
+  assetSel.innerHTML = `<option value="">Select Asset</option>`;
+  assetSel.disabled = true;
+
+  if (!line) return;
+
+  const filtered = assetsData.filter(a => a.line === line);
+
+  filtered.forEach(a => {
+    const opt = document.createElement("option");
+    opt.value = a.id;
+    opt.textContent = `${a.model} (${a.serial_number})`;
+    assetSel.appendChild(opt);
+  });
+
+  assetSel.disabled = false;
+});
+
 
 /* =====================
    VIEW TASK MODAL
@@ -865,10 +912,10 @@ taskTypeSelect?.addEventListener("change", e => {
   }
 });
 
-/* =====================
+  /* =====================
    SAVE TASK (PLANNED / UNPLANNED)
-===================== */
-document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
+  ===================== */
+  document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const typeSelect = document.getElementById("taskPlannedType");
   const isPlanned = typeSelect?.value === "planned";
@@ -963,7 +1010,7 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
 console.log("ASSETS DATA:", assetsData);
 
   // Populate Line dropdown
-  populateAssetLineFilter();
+  populateAddTaskLines();
 
   // Reset asset dropdown
   const assetSel = document.getElementById("nt-asset");
