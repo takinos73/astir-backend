@@ -1079,8 +1079,16 @@ document.getElementById("cancelAddTask")?.addEventListener("click", () => {
    TASK ACTIONS
 ===================== */
 
+//let pendingTaskId = null;
+
 function askTechnician(id) {
   pendingTaskId = id;
+
+  // default date = today
+  const today = new Date().toISOString().split("T")[0];
+  const dateInput = getEl("completedDateInput");
+  if (dateInput) dateInput.value = today;
+
   getEl("modalOverlay").style.display = "flex";
 }
 
@@ -1093,14 +1101,22 @@ getEl("cancelDone")?.addEventListener("click", () => {
    CONFIRM TASK DONE
 ===================== */
 getEl("confirmDone")?.addEventListener("click", async () => {
-  const name = getEl("technicianInput").value.trim();
-  if (!name) return alert("Δώσε όνομα");
+  const name = getEl("technicianInput")?.value.trim();
+  if (!name) return alert("Δώσε όνομα τεχνικού");
+
+  const dateValue = getEl("completedDateInput")?.value;
+  const completedAt = dateValue
+    ? new Date(dateValue + "T12:00:00").toISOString()
+    : new Date().toISOString();
 
   try {
     const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed_by: name })
+      body: JSON.stringify({
+        completed_by: name,
+        completed_at: completedAt   // ✅ ΝΕΟ
+      })
     });
 
     if (!res.ok) {
@@ -1108,10 +1124,16 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       throw new Error(err.error || "Failed to complete task");
     }
 
+    // cleanup
     getEl("modalOverlay").style.display = "none";
     getEl("technicianInput").value = "";
+    if (getEl("completedDateInput")) {
+      getEl("completedDateInput").value = "";
+    }
 
-    // 🔄 REFRESH BOTH
+    pendingTaskId = null;
+
+    // 🔄 REFRESH
     loadTasks();
     loadHistory();
 
@@ -1120,6 +1142,7 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     console.error("CONFIRM DONE ERROR:", err);
   }
 });
+
 
 /* ===========================
    LOAD TASK DONE from HISTORY

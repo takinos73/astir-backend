@@ -172,16 +172,20 @@ app.post("/tasks", async (req, res) => {
 /* =====================
    COMPLETE TASK
    - Preventive (frequency_hours > 0): ROTATE
-   - Planned without frequency: FINISH (status = Done)
+   - Planned without frequency: FINISH
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
-  const { completed_by } = req.body;
+  const { completed_by, completed_at } = req.body;
   const { id } = req.params;
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
+
+    // Normalize completed date
+    const completedAt =
+      completed_at ? new Date(completed_at) : new Date();
 
     // 1️⃣ Fetch task
     const taskRes = await client.query(
@@ -207,15 +211,17 @@ app.patch("/tasks/:id", async (req, res) => {
         task_id,
         asset_id,
         executed_by,
-        prev_due_date
+        prev_due_date,
+        executed_at
       )
-      VALUES ($1, $2, $3, $4)
+      VALUES ($1, $2, $3, $4, $5)
       `,
       [
         task.id,
         task.asset_id,
         completed_by || null,
-        task.due_date || null
+        task.due_date || null,
+        completedAt
       ]
     );
 
@@ -233,11 +239,16 @@ app.patch("/tasks/:id", async (req, res) => {
           status = 'Planned',
           due_date = $2,
           completed_by = $3,
-          completed_at = NOW(),
+          completed_at = $4,
           updated_at = NOW()
         WHERE id = $1
         `,
-        [id, nextDue, completed_by || null]
+        [
+          id,
+          nextDue,
+          completed_by || null,
+          completedAt
+        ]
       );
 
     } else {
@@ -248,11 +259,15 @@ app.patch("/tasks/:id", async (req, res) => {
         SET
           status = 'Done',
           completed_by = $2,
-          completed_at = NOW(),
+          completed_at = $3,
           updated_at = NOW()
         WHERE id = $1
         `,
-        [id, completed_by || null]
+        [
+          id,
+          completed_by || null,
+          completedAt
+        ]
       );
     }
 

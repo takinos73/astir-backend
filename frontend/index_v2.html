@@ -136,20 +136,35 @@
 </div>  
 <body>
 
-  <!-- Modal για ολοκλήρωση εργασίας -->
-  <div id="modalOverlay" class="modal-overlay">
-    <div class="modal-box">
-      <h3>Ολοκλήρωση Εργασίας</h3>
-      <p>Ποιος ολοκλήρωσε την εργασία;</p>
-      <input type="text" id="technicianInput" placeholder="Όνομα τεχνικού" />
-      <div class="modal-actions">
-        <button id="confirmDone" class="btn-table">✔ Επιβεβαίωση</button>
-        <button id="cancelDone" class="btn-cancel">Ακύρωση</button>
-      </div>
+   
+<!-- Modal για ολοκλήρωση εργασίας -->
+
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Ολοκλήρωση Εργασίας</h3>
+
+    <p>Ποιος ολοκλήρωσε την εργασία;</p>
+    <input
+      type="text"
+      id="technicianInput"
+      placeholder="Όνομα τεχνικού"
+    />
+
+    <!-- ✅ ΝΕΟ: Ημερομηνία ολοκλήρωσης -->
+    <p style="margin-top:10px;">Ημερομηνία ολοκλήρωσης</p>
+    <input
+      type="date"
+      id="completedDateInput"
+    />
+
+    <div class="modal-actions">
+      <button id="confirmDone" class="btn-table">✔ Επιβεβαίωση</button>
+      <button id="cancelDone" class="btn-cancel">Ακύρωση</button>
     </div>
   </div>
-
-  <div class="app-shell">
+</div>
+  
+<div class="app-shell">
 
   <!-- IMPORT PREVIEW MODAL -->
     
