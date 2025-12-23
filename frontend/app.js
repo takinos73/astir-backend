@@ -931,13 +931,19 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 /* =====================
    OPEN ADD TASK MODAL
 ===================== */
-document.getElementById("addTaskBtn")?.addEventListener("click", e => {
+
+document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
   e.preventDefault();
+
+  // 🔑 Ensure assets are loaded
+  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+    await loadAssets();
+  }
 
   const overlay = document.getElementById("addTaskOverlay");
   if (!overlay) return;
 
-  // Reset task type to Planned
+  // Reset task type
   const typeSelect = document.getElementById("taskPlannedType");
   if (typeSelect) typeSelect.value = "planned";
 
@@ -954,11 +960,12 @@ document.getElementById("addTaskBtn")?.addEventListener("click", e => {
   document
     .getElementById("addTaskModal")
     ?.classList.remove("unplanned-mode");
+console.log("ASSETS DATA:", assetsData);
 
-  // 🔹 POPULATE LINES (reuse existing logic)
-  populateAssetLineFilter();   // 👈 ΝΑΙ, ΕΔΩ ΜΠΑΙΝΕΙ
+  // Populate Line dropdown
+  populateAssetLineFilter();
 
-  // Reset asset selector
+  // Reset asset dropdown
   const assetSel = document.getElementById("nt-asset");
   if (assetSel) {
     assetSel.innerHTML = `<option value="">Select Asset</option>`;
@@ -967,6 +974,7 @@ document.getElementById("addTaskBtn")?.addEventListener("click", e => {
 
   overlay.style.display = "flex";
 });
+
 
 document.getElementById("nt-line")?.addEventListener("change", e => {
   const line = e.target.value;
