@@ -267,7 +267,9 @@ app.patch("/tasks/:id", async (req, res) => {
 });
 
 /* =====================
-   UNDO TASK EXECUTION (RESTORE SCHEDULE)
+   UNDO TASK EXECUTION
+   - Planned: restore schedule
+   - Unplanned: delete entirely
 ===================== */
 
 app.post("/executions/:id/undo", async (req, res) => {
@@ -277,12 +279,17 @@ app.post("/executions/:id/undo", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1️⃣ Fetch execution
+    // 1️⃣ Fetch execution + task info
     const execRes = await client.query(
       `
-      SELECT id, task_id, prev_due_date
-      FROM task_executions
-      WHERE id = $1
+      SELECT
+        e.id,
+        e.task_id,
+        e.prev_due_date,
+        t.is_planned
+      FROM task_executions e
+      JOIN maintenance_tasks t ON t.id = e.task_id
+      WHERE e.id = $1
       `,
       [id]
     );
@@ -294,17 +301,40 @@ app.post("/executions/:id/undo", async (req, res) => {
 
     const exec = execRes.rows[0];
 
-    if (!exec.prev_due_date) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Cannot undo: missing prev_due_date" });
+    // 🔴 CASE 1: UNPLANNED → DELETE EVERYTHING
+    if (exec.is_planned === false) {
+
+      // Delete execution
+      await client.query(
+        `DELETE FROM task_executions WHERE id = $1`,
+        [exec.id]
+      );
+
+      // Delete task entirely
+      await client.query(
+        `DELETE FROM maintenance_tasks WHERE id = $1`,
+        [exec.task_id]
+      );
+
+      await client.query("COMMIT");
+      return res.json({ success: true, mode: "unplanned_deleted" });
     }
 
-    // 2️⃣ Restore task schedule
+    // 🟢 CASE 2: PLANNED → RESTORE SCHEDULE
+    if (!exec.prev_due_date) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Cannot undo planned task: missing prev_due_date"
+      });
+    }
+
+    // Restore task
     await client.query(
       `
       UPDATE maintenance_tasks
       SET
         due_date = $2,
+        status = 'Planned',
         completed_at = NULL,
         completed_by = NULL,
         updated_at = NOW()
@@ -313,14 +343,14 @@ app.post("/executions/:id/undo", async (req, res) => {
       [exec.task_id, exec.prev_due_date]
     );
 
-    // 3️⃣ Delete execution (history)
+    // Delete execution (history)
     await client.query(
       `DELETE FROM task_executions WHERE id = $1`,
       [exec.id]
     );
 
     await client.query("COMMIT");
-    res.json({ success: true });
+    res.json({ success: true, mode: "planned_restored" });
 
   } catch (err) {
     await client.query("ROLLBACK");
