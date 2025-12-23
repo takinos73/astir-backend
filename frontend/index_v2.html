@@ -90,8 +90,20 @@
     </div>
 
     <!-- Asset / Location -->
-    <input id="nt-line" placeholder="Line (L1…)" />
-    <input id="nt-machine" placeholder="Machine" />
+    <div class="field">
+      <label for="nt-line">Line</label>
+      <select id="nt-line">
+          <option value="">Select Line</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="nt-asset">Asset</label>
+      <select id="nt-asset" disabled>
+        <option value="">Select Asset</option>
+      </select>
+    </div>
+
     <input id="nt-section" placeholder="Section" />
     <input id="nt-unit" placeholder="Unit" />
 

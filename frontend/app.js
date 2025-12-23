@@ -937,26 +937,58 @@ document.getElementById("addTaskBtn")?.addEventListener("click", e => {
   const overlay = document.getElementById("addTaskOverlay");
   if (!overlay) return;
 
-  // reset type to Planned (default)
+  // Reset task type to Planned
   const typeSelect = document.getElementById("taskPlannedType");
   if (typeSelect) typeSelect.value = "planned";
 
-  // reset title
+  // Reset title
   const title = document.getElementById("addTaskTitle");
   if (title) title.textContent = "New Planned Task";
 
-  // show planned-only fields
+  // Show planned-only fields
   document.querySelectorAll(".planned-only").forEach(el => {
     el.style.display = "block";
   });
 
-  // remove unplanned visual state
+  // Remove unplanned visual state
   document
     .getElementById("addTaskModal")
     ?.classList.remove("unplanned-mode");
 
+  // 🔹 POPULATE LINES (reuse existing logic)
+  populateAssetLineFilter();   // 👈 ΝΑΙ, ΕΔΩ ΜΠΑΙΝΕΙ
+
+  // Reset asset selector
+  const assetSel = document.getElementById("nt-asset");
+  if (assetSel) {
+    assetSel.innerHTML = `<option value="">Select Asset</option>`;
+    assetSel.disabled = true;
+  }
+
   overlay.style.display = "flex";
 });
+
+document.getElementById("nt-line")?.addEventListener("change", e => {
+  const line = e.target.value;
+  const assetSel = document.getElementById("nt-asset");
+
+  assetSel.innerHTML = `<option value="">Select Asset</option>`;
+  assetSel.disabled = true;
+
+  if (!line) return;
+
+  const filtered = assetsData.filter(a => a.line === line);
+
+  filtered.forEach(a => {
+    const opt = document.createElement("option");
+    opt.value = a.id;
+    opt.textContent = `${a.model} (${a.serial_number})`;
+    assetSel.appendChild(opt);
+  });
+
+  assetSel.disabled = false;
+});
+
   /* =====================
     CANCEL ADD TASK
   ===================== */ 
