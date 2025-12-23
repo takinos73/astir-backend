@@ -917,7 +917,7 @@ taskTypeSelect?.addEventListener("change", e => {
 });
 
 
-  /* =====================
+/* =====================
    SAVE TASK (PLANNED / UNPLANNED)
 ===================== */
 document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
@@ -997,23 +997,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   }
 });
 
-
-    // Close modal
-    document.getElementById("addTaskOverlay").style.display = "none";
-
-    // Reset form
-    document.querySelectorAll(
-      "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
-    ).forEach(el => el.value = "");
-
-    // Refresh tasks
-    loadTasks();
-
-  } catch (err) {
-    console.error("SAVE TASK ERROR:", err);
-    alert(err.message);
-  }
-});
 
 /* =====================
    OPEN ADD TASK MODAL
