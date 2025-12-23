@@ -91,7 +91,7 @@ app.get("/tasks", async (req, res) => {
   /*================================
    Create task (Planned or Unplanned)
   =================================*/
-  
+
 app.post("/tasks", async (req, res) => {
   const {
     asset_id,
@@ -170,7 +170,9 @@ app.post("/tasks", async (req, res) => {
 
 
 /* =====================
-   COMPLETE PREVENTIVE TASK (ROTATE + HISTORY)
+   COMPLETE TASK
+   - Preventive (frequency_hours > 0): ROTATE
+   - Planned without frequency: FINISH (status = Done)
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
   const { completed_by } = req.body;
@@ -194,7 +196,11 @@ app.patch("/tasks/:id", async (req, res) => {
 
     const task = taskRes.rows[0];
 
-    // 2️⃣ Log execution (HISTORY)
+    const hasFrequency =
+      task.frequency_hours &&
+      Number(task.frequency_hours) > 0;
+
+    // 2️⃣ Log execution (HISTORY) — ALWAYS
     await client.query(
       `
       INSERT INTO task_executions (
@@ -202,36 +208,56 @@ app.patch("/tasks/:id", async (req, res) => {
         asset_id,
         executed_by,
         prev_due_date
-  )
-  VALUES ($1, $2, $3, $4)
+      )
+      VALUES ($1, $2, $3, $4)
       `,
-      [task.id, task.asset_id, completed_by || null, task.due_date]
+      [
+        task.id,
+        task.asset_id,
+        completed_by || null,
+        task.due_date || null
+      ]
     );
 
-    // 3️⃣ Calculate next due (if preventive)
-    let nextDue = null;
-    if (task.frequency_hours && task.frequency_hours > 0) {
-      nextDue = new Date(task.due_date);
-      nextDue.setHours(nextDue.getHours() + task.frequency_hours);
+    // 3️⃣ PREVENTIVE → ROTATE
+    if (hasFrequency) {
+      const nextDue = new Date(task.due_date);
+      nextDue.setHours(
+        nextDue.getHours() + Number(task.frequency_hours)
+      );
+
+      await client.query(
+        `
+        UPDATE maintenance_tasks
+        SET
+          status = 'Planned',
+          due_date = $2,
+          completed_by = $3,
+          completed_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [id, nextDue, completed_by || null]
+      );
+
+    } else {
+      // 4️⃣ PLANNED (NO FREQUENCY) → FINISH
+      await client.query(
+        `
+        UPDATE maintenance_tasks
+        SET
+          status = 'Done',
+          completed_by = $2,
+          completed_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [id, completed_by || null]
+      );
     }
 
-    // 4️⃣ Rotate SAME task (no INSERT)
-    await client.query(
-      `
-      UPDATE maintenance_tasks
-      SET
-        status = 'Planned',
-        due_date = COALESCE($2, due_date),
-        completed_by = $3,
-        completed_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $1
-      `,
-      [id, nextDue, completed_by || null]
-    );
-
     await client.query("COMMIT");
-    res.json({ success: true });
+    res.json({ success: true, rotated: hasFrequency });
 
   } catch (err) {
     await client.query("ROLLBACK");
