@@ -14,7 +14,6 @@ let activeDateFilter = "all";
 let activeAssetFilter = "all";
 let executionsData = [];
 
-
 /* =====================
    Helpers
 ===================== */

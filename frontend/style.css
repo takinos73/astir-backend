@@ -786,6 +786,49 @@ td:last-child {
 .unplanned-mode {
   border-left: 5px solid #ff4d4d;
 }
+/* =====================
+   ADD TASK MODAL FORM
+===================== */
+
+/* Ensure vertical form layout */
+#addTaskModal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;   /* 👈 ΟΧΙ center */
+  gap: 10px;
+}
+
+/* Inputs, selects, textarea same look */
+#addTaskModal input,
+#addTaskModal select,
+#addTaskModal textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Field wrapper alignment */
+#addTaskModal .field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;   /* 👈 αριστερά */
+}
+
+/* Labels */
+#addTaskModal label {
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+/* Prevent selects from centering text */
+#addTaskModal select {
+  text-align: left;
+}
+
 
 
 
