@@ -91,14 +91,10 @@ app.get("/tasks", async (req, res) => {
   /*================================
    Create task (Planned or Unplanned)
   =================================*/
-
+  
 app.post("/tasks", async (req, res) => {
-
   const {
     asset_id,
-    line,
-    machine_name,
-    serial_number,
     section,
     unit,
     task,
@@ -106,48 +102,21 @@ app.post("/tasks", async (req, res) => {
     due_date,
     notes,
     is_planned,
-    status
+    status,
+    executed_by
   } = req.body;
 
-  if (!task) {
-    return res.status(400).json({ error: "Task description is required" });
+  if (!asset_id || !task) {
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   const client = await pool.connect();
 
   try {
-    let assetId = asset_id || null;
+    await client.query("BEGIN");
 
-    // 🔁 BACKWARD COMPATIBILITY (old UI / imports)
-    if (!assetId) {
-      if (!line || !machine_name || !serial_number) {
-        return res.status(400).json({
-          error: "asset_id OR (line, machine_name, serial_number) required"
-        });
-      }
-
-      assetId = await findAssetId(client, line, machine_name, serial_number);
-      if (!assetId) {
-        return res.status(400).json({
-          error: `Asset not found: ${line}/${machine_name}/${serial_number}`
-        });
-      }
-    }
-
-    // 🔒 Validate asset exists
-    const assetCheck = await client.query(
-      "SELECT id FROM assets WHERE id = $1",
-      [assetId]
-    );
-
-    if (!assetCheck.rows.length) {
-      return res.status(400).json({ error: "Invalid asset_id" });
-    }
-
-    const plannedFlag = is_planned !== false; // default true
-    const finalStatus = status || (plannedFlag ? "Planned" : "Done");
-
-    const insertTask = await client.query(
+    // 1️⃣ Insert task
+    const taskRes = await client.query(
       `
       INSERT INTO maintenance_tasks
         (asset_id, section, unit, task, type, due_date, status, is_planned, notes)
@@ -156,42 +125,49 @@ app.post("/tasks", async (req, res) => {
       RETURNING *
       `,
       [
-        assetId,
+        asset_id,
         section || null,
         unit || null,
         task,
         type || null,
         due_date ? new Date(due_date) : null,
-        finalStatus,
-        plannedFlag,
+        status || "Planned",
+        is_planned === true,
         notes || null
       ]
     );
 
-    const newTask = insertTask.rows[0];
+    const newTask = taskRes.rows[0];
 
-    // 🔥 AUTO-HISTORY FOR UNPLANNED
-    if (plannedFlag === false) {
+    // 2️⃣ 🔥 IF UNPLANNED → write directly to HISTORY
+    if (is_planned === false) {
       await client.query(
         `
         INSERT INTO task_executions
-          (task_id, asset_id, executed_by)
+          (task_id, asset_id, executed_by, executed_at)
         VALUES
-          ($1, $2, NULL)
+          ($1, $2, $3, NOW())
         `,
-        [newTask.id, assetId]
+        [
+          newTask.id,
+          asset_id,
+          executed_by || null
+        ]
       );
     }
 
+    await client.query("COMMIT");
     res.json(newTask);
 
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("POST /tasks ERROR:", err.message);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
 });
+
 
 /* =====================
    COMPLETE PREVENTIVE TASK (ROTATE + HISTORY)

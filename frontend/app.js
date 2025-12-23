@@ -926,7 +926,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     document.getElementById("taskPlannedType")?.value === "planned";
 
   const technician =
-    document.getElementById("nt-technician")?.value?.trim() || null;
+    document.getElementById("nt-technician")?.value?.trim() || null;    
 
   const assetId = document.getElementById("nt-asset")?.value;
 
