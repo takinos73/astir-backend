@@ -882,7 +882,7 @@ async function loadTasks() {
   renderTable();
 }
 /* =====================
-   ADD TASK MODAL LOGIC
+   ADD TASK TYPE LOGIC
    Planned vs Unplanned
 ===================== */
 
@@ -891,7 +891,7 @@ const taskTypeSelect = document.getElementById("taskPlannedType");
 taskTypeSelect?.addEventListener("change", e => {
   const isPlanned = e.target.value === "planned";
 
-  // Title
+  // 🔹 Title
   const title = document.getElementById("addTaskTitle");
   if (title) {
     title.textContent = isPlanned
@@ -899,17 +899,23 @@ taskTypeSelect?.addEventListener("change", e => {
       : "New Unplanned Task (Breakdown)";
   }
 
-  // Planned-only fields
+  // 🔹 Planned-only fields
   document.querySelectorAll(".planned-only").forEach(el => {
     el.style.display = isPlanned ? "block" : "none";
   });
 
-  // Visual cue on modal
+  // 🔹 Unplanned-only fields (Technician)
+  document.querySelectorAll(".unplanned-only").forEach(el => {
+    el.style.display = isPlanned ? "none" : "block";
+  });
+
+  // 🔹 Visual cue on modal
   const modal = document.getElementById("addTaskModal");
   if (modal) {
     modal.classList.toggle("unplanned-mode", !isPlanned);
   }
 });
+
 
   /* =====================
    SAVE TASK (PLANNED / UNPLANNED)
