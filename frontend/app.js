@@ -925,16 +925,27 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   const isPlanned =
     document.getElementById("taskPlannedType")?.value === "planned";
 
+  const technician =
+    document.getElementById("nt-technician")?.value?.trim() || null;
+
   const assetId = document.getElementById("nt-asset")?.value;
 
+  // 🔒 Asset validation
   if (!assetId) {
     alert("Asset is required");
     return;
   }
 
+  // 🔒 Task description validation
   const taskDesc = document.getElementById("nt-task")?.value?.trim();
   if (!taskDesc) {
     alert("Task description is required");
+    return;
+  }
+
+  // 🔒 Technician required ONLY for unplanned
+  if (!isPlanned && !technician) {
+    alert("Technician is required for unplanned tasks");
     return;
   }
 
@@ -951,7 +962,10 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
     due_date: isPlanned
       ? document.getElementById("nt-due")?.value
-      : new Date().toISOString()
+      : new Date().toISOString(),
+
+    // 🔥 NEW — technician for unplanned history
+    executed_by: technician
   };
 
   try {
@@ -965,6 +979,24 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       const err = await res.json();
       throw new Error(err.error || "Failed to save task");
     }
+
+    // Close modal
+    document.getElementById("addTaskOverlay").style.display = "none";
+
+    // Reset form
+    document.querySelectorAll(
+      "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
+    ).forEach(el => el.value = "");
+
+    // Refresh data
+    loadTasks();
+
+  } catch (err) {
+    console.error("SAVE TASK ERROR:", err);
+    alert(err.message);
+  }
+});
+
 
     // Close modal
     document.getElementById("addTaskOverlay").style.display = "none";
