@@ -789,10 +789,11 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
 
     await client.query(
       `
-      DELETE FROM maintenance_tasks
-      WHERE asset_id = ANY($1)
-        AND status = 'Planned'
+      DELETE FROM maintenance_tasks 
+        WHERE asset_id = ANY($1)
         AND is_planned = true
+        AND frequency_hours IS NOT NULL
+        AND status = 'Planned'
       `,
       [assetIds]
     );
