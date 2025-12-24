@@ -315,7 +315,7 @@ tbody tr:hover { background: #131520; }
   justify-content: center;
   align-items: center;
   z-index: 999;
-   pointer-events: none;
+  pointer-events: none;
 }
 
 .modal-box {
