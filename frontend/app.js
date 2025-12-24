@@ -571,6 +571,13 @@ function initAssetDropdown() {
     console.warn("Asset dropdown elements not found");
     return;
   }
+  console.log("INIT DROPDOWN ✅", { btn, menu, options: menu.querySelectorAll(".asset-option").length });
+
+  btn.addEventListener("click", () => {
+  console.log("BTN CLICK ✅ open before:", menu.classList.contains("open"));
+  setTimeout(() => console.log("open after:", menu.classList.contains("open")), 0);
+});
+
 
   // Toggle dropdown
   btn.addEventListener("click", (e) => {
