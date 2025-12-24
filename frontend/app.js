@@ -562,51 +562,55 @@ function buildAssetDropdown() {
 /* =====================
    ASSET DROPDOWN (INIT)
 ===================== */
-
 function initAssetDropdown() {
   const btn = document.getElementById("assetDropdownBtn");
   const menu = document.getElementById("assetDropdownMenu");
 
   if (!btn || !menu) return;
 
-  // 🔒 reset state on every init
+  // 🔒 reset state κάθε φορά
   menu.classList.remove("open");
-  console.log("INIT DROPDOWN ✅", { btn, menu, options: menu.querySelectorAll(".asset-option").length });
 
-  btn.addEventListener("click", () => {
-  console.log("BTN CLICK ✅ open before:", menu.classList.contains("open"));
-  setTimeout(() => console.log("open after:", menu.classList.contains("open")), 0);
-});
-
+  // ❗ καθάρισε παλιούς handlers
+  btn.onclick = null;
+  menu.onclick = null;
+  document.onclick = null;
 
   // Toggle dropdown
-  btn.addEventListener("click", (e) => {
+  btn.onclick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     menu.classList.toggle("open");
-  });
+  };
 
-  // Select option
-  menu.querySelectorAll(".asset-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-      menu.querySelectorAll(".asset-option")
-        .forEach(o => o.classList.remove("active"));
+  // Options (event delegation)
+  menu.onclick = (e) => {
+    const opt = e.target.closest(".asset-option");
+    if (!opt) return;
 
-      opt.classList.add("active");
+    menu.querySelectorAll(".asset-option")
+      .forEach(o => o.classList.remove("active"));
 
-      activeAssetFilter = opt.dataset.value;
-      btn.textContent = opt.textContent;
+    opt.classList.add("active");
 
-      menu.classList.remove("open");
-      renderTable();
-    });
-  });
+    activeAssetFilter = opt.dataset.value;
 
-  // Close on outside click
-  document.addEventListener("click", () => {
+    // αν το label έχει HTML (line | machine | small SN)
+    btn.innerHTML = opt.innerHTML;
+
     menu.classList.remove("open");
+    renderTable();
+  };
+
+  // Close on outside click (ΜΟΝΟ ΕΝΑΣ)
+  document.onclick = () => {
+    menu.classList.remove("open");
+  };
+
+  console.log("INIT DROPDOWN ✅", {
+    options: menu.querySelectorAll(".asset-option").length
   });
 }
-
 
 
 function getFilteredTasksForPrint() {
