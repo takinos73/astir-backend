@@ -180,34 +180,32 @@ function statusPill(task) {
   return `<span class="${cls}">${txt}</span>`;
 }
 
-/* =====================================================
-   BUILD TASK TABLE ROW
-   - Renders one task row in the Tasks table
-   - Color-coded by task type
-===================================================== */
-
 function buildRow(task) {
   const tr = document.createElement("tr");
 
-  // 🔍 current search query (used for highlight)
+  // 🔍 search query
   const q = document.getElementById("taskSearch")?.value || "";
-    // 🎨 TASK TYPE COLOR CLASS (robust)
-  const isPlanned =
-    task.is_planned === true ||
-    task.is_planned === "true" ||
-    task.is_planned === 1 ||
-    task.is_planned === "1";
 
-  const freq = Number(task.frequency_hours || 0);
-  const hasFreq = Number.isFinite(freq) && freq > 0;
+  /* =====================================
+     TASK TYPE CLASSIFICATION (SAFE)
+  ===================================== */
 
-  if (isPlanned && hasFreq) {
-    tr.classList.add("task-preventive");
-  } else if (isPlanned && !hasFreq) {
-    tr.classList.add("task-planned-manual");
-  } else {
-    tr.classList.add("task-unplanned");
+  let rowClass = "";
+
+  // 🟦 Preventive (Excel master plan)
+  if (task.frequency_hours && Number(task.frequency_hours) > 0) {
+    rowClass = "task-preventive";
   }
+  // 🟥 Unplanned (manual, finished immediately)
+  else if (task.is_planned === false || task.status === "Done") {
+    rowClass = "task-unplanned";
+  }
+  // 🟨 Planned manual
+  else {
+    rowClass = "task-planned-manual";
+  }
+
+  tr.classList.add(rowClass);
 
   tr.innerHTML = `
     <!-- MACHINE / ASSET -->
@@ -226,13 +224,13 @@ function buildRow(task) {
     <!-- UNIT -->
     <td>${task.unit ? highlight(task.unit, q) : "-"}</td>
 
-    <!-- TASK DESCRIPTION -->
+    <!-- TASK -->
     <td>${highlight(task.task || "", q)}</td>
 
     <!-- TYPE -->
     <td>${task.type ? highlight(task.type, q) : "-"}</td>
 
-    <!-- DATE (Due or Completed) -->
+    <!-- DATE -->
     <td>${
       task.status === "Done"
         ? "Completed: " + formatDate(task.completed_at)
