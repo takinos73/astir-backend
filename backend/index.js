@@ -865,12 +865,21 @@ app.post("/importExcel", uploadMem.single("file"), async (req, res) => {
 });
 
 /* =====================================================
-   SNAPSHOT (includes lines, assets, tasks)
+   SNAPSHOT EXPORT / RESTORE
+   - EXPORT: lines, assets, ALL maintenance_tasks
+   - RESTORE: exact operational state
+   - DOES NOT touch task_executions (history)
 ===================================================== */
 
+/* =====================
+   EXPORT SNAPSHOT
+===================== */
 app.get("/snapshot/export", async (req, res) => {
   try {
-    const lines = (await pool.query(`SELECT * FROM lines ORDER BY id ASC`)).rows;
+    const lines = (
+      await pool.query(`SELECT * FROM lines ORDER BY id ASC`)
+    ).rows;
+
     const assets = (
       await pool.query(`
         SELECT a.*, l.code AS line_code
@@ -895,34 +904,45 @@ app.get("/snapshot/export", async (req, res) => {
     ).rows;
 
     res.json({
-      version: 2,
+      version: 3,
       created_at: new Date().toISOString(),
       lines,
       assets,
-      tasks,
+      tasks
     });
+
   } catch (err) {
     console.error("SNAPSHOT EXPORT ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
+/* =====================
+   RESTORE SNAPSHOT
+===================== */
 app.post("/snapshot/restore", async (req, res) => {
   const client = await pool.connect();
+
   try {
     const { lines, assets, tasks } = req.body || {};
 
-    if (!Array.isArray(lines) || !Array.isArray(assets) || !Array.isArray(tasks)) {
-      return res.status(400).json({ error: "Invalid snapshot format (expected lines/assets/tasks arrays)" });
+    if (
+      !Array.isArray(lines) ||
+      !Array.isArray(assets) ||
+      !Array.isArray(tasks)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Invalid snapshot format" });
     }
 
     await client.query("BEGIN");
 
-    // We restore by natural keys, not raw ids
-    // 1) restore lines (by code)
+    /* 1️⃣ RESTORE LINES (by code) */
     for (const l of lines) {
-      const code = cleanStr(l.code || l.line || l.name);
+      const code = cleanUpper(l.code || l.line || "");
       if (!code) continue;
+
       await client.query(
         `
         INSERT INTO lines (code, name, description)
@@ -935,48 +955,83 @@ app.post("/snapshot/restore", async (req, res) => {
       );
     }
 
-    // 2) restore assets (by serial_number unique)
+    /* 2️⃣ RESTORE ASSETS (by serial_number) */
     for (const a of assets) {
-      const lineCode = cleanStr(a.line_code || a.line || "");
-      const model = cleanStr(a.model || a.machine || a.machine_name || "");
-      const sn = cleanStr(a.serial_number || a.Serial_number || a.SerialNumber || "");
+      const lineCode = cleanUpper(a.line_code || "");
+      const model = cleanStr(a.model || "");
+      const sn = cleanStr(a.serial_number || "");
+
       if (!lineCode || !model || !sn) continue;
 
-      const lineId = await findLineIdByCode(client, cleanUpper(lineCode));
+      const lineId = await findLineIdByCode(client, lineCode);
       if (!lineId) continue;
 
       await client.query(
         `
-        INSERT INTO assets (line_id, model, serial_number, description, active)
-        VALUES ($1,$2,$3,$4,$5)
+        INSERT INTO assets
+          (line_id, model, serial_number, description, active)
+        VALUES
+          ($1,$2,$3,$4,$5)
         ON CONFLICT (serial_number) DO UPDATE SET
           line_id = EXCLUDED.line_id,
           model = EXCLUDED.model,
           description = EXCLUDED.description,
           active = EXCLUDED.active
         `,
-        [lineId, model, sn, a.description || null, typeof a.active === "boolean" ? a.active : true]
+        [
+          lineId,
+          model,
+          sn,
+          a.description || null,
+          typeof a.active === "boolean" ? a.active : true
+        ]
       );
     }
 
-    // 3) wipe tasks, then restore tasks by matching asset via (line+model+sn)
-    await client.query(`TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;`);
+    /* 3️⃣ WIPE TASKS (HISTORY STAYS UNTOUCHED) */
+    await client.query(
+      `TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE`
+    );
 
+    /* 4️⃣ RESTORE TASKS EXACTLY AS SNAPSHOT */
     for (const t of tasks) {
-      const lineCode = cleanStr(t.line || t.line_code || "");
-      const model = cleanStr(t.machine_name || t.model || "");
-      const sn = cleanStr(t.serial_number || t.Serial_number || "");
+      const lineCode = cleanUpper(t.line || "");
+      const model = cleanStr(t.machine_name || "");
+      const sn = cleanStr(t.serial_number || "");
 
-      const assetId = await findAssetId(client, lineCode, model, sn);
-      if (!assetId) continue; // skip tasks that can't map (snapshot may be inconsistent)
+      const assetId = await findAssetId(
+        client,
+        lineCode,
+        model,
+        sn
+      );
+      if (!assetId) continue;
 
       await client.query(
         `
-        INSERT INTO maintenance_tasks
-          (asset_id, section, unit, task, type, qty, duration_min, frequency_hours,
-           due_date, status, completed_by, completed_at, updated_at, is_planned, notes)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13,NOW()),COALESCE($14,true),$15)
+        INSERT INTO maintenance_tasks (
+          asset_id,
+          section,
+          unit,
+          task,
+          type,
+          qty,
+          duration_min,
+          frequency_hours,
+          due_date,
+          status,
+          completed_by,
+          completed_at,
+          updated_at,
+          is_planned,
+          notes
+        )
+        VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
+          COALESCE($13,NOW()),
+          COALESCE($14,true),
+          $15
+        )
         `,
         [
           assetId,
@@ -993,13 +1048,14 @@ app.post("/snapshot/restore", async (req, res) => {
           t.completed_at ? new Date(t.completed_at) : null,
           t.updated_at ? new Date(t.updated_at) : null,
           typeof t.is_planned === "boolean" ? t.is_planned : true,
-          t.notes || null,
+          t.notes || null
         ]
       );
     }
 
     await client.query("COMMIT");
-    res.json({ message: "Restore completed!" });
+    res.json({ message: "Snapshot restored successfully" });
+
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     console.error("SNAPSHOT RESTORE ERROR:", err.message);
@@ -1008,6 +1064,7 @@ app.post("/snapshot/restore", async (req, res) => {
     client.release();
   }
 });
+
 
 /* =====================================================
    DOCUMENTATION (MasterPlan PDF)

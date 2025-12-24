@@ -211,16 +211,16 @@
         </div>
         <div class="app-subtitle">Maintenance – Supervisor View</div>
       </div>
+      
       <div class="app-header-meta">
         <div class="pill">
           Backend Live: PostgreSQL • Render
         </div>
         <span class="snapshot-note" id="snapshotStatus">
           No snapshot loaded
+        
         </span>
-        <div id="importStatus" class="import-status">
-         No Excel imported yet
-        </div>
+        
       </div>
 
     <!-- =====================
@@ -251,6 +251,9 @@
 
     <!-- 🔧 ADMIN / TOOLS -->      
     <div class="top-tools">
+      <div id="importStatus" class="import-status">
+         No Excel imported yet
+        </div>
       <label class="btn-secondary admin-only">
           📂 Upload Excel
         <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />

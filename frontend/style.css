@@ -478,6 +478,13 @@ tbody tr:hover { background: #131520; }
   top: 0;
   z-index: 2;
 }
+.import-status {
+  font-size: 12px;
+  color: #9aa4b2;
+  opacity: 0.9;
+  margin-left: auto;
+  white-space: nowrap;
+}
 
 /* =========================
    MAIN TABS + TOP TOOLS
