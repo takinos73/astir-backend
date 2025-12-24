@@ -559,42 +559,48 @@ function buildAssetDropdown() {
   });
 }
 
+/* =====================
+   ASSET DROPDOWN (INIT)
+===================== */
 
 function initAssetDropdown() {
-  const btn = getEl("assetDropdownBtn");
-  const menu = getEl("assetDropdownMenu");
+  const btn = document.getElementById("assetDropdownBtn");
+  const menu = document.getElementById("assetDropdownMenu");
 
-  if (!btn || !menu) return;
+  if (!btn || !menu) {
+    console.warn("Asset dropdown elements not found");
+    return;
+  }
 
   // Toggle dropdown
-  btn.onclick = (e) => {
-    e.stopPropagation(); // 🔥 ΣΗΜΑΝΤΙΚΟ
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
     menu.classList.toggle("open");
-  };
+  });
 
-  // Click on option
+  // Select option
   menu.querySelectorAll(".asset-option").forEach(opt => {
-    opt.onclick = (e) => {
-      e.stopPropagation(); // 🔥 ΣΗΜΑΝΤΙΚΟ
-
+    opt.addEventListener("click", () => {
       menu.querySelectorAll(".asset-option")
         .forEach(o => o.classList.remove("active"));
 
       opt.classList.add("active");
 
       activeAssetFilter = opt.dataset.value;
-      btn.innerHTML = opt.innerHTML; // κρατάμε rich label
+      btn.textContent = opt.textContent;
 
       menu.classList.remove("open");
       renderTable();
-    };
+    });
   });
 
-  // Close when clicking outside
+  // Close on outside click
   document.addEventListener("click", () => {
     menu.classList.remove("open");
   });
 }
+
+
 
 function getFilteredTasksForPrint() {
 
