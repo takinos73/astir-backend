@@ -315,6 +315,7 @@ tbody tr:hover { background: #131520; }
   justify-content: center;
   align-items: center;
   z-index: 999;
+   pointer-events: none;
 }
 
 .modal-box {
@@ -323,6 +324,9 @@ tbody tr:hover { background: #131520; }
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   text-align: center;  
+}
+.modal-overlay .modal-box {
+  pointer-events: auto;
 }
 
 .modal-wide {
