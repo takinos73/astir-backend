@@ -549,7 +549,6 @@ function buildAssetDropdown() {
   });
 }
 
-
 function initAssetDropdown() {
   const dropdown = getEl("assetDropdown");
   const btn = getEl("assetDropdownBtn");
