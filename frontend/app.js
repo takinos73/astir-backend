@@ -561,44 +561,39 @@ function buildAssetDropdown() {
 
 
 function initAssetDropdown() {
-  const dropdown = getEl("assetDropdown");
   const btn = getEl("assetDropdownBtn");
   const menu = getEl("assetDropdownMenu");
 
-  if (!dropdown || !btn || !menu) return;
+  if (!btn || !menu) return;
 
-  // open / close
-  btn.addEventListener("click", e => {
-  e.stopPropagation();                 // 🔑 ΤΟ FIX
-  dropdown.classList.toggle("open");
-});
+  // Toggle dropdown
+  btn.onclick = (e) => {
+    e.stopPropagation(); // 🔥 ΣΗΜΑΝΤΙΚΟ
+    menu.classList.toggle("open");
+  };
 
+  // Click on option
+  menu.querySelectorAll(".asset-option").forEach(opt => {
+    opt.onclick = (e) => {
+      e.stopPropagation(); // 🔥 ΣΗΜΑΝΤΙΚΟ
 
-  // option click
-  menu.addEventListener("click", e => {
-    const opt = e.target.closest(".asset-option");
-    if (!opt) return;
+      menu.querySelectorAll(".asset-option")
+        .forEach(o => o.classList.remove("active"));
 
-    activeAssetFilter = opt.dataset.value;
-    btn.textContent = opt.textContent;
+      opt.classList.add("active");
 
-    menu.querySelectorAll(".asset-option")
-      .forEach(o => o.classList.remove("active"));
-    opt.classList.add("active");
+      activeAssetFilter = opt.dataset.value;
+      btn.innerHTML = opt.innerHTML; // κρατάμε rich label
 
-    dropdown.classList.remove("open");
-    renderTable();
+      menu.classList.remove("open");
+      renderTable();
+    };
   });
 
-  // click outside
-  document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target)) {
-      dropdown.classList.remove("open");
-    }
+  // Close when clicking outside
+  document.addEventListener("click", () => {
+    menu.classList.remove("open");
   });
-
-  // default
-  activeAssetFilter = "all";
 }
 
 function getFilteredTasksForPrint() {
