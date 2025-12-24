@@ -2048,9 +2048,120 @@ document.addEventListener("DOMContentLoaded", updateImportStatusUI);
 getEl("importExcelBtn")?.addEventListener("click", importExcel);
 getEl("confirmImportBtn")?.addEventListener("click", confirmImport);
 getEl("closeImportPreviewBtn")?.addEventListener("click", () => {
-  getEl("importPreviewOverlay").style.display = "none";
+getEl("importPreviewOverlay").style.display = "none";
 });
 
+/* =====================
+   SNAPSHOT EXPORT
+===================== */
+document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
+  if (!hasRole("admin")) {
+    alert("Admin only");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/snapshot/export`);
+    if (!res.ok) throw new Error("Snapshot export failed");
+
+    const snapshot = await res.json();
+
+    const ts = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, 19);
+
+    const filename = `cmms_snapshot_${ts}.json`;
+
+    const blob = new Blob(
+      [JSON.stringify(snapshot, null, 2)],
+      { type: "application/json" }
+    );
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+  } catch (err) {
+    console.error("SNAPSHOT EXPORT ERROR:", err);
+    alert("Failed to export snapshot");
+  }
+});
+
+let loadedSnapshotFile = null;
+
+/* =====================
+   SNAPSHOT FILE LOAD
+===================== */
+document.getElementById("snapshotFile")?.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.name.endsWith(".json")) {
+    alert("Invalid snapshot file");
+    e.target.value = "";
+    return;
+  }
+
+  loadedSnapshotFile = file;
+  alert(`Snapshot loaded: ${file.name}`);
+});
+/* =====================
+   SNAPSHOT RESTORE
+===================== */
+document.getElementById("restoreSnapshot")?.addEventListener("click", async () => {
+  if (!hasRole("admin")) {
+    alert("Admin only");
+    return;
+  }
+
+  if (!loadedSnapshotFile) {
+    alert("No snapshot file selected");
+    return;
+  }
+
+  const ok = confirm(
+    "⚠️ RESTORE SNAPSHOT\n\n" +
+    "This will REPLACE:\n" +
+    "• Lines\n" +
+    "• Assets\n" +
+    "• Tasks\n\n" +
+    "History (executions) will NOT be touched.\n\n" +
+    "Continue?"
+  );
+
+  if (!ok) return;
+
+  try {
+    const text = await loadedSnapshotFile.text();
+    const json = JSON.parse(text);
+
+    const res = await fetch(`${API}/snapshot/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Restore failed");
+    }
+
+    alert("✅ Snapshot restored successfully");
+
+    // 🔄 Full refresh
+    await loadAssets();
+    await loadTasks();
+    await loadHistory();
+
+  } catch (err) {
+    console.error("SNAPSHOT RESTORE ERROR:", err);
+    alert(err.message);
+  }
+});
 
 /* =====================
    LINE TABS
