@@ -322,7 +322,7 @@ tbody tr:hover { background: #131520; }
   padding: 20px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
-  text-align: center;
+  text-align: center;  
 }
 
 .modal-wide {
@@ -795,7 +795,7 @@ td:last-child {
   display: flex;
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
-  gap: 10px;
+  gap: 3px;  
 }
 
 /* Inputs, selects, textarea same look */
@@ -835,17 +835,17 @@ td:last-child {
 
 /* Preventive (Excel / frequency) */
 tr.task-preventive {
-  border-left: 6px solid #2b7cff;  
+  border-left: 6px solid #2b7cff; /* μπλε */ 
 }
 
 /* Planned – Manual */
 tr.task-planned-manual {
-  border-left: 6px solid #f0b429;  
+  border-left: 6px solid #f0b429;  /* κίτρινο */
 }
 
 /* Unplanned / Breakdown */
 tr.task-unplanned {
-  border-left: 6px solid #d64545;  
+  border-left: 6px solid #d64545;  /* κόκκινο */
 }
 /* HISTORY – COLOR CODING */
 tr.history-preventive {
@@ -853,7 +853,7 @@ tr.history-preventive {
 }
 
 tr.history-planned {
-  border-left: 4px solid #2196f3; /* μπλε */
+  border-left: 4px solid #f0b429; /* κίτρινο */
 }
 
 tr.history-unplanned {

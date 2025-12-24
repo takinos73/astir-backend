@@ -638,7 +638,6 @@ function populateAssetFilter() {
 
   const map = new Map();
 
-  // Συλλογή μοναδικών assets
   tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
@@ -647,23 +646,26 @@ function populateAssetFilter() {
 
     map.set(key, {
       value: key,
-      label: `${t.machine_name} (${t.serial_number})`
+      line: t.line_code || t.line || "",
+      machine: t.machine_name,
+      serial: t.serial_number
     });
   });
 
-  // 🔹 SORT με βάση το label (ASSET)
-  const sortedAssets = Array.from(map.values()).sort((a, b) =>
-    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
-  );
+  const sortedAssets = Array.from(map.values()).sort((a, b) => {
+    const la = `${a.line} ${a.machine} ${a.serial}`;
+    const lb = `${b.line} ${b.machine} ${b.serial}`;
+    return la.localeCompare(lb, "el", { sensitivity: "base" });
+  });
 
-  // Δημιουργία options
   sortedAssets.forEach(a => {
     const opt = document.createElement("option");
     opt.value = a.value;
-    opt.textContent = a.label;
+    opt.textContent = `${a.line} | ${a.machine} — SN: ${a.serial}`;
     sel.appendChild(opt);
   });
 }
+
 // Search matching
 function matchesSearch(task, q) {
   if (!q) return true;
