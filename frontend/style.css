@@ -835,20 +835,17 @@ td:last-child {
 
 /* Preventive (Excel / frequency) */
 tr.task-preventive {
-  border-left: 6px solid #2b7cff;
-  background: #f4f8ff;
+  border-left: 6px solid #2b7cff;  
 }
 
 /* Planned – Manual */
 tr.task-planned-manual {
-  border-left: 6px solid #f0b429;
-  background: #fffaf0;
+  border-left: 6px solid #f0b429;  
 }
 
 /* Unplanned / Breakdown */
 tr.task-unplanned {
-  border-left: 6px solid #d64545;
-  background: #fff5f5;
+  border-left: 6px solid #d64545;  
 }
 
 
