@@ -191,17 +191,19 @@ function buildRow(task) {
 
   // 🔍 current search query (used for highlight)
   const q = document.getElementById("taskSearch")?.value || "";
-  console.log("TYPECHECK", {
-  id: task.id,
-  is_planned: task.is_planned,
-  frequency_hours: task.frequency_hours,
-  status: task.status
-});
+    // 🎨 TASK TYPE COLOR CLASS (robust)
+  const isPlanned =
+    task.is_planned === true ||
+    task.is_planned === "true" ||
+    task.is_planned === 1 ||
+    task.is_planned === "1";
 
-  // 🎨 TASK TYPE COLOR CLASS
-  if (task.is_planned && task.frequency_hours > 0) {
+  const freq = Number(task.frequency_hours || 0);
+  const hasFreq = Number.isFinite(freq) && freq > 0;
+
+  if (isPlanned && hasFreq) {
     tr.classList.add("task-preventive");
-  } else if (task.is_planned && !task.frequency_hours) {
+  } else if (isPlanned && !hasFreq) {
     tr.classList.add("task-planned-manual");
   } else {
     tr.classList.add("task-unplanned");
