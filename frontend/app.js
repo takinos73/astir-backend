@@ -567,10 +567,10 @@ function initAssetDropdown() {
   const btn = document.getElementById("assetDropdownBtn");
   const menu = document.getElementById("assetDropdownMenu");
 
-  if (!btn || !menu) {
-    console.warn("Asset dropdown elements not found");
-    return;
-  }
+  if (!btn || !menu) return;
+
+  // 🔒 reset state on every init
+  menu.classList.remove("open");
   console.log("INIT DROPDOWN ✅", { btn, menu, options: menu.querySelectorAll(".asset-option").length });
 
   btn.addEventListener("click", () => {
@@ -916,6 +916,10 @@ document
 ===================== */
 
 async function loadTasks() {
+// 🔒 force-close asset dropdown before rebuild
+const menu = document.getElementById("assetDropdownMenu");
+if (menu) menu.classList.remove("open");
+
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
 
@@ -926,6 +930,7 @@ async function loadTasks() {
 
   buildAssetDropdown();
   initAssetDropdown();
+
   renderTable();
 }
 /* =====================

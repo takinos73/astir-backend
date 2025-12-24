@@ -557,6 +557,10 @@ tbody tr:hover { background: #131520; }
 .asset-dropdown.open .asset-dropdown-menu {
   display: block;
 }
+/* ✅ ΝΕΟ – για το current JS */
+.asset-dropdown-menu.open {
+  display: block;
+}
 
 .asset-option {
   padding: 8px 10px;
