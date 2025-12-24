@@ -847,6 +847,18 @@ tr.task-planned-manual {
 tr.task-unplanned {
   border-left: 6px solid #d64545;  
 }
+/* HISTORY – COLOR CODING */
+tr.history-preventive {
+  border-left: 4px solid #4caf50; /* πράσινο */
+}
+
+tr.history-planned {
+  border-left: 4px solid #2196f3; /* μπλε */
+}
+
+tr.history-unplanned {
+  border-left: 4px solid #f44336; /* κόκκινο */
+}
 
 
 

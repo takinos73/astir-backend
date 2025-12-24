@@ -418,10 +418,13 @@ app.get("/executions", async (req, res) => {
         t.section,
         t.unit,
         t.type,
-
+        t.is_planned,
+        t.frequency_hours,   
+        
         a.model AS machine,
         a.serial_number,
         l.code AS line
+
       FROM task_executions e
       JOIN maintenance_tasks t ON t.id = e.task_id
       JOIN assets a ON a.id = e.asset_id

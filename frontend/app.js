@@ -270,6 +270,16 @@ async function loadHistory() {
   }
 }
 
+function getExecutionType(h) {
+  // 🔴 Unplanned (manual breakdowns)
+  if (h.is_planned === false) return "unplanned";
+
+  // 🟢 Preventive (Excel / frequency based)
+  if (h.frequency_hours && Number(h.frequency_hours) > 0) return "preventive";
+
+  // 🔵 Manual Planned (no frequency)
+  return "planned";
+}
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
@@ -279,6 +289,10 @@ function renderHistoryTable(data) {
 
   data.forEach(h => {
     const tr = document.createElement("tr");
+
+    // 🎨 classify execution
+    const execType = getExecutionType(h);
+    tr.classList.add(`history-${execType}`);
 
     tr.innerHTML = `
       <td>${formatDateTime(h.executed_at)}</td>
@@ -310,7 +324,6 @@ function renderHistoryTable(data) {
     tbody.appendChild(tr);
   });
 }
-
 
 /* =====================
    KPIs
