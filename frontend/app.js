@@ -522,13 +522,17 @@ function buildAssetDropdown() {
 
     map.set(key, {
       value: key,
-      label: `${t.machine_name} (${t.serial_number})`
+      line: t.line_code || t.line || "",
+      machine: t.machine_name,
+      serial: t.serial_number
     });
   });
 
-  const assets = Array.from(map.values()).sort((a, b) =>
-    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
-  );
+  const assets = Array.from(map.values()).sort((a, b) => {
+    const la = `${a.line} ${a.machine} ${a.serial}`;
+    const lb = `${b.line} ${b.machine} ${b.serial}`;
+    return la.localeCompare(lb, "el", { sensitivity: "base" });
+  });
 
   // All Machines option
   const all = document.createElement("div");
@@ -543,11 +547,18 @@ function buildAssetDropdown() {
   assets.forEach(a => {
     const div = document.createElement("div");
     div.className = "asset-option";
-    div.textContent = a.label;
     div.dataset.value = a.value;
+
+    // 🔥 RICH LABEL
+    div.innerHTML = `
+      <div><strong>${a.line} | ${a.machine}</strong></div>
+      <small>SN: ${a.serial}</small>
+    `;
+
     menu.appendChild(div);
   });
 }
+
 
 function initAssetDropdown() {
   const dropdown = getEl("assetDropdown");
@@ -637,7 +648,6 @@ function populateAssetFilter() {
 
   const map = new Map();
 
-  // Συλλογή μοναδικών assets
   tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
@@ -646,23 +656,26 @@ function populateAssetFilter() {
 
     map.set(key, {
       value: key,
-      label: `${t.machine_name} (${t.serial_number})`
+      line: t.line_code || t.line || "",
+      machine: t.machine_name,
+      serial: t.serial_number
     });
   });
 
-  // 🔹 SORT με βάση το label (ASSET)
-  const sortedAssets = Array.from(map.values()).sort((a, b) =>
-    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
-  );
+  const sortedAssets = Array.from(map.values()).sort((a, b) => {
+    const la = `${a.line} ${a.machine} ${a.serial}`;
+    const lb = `${b.line} ${b.machine} ${b.serial}`;
+    return la.localeCompare(lb, "el", { sensitivity: "base" });
+  });
 
-  // Δημιουργία options
   sortedAssets.forEach(a => {
     const opt = document.createElement("option");
     opt.value = a.value;
-    opt.textContent = a.label;
+    opt.textContent = `${a.line} | ${a.machine} — SN: ${a.serial}`;
     sel.appendChild(opt);
   });
 }
+
 // Search matching
 function matchesSearch(task, q) {
   if (!q) return true;
