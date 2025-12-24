@@ -315,8 +315,15 @@ tbody tr:hover { background: #131520; }
   justify-content: center;
   align-items: center;
   z-index: 999;
+}
+.modal-overlay {
+  pointer-events: auto;
+}
+
+.modal-overlay[style*="display: none"] {
   pointer-events: none;
 }
+
 
 .modal-box {
   background: var(--bg-card-alt);
