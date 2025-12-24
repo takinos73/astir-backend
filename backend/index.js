@@ -953,7 +953,7 @@ app.post("/snapshot/restore", async (req, res) => {
 
     /* =====================
        2️⃣ RESTORE ASSETS
-       (serial_number is UNIQUE)
+       (line_id, model, serial_number is UNIQUE)
     ===================== */
     for (const a of assets) {
       if (!a.serial_number || !a.line_code) continue;
@@ -965,23 +965,23 @@ app.post("/snapshot/restore", async (req, res) => {
       if (!lineRes.rows.length) continue;
 
       await client.query(
-        `
-        INSERT INTO assets (line_id, model, serial_number, description, active)
-        VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (serial_number) DO UPDATE SET
-          line_id = EXCLUDED.line_id,
-          model = EXCLUDED.model,
-          description = EXCLUDED.description,
-          active = EXCLUDED.active
-        `,
-        [
-          lineRes.rows[0].id,
-          a.model,
-          a.serial_number,
-          a.description || null,
-          typeof a.active === "boolean" ? a.active : true
-        ]
-      );
+  `
+  INSERT INTO assets (line_id, model, serial_number, description, active)
+  VALUES ($1,$2,$3,$4,$5)
+  ON CONFLICT (line_id, model, serial_number)
+  DO UPDATE SET
+    description = EXCLUDED.description,
+    active = EXCLUDED.active
+  `,
+  [
+    lineId,
+    model,
+    sn,
+    a.description || null,
+    typeof a.active === "boolean" ? a.active : true
+  ]
+);
+
     }
 
     // 3) wipe tasks, then restore tasks EXACTLY as snapshot
