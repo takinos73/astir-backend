@@ -522,13 +522,17 @@ function buildAssetDropdown() {
 
     map.set(key, {
       value: key,
-      label: `${t.machine_name} (${t.serial_number})`
+      line: t.line_code || t.line || "",
+      machine: t.machine_name,
+      serial: t.serial_number
     });
   });
 
-  const assets = Array.from(map.values()).sort((a, b) =>
-    a.label.localeCompare(b.label, "el", { sensitivity: "base" })
-  );
+  const assets = Array.from(map.values()).sort((a, b) => {
+    const la = `${a.line} ${a.machine} ${a.serial}`;
+    const lb = `${b.line} ${b.machine} ${b.serial}`;
+    return la.localeCompare(lb, "el", { sensitivity: "base" });
+  });
 
   // All Machines option
   const all = document.createElement("div");
@@ -543,8 +547,14 @@ function buildAssetDropdown() {
   assets.forEach(a => {
     const div = document.createElement("div");
     div.className = "asset-option";
-    div.textContent = a.label;
     div.dataset.value = a.value;
+
+    // 🔥 RICH LABEL
+    div.innerHTML = `
+      <div><strong>${a.line} | ${a.machine}</strong></div>
+      <small>SN: ${a.serial}</small>
+    `;
+
     menu.appendChild(div);
   });
 }
