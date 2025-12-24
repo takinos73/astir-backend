@@ -183,8 +183,7 @@ function statusPill(task) {
 /* =====================================================
    BUILD TASK TABLE ROW
    - Renders one task row in the Tasks table
-   - View button calls viewTask(task.id)
-   - Done / Undo handled separately
+   - Color-coded by task type
 ===================================================== */
 
 function buildRow(task) {
@@ -192,6 +191,15 @@ function buildRow(task) {
 
   // 🔍 current search query (used for highlight)
   const q = document.getElementById("taskSearch")?.value || "";
+
+  // 🎨 TASK TYPE COLOR CLASS
+  if (task.is_planned && task.frequency_hours > 0) {
+    tr.classList.add("task-preventive");
+  } else if (task.is_planned && !task.frequency_hours) {
+    tr.classList.add("task-planned-manual");
+  } else {
+    tr.classList.add("task-unplanned");
+  }
 
   tr.innerHTML = `
     <!-- MACHINE / ASSET -->
