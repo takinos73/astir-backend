@@ -965,7 +965,13 @@ app.post("/snapshot/restore", async (req, res) => {
         l.description || null
       ]);
     }
-
+     /* =====================
+   0️⃣ FULL WIPE BASE TABLES
+    ===================== */
+    await client.query(`TRUNCATE TABLE task_executions RESTART IDENTITY CASCADE`);
+    await client.query(`TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE`);
+    await client.query(`TRUNCATE TABLE assets RESTART IDENTITY CASCADE`);
+    await client.query(`TRUNCATE TABLE lines RESTART IDENTITY CASCADE`);
     /* =====================
        2️⃣ RESTORE ASSETS
     ===================== */
@@ -992,11 +998,7 @@ app.post("/snapshot/restore", async (req, res) => {
       ]);
     }
 
-    /* =====================
-       3️⃣ FULL WIPE TASKS + HISTORY
-    ===================== */
-    await client.query(`TRUNCATE TABLE task_executions RESTART IDENTITY CASCADE`);
-    await client.query(`TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE`);
+  
 
     /* =====================
        4️⃣ RESTORE TASKS
