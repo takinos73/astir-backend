@@ -2054,59 +2054,24 @@ getEl("importPreviewOverlay").style.display = "none";
 /* =====================
    SNAPSHOT EXPORT
 ===================== */
-document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
-  if (!hasRole("admin")) {
-    alert("Admin only");
-    return;
-  }
+document.getElementById("exportSnapshot")?.addEventListener("click", async (e) => {
+  e.preventDefault();   // 🔥 ΚΡΙΣΙΜΟ
+  e.stopPropagation();
 
-  try {
-    const res = await fetch(`${API}/snapshot/export`);
-    if (!res.ok) throw new Error("Snapshot export failed");
-
-    const snapshot = await res.json();
-
-    const ts = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .slice(0, 19);
-
-    const filename = `cmms_snapshot_${ts}.json`;
-
-    const blob = new Blob(
-      [JSON.stringify(snapshot, null, 2)],
-      { type: "application/json" }
-    );
-
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-  } catch (err) {
-    console.error("SNAPSHOT EXPORT ERROR:", err);
-    alert("Failed to export snapshot");
-  }
-});
-
-let loadedSnapshotFile = null;
-
-/* =====================
-   SNAPSHOT FILE LOAD
-===================== */
-document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
   const res = await fetch(`${API}/snapshot/export`);
   const data = await res.json();
 
   const name = `CMMS_snapshot_${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
 
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 });
 
 /* =====================
