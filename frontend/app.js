@@ -2096,72 +2096,46 @@ let loadedSnapshotFile = null;
 /* =====================
    SNAPSHOT FILE LOAD
 ===================== */
-document.getElementById("snapshotFile")?.addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+document.getElementById("exportSnapshot")?.addEventListener("click", async () => {
+  const res = await fetch(`${API}/snapshot/export`);
+  const data = await res.json();
 
-  if (!file.name.endsWith(".json")) {
-    alert("Invalid snapshot file");
-    e.target.value = "";
-    return;
-  }
+  const name = `CMMS_snapshot_${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
 
-  loadedSnapshotFile = file;
-  alert(`Snapshot loaded: ${file.name}`);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
 });
+
 /* =====================
    SNAPSHOT RESTORE
 ===================== */
 document.getElementById("restoreSnapshot")?.addEventListener("click", async () => {
-  if (!hasRole("admin")) {
-    alert("Admin only");
-    return;
+  const file = document.getElementById("snapshotFile")?.files[0];
+  if (!file) return alert("Select snapshot file");
+
+  const text = await file.text();
+  const json = JSON.parse(text);
+
+  if (!confirm("⚠️ This will fully restore the system. Continue?")) return;
+
+  const res = await fetch(`${API}/snapshot/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(json)
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    return alert(err.error || "Restore failed");
   }
 
-  if (!loadedSnapshotFile) {
-    alert("No snapshot file selected");
-    return;
-  }
-
-  const ok = confirm(
-    "⚠️ RESTORE SNAPSHOT\n\n" +
-    "This will REPLACE:\n" +
-    "• Lines\n" +
-    "• Assets\n" +
-    "• Tasks\n\n" +
-    "History (executions) will NOT be touched.\n\n" +
-    "Continue?"
-  );
-
-  if (!ok) return;
-
-  try {
-    const text = await loadedSnapshotFile.text();
-    const json = JSON.parse(text);
-
-    const res = await fetch(`${API}/snapshot/restore`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(json),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Restore failed");
-    }
-
-    alert("✅ Snapshot restored successfully");
-
-    // 🔄 Full refresh
-    await loadAssets();
-    await loadTasks();
-    await loadHistory();
-
-  } catch (err) {
-    console.error("SNAPSHOT RESTORE ERROR:", err);
-    alert(err.message);
-  }
+  alert("Snapshot restored successfully");
+  location.reload();
 });
+
 
 /* =====================
    LINE TABS

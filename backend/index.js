@@ -934,9 +934,14 @@ app.post("/snapshot/restore", async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const { lines, assets, tasks } = req.body || {};
+    const { lines, assets, tasks, executions } = req.body || {};
 
-    if (!Array.isArray(lines) || !Array.isArray(assets) || !Array.isArray(tasks)) {
+    if (
+      !Array.isArray(lines) ||
+      !Array.isArray(assets) ||
+      !Array.isArray(tasks) ||
+      !Array.isArray(executions)
+    ) {
       return res.status(400).json({ error: "Invalid snapshot format" });
     }
 
@@ -946,130 +951,129 @@ app.post("/snapshot/restore", async (req, res) => {
        1️⃣ RESTORE LINES
     ===================== */
     for (const l of lines) {
-      const code = (l.code || "").trim();
-      if (!code) continue;
+      if (!l.code) continue;
 
-      await client.query(
-        `
+      await client.query(`
         INSERT INTO lines (code, name, description)
         VALUES ($1,$2,$3)
         ON CONFLICT (code) DO UPDATE SET
           name = EXCLUDED.name,
           description = EXCLUDED.description
-        `,
-        [code, l.name || code, l.description || null]
-      );
+      `, [
+        l.code,
+        l.name || l.code,
+        l.description || null
+      ]);
     }
 
     /* =====================
        2️⃣ RESTORE ASSETS
     ===================== */
     for (const a of assets) {
-      const lineCode = (a.line_code || a.line || "").trim();
-      const model = (a.model || "").trim();
-      const sn = (a.serial_number || "").trim();
-
-      if (!lineCode || !model || !sn) continue;
+      if (!a.line_code || !a.model || !a.serial_number) continue;
 
       const lineRes = await client.query(
         `SELECT id FROM lines WHERE code = $1`,
-        [lineCode]
+        [a.line_code]
       );
-
       if (!lineRes.rows.length) continue;
 
       const lineId = lineRes.rows[0].id;
 
-      await client.query(
-        `
+      await client.query(`
         INSERT INTO assets (line_id, model, serial_number, description, active)
         VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (line_id, model, serial_number) DO UPDATE SET
+        ON CONFLICT (serial_number) DO UPDATE SET
+          line_id = EXCLUDED.line_id,
+          model = EXCLUDED.model,
           description = EXCLUDED.description,
           active = EXCLUDED.active
-        `,
-        [lineId, model, sn, a.description || null, a.active !== false]
-      );
+      `, [
+        lineId,
+        a.model,
+        a.serial_number,
+        a.description || null,
+        a.active !== false
+      ]);
     }
 
     /* =====================
-       3️⃣ WIPE TASKS
-       
+       3️⃣ FULL WIPE TASKS + HISTORY
     ===================== */
-    await client.query(`
-      TRUNCATE TABLE maintenance_tasks
-      RESTART IDENTITY
-      CASCADE
-    `);
+    await client.query(`TRUNCATE TABLE task_executions RESTART IDENTITY CASCADE`);
+    await client.query(`TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE`);
 
     /* =====================
        4️⃣ RESTORE TASKS
     ===================== */
     for (const t of tasks) {
-      const lineCode = (t.line || "").trim();
-      const model = (t.machine_name || "").trim();
-      const sn = (t.serial_number || "").trim();
-
-      const assetRes = await client.query(
-        `
+      const assetRes = await client.query(`
         SELECT a.id
         FROM assets a
         JOIN lines l ON l.id = a.line_id
-        WHERE l.code = $1
-          AND a.model = $2
-          AND a.serial_number = $3
-        `,
-        [lineCode, model, sn]
-      );
+        WHERE l.code = $1 AND a.model = $2 AND a.serial_number = $3
+      `, [t.line, t.machine_name, t.serial_number]);
 
       if (!assetRes.rows.length) continue;
-
       const assetId = assetRes.rows[0].id;
 
-      await client.query(
-        `
+      await client.query(`
         INSERT INTO maintenance_tasks (
-          asset_id,
-          section,
-          unit,
-          task,
-          type,
-          qty,
-          duration_min,
-          frequency_hours,
-          due_date,
-          status,
-          completed_by,
-          completed_at,
-          updated_at,
-          is_planned,
-          notes
+          asset_id, section, unit, task, type, qty,
+          duration_min, frequency_hours,
+          due_date, status,
+          completed_by, completed_at,
+          is_planned, notes,
+          created_at, updated_at
         )
         VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,
-          $9,$10,$11,$12,
-          COALESCE($13,NOW()),
-          $14,$15
+          $1,$2,$3,$4,$5,$6,
+          $7,$8,
+          $9,$10,
+          $11,$12,
+          $13,$14,
+          COALESCE($15,NOW()), COALESCE($16,NOW())
         )
-        `,
-        [
-          assetId,
-          t.section || null,
-          t.unit || null,
-          t.task,
-          t.type || null,
-          t.qty ?? null,
-          t.duration_min ?? null,
-          t.frequency_hours ?? null,
-          t.due_date ? new Date(t.due_date) : null,
-          t.status || "Planned",
-          t.completed_by || null,
-          t.completed_at ? new Date(t.completed_at) : null,
-          t.updated_at ? new Date(t.updated_at) : null,
-          typeof t.is_planned === "boolean" ? t.is_planned : true,
-          t.notes || null
-        ]
-      );
+      `, [
+        assetId,
+        t.section || null,
+        t.unit || null,
+        t.task,
+        t.type || null,
+        t.qty ?? null,
+        t.duration_min ?? null,
+        t.frequency_hours ?? null,
+        t.due_date ? new Date(t.due_date) : null,
+        t.status,
+        t.completed_by || null,
+        t.completed_at ? new Date(t.completed_at) : null,
+        t.is_planned,
+        t.notes || null,
+        t.created_at ? new Date(t.created_at) : null,
+        t.updated_at ? new Date(t.updated_at) : null
+      ]);
+    }
+
+    /* =====================
+       5️⃣ RESTORE HISTORY
+    ===================== */
+    for (const e of executions) {
+      await client.query(`
+        INSERT INTO task_executions (
+          task_id,
+          asset_id,
+          executed_by,
+          executed_at,
+          prev_due_date
+        )
+        VALUES ($1,$2,$3,$4,$5)
+      `, [
+        e.task_id,
+        e.asset_id,
+        e.executed_by || null,
+        e.executed_at ? new Date(e.executed_at) : null,
+        e.prev_due_date ? new Date(e.prev_due_date) : null
+      ]);
     }
 
     await client.query("COMMIT");
@@ -1083,7 +1087,6 @@ app.post("/snapshot/restore", async (req, res) => {
     client.release();
   }
 });
-
 
 /* =====================================================
    DOCUMENTATION (MasterPlan PDF)
