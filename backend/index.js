@@ -956,23 +956,30 @@ app.post("/snapshot/restore", async (req, res) => {
     await client.query(`TRUNCATE TABLE lines RESTART IDENTITY CASCADE`);
 
     /* =====================
-       1️⃣ RESTORE LINES
+   1️⃣ RESTORE LINES (SAFE)
     ===================== */
-    for (const l of lines) {
-      if (!l.code) continue;
 
-      await client.query(`
-        INSERT INTO lines (code, name, description)
-        VALUES ($1,$2,$3)
-        ON CONFLICT (code) DO UPDATE SET
-          name = EXCLUDED.name,
-          description = EXCLUDED.description
-      `, [
-        l.code,
-        l.name || l.code,
-        l.description || null
-      ]);
-    }
+    for (const l of lines) {
+      const code =
+      (l.code || l.line || l.name || "").toString().trim();
+
+    if (!code) {
+      console.warn("SKIP LINE (no code):", l);
+      continue;
+  }
+
+  await client.query(
+    `
+    INSERT INTO lines (code, name, description)
+    VALUES ($1,$2,$3)
+    `,
+    [
+      code,
+      l.name || code,
+      l.description || null
+    ]
+  );
+}
      
     /* =====================
        2️⃣ RESTORE ASSETS
