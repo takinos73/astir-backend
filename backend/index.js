@@ -929,6 +929,8 @@ res.json({
 
 /* =====================
    RESTORE SNAPSHOT
+   - Restores ONLY active maintenance plan
+   - History (task_executions) remains untouched
 ===================== */
 app.post("/snapshot/restore", async (req, res) => {
   const client = await pool.connect();
@@ -975,7 +977,6 @@ app.post("/snapshot/restore", async (req, res) => {
         `SELECT id FROM lines WHERE code = $1`,
         [lineCode]
       );
-
       if (!lineRes.rows.length) continue;
 
       const lineId = lineRes.rows[0].id;
@@ -984,7 +985,8 @@ app.post("/snapshot/restore", async (req, res) => {
         `
         INSERT INTO assets (line_id, model, serial_number, description, active)
         VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (line_id, model, serial_number) DO UPDATE SET
+        ON CONFLICT (line_id, model, serial_number)
+        DO UPDATE SET
           description = EXCLUDED.description,
           active = EXCLUDED.active
         `,
@@ -993,43 +995,29 @@ app.post("/snapshot/restore", async (req, res) => {
     }
 
     /* =====================
-       3️⃣ WIPE TASKS
-       
+       3️⃣ CLEAN CURRENT PLAN
+       (ONLY planned tasks)
     ===================== */
     await client.query(`
-      TRUNCATE TABLE maintenance_tasks
-      RESTART IDENTITY
-      CASCADE
-    `);
-    await client.query(`
-      TRUNCATE TABLE task_executions
-      RESTART IDENTITY
-      CASCADE
+      DELETE FROM maintenance_tasks
+      WHERE is_planned = true
     `);
 
     /* =====================
-       4️⃣ RESTORE TASKS
+       4️⃣ RESTORE PLANNED TASKS ONLY
+       - Skip DONE
+       - Skip unplanned
     ===================== */
     for (const t of tasks) {
-      const lineCode = (t.line || "").trim();
-      const model = (t.machine_name || "").trim();
-      const sn = (t.serial_number || "").trim();
+      if (t.status === "Done") continue;
+      if (t.is_planned === false) continue;
 
-      const assetRes = await client.query(
-        `
-        SELECT a.id
-        FROM assets a
-        JOIN lines l ON l.id = a.line_id
-        WHERE l.code = $1
-          AND a.model = $2
-          AND a.serial_number = $3
-        `,
-        [lineCode, model, sn]
-      );
+      const lineCode = cleanStr(t.line || t.line_code || "");
+      const model = cleanStr(t.machine_name || t.model || "");
+      const sn = cleanStr(t.serial_number || "");
 
-      if (!assetRes.rows.length) continue;
-
-      const assetId = assetRes.rows[0].id;
+      const assetId = await findAssetId(client, lineCode, model, sn);
+      if (!assetId) continue;
 
       await client.query(
         `
@@ -1044,17 +1032,18 @@ app.post("/snapshot/restore", async (req, res) => {
           frequency_hours,
           due_date,
           status,
-          completed_by,
-          completed_at,
-          updated_at,
           is_planned,
-          notes
+          notes,
+          created_at,
+          updated_at
         )
         VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,
-          $9,$10,$11,$12,
-          COALESCE($13,NOW()),
-          $14,$15
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,
+          'Planned',
+          true,
+          $10,
+          COALESCE($11, NOW()),
+          NOW()
         )
         `,
         [
@@ -1067,29 +1056,11 @@ app.post("/snapshot/restore", async (req, res) => {
           t.duration_min ?? null,
           t.frequency_hours ?? null,
           t.due_date ? new Date(t.due_date) : null,
-          t.status || "Planned",
-          t.completed_by || null,
-          t.completed_at ? new Date(t.completed_at) : null,
-          t.updated_at ? new Date(t.updated_at) : null,
-          typeof t.is_planned === "boolean" ? t.is_planned : true,
-          t.notes || null
+          t.notes || null,
+          t.created_at ? new Date(t.created_at) : null
         ]
       );
     }
-    // ✅ Restore executions
-for (const e of executions) {
-  await client.query(`
-    INSERT INTO task_executions
-      (task_id, asset_id, executed_by, executed_at, prev_due_date)
-    VALUES ($1,$2,$3,$4,$5)
-  `, [
-    e.task_id,
-    e.asset_id,
-    e.executed_by || null,
-    e.executed_at ? new Date(e.executed_at) : null,
-    e.prev_due_date ? new Date(e.prev_due_date) : null
-  ]);
-}
 
     await client.query("COMMIT");
     res.json({ message: "Snapshot restored successfully" });
@@ -1102,6 +1073,7 @@ for (const e of executions) {
     client.release();
   }
 });
+
 
 
 /* =====================================================
