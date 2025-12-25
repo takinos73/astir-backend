@@ -937,7 +937,8 @@ app.post("/snapshot/restore", async (req, res) => {
        1️⃣ RESTORE LINES
     ===================== */
     for (const l of lines) {
-      if (!l.code) continue;
+      const code = (l.code || "").trim();
+      if (!code) continue;
 
       await client.query(
         `
@@ -947,102 +948,120 @@ app.post("/snapshot/restore", async (req, res) => {
           name = EXCLUDED.name,
           description = EXCLUDED.description
         `,
-        [l.code, l.name || l.code, l.description || null]
+        [code, l.name || code, l.description || null]
       );
     }
 
     /* =====================
        2️⃣ RESTORE ASSETS
-       (line_id, model, serial_number is UNIQUE)
     ===================== */
     for (const a of assets) {
-      if (!a.serial_number || !a.line_code) continue;
+      const lineCode = (a.line_code || a.line || "").trim();
+      const model = (a.model || "").trim();
+      const sn = (a.serial_number || "").trim();
+
+      if (!lineCode || !model || !sn) continue;
 
       const lineRes = await client.query(
         `SELECT id FROM lines WHERE code = $1`,
-        [a.line_code]
+        [lineCode]
       );
+
       if (!lineRes.rows.length) continue;
 
-      await client.query(
-  `
-  INSERT INTO assets (line_id, model, serial_number, description, active)
-  VALUES ($1,$2,$3,$4,$5)
-  ON CONFLICT (line_id, model, serial_number)
-  DO UPDATE SET
-    description = EXCLUDED.description,
-    active = EXCLUDED.active
-  `,
-  [
-    lineId,
-    model,
-    sn,
-    a.description || null,
-    typeof a.active === "boolean" ? a.active : true
-  ]
-);
+      const lineId = lineRes.rows[0].id;
 
+      await client.query(
+        `
+        INSERT INTO assets (line_id, model, serial_number, description, active)
+        VALUES ($1,$2,$3,$4,$5)
+        ON CONFLICT (line_id, model, serial_number) DO UPDATE SET
+          description = EXCLUDED.description,
+          active = EXCLUDED.active
+        `,
+        [lineId, model, sn, a.description || null, a.active !== false]
+      );
     }
 
-    // 3) wipe tasks, then restore tasks EXACTLY as snapshot
-await client.query(
-  `TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE;`
-);
+    /* =====================
+       3️⃣ WIPE TASKS
+       (⚠️ NOT HISTORY)
+    ===================== */
+    await client.query(`
+      TRUNCATE TABLE maintenance_tasks
+      RESTART IDENTITY
+      CASCADE
+    `);
 
-for (const t of tasks) {
-  const lineCode = cleanStr(t.line || t.line_code || "");
-  const model = cleanStr(t.machine_name || t.model || "");
-  const sn = cleanStr(t.serial_number || "");
+    /* =====================
+       4️⃣ RESTORE TASKS
+    ===================== */
+    for (const t of tasks) {
+      const lineCode = (t.line || "").trim();
+      const model = (t.machine_name || "").trim();
+      const sn = (t.serial_number || "").trim();
 
-  const assetId = await findAssetId(client, lineCode, model, sn);
-  if (!assetId) continue;
+      const assetRes = await client.query(
+        `
+        SELECT a.id
+        FROM assets a
+        JOIN lines l ON l.id = a.line_id
+        WHERE l.code = $1
+          AND a.model = $2
+          AND a.serial_number = $3
+        `,
+        [lineCode, model, sn]
+      );
 
-  await client.query(
-    `
-    INSERT INTO maintenance_tasks (
-      asset_id,
-      section,
-      unit,
-      task,
-      type,
-      qty,
-      duration_min,
-      frequency_hours,
-      due_date,
-      status,
-      completed_by,
-      completed_at,
-      updated_at,
-      is_planned,
-      notes
-    )
-    VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,
-      $9,$10,$11,$12,
-      COALESCE($13, NOW()),
-      COALESCE($14, true),
-      $15
-    )
-    `,
-    [
-      assetId,
-      t.section || null,
-      t.unit || null,
-      t.task,
-      t.type || null,
-      t.qty ?? null,
-      t.duration_min ?? null,
-      t.frequency_hours ?? null,
-      t.due_date ? new Date(t.due_date) : null,
-      t.status || "Planned",
-      t.completed_by || null,
-      t.completed_at ? new Date(t.completed_at) : null,
-      t.updated_at ? new Date(t.updated_at) : null,
-      typeof t.is_planned === "boolean" ? t.is_planned : true,
-      t.notes || null,
-    ]
-  );
-}
+      if (!assetRes.rows.length) continue;
+
+      const assetId = assetRes.rows[0].id;
+
+      await client.query(
+        `
+        INSERT INTO maintenance_tasks (
+          asset_id,
+          section,
+          unit,
+          task,
+          type,
+          qty,
+          duration_min,
+          frequency_hours,
+          due_date,
+          status,
+          completed_by,
+          completed_at,
+          updated_at,
+          is_planned,
+          notes
+        )
+        VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,
+          $9,$10,$11,$12,
+          COALESCE($13,NOW()),
+          $14,$15
+        )
+        `,
+        [
+          assetId,
+          t.section || null,
+          t.unit || null,
+          t.task,
+          t.type || null,
+          t.qty ?? null,
+          t.duration_min ?? null,
+          t.frequency_hours ?? null,
+          t.due_date ? new Date(t.due_date) : null,
+          t.status || "Planned",
+          t.completed_by || null,
+          t.completed_at ? new Date(t.completed_at) : null,
+          t.updated_at ? new Date(t.updated_at) : null,
+          typeof t.is_planned === "boolean" ? t.is_planned : true,
+          t.notes || null
+        ]
+      );
+    }
 
     await client.query("COMMIT");
     res.json({ message: "Snapshot restored successfully" });
