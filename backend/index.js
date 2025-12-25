@@ -981,13 +981,8 @@ app.post("/snapshot/restore", async (req, res) => {
       const lineId = lineRes.rows[0].id;
 
       await client.query(`
-        INSERT INTO assets (line_id, model, serial_number, description, active)
-        VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (serial_number) DO UPDATE SET
-          line_id = EXCLUDED.line_id,
-          model = EXCLUDED.model,
-          description = EXCLUDED.description,
-          active = EXCLUDED.active
+      INSERT INTO assets (line_id, model, serial_number, description, active)
+      VALUES ($1,$2,$3,$4,$5)
       `, [
         lineId,
         a.model,
