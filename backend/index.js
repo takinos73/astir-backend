@@ -904,13 +904,22 @@ app.get("/snapshot/export", async (req, res) => {
       `)
     ).rows;
 
-    res.json({
-      version: 3,
-      created_at: new Date().toISOString(),
-      lines,
-      assets,
-      tasks
-    });
+    const executions = (
+  await pool.query(`
+    SELECT *
+    FROM task_executions
+    ORDER BY id ASC
+  `)
+).rows;
+
+res.json({
+  version: 3,
+  created_at: new Date().toISOString(),
+  lines,
+  assets,
+  tasks,
+  executions
+});
 
   } catch (err) {
     console.error("SNAPSHOT EXPORT ERROR:", err.message);
@@ -985,10 +994,15 @@ app.post("/snapshot/restore", async (req, res) => {
 
     /* =====================
        3️⃣ WIPE TASKS
-       (⚠️ NOT HISTORY)
+       
     ===================== */
     await client.query(`
       TRUNCATE TABLE maintenance_tasks
+      RESTART IDENTITY
+      CASCADE
+    `);
+    await client.query(`
+      TRUNCATE TABLE task_executions
       RESTART IDENTITY
       CASCADE
     `);
@@ -1062,6 +1076,20 @@ app.post("/snapshot/restore", async (req, res) => {
         ]
       );
     }
+    // ✅ Restore executions
+for (const e of executions) {
+  await client.query(`
+    INSERT INTO task_executions
+      (task_id, asset_id, executed_by, executed_at, prev_due_date)
+    VALUES ($1,$2,$3,$4,$5)
+  `, [
+    e.task_id,
+    e.asset_id,
+    e.executed_by || null,
+    e.executed_at ? new Date(e.executed_at) : null,
+    e.prev_due_date ? new Date(e.prev_due_date) : null
+  ]);
+}
 
     await client.query("COMMIT");
     res.json({ message: "Snapshot restored successfully" });
