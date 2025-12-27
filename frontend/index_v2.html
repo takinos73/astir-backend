@@ -16,28 +16,75 @@
 
     <h3>Task Details</h3>
 
-    <!-- Dynamic content injected by JS -->
+    <!-- =====================
+         VIEW CONTENT
+    ====================== -->
     <div id="taskViewContent" class="task-view-grid"></div>
 
-    <!-- ACTIONS -->
-    <div class="modal-actions task-view-actions">
+    <!-- =====================
+         EDIT PLANNED MANUAL
+    ====================== -->
+    <div class="task-edit-area" id="taskEditArea" style="display:none;">
 
-      <!-- LEFT: EDIT / DELETE (shown ONLY for Planned Manual via JS) -->
-      <div
-        class="task-manage-actions"
-        id="taskManageActions"
-        style="display:none;"
-      >
-        <button class="btn-edit" id="editTaskBtn">✏️ Edit</button>
-        <button class="btn-delete" id="deleteTaskBtn">🗑 Delete</button>
+      <h4>Edit Task</h4>
+
+      <div class="task-edit-grid">
+
+        <div>
+          <label>Task</label>
+          <input id="edit-task-desc" />
+        </div>
+
+        <div>
+          <label>Type</label>
+          <input id="edit-task-type" />
+        </div>
+
+        <div>
+          <label>Section</label>
+          <input id="edit-task-section" />
+        </div>
+
+        <div>
+          <label>Unit</label>
+          <input id="edit-task-unit" />
+        </div>
+
+        <div>
+          <label>Due Date</label>
+          <input id="edit-task-due" type="date" />
+        </div>
+
+        <div class="edit-notes">
+          <label>Notes</label>
+          <textarea id="edit-task-notes"></textarea>
+        </div>
+
       </div>
 
-      <!-- RIGHT: ALWAYS -->
+      <div class="task-edit-actions">
+        <button class="btn-table" onclick="saveTaskEdit()">💾 Update</button>
+        <button class="btn-cancel" onclick="cancelTaskEdit()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- =====================
+         ACTIONS
+    ====================== -->
+    <div class="modal-actions task-view-actions">
       <button class="btn-secondary" onclick="closeTaskView()">Close</button>
+      <button
+        id="editTaskBtn"
+        class="btn-edit"
+        style="display:none;"
+        onclick="enableTaskEdit()">
+        ✏️ Edit
+      </button>
     </div>
 
   </div>
 </div>
+
 
 <!-- =====================
      HISTORY MODAL

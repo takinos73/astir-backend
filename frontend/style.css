@@ -451,6 +451,48 @@ tbody tr:hover { background: #131520; }
 .task-view-completed span {
   color: #cfd8dc;
 }
+/* =====================
+   TASK VIEW MODAL – SCROLL FIX
+===================== */
+
+/* overlay stays fixed */
+#taskViewOverlay {
+  align-items: center;
+  justify-content: center;
+}
+
+/* modal box scroll handling */
+#taskViewOverlay .modal-box {
+  max-height: 90vh;              /* 👈 ΚΡΙΣΙΜΟ */
+  overflow-y: auto;              /* 👈 ΚΡΙΣΙΜΟ */
+  padding-bottom: 16px;
+}
+
+/* keep actions always visible */
+.task-view-actions {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(15,21,32,0.95),
+    rgba(15,21,32,0.75),
+    rgba(15,21,32,0)
+  );
+  padding-top: 12px;
+  margin-top: 20px;
+  z-index: 2;
+}
+
+/* edit area spacing */
+.task-edit-area {
+  margin-top: 24px;
+}
+
+/* grid spacing safety */
+.task-edit-grid {
+  gap: 14px 16px;
+}
+
 
 /* =====================
    TASK VIEW ACTIONS

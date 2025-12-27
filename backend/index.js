@@ -457,6 +457,60 @@ app.get("/executions/count", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/* =====================
+   EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
+===================== */
+app.put("/tasks/:id", async (req, res) => {
+  const { id } = req.params;
+  const {
+    task,
+    type,
+    section,
+    unit,
+    due_date,
+    notes
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE maintenance_tasks
+      SET
+        task = COALESCE($2, task),
+        type = COALESCE($3, type),
+        section = COALESCE($4, section),
+        unit = COALESCE($5, unit),
+        due_date = COALESCE($6, due_date),
+        notes = COALESCE($7, notes),
+        updated_at = NOW()
+      WHERE id = $1
+        AND status = 'Planned'
+      RETURNING *
+      `,
+      [
+        id,
+        task || null,
+        type || null,
+        section || null,
+        unit || null,
+        due_date ? new Date(due_date) : null,
+        notes || null
+      ]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: "Task not found or not editable"
+      });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("PUT /tasks/:id ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 /* =====================================================

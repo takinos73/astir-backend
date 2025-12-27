@@ -64,6 +64,15 @@ function isPlannedManual(task) {
     task.status !== "Done"
   );
 }
+let currentViewedTask = null;
+
+function canEditTask(task) {
+  return (
+    task.status === "Planned" &&
+    !task.frequency_hours &&   // όχι preventive
+    !!task.due_date            // planned manual
+  );
+}
 
 /* =====================
    DATE TIME FORMATTER
@@ -564,7 +573,52 @@ function viewTask(taskId) {
 `;
 
   document.getElementById("taskViewOverlay").style.display = "flex";
+// =====================
+// EDIT BUTTON VISIBILITY
+// =====================
+currentViewedTask = task;
+
+const editBtn = document.getElementById("editTaskBtn");
+const editArea = document.getElementById("taskEditArea");
+
+if (canEditTask(task)) {
+  editBtn.style.display = "inline-flex";
+  editArea.style.display = "none"; // αρχικά κρυφό
+} else {
+  editBtn.style.display = "none";
+  editArea.style.display = "none";
 }
+
+}
+function enableTaskEdit() {
+  if (!currentViewedTask) return;
+
+  const t = currentViewedTask;
+
+  // Fill edit fields
+  document.getElementById("edit-task-desc").value = t.task || "";
+  document.getElementById("edit-task-type").value = t.type || "";
+  document.getElementById("edit-task-section").value = t.section || "";
+  document.getElementById("edit-task-unit").value = t.unit || "";
+  document.getElementById("edit-task-due").value =
+    t.due_date ? t.due_date.split("T")[0] : "";
+  document.getElementById("edit-task-notes").value = t.notes || "";
+
+  // Show edit area
+  document.getElementById("taskEditArea").style.display = "block";
+
+  // Hide edit button while editing
+  document.getElementById("editTaskBtn").style.display = "none";
+}
+function cancelTaskEdit() {
+  document.getElementById("taskEditArea").style.display = "none";
+
+  // επανεμφάνιση Edit button
+  if (currentViewedTask && canEditTask(currentViewedTask)) {
+    document.getElementById("editTaskBtn").style.display = "inline-flex";
+  }
+}
+
 
 // Close modal
 function closeTaskView() {
@@ -1175,6 +1229,60 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert(err.message);
   }
 });
+
+// =====================
+// SAVE TASK EDIT (PUT – METADATA ONLY)
+// =====================
+async function saveTaskEdit() {
+  if (!currentViewedTask) return;
+
+  // 🔒 Safety check
+  if (!canEditTask(currentViewedTask)) {
+    alert("This task cannot be edited");
+    return;
+  }
+
+  const payload = {
+    task: document.getElementById("edit-task-desc")?.value?.trim(),
+    type: document.getElementById("edit-task-type")?.value || null,
+    section: document.getElementById("edit-task-section")?.value || null,
+    unit: document.getElementById("edit-task-unit")?.value || null,
+    due_date: document.getElementById("edit-task-due")?.value || null,
+    notes: document.getElementById("edit-task-notes")?.value || null
+  };
+
+  // 🔒 Validation
+  if (!payload.task) {
+    alert("Task description is required");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/tasks/${currentViewedTask.id}`, {
+      method: "PUT", // 👈 ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Update failed");
+    }
+
+    // success
+    currentViewedTask = null;
+
+    // Close modal
+    closeTaskView();
+
+    // Refresh tasks list
+    loadTasks();
+
+  } catch (err) {
+    console.error("SAVE TASK EDIT ERROR:", err);
+    alert(err.message);
+  }
+}
 
 
 /* =====================
