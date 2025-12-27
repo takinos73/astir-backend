@@ -311,6 +311,24 @@
   <button class="btn-secondary admin-only" id="addTaskBtn">➕ New Task</button>
   <button class="btn-secondary" id="openHistoryBtn">📜 View History</button>
   <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
+  <!-- TASKS: Due Date Range Filter -->
+<div class="field">
+  <label for="taskDateFrom">From</label>
+  <input
+    id="taskDateFrom"
+    type="date"
+    onchange="onTaskDateRangeChange()"
+  />
+</div>
+
+<div class="field">
+  <label for="taskDateTo">To</label>
+  <input
+    id="taskDateTo"
+    type="date"
+    onchange="onTaskDateRangeChange()"
+  />
+</div>
 
   <!-- 🔍 GLOBAL SEARCH -->
   <input

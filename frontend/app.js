@@ -5,6 +5,12 @@ const API = "https://astir-backend.onrender.com";
 
 let tasksData = [];
 let assetsData = [];
+// =====================
+// TASKS – DATE RANGE STATE
+// =====================
+let taskDateFrom = null;
+let taskDateTo = null;
+
 //let activeLine = "all";
 let pendingTaskId = null;
 let pendingSnapshotJson = null;
@@ -625,13 +631,14 @@ function getFilteredTasksForPrint() {
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   return tasksData
+
     // ASSET FILTER (CUSTOM DROPDOWN)
     .filter(t => {
       if (activeAssetFilter === "all") return true;
       return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
     })
 
-    // DATE FILTER
+    // QUICK DATE FILTER (Today / Week / Overdue)
     .filter(t => {
       if (activeDateFilter === "all") return true;
       if (!t.due_date) return false;
@@ -652,8 +659,23 @@ function getFilteredTasksForPrint() {
       }
 
       return true;
+    })
+
+    // 🆕 TASK DATE RANGE FILTER (From – To)
+    .filter(t => {
+      if (!taskDateFrom && !taskDateTo) return true;
+      if (!t.due_date) return false;
+
+      const due = new Date(t.due_date);
+
+      if (taskDateFrom && due < taskDateFrom) return false;
+      if (taskDateTo && due > taskDateTo) return false;
+
+      return true;
     });
 }
+
+
 
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
@@ -775,6 +797,19 @@ function renderTable() {
 
       return true;
     })
+    // TASKS – DATE RANGE FILTER (SAFE)
+.filter(t => {
+  if (!taskDateFrom && !taskDateTo) return true;
+  if (!t.due_date) return false;
+
+  const due = new Date(t.due_date);
+
+  if (taskDateFrom && due < taskDateFrom) return false;
+  if (taskDateTo && due > taskDateTo) return false;
+
+  return true;
+})
+
 
     // SORT (kept as-is)
     .sort((a, b) => {
@@ -2209,5 +2244,21 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
     });
   });
 })();
+// =====================
+// TASKS – DATE RANGE HANDLER
+// =====================
+function onTaskDateRangeChange() {
+  const fromVal = document.getElementById("taskDateFrom")?.value;
+  const toVal = document.getElementById("taskDateTo")?.value;
+
+  taskDateFrom = fromVal ? new Date(fromVal) : null;
+  taskDateTo = toVal ? new Date(toVal) : null;
+
+  if (taskDateFrom) taskDateFrom.setHours(0, 0, 0, 0);
+  if (taskDateTo) taskDateTo.setHours(23, 59, 59, 999);
+
+  renderTable();
+}
+
 
 
