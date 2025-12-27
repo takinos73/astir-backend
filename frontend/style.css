@@ -878,6 +878,59 @@ tr.history-unplanned {
   display: flex;
   gap: 10px;
 }
+/* =====================
+   TASK DATE FILTER (From / To)
+===================== */
+
+.task-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #121826, #0f1520);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+/* Labels (From / To) */
+.task-date-filter label {
+  font-size: 12px;
+  color: #9aa4b2;
+  margin-right: 4px;
+}
+
+/* Date inputs */
+.task-date-filter input[type="date"] {
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e6eaf0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover / focus */
+.task-date-filter input[type="date"]:hover,
+.task-date-filter input[type="date"]:focus {
+  border-color: rgba(77,163,255,0.6);
+  box-shadow: 0 0 0 2px rgba(77,163,255,0.15);
+  outline: none;
+}
+
+/* Calendar icon (Chrome / Edge) */
+.task-date-filter input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.7);
+  cursor: pointer;
+}
+
+/* Disabled state (optional) */
+.task-date-filter input[type="date"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 
 
 
