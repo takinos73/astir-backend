@@ -3,8 +3,6 @@ console.log("APP.JS LOADED");
 
 const API = "https://astir-backend.onrender.com";
 
-// 🔒 Master dataset (used by reports, exports, analytics)
-let allTasksData = [];
 let tasksData = [];
 let assetsData = [];
 //let activeLine = "all";
@@ -1582,15 +1580,19 @@ function getFilteredTasksForStatusReport() {
   const status = document.getElementById("reportStatus")?.value || "all";
 
   const fromDate = from ? new Date(from) : null;
-  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+  if (fromDate) {
+    fromDate.setHours(0, 0, 0, 0);
+  }
 
   const toDate = to ? new Date(to) : null;
-  if (toDate) toDate.setHours(23, 59, 59, 999);
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return allTasksData   // ✅ MASTER DATA ONLY
+  return tasksData
 
     // LINE FILTER
     .filter(t => {
@@ -1626,6 +1628,7 @@ function getFilteredTasksForStatusReport() {
       return true;
     });
 }
+
 
 /* =====================
    STATUS REPORT – PDF
@@ -2188,7 +2191,7 @@ applyRoleVisibility();
 getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
 // =====================
-// TASKS – DATE FILTER BUTTONS
+// DATE FILTER BUTTONS
 // =====================
 
 (function initDateFilters() {
@@ -2197,21 +2200,8 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
   btns.forEach(btn => {
     btn.addEventListener("click", () => {
-
-      // 🔹 Set active quick date filter
       activeDateFilter = btn.dataset.filter;
 
-      // 🔹 Clear TASK date range
-      dueDateFrom = null;
-      dueDateTo = null;
-
-      const fromInput = document.getElementById("taskDateFrom");
-      const toInput = document.getElementById("taskDateTo");
-
-      if (fromInput) fromInput.value = "";
-      if (toInput) toInput.value = "";
-
-      // 🔹 Update UI
       btns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
@@ -2219,35 +2209,5 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
     });
   });
 })();
-
-// =====================
-// TASKS – DUE DATE RANGE HANDLER
-// =====================
-
-function onTaskDueDateChange() {
-  // 🔹 Read task date inputs
-  const fromVal = document.getElementById("taskDateFrom")?.value;
-  const toVal = document.getElementById("taskDateTo")?.value;
-
-  // 🔹 Convert to Date or null
-  dueDateFrom = fromVal ? new Date(fromVal) : null;
-  dueDateTo = toVal ? new Date(toVal) : null;
-
-  // 🔹 Normalize time
-  if (dueDateFrom) dueDateFrom.setHours(0, 0, 0, 0);
-  if (dueDateTo) dueDateTo.setHours(0, 0, 0, 0);
-
-  // 🔹 Disable quick date buttons
-  activeDateFilter = "all";
-  document
-    .querySelectorAll(".date-filter-btn")
-    .forEach(btn => btn.classList.remove("active"));
-
-  // 🔹 Re-render tasks table
-  renderTable();
-}
-
-
-
 
 
