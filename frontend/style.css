@@ -379,8 +379,8 @@ tbody tr:hover { background: #131520; }
 ===================== */
 
 .task-view-title {
-  margin-top: 16px;
-  margin-bottom: 6px;
+  margin-top: 18px;
+  margin-bottom: 4px;
   font-size: 1.4em;
   font-weight: 600;
   line-height: 1.25;
@@ -451,48 +451,6 @@ tbody tr:hover { background: #131520; }
 .task-view-completed span {
   color: #cfd8dc;
 }
-/* =====================
-   TASK VIEW MODAL – SCROLL FIX
-===================== */
-
-/* overlay stays fixed */
-#taskViewOverlay {
-  align-items: center;
-  justify-content: center;
-}
-
-/* modal box scroll handling */
-#taskViewOverlay .modal-box {
-  max-height: 90vh;              /* 👈 ΚΡΙΣΙΜΟ */
-  overflow-y: auto;              /* 👈 ΚΡΙΣΙΜΟ */
-  padding-bottom: 16px;
-}
-
-/* keep actions always visible */
-.task-view-actions {
-  position: sticky;
-  bottom: 0;
-  background: linear-gradient(
-    to top,
-    rgba(15,21,32,0.95),
-    rgba(15,21,32,0.75),
-    rgba(15,21,32,0)
-  );
-  padding-top: 12px;
-  margin-top: 20px;
-  z-index: 2;
-}
-
-/* edit area spacing */
-.task-edit-area {
-  margin-top: 24px;
-}
-
-/* grid spacing safety */
-.task-edit-grid {
-  gap: 14px 16px;
-}
-
 
 /* =====================
    TASK VIEW ACTIONS
@@ -503,7 +461,7 @@ tbody tr:hover { background: #131520; }
   align-items: center;
   justify-content: space-between;
 
-  margin-top: 28px;
+  margin-top: 26px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
@@ -565,7 +523,7 @@ tbody tr:hover { background: #131520; }
 
   color: #fff;
   font-size: 12px;
-  font-weight: 450;
+  font-weight: 500;
   cursor: pointer;
 
   box-shadow:
@@ -584,6 +542,188 @@ tbody tr:hover { background: #131520; }
   transform: translateY(0);
   opacity: 0.9;
 }
+/* =====================
+   TASK EDIT PANEL – POLISH
+===================== */
+
+.task-edit-area {
+  margin-top: 32px;
+  padding: 20px 22px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0.01)
+  );
+
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+}
+
+/* header */
+.task-edit-header {
+  margin-bottom: 18px;
+}
+
+.task-edit-header h4 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.task-edit-sub {
+  font-size: 0.8em;
+  color: #9aa4b2;
+}
+
+/* grid */
+.task-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 18px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-field.full {
+  grid-column: span 2;
+}
+
+.edit-field label {
+  font-size: 0.75em;
+  color: #9aa4b2;
+  margin-bottom: 2px;
+}
+
+/* inputs */
+.task-edit-area input,
+.task-edit-area textarea {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #fff;
+  font-size: 0.85em;
+}
+
+.task-edit-area input:focus,
+.task-edit-area textarea:focus {
+  outline: none;
+  border-color: #1f6feb;
+}
+
+/* actions */
+.task-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1px;
+}
+/* =====================
+   TASK VIEW – COMPACT TUNING
+===================== */
+
+/* γενικό spacing modal */
+#taskViewOverlay .modal-box {
+  padding: 18px 20px;   /* πριν ήταν πιο “βαρύ” */
+}
+
+/* title */
+#taskViewOverlay h3 {
+  margin-bottom: 8px;
+}
+
+/* =====================
+   VIEW CONTENT
+===================== */
+
+.task-view-grid {
+  gap: 8px;            /* λιγότερο κενό */
+}
+
+/* asset header */
+.task-view-asset {
+  margin-bottom: 10px;
+}
+
+.asset-main {
+  font-size: 1.4em;     /* λίγο μικρότερο */
+}
+
+.asset-sub {
+  font-size: 0.85em;
+}
+
+/* task title */
+.task-view-title {
+  margin-top: 8px;
+  font-size: 1.25em;
+}
+
+/* badges */
+.task-view-meta {
+  margin-top: 6px;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  font-size: 0.7em;
+}
+
+/* details grid */
+.task-view-details {
+  margin-top: 12px;
+  gap: 10px 12px;
+}
+
+/* =====================
+   EDIT PANEL – COMPACT
+===================== */
+
+.task-edit-area {
+  margin-top: 12px;
+  padding: 14px 16px;   /* πιο κοντό panel */
+}
+
+/* edit header */
+.task-edit-header {
+  margin-bottom: 12px;
+}
+
+.task-edit-header h4 {
+  font-size: 1em;
+}
+
+/* edit grid */
+.task-edit-grid {
+  gap: 10px 14px;
+}
+
+/* inputs */
+.task-edit-area input,
+.task-edit-area textarea {
+  padding: 6px 8px;
+  font-size: 0.82em;
+}
+
+/* actions */
+.task-edit-actions {
+  margin-top: 12px;
+}
+
+/* =====================
+   ACTIONS BAR
+===================== */
+
+.task-view-actions {
+  margin-top: 14px;
+  padding-top: 10px;
+}
+
 
 
 /* =========================
@@ -1134,6 +1274,7 @@ tr.history-unplanned {
   justify-content: center;
   align-items: center;
   z-index: 999;
+  max-height: 90%;
 
   /* 🔑 clicks active only when visible */
   pointer-events: auto;
