@@ -34,7 +34,7 @@
     <h3>📜 Task Execution History</h3>
     <!-- =====================
      HISTORY FILTERS
-===================== -->
+    ===================== -->
 <div class="history-filters">
 
   <!-- Date filter -->
@@ -59,7 +59,6 @@
   />
 
 </div>
-
     <div class="table-card" style="max-height:60vh; overflow:auto;">
       <table id="historyTable">
         <thead>
@@ -92,11 +91,32 @@
         </tbody>
       </table>
     </div>
+      <!-- =====================
+     HISTORY LEGEND
+      ===================== -->
+<div class="history-legend">
+  <div class="legend-item red">
+    <span class="dot"></span>
+    <span>Unplanned / Breakdown</span>
+  </div>
+
+  <div class="legend-item green">
+    <span class="dot"></span>
+    <span>Preventive Maintenance</span>
+  </div>
+
+  <div class="legend-item yellow">
+    <span class="dot"></span>
+    <span>Planned (Manual)</span>
+  </div>
+</div>
 
     <div class="modal-actions">
       <button class="btn-secondary" id="closeHistoryBtn">Close</button>
     </div>
+    
   </div>
+  
 </div>
 <!-- =====================
      ADD TASK MODAL
@@ -493,19 +513,19 @@
         </select>
       </div>
 
-      <!-- Date range -->
-      <div class="field">
-        <label for="dateFrom">From</label>
-        <input id="dateFrom" type="date" />
-      </div>
+      <!-- REPORTS: Date Range (compact like Tasks) -->
+      <div class="report-date-range-pill">
+          <span class="date-range-label">📅</span>
 
-      <div class="field">
-        <label for="dateTo">To</label>
+        <input id="dateFrom" type="date" />
+
+          <span class="date-range-sep">→</span>
+
         <input id="dateTo" type="date" />
       </div>
 
       <!-- Line -->
-      <div class="field">
+      <div class="field field-right">
         <label for="reportLine">Line</label>
         <select id="reportLine">
           <option value="all">ALL</option>
@@ -520,7 +540,7 @@
       </div>
 
       <!-- Status -->
-      <div class="field">
+      <div class="field field-right">
         <label for="reportStatus">Status</label>
         <select id="reportStatus">
           <option value="all">ALL</option>

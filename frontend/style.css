@@ -117,19 +117,55 @@ body {
   gap: 12px;
   margin-bottom: 12px;
 }
+/* =====================
+   TASK GLOBAL SEARCH
+===================== */
+
 .task-search {
-  margin-left: auto;        /* 👈 πάει δεξιά */
-  padding: 8px 10px;
+  height: 38px;
   min-width: 260px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+
+  background: linear-gradient(180deg, #121826, #0f1520);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+
+  padding: 0 14px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.08);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  transition: border 0.2s ease, box-shadow 0.2s ease;
 }
-.search-highlight {
-  background: #ffe066;
-  color: #000;
-  padding: 0 2px;
-  border-radius: 3px;
+
+/* placeholder */
+.task-search::placeholder {
+  color: #9aa4b2;
+  opacity: 0.85;
 }
+
+/* hover */
+.task-search:hover {
+  border-color: rgba(77,163,255,0.35);
+}
+
+/* focus */
+.task-search:focus {
+  outline: none;
+  border-color: rgba(77,163,255,0.6);
+  box-shadow:
+    0 0 0 2px rgba(77,163,255,0.18),
+    inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+/* optional: align nicely in control rows */
+.controls-row .task-search {
+  margin-left: auto;
+  color: #9aa4b2;
+}
+
 
 select,
 .btn-secondary {
@@ -672,7 +708,7 @@ td:last-child {
   background: #14161c;
   border-radius: 10px;
   padding: 20px;
-  max-width: 1100px;
+  max-width: 1000px;
 }
 
 /* Grid */
@@ -688,6 +724,10 @@ td:last-child {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.field-right {
+  justify-self: end;
+  max-width: 180px;
 }
 
 .reports-card label {
@@ -754,6 +794,97 @@ td:last-child {
 .unplanned-mode {
   border-left: 5px solid #ff4d4d;
 }
+/* =====================
+   REPORTS FIELD WIDTH TUNING
+===================== */
+
+/* Line & Status πιο στενά */
+.reports-grid .field:has(#reportLine),
+.reports-grid .field:has(#reportStatus) {
+  max-width: 200px;
+  justify-self: end;
+}
+
+/* κρατάμε τα selects full μέσα στο field */
+.reports-grid .field select {
+  width: 100%;
+}
+
+/* =====================
+   REPORT DATE RANGE – FINAL (CLICK SAFE)
+===================== */
+
+.report-date-range-pill {
+  position: relative;              /* 👈 για z-index context */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  min-height: 38px;
+  padding: 6px 12px;
+  margin-top: 22px;
+  align-self: end;
+
+  background: linear-gradient(180deg, #121826, #0f1520);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  overflow: hidden;                /* 👈 κρατάμε το icon μέσα */
+}
+
+/* icon & arrow */
+.report-date-range-pill .date-range-label,
+.report-date-range-pill .date-range-sep {
+  flex-shrink: 0;
+  pointer-events: none;            /* 👈 δεν κλέβουν click */
+}
+
+/* DATE INPUT */
+.report-date-range-pill input[type="date"] {
+  position: relative;
+  z-index: 2;                      /* 👈 πάνω από το pill */
+
+  background: transparent;
+  border: none;
+  color: #e6eaf0;
+  font-size: 13px;
+
+  padding: 2px 28px 2px 4px;       /* χώρος για calendar icon */
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.report-date-range-pill input[type="date"]:focus {
+  outline: none;
+}
+
+/* calendar icon – fully clickable */
+.report-date-range-pill
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: relative;
+  z-index: 3;                      /* 👈 ΠΑΝΩ απ’ όλα */
+  margin-left: auto;
+  filter: invert(1) opacity(0.6);
+  cursor: pointer;
+  pointer-events: auto;            /* 👈 ΤΟ ΚΛΕΙΔΙ */
+}
+
+
+/* =====================
+   REPORTS GRID ALIGNMENT
+===================== */
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  gap: 20px;
+  align-items: end;
+}
+
 /* =====================
   ADD TASK MODAL FORM
 ===================== */
@@ -849,7 +980,7 @@ tr.history-unplanned {
 
 .modal-box {
   background: var(--bg-card-alt);
-  padding: 20px;
+  padding: 10px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   text-align: center;
@@ -905,6 +1036,45 @@ tr.history-unplanned {
 
 .history-filters select {
   cursor: pointer;
+}
+
+/* =====================
+   HISTORY LEGEND
+===================== */
+
+.history-legend {
+  display: flex;
+  justify-content: flex-end;   /* 👈 δεξιά στοίχιση */
+  gap: 18px;
+  margin: 6px 6px 12px auto;   /* δεξιά ανάσα */
+  font-size: 12px;
+  color: #9aa4b2;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* colored dots */
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* colors */
+.legend-item.red .dot {
+  background: #f87171;
+}
+
+.legend-item.green .dot {
+  background: #4ade80;
+}
+
+.legend-item.yellow .dot {
+  background: #facc15;
 }
 
 
@@ -973,11 +1143,9 @@ tr.history-unplanned {
   gap: 6px;
   padding: 6px 10px;
   height: 38px;
-
   background: linear-gradient(180deg, #121826, #0f1520);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px;
-
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
