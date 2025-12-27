@@ -17,9 +17,22 @@
     <h3>Task Details</h3>
 
     <!-- Dynamic content injected by JS -->
-    <div id="taskViewContent"></div>
+    <div id="taskViewContent" class="task-view-grid"></div>
 
-    <div class="modal-actions">
+    <!-- ACTIONS -->
+    <div class="modal-actions task-view-actions">
+
+      <!-- LEFT: EDIT / DELETE (shown ONLY for Planned Manual via JS) -->
+      <div
+        class="task-manage-actions"
+        id="taskManageActions"
+        style="display:none;"
+      >
+        <button class="btn-edit" id="editTaskBtn">✏️ Edit</button>
+        <button class="btn-delete" id="deleteTaskBtn">🗑 Delete</button>
+      </div>
+
+      <!-- RIGHT: ALWAYS -->
       <button class="btn-secondary" onclick="closeTaskView()">Close</button>
     </div>
 
@@ -617,9 +630,19 @@
 
     <h3>Task Details</h3>
 
+    <!-- CONTENT -->
     <div id="taskViewContent" class="task-view-grid"></div>
 
-    <div class="modal-actions">
+    <!-- ACTIONS -->
+    <div class="modal-actions task-view-actions">
+      
+      <!-- LEFT: MANAGEMENT ACTIONS (conditional via JS) -->
+      <div class="task-manage-actions" id="taskManageActions" style="display:none;">
+        <button class="btn-edit" id="editTaskBtn">✏️ Edit</button>
+        <button class="btn-delete" id="deleteTaskBtn">🗑 Delete</button>
+      </div>
+
+      <!-- RIGHT: ALWAYS AVAILABLE -->
       <button class="btn-cancel" onclick="closeTaskView()">Close</button>
     </div>
 

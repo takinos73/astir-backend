@@ -48,6 +48,23 @@ function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
+function isPreventive(task) {
+  return task.frequency_hours && Number(task.frequency_hours) > 0;
+}
+
+function isUnplanned(task) {
+  return task.is_planned === false;
+}
+
+function isPlannedManual(task) {
+  return (
+    !isPreventive(task) &&
+    !isUnplanned(task) &&
+    !!task.due_date &&
+    task.status !== "Done"
+  );
+}
+
 /* =====================
    DATE TIME FORMATTER
 ===================== */
@@ -2327,6 +2344,4 @@ function onTaskDateRangeChange() {
 
   renderTable();
 }
-
-
 

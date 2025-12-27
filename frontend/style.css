@@ -344,23 +344,29 @@ tbody tr:hover { background: #131520; }
 /* =====================
    TASK VIEW MODAL
 ===================== */
+
 .tech-meta {
   font-size: 11px;
   color: #9ca3af;
 }
 
+/* main container (document flow, not grid) */
 .task-view-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  display: block;
 }
 
-.task-view-asset { margin-bottom: 14px;}
+/* =====================
+   ASSET HEADER
+===================== */
+
+.task-view-asset {
+  margin-bottom: 18px;
+}
 
 .asset-main {
   font-size: 1.6em;
   font-weight: 600;
-  
+  line-height: 1.2;
 }
 
 .asset-sub {
@@ -368,18 +374,29 @@ tbody tr:hover { background: #131520; }
   font-size: 0.9em;
 }
 
+/* =====================
+   TITLE & META
+===================== */
+
 .task-view-title {
-  margin-top: 12px;
+  margin-top: 16px;
+  margin-bottom: 6px;
   font-size: 1.4em;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .task-view-meta {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 4px;
+  margin-bottom: 18px;
 }
+
+/* =====================
+   BADGES
+===================== */
 
 .badge {
   padding: 6px 12px;
@@ -387,31 +404,43 @@ tbody tr:hover { background: #131520; }
   opacity: 0.9;
   display: inline-flex;
   align-items: center;
+  border-radius: 6px;
 }
 
 .badge-type { background: #2b3a55; }
 .badge-status { background: #1f6f5c; }
 .badge-date { background: #3a3a3a; }
 
+/* =====================
+   DETAILS GRID
+===================== */
+
 .task-view-details {
   display: grid;
-  grid-template-columns: repeat(2,1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px 14px;
   max-width: 480px;
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .task-view-details > div {
   background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  border-radius: 6px;
 }
 
 .task-view-details label {
   font-size: 0.7em;
   letter-spacing: 0.5px;
+  color: #9aa4b2;
 }
 
+/* =====================
+   COMPLETED BLOCK
+===================== */
+
 .task-view-completed {
-  margin-top: 12px;
+  margin-top: 18px;
   padding: 10px 12px;
   border-left: 4px solid #1f6f5c;
   background: rgba(31,111,92,0.12);
@@ -419,7 +448,101 @@ tbody tr:hover { background: #131520; }
   border-radius: 6px;
 }
 
-.task-view-completed span { color: #cfd8dc; }
+.task-view-completed span {
+  color: #cfd8dc;
+}
+
+/* =====================
+   TASK VIEW ACTIONS
+===================== */
+
+.task-view-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* container for edit/delete */
+.task-manage-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* unify button height */
+.task-view-actions button {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* =====================
+   EDIT BUTTON
+===================== */
+
+.btn-edit {
+  padding: 0 12px;
+  background: linear-gradient(180deg, #1f6feb, #1a5fd0);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+
+  color: #fff;
+  font-size: 12px;
+  font-weight: 450;
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 4px 12px rgba(0,0,0,0.35);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+}
+
+.btn-edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.btn-edit:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+/* =====================
+   DELETE BUTTON
+===================== */
+
+.btn-delete {
+  padding: 0 12px;
+  background: linear-gradient(180deg, #b42318, #8f1d16);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+
+  color: #fff;
+  font-size: 12px;
+  font-weight: 450;
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 4px 12px rgba(0,0,0,0.35);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+}
+
+.btn-delete:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.btn-delete:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
 
 /* =========================
    HISTORY TABLE (FINAL)
