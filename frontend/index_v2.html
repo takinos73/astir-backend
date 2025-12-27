@@ -32,6 +32,33 @@
 <div id="historyOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-history">
     <h3>📜 Task Execution History</h3>
+    <!-- =====================
+     HISTORY FILTERS
+===================== -->
+<div class="history-filters">
+
+  <!-- Date filter -->
+  <select id="historyDateFilter">
+    <option value="7">📅 Last 7 days</option>
+    <option value="30">📅 Last 30 days</option>
+    <option value="all">📅 All</option>
+  </select>
+
+  <!-- Machine / SN search -->
+  <input
+    type="text"
+    id="historyMachineSearch"
+    placeholder="🔍 Machine / SN"
+  />
+
+  <!-- Technician -->
+  <input
+    type="text"
+    id="historyTechnicianSearch"
+    placeholder="👤 Technician"
+  />
+
+</div>
 
     <div class="table-card" style="max-height:60vh; overflow:auto;">
       <table id="historyTable">
@@ -365,11 +392,11 @@
               <th>Machine</th>
               <th>Section</th>
               <th>Unit</th>
-              <th>Task</th>
+              <th style="width: 25%;">Task</th>
               <th>Type</th>
               <th>Due Date</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th style="width: 7%;">Status</th>
+              <th style="width: 7%;">Action</th>
             </tr>
           </thead>
           <tbody></tbody>

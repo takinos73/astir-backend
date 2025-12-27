@@ -21,6 +21,13 @@ let activeAssetFilter = "all";
 let executionsData = [];
 let dueDateFrom = null; // Date | null
 let dueDateTo = null;   // Date | null
+// =====================
+// HISTORY FILTER STATE
+// =====================
+let historyDateRange = 7;
+let historyMachineQuery = "";
+let historyTechnicianQuery = "";
+
 
 
 /* =====================
@@ -304,45 +311,96 @@ function renderHistoryTable(data) {
 
   tbody.innerHTML = "";
 
-  data.forEach(h => {
-    const tr = document.createElement("tr");
+  const now = new Date();
+  now.setHours(23, 59, 59, 999);
 
-    // 🎨 classify execution
-    const execType = getExecutionType(h);
-    tr.classList.add(`history-${execType}`);
+  const fromDate =
+    historyDateRange === "all"
+      ? null
+      : new Date(
+          now.getTime() -
+            Number(historyDateRange) * 24 * 60 * 60 * 1000
+        );
 
-    tr.innerHTML = `
-      <td title="${formatDateTime(h.executed_at)}">
-        ${formatDateOnly(h.executed_at)}
-      </td>
+  data
+    // 📅 DATE FILTER (Last 7 / 30 / All)
+    .filter(h => {
+      if (!fromDate) return true;
+      const exec = new Date(h.executed_at);
+      return exec >= fromDate;
+    })
 
-      <td>
-        <strong>${h.machine}</strong><br>
-        <small>SN: ${h.serial_number} | ${h.line}</small>
-      </td>
+    // 🔍 MACHINE / SERIAL FILTER
+    .filter(h => {
+      if (!historyMachineQuery) return true;
+      const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
+      return txt.includes(historyMachineQuery);
+    })
 
-      <td>
-        <div><strong>${h.task}</strong></div>
-        <small>
-          ${h.section || ""}
-          ${h.section && h.unit ? " / " : ""}
-          ${h.unit || ""}
-        </small>
-      </td>
+    // 👤 TECHNICIAN FILTER
+    .filter(h => {
+      if (!historyTechnicianQuery) return true;
+      return (h.executed_by || "")
+        .toLowerCase()
+        .includes(historyTechnicianQuery);
+    })
 
-      <td>${h.executed_by || "-"}</td>
+    // ⬇️ RENDER ROWS
+    .forEach(h => {
+      const tr = document.createElement("tr");
 
-      <td>
-        <button class="btn-undo"
-          onclick="undoExecution(${h.id})">
-          ↩ Undo
-        </button>
-      </td>
-    `;
+      // 🎨 classify execution
+      const execType = getExecutionType(h);
+      tr.classList.add(`history-${execType}`);
 
-    tbody.appendChild(tr);
-  });
+      tr.innerHTML = `
+        <td title="${formatDateTime(h.executed_at)}">
+          ${formatDateOnly(h.executed_at)}
+        </td>
+
+        <td>
+          <strong>${h.machine}</strong><br>
+          <small>SN: ${h.serial_number} | ${h.line}</small>
+        </td>
+
+        <td>
+          <div><strong>${h.task}</strong></div>
+          <small>
+            ${h.section || ""}
+            ${h.section && h.unit ? " / " : ""}
+            ${h.unit || ""}
+          </small>
+        </td>
+
+        <td>${h.executed_by || "-"}</td>
+
+        <td>
+          <button class="btn-undo"
+            onclick="undoExecution(${h.id})">
+            ↩ Undo
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
 }
+
+document.getElementById("historyDateFilter")?.addEventListener("change", e => {
+  historyDateRange = e.target.value;
+  renderHistoryTable(executionsData);
+});
+
+document.getElementById("historyMachineSearch")?.addEventListener("input", e => {
+  historyMachineQuery = e.target.value.toLowerCase();
+  renderHistoryTable(executionsData);
+});
+
+document.getElementById("historyTechnicianSearch")?.addEventListener("input", e => {
+  historyTechnicianQuery = e.target.value.toLowerCase();
+  renderHistoryTable(executionsData);
+});
+
 
 /* =====================
    KPIs
