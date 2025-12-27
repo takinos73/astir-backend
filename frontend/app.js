@@ -2191,8 +2191,7 @@ applyRoleVisibility();
 getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
 // =====================
-// DATE FILTER BUTTONS
-// (Today / Week / Overdue / All)
+// TASKS – DATE FILTER BUTTONS
 // =====================
 
 (function initDateFilters() {
@@ -2205,54 +2204,52 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
       // 🔹 Set active quick date filter
       activeDateFilter = btn.dataset.filter;
 
-      // 🔹 Clear manual date range (From–To)
+      // 🔹 Clear TASK date range
       dueDateFrom = null;
       dueDateTo = null;
 
-      const fromInput = document.getElementById("dateFrom");
-      const toInput = document.getElementById("dateTo");
+      const fromInput = document.getElementById("taskDateFrom");
+      const toInput = document.getElementById("taskDateTo");
 
       if (fromInput) fromInput.value = "";
       if (toInput) toInput.value = "";
 
-      // 🔹 Update UI state (active button)
+      // 🔹 Update UI
       btns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
-      // 🔹 Re-render table with new filters
       renderTable();
     });
   });
 })();
+
 // =====================
-// DUE DATE RANGE HANDLER
-// (From – To inputs)
+// TASKS – DUE DATE RANGE HANDLER
 // =====================
 
-function onDueDateChange() {
-  // 🔹 Read values from date inputs
-  const fromVal = document.getElementById("dateFrom")?.value;
-  const toVal = document.getElementById("dateTo")?.value;
+function onTaskDueDateChange() {
+  // 🔹 Read task date inputs
+  const fromVal = document.getElementById("taskDateFrom")?.value;
+  const toVal = document.getElementById("taskDateTo")?.value;
 
   // 🔹 Convert to Date or null
   dueDateFrom = fromVal ? new Date(fromVal) : null;
   dueDateTo = toVal ? new Date(toVal) : null;
 
-  // 🔹 Normalize time (important for correct comparisons)
+  // 🔹 Normalize time
   if (dueDateFrom) dueDateFrom.setHours(0, 0, 0, 0);
   if (dueDateTo) dueDateTo.setHours(0, 0, 0, 0);
 
-  // 🔹 Disable quick date filters when manual range is used
+  // 🔹 Disable quick date buttons
   activeDateFilter = "all";
-
-  // 🔹 Remove active state from quick filter buttons (UI sync)
   document
     .querySelectorAll(".date-filter-btn")
     .forEach(btn => btn.classList.remove("active"));
 
-  // 🔹 Re-render table with updated filters
+  // 🔹 Re-render tasks table
   renderTable();
 }
+
 
 
 

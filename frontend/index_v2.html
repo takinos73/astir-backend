@@ -449,16 +449,25 @@
         </select>
       </div>
 
-      <!-- Date range -->
-      <div class="field">
-        <label for="dateFrom">From</label>
-        <input id="dateFrom" type="date" />
-      </div>
+      <!-- TASKS: Date range -->
+<div class="field">
+  <label for="taskDateFrom">From</label>
+  <input
+    id="taskDateFrom"
+    type="date"
+    onchange="onTaskDueDateChange()"
+  />
+</div>
 
-      <div class="field">
-        <label for="dateTo">To</label>
-        <input id="dateTo" type="date" />
-      </div>
+<div class="field">
+  <label for="taskDateTo">To</label>
+  <input
+    id="taskDateTo"
+    type="date"
+    onchange="onTaskDueDateChange()"
+  />
+</div>
+
 
       <!-- Line -->
       <div class="field">
