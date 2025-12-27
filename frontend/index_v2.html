@@ -297,7 +297,7 @@
     <button class="btn-secondary date-filter-btn" data-filter="today">Today</button>
     <button class="btn-secondary date-filter-btn" data-filter="week">This Week</button>
     <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>
-    
+    <button class="btn-secondary" id="openHistoryBtn">📜 View History</button>    
   </div>    
 
 <section class="controls-row">
@@ -308,21 +308,19 @@
     <div class="asset-dropdown-menu" id="assetDropdownMenu"></div>
   </div>
 
-  <button class="btn-secondary admin-only" id="addTaskBtn">➕ New Task</button>
-  <button class="btn-secondary" id="openHistoryBtn">📜 View History</button>
-  <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
-  <!-- TASKS: Due Date Range Filter -->
-<div class="field">
-  <label for="taskDateFrom">From</label>
+  <button class="btn-secondary admin-only" id="addTaskBtn">➕ New Task</button>  
+  
+<div class="date-range-pill">
+  <span class="date-range-label">📅</span>
+
   <input
     id="taskDateFrom"
     type="date"
     onchange="onTaskDateRangeChange()"
   />
-</div>
 
-<div class="field">
-  <label for="taskDateTo">To</label>
+  <span class="date-range-sep">→</span>
+
   <input
     id="taskDateTo"
     type="date"
@@ -337,7 +335,9 @@
     placeholder="🔍 Search task / machine / serial"
     class="task-search"
   />
+  <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
 </section>
+
   <!-- =====================
      GROUP DONE ACTION BAR (MOCK)
      εμφανίζεται όταν υπάρχουν selected tasks (στο JS)

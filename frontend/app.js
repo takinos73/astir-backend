@@ -49,7 +49,15 @@ function formatDateTime(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleString("el-GR");
 }
-
+/* =====================
+   DATE ONLY FORMATTER
+===================== */
+function formatDateOnly(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "-";
+  return d.toLocaleDateString("el-GR");
+}
 
 function diffDays(a, b) {
   return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
@@ -304,7 +312,9 @@ function renderHistoryTable(data) {
     tr.classList.add(`history-${execType}`);
 
     tr.innerHTML = `
-      <td>${formatDateTime(h.executed_at)}</td>
+      <td title="${formatDateTime(h.executed_at)}">
+        ${formatDateOnly(h.executed_at)}
+      </td>
 
       <td>
         <strong>${h.machine}</strong><br>
