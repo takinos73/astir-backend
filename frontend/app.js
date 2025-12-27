@@ -13,6 +13,9 @@ let importExcelFile = null;
 let activeDateFilter = "all";
 let activeAssetFilter = "all";
 let executionsData = [];
+let dueDateFrom = null; // Date | null
+let dueDateTo = null;   // Date | null
+
 
 /* =====================
    Helpers
@@ -2189,6 +2192,7 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
 // =====================
 // DATE FILTER BUTTONS
+// (Today / Week / Overdue / All)
 // =====================
 
 (function initDateFilters() {
@@ -2197,14 +2201,59 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
   btns.forEach(btn => {
     btn.addEventListener("click", () => {
+
+      // 🔹 Set active quick date filter
       activeDateFilter = btn.dataset.filter;
 
+      // 🔹 Clear manual date range (From–To)
+      dueDateFrom = null;
+      dueDateTo = null;
+
+      const fromInput = document.getElementById("dateFrom");
+      const toInput = document.getElementById("dateTo");
+
+      if (fromInput) fromInput.value = "";
+      if (toInput) toInput.value = "";
+
+      // 🔹 Update UI state (active button)
       btns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
+      // 🔹 Re-render table with new filters
       renderTable();
     });
   });
 })();
+// =====================
+// DUE DATE RANGE HANDLER
+// (From – To inputs)
+// =====================
+
+function onDueDateChange() {
+  // 🔹 Read values from date inputs
+  const fromVal = document.getElementById("dateFrom")?.value;
+  const toVal = document.getElementById("dateTo")?.value;
+
+  // 🔹 Convert to Date or null
+  dueDateFrom = fromVal ? new Date(fromVal) : null;
+  dueDateTo = toVal ? new Date(toVal) : null;
+
+  // 🔹 Normalize time (important for correct comparisons)
+  if (dueDateFrom) dueDateFrom.setHours(0, 0, 0, 0);
+  if (dueDateTo) dueDateTo.setHours(0, 0, 0, 0);
+
+  // 🔹 Disable quick date filters when manual range is used
+  activeDateFilter = "all";
+
+  // 🔹 Remove active state from quick filter buttons (UI sync)
+  document
+    .querySelectorAll(".date-filter-btn")
+    .forEach(btn => btn.classList.remove("active"));
+
+  // 🔹 Re-render table with updated filters
+  renderTable();
+}
+
+
 
 

@@ -311,6 +311,9 @@
   <button class="btn-secondary admin-only" id="addTaskBtn">➕ New Task</button>
   <button class="btn-secondary" id="openHistoryBtn">📜 View History</button>
   <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
+  <input id="dateFrom" type="date" onchange="onDueDateChange()" />
+  <input id="dateTo" type="date" onchange="onDueDateChange()" />
+
 
   <!-- 🔍 GLOBAL SEARCH -->
   <input
@@ -320,7 +323,23 @@
     class="task-search"
   />
 </section>
+  <!-- =====================
+     GROUP DONE ACTION BAR (MOCK)
+     εμφανίζεται όταν υπάρχουν selected tasks (στο JS)
+===================== -->
+<section id="bulkActionsBar" class="bulk-actions" style="display:none;">
+  <div class="bulk-actions-left">
+    <strong id="bulkSelectedCount">0</strong>
+    <span>selected</span>
+    <button class="btn-secondary" id="bulkClearBtn" type="button">Clear</button>
+  </div>
 
+  <div class="bulk-actions-right">
+    <button class="btn-table" id="bulkDoneBtn" type="button">
+      ✔ Mark Selected as Done
+    </button>
+  </div>
+</section>
       <!-- TASK TABLE -->
       <div class="table-card">
         <table id="tasksTable">
