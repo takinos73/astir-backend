@@ -394,17 +394,17 @@ function renderHistoryTable(data) {
       // =====================
       let actionHtml = `<span class="muted">—</span>`;
 
-      // 🟨 Planned (Manual) → Restore
-      if (execType === "planned") {
-        actionHtml = `
-          <button
-            class="btn-undo"
-            title="Restore planned task back to active list"
-            onclick="undoExecution(${h.id})">
-            ↩ Restore
-          </button>
-        `;
-      }
+      // 🟨 Preventive & Planned (Manual) → Restore
+      if (execType === "planned" || execType === "preventive") {
+       actionHtml = `
+       <button class="btn-undo"
+       title="Restore task back to active list"
+       onclick="undoExecution(${h.id})">
+       ↩ Restore
+       </button>
+    `;
+  }
+
       // 🟥 Unplanned / Breakdown → Edit
       else if (execType === "unplanned") {
         actionHtml = `
