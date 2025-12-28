@@ -27,7 +27,10 @@ let dueDateTo = null;   // Date | null
 let historyDateRange = 7;
 let historyMachineQuery = "";
 let historyTechnicianQuery = "";
-
+// =====================
+// EDIT BREAKDOWN STATE
+// =====================
+let editingBreakdownId = null;
 
 
 /* =====================
@@ -726,6 +729,67 @@ getEl("closeHistoryBtn")
     overlay.style.display = "none";
     overlay.style.pointerEvents = "none"; // 👈 ΚΡΙΣΙΜΟ
   });
+  // =====================
+// OPEN EDIT BREAKDOWN
+// =====================
+function editBreakdown(executionId) {
+  const h = executionsData.find(e => e.id === executionId);
+  if (!h) return;
+
+  editingBreakdownId = h.id;
+
+  document.getElementById("eb-task").value = h.task || "";
+  document.getElementById("eb-executed-by").value = h.executed_by || "";
+
+  document.getElementById("editBreakdownOverlay").style.display = "flex";
+}
+// =====================
+// SAVE BREAKDOWN EDIT
+// =====================
+async function saveBreakdownEdit() {
+  if (!editingBreakdownId) return;
+
+  const executedBy = document.getElementById("eb-executed-by").value.trim();
+  const notesEl = document.getElementById("eb-notes");
+  const notes = notesEl ? notesEl.value.trim() : null;
+
+  if (!executedBy) {
+    alert("Executed by is required");
+    return;
+  }
+
+  const payload = {
+    executed_by: executedBy,
+    notes
+  };
+
+  try {
+    const res = await fetch(`${API}/executions/${editingBreakdownId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Update failed");
+    }
+
+    closeEditBreakdown();
+
+    // refresh history
+    loadHistory();
+
+  } catch (err) {
+    console.error("EDIT BREAKDOWN ERROR:", err);
+    alert(err.message);
+  }
+}
+
+function closeEditBreakdown() {
+  editingBreakdownId = null;
+  document.getElementById("editBreakdownOverlay").style.display = "none";
+}
 
 
 /* =====================
