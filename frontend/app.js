@@ -331,6 +331,10 @@ function getExecutionType(h) {
   return "planned";
 }
 
+/* =====================
+   Render HISTORY table
+===================== */
+
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
   if (!tbody) return;
@@ -379,6 +383,37 @@ function renderHistoryTable(data) {
       const execType = getExecutionType(h);
       tr.classList.add(`history-${execType}`);
 
+      // =====================
+      // ACTIONS (SAFE UX)
+      // - Planned (manual) => Restore
+      // - Breakdown (unplanned) => Edit
+      // - Preventive => no action
+      // =====================
+      let actionHtml = `<span class="muted">—</span>`;
+
+      // 🟨 Planned (Manual) → Restore
+      if (execType === "planned") {
+        actionHtml = `
+          <button
+            class="btn-undo"
+            title="Restore planned task back to active list"
+            onclick="undoExecution(${h.id})">
+            ↩ Restore
+          </button>
+        `;
+      }
+      // 🟥 Unplanned / Breakdown → Edit
+      else if (execType === "unplanned") {
+        actionHtml = `
+          <button
+            class="btn-history-edit"
+            title="Edit breakdown details"
+            onclick="editBreakdown(${h.id})">
+            ✏️ Edit
+          </button>
+        `;
+      }
+
       tr.innerHTML = `
         <td title="${formatDateTime(h.executed_at)}">
           ${formatDateOnly(h.executed_at)}
@@ -400,17 +435,18 @@ function renderHistoryTable(data) {
 
         <td>${h.executed_by || "-"}</td>
 
-        <td>
-          <button class="btn-undo"
-            onclick="undoExecution(${h.id})">
-            ↩ Undo
-          </button>
-        </td>
+        <td>${actionHtml}</td>
       `;
 
       tbody.appendChild(tr);
     });
 }
+
+
+function editBreakdown(id) {
+  alert("Breakdown edit coming next (id: " + id + ")");
+}
+
 
 document.getElementById("historyDateFilter")?.addEventListener("change", e => {
   historyDateRange = e.target.value;
