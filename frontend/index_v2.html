@@ -36,12 +36,12 @@
       <div class="task-edit-grid">
 
         <div class="edit-field full">
-          <label>Task</label>
+          <label style="justify-self: start;">Task</label>
           <input id="edit-task-desc" />
         </div>
 
         <div class="edit-field">
-          <label>Type</label>
+          <label style="justify-self: start;">Type</label>
           <input id="edit-task-type" />
         </div>
 
@@ -85,11 +85,16 @@
         onclick="enableTaskEdit()">
         ✏️ Edit
       </button>
+      <button
+        id="deleteTaskBtn"
+        class="btn-delete"
+        style="display:none;"
+        onclick="confirmDeleteTask()">
+        🗑 Cancel Task
+      </button>
     </div>
-
   </div>
 </div>
-
 
 <!-- =====================
      HISTORY MODAL

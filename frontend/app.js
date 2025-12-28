@@ -588,6 +588,15 @@ if (canEditTask(task)) {
   editBtn.style.display = "none";
   editArea.style.display = "none";
 }
+const deleteBtn = document.getElementById("deleteTaskBtn");
+
+if (canEditTask(task)) {
+  editBtn.style.display = "inline-flex";
+  deleteBtn.style.display = "inline-flex";
+} else {
+  editBtn.style.display = "none";
+  deleteBtn.style.display = "none";
+}
 
 }
 function enableTaskEdit() {
@@ -618,6 +627,40 @@ function cancelTaskEdit() {
     document.getElementById("editTaskBtn").style.display = "inline-flex";
   }
 }
+// =====================
+// CONFIRM + SOFT DELETE TASK
+// =====================
+async function confirmDeleteTask() {
+  if (!currentViewedTask) return;
+
+  const ok = confirm(
+    "Are you sure you want to cancel this planned task?\nThis action cannot be undone."
+  );
+
+  if (!ok) return;
+
+  try {
+    const res = await fetch(
+      `${API}/tasks/${currentViewedTask.id}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Delete failed");
+    }
+
+    currentViewedTask = null;
+
+    closeTaskView();
+    loadTasks();
+
+  } catch (err) {
+    console.error("DELETE TASK ERROR:", err);
+    alert(err.message);
+  }
+}
+
 
 
 // Close modal

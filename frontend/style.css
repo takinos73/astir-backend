@@ -360,7 +360,7 @@ tbody tr:hover { background: #131520; }
 ===================== */
 
 .task-view-asset {
-  margin-bottom: 18px;
+  margin-bottom: 2px;
 }
 
 .asset-main {
@@ -659,7 +659,7 @@ tbody tr:hover { background: #131520; }
 
 /* task title */
 .task-view-title {
-  margin-top: 8px;
+  margin-top: 2px;
   font-size: 1.25em;
 }
 
@@ -1274,7 +1274,8 @@ tr.history-unplanned {
   justify-content: center;
   align-items: center;
   z-index: 999;
-  max-height: 90%;
+  max-height: 100%;
+  margin-top: 1%;
 
   /* 🔑 clicks active only when visible */
   pointer-events: auto;

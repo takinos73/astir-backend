@@ -55,6 +55,7 @@ app.get("/api", (req, res) => {
 ===================================================== */
 
 // GET active tasks (Planned + Overdue), sorted by due date
+
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -69,7 +70,6 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
-
         a.model AS machine_name,
         a.serial_number,
         l.code AS line_code
@@ -79,6 +79,8 @@ app.get("/tasks", async (req, res) => {
       JOIN lines l ON l.id = a.line_id
 
       WHERE mt.status IN ('Planned', 'Overdue')
+        AND mt.deleted_at IS NULL   -- 👈 ΤΟ ΒΗΜΑ 3
+
       ORDER BY mt.due_date ASC
     `);
 
@@ -88,6 +90,7 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
   /*================================
    Create task (Planned or Unplanned)
@@ -283,6 +286,40 @@ app.patch("/tasks/:id", async (req, res) => {
     client.release();
   }
 });
+
+/* =====================
+   SOFT DELETE PLANNED MANUAL TASK
+===================== */
+app.delete("/tasks/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE maintenance_tasks
+      SET deleted_at = NOW()
+      WHERE id = $1
+        AND status = 'Planned'
+        AND frequency_hours IS NULL
+      RETURNING id
+      `,
+      [id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({
+        error: "Task cannot be deleted"
+      });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("DELETE TASK ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 /* =====================
    UNDO TASK EXECUTION
