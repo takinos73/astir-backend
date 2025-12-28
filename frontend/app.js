@@ -729,7 +729,7 @@ getEl("closeHistoryBtn")
     overlay.style.display = "none";
     overlay.style.pointerEvents = "none"; // 👈 ΚΡΙΣΙΜΟ
   });
-  // =====================
+// =====================
 // OPEN EDIT BREAKDOWN
 // =====================
 function editBreakdown(executionId) {
@@ -741,17 +741,27 @@ function editBreakdown(executionId) {
   document.getElementById("eb-task").value = h.task || "";
   document.getElementById("eb-executed-by").value = h.executed_by || "";
 
+  const notesEl = document.getElementById("eb-notes");
+  if (notesEl) notesEl.value = h.notes || "";
+
   document.getElementById("editBreakdownOverlay").style.display = "flex";
 }
+
 // =====================
-// SAVE BREAKDOWN EDIT
+// SAVE BREAKDOWN EDIT (FINAL)
 // =====================
 async function saveBreakdownEdit() {
   if (!editingBreakdownId) return;
 
+  const taskDesc = document.getElementById("eb-task").value.trim();
   const executedBy = document.getElementById("eb-executed-by").value.trim();
   const notesEl = document.getElementById("eb-notes");
   const notes = notesEl ? notesEl.value.trim() : null;
+
+  if (!taskDesc) {
+    alert("Task description is required");
+    return;
+  }
 
   if (!executedBy) {
     alert("Executed by is required");
@@ -759,6 +769,7 @@ async function saveBreakdownEdit() {
   }
 
   const payload = {
+    task: taskDesc,
     executed_by: executedBy,
     notes
   };
@@ -776,15 +787,14 @@ async function saveBreakdownEdit() {
     }
 
     closeEditBreakdown();
-
-    // refresh history
-    loadHistory();
+    loadHistory(); // refresh history
 
   } catch (err) {
     console.error("EDIT BREAKDOWN ERROR:", err);
     alert(err.message);
   }
 }
+
 
 function closeEditBreakdown() {
   editingBreakdownId = null;

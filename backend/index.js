@@ -477,37 +477,57 @@ app.get("/executions", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 /* =====================
-   UPDATE EXECUTION (BREAKDOWN EDIT)
+   UPDATE BREAKDOWN (DESCRIPTION + METADATA)
 ===================== */
 app.patch("/executions/:id", async (req, res) => {
   const { id } = req.params;
-  const { executed_by, notes } = req.body;
+  const { task, executed_by, notes } = req.body;
 
-  if (!executed_by) {
+  if (!task || !executed_by) {
     return res.status(400).json({
-      error: "executed_by is required"
+      error: "task and executed_by are required"
     });
   }
 
   try {
-    const result = await pool.query(
+    // 1️⃣ Find related task_id
+    const execRes = await pool.query(
+      `SELECT task_id FROM task_executions WHERE id = $1`,
+      [id]
+    );
+
+    if (execRes.rowCount === 0) {
+      return res.status(404).json({ error: "Execution not found" });
+    }
+
+    const taskId = execRes.rows[0].task_id;
+
+    // 2️⃣ Update task description (maintenance_tasks)
+    await pool.query(
+      `
+      UPDATE maintenance_tasks
+      SET task = $1
+      WHERE id = $2
+      `,
+      [task, taskId]
+    );
+
+    // 3️⃣ Update execution metadata
+    await pool.query(
       `
       UPDATE task_executions
       SET
         executed_by = $1,
         notes = $2
       WHERE id = $3
-      RETURNING id
       `,
       [executed_by, notes || null, id]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Execution not found" });
-    }
-
     res.json({ success: true });
+
   } catch (err) {
     console.error("PATCH /executions/:id ERROR:", err.message);
     res.status(500).json({ error: err.message });
