@@ -1416,6 +1416,30 @@ tr.history-unplanned {
 .legend-item.yellow .dot {
   background: #facc15;
 }
+/* =====================
+   HISTORY VIEW – BREAKDOWN SECTIONS
+===================== */
+
+.history-view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.history-view-section {
+  background: rgba(255,255,255,0.03);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+
+.history-view-section strong {
+  display: block;
+  font-size: 0.75em;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
 
 
 /* =====================

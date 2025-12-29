@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASTIR CMMS – Supervisor Dashboard</title>
-
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -135,9 +134,9 @@
           <tr>
             <th>Date</th>
             <th>Asset</th>
-            <th style="width:44%">Task</th>
+            <th style="width:35%">Task</th>
             <th>Executed By</th>
-            <th style="width:12%">Actions</th> <!-- 👈 UNDO -->
+            <th style="width:14%">Actions</th> <!-- 👈 UNDO -->
           </tr>
         </thead>
         <tbody>
@@ -220,7 +219,22 @@
 
   </div>
 </div>
+<!-- =====================
+     HISTORY VIEW MODAL
+===================== -->
+<div id="historyViewOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide">
 
+    <h3>📜 Execution Details</h3>
+
+    <div id="historyViewContent" class="history-view-grid"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeHistoryView()">Close</button>
+    </div>
+
+  </div>
+</div>
 
 <!-- =====================
      ADD TASK MODAL

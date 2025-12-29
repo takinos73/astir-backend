@@ -457,6 +457,7 @@ app.get("/executions", async (req, res) => {
         t.section,
         t.unit,
         t.type,
+        t.notes, 
         t.is_planned,
         t.frequency_hours,   
         

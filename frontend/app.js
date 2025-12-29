@@ -387,36 +387,58 @@ function renderHistoryTable(data) {
       tr.classList.add(`history-${execType}`);
 
       // =====================
-      // ACTIONS (SAFE UX)
-      // - Planned (manual) => Restore
-      // - Breakdown (unplanned) => Edit
-      // - Preventive => no action
-      // =====================
-      let actionHtml = `<span class="muted">—</span>`;
+// HISTORY ACTIONS (SAFE UX)
+// =====================
+// Rules:
+// 🟩 Preventive        → Restore
+// 🟨 Planned (manual)  → Restore
+// 🟥 Unplanned / Breakdown → View + Edit
+// — Default            → No action
+// =====================
 
-      // 🟨 Preventive & Planned (Manual) → Restore
-      if (execType === "planned" || execType === "preventive") {
-       actionHtml = `
-       <button class="btn-undo"
-       title="Restore task back to active list"
-       onclick="undoExecution(${h.id})">
-       ↩ Restore
-       </button>
-    `;
-  }
+// default (no available action)
+let actionHtml = `<span class="muted">—</span>`;
 
-      // 🟥 Unplanned / Breakdown → Edit
-      else if (execType === "unplanned") {
-        actionHtml = `
-          <button
-            class="btn-history-edit"
-            title="Edit breakdown details"
-            onclick="editBreakdown(${h.id})">
-            ✏️ Edit
-          </button>
-        `;
-      }
+// 🟩 Preventive & 🟨 Planned (Manual)
+// Restore execution back to active tasks list
+if (execType === "planned" || execType === "preventive") {
+  actionHtml = `
+  <button
+        class="btn-secondary"
+        title="View breakdown details"
+        onclick="viewHistoryEntry(${h.id})">
+        👁 View
+      </button>
+    <button
+      class="btn-undo"
+      title="Restore task back to active list"
+      onclick="undoExecution(${h.id})">
+      ↩ Restore
+    </button>
+  `;
+}
 
+// 🟥 Unplanned / Breakdown
+// View execution details + Edit breakdown metadata
+else if (execType === "unplanned") {
+  actionHtml = `
+    <div class="history-action-group">
+      <button
+        class="btn-secondary"
+        title="View breakdown details"
+        onclick="viewHistoryEntry(${h.id})">
+        👁 View
+      </button>
+
+      <button
+        class="btn-history-edit"
+        title="Edit breakdown details"
+        onclick="editBreakdown(${h.id})">
+        ✏️ Edit
+      </button>
+    </div>
+  `;
+}
       tr.innerHTML = `
         <td title="${formatDateTime(h.executed_at)}">
           ${formatDateOnly(h.executed_at)}
@@ -443,6 +465,57 @@ function renderHistoryTable(data) {
 
       tbody.appendChild(tr);
     });
+}
+// =====================
+// VIEW HISTORY ENTRY
+// =====================
+function viewHistoryEntry(executionId) {
+  const h = executionsData.find(e => e.id === executionId);
+  if (!h) return;
+
+  const el = document.getElementById("historyViewContent");
+
+  el.innerHTML = `
+    <div class="history-view-section">
+      <strong>Date</strong>
+      <div>${formatDateTime(h.executed_at)}</div>
+    </div>
+
+    <div class="history-view-section">
+      <strong>Asset</strong>
+      <div>
+        ${h.machine}<br>
+        <small>SN: ${h.serial_number} • Line ${h.line}</small>
+      </div>
+    </div>
+
+    <div class="history-view-section">
+      <strong>Task</strong>
+      <div>${h.task}</div>
+    </div>
+
+    <div class="history-view-section">
+      <strong>Details</strong>
+      <div>
+        ${h.section || "-"} ${h.unit ? " / " + h.unit : ""}
+      </div>
+    </div>
+
+    <div class="history-view-section">
+      <strong>Executed By</strong>
+      <div>${h.executed_by || "-"}</div>
+    </div>
+
+    <div class="history-view-section">
+      <strong>Notes</strong>
+      <div>${h.notes || "-"}</div>
+    </div>
+  `;
+
+  document.getElementById("historyViewOverlay").style.display = "flex";
+}
+function closeHistoryView() {
+  document.getElementById("historyViewOverlay").style.display = "none";
 }
 
 
@@ -699,8 +772,6 @@ async function confirmDeleteTask() {
     alert(err.message);
   }
 }
-
-
 
 // Close modal
 function closeTaskView() {
@@ -967,8 +1038,6 @@ function getFilteredTasksForPrint() {
     });
 }
 
-
-
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
   if (!sel) return;
@@ -1101,7 +1170,6 @@ function renderTable() {
 
   return true;
 })
-
 
     // SORT (kept as-is)
     .sort((a, b) => {
