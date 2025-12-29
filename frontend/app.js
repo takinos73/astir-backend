@@ -27,6 +27,7 @@ let dueDateTo = null;   // Date | null
 let historyDateRange = 7;
 let historyMachineQuery = "";
 let historyTechnicianQuery = "";
+let historyTypeFilter = "all";
 // =====================
 // EDIT BREAKDOWN STATE
 // =====================
@@ -273,7 +274,6 @@ function buildRow(task) {
 
     <!-- SECTION -->
     <td>${task.section ? highlight(task.section, q) : "-"}</td>
-
     <!-- UNIT -->
     <td>${task.unit ? highlight(task.unit, q) : "-"}</td>
 
@@ -294,14 +294,34 @@ function buildRow(task) {
     <td>${statusPill(task)}</td>
 
     <!-- ACTIONS -->
-    <td>
-      <button class="btn-secondary" onclick="viewTask(${task.id})">👁 View</button>
-      ${
-        task.status === "Done"
-          ? `<button class="btn-undo" onclick="undoTask(${task.id})">↩ Undo</button>`
-          : `<button class="btn-table" onclick="askTechnician(${task.id})">✔ Done</button>`
-      }
-    </td>
+<td>
+  <div class="history-action-group">
+    
+    <!-- 👁 View task -->
+    <button
+      class="btn-icon btn-view"
+      title="View task details"
+      onclick="viewTask(${task.id})">
+      👁
+    </button>
+
+    <!-- ✔ Mark as Done (only if not Done) -->
+    ${
+      task.status !== "Done"
+        ? `
+          <button
+            class="btn-icon btn-done"
+            title="Mark task as completed"
+            onclick="askTechnician(${task.id})">
+            ✔
+          </button>
+        `
+        : ``
+    }
+
+  </div>
+</td>
+
   `;
 
   return tr;
@@ -369,6 +389,12 @@ function renderHistoryTable(data) {
       const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
       return txt.includes(historyMachineQuery);
     })
+    // 🧩 TYPE FILTER (Planned / Breakdown / Preventive)
+    .filter(h => {
+      if (historyTypeFilter === "all") return true;
+      const execType = getExecutionType(h);
+      return execType === historyTypeFilter;
+    })
 
     // 👤 TECHNICIAN FILTER
     .filter(h => {
@@ -403,18 +429,20 @@ let actionHtml = `<span class="muted">—</span>`;
 // Restore execution back to active tasks list
 if (execType === "planned" || execType === "preventive") {
   actionHtml = `
-  <button
-        class="btn-secondary"
-        title="View breakdown details"
-        onclick="viewHistoryEntry(${h.id})">
-        👁 View
-      </button>
+  <div class="history-action-group">
+   <button
+    class="btn-icon btn-view"
+    title="View details"
+    onclick="viewHistoryEntry(${h.id})">
+    👁
+   </button>
     <button
-      class="btn-undo"
-      title="Restore task back to active list"
-      onclick="undoExecution(${h.id})">
-      ↩ Restore
-    </button>
+    class="btn-icon btn-restore"
+    title="Restore task"
+    onclick="undoExecution(${h.id})">
+    ↩
+   </button>
+  </div>
   `;
 }
 
@@ -427,14 +455,14 @@ else if (execType === "unplanned") {
         class="btn-secondary"
         title="View breakdown details"
         onclick="viewHistoryEntry(${h.id})">
-        👁 View
+        👁
       </button>
 
       <button
         class="btn-history-edit"
         title="Edit breakdown details"
         onclick="editBreakdown(${h.id})">
-        ✏️ Edit
+        ✏️
       </button>
     </div>
   `;
@@ -523,6 +551,9 @@ function editBreakdown(id) {
   alert("Breakdown edit coming next (id: " + id + ")");
 }
 
+   /* =====================
+    HISTORY FILTER HANDLERS
+   ===================== */
 
 document.getElementById("historyDateFilter")?.addEventListener("change", e => {
   historyDateRange = e.target.value;
@@ -533,6 +564,10 @@ document.getElementById("historyMachineSearch")?.addEventListener("input", e => 
   historyMachineQuery = e.target.value.toLowerCase();
   renderHistoryTable(executionsData);
 });
+document.getElementById("historyTypeFilter")?.addEventListener("change", e => {
+    historyTypeFilter = e.target.value;
+    renderHistoryTable(executionsData);
+  });
 
 document.getElementById("historyTechnicianSearch")?.addEventListener("input", e => {
   historyTechnicianQuery = e.target.value.toLowerCase();
@@ -1176,6 +1211,16 @@ function renderTable() {
       const o = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
       return (o[getDueState(a)] ?? 99) - (o[getDueState(b)] ?? 99);
     });
+    // =====================
+// UPDATE TASKS COUNT
+// =====================
+const countEl = document.getElementById("tasksCountLabel");
+if (countEl) {
+  const n = filtered.length;
+  countEl.textContent = `${n} task${n === 1 ? "" : "s"}`;
+  countEl.classList.toggle("zero", n === 0);
+
+}
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }

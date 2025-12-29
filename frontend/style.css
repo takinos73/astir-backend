@@ -678,6 +678,29 @@ tbody tr:hover { background: #131520; }
   margin-top: 12px;
   gap: 10px 12px;
 }
+/* =====================
+   TASKS COUNT LABEL
+===================== */
+
+.tasks-count-label {
+  font-size: 12px;
+  color: #cfd8dc;
+  opacity: 0.85;
+
+  padding: 4px 10px;
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;  
+}
+.tasks-count-label.zero {
+  color: #ff8a8a;
+  border-color: rgba(255,138,138,0.3);
+}
 
 /* =====================
    EDIT PANEL – COMPACT
@@ -777,12 +800,17 @@ tbody tr:hover { background: #131520; }
 
 #historyTable td:nth-child(3) strong { display:block; font-size:.95em; }
 #historyTable td:nth-child(3) small { font-size:.75em; color:#a0a0a0; }
+/* align table cell content nicely */
+#historyTable td:last-child {
+  text-align: left;          /* 👈 ΑΡΙΣΤΕΡΑ */
+  padding-left: 10px;        /* 👈 ΑΕΡΑΣ ΑΠΟ BORDER */
+}
 /* =====================
    HISTORY – EDIT (BREAKDOWN)
 ===================== */
 
 .btn-history-edit {
-  height: 30px;
+  
   padding: 0 12px;
 
   background: rgba(255, 255, 255, 0.04);
@@ -1376,6 +1404,7 @@ tr.history-unplanned {
 
 .history-filters select {
   cursor: pointer;
+  min-width: 130px;
 }
 
 /* =====================
@@ -1545,6 +1574,75 @@ tr.history-unplanned {
   filter: invert(1) opacity(0.6);
   cursor: pointer;
 }
+/* =====================
+   ICON ACTION BUTTONS
+===================== */
+
+.history-action-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* base icon button */
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  color: #e6eaf0;
+  font-size: 14px;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-icon:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.btn-icon:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+/* =====================
+   COLOR VARIANTS
+===================== */
+
+/* View */
+.btn-view {
+  color: #9db4ff;
+}
+
+/* Edit */
+.btn-edit {
+  color: #ffd37a;
+}
+
+/* Restore */
+.btn-restore {
+  color: #7ee2b8;
+}
+
+/* Delete / Dangerous (if ever) */
+.btn-danger {
+  color: #ff8a8a;
+}
+
 
 
 

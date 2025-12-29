@@ -63,9 +63,7 @@
           <label>Notes</label>
           <textarea id="edit-task-notes" rows="3"></textarea>
         </div>
-
       </div>
-
       <div class="task-edit-actions">
         <button class="btn-table" onclick="saveTaskEdit()">💾 Update</button>
         <button class="btn-cancel" onclick="cancelTaskEdit()">Cancel</button>
@@ -119,6 +117,13 @@
     id="historyMachineSearch"
     placeholder="🔍 Machine / SN"
   />
+  <!-- Type filter -->
+  <select id="historyTypeFilter">
+  <option value="all">📂 All</option>
+  <option value="unplanned">🟥 Breakdown</option>
+  <option value="planned">🟨 Planned</option>
+  <option value="preventive">🟩 Preventive</option>
+</select>
 
   <!-- Technician -->
   <input
@@ -136,7 +141,7 @@
             <th>Asset</th>
             <th style="width:35%">Task</th>
             <th>Executed By</th>
-            <th style="width:14%">Actions</th> <!-- 👈 UNDO -->
+            <th style="width:8%">Actions</th> <!-- 👈 UNDO -->
           </tr>
         </thead>
         <tbody>
@@ -225,7 +230,7 @@
 <div id="historyViewOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-wide">
 
-    <h3>📜 Execution Details</h3>
+    <h3>📜 History Details</h3>
 
     <div id="historyViewContent" class="history-view-grid"></div>
 
@@ -490,6 +495,9 @@
     onchange="onTaskDateRangeChange()"
   />
 </div>
+<span id="tasksCountLabel" class="tasks-count-label">
+  0 tasks
+</span>
 
   <!-- 🔍 GLOBAL SEARCH -->
   <input
