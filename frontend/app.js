@@ -1660,23 +1660,37 @@ document.getElementById("cancelAddTask")?.addEventListener("click", () => {
    TASK ACTIONS
 ===================== */
 
-//let pendingTaskId = null;
-
+/* =====================
+   OPEN CONFIRM DONE MODAL
+   - Sets pending task
+   - Prefills completion date (today)
+   - Shows modal
+===================== */
 function askTechnician(id) {
+  // store task id for completion
   pendingTaskId = id;
 
-  // default date = today
+  // 📅 default completion date = today
   const today = new Date().toISOString().split("T")[0];
   const dateInput = getEl("completedDateInput");
-  if (dateInput) dateInput.value = today;
+  if (dateInput) {
+    dateInput.value = today;
+  }
 
+  // show modal
   getEl("modalOverlay").style.display = "flex";
 }
 
+/* =====================
+   CANCEL TASK COMPLETION
+   - Closes modal
+   - Resets pending task
+===================== */
 getEl("cancelDone")?.addEventListener("click", () => {
   getEl("modalOverlay").style.display = "none";
   pendingTaskId = null;
 });
+
 
 /* =====================
    CONFIRM TASK DONE
