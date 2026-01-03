@@ -179,7 +179,7 @@ app.post("/tasks", async (req, res) => {
    - Planned without frequency: FINISH
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
-  const { completed_by, completed_at } = req.body;
+  const { completed_by, completed_at, notes } = req.body; // 🔵 notes added
   const { id } = req.params;
 
   const client = await pool.connect();
@@ -244,6 +244,7 @@ app.patch("/tasks/:id", async (req, res) => {
           due_date = $2,
           completed_by = $3,
           completed_at = $4,
+          notes = COALESCE($5, notes),   -- 🔵 preserve existing notes
           updated_at = NOW()
         WHERE id = $1
         `,
@@ -251,7 +252,8 @@ app.patch("/tasks/:id", async (req, res) => {
           id,
           nextDue,
           completed_by || null,
-          completedAt
+          completedAt,
+          notes || null                  // 🔵
         ]
       );
 
@@ -264,13 +266,15 @@ app.patch("/tasks/:id", async (req, res) => {
           status = 'Done',
           completed_by = $2,
           completed_at = $3,
+          notes = COALESCE($4, notes),   -- 🔵 preserve existing notes
           updated_at = NOW()
         WHERE id = $1
         `,
         [
           id,
           completed_by || null,
-          completedAt
+          completedAt,
+          notes || null                  // 🔵
         ]
       );
     }
@@ -286,6 +290,7 @@ app.patch("/tasks/:id", async (req, res) => {
     client.release();
   }
 });
+
 
 /* =====================
    SOFT DELETE PLANNED MANUAL TASK

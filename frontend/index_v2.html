@@ -307,12 +307,15 @@
 <body>
 
    
-<!-- Modal για ολοκλήρωση εργασίας -->
-
+<!-- =====================
+     CONFIRM TASK DONE MODAL
+===================== -->
 <div id="modalOverlay" class="modal-overlay">
   <div class="modal-box">
+
     <h3>Ολοκλήρωση Εργασίας</h3>
 
+    <!-- Technician -->
     <p>Ποιος ολοκλήρωσε την εργασία;</p>
     <input
       type="text"
@@ -320,19 +323,31 @@
       placeholder="Όνομα τεχνικού"
     />
 
-    <!-- ✅ ΝΕΟ: Ημερομηνία ολοκλήρωσης -->
+    <!-- Completion date -->
     <p style="margin-top:10px;">Ημερομηνία ολοκλήρωσης</p>
     <input
       type="date"
       id="completedDateInput"
     />
 
+    <!-- 🆕 Execution Notes -->
+    <p style="margin-top:10px;">Σημειώσεις</p>
+    <textarea
+      id="doneNotesInput"
+      placeholder="Παρατηρήσεις / σημειώσεις εκτέλεσης"
+      rows="3"
+      style="width:100%; resize:vertical;"
+    ></textarea>
+
+    <!-- Actions -->
     <div class="modal-actions">
       <button id="confirmDone" class="btn-table">✔ Επιβεβαίωση</button>
       <button id="cancelDone" class="btn-cancel">Ακύρωση</button>
     </div>
+
   </div>
 </div>
+
   
 <div class="app-shell">
 

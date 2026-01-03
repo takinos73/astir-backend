@@ -1685,6 +1685,9 @@ getEl("confirmDone")?.addEventListener("click", async () => {
   const name = getEl("technicianInput")?.value.trim();
   if (!name) return alert("Δώσε όνομα τεχνικού");
 
+  const notes =
+    getEl("doneNotesInput")?.value.trim() || null;
+
   const dateValue = getEl("completedDateInput")?.value;
   const completedAt = dateValue
     ? new Date(dateValue + "T12:00:00").toISOString()
@@ -1696,7 +1699,8 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         completed_by: name,
-        completed_at: completedAt   // ✅ ΝΕΟ
+        completed_at: completedAt,
+        notes          // 🆕 execution notes
       })
     });
 
@@ -1710,6 +1714,9 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     getEl("technicianInput").value = "";
     if (getEl("completedDateInput")) {
       getEl("completedDateInput").value = "";
+    }
+    if (getEl("doneNotesInput")) {
+      getEl("doneNotesInput").value = "";
     }
 
     pendingTaskId = null;
