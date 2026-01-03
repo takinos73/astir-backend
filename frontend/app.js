@@ -151,6 +151,16 @@ function loginAsRole() {
 document.getElementById("loginAsRoleBtn")
   ?.addEventListener("click", loginAsRole);
 
+// =====================
+// SHOW LAST RESTORED SNAPSHOT
+// =====================
+const last = localStorage.getItem("lastRestoredSnapshot");
+const statusEl = document.getElementById("snapshotStatus");
+
+if (statusEl && last) {
+  statusEl.textContent = `Last restored: ${last}`;
+  statusEl.classList.add("loaded");
+}
 
 /* =====================
    Date Filters
@@ -2588,6 +2598,25 @@ document.getElementById("exportSnapshot")?.addEventListener("click", async (e) =
   a.click();
   document.body.removeChild(a);
 });
+// =====================
+// SNAPSHOT FILE LOAD LABEL
+// =====================
+document.getElementById("snapshotFile")?.addEventListener("change", e => {
+  const file = e.target.files?.[0];
+  const statusEl = document.getElementById("snapshotStatus");
+
+  if (!statusEl) return;
+
+  if (!file) {
+    statusEl.textContent = "No snapshot loaded";
+    statusEl.classList.remove("loaded");
+    return;
+  }
+
+  statusEl.textContent = `Loaded: ${file.name}`;
+  statusEl.classList.add("loaded");
+});
+
 
 /* =====================
    SNAPSHOT RESTORE
@@ -2600,6 +2629,10 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
   const json = JSON.parse(text);
 
   if (!confirm("⚠️ This will fully restore the system. Continue?")) return;
+  localStorage.setItem(
+  "lastRestoredSnapshot",
+  file.name
+);
 
   const res = await fetch(`${API}/snapshot/restore`, {
     method: "POST",

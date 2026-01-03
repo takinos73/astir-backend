@@ -386,6 +386,9 @@
         <div class="pill">
           Backend Live: PostgreSQL • Render
         </div>
+        <div id="importStatus" class="import-status">
+         No Excel imported yet
+        </div>
         <span class="snapshot-note" id="snapshotStatus">
           No snapshot loaded        
         </span>        
@@ -419,9 +422,7 @@
 
     <!-- 🔧 ADMIN / TOOLS -->      
     <div class="top-tools">
-      <div id="importStatus" class="import-status">
-         No Excel imported yet
-        </div>
+      
       <label class="btn-secondary admin-only">
           📂 Upload Excel
         <input type="file" id="excelFile" accept=".xlsx,.xls" hidden />

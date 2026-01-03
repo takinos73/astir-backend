@@ -39,9 +39,9 @@ body {
 ===================== */
 .app-header {
   background: #10131a;
-  padding: 16px;
+  padding: 8px;
   border-radius: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   border: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
