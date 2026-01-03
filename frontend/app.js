@@ -1656,25 +1656,34 @@ document.getElementById("cancelAddTask")?.addEventListener("click", () => {
   document.getElementById("addTaskOverlay").style.display = "none";
 });
 
-/* =====================
-   TASK ACTIONS
-===================== */
 
 /* =====================
    OPEN CONFIRM DONE MODAL
-   - Sets pending task
-   - Prefills completion date (today)
-   - Shows modal
+   - Prefills technician date
+   - Prefills existing task notes (if any)
 ===================== */
 function askTechnician(id) {
-  // store task id for completion
   pendingTaskId = id;
+
+  // 🔍 find task from loaded tasks
+  const task = tasksData.find(t => t.id === id);
+
+  if (!task) {
+    alert("Task not found");
+    return;
+  }
 
   // 📅 default completion date = today
   const today = new Date().toISOString().split("T")[0];
   const dateInput = getEl("completedDateInput");
   if (dateInput) {
     dateInput.value = today;
+  }
+
+  // 📝 PREFILL NOTES (if exist)
+  const notesInput = getEl("doneNotesInput");
+  if (notesInput) {
+    notesInput.value = task.notes || "";
   }
 
   // show modal
