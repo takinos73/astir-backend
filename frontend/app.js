@@ -1171,38 +1171,38 @@ function renderTable() {
            return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
      })  
 
-    // DATE FILTER (NEW)
-    .filter(t => {
-      if (activeDateFilter === "all") return true;
-      if (!t.due_date) return false;
-
-      const due = new Date(t.due_date);
-      due.setHours(0, 0, 0, 0);
-
-      if (activeDateFilter === "today") {
-        return due.getTime() === today.getTime();
-      }
-
-      if (activeDateFilter === "week") {
-        return due >= today && due <= weekEnd;
-      }
-
-      if (activeDateFilter === "overdue") {
-        return due < today;
-      }
-
-      return true;
-    })
-    // TASKS – DATE RANGE FILTER (SAFE)
+    // =====================
+// DATE FILTER (UNIFIED)
+// - Date range (From–To) has priority
+// - Quick filters used only if range is empty
+// =====================
 .filter(t => {
-  if (!taskDateFrom && !taskDateTo) return true;
   if (!t.due_date) return false;
 
   const due = new Date(t.due_date);
+  due.setHours(0, 0, 0, 0);
 
-  if (taskDateFrom && due < taskDateFrom) return false;
-  if (taskDateTo && due > taskDateTo) return false;
+  // 🔴 Custom date range (priority)
+  if (taskDateFrom || taskDateTo) {
+    if (taskDateFrom && due < taskDateFrom) return false;
+    if (taskDateTo && due > taskDateTo) return false;
+    return true;
+  }
 
+  // 🟢 Quick date filters
+  if (activeDateFilter === "today") {
+    return due.getTime() === today.getTime();
+  }
+
+  if (activeDateFilter === "week") {
+    return due >= today && due <= weekEnd;
+  }
+
+  if (activeDateFilter === "overdue") {
+    return due < today;
+  }
+
+  // ⚪ ALL
   return true;
 })
 
@@ -1239,6 +1239,22 @@ function getAssetFilterLabel() {
     ? `${machine} (${serial})`
     : machine;
 }
+function getCurrentPeriodLabel() {
+  // 🟢 αν υπάρχει custom date range
+  if (taskDateFrom || taskDateTo) {
+    const from = taskDateFrom ? formatDate(taskDateFrom) : "—";
+    const to = taskDateTo ? formatDate(taskDateTo) : "—";
+    return `${from} → ${to}`;
+  }
+
+  // 🟢 αλλιώς quick filter
+  if (activeDateFilter && activeDateFilter !== "all") {
+    return activeDateFilter.toUpperCase();
+  }
+
+  return "ALL";
+}
+
  /* =====================
     PRINT TASKS
   ===================== */
@@ -1276,9 +1292,11 @@ function printTasks() {
       <h2>Maintenance Tasks Schedule</h2>
       <div class="meta">
         Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
-        Περίοδος: ${activeDateFilter.toUpperCase()}<br>
-        Asset: ${getAssetFilterLabel()}
+        Περίοδος: ${getCurrentPeriodLabel()}<br>
+        Asset: ${getAssetFilterLabel()}<br>
+        <strong>Σύνολο εργασιών: ${tasks.length}</strong>
       </div>
+
 
       <table>
         <thead>
@@ -2696,15 +2714,25 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
     btn.addEventListener("click", () => {
       activeDateFilter = btn.dataset.filter;
 
+      // 🔴 RESET custom date range (MASTER FIX)
+      taskDateFrom = null;
+      taskDateTo = null;
+
+      const fromEl = document.getElementById("taskDateFrom");
+      const toEl = document.getElementById("taskDateTo");
+      if (fromEl) fromEl.value = "";
+      if (toEl) toEl.value = "";
+
+      // UI state
       btns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
-      renderTable();
-    });
+  renderTable();
+});
   });
 })();
 // =====================
-// TASKS – DATE RANGE HANDLER
+// TASKS – DATE RANGE HANDLER (MASTER FILTER)
 // =====================
 function onTaskDateRangeChange() {
   const fromVal = document.getElementById("taskDateFrom")?.value;
@@ -2716,6 +2744,14 @@ function onTaskDateRangeChange() {
   if (taskDateFrom) taskDateFrom.setHours(0, 0, 0, 0);
   if (taskDateTo) taskDateTo.setHours(23, 59, 59, 999);
 
+  // 🔁 RESET QUICK DATE FILTERS (ALL / TODAY / WEEK / OVERDUE)
+  activeDateFilter = "all";
+
+  document
+    .querySelectorAll(".date-filter-btn")
+    .forEach(btn => btn.classList.remove("active"));
+
   renderTable();
 }
+
 
