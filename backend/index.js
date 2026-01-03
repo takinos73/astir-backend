@@ -50,17 +50,19 @@ app.get("/api", (req, res) => {
 /* =====================================================
    TASKS
    - maintenance_tasks is assumed to have:
-     id, asset_id (FK), section, unit, task, type, qty, duration_min, frequency_hours,
-     due_date, status, completed_by, completed_at, updated_at, is_planned, notes
+     id, asset_id (FK), section, unit, task, type, qty,
+     duration_min, frequency_hours,
+     due_date, status, completed_by, completed_at,
+     updated_at, is_planned, notes, deleted_at
 ===================================================== */
 
 // GET active tasks (Planned + Overdue), sorted by due date
-
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         mt.id,
+        mt.asset_id,              -- ✅ needed for UI logic
         mt.task,
         mt.status,
         mt.due_date,
@@ -70,6 +72,9 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
+        mt.is_planned,            -- ✅ useful for classification
+        mt.notes,                 -- ✅ FIX: notes now included
+
         a.model AS machine_name,
         a.serial_number,
         l.code AS line_code
@@ -79,7 +84,7 @@ app.get("/tasks", async (req, res) => {
       JOIN lines l ON l.id = a.line_id
 
       WHERE mt.status IN ('Planned', 'Overdue')
-        AND mt.deleted_at IS NULL   -- 👈 ΤΟ ΒΗΜΑ 3
+        AND mt.deleted_at IS NULL
 
       ORDER BY mt.due_date ASC
     `);
