@@ -703,42 +703,56 @@ tbody tr:hover { background: #131520; }
 }
 
 /* =====================
-   EDIT PANEL – COMPACT
+   EDIT PANEL – EXTRA COMPACT (SAFE)
 ===================== */
 
 .task-edit-area {
-  margin-top: 12px;
-  padding: 14px 16px;   /* πιο κοντό panel */
+  margin-top: 10px;
+  padding: 12px 14px;   /* 👈 λίγο πιο κοντό */
 }
 
-/* edit header */
+/* header */
 .task-edit-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;  /* 👈 λιγότερος αέρας */
 }
 
 .task-edit-header h4 {
-  font-size: 1em;
+  font-size: 0.95em;
+  margin-bottom: 2px;
 }
 
-/* edit grid */
+.task-edit-header .task-edit-sub {
+  font-size: 0.72em;
+  opacity: 0.75;
+}
+
+/* grid */
 .task-edit-grid {
-  gap: 10px 14px;
+  gap: 8px 12px;       /* 👈 tighter grid */
   max-width: 100%;
 }
 
-/* inputs */
+/* fields */
 .task-edit-area input,
 .task-edit-area textarea {
-  padding: 6px 8px;
-  font-size: 0.82em;
-  max-height: 120px;      /* 👈 δεν ξεφεύγει */
-  resize: vertical;      /* 👈 μόνο προς τα κάτω */
+  padding: 5px 8px;    /* 👈 μικρότερο ύψος */
+  font-size: 0.8em;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+/* textarea safety */
+.task-edit-area textarea {
+  max-height: 110px;   /* 👈 λίγο πιο κοντό */
+  resize: vertical;
+  overflow-y: auto;
 }
 
 /* actions */
 .task-edit-actions {
-  margin-top: 12px;
+  margin-top: 10px;    /* 👈 πιο κοντά στο grid */
 }
+
 
 /* =====================
    ACTIONS BAR
@@ -1178,6 +1192,71 @@ td:last-child {
 .reports-grid .field select {
   width: 100%;
 }
+/* =====================
+   PRIMARY ACTION – PDF
+===================== */
+
+#generatePdfBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  height: 38px;
+  padding: 0 16px;
+
+  background: linear-gradient(
+    180deg,
+    #2563eb,
+    #1d4ed8
+  );
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+/* hover */
+#generatePdfBtn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.08),
+    0 8px 22px rgba(0,0,0,0.45);
+}
+
+/* active */
+#generatePdfBtn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 4px 12px rgba(0,0,0,0.35);
+}
+
+/* disabled (future-safe) */
+#generatePdfBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 
 /* =====================
    REPORT DATE RANGE – FINAL (CLICK SAFE)
@@ -1276,6 +1355,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
+  max-height: 120px;      /* 👈 δεν ξεφεύγει */
+  resize: vertical; 
 }
 
 /* Field wrapper alignment */

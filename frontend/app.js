@@ -756,34 +756,63 @@ if (canEditTask(task)) {
 }
 
 }
+// =====================
+// TASK EDITING
+// =====================
+
+// =====================
+// TASK EDITING (COLLAPSE / EXPAND) — SAFE
+// =====================
+
 function enableTaskEdit() {
   if (!currentViewedTask) return;
 
   const t = currentViewedTask;
 
-  // Fill edit fields
-  document.getElementById("edit-task-desc").value = t.task || "";
-  document.getElementById("edit-task-type").value = t.type || "";
-  document.getElementById("edit-task-section").value = t.section || "";
-  document.getElementById("edit-task-unit").value = t.unit || "";
-  document.getElementById("edit-task-due").value =
-    t.due_date ? t.due_date.split("T")[0] : "";
-  document.getElementById("edit-task-notes").value = t.notes || "";
+  // Fill edit fields (guarded)
+  const descEl = document.getElementById("edit-task-desc");
+  if (descEl) descEl.value = t.task || "";
+
+  const typeEl = document.getElementById("edit-task-type");
+  if (typeEl) typeEl.value = t.type || "";
+
+  const secEl = document.getElementById("edit-task-section");
+  if (secEl) secEl.value = t.section || "";
+
+  const unitEl = document.getElementById("edit-task-unit");
+  if (unitEl) unitEl.value = t.unit || "";
+
+  const dueEl = document.getElementById("edit-task-due");
+  if (dueEl) dueEl.value = t.due_date ? String(t.due_date).split("T")[0] : "";
+
+  const notesEl = document.getElementById("edit-task-notes");
+  if (notesEl) notesEl.value = t.notes || "";
 
   // Show edit area
-  document.getElementById("taskEditArea").style.display = "block";
+  const editArea = document.getElementById("taskEditArea");
+  if (editArea) editArea.style.display = "block";
+
+  // (Optional) scroll into view (safe)
+  if (editArea && editArea.scrollIntoView) {
+    editArea.scrollIntoView({ block: "start" });
+  }
 
   // Hide edit button while editing
-  document.getElementById("editTaskBtn").style.display = "none";
+  const editBtn = document.getElementById("editTaskBtn");
+  if (editBtn) editBtn.style.display = "none";
 }
-function cancelTaskEdit() {
-  document.getElementById("taskEditArea").style.display = "none";
 
-  // επανεμφάνιση Edit button
-  if (currentViewedTask && canEditTask(currentViewedTask)) {
-    document.getElementById("editTaskBtn").style.display = "inline-flex";
+function cancelTaskEdit() {
+  const editArea = document.getElementById("taskEditArea");
+  if (editArea) editArea.style.display = "none";
+
+  // Show Edit button again (only if allowed)
+  const editBtn = document.getElementById("editTaskBtn");
+  if (editBtn && currentViewedTask && canEditTask(currentViewedTask)) {
+    editBtn.style.display = "inline-flex";
   }
 }
+
 // =====================
 // CONFIRM + SOFT DELETE TASK
 // =====================
