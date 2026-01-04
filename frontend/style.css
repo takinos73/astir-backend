@@ -723,6 +723,7 @@ tbody tr:hover { background: #131520; }
 /* edit grid */
 .task-edit-grid {
   gap: 10px 14px;
+  max-width: 100%;
 }
 
 /* inputs */
@@ -730,6 +731,8 @@ tbody tr:hover { background: #131520; }
 .task-edit-area textarea {
   padding: 6px 8px;
   font-size: 0.82em;
+  max-height: 120px;      /* 👈 δεν ξεφεύγει */
+  resize: vertical;      /* 👈 μόνο προς τα κάτω */
 }
 
 /* actions */
