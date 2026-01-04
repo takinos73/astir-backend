@@ -491,7 +491,9 @@ app.get("/executions", async (req, res) => {
 });
 
 /* =====================
-   UPDATE BREAKDOWN (DESCRIPTION + METADATA)
+   UPDATE BREAKDOWN
+   - Update task description & notes
+   - Update execution technician
 ===================== */
 app.patch("/executions/:id", async (req, res) => {
   const { id } = req.params;
@@ -503,46 +505,63 @@ app.patch("/executions/:id", async (req, res) => {
     });
   }
 
+  const client = await pool.connect();
+
   try {
+    await client.query("BEGIN");
+
     // 1️⃣ Find related task_id
-    const execRes = await pool.query(
+    const execRes = await client.query(
       `SELECT task_id FROM task_executions WHERE id = $1`,
       [id]
     );
 
     if (execRes.rowCount === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Execution not found" });
     }
 
     const taskId = execRes.rows[0].task_id;
 
-    // 2️⃣ Update task description (maintenance_tasks)
-    await pool.query(
+    // 2️⃣ Update task (description + notes)
+    await client.query(
       `
       UPDATE maintenance_tasks
-      SET task = $1
-      WHERE id = $2
-      `,
-      [task, taskId]
-    );
-
-    // 3️⃣ Update execution metadata
-    await pool.query(
-      `
-      UPDATE task_executions
       SET
-        executed_by = $1,
-        notes = $2
+        task = $1,
+        notes = $2,
+        updated_at = NOW()
       WHERE id = $3
       `,
-      [executed_by, notes || null, id]
+      [
+        task,
+        notes || null,
+        taskId
+      ]
     );
 
+    // 3️⃣ Update execution metadata (technician only)
+    await client.query(
+      `
+      UPDATE task_executions
+      SET executed_by = $1
+      WHERE id = $2
+      `,
+      [
+        executed_by,
+        id
+      ]
+    );
+
+    await client.query("COMMIT");
     res.json({ success: true });
 
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("PATCH /executions/:id ERROR:", err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
