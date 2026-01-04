@@ -72,6 +72,7 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
+        mt.duration_min,          -- ✅ FIX
         mt.is_planned,            -- ✅ useful for classification
         mt.notes,                 -- ✅ FIX: notes now included
 
