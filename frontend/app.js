@@ -2513,7 +2513,9 @@ function getExecutionTotalsByTechnician(data) {
   return totals;
 }
 
-
+/* =====================
+   GENERATE PDF BUTTON CLICK
+===================== */
 
 document.getElementById("generatePdfBtn")
   ?.addEventListener("click", () => {
@@ -2542,6 +2544,50 @@ document.getElementById("generatePdfBtn")
         alert(`Report type "${type}" is not implemented yet.`);
     }
 });
+/* =====================
+   RESET REPORT FILTERS
+===================== */
+document.getElementById("resetReportBtn")?.addEventListener("click", () => {
+  resetReportBtn.innerText = "✔ Reset";
+  setTimeout(() => resetReportBtn.innerText = "Reset", 800);
+
+  // Report type
+  const reportType = document.getElementById("reportType");
+  if (reportType) reportType.value = "status";
+
+  // Date range
+  const dateFrom = document.getElementById("dateFrom");
+  const dateTo = document.getElementById("dateTo");
+  if (dateFrom) dateFrom.value = "";
+  if (dateTo) dateTo.value = "";
+
+  // Line
+  const line = document.getElementById("reportLine");
+  if (line) line.value = "all";
+
+  // Status
+  const status = document.getElementById("reportStatus");
+  if (status) status.value = "all";
+
+  // Technician
+  const tech = document.getElementById("reportTechnician");
+  if (tech) tech.value = "";
+
+  // Hide technician field if not needed
+  document
+    .getElementById("fieldTechnician")
+    ?.classList.add("field-hidden");
+
+  /* =====================
+     RESET PREVIEW
+  ===================== */
+  document.getElementById("previewLines").innerText = "Lines: ALL";
+  document.getElementById("previewDates").innerText = "Period: —";
+  document.getElementById("previewType").innerText =
+    "Report: Maintenance Status Report";
+  document.getElementById("previewStatus").innerText = "Status: ALL";
+});
+
 /* =====================
    NON-PLANNED REPORT – DATA
    (Breakdowns only)
