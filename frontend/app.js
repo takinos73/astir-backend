@@ -2499,6 +2499,10 @@ document.getElementById("generatePdfBtn")
       case "technician":
         generateCompletedReportPdf();
         break;
+      case "nonplanned":
+
+        generateNonPlannedReportPdf();
+        break;
 
       default:
         alert(`Report type "${type}" is not implemented yet.`);
