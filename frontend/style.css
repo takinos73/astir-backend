@@ -855,6 +855,39 @@ tbody tr:hover { background: #131520; }
   border-color: rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
 }
+/* =====================
+   EDIT BREAKDOWN – ALIGNMENT FIX
+===================== */
+
+.edit-breakdown-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* κάθε field ίδιο layout */
+.edit-breakdown-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* inputs & textarea ίδιο πλάτος */
+.edit-breakdown-form input,
+.edit-breakdown-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 0.9em;
+  border-radius: 8px;
+}
+
+/* textarea λίγο πιο ψηλό αλλά ελεγχόμενο */
+.edit-breakdown-form textarea {
+  min-height: 90px;
+  resize: vertical;      /* μόνο προς τα κάτω */
+}
+
 
 
 /* =========================
