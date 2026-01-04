@@ -2499,10 +2499,15 @@ document.getElementById("generatePdfBtn")
       case "technician":
         generateCompletedReportPdf();
         break;
-      case "nonplanned":
+        
+      case "overdue":
+        generateOverdueReportPdf();
+        break;
 
+      case "nonplanned":
         generateNonPlannedReportPdf();
         break;
+
 
       default:
         alert(`Report type "${type}" is not implemented yet.`);
@@ -2700,6 +2705,175 @@ function generateNonPlannedReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+/* =====================
+   OVERDUE REPORT – DATA
+   (Active tasks only)
+===================== */
+
+function getFilteredOverdueTasksForReport() {
+  const line = document.getElementById("reportLine")?.value || "all";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return tasksData.filter(t => {
+    // ❌ must have due date
+    if (!t.due_date) return false;
+
+    // ❌ already completed
+    if (t.status === "Done") return false;
+
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
+
+    // ✅ overdue only
+    if (due >= today) return false;
+
+    // line filter
+    if (line !== "all" && t.line_code !== line) return false;
+
+    return true;
+  });
+}
+/* =====================
+   OVERDUE TASKS REPORT – PDF
+===================== */
+
+function generateOverdueReportPdf() {
+  const rows = getFilteredOverdueTasksForReport();
+
+  if (!rows.length) {
+    alert("No overdue tasks found");
+    return;
+  }
+
+  const line = document.getElementById("reportLine")?.value || "ALL";
+
+  let html = `
+    <html>
+    <head>
+      <title>Overdue Tasks Report</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          color: #111;
+        }
+
+        h2 {
+          margin-bottom: 6px;
+        }
+
+        .meta {
+          font-size: 12px;
+          margin-bottom: 14px;
+          color: #444;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+
+        th, td {
+          border: 1px solid #999;
+          padding: 6px 8px;
+          vertical-align: top;
+        }
+
+        th {
+          background: #eee;
+          text-align: left;
+        }
+
+        .small {
+          font-size: 10px;
+          color: #555;
+        }
+      </style>
+    </head>
+    <body>
+
+      <h2>Overdue Maintenance Tasks</h2>
+
+      <div class="meta">
+        Line: ${line}<br>
+        Generated: ${new Date().toLocaleDateString("en-GB")}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:12%">Due Date</th>
+            <th style="width:18%">Line</th>
+            <th style="width:25%">Machine</th>
+            <th style="width:45%">Task</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  rows.forEach(t => {
+    html += `
+      <tr>
+        <td>${formatDate(t.due_date)}</td>
+
+        <td>${t.line_code}</td>
+
+        <td>
+          ${t.machine_name}<br>
+          <span class="small">SN: ${t.serial_number || "-"}</span>
+        </td>
+
+        <td>
+          <strong>${t.task}</strong><br>
+          <span class="small">
+            ${t.section || ""}
+            ${t.section && t.unit ? " / " : ""}
+            ${t.unit || ""}
+          </span>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+
+    </body>
+    </html>
+  `;
+
+  /* 🔹 PRINT VIA HIDDEN IFRAME */
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
+
 
 
 /*================================
