@@ -2504,6 +2504,198 @@ document.getElementById("generatePdfBtn")
         alert(`Report type "${type}" is not implemented yet.`);
     }
 });
+/* =====================
+   NON-PLANNED REPORT – DATA
+   (Breakdowns only)
+===================== */
+
+function getFilteredNonPlannedExecutionsForReport() {
+  const from = document.getElementById("dateFrom")?.value;
+  const to = document.getElementById("dateTo")?.value;
+  const line = document.getElementById("reportLine")?.value || "all";
+  const technician = document
+    .getElementById("reportTechnician")
+    ?.value
+    ?.trim()
+    .toLowerCase();
+
+  const fromDate = from ? new Date(from) : null;
+  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+
+  const toDate = to ? new Date(to) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  return executionsData.filter(e => {
+    // ❌ must have execution date
+    if (!e.executed_at) return false;
+
+    // ✅ NON-PLANNED ONLY (Breakdowns)
+    if (e.is_planned !== false) return false;
+
+    const execDate = new Date(e.executed_at);
+
+    if (fromDate && execDate < fromDate) return false;
+    if (toDate && execDate > toDate) return false;
+
+    if (line !== "all" && e.line !== line) return false;
+
+    if (
+      technician &&
+      !e.executed_by?.toLowerCase().includes(technician)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+/* =====================
+   NON-PLANNED (BREAKDOWN) REPORT – PDF
+===================== */
+
+function generateNonPlannedReportPdf() {
+  const rows = getFilteredNonPlannedExecutionsForReport();
+
+  if (!rows.length) {
+    alert("No non-planned tasks found for selected criteria");
+    return;
+  }
+
+  const from = document.getElementById("dateFrom")?.value;
+  const to = document.getElementById("dateTo")?.value;
+  const line = document.getElementById("reportLine")?.value || "ALL";
+  const technician =
+    document.getElementById("reportTechnician")?.value || "ALL";
+
+  let html = `
+    <html>
+    <head>
+      <title>Non-Planned Maintenance Report</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          color: #111;
+        }
+
+        h2 {
+          margin-bottom: 6px;
+        }
+
+        .meta {
+          font-size: 12px;
+          margin-bottom: 14px;
+          color: #444;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+
+        th, td {
+          border: 1px solid #999;
+          padding: 6px 8px;
+          vertical-align: top;
+        }
+
+        th {
+          background: #eee;
+          text-align: left;
+        }
+
+        .small {
+          font-size: 10px;
+          color: #555;
+        }
+      </style>
+    </head>
+    <body>
+
+      <h2>Non-Planned Maintenance / Breakdown Report</h2>
+
+      <div class="meta">
+        Period: ${from || "—"} → ${to || "—"}<br>
+        Line: ${line}<br>
+        Technician: ${technician}<br>
+        Generated: ${new Date().toLocaleDateString("en-GB")}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:10%">Date</th>
+            <th style="width:12%">Line</th>
+            <th style="width:20%">Machine</th>
+            <th style="width:38%">Breakdown Description</th>
+            <th style="width:20%">Executed By</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  rows.forEach(r => {
+    html += `
+      <tr>
+        <td>${formatDateOnly(r.executed_at)}</td>
+
+        <td>${r.line || "-"}</td>
+
+        <td>
+          ${r.machine}<br>
+          <span class="small">SN: ${r.serial_number || "-"}</span>
+        </td>
+
+        <td>
+          <strong>${r.task}</strong><br>
+          <span class="small">
+            ${r.section || ""}
+            ${r.section && r.unit ? " / " : ""}
+            ${r.unit || ""}
+          </span>
+        </td>
+
+        <td>${r.executed_by || "-"}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+
+    </body>
+    </html>
+  `;
+
+  /* 🔹 PRINT VIA HIDDEN IFRAME (NO NEW TAB) */
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
 
 
 /*================================
