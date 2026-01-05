@@ -1908,6 +1908,7 @@ function renderAssetsTable() {
     tbody.appendChild(tr);
   });
 }
+
 /* =====================
    LOAD LINES (FOR ADD ASSET)
 ===================== */
@@ -1939,6 +1940,40 @@ async function loadLinesForAsset() {
   }
 }
 
+/* =====================
+   LOAD MACHINE MODELS (FOR ADD ASSET)
+   Backend returns: ["PMC250","PMC300",...]
+===================== */
+async function loadMachineModelsForAsset() {
+  const select = document.getElementById("assetMachine");
+  if (!select) return;
+
+  try {
+    const res = await fetch(`${API}/asset-models`);
+    const models = await res.json();
+
+    select.innerHTML = `<option value="">Select Machine</option>`;
+
+    models.forEach(model => {
+      if (!model) return;
+
+      const opt = document.createElement("option");
+      opt.value = model;
+      opt.textContent = model;
+      select.appendChild(opt);
+    });
+
+    // ➕ OTHER OPTION
+    const other = document.createElement("option");
+    other.value = "__other__";
+    other.textContent = "➕ Other (new machine)";
+    select.appendChild(other);
+
+  } catch (err) {
+    console.error("LOAD MACHINE MODELS ERROR:", err);
+  }
+}
+
 
 /* =====================
    ADD ASSET MODAL – SAFE OPEN
@@ -1963,6 +1998,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     loadLinesForAsset(); // 👈 ΕΔΩ
+    loadMachineModelsForAsset();
 
     overlay.style.display = "flex";
   });
