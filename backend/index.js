@@ -463,7 +463,7 @@ app.get("/executions", async (req, res) => {
         e.id,
         e.executed_at,
         e.executed_by,
-
+        e.updated_at,       -- 👈 ΝΕΟ
         t.task,
         t.section,
         t.unit,

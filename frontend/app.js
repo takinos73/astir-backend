@@ -368,6 +368,11 @@ function getExecutionType(h) {
    Render HISTORY table
 ===================== */
 
+function wasEditedAfterExecution(h) {
+  if (!h.updated_at || !h.executed_at) return false;
+  return new Date(h.updated_at) > new Date(h.executed_at);
+}
+
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
   if (!tbody) return;
@@ -386,7 +391,7 @@ function renderHistoryTable(data) {
         );
 
   data
-    // 📅 DATE FILTER (Last 7 / 30 / All)
+    // 📅 DATE FILTER
     .filter(h => {
       if (!fromDate) return true;
       const exec = new Date(h.executed_at);
@@ -399,7 +404,8 @@ function renderHistoryTable(data) {
       const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
       return txt.includes(historyMachineQuery);
     })
-    // 🧩 TYPE FILTER (Planned / Breakdown / Preventive)
+
+    // 🧩 TYPE FILTER
     .filter(h => {
       if (historyTypeFilter === "all") return true;
       const execType = getExecutionType(h);
@@ -418,65 +424,59 @@ function renderHistoryTable(data) {
     .forEach(h => {
       const tr = document.createElement("tr");
 
-      // 🎨 classify execution
       const execType = getExecutionType(h);
       tr.classList.add(`history-${execType}`);
 
-      // =====================
-// HISTORY ACTIONS (SAFE UX)
-// =====================
-// Rules:
-// 🟩 Preventive        → Restore
-// 🟨 Planned (manual)  → Restore
-// 🟥 Unplanned / Breakdown → View + Edit
-// — Default            → No action
-// =====================
+      /* =====================
+         ACTIONS (SAFE UX)
+      ===================== */
+      let actionHtml = `<span class="muted">—</span>`;
 
-// default (no available action)
-let actionHtml = `<span class="muted">—</span>`;
+      // 🟩 Preventive & 🟨 Planned → View + Restore
+      if (execType === "planned" || execType === "preventive") {
+        actionHtml = `
+          <div class="history-action-group">
+            <button
+              class="btn-icon btn-view"
+              title="View details"
+              onclick="viewHistoryEntry(${h.id})">
+              👁
+            </button>
+            <button
+              class="btn-icon btn-restore"
+              title="Restore task"
+              onclick="undoExecution(${h.id})">
+              ↩
+            </button>
+          </div>
+        `;
+      }
 
-// 🟩 Preventive & 🟨 Planned (Manual)
-// Restore execution back to active tasks list
-if (execType === "planned" || execType === "preventive") {
-  actionHtml = `
-  <div class="history-action-group">
-   <button
-    class="btn-icon btn-view"
-    title="View details"
-    onclick="viewHistoryEntry(${h.id})">
-    👁
-   </button>
-    <button
-    class="btn-icon btn-restore"
-    title="Restore task"
-    onclick="undoExecution(${h.id})">
-    ↩
-   </button>
-  </div>
-  `;
-}
+      // 🟥 Unplanned / Breakdown → View + Edit
+      else if (execType === "unplanned") {
+        actionHtml = `
+          <div class="history-action-group">
+            <button
+              class="btn-icon btn-view"
+              title="View breakdown details"
+              onclick="viewHistoryEntry(${h.id})">
+              👁
+            </button>
+            <button
+              class="btn-icon btn-edit"
+              title="Edit breakdown details"
+              onclick="editBreakdown(${h.id})">
+              ✏️
+            </button>
+          </div>
+        `;
+      }
 
-// 🟥 Unplanned / Breakdown
-// View execution details + Edit breakdown metadata
-else if (execType === "unplanned") {
-  actionHtml = `
-    <div class="history-action-group">
-      <button
-        class="btn-secondary"
-        title="View breakdown details"
-        onclick="viewHistoryEntry(${h.id})">
-        👁
-      </button>
+      // ✏️ Edited badge
+      const editedBadge = wasEditedAfterExecution(h)
+        ? `<span class="badge-edited" title="Edited after execution">✏️ Edited</span>`
+        : "";
 
-      <button
-        class="btn-history-edit"
-        title="Edit breakdown details"
-        onclick="editBreakdown(${h.id})">
-        ✏️
-      </button>
-    </div>
-  `;
-}
       tr.innerHTML = `
         <td title="${formatDateTime(h.executed_at)}">
           ${formatDateOnly(h.executed_at)}
@@ -488,7 +488,10 @@ else if (execType === "unplanned") {
         </td>
 
         <td>
-          <div><strong>${h.task}</strong></div>
+          <div class="task-title">
+            <strong>${h.task}</strong>
+            ${editedBadge}
+          </div>
           <small>
             ${h.section || ""}
             ${h.section && h.unit ? " / " : ""}
@@ -504,6 +507,7 @@ else if (execType === "unplanned") {
       tbody.appendChild(tr);
     });
 }
+
 // =====================
 // VIEW HISTORY ENTRY
 // =====================

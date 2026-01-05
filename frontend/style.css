@@ -887,6 +887,16 @@ tbody tr:hover { background: #131520; }
   min-height: 90px;
   resize: vertical;      /* μόνο προς τα κάτω */
 }
+.badge-edited {
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 0.65em;
+  border-radius: 6px;
+  background: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  vertical-align: middle;
+}
 
 
 
