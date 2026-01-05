@@ -91,9 +91,9 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
-        mt.duration_min,          -- ✅ FIX
-        mt.is_planned,            -- ✅ useful for classification
-        mt.notes,                 -- ✅ FIX: notes now included
+        mt.duration_min,          -- ✅ duration now available
+        mt.is_planned,            -- ✅ classification helper
+        mt.notes,                 -- ✅ notes included
 
         a.model AS machine_name,
         a.serial_number,
@@ -105,6 +105,7 @@ app.get("/tasks", async (req, res) => {
 
       WHERE mt.status IN ('Planned', 'Overdue')
         AND mt.deleted_at IS NULL
+        AND a.active = true       -- ✅ FIX: hide tasks of inactive assets
 
       ORDER BY mt.due_date ASC
     `);
@@ -115,7 +116,6 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
   /*================================
    Create task (Planned or Unplanned)
