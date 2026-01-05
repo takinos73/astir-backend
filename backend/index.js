@@ -690,6 +690,12 @@ app.get("/assets", async (req, res) => {
   }
 });
 
+/* =====================
+   ADD ASSET
+   - Supports existing line
+   - Supports NEW line (auto-create)
+   - Reactivates inactive assets
+===================== */
 app.post("/assets", async (req, res) => {
   const { line, model, serial_number, description, active } = req.body;
 
@@ -700,61 +706,104 @@ app.post("/assets", async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const lineId = await findLineIdByCode(client, cleanUpper(line));
+    await client.query("BEGIN");
+
+    const cleanLine = cleanUpper(line);
+    const cleanModel = cleanStr(model);
+    const cleanSerial = cleanStr(serial_number);
+
+    // =====================
+    // 1️⃣ FIND OR CREATE LINE
+    // =====================
+    let lineId = await findLineIdByCode(client, cleanLine);
+
     if (!lineId) {
-      return res.status(400).json({ error: `Line not found: ${line}` });
+      const createdLine = await client.query(
+        `
+        INSERT INTO lines (code, name, created_at)
+        VALUES ($1, $2, NOW())
+        RETURNING id
+        `,
+        [cleanLine, cleanLine]
+      );
+
+      lineId = createdLine.rows[0].id;
     }
 
-    // 🔍 Check if asset already exists
+    // =====================
+    // 2️⃣ CHECK EXISTING ASSET
+    // =====================
     const existing = await client.query(
       `
       SELECT id, active
       FROM assets
       WHERE model = $1 AND serial_number = $2
       `,
-      [cleanStr(model), cleanStr(serial_number)]
+      [cleanModel, cleanSerial]
     );
 
-    // ♻ Inactive → Reactivate
+    // ♻ Reactivate inactive asset
     if (existing.rows.length > 0 && existing.rows[0].active === false) {
       const reactivated = await client.query(
         `
         UPDATE assets
-        SET active = true,
-            line_id = $1,
-            description = $2
+        SET
+          active = true,
+          line_id = $1,
+          description = $2
         WHERE id = $3
         RETURNING *
         `,
-        [lineId, description || null, existing.rows[0].id]
+        [
+          lineId,
+          description || null,
+          existing.rows[0].id
+        ]
       );
 
+      await client.query("COMMIT");
       return res.json({
         reactivated: true,
         asset: reactivated.rows[0]
       });
     }
 
-    // ❌ Already active
+    // ❌ Already active → conflict
     if (existing.rows.length > 0) {
+      await client.query("ROLLBACK");
       return res.status(409).json({
         error: "Asset already exists and is active"
       });
     }
 
-    // ➕ New asset
+    // =====================
+    // 3️⃣ CREATE NEW ASSET
+    // =====================
     const result = await client.query(
       `
-      INSERT INTO assets (line_id, model, serial_number, description, active)
+      INSERT INTO assets (
+        line_id,
+        model,
+        serial_number,
+        description,
+        active
+      )
       VALUES ($1, $2, $3, $4, true)
       RETURNING *
       `,
-      [lineId, cleanStr(model), cleanStr(serial_number), description || null]
+      [
+        lineId,
+        cleanModel,
+        cleanSerial,
+        description || null
+      ]
     );
 
+    await client.query("COMMIT");
     res.json(result.rows[0]);
 
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("POST /assets ERROR:", err.message);
     res.status(500).json({ error: err.message });
   } finally {

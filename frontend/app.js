@@ -1972,7 +1972,152 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.style.display = "none";
   });
 });
+/* =====================
+   ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
+   Works with value="__other__"
+===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  const lineSelect = document.getElementById("assetLine");
+  const machineSelect = document.getElementById("assetMachine");
 
+  const newLineField = document.getElementById("newLineField");
+  const newMachineField = document.getElementById("newMachineField");
+
+  // LINE → Other
+  lineSelect?.addEventListener("change", () => {
+    const isOther = lineSelect.value === "__other__";
+
+    if (newLineField) {
+      newLineField.style.display = isOther ? "block" : "none";
+    }
+
+    if (!isOther) {
+      const input = document.getElementById("assetNewLine");
+      if (input) input.value = "";
+    }
+  });
+
+  // MACHINE → Other
+  machineSelect?.addEventListener("change", () => {
+    const isOther = machineSelect.value === "__other__";
+
+    if (newMachineField) {
+      newMachineField.style.display = isOther ? "block" : "none";
+    }
+
+    if (!isOther) {
+      const input = document.getElementById("assetNewMachine");
+      if (input) input.value = "";
+    }
+  });
+});
+
+
+/* =====================
+   SAVE ASSET (WITH OTHER LINE / MACHINE)
+===================== */
+getEl("saveAssetBtn")?.addEventListener("click", async () => {
+  if (!hasRole("planner", "admin")) {
+    alert("Not allowed");
+    return;
+  }
+
+  // --- LINE ---
+  const lineSelect = getEl("assetLine").value;
+  const newLineVal = getEl("assetNewLine")?.value.trim();
+
+  const line =
+    lineSelect === "__other__"
+      ? newLineVal
+      : lineSelect;
+
+  // --- MACHINE ---
+  const machineSelect = getEl("assetMachine").value;
+  const newMachineVal = getEl("assetNewMachine")?.value.trim();
+
+  const model =
+    machineSelect === "__other__"
+      ? newMachineVal
+      : machineSelect;
+
+  // --- SERIAL ---
+  const serial = getEl("assetSn").value.trim();
+
+  // 🔒 VALIDATION
+  if (!line) {
+    alert("Line is required");
+    return;
+  }
+
+  if (!model) {
+    alert("Machine is required");
+    return;
+  }
+
+  if (!serial) {
+    alert("Serial Number is required");
+    return;
+  }
+
+  try {
+    await fetch(`${API}/assets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        line,              // είτε existing είτε new
+        model,             // είτε existing είτε new
+        serial_number: serial
+      })
+    });
+
+    // ✅ CLOSE MODAL
+    getEl("addAssetOverlay").style.display = "none";
+
+    // ✅ RESET FORM (SAFE)
+    getEl("assetLine").value = "";
+    getEl("assetMachine").value = "";
+    getEl("assetSn").value = "";
+
+    if (getEl("assetNewLine")) getEl("assetNewLine").value = "";
+    if (getEl("assetNewMachine")) getEl("assetNewMachine").value = "";
+
+    getEl("newLineField").style.display = "none";
+    getEl("newMachineField").style.display = "none";
+
+    // 🔄 REFRESH ASSETS
+    loadAssets();
+
+  } catch (err) {
+    console.error("SAVE ASSET ERROR:", err);
+    alert("Failed to save asset");
+  }
+});
+
+/* =====================
+   ADD ASSET – OTHER HANDLERS
+===================== */
+
+// LINE → show/hide new line field
+getEl("assetLine")?.addEventListener("change", () => {
+  const isOther = getEl("assetLine").value === "__other__";
+  const field = getEl("newLineField");
+
+  if (!field) return;
+
+  field.style.display = isOther ? "block" : "none";
+  if (!isOther) getEl("assetNewLine").value = "";
+});
+
+// MACHINE → show/hide new machine field
+getEl("assetMachine")?.addEventListener("change", () => {
+  const isOther = getEl("assetMachine").value === "__other__";
+  const field = getEl("newMachineField");
+
+  if (!field) return;
+
+  field.style.display = isOther ? "block" : "none";
+  if (!isOther) getEl("assetNewMachine").value = "";
+});
 
 
 /* =====================

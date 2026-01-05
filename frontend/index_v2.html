@@ -745,9 +745,10 @@
       <select id="assetLine">
         <option value="">Select Line</option>
         <!-- populated from DB -->
-        <option value="_other">➕ Other…</option>
+        <option value="__other__">➕ Other…</option>
       </select>
     </div>
+
 
     <!-- NEW LINE (conditional) -->
     <div class="field" id="newLineField" style="display:none;">
@@ -758,20 +759,19 @@
         placeholder="e.g. L8 / Packaging"
       />
     </div>
-
+    
     <!-- MACHINE -->
     <div class="field">
       <label>Machine</label>
       <select id="assetMachine">
-        <option value="">Select Machine</option>
-        <option value="PMC250">PMC250</option>
-        <option value="PMC300">PMC300</option>
-        <option value="PMC500">PMC500</option>
-        <option value="PTC027">PTC027</option>
-        <option value="_other">➕ Other…</option>
-      </select>
+       <option value="">Select Machine</option>
+       <option value="PMC250">PMC250</option>
+       <option value="PMC300">PMC300</option>
+       <option value="PMC500">PMC500</option>
+       <option value="PTC027">PTC027</option>
+        <option value="__other__">➕ Other…</option>
+     </select>
     </div>
-
     <!-- NEW MACHINE (conditional) -->
     <div class="field" id="newMachineField" style="display:none;">
       <label>New Machine</label>
