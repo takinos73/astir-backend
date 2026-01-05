@@ -540,11 +540,13 @@ app.patch("/executions/:id", async (req, res) => {
       ]
     );
 
-    // 3️⃣ Update execution metadata (technician only)
+    // 3️⃣ Update execution metadata (technician + audit)
     await client.query(
       `
       UPDATE task_executions
-      SET executed_by = $1
+      SET
+        executed_by = $1,
+        updated_at = NOW()
       WHERE id = $2
       `,
       [
