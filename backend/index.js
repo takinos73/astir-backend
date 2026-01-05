@@ -720,8 +720,8 @@ app.post("/assets", async (req, res) => {
     if (!lineId) {
       const createdLine = await client.query(
         `
-        INSERT INTO lines (code, name, created_at)
-        VALUES ($1, $2, NOW())
+        INSERT INTO lines (code, name)
+        VALUES ($1, $2)
         RETURNING id
         `,
         [cleanLine, cleanLine]
