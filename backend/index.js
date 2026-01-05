@@ -849,6 +849,32 @@ app.patch("/assets/:id/deactivate", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/* =====================
+   GET ASSET MODELS
+   - Used in Add Asset modal
+===================== */
+app.get("/asset-models", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT model
+      FROM assets
+      WHERE active = true
+        AND model IS NOT NULL
+        AND model <> ''
+      ORDER BY model ASC
+    `);
+
+    // επιστρέφουμε απλό array strings
+    const models = result.rows.map(r => r.model);
+
+    res.json(models);
+
+  } catch (err) {
+    console.error("GET /asset-models ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 /* =====================================================
    IMPORT HELPERS
