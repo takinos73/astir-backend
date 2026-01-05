@@ -489,14 +489,15 @@ function renderHistoryTable(data) {
 
         <td>
           <div class="task-title">
-            <strong>${h.task}</strong>
-            ${editedBadge}
+            <strong>${h.task}</strong> 
           </div>
           <small>
             ${h.section || ""}
             ${h.section && h.unit ? " / " : ""}
             ${h.unit || ""}
+            ${editedBadge}
           </small>
+          
         </td>
 
         <td>${h.executed_by || "-"}</td>
