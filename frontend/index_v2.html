@@ -728,42 +728,79 @@
       <button class="btn-secondary" id="resetReportBtn">Reset</button>
     </div>
   </section>
+ </div>
 </div>
+   
+  <!-- =====================
+     ADD ASSET MODAL
+===================== -->
+<div id="addAssetOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-small">
 
+    <h3>➕ Add Asset</h3>
 
-  </div>
-   <!-- ADD ASSET MODAL -->
-<div id="addAssetOverlay" class="modal-overlay">
-  <div class="modal-box">
-    <h3>Add Asset</h3>
+    <!-- LINE -->
+    <div class="field">
+      <label>Line</label>
+      <select id="assetLine">
+        <option value="">Select Line</option>
+        <!-- populated from DB -->
+        <option value="_other">➕ Other…</option>
+      </select>
+    </div>
 
-    <select id="assetLine">
-      <option value="">Select Line</option>
-      <option>L1</option><option>L2</option><option>L3</option>
-      <option>L4</option><option>L5</option><option>L6</option><option>L7</option>
-    </select>
+    <!-- NEW LINE (conditional) -->
+    <div class="field" id="newLineField" style="display:none;">
+      <label>New Line</label>
+      <input
+        type="text"
+        id="assetNewLine"
+        placeholder="e.g. L8 / Packaging"
+      />
+    </div>
 
-    <select id="assetMachine">
-      <option value="">Select Machine</option>
-      <option>PMC250</option>
-      <option>PMC300</option>
-      <option>PMC500</option>
-      <option>PTC027</option>
-    </select>
+    <!-- MACHINE -->
+    <div class="field">
+      <label>Machine</label>
+      <select id="assetMachine">
+        <option value="">Select Machine</option>
+        <option value="PMC250">PMC250</option>
+        <option value="PMC300">PMC300</option>
+        <option value="PMC500">PMC500</option>
+        <option value="PTC027">PTC027</option>
+        <option value="_other">➕ Other…</option>
+      </select>
+    </div>
 
-    <input
-      type="text"
-      id="assetSn"
-      placeholder="Serial Number"
-    />
+    <!-- NEW MACHINE (conditional) -->
+    <div class="field" id="newMachineField" style="display:none;">
+      <label>New Machine</label>
+      <input
+        type="text"
+        id="assetNewMachine"
+        placeholder="Machine model"
+      />
+    </div>
 
+    <!-- SERIAL NUMBER -->
+    <div class="field">
+      <label>Serial Number</label>
+      <input
+        type="text"
+        id="assetSn"
+        placeholder="Serial Number"
+      />
+    </div>
+
+    <!-- ACTIONS -->
     <div class="modal-actions">
-      <button class="btn-table" id="saveAssetBtn">💾 Save</button>
+      <button class="btn-primary" id="saveAssetBtn">💾 Save</button>
       <button class="btn-cancel" id="cancelAssetBtn">Cancel</button>
     </div>
+
   </div>
 </div>
-  
+
 
   <!-- JS -->
   <script src="app.js" defer></script>

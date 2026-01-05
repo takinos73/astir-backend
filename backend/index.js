@@ -47,6 +47,25 @@ app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
 
+/* =====================
+   GET LINES
+===================== */
+app.get("/lines", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, code, name
+      FROM lines
+      ORDER BY code
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET /lines ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 /* =====================================================
    TASKS
    - maintenance_tasks is assumed to have:

@@ -1908,65 +1908,72 @@ function renderAssetsTable() {
     tbody.appendChild(tr);
   });
 }
-
 /* =====================
-   ADD ASSET
+   LOAD LINES (FOR ADD ASSET)
 ===================== */
-
-// Open Add Asset modal
-getEl("addAssetBtn")?.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopImmediatePropagation(); // 🔥 ΣΤΑΜΑΤΑ ΟΛΑ ΤΑ ΑΛΛΑ LISTENERS
-
-  if (!hasRole("planner", "admin")) {
-    alert("You are not allowed to add assets");
-    return;
-  }
-
-  getEl("addAssetOverlay").style.display = "flex";
-});
-
-// Cancel Add Asset
-getEl("cancelAssetBtn")?.addEventListener("click", () => {
-  getEl("addAssetOverlay").style.display = "none";
-});
-
-// Save Asset
-getEl("saveAssetBtn")?.addEventListener("click", async () => {
-  // ROLE GUARD — extra safety
-  if (!hasRole("planner", "admin")) {
-    alert("Not allowed");
-    return;
-  }
-
-  const line = getEl("assetLine").value;
-  const model = getEl("assetMachine").value;
-  const sn = getEl("assetSn").value.trim();
-
-  if (!line || !model || !sn) {
-    return alert("Συμπλήρωσε όλα τα πεδία");
-  }
+async function loadLinesForAsset() {
+  const select = document.getElementById("assetLine");
+  if (!select) return;
 
   try {
-    await fetch(`${API}/assets`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        line,
-        model,
-        serial_number: sn
-      })
+    const res = await fetch(`${API}/lines`);
+    const lines = await res.json();
+
+    select.innerHTML = `<option value="">Select Line</option>`;
+
+    lines.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l.code;
+      opt.textContent = l.code;
+      select.appendChild(opt);
     });
 
-    getEl("addAssetOverlay").style.display = "none";
-    getEl("assetSn").value = "";
+    // ➕ OTHER
+    const other = document.createElement("option");
+    other.value = "__other__";
+    other.textContent = "➕ Other (new line)";
+    select.appendChild(other);
 
-    loadAssets();
   } catch (err) {
-    alert("Failed to save asset");
-    console.error(err);
+    console.error("LOAD LINES ERROR:", err);
   }
+}
+
+
+/* =====================
+   ADD ASSET MODAL – SAFE OPEN
+===================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const addBtn = document.getElementById("addAssetBtn");
+  const overlay = document.getElementById("addAssetOverlay");
+  const cancelBtn = document.getElementById("cancelAssetBtn");
+
+  if (!addBtn || !overlay) {
+    console.warn("Add Asset elements not found");
+    return;
+  }
+
+  // OPEN MODAL
+  addBtn.addEventListener("click", e => {
+    e.preventDefault();
+
+    if (!hasRole("planner", "admin")) {
+      alert("You are not allowed to add assets");
+      return;
+    }
+    loadLinesForAsset(); // 👈 ΕΔΩ
+
+    overlay.style.display = "flex";
+  });
+
+  // CLOSE MODAL
+  cancelBtn?.addEventListener("click", () => {
+    overlay.style.display = "none";
+  });
 });
+
+
 
 /* =====================
    DELETE ASSET
@@ -2034,6 +2041,37 @@ function populateAssetLineFilter() {
     sel.appendChild(opt);
   });
 }
+async function loadAssetLines() {
+  const sel = document.getElementById("assetLine");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Select Line</option>`;
+
+  const res = await fetch(`${API}/lines`);
+  const lines = await res.json();
+
+  lines.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.code;
+    opt.textContent = l.code;
+    sel.appendChild(opt);
+  });
+
+  // keep Other
+  sel.appendChild(new Option("➕ Other…", "_other"));
+}
+// LINE → Other
+document.getElementById("assetLine")?.addEventListener("change", e => {
+  document.getElementById("newLineField").style.display =
+    e.target.value === "_other" ? "block" : "none";
+});
+
+// MACHINE → Other
+document.getElementById("assetMachine")?.addEventListener("change", e => {
+  document.getElementById("newMachineField").style.display =
+    e.target.value === "_other" ? "block" : "none";
+});
+
 
 /* =====================
    LOAD REPORTS TAB
