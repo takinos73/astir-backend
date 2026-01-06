@@ -1026,8 +1026,8 @@ app.post("/importExcel/preview", uploadMem.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const workbook = XLSX.read(req.file.buffer, { cellDates: true });
-    const sheet = workbook.Sheets["MasterPlan"];
-    if (!sheet) return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
+    const sheet = workbook.Sheets["MasterPlan_GR"];
+    if (!sheet) return res.status(400).json({ error: "Sheet 'MasterPlan_GR' not found" });
 
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
     const preview = await buildImportPreview(rows);
@@ -1048,9 +1048,9 @@ app.post("/importExcel/commit", uploadMem.single("file"), async (req, res) => {
     }
 
     const workbook = XLSX.read(req.file.buffer, { cellDates: true });
-    const sheet = workbook.Sheets["MasterPlan"];
+    const sheet = workbook.Sheets["MasterPlan_GR"];
     if (!sheet) {
-      return res.status(400).json({ error: "Sheet 'MasterPlan' not found" });
+      return res.status(400).json({ error: "Sheet 'MasterPlan_GR' not found" });
     }
 
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
