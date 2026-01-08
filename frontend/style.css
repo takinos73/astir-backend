@@ -379,10 +379,10 @@ tbody tr:hover { background: #131520; }
 ===================== */
 
 .task-view-title {
-  margin-top: 18px;
+  margin-top: 12px;
   margin-bottom: 4px;
   font-size: 1.4em;
-  font-weight: 600;
+  font-weight: 200;
   line-height: 1.25;
 }
 
@@ -418,9 +418,9 @@ tbody tr:hover { background: #131520; }
 .task-view-details {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px 14px;
-  max-width: 480px;
-  margin-top: 22px;
+  gap: 8px 14px;
+  max-width: 520px;
+  margin-top: 20px;
 }
 
 .task-view-details > div {
@@ -627,12 +627,13 @@ tbody tr:hover { background: #131520; }
 
 /* γενικό spacing modal */
 #taskViewOverlay .modal-box {
-  padding: 18px 20px;   /* πριν ήταν πιο “βαρύ” */
+  padding: 14px 16px;   /* πριν ήταν πιο “βαρύ” */
 }
 
 /* title */
 #taskViewOverlay h3 {
-  margin-bottom: 8px;
+  margin-top: 4px;      /* 👈 μειώνει το κενό από πάνω */
+  margin-bottom: 6px;   /* 👈 κρατάει λίγο αέρα κάτω */
 }
 
 /* =====================
@@ -675,8 +676,13 @@ tbody tr:hover { background: #131520; }
 
 /* details grid */
 .task-view-details {
-  margin-top: 12px;
-  gap: 10px 12px;
+  display: grid;              /* 👈 απαραίτητο */
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 10px;
+  gap: 10px 12px;  
+  align-items: start;         /* 👈 πάνω κάθετα */
+  text-align: left;           /* 👈 text πάντα αριστερά */
+  font-size: 2;
 }
 /* =====================
    TASKS COUNT LABEL
@@ -1377,7 +1383,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* =====================
-  ADD TASK MODAL FORM
+  ADD TASK MODAL FORM – COMPACT
 ===================== */
 
 /* Ensure vertical form layout */
@@ -1385,7 +1391,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
-  gap: 3px;  
+  gap: 2px;               /* 👈 λίγο πιο σφιχτό */  
+}
+#addTaskOverlay .modal-box {
+  padding-top: 2px;   /* 👈 πριν ήταν ~20px */
 }
 
 /* Inputs, selects, textarea same look */
@@ -1393,13 +1402,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #addTaskModal select,
 #addTaskModal textarea {
   width: 100%;
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 4px 6px;       /* 👈 ΜΙΚΡΥΝΕ ΥΨΟΣ */
+  font-size: 13px;        /* 👈 ελαφρώς πιο compact */
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-  max-height: 120px;      /* 👈 δεν ξεφεύγει */
-  resize: vertical; 
+  max-height: 92px;       /* 👈 πιο κοντό από πριν */
+  resize: vertical;
 }
 
 /* Field wrapper alignment */
@@ -1407,19 +1416,59 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   align-items: flex-start;   /* 👈 αριστερά */
+  margin-bottom: 2px;        /* 👈 λιγότερο vertical air */
 }
 
 /* Labels */
 #addTaskModal label {
-  font-size: 13px;
-  margin-bottom: 4px;
-  color: #333;
+  font-size: 12px;           /* 👈 πιο μικρό label */
+  margin-bottom: 1px;
+  color: #d0cfcf;
+  align-self: flex-start;   /* 👈 αριστερά */
+  text-align: left; 
+  padding-left: 4px;
 }
-
+#addTaskModal .field > label {
+  align-self: flex-start;
+}
 /* Prevent selects from centering text */
 #addTaskModal select {
   text-align: left;
 }
+/* =====================
+   ADD TASK – HEADER COMPACT
+===================== */
+
+.addtask-header {
+  margin:4;
+  padding-top: 0;
+}
+
+/* Title */
+.addtask-header h3 {
+  margin: 1;              /* 👈 αφαιρεί default h3 margin */
+  font-size: 1.15em;     /* ελαφρώς πιο compact */
+  font-weight: 600;
+}
+
+/* Context line */
+.addtask-context {
+  margin-top: 4px;       /* 👈 κοντά στον τίτλο */
+  font-size: 0.8em;
+  color: #9aa4b2;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Optional: ελαφρύ icon alignment */
+.addtask-context span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 
 /* =====================
    TASK TYPE COLOR CODING
@@ -1460,10 +1509,10 @@ tr.history-unplanned {
   background: rgba(0,0,0,0.6);
   display: none;
   justify-content: center;
-  align-items: center;
+  align-items: left;
   z-index: 999;
-  max-height: 100%;
-  margin-top: 1%;
+  max-height: 99%;
+  margin-top: 6px;
 
   /* 🔑 clicks active only when visible */
   pointer-events: auto;
@@ -1475,16 +1524,17 @@ tr.history-unplanned {
 
 .modal-box {
   background: var(--bg-card-alt);
-  padding: 10px;
+  padding: 2px 8px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   text-align: center;
   pointer-events: auto;
+  overflow-y: auto;
 }
 
 .modal-wide {
-  width: 520px;
-  max-width: 90%;
+  width: 550px;
+  max-width: 92%;  
 }
 
 .modal-history {
@@ -1502,7 +1552,7 @@ tr.history-unplanned {
 
 .modal-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* =====================
@@ -1873,6 +1923,127 @@ tr.history-unplanned {
 .btn-danger {
   color: #ff8a8a;
 }
+
+/* =====================
+   TASK VIEW – FOLLOW-UP (POLISH, THEME SAFE)
+===================== */
+
+/* Follow-up container */
+.task-followup.tech {
+  margin-top: 16px;
+  padding: 4px 16px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(78,168,255,0.06),
+    rgba(78,168,255,0.02)
+  );
+
+  border: 1px dashed rgba(78,168,255,0.35);
+  border-radius: 12px;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 6px 18px rgba(0,0,0,0.35);
+}
+
+/* Header */
+.task-followup .followup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.task-followup .followup-header strong {
+  font-size: 0.85em;
+  letter-spacing: 0.3px;
+}
+
+.task-followup .followup-hint {
+  font-size: 0.7em;
+  color: var(--text-muted);
+}
+
+/* Body text */
+.task-followup p {
+  font-size: 0.8em;
+  color: #cfd8dc;
+  margin: 8px 0 14px;
+  line-height: 1.45;
+}
+
+/* =====================
+   FOLLOW-UP PRIMARY BUTTON
+===================== */
+
+.task-followup .btn-primary {
+  height: 32px;
+  padding: 0 12px;
+
+  background: linear-gradient(
+    180deg,
+    var(--accent),
+    #1f6feb
+  );  
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  color: #061825;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.08),
+    0 6px 18px rgba(0,0,0,0.45);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+/* hover */
+.task-followup .btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.12),
+    0 8px 22px rgba(0,0,0,0.55);
+}
+/* active */
+.task-followup .btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 4px 12px rgba(0,0,0,0.35);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

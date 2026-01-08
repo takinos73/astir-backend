@@ -27,9 +27,7 @@
 
       <div class="task-edit-header">
         <h4>✏️ Edit Task</h4>
-        <span class="task-edit-sub">
-          Modify planned task details
-        </span>
+        
       </div>
 
       <div class="task-edit-grid">
@@ -64,6 +62,7 @@
           <textarea id="edit-task-notes" rows="3"></textarea>
         </div>
       </div>
+
       <div class="task-edit-actions">
         <button class="btn-table" onclick="saveTaskEdit()">💾 Update</button>
         <button class="btn-cancel" onclick="cancelTaskEdit()">Cancel</button>
@@ -74,7 +73,22 @@
          ACTIONS
     ====================== -->
     <div class="modal-actions task-view-actions">
-      <button class="btn-secondary" onclick="closeTaskView()">Close</button>
+
+      <!-- Close -->
+      <button class="btn-secondary" onclick="closeTaskView()">
+        Close
+      </button>
+
+      <!-- 🆕 CREATE FOLLOW-UP TASK -->
+      <button
+        id="createFollowupTaskBtn"
+        class="btn-primary"
+        style="display:none;"
+        onclick="createFollowupTaskFromView()">
+        ➕ Create Follow-up Task
+      </button>
+
+      <!-- Edit planned manual -->
       <button
         id="editTaskBtn"
         class="btn-edit"
@@ -82,6 +96,8 @@
         onclick="enableTaskEdit()">
         ✏️ Edit
       </button>
+
+      <!-- Cancel planned manual -->
       <button
         id="deleteTaskBtn"
         class="btn-delete"
@@ -89,9 +105,11 @@
         onclick="confirmDeleteTask()">
         🗑 Cancel Task
       </button>
+
     </div>
   </div>
 </div>
+
 
 <!-- =====================
      HISTORY MODAL
@@ -258,68 +276,133 @@
 </div>
 
 <!-- =====================
-     ADD TASK MODAL
+     ADD TASK MODAL – INDUSTRIAL v2
 ===================== -->
 <div id="addTaskOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-wide" id="addTaskModal">
 
-    <!-- Title -->
-    <h3 id="addTaskTitle">New Task</h3>
+    <!-- =====================
+         HEADER / CONTEXT
+    ====================== -->
+    <div class="addtask-header">
+      <h3 id="addTaskTitle">New Work Order</h3>
+      <div class="addtask-context">
+        <span id="ctx-asset">🏭 Asset context will be used</span>
+        <span id="ctx-location">Line / Section / Unit</span>
+      </div>
+    </div>
 
-    <!-- Task Type -->
-    <div class="field">
-      <label for="taskPlannedType">Task Type</label>
+    <!-- =====================
+         TASK INTENT
+    ====================== -->
+    <div class="addtask-block">
+      <label>Work Order Type</label>
       <select id="taskPlannedType">
-        <option value="planned">Planned Task</option>
-        <option value="unplanned">Unplanned (Breakdown)</option>
+        <option value="planned">🟨 Planned Task</option>
+        <option value="unplanned">🟥 Breakdown / Unplanned</option>
       </select>
     </div>
 
-    <!-- Asset / Location -->
-    <div class="field">
-      <label for="nt-line">Line</label>
-      <select id="nt-line">
+    <!-- =====================
+         ASSET / LOCATION
+    ====================== -->
+    <div class="addtask-block addtask-grid">
+
+      <div class="field">
+        <label>Line</label>
+        <select id="nt-line">
           <option value="">Select Line</option>
-      </select>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Asset</label>
+        <select id="nt-asset" disabled>
+          <option value="">Select Asset</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Section</label>
+        <input id="nt-section" placeholder="Section" />
+      </div>
+
+      <div class="field">
+        <label>Unit</label>
+        <input id="nt-unit" placeholder="Unit" />
+      </div>
+
     </div>
 
-    <div class="field">
-      <label for="nt-asset">Asset</label>
-      <select id="nt-asset" disabled>
-        <option value="">Select Asset</option>
-      </select>
+    <!-- =====================
+         TASK DEFINITION
+    ====================== -->
+    <div class="addtask-block">
+      <label>Task Description</label>
+      <input
+        id="nt-task"
+        placeholder="Describe the maintenance task"
+      />
     </div>
 
-    <input id="nt-section" placeholder="Section" />
-    <input id="nt-unit" placeholder="Unit" />
+    <div class="addtask-block addtask-grid">
 
-    <!-- Task Info -->
-    <input id="nt-task" placeholder="Task description" />
-    <input id="nt-type" placeholder="Type (Inspection / Repair / Breakdown)" />
-    <div class="field unplanned-only">
-      <label for="nt-technician">Technician</label>
-      <input id="nt-technician" placeholder="Technician name"/>
+      <div class="field">
+        <label>Task Type</label>
+        <input
+          id="nt-type"
+          placeholder="Inspection / Repair / Adjustment"
+        />
+      </div>
+
+      <div class="field unplanned-only">
+        <label>Technician</label>
+        <input
+          id="nt-technician"
+          placeholder="Technician name"
+        />
+      </div>
+
     </div>
 
-    <!-- Planned only -->
-    <input
-      id="nt-due"
-      type="date"
-      class="planned-only"
-      placeholder="Due date"
-    />
+    <!-- =====================
+         SCHEDULING (PLANNED)
+    ====================== -->
+    <div class="addtask-block planned-only">
+      <label>Due Date</label>
+      <input
+        id="nt-due"
+        type="date"
+      />
+    </div>
 
-    <!-- Notes -->
-    <textarea id="nt-notes" placeholder="Notes"></textarea>
+    <!-- =====================
+         NOTES
+    ====================== -->
+    <div class="addtask-block">
+      <label>Notes</label>
+      <textarea
+        id="nt-notes"
+        rows="3"
+        placeholder="Observations, findings, instructions"
+      ></textarea>
+    </div>
 
-    <!-- Actions -->
+    <!-- =====================
+         ACTIONS
+    ====================== -->
     <div class="modal-actions">
-      <button id="saveTaskBtn" class="btn-table">Save</button>
-      <button id="cancelAddTask" class="btn-cancel">Cancel</button>
+      <button id="cancelAddTask" class="btn-cancel">
+        Cancel
+      </button>
+      <button id="saveTaskBtn" class="btn-table">
+        ✔ Create Work Order
+      </button>
     </div>
 
   </div>
-</div>  
+</div>
+
 <body>
 
    

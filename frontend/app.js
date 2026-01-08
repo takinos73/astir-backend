@@ -667,69 +667,132 @@ function viewTask(taskId) {
 
   const el = document.getElementById("taskViewContent");
 
-  el.innerHTML = `
+el.innerHTML = `
 
-   <!-- =====================
-       ASSET HEADER
-  ====================== -->
-  <div class="task-view-asset">
-    <div class="asset-main">
-      ${task.machine_name}
-    </div>
-    <div class="asset-sub">
-      ${task.serial_number ? `SN: ${task.serial_number}` : ""}
-      • Line ${task.line_code}
+<!-- =====================
+     TECHNICAL TASK VIEW
+===================== -->
+
+<!-- ASSET CONTEXT -->
+<div class="task-view-asset tech">
+  <div class="asset-main">
+    🏭 ${task.machine_name}
+  </div>
+  <div class="asset-sub">
+    ${task.serial_number ? `SN: ${task.serial_number}` : ""}
+    • Line ${task.line_code}
+  </div>
+</div>
+
+<!-- WORK ORDER TITLE -->
+<div class="task-view-title tech">
+  ${task.task}
+</div>
+
+<!-- STATUS / TYPE -->
+<div class="task-view-meta tech">
+  <span class="badge badge-type">
+    ${task.type || "Maintenance Task"}
+  </span>
+  <span class="badge badge-status">
+    ${task.status}
+  </span>
+  ${
+    task.due_date
+      ? `<span class="badge badge-date">
+           Due: ${formatDate(task.due_date)}
+         </span>`
+      : ``
+  }
+</div>
+
+<!-- TECHNICAL DETAILS -->
+<div class="task-view-details tech">
+
+  <div>
+    <label>Section</label>
+    <div>${task.section || "-"}</div>
+  </div>
+
+  <div>
+    <label>Unit</label>
+    <div>${task.unit || "-"}</div>
+  </div>
+
+  <div>
+    <label>Maintenance Type</label>
+    <div>
+      ${
+        isPreventive(task)
+          ? "Preventive (Scheduled)"
+          : isPlannedManual(task)
+          ? "Planned (Manual)"
+          : "Unplanned / Breakdown"
+      }
     </div>
   </div>
 
-  <!-- =====================
-       TASK TITLE
-  ====================== -->
-  <div class="task-view-title">
-    ${task.task}
+  <div>
+    <label>Frequency</label>
+    <div>
+      ${task.frequency_hours ? task.frequency_hours + " h" : "-"}
+    </div>
   </div>
 
-  <!-- =====================
-       TASK META
-  ====================== -->
-  <div class="task-view-meta">
-    <span class="badge badge-type">${task.type || "Task"}</span>
-    <span class="badge badge-status">${task.status}</span>
-    <span class="badge badge-date">
-      Due: ${formatDate(task.due_date)}
+  <div>
+    <label>Estimated Duration</label>
+    <div>
+      ${task.duration_min ? task.duration_min + " min" : "-"}
+    </div>
+  </div>
+
+</div>
+
+<!-- COMPLETION INFO -->
+${
+  task.status === "Done"
+    ? `
+<div class="task-view-completed tech">
+  ✔ Completed<br>
+  <span>
+    Executed by <strong>${task.completed_by || "-"}</strong>
+  </span>
+  <span>
+    • ${task.completed_at ? formatDate(task.completed_at) : ""}
+  </span>
+</div>
+`
+    : ""
+}
+${task.status !== "Done" ? `
+<!-- =====================
+     FOLLOW-UP ACTION
+===================== -->
+<div class="task-followup tech">
+
+  <div class="followup-header">
+    <strong>Follow-up Action</strong>
+    <span class="followup-hint">
+      Use this inspection to create a new maintenance task
     </span>
   </div>
 
-  <!-- =====================
-       DETAILS
-  ====================== -->
-  <div class="task-view-details">
-    <div>
-      <label>Section</label>
-      <div>${task.section || "-"}</div>
-    </div>
+  <div class="followup-body">
+    <p>
+      you can open a new <strong>Planned</strong> or <strong>Breakdown</strong>
+      task using the same asset.
+    </p>
 
-    <div>
-      <label>Unit</label>
-      <div>${task.unit || "-"}</div>
-    </div>
-
-    <div>
-      <label>Frequency</label>
-      <div>${task.frequency_hours ? task.frequency_hours + " h" : "-"}</div>
-    </div>
-
-    <div>
-      <label>Duration</label>
-      <div>${task.duration_min ? task.duration_min + " min" : "-"}</div>
-    </div>
+    <button
+      id="createFollowupTaskBtn"
+      class="btn-primary"
+      style="display:none;"
+      type="button">
+      ➕ Create Follow-up Task
+    </button>
   </div>
-  ${task.status === "Done" ? `
-  <div class="task-view-completed">
-    ✔ Completed<br>
-    <span>Done by <strong>${task.completed_by || "-"}</strong></span>
-    <span> • ${task.completed_at ? formatDate(task.completed_at) : ""}</span>
-  </div>
+
+</div>
 ` : ""}
 
 `;
@@ -758,6 +821,21 @@ if (canEditTask(task)) {
 } else {
   editBtn.style.display = "none";
   deleteBtn.style.display = "none";
+}
+// =====================
+// FOLLOW-UP TASK BUTTON VISIBILITY
+// =====================
+const followupBtn = document.getElementById("createFollowupTaskBtn");
+
+if (
+  followupBtn &&
+  hasRole("planner", "admin") &&
+  task.status !== "Done" &&
+  (isPreventive(task) || isPlannedManual(task))
+) {
+  followupBtn.style.display = "inline-flex";
+} else if (followupBtn) {
+  followupBtn.style.display = "none";
 }
 
 }
@@ -1484,7 +1562,17 @@ taskTypeSelect?.addEventListener("change", e => {
 document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const isPlanned =
-    document.getElementById("taskPlannedType")?.value === "planned";
+  document.getElementById("taskPlannedType")?.value === "planned";
+
+// 🔒 Due date required for Planned tasks
+if (isPlanned) {
+  const due = document.getElementById("nt-due")?.value;
+  if (!due) {
+    alert("Please select a due date for a planned task.");
+    return;
+  }
+}
+
 
   const technician =
     document.getElementById("nt-technician")?.value?.trim() || null;    
@@ -1659,6 +1747,114 @@ console.log("ASSETS DATA:", assetsData);
 
   overlay.style.display = "flex";
 });
+
+// =====================
+// FOLLOW-UP TASK (PREFILL FROM VIEW) — FINAL
+// =====================
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("#createFollowupTaskBtn");
+  if (!btn) return;
+
+  if (!currentViewedTask) return;
+  const t = currentViewedTask;
+
+  // 🔒 Ensure assets loaded (CRITICAL)
+  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+    await loadAssets();
+  }
+
+  // 🔥 CRITICAL: ensure Line dropdown OPTIONS exist
+  // (this was the missing piece on fresh reload)
+  populateAddTaskLines();
+
+  // 🔹 Reset Add Task form (SAFE)
+  document.querySelectorAll(
+    "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
+  ).forEach(el => el.value = "");
+
+  // 🔹 Default task type = Planned
+  const typeSelect = document.getElementById("taskPlannedType");
+  if (typeSelect) typeSelect.value = "planned";
+
+  // 🔹 Modal title
+  const title = document.getElementById("addTaskTitle");
+  if (title) title.textContent = "New Follow-up Task";
+
+  // 🔹 Prefill Section / Unit
+  const secEl = document.getElementById("nt-section");
+  if (secEl) secEl.value = t.section || "";
+
+  const unitEl = document.getElementById("nt-unit");
+  if (unitEl) unitEl.value = t.unit || "";
+
+  // 🔹 Prefill Line (AFTER options exist)
+  const line = (t.line_code || t.line || "");
+  const lineEl = document.getElementById("nt-line");
+
+  if (lineEl && line) {
+    // ⏳ Final set (defensive against any late resets)
+    requestAnimationFrame(() => {
+      lineEl.value = line;
+    });
+  }
+
+  // 🔹 Populate Asset dropdown for selected line
+  populateAssetSelectForLine(line);
+
+  // 🔹 Robust asset match (case / trim safe)
+  const normStr = (v) =>
+    (v ?? "").toString().trim().toUpperCase();
+
+  const match =
+    (assetsData || []).find(a =>
+      normStr(a.line) === normStr(line) &&
+      normStr(a.model) === normStr(t.machine_name) &&
+      normStr(a.serial_number) === normStr(t.serial_number)
+    )
+    // fallback: serial usually unique
+    || (assetsData || []).find(a =>
+      normStr(a.serial_number) === normStr(t.serial_number)
+    );
+
+  const assetEl = document.getElementById("nt-asset");
+  if (assetEl && match) {
+    // ⏳ Final asset select (defensive)
+    requestAnimationFrame(() => {
+      assetEl.value = match.id;
+    });
+  }
+
+  // 🔹 Open Add Task modal
+  document.getElementById("addTaskOverlay").style.display = "flex";
+
+  // 🔹 Close Task View to save one click (UX win)
+  const tv = document.getElementById("taskViewOverlay");
+  if (tv) tv.style.display = "none";
+});
+
+
+
+function populateAssetSelectForLine(line) {
+  const assetSel = document.getElementById("nt-asset");
+  if (!assetSel) return;
+
+  assetSel.innerHTML = `<option value="">Select Asset</option>`;
+  assetSel.disabled = true;
+
+  if (!line) return;
+
+  const filtered = (assetsData || []).filter(a => (a.line || "") === line);
+
+  filtered.forEach(a => {
+    const opt = document.createElement("option");
+    opt.value = a.id;
+    opt.textContent = `${a.model} (${a.serial_number})`;
+    assetSel.appendChild(opt);
+  });
+
+  assetSel.disabled = false;
+}
+
 
 
 document.getElementById("nt-line")?.addEventListener("change", e => {
