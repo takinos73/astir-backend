@@ -714,8 +714,9 @@ tbody tr:hover { background: #131520; }
 
 .task-edit-area {
   margin-top: 10px;
-  padding: 12px 14px;   /* 👈 λίγο πιο κοντό */
+  padding: 12px 14px;
 }
+
 
 /* header */
 .task-edit-header {
@@ -1507,16 +1508,16 @@ tr.history-unplanned {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center;
-  align-items: left;
-  z-index: 999;
-  max-height: 99%;
-  margin-top: 6px;
 
-  /* 🔑 clicks active only when visible */
+  display: none;
+  justify-content: center;   /* οριζόντια */
+  align-items: flex-start;   /* 👈 ΤΟ ΚΛΕΙΔΙ */
+
+  z-index: 999;
+  padding-top: 16px;         /* αντί για margin-top */
   pointer-events: auto;
 }
+
 
 .modal-overlay[style*="display: none"] {
   pointer-events: none;
@@ -1529,16 +1530,21 @@ tr.history-unplanned {
   border: 1px solid var(--border-subtle);
   text-align: center;
   pointer-events: auto;
-  overflow-y: auto;
+
+  /* 🔑 default: fit content */
+  overflow: visible;
 }
+
 
 .modal-wide {
   width: 550px;
   max-width: 92%;  
+  max-height: 100%;     /* 👈 όριο: μόνο όταν ξεπεραστεί */
+  overflow-y: auto;     /* 👈 scroll εμφανίζεται ΜΟΝΟ τότε */  
 }
 
 .modal-history {
-  width: 95%;
+  width: 96%;
   max-width: 1200px;
 }
 
@@ -1554,6 +1560,8 @@ tr.history-unplanned {
   display: flex;
   gap: 8px;
 }
+
+
 
 /* =====================
    ADD ASSET MODAL – POLISH
@@ -2027,6 +2035,11 @@ tr.history-unplanned {
     inset 0 0 0 1px rgba(255,255,255,0.06),
     0 4px 12px rgba(0,0,0,0.35);
 }
+.modal-small {
+  overflow: visible;
+  height: auto;
+}
+
 
 
 
