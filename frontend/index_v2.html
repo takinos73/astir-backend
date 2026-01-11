@@ -72,41 +72,54 @@
     <!-- =====================
          ACTIONS
     ====================== -->
-    <div class="modal-actions task-view-actions">
+    <!-- =====================
+     ACTIONS
+===================== -->
+<div class="modal-actions task-view-actions">
 
-      <!-- Close -->
-      <button class="btn-secondary" onclick="closeTaskView()">
-        Close
-      </button>
+  <!-- Close -->
+  <button class="btn-secondary" onclick="closeTaskView()">
+    Close
+  </button>
 
-      <!-- 🆕 CREATE FOLLOW-UP TASK -->
-      <button
-        id="createFollowupTaskBtn"
-        class="btn-primary"
-        style="display:none;"
-        onclick="createFollowupTaskFromView()">
-        ➕ Create Follow-up Task
-      </button>
+  <!-- 🖨 Print Work Order -->
+  <button
+    id="printTaskBtn"
+    class="btn-print"
+    type="button"
+    onclick="printCurrentTask()">
+    🖨 Print Work Order
+  </button>
 
-      <!-- Edit planned manual -->
-      <button
-        id="editTaskBtn"
-        class="btn-edit"
-        style="display:none;"
-        onclick="enableTaskEdit()">
-        ✏️ Edit
-      </button>
+  <!-- 🆕 CREATE FOLLOW-UP TASK -->
+  <button
+    id="createFollowupTaskBtn"
+    class="btn-primary"
+    style="display:none;"
+    onclick="createFollowupTaskFromView()">
+    ➕ Create Follow-up Task
+  </button>
 
-      <!-- Cancel planned manual -->
-      <button
-        id="deleteTaskBtn"
-        class="btn-delete"
-        style="display:none;"
-        onclick="confirmDeleteTask()">
-        🗑 Cancel Task
-      </button>
+  <!-- Edit planned manual -->
+  <button
+    id="editTaskBtn"
+    class="btn-edit"
+    style="display:none;"
+    onclick="enableTaskEdit()">
+    ✏️ Edit
+  </button>
 
-    </div>
+  <!-- Cancel planned manual -->
+  <button
+    id="deleteTaskBtn"
+    class="btn-delete"
+    style="display:none;"
+    onclick="confirmDeleteTask()">
+    🗑 Cancel Task
+  </button>
+
+</div>
+
   </div>
 </div>
 

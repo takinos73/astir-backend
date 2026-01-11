@@ -1399,6 +1399,40 @@ app.get("/documentation/masterplan", async (req, res) => {
   }
 });
 
+// backend/print.js (example)
+import express from "express";
+import puppeteer from "puppeteer";
+
+const router = express.Router();
+
+router.get("/tasks/:id/print", async (req, res) => {
+  const id = req.params.id;
+
+  // TODO: fetch task from DB
+  const t = await getTaskById(id); // implement
+
+  const html = renderWorkOrderHtml(t); // reuse same template idea
+
+  const browser = await puppeteer.launch({ headless: "new" });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: "networkidle0" });
+
+  const pdf = await page.pdf({
+    format: "A4",
+    printBackground: true,
+    margin: { top: "14mm", right: "14mm", bottom: "14mm", left: "14mm" }
+  });
+
+  await browser.close();
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="workorder-${id}.pdf"`);
+  res.send(pdf);
+});
+
+export default router;
+
+
 /* =====================================================
    SPA fallback
 ===================================================== */

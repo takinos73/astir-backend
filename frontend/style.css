@@ -541,6 +541,47 @@ tbody tr:hover { background: #131520; }
   transform: translateY(0);
   opacity: 0.9;
 }
+
+/* =====================
+   PRINT BUTTON (WORK ORDER)
+===================== */
+
+.btn-print {
+  padding: 0 12px;
+  height: 34px;
+
+  background: linear-gradient(180deg, #2a2f3a, #1f2430);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+
+  color: #e6eaf0;
+  font-size: 12px;
+  font-weight: 500;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 4px 12px rgba(0,0,0,0.35);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+}
+
+.btn-print:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.btn-print:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+
 /* =====================
    TASK EDIT PANEL – POLISH
 ===================== */
@@ -1366,7 +1407,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   pointer-events: auto;            /* 👈 ΤΟ ΚΛΕΙΔΙ */
 }
 
-
 /* =====================
    REPORTS GRID ALIGNMENT
 ===================== */
@@ -1394,17 +1434,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Inputs, selects, textarea same look */
-#addTaskModal input,
-#addTaskModal select,
-#addTaskModal textarea {
-  width: 100%;
-  padding: 4px 6px;       /* 👈 ΜΙΚΡΥΝΕ ΥΨΟΣ */
-  font-size: 13px;        /* 👈 ελαφρώς πιο compact */
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
-  max-height: 52px;       /* 👈 πιο κοντό από πριν */
-  resize: vertical;
+  #addTaskModal input,
+  #addTaskModal select,
+  #addTaskModal textarea {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    max-height: 64px;
+    resize: vertical;
 }
 
 /* Field wrapper alignment */
