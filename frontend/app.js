@@ -410,7 +410,8 @@ function printCurrentTask() {
 </html>
 `;
 
-  const w = window.open("", "_blank");
+  const w = window.open(`/api/tasks/${currentViewedTask.id}/print`, "_blank");
+
   if (!w) {
     alert("Popup blocked. Please allow popups to print.");
     return;
