@@ -572,6 +572,13 @@ function getExecutionType(h) {
   // 🔵 Manual Planned (no frequency)
   return "planned";
 }
+/* =====================
+    PRINT History TASK
+===================== */
+function printExecution(executionId) {
+  window.open(`${API}/api/executions/${executionId}/print`, "_blank");
+}
+
 
 /* =====================
    Render HISTORY table
@@ -641,7 +648,7 @@ function renderHistoryTable(data) {
       ===================== */
       let actionHtml = `<span class="muted">—</span>`;
 
-      // 🟩 Preventive & 🟨 Planned → View + Restore
+      // 🟩 Preventive & 🟨 Planned → View + Restore + Print
       if (execType === "planned" || execType === "preventive") {
         actionHtml = `
           <div class="history-action-group">
@@ -650,6 +657,12 @@ function renderHistoryTable(data) {
               title="View details"
               onclick="viewHistoryEntry(${h.id})">
               👁
+            </button>
+            <button
+              class="btn-icon btn-print"
+              title="Print job report"
+              onclick="printExecution(${h.id})">
+              🖨
             </button>
             <button
               class="btn-icon btn-restore"
@@ -661,7 +674,7 @@ function renderHistoryTable(data) {
         `;
       }
 
-      // 🟥 Unplanned / Breakdown → View + Edit
+      // 🟥 Unplanned / Breakdown → View + Edit + Print
       else if (execType === "unplanned") {
         actionHtml = `
           <div class="history-action-group">
@@ -670,6 +683,12 @@ function renderHistoryTable(data) {
               title="View breakdown details"
               onclick="viewHistoryEntry(${h.id})">
               👁
+            </button>
+            <button
+              class="btn-icon btn-print"
+              title="Print job report"
+              onclick="printExecution(${h.id})">
+              🖨
             </button>
             <button
               class="btn-icon btn-edit"
@@ -706,7 +725,6 @@ function renderHistoryTable(data) {
             ${h.unit || ""}
             ${editedBadge}
           </small>
-          
         </td>
 
         <td>${h.executed_by || "-"}</td>
