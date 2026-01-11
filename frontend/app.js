@@ -1589,13 +1589,9 @@ function getCurrentPeriodLabel() {
 // =====================
 function printTask(taskId) {
   if (!taskId) return;
-
-  // Backend PDF endpoint
-  const url = `${API_BASE}/tasks/${taskId}/print`;
-
-  // Open PDF in new tab (print-friendly)
-  window.open(url, "_blank", "noopener,noreferrer");
+  window.open(`${API}/api/tasks/${taskId}/print`, "_blank");
 }
+
 
  /* =====================
     PRINT TASKS
