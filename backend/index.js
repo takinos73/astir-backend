@@ -9,7 +9,6 @@ import path from "path";
 import multer from "multer";
 import XLSX from "xlsx";
 import fs from "fs";
-import puppeteer from "puppeteer";
 
 dotenv.config();
 
@@ -1400,83 +1399,46 @@ app.get("/documentation/masterplan", async (req, res) => {
   }
 });
 
-/* =====================================================
-  PRINT WORK ORDER (PDF via Puppeteer)
-===================================================== */
 
 /* =====================
-   PRINT WORK ORDER (PDF)
+   PRINT WORK ORDER (HTML → Browser Print)
 ===================== */
 app.get("/api/tasks/:id/print", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // 1️⃣ Fetch task + asset
+    // 1️⃣ Fetch task + asset + line
     const result = await pool.query(`
-  SELECT
-    t.*,
-    a.model AS machine_name,
-    a.serial_number,
-    l.code AS line_code
-    FROM maintenance_tasks t
-    JOIN assets a ON a.id = t.asset_id
-    JOIN lines l ON l.id = a.line_id
-    WHERE t.id = $1
+      SELECT
+        t.*,
+        a.model AS machine_name,
+        a.serial_number,
+        l.code AS line_code
+      FROM maintenance_tasks t
+      JOIN assets a ON a.id = t.asset_id
+      JOIN lines l ON l.id = a.line_id
+      WHERE t.id = $1
     `, [id]);
 
-
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Task not found" });
+      return res.status(404).send("Task not found");
     }
 
     const task = result.rows[0];
 
-    // 2️⃣ Generate HTML
+    // 2️⃣ Generate printable HTML
     const html = buildWorkOrderHTML(task);
 
-    // 3️⃣ Launch browser (Render-safe)
-    const browser = await puppeteer.launch({
-      headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox"
-      ]
-    });
-
-    const page = await browser.newPage();
-
-    await page.setContent(html, { waitUntil: "networkidle0" });
-
-    // 4️⃣ Generate PDF
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: {
-        top: "20mm",
-        bottom: "20mm",
-        left: "15mm",
-        right: "15mm"
-      }
-    });
-
-    await browser.close();
-
-    // 5️⃣ Send PDF
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename=work-order-${task.id}.pdf`
-    );
-
-    res.send(pdf);
+    // 3️⃣ Send HTML (browser handles print → PDF)
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
 
   } catch (err) {
-      console.error("PDF ERROR FULL:", err);
-      console.error(err?.stack);
-      res.status(500).json({ error: "Failed to generate PDF" });
-    }
-  
+    console.error("PRINT WORK ORDER ERROR:", err);
+    res.status(500).send("Failed to generate work order");
+  }
 });
+
 
 function buildWorkOrderHTML(task) {
   return `
