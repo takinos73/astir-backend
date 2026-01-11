@@ -9,7 +9,6 @@ import path from "path";
 import multer from "multer";
 import XLSX from "xlsx";
 import fs from "fs";
-import express from "express";
 import puppeteer from "puppeteer";
 
 dotenv.config();
