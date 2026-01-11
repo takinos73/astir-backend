@@ -1408,7 +1408,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-  max-height: 50px;       /* 👈 πιο κοντό από πριν */
+  max-height: 52px;       /* 👈 πιο κοντό από πριν */
   resize: vertical;
 }
 
@@ -1422,7 +1422,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Labels */
 #addTaskModal label {
-  font-size: 12px;           /* 👈 πιο μικρό label */
+  font-size: 10px;           /* 👈 πιο μικρό label */
   margin-bottom: 1px;
   color: #d0cfcf;
   align-self: flex-start;   /* 👈 αριστερά */
@@ -1441,25 +1441,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 ===================== */
 
 .addtask-header {
-  margin:4;
-  padding-top: 0;
+  margin:2px;
+  padding-top: 1px;
 }
 
 /* Title */
 .addtask-header h3 {
-  margin: 1;              /* 👈 αφαιρεί default h3 margin */
+  margin: 1px;              /* 👈 αφαιρεί default h3 margin */
   font-size: 1.15em;     /* ελαφρώς πιο compact */
   font-weight: 600;
 }
 
 /* Context line */
 .addtask-context {
-  margin-top: 4px;       /* 👈 κοντά στον τίτλο */
+  margin-top: 2px;       /* 👈 κοντά στον τίτλο */
   font-size: 0.8em;
   color: #9aa4b2;
 
   display: flex;
-  gap: 10px;
+  gap: 6px;
   align-items: center;
 }
 
