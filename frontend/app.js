@@ -771,24 +771,15 @@ ${task.status !== "Done" ? `
 <div class="task-followup tech">
 
   <div class="followup-header">
-    <strong>Follow-up Action</strong>
-    <span class="followup-hint">
-      Use this inspection to create a new maintenance task
-    </span>
+    <strong>Follow-up Action</strong>    
   </div>
-
   <div class="followup-body">
-    <p>
-      you can open a new <strong>Planned</strong> or <strong>Breakdown</strong>
-      task using the same asset.
-    </p>
-
     <button
       id="createFollowupTaskBtn"
       class="btn-primary"
       style="display:none;"
       type="button">
-      ➕ Create Follow-up Task
+      ➕ Follow-up Task
     </button>
   </div>
 
