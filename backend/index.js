@@ -9,6 +9,8 @@ import path from "path";
 import multer from "multer";
 import XLSX from "xlsx";
 import fs from "fs";
+import express from "express";
+import puppeteer from "puppeteer";
 
 dotenv.config();
 
@@ -1400,8 +1402,6 @@ app.get("/documentation/masterplan", async (req, res) => {
 });
 
 // backend/print.js (example)
-import express from "express";
-import puppeteer from "puppeteer";
 
 const router = express.Router();
 
