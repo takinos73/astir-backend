@@ -875,11 +875,17 @@ function viewTask(taskId) {
   if (!task) return;
 
   const el = document.getElementById("taskViewContent");
+
+  // =====================
+  // PRINT BUTTON
+  // =====================
   const printBtn = document.getElementById("printTaskBtn");
-  if (printBtn) printBtn.style.display = "inline-flex";
+  if (printBtn) {
+    printBtn.style.display = "inline-flex";
+    printBtn.onclick = () => printTask(task.id);
+  }
 
-
-el.innerHTML = `
+  el.innerHTML = `
 
 <!-- =====================
      TECHNICAL TASK VIEW
@@ -976,15 +982,19 @@ ${
 `
     : ""
 }
-${task.status !== "Done" ? `
+
+${
+  task.status !== "Done"
+    ? `
 <!-- =====================
      FOLLOW-UP ACTION
 ===================== -->
 <div class="task-followup tech">
 
   <div class="followup-header">
-    <strong>Follow-up Action</strong>    
+    <strong>Follow-up Action</strong>
   </div>
+
   <div class="followup-body">
     <button
       id="createFollowupTaskBtn"
@@ -996,55 +1006,50 @@ ${task.status !== "Done" ? `
   </div>
 
 </div>
-` : ""}
+`
+    : ""
+}
 
 `;
 
   document.getElementById("taskViewOverlay").style.display = "flex";
-// =====================
-// EDIT BUTTON VISIBILITY
-// =====================
-currentViewedTask = task;
 
-const editBtn = document.getElementById("editTaskBtn");
-const editArea = document.getElementById("taskEditArea");
+  // =====================
+  // EDIT / DELETE VISIBILITY
+  // =====================
+  currentViewedTask = task;
 
-if (canEditTask(task)) {
-  editBtn.style.display = "inline-flex";
-  editArea.style.display = "none"; // αρχικά κρυφό
-} else {
-  editBtn.style.display = "none";
-  editArea.style.display = "none";
-}
-const deleteBtn = document.getElementById("deleteTaskBtn");
+  const editBtn = document.getElementById("editTaskBtn");
+  const deleteBtn = document.getElementById("deleteTaskBtn");
+  const editArea = document.getElementById("taskEditArea");
 
-if (canEditTask(task)) {
-  editBtn.style.display = "inline-flex";
-  deleteBtn.style.display = "inline-flex";
-} else {
-  editBtn.style.display = "none";
-  deleteBtn.style.display = "none";
-}
-// =====================
-// FOLLOW-UP TASK BUTTON VISIBILITY
-// =====================
-const followupBtn = document.getElementById("createFollowupTaskBtn");
+  if (canEditTask(task)) {
+    editBtn.style.display = "inline-flex";
+    deleteBtn.style.display = "inline-flex";
+    editArea.style.display = "none";
+  } else {
+    editBtn.style.display = "none";
+    deleteBtn.style.display = "none";
+    editArea.style.display = "none";
+  }
 
-if (
-  followupBtn &&
-  hasRole("planner", "admin") &&
-  task.status !== "Done" &&
-  (isPreventive(task) || isPlannedManual(task))
-) {
-  followupBtn.style.display = "inline-flex";
-} else if (followupBtn) {
-  followupBtn.style.display = "none";
+  // =====================
+  // FOLLOW-UP BUTTON VISIBILITY
+  // =====================
+  const followupBtn = document.getElementById("createFollowupTaskBtn");
+
+  if (
+    followupBtn &&
+    hasRole("planner", "admin") &&
+    task.status !== "Done" &&
+    (isPreventive(task) || isPlannedManual(task))
+  ) {
+    followupBtn.style.display = "inline-flex";
+  } else if (followupBtn) {
+    followupBtn.style.display = "none";
+  }
 }
 
-}
-// =====================
-// TASK EDITING
-// =====================
 
 // =====================
 // TASK EDITING (COLLAPSE / EXPAND) — SAFE

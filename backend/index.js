@@ -1400,36 +1400,190 @@ app.get("/documentation/masterplan", async (req, res) => {
   }
 });
 
-// backend/print.js (example)
+/* =====================================================
+  PRINT WORK ORDER (PDF via Puppeteer)
+===================================================== */
 
-const router = express.Router();
+/* =====================
+   PRINT WORK ORDER (PDF)
+===================== */
+app.get("/tasks/:id/print", async (req, res) => {
+  const { id } = req.params;
 
-router.get("/tasks/:id/print", async (req, res) => {
-  const id = req.params.id;
+  try {
+    // 1️⃣ Fetch task + asset
+    const result = await pool.query(`
+      SELECT
+        t.*,
+        a.machine_name,
+        a.serial_number,
+        a.line_code
+      FROM maintenance_tasks t
+      LEFT JOIN assets a ON a.id = t.asset_id
+      WHERE t.id = $1
+    `, [id]);
 
-  // TODO: fetch task from DB
-  const t = await getTaskById(id); // implement
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
 
-  const html = renderWorkOrderHtml(t); // reuse same template idea
+    const task = result.rows[0];
 
-  const browser = await puppeteer.launch({ headless: "new" });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "networkidle0" });
+    // 2️⃣ Generate HTML
+    const html = buildWorkOrderHTML(task);
 
-  const pdf = await page.pdf({
-    format: "A4",
-    printBackground: true,
-    margin: { top: "14mm", right: "14mm", bottom: "14mm", left: "14mm" }
-  });
+    // 3️⃣ Launch browser
+    const browser = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
 
-  await browser.close();
+    const page = await browser.newPage();
 
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `inline; filename="workorder-${id}.pdf"`);
-  res.send(pdf);
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    // 4️⃣ Generate PDF
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "20mm",
+        bottom: "20mm",
+        left: "15mm",
+        right: "15mm"
+      }
+    });
+
+    await browser.close();
+
+    // 5️⃣ Send PDF
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename=work-order-${task.id}.pdf`
+    );
+
+    res.send(pdf);
+
+  } catch (err) {
+    console.error("PDF ERROR:", err);
+    res.status(500).json({ error: "Failed to generate PDF" });
+  }
 });
+function buildWorkOrderHTML(task) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Work Order #${task.id}</title>
 
-export default router;
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    color: #111;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .muted {
+    color: #555;
+  }
+
+  .section {
+    margin-top: 18px;
+  }
+
+  .section-title {
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 6px;
+    padding-bottom: 2px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td {
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+
+  .label {
+    width: 160px;
+    color: #555;
+  }
+
+  .footer {
+    margin-top: 40px;
+  }
+
+  .signature {
+    margin-top: 24px;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>WORK ORDER</h1>
+<div class="muted">
+  ID: #${task.id}<br/>
+  Type: ${task.frequency_hours ? "Preventive" : task.is_planned ? "Planned" : "Breakdown"}<br/>
+  Status: ${task.status}<br/>
+  Printed: ${new Date().toLocaleDateString()}
+</div>
+
+<div class="section">
+  <div class="section-title">ASSET</div>
+  <table>
+    <tr><td class="label">Machine</td><td>${task.machine_name || "-"}</td></tr>
+    <tr><td class="label">Serial No</td><td>${task.serial_number || "-"}</td></tr>
+    <tr><td class="label">Line</td><td>${task.line_code || "-"}</td></tr>
+    <tr><td class="label">Section</td><td>${task.section || "-"}</td></tr>
+    <tr><td class="label">Unit</td><td>${task.unit || "-"}</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">TASK DETAILS</div>
+  <table>
+    <tr><td class="label">Description</td><td>${task.task}</td></tr>
+    <tr><td class="label">Due Date</td><td>${task.due_date || "-"}</td></tr>
+    <tr><td class="label">Frequency</td><td>${task.frequency_hours ? task.frequency_hours + " h" : "-"}</td></tr>
+    <tr><td class="label">Estimated Duration</td><td>${task.duration_min ? task.duration_min + " min" : "-"}</td></tr>
+    <tr><td class="label">Notes</td><td>${task.notes || "-"}</td></tr>
+  </table>
+</div>
+
+${task.completed_at ? `
+<div class="section">
+  <div class="section-title">EXECUTION</div>
+  <table>
+    <tr><td class="label">Executed By</td><td>${task.completed_by || "-"}</td></tr>
+    <tr><td class="label">Date</td><td>${task.completed_at}</td></tr>
+  </table>
+</div>
+` : ""}
+
+<div class="footer">
+  <div class="signature">Technician Signature: __________________________</div>
+  <div class="signature">Supervisor Signature: __________________________</div>
+</div>
+
+</body>
+</html>
+`;
+}
+
+
 
 
 /* =====================================================
