@@ -1436,8 +1436,15 @@ app.get("/api/tasks/:id/print", async (req, res) => {
 
     // 3️⃣ Launch browser (Render-safe)
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-zygote",
+        "--single-process"
+    ]
     });
 
     const page = await browser.newPage();
@@ -1468,9 +1475,11 @@ app.get("/api/tasks/:id/print", async (req, res) => {
     res.send(pdf);
 
   } catch (err) {
-    console.error("PDF ERROR:", err);
-    res.status(500).json({ error: "Failed to generate PDF" });
-  }
+  console.error("PDF ERROR FULL:", err);
+  console.error(err?.stack);
+  res.status(500).json({ error: "Failed to generate PDF" });
+}
+  
 });
 
 function buildWorkOrderHTML(task) {
