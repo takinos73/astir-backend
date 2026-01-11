@@ -1407,21 +1407,23 @@ app.get("/documentation/masterplan", async (req, res) => {
 /* =====================
    PRINT WORK ORDER (PDF)
 ===================== */
-app.get("/tasks/:id/print", async (req, res) => {
+app.get("/api/tasks/:id/print", async (req, res) => {
   const { id } = req.params;
 
   try {
     // 1️⃣ Fetch task + asset
     const result = await pool.query(`
-      SELECT
-        t.*,
-        a.machine_name,
-        a.serial_number,
-        a.line_code
-      FROM maintenance_tasks t
-      LEFT JOIN assets a ON a.id = t.asset_id
-      WHERE t.id = $1
+  SELECT
+    t.*,
+    a.model AS machine_name,
+    a.serial_number,
+    l.code AS line_code
+    FROM maintenance_tasks t
+    JOIN assets a ON a.id = t.asset_id
+    JOIN lines l ON l.id = a.line_id
+    WHERE t.id = $1
     `, [id]);
+
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Task not found" });
@@ -1582,8 +1584,6 @@ ${task.completed_at ? `
 </html>
 `;
 }
-
-
 
 
 /* =====================================================
