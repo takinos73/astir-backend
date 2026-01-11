@@ -1547,6 +1547,10 @@ ${task.completed_at ? `
   <div class="signature">Supervisor Signature: __________________________</div>
 </div>
 
+<script>
+  window.onload = () => window.print();
+</script>
+
 </body>
 </html>
 `;
