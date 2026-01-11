@@ -26,8 +26,7 @@
     <div class="task-edit-area" id="taskEditArea" style="display:none;">
 
       <div class="task-edit-header">
-        <h4>✏️ Edit Task</h4>
-        
+        <h4>✏️ Edit Task</h4>        
       </div>
 
       <div class="task-edit-grid">
@@ -69,12 +68,9 @@
       </div>
     </div>
 
-    <!-- =====================
-         ACTIONS
-    ====================== -->
-    <!-- =====================
+  <!-- ================
      ACTIONS
-===================== -->
+  ================= -->
 <div class="modal-actions task-view-actions">
 
   <!-- Close -->
@@ -94,7 +90,7 @@
   <!-- 🆕 CREATE FOLLOW-UP TASK -->
   <button
     id="createFollowupTaskBtn"
-    class="btn-primary"
+    class="btn-followup"
     style="display:none;"
     onclick="createFollowupTaskFromView()">
     ➕ Create Follow-up Task
@@ -129,7 +125,7 @@
 ===================== -->
 <div id="historyOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-history">
-    <h3>📜 Tasks History</h3>
+    <h3>📜 History</h3>
     <!-- =====================
      HISTORY FILTERS
     ===================== -->
@@ -593,7 +589,7 @@
     <button class="btn-secondary date-filter-btn" data-filter="today">Today</button>
     <button class="btn-secondary date-filter-btn" data-filter="week">This Week</button>
     <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>
-    <button class="btn-secondary" id="openHistoryBtn">📜 View History</button>    
+    <button class="btn-secondary" id="openHistoryBtn">📜 History</button>    
   </div>    
 
 <section class="controls-row">
@@ -897,6 +893,6 @@
 
   <!-- JS -->
   <script src="app.js" defer></script>
-  
+
 </body>
 </html>

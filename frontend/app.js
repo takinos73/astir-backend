@@ -658,18 +658,21 @@ function renderHistoryTable(data) {
               onclick="viewHistoryEntry(${h.id})">
               👁
             </button>
-            <button
-              class="btn-icon btn-print"
-              title="Print job report"
-              onclick="printExecution(${h.id})">
-              🖨
-            </button>
+            
             <button
               class="btn-icon btn-restore"
               title="Restore task"
               onclick="undoExecution(${h.id})">
               ↩
             </button>
+
+            <button
+              class="btn-icon btn-print"
+              title="Print job report"
+              onclick="printExecution(${h.id})">
+              🖨
+            </button>
+
           </div>
         `;
       }
@@ -684,17 +687,19 @@ function renderHistoryTable(data) {
               onclick="viewHistoryEntry(${h.id})">
               👁
             </button>
-            <button
-              class="btn-icon btn-print"
-              title="Print job report"
-              onclick="printExecution(${h.id})">
-              🖨
-            </button>
+            
             <button
               class="btn-icon btn-edit"
               title="Edit breakdown details"
               onclick="editBreakdown(${h.id})">
               ✏️
+            </button>
+
+            <button
+              class="btn-icon btn-print"
+              title="Print job report"
+              onclick="printExecution(${h.id})">
+              🖨
             </button>
           </div>
         `;
@@ -1001,33 +1006,6 @@ ${
     : ""
 }
 
-${
-  task.status !== "Done"
-    ? `
-<!-- =====================
-     FOLLOW-UP ACTION
-===================== -->
-<div class="task-followup tech">
-
-  <div class="followup-header">
-    <strong>Follow-up Action</strong>
-  </div>
-
-  <div class="followup-body">
-    <button
-      id="createFollowupTaskBtn"
-      class="btn-primary"
-      style="display:none;"
-      type="button">
-      ➕ Follow-up Task
-    </button>
-  </div>
-
-</div>
-`
-    : ""
-}
-
 `;
 
   document.getElementById("taskViewOverlay").style.display = "flex";
@@ -1052,7 +1030,7 @@ ${
   }
 
   // =====================
-  // FOLLOW-UP BUTTON VISIBILITY
+  // FOLLOW-UP BUTTON IN ACTION BAR (ALIGN WITH OTHER ACTIONS)
   // =====================
   const followupBtn = document.getElementById("createFollowupTaskBtn");
 

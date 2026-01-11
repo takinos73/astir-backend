@@ -2045,6 +2045,61 @@ tr.history-unplanned {
     inset 0 0 0 1px rgba(255,255,255,0.06),
     0 4px 12px rgba(0,0,0,0.35);
 }
+
+/* =====================
+   FOLLOW-UP ACTION BUTTON (FINAL)
+   Aligned with modal actions
+===================== */
+
+#taskViewOverlay .btn-followup {
+  height: 32px;
+  padding: 0 14px;
+
+  background: linear-gradient(180deg, #72b3f3, #1f6feb);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+
+  color: #061825;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.15px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+/* hover */
+#taskViewOverlay .btn-followup:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.12),
+    0 6px 18px rgba(0,0,0,0.55);
+}
+
+/* active */
+#taskViewOverlay .btn-followup:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 3px 10px rgba(0,0,0,0.35);
+}
+
 .modal-small {
   overflow: visible;
   height: auto;
