@@ -1584,6 +1584,18 @@ function getCurrentPeriodLabel() {
 
   return "ALL";
 }
+// =====================
+// PRINT TASK (FRONTEND)
+// =====================
+function printTask(taskId) {
+  if (!taskId) return;
+
+  // Backend PDF endpoint
+  const url = `${API_BASE}/tasks/${taskId}/print`;
+
+  // Open PDF in new tab (print-friendly)
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
  /* =====================
     PRINT TASKS

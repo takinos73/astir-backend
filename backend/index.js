@@ -1432,10 +1432,9 @@ app.get("/tasks/:id/print", async (req, res) => {
     // 2️⃣ Generate HTML
     const html = buildWorkOrderHTML(task);
 
-    // 3️⃣ Launch browser
+    // 3️⃣ Launch browser (Render-safe)
     const browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-      headless: "new",
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
@@ -1471,6 +1470,7 @@ app.get("/tasks/:id/print", async (req, res) => {
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 });
+
 function buildWorkOrderHTML(task) {
   return `
 <!DOCTYPE html>
