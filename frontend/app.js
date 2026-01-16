@@ -935,6 +935,16 @@ async function loadDashboardKPIs() {
   } catch (err) {
     console.error("KPI LOAD ERROR:", err);
   }
+  // 4️⃣ KPI coloring
+    const cardTotal = document.getElementById("kpiTotal")?.closest(".kpi-card");
+    const cardOverdue = document.getElementById("kpiOverdue")?.closest(".kpi-card");
+    const cardSoon = document.getElementById("kpiSoon")?.closest(".kpi-card");
+    const cardDone = document.getElementById("kpiDone")?.closest(".kpi-card");
+
+setKpiClass(cardOverdue, colorOverdue(overdue));
+setKpiClass(cardSoon, colorSoon(soon));
+setKpiClass(cardDone, colorCompleted(completed));
+
 }
 
 /* =====================
@@ -943,6 +953,32 @@ async function loadDashboardKPIs() {
 document.addEventListener("DOMContentLoaded", () => {
   loadDashboardKPIs();
 });
+
+/* =====================
+   KPI COLORING HELPERS
+===================== */
+
+function setKpiClass(el, cls) {
+  if (!el) return;
+  el.classList.remove("kpi-ok", "kpi-warn", "kpi-bad");
+  if (cls) el.classList.add(cls);
+}
+
+function colorOverdue(val) {
+  if (val === 0) return "kpi-ok";
+  if (val <= 3) return "kpi-warn";
+  return "kpi-bad";
+}
+
+function colorSoon(val) {
+  if (val <= 3) return "kpi-ok";
+  if (val <= 7) return "kpi-warn";
+  return "kpi-bad";
+}
+
+function colorCompleted(val) {
+  return val > 0 ? "kpi-ok" : null;
+}
 
 
 /* =====================
