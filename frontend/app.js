@@ -841,145 +841,6 @@ function updateKpis() {
   getEl("kpiSoon").textContent = soon;
   getEl("kpiDone").textContent = done;
 }
-
-/* =====================
-   DASHBOARD – KPI API
-===================== */
-
-async function fetchCompletedCount() {
-  const res = await fetch(`${API}/executions/count`);
-  const data = await res.json();
-  return data.completed || 0;
-}
-
-async function fetchOpenTasks() {
-  const res = await fetch(`${API}/tasks`);
-  return await res.json(); // planned + overdue
-}
-
-async function fetchExecutions() {
-  const res = await fetch(`${API}/executions`);
-  return await res.json();
-}
-
-function calculateKPIs({ tasks, executions }) {
-  const now = new Date();
-
-  const openTasks = tasks.length;
-
-  const overdueTasks = tasks.filter(t =>
-    t.due_date && new Date(t.due_date) < now
-  ).length;
-
-  const breakdowns30d = executions.filter(e => {
-    if (e.is_planned !== false) return false;
-    const d = new Date(e.executed_at);
-    return (now - d) / (1000 * 60 * 60 * 24) <= 30;
-  }).length;
-
-  return {
-    openTasks,
-    overdueTasks,
-    breakdowns30d
-  };
-}
-/* =====================
-   DASHBOARD KPIs
-===================== */
-
-async function loadDashboardKPIs() {
-  try {
-    // 1️⃣ Fetch active tasks (Planned + Overdue)
-    const tasksRes = await fetch(`${API}/tasks`);
-    const tasks = await tasksRes.json();
-
-    const now = new Date();
-    const soonLimit = new Date();
-    soonLimit.setDate(now.getDate() + 7);
-
-    let total = 0;
-    let overdue = 0;
-    let soon = 0;
-
-    tasks.forEach(t => {
-      total++;
-
-      if (t.status === "Overdue") {
-        overdue++;
-      }
-
-      if (t.status === "Planned" && t.due_date) {
-        const due = new Date(t.due_date);
-        if (due <= soonLimit) {
-          soon++;
-        }
-      }
-    });
-
-    // 2️⃣ Fetch completed count (history)
-    const doneRes = await fetch(`${API}/executions/count`);
-    const doneData = await doneRes.json();
-    const completed = doneData.completed || 0;
-
-    // 3️⃣ Update DOM (safe)
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-
-    set("kpiTotal", total);
-    set("kpiOverdue", overdue);
-    set("kpiSoon", soon);
-    set("kpiDone", completed);
-
-  } catch (err) {
-    console.error("KPI LOAD ERROR:", err);
-  }
-  // 4️⃣ KPI coloring
-    const cardTotal = document.getElementById("kpiTotal")?.closest(".kpi-card");
-    const cardOverdue = document.getElementById("kpiOverdue")?.closest(".kpi-card");
-    const cardSoon = document.getElementById("kpiSoon")?.closest(".kpi-card");
-    const cardDone = document.getElementById("kpiDone")?.closest(".kpi-card");
-
-setKpiClass(cardOverdue, colorOverdue(overdue));
-setKpiClass(cardSoon, colorSoon(soon));
-setKpiClass(cardDone, colorCompleted(completed));
-}
-
-/* =====================
-   INIT
-===================== */
-document.addEventListener("DOMContentLoaded", () => {
-  loadDashboardKPIs();
-});
-
-/* =====================
-   KPI COLORING HELPERS
-===================== */
-
-function setKpiClass(el, cls) {
-  if (!el) return;
-  el.classList.remove("kpi-ok", "kpi-warn", "kpi-bad");
-  if (cls) el.classList.add(cls);
-}
-
-function colorOverdue(val) {
-  if (val === 0) return "kpi-ok";
-  if (val <= 3) return "kpi-warn";
-  return "kpi-bad";
-}
-
-function colorSoon(val) {
-  if (val <= 3) return "kpi-ok";
-  if (val <= 7) return "kpi-warn";
-  return "kpi-bad";
-}
-
-function colorCompleted(val) {
-  return val > 0 ? "kpi-ok" : null;
-}
-
-
 /* =====================
    POPULATE ADD TASK LINES
 ===================== */
@@ -1636,7 +1497,7 @@ function renderTable() {
            return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
      })  
 
-// =====================
+    // =====================
 // DATE FILTER (UNIFIED)
 // - Date range (From–To) has priority
 // - Quick filters used only if range is empty
@@ -1770,6 +1631,7 @@ function printTasks() {
         <strong>Σύνολο εργασιών: ${tasks.length}</strong>
       </div>
 
+
       <table>
         <thead>
           <tr>
@@ -1845,6 +1707,7 @@ document
     console.log("SEARCH INPUT:", e.target.value);
     renderTable();
   });
+
 
 
 /* =====================
