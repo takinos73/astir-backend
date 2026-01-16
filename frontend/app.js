@@ -883,26 +883,66 @@ function calculateKPIs({ tasks, executions }) {
     breakdowns30d
   };
 }
+/* =====================
+   DASHBOARD KPIs
+===================== */
+
 async function loadDashboardKPIs() {
   try {
-    const [completed, tasks, executions] = await Promise.all([
-      fetchCompletedCount(),
-      fetchOpenTasks(),
-      fetchExecutions()
-    ]);
+    // 1️⃣ Fetch active tasks (Planned + Overdue)
+    const tasksRes = await fetch(`${API}/tasks`);
+    const tasks = await tasksRes.json();
 
-    const kpis = calculateKPIs({ tasks, executions });
+    const now = new Date();
+    const soonLimit = new Date();
+    soonLimit.setDate(now.getDate() + 7);
 
-    document.getElementById("kpi-completed").textContent = completed;
-    document.getElementById("kpi-open").textContent = kpis.openTasks;
-    document.getElementById("kpi-overdue").textContent = kpis.overdueTasks;
-    document.getElementById("kpi-breakdowns").textContent = kpis.breakdowns30d;
+    let total = 0;
+    let overdue = 0;
+    let soon = 0;
+
+    tasks.forEach(t => {
+      total++;
+
+      if (t.status === "Overdue") {
+        overdue++;
+      }
+
+      if (t.status === "Planned" && t.due_date) {
+        const due = new Date(t.due_date);
+        if (due <= soonLimit) {
+          soon++;
+        }
+      }
+    });
+
+    // 2️⃣ Fetch completed count (history)
+    const doneRes = await fetch(`${API}/executions/count`);
+    const doneData = await doneRes.json();
+    const completed = doneData.completed || 0;
+
+    // 3️⃣ Update DOM (safe)
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    set("kpiTotal", total);
+    set("kpiOverdue", overdue);
+    set("kpiSoon", soon);
+    set("kpiDone", completed);
 
   } catch (err) {
     console.error("KPI LOAD ERROR:", err);
   }
 }
-document.addEventListener("DOMContentLoaded", loadDashboardKPIs);
+
+/* =====================
+   INIT
+===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  loadDashboardKPIs();
+});
 
 
 /* =====================
