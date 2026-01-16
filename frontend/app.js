@@ -944,7 +944,6 @@ async function loadDashboardKPIs() {
 setKpiClass(cardOverdue, colorOverdue(overdue));
 setKpiClass(cardSoon, colorSoon(soon));
 setKpiClass(cardDone, colorCompleted(completed));
-
 }
 
 /* =====================
