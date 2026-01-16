@@ -841,6 +841,70 @@ function updateKpis() {
   getEl("kpiSoon").textContent = soon;
   getEl("kpiDone").textContent = done;
 }
+
+/* =====================
+   DASHBOARD – KPI API
+===================== */
+
+async function fetchCompletedCount() {
+  const res = await fetch(`${API}/executions/count`);
+  const data = await res.json();
+  return data.completed || 0;
+}
+
+async function fetchOpenTasks() {
+  const res = await fetch(`${API}/tasks`);
+  return await res.json(); // planned + overdue
+}
+
+async function fetchExecutions() {
+  const res = await fetch(`${API}/executions`);
+  return await res.json();
+}
+
+function calculateKPIs({ tasks, executions }) {
+  const now = new Date();
+
+  const openTasks = tasks.length;
+
+  const overdueTasks = tasks.filter(t =>
+    t.due_date && new Date(t.due_date) < now
+  ).length;
+
+  const breakdowns30d = executions.filter(e => {
+    if (e.is_planned !== false) return false;
+    const d = new Date(e.executed_at);
+    return (now - d) / (1000 * 60 * 60 * 24) <= 30;
+  }).length;
+
+  return {
+    openTasks,
+    overdueTasks,
+    breakdowns30d
+  };
+}
+async function loadDashboardKPIs() {
+  try {
+    const [completed, tasks, executions] = await Promise.all([
+      fetchCompletedCount(),
+      fetchOpenTasks(),
+      fetchExecutions()
+    ]);
+
+    const kpis = calculateKPIs({ tasks, executions });
+
+    document.getElementById("kpi-completed").textContent = completed;
+    document.getElementById("kpi-open").textContent = kpis.openTasks;
+    document.getElementById("kpi-overdue").textContent = kpis.overdueTasks;
+    document.getElementById("kpi-breakdowns").textContent = kpis.breakdowns30d;
+
+  } catch (err) {
+    console.error("KPI LOAD ERROR:", err);
+  }
+}
+document.addEventListener("DOMContentLoaded", loadDashboardKPIs);
+
+
 /* =====================
    POPULATE ADD TASK LINES
 ===================== */
@@ -1497,7 +1561,7 @@ function renderTable() {
            return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
      })  
 
-    // =====================
+// =====================
 // DATE FILTER (UNIFIED)
 // - Date range (From–To) has priority
 // - Quick filters used only if range is empty
@@ -1631,7 +1695,6 @@ function printTasks() {
         <strong>Σύνολο εργασιών: ${tasks.length}</strong>
       </div>
 
-
       <table>
         <thead>
           <tr>
@@ -1707,7 +1770,6 @@ document
     console.log("SEARCH INPUT:", e.target.value);
     renderTable();
   });
-
 
 
 /* =====================
