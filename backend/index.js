@@ -604,6 +604,32 @@ app.get("/executions/count", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+/*================================================
+ KPI – ESTIMATED WORKLOAD (NEXT 7 DAYS)
+=================================================*/
+app.get("/kpis/workload/next-7-days", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COALESCE(SUM(duration_min), 0)::int AS total_minutes
+      FROM maintenance_tasks
+      WHERE
+        duration_min IS NOT NULL
+        AND status != 'Done'
+        AND deleted_at IS NULL
+        AND due_date >= CURRENT_DATE
+        AND due_date < CURRENT_DATE + INTERVAL '7 days'
+    `);
+
+    res.json(rows[0]); // { total_minutes: 123 }
+  } catch (err) {
+    console.error("GET /kpis/workload/next-7-days ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */

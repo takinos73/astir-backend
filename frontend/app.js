@@ -83,7 +83,7 @@ function canEditTask(task) {
    min -> "xh ym" | "xh" | "ym" | "-"
 ===================== */
 function formatDuration(min) {
-  if (min == null || isNaN(min)) return "-";
+  if (min == null || isNaN(min)) return "-";// single source of truth for estimated duration formatting
 
   const total = Number(min);
   if (total <= 0) return "-";
@@ -93,7 +93,7 @@ function formatDuration(min) {
 
   if (h > 0 && m > 0) return `${h}h ${m}m`;
   if (h > 0) return `${h}h`;
-  return `${m}m`;
+  return `${m}m`; 
 }
 
 /* =====================
@@ -3867,6 +3867,56 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     }
   });
 });
+/* =====================
+   KPI / ANALYTICS MODAL
+===================== */
+
+function openAnalyticsModal() {
+  const overlay = document.getElementById("analyticsOverlay");
+  if (!overlay) return;
+
+  overlay.style.display = "flex";
+  overlay.style.pointerEvents = "auto";
+}
+
+function closeAnalyticsModal() {
+  const overlay = document.getElementById("analyticsOverlay");
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+  overlay.style.pointerEvents = "none";
+}
+
+/* =====================
+   EVENT LISTENERS
+===================== */
+
+// Open button
+document
+  .getElementById("openAnalyticsBtn")
+  ?.addEventListener("click", openAnalyticsModal);
+
+// Close button
+document
+  .getElementById("closeAnalyticsBtn")
+  ?.addEventListener("click", closeAnalyticsModal);
+
+// Click outside modal box → close
+document
+  .getElementById("analyticsOverlay")
+  ?.addEventListener("click", (e) => {
+    if (e.target.id === "analyticsOverlay") {
+      closeAnalyticsModal();
+    }
+  });
+
+// ESC key → close
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeAnalyticsModal();
+  }
+});
+
 
 /* =====================
    INIT

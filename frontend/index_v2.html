@@ -266,6 +266,74 @@
 
   </div>
 </div>
+<!-- =====================
+     KPI / ANALYTICS MODAL
+===================== -->
+<div id="analyticsOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide">
+
+    <h3>📊 KPI / Analytics</h3>
+    <p class="modal-subtitle">
+      Decision support metrics based on current maintenance data
+    </p>
+
+    <!-- =====================
+         SECTION: WORKLOAD
+    ===================== -->
+    <section class="analytics-section">
+      <h4>🛠 Workload</h4>
+
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <span class="label">Estimated workload (next 7 days)</span>
+          <span class="value">—</span>
+        </div>
+
+        <div class="analytics-card">
+          <span class="label">Overdue workload</span>
+          <span class="value">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: PLANNING MIX
+    ===================== -->
+    <section class="analytics-section">
+      <h4>📅 Planning Mix</h4>
+
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <span class="label">Planned vs Unplanned</span>
+          <span class="value">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: RISK
+    ===================== -->
+    <section class="analytics-section">
+      <h4>⚠️ Risk / Hotspots</h4>
+
+      <div class="analytics-card">
+        <span class="label">Top assets by overdue workload</span>
+        <span class="value">—</span>
+      </div>
+    </section>
+
+    <!-- =====================
+         ACTIONS
+    ===================== -->
+    <div class="modal-actions">
+      <button class="btn-secondary" id="closeAnalyticsBtn">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>
+
 
 <!-- =====================
      HISTORY VIEW MODAL
@@ -589,7 +657,10 @@
     <button class="btn-secondary date-filter-btn" data-filter="today">Today</button>
     <button class="btn-secondary date-filter-btn" data-filter="week">This Week</button>
     <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>
-    <button class="btn-secondary" id="openHistoryBtn">📜 History</button>    
+    <button class="btn-secondary" id="openHistoryBtn">📜 History</button>
+    <button class="btn-secondary" id="openAnalyticsBtn">📊 KPI / Analytics
+</button>
+    
   </div>    
 
 <section class="controls-row">
@@ -650,7 +721,6 @@
     </button>
   </div>
 </section>
-
 
       <!-- TASK TABLE -->
       <div class="table-card">
