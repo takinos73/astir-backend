@@ -4009,6 +4009,11 @@ async function loadKpiTopAssetsOverdue() {
 
       const row = document.createElement("div");
       row.className = "analytics-list-row";
+
+      // 🔗 Context for drill-down (next step)
+      row.dataset.machine = a.machine_name;
+      row.dataset.serial = a.serial_number;
+
       row.innerHTML = `
         <div class="asset">
           <strong>${a.machine_name}</strong>
@@ -4019,6 +4024,7 @@ async function loadKpiTopAssetsOverdue() {
         </div>
       `;
 
+      // ✅ THIS WAS MISSING
       listEl.appendChild(row);
     });
 
