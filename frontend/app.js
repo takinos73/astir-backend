@@ -3989,11 +3989,9 @@ async function loadKpiTopAssetsOverdue() {
 
     const data = await res.json();
 
-    const listEl = document.querySelector(
-      "#analyticsOverlay .analytics-section:nth-of-type(2) .analytics-card:nth-child(2) .analytics-list"
-    );
-
+    const listEl = document.getElementById("kpiTopAssetsOverdueList");
     if (!listEl) return;
+
     listEl.innerHTML = "";
 
     if (data.length === 0) {
@@ -4002,7 +4000,11 @@ async function loadKpiTopAssetsOverdue() {
     }
 
     data.forEach(a => {
-      const dur = a.total_minutes > 0 ? formatDuration(a.total_minutes) : "—";
+      const dur =
+        a.total_minutes && a.total_minutes > 0
+          ? formatDuration(a.total_minutes)
+          : "—";
+
       const tasksLabel = `${a.pending_tasks} task${a.pending_tasks === 1 ? "" : "s"}`;
 
       const row = document.createElement("div");

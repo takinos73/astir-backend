@@ -673,55 +673,37 @@ app.get("/kpis/planning-mix", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-/* =====================
-   KPI: Top Assets by Overdue Workload
-===================== */
-
-async function loadKpiTopAssetsOverdue() {
+/*================================================
+ KPI – TOP ASSETS BY OVERDUE WORKLOAD (WITH COUNT)
+=================================================*/
+app.get("/kpis/overdue/top-assets", async (req, res) => {
   try {
-    const res = await fetch("/kpis/overdue/top-assets");
-    if (!res.ok) throw new Error("Failed to fetch top assets KPI");
+    const { rows } = await pool.query(`
+      SELECT
+        a.model AS machine_name,
+        a.serial_number,
+        l.code AS line_code,
+        COUNT(mt.id)::int AS pending_tasks,
+        SUM(mt.duration_min)::int AS total_minutes
+      FROM maintenance_tasks mt
+      JOIN assets a ON a.id = mt.asset_id
+      JOIN lines l ON l.id = a.line_id
+      WHERE
+        mt.duration_min IS NOT NULL
+        AND mt.status != 'Done'
+        AND mt.due_date < CURRENT_DATE
+        AND mt.deleted_at IS NULL
+      GROUP BY a.model, a.serial_number, l.code
+      ORDER BY total_minutes DESC
+      LIMIT 5
+    `);
 
-    const data = await res.json();
-
-    const listEl = document.getElementById("kpiTopAssetsOverdueList");
-    if (!listEl) return;
-
-    listEl.innerHTML = "";
-
-    if (data.length === 0) {
-      listEl.innerHTML = `<div class="analytics-empty">—</div>`;
-      return;
-    }
-
-    data.forEach(a => {
-      const dur =
-        a.total_minutes && a.total_minutes > 0
-          ? formatDuration(a.total_minutes)
-          : "—";
-
-      const tasksLabel = `${a.pending_tasks} task${a.pending_tasks === 1 ? "" : "s"}`;
-
-      const row = document.createElement("div");
-      row.className = "analytics-list-row";
-      row.innerHTML = `
-        <div class="asset">
-          <strong>${a.machine_name}</strong>
-          <small>${a.line_code} • ${a.serial_number}</small>
-        </div>
-        <div class="meta">
-          ⏱ ${dur} • 📋 ${tasksLabel}
-        </div>
-      `;
-
-      listEl.appendChild(row);
-    });
-
+    res.json(rows);
   } catch (err) {
-    console.error("Top assets overdue KPI error:", err);
+    console.error("GET /kpis/overdue/top-assets ERROR:", err.message);
+    res.status(500).json({ error: err.message });
   }
-}
-
+});
 
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
