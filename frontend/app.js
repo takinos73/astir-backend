@@ -1497,11 +1497,11 @@ function renderTable() {
            return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
      })  
 
-    // =====================
-// DATE FILTER (UNIFIED)
-// - Date range (From–To) has priority
-// - Quick filters used only if range is empty
-// =====================
+  // =====================
+  // DATE FILTER (UNIFIED)
+  // - Date range (From–To) has priority
+  // - Quick filters used only if range is empty
+  // =====================
 .filter(t => {
   if (!t.due_date) return false;
 
@@ -1537,18 +1537,38 @@ function renderTable() {
       const o = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
       return (o[getDueState(a)] ?? 99) - (o[getDueState(b)] ?? 99);
     });
-    // =====================
-// UPDATE TASKS COUNT
-// =====================
-const countEl = document.getElementById("tasksCountLabel");
-if (countEl) {
-  const n = filtered.length;
-  countEl.textContent = `${n} task${n === 1 ? "" : "s"}`;
-  countEl.classList.toggle("zero", n === 0);
+  // =====================
+  // UPDATE TASKS COUNT + DURATION (h + min)
+  // =====================
+  const countEl = document.getElementById("tasksCountLabel");
+  if (countEl) {
+    const n = filtered.length;
+  // ⏱ sum duration_min (ONLY not null)
+  const totalMinutes = filtered.reduce((sum, t) => {
+    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+  }, 0);
 
+  // base label
+  let label = `${n} task${n === 1 ? "" : "s"}`;
+
+  // append duration only if exists
+  if (totalMinutes > 0) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    const durationLabel =
+      hours > 0
+        ? `${hours}h${minutes > 0 ? " " + minutes + "m" : ""}`
+        : `${minutes}m`;
+
+    label += ` • ${durationLabel}`;
+  }
+
+  countEl.textContent = label;
+  countEl.classList.toggle("zero", n === 0);
 }
 
-  filtered.forEach(t => tbody.appendChild(buildRow(t)));
+filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
 function getAssetFilterLabel() {
@@ -1589,9 +1609,9 @@ function printTask(taskId) {
 }
 
 
- /* =====================
-    PRINT TASKS
-  ===================== */
+/* =====================
+   PRINT TASKS (WITH ESTIMATED DURATION)
+===================== */
 
 function printTasks() {
   const tasks = getFilteredTasksForPrint();
@@ -1599,6 +1619,20 @@ function printTasks() {
   if (tasks.length === 0) {
     alert("No tasks to print");
     return;
+  }
+
+  // ⏱ TOTAL ESTIMATED DURATION (ONLY NOT NULL)
+  const totalMinutes = tasks.reduce((sum, t) => {
+    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+  }, 0);
+
+  let totalDurationLabel = "";
+  if (totalMinutes > 0) {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0 && m > 0) totalDurationLabel = `${h}h ${m}m`;
+    else if (h > 0) totalDurationLabel = `${h}h`;
+    else totalDurationLabel = `${m}m`;
   }
 
   let html = `
@@ -1629,8 +1663,8 @@ function printTasks() {
         Περίοδος: ${getCurrentPeriodLabel()}<br>
         Asset: ${getAssetFilterLabel()}<br>
         <strong>Σύνολο εργασιών: ${tasks.length}</strong>
+        ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
       </div>
-
 
       <table>
         <thead>
@@ -1641,6 +1675,7 @@ function printTasks() {
             <th>Task</th>
             <th>Type</th>
             <th>Due Date</th>
+            <th>Estimated Duration</th>
             <th>✔</th>
           </tr>
         </thead>
@@ -1648,6 +1683,15 @@ function printTasks() {
   `;
 
   tasks.forEach(t => {
+    let durLabel = "-";
+    if (t.duration_min != null) {
+      const h = Math.floor(t.duration_min / 60);
+      const m = t.duration_min % 60;
+      if (h > 0 && m > 0) durLabel = `${h}h ${m}m`;
+      else if (h > 0) durLabel = `${h}h`;
+      else durLabel = `${m}m`;
+    }
+
     html += `
       <tr>
         <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
@@ -1656,6 +1700,7 @@ function printTasks() {
         <td>${t.task}</td>
         <td>${t.type || "-"}</td>
         <td>${formatDate(t.due_date)}</td>
+        <td>${durLabel}</td>
         <td></td>
       </tr>
     `;
@@ -1687,7 +1732,6 @@ function printTasks() {
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
 
-  // cleanup
   setTimeout(() => {
     document.body.removeChild(iframe);
   }, 1000);
@@ -2844,7 +2888,7 @@ function getFilteredTasksForStatusReport() {
 
 
 /* =====================
-   STATUS REPORT – PDF
+   STATUS REPORT – PDF (WITH ESTIMATED DURATION)
 ===================== */
 function generateStatusReportPdf() {
   const tasks = getFilteredTasksForStatusReport();
@@ -2858,6 +2902,20 @@ function generateStatusReportPdf() {
   const to = document.getElementById("dateTo")?.value || "—";
   const line = document.getElementById("reportLine")?.value || "ALL";
   const status = document.getElementById("reportStatus")?.value || "ALL";
+
+  // ⏱ TOTAL ESTIMATED DURATION (ONLY NOT NULL)
+  const totalMinutes = tasks.reduce((sum, t) => {
+    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+  }, 0);
+
+  let totalDurationLabel = "";
+  if (totalMinutes > 0) {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0 && m > 0) totalDurationLabel = `${h}h ${m}m`;
+    else if (h > 0) totalDurationLabel = `${h}h`;
+    else totalDurationLabel = `${m}m`;
+  }
 
   let html = `
     <html>
@@ -2888,7 +2946,9 @@ function generateStatusReportPdf() {
         Date: ${new Date().toLocaleDateString("el-GR")}<br>
         Period: ${from} → ${to}<br>
         Line: ${line.toUpperCase()}<br>
-        Status: ${status.toUpperCase()}
+        Status: ${status.toUpperCase()}<br>
+        <strong>Tasks: ${tasks.length}</strong>
+        ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
       </div>
 
       <table>
@@ -2900,6 +2960,7 @@ function generateStatusReportPdf() {
             <th>Task</th>
             <th>Type</th>
             <th>Due Date</th>
+            <th>Estimated Duration</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -2909,6 +2970,15 @@ function generateStatusReportPdf() {
   tasks.forEach(t => {
     const due = new Date(t.due_date);
     const isOverdue = due < new Date() && t.status !== "Done";
+
+    let durLabel = "-";
+    if (t.duration_min != null) {
+      const h = Math.floor(t.duration_min / 60);
+      const m = t.duration_min % 60;
+      if (h > 0 && m > 0) durLabel = `${h}h ${m}m`;
+      else if (h > 0) durLabel = `${h}h`;
+      else durLabel = `${m}m`;
+    }
 
     html += `
       <tr>
@@ -2921,6 +2991,7 @@ function generateStatusReportPdf() {
         <td>${t.task}</td>
         <td>${t.type || "-"}</td>
         <td>${due.toLocaleDateString("el-GR")}</td>
+        <td>${durLabel}</td>
         <td class="${isOverdue ? "status-overdue" : "status-planned"}">
           ${isOverdue ? "Overdue" : "Planned"}
         </td>
@@ -2955,6 +3026,7 @@ function generateStatusReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+
 /* =====================
    COMPLETED REPORT – PDF
 ===================== */
