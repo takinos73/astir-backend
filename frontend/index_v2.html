@@ -356,11 +356,11 @@
   </div>
 </div>
 
-<!-- =====================
+  <!-- =====================
      ADD TASK MODAL – INDUSTRIAL v2
-===================== -->
-<div id="addTaskOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box modal-wide" id="addTaskModal">
+  ===================== -->
+  <div id="addTaskOverlay" class="modal-overlay" style="display:none;">
+    <div class="modal-box modal-wide" id="addTaskModal">
 
     <!-- =====================
          HEADER / CONTEXT
@@ -447,15 +447,32 @@
     </div>
 
     <!-- =====================
-         SCHEDULING (PLANNED)
-    ====================== -->
-    <div class="addtask-block planned-only">
-      <label>Due Date</label>
-      <input
-        id="nt-due"
-        type="date"
+     SCHEDULING (PLANNED)
+    ===================== -->
+    <div class="addtask-block addtask-grid planned-only">
+
+      <div class="field">
+        <label>Due Date</label>
+        <input
+          id="nt-due"
+          type="date"
+        />
+      </div>
+
+      <div class="field">
+        <label>Estimated Duration (min)</label>
+        <input
+          id="nt-duration"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 30"
       />
-    </div>
+    <small class="field-hint">
+      Used for planning & workload KPIs
+    </small>
+  </div>
+</div>
 
     <!-- =====================
          NOTES

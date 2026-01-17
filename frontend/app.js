@@ -1817,20 +1817,19 @@ taskTypeSelect?.addEventListener("change", e => {
 document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const isPlanned =
-  document.getElementById("taskPlannedType")?.value === "planned";
+    document.getElementById("taskPlannedType")?.value === "planned";
 
-// 🔒 Due date required for Planned tasks
-if (isPlanned) {
-  const due = document.getElementById("nt-due")?.value;
-  if (!due) {
-    alert("Please select a due date for a planned task.");
-    return;
+  // 🔒 Due date required for Planned tasks
+  if (isPlanned) {
+    const due = document.getElementById("nt-due")?.value;
+    if (!due) {
+      alert("Please select a due date for a planned task.");
+      return;
+    }
   }
-}
-
 
   const technician =
-    document.getElementById("nt-technician")?.value?.trim() || null;    
+    document.getElementById("nt-technician")?.value?.trim() || null;
 
   const assetId = document.getElementById("nt-asset")?.value;
 
@@ -1853,6 +1852,18 @@ if (isPlanned) {
     return;
   }
 
+  // 🕒 Estimated duration (planned only, optional)
+  let durationMin = null;
+  if (isPlanned) {
+    const d = document.getElementById("nt-duration")?.value;
+    if (d !== "" && d != null) {
+      const n = Number(d);
+      if (Number.isFinite(n) && n > 0) {
+        durationMin = n;
+      }
+    }
+  }
+
   const payload = {
     asset_id: assetId,
     section: document.getElementById("nt-section")?.value || null,
@@ -1868,7 +1879,9 @@ if (isPlanned) {
       ? document.getElementById("nt-due")?.value
       : new Date().toISOString(),
 
-    // 🔥 NEW — technician for unplanned history
+    duration_min: durationMin, // ✅ NEW
+
+    // 🔥 Technician for unplanned history
     executed_by: technician
   };
 
@@ -1900,6 +1913,7 @@ if (isPlanned) {
     alert(err.message);
   }
 });
+
 
 // =====================
 // SAVE TASK EDIT (PUT – METADATA ONLY)
