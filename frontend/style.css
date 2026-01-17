@@ -1472,6 +1472,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: left;
 }
 /* =====================
+   Add Task – Planned Scheduling Grid Fix
+===================== */
+
+#addTaskModal .addtask-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 16px;
+}
+
+#addTaskModal .addtask-grid .field {
+  grid-column: auto;
+}
+
+#addTaskModal .addtask-grid .field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* =====================
    ADD TASK – HEADER COMPACT
 ===================== */
 
@@ -1504,6 +1525,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 4px;
 }
+
 
 
 /* =====================
