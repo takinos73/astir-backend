@@ -3880,7 +3880,8 @@ function openAnalyticsModal() {
   overlay.style.display = "flex";
   overlay.style.pointerEvents = "auto";
   loadKpiEstimatedWorkloadNext7Days();
-  loadKpiOverdueWorkload();}
+  loadKpiOverdueWorkload();
+}
 
 function closeAnalyticsModal() {
   const overlay = document.getElementById("analyticsOverlay");
@@ -3935,7 +3936,7 @@ async function loadKpiOverdueWorkload() {
     if (!kpiValueEl) return;
 
     kpiValueEl.textContent =
-      minutes > 0 ? formatDuration(minutes) : "—";
+      minutes > 0 ? formatDuration(minutes) : "0";
 
   } catch (err) {
     console.error("Overdue workload KPI error:", err);
