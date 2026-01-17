@@ -117,9 +117,9 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-  /*================================
+/*================================
    Create task (Planned or Unplanned)
-  =================================*/
+=================================*/
 
 app.post("/tasks", async (req, res) => {
   const {
@@ -132,7 +132,8 @@ app.post("/tasks", async (req, res) => {
     notes,
     is_planned,
     status,
-    executed_by
+    executed_by,
+    duration_min            // ✅ NEW
   } = req.body;
 
   if (!asset_id || !task) {
@@ -148,9 +149,20 @@ app.post("/tasks", async (req, res) => {
     const taskRes = await client.query(
       `
       INSERT INTO maintenance_tasks
-        (asset_id, section, unit, task, type, due_date, status, is_planned, notes)
+        (
+          asset_id,
+          section,
+          unit,
+          task,
+          type,
+          due_date,
+          status,
+          is_planned,
+          duration_min,        -- ✅ NEW
+          notes
+        )
       VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       RETURNING *
       `,
       [
@@ -162,6 +174,7 @@ app.post("/tasks", async (req, res) => {
         due_date ? new Date(due_date) : null,
         status || "Planned",
         is_planned === true,
+        duration_min ?? null,   // ✅ safe
         notes || null
       ]
     );
@@ -196,6 +209,7 @@ app.post("/tasks", async (req, res) => {
     client.release();
   }
 });
+
 
 
 /* =====================
