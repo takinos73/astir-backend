@@ -3882,6 +3882,7 @@ function openAnalyticsModal() {
   loadKpiEstimatedWorkloadNext7Days();
   loadKpiOverdueWorkload();
   loadKpiPlanningMix();
+  loadKpiTopAssetsOverdue();
 }
 
 function closeAnalyticsModal() {
@@ -3975,6 +3976,52 @@ async function loadKpiPlanningMix() {
 
   } catch (err) {
     console.error("Planning mix KPI error:", err);
+  }
+}
+/* =====================
+   KPI: Top Assets by Overdue Workload
+===================== */
+
+async function loadKpiTopAssetsOverdue() {
+  try {
+    const res = await fetch("/kpis/overdue/top-assets");
+    if (!res.ok) throw new Error("Failed to fetch top assets KPI");
+
+    const data = await res.json();
+
+    const listEl = document.querySelector(
+      "#analyticsOverlay .analytics-section:nth-of-type(2) .analytics-card:nth-child(2) .analytics-list"
+    );
+
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    if (data.length === 0) {
+      listEl.innerHTML = `<div class="analytics-empty">—</div>`;
+      return;
+    }
+
+    data.forEach(a => {
+      const dur = a.total_minutes > 0 ? formatDuration(a.total_minutes) : "—";
+      const tasksLabel = `${a.pending_tasks} task${a.pending_tasks === 1 ? "" : "s"}`;
+
+      const row = document.createElement("div");
+      row.className = "analytics-list-row";
+      row.innerHTML = `
+        <div class="asset">
+          <strong>${a.machine_name}</strong>
+          <small>${a.line_code} • ${a.serial_number}</small>
+        </div>
+        <div class="meta">
+          ⏱ ${dur} • 📋 ${tasksLabel}
+        </div>
+      `;
+
+      listEl.appendChild(row);
+    });
+
+  } catch (err) {
+    console.error("Top assets overdue KPI error:", err);
   }
 }
 

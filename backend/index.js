@@ -674,7 +674,7 @@ app.get("/kpis/planning-mix", async (req, res) => {
   }
 });
 /*================================================
- KPI – TOP ASSETS BY OVERDUE WORKLOAD
+ KPI – TOP ASSETS BY OVERDUE WORKLOAD (WITH COUNT)
 =================================================*/
 app.get("/kpis/overdue/top-assets", async (req, res) => {
   try {
@@ -683,6 +683,7 @@ app.get("/kpis/overdue/top-assets", async (req, res) => {
         a.model AS machine_name,
         a.serial_number,
         l.code AS line_code,
+        COUNT(mt.id)::int AS pending_tasks,
         SUM(mt.duration_min)::int AS total_minutes
       FROM maintenance_tasks mt
       JOIN assets a ON a.id = mt.asset_id
@@ -698,23 +699,11 @@ app.get("/kpis/overdue/top-assets", async (req, res) => {
     `);
 
     res.json(rows);
-    /*
-      [
-        {
-          machine_name: "PMC300",
-          serial_number: "SN-123",
-          line_code: "L2",
-          total_minutes: 180
-        },
-        ...
-      ]
-    */
   } catch (err) {
     console.error("GET /kpis/overdue/top-assets ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
