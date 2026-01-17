@@ -673,6 +673,47 @@ app.get("/kpis/planning-mix", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/*================================================
+ KPI – TOP ASSETS BY OVERDUE WORKLOAD
+=================================================*/
+app.get("/kpis/overdue/top-assets", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        a.model AS machine_name,
+        a.serial_number,
+        l.code AS line_code,
+        SUM(mt.duration_min)::int AS total_minutes
+      FROM maintenance_tasks mt
+      JOIN assets a ON a.id = mt.asset_id
+      JOIN lines l ON l.id = a.line_id
+      WHERE
+        mt.duration_min IS NOT NULL
+        AND mt.status != 'Done'
+        AND mt.due_date < CURRENT_DATE
+        AND mt.deleted_at IS NULL
+      GROUP BY a.model, a.serial_number, l.code
+      ORDER BY total_minutes DESC
+      LIMIT 5
+    `);
+
+    res.json(rows);
+    /*
+      [
+        {
+          machine_name: "PMC300",
+          serial_number: "SN-123",
+          line_code: "L2",
+          total_minutes: 180
+        },
+        ...
+      ]
+    */
+  } catch (err) {
+    console.error("GET /kpis/overdue/top-assets ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 /* =====================
