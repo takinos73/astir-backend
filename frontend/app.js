@@ -3867,6 +3867,8 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     }
   });
 });
+
+
 /* =====================
    KPI / ANALYTICS MODAL
 ===================== */
@@ -3877,6 +3879,7 @@ function openAnalyticsModal() {
 
   overlay.style.display = "flex";
   overlay.style.pointerEvents = "auto";
+  loadKpiEstimatedWorkloadNext7Days();
 }
 
 function closeAnalyticsModal() {
@@ -3886,6 +3889,33 @@ function closeAnalyticsModal() {
   overlay.style.display = "none";
   overlay.style.pointerEvents = "none";
 }
+/* =====================
+   KPI: Estimated Workload – Next 7 Days
+===================== */
+
+async function loadKpiEstimatedWorkloadNext7Days() {
+  try {
+    const res = await fetch("/kpis/workload/next-7-days");
+    if (!res.ok) throw new Error("Failed to fetch KPI");
+
+    const data = await res.json();
+    const minutes = data.total_minutes || 0;
+
+    // Find KPI value element (first workload card)
+    const kpiValueEl = document.querySelector(
+      "#analyticsOverlay .analytics-section:first-of-type .analytics-card .value"
+    );
+
+    if (!kpiValueEl) return;
+
+    kpiValueEl.textContent =
+      minutes > 0 ? formatDuration(minutes) : "—";
+
+  } catch (err) {
+    console.error("KPI workload fetch error:", err);
+  }
+}
+
 
 /* =====================
    EVENT LISTENERS
