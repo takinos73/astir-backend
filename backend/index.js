@@ -628,6 +628,28 @@ app.get("/kpis/workload/next-7-days", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/*================================================
+ KPI – OVERDUE WORKLOAD
+=================================================*/
+app.get("/kpis/workload/overdue", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COALESCE(SUM(duration_min), 0)::int AS total_minutes
+      FROM maintenance_tasks
+      WHERE
+        duration_min IS NOT NULL
+        AND status != 'Done'
+        AND due_date < CURRENT_DATE
+        AND deleted_at IS NULL
+    `);
+
+    res.json(rows[0]); // { total_minutes: xxx }
+  } catch (err) {
+    console.error("GET /kpis/workload/overdue ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 /* =====================
