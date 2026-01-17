@@ -4072,7 +4072,7 @@ function enableKpiAssetDrilldown() {
     // 3️⃣ Apply filters (reuse existing UI)
     const searchInput = document.getElementById("taskSearch");
     if (searchInput) {
-      searchInput.value = `${machine} ${serial}`;
+      searchInput.value = serial; // 👈 μοναδικό φίλτρο
     }
 
     // Force overdue filter button
