@@ -3881,6 +3881,7 @@ function openAnalyticsModal() {
   overlay.style.pointerEvents = "auto";
   loadKpiEstimatedWorkloadNext7Days();
   loadKpiOverdueWorkload();
+  loadKpiPlanningMix();
 }
 
 function closeAnalyticsModal() {
@@ -3942,7 +3943,40 @@ async function loadKpiOverdueWorkload() {
     console.error("Overdue workload KPI error:", err);
   }
 }
+/* =====================
+   KPI: Planning Mix (Planned vs Unplanned)
+===================== */
 
+async function loadKpiPlanningMix() {
+  try {
+    const res = await fetch("/kpis/planning-mix");
+    if (!res.ok) throw new Error("Failed to fetch planning mix KPI");
+
+    const data = await res.json();
+    const planned = data.planned_minutes || 0;
+    const unplanned = data.unplanned_minutes || 0;
+    const total = planned + unplanned;
+
+    const kpiValueEl = document.querySelector(
+      "#analyticsOverlay .analytics-section:nth-of-type(2) .analytics-card .value"
+    );
+
+    if (!kpiValueEl) return;
+
+    if (total === 0) {
+      kpiValueEl.textContent = "—";
+      return;
+    }
+
+    const plannedPct = Math.round((planned / total) * 100);
+    const unplannedPct = 100 - plannedPct;
+
+    kpiValueEl.textContent = `${plannedPct}% planned / ${unplannedPct}% unplanned`;
+
+  } catch (err) {
+    console.error("Planning mix KPI error:", err);
+  }
+}
 
 
 /* =====================
