@@ -79,6 +79,24 @@ function canEditTask(task) {
 }
 
 /* =====================
+   DURATION FORMATTER
+   min -> "xh ym" | "xh" | "ym" | "-"
+===================== */
+function formatDuration(min) {
+  if (min == null || isNaN(min)) return "-";
+
+  const total = Number(min);
+  if (total <= 0) return "-";
+
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+/* =====================
    DATE TIME FORMATTER
 ===================== */
 function formatDateTime(dateStr) {
@@ -1545,24 +1563,14 @@ function renderTable() {
     const n = filtered.length;
   // ⏱ sum duration_min (ONLY not null)
   const totalMinutes = filtered.reduce((sum, t) => {
-    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
-  }, 0);
+  return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+}, 0);
 
-  // base label
-  let label = `${n} task${n === 1 ? "" : "s"}`;
+let label = `${n} task${n === 1 ? "" : "s"}`;
 
-  // append duration only if exists
-  if (totalMinutes > 0) {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    const durationLabel =
-      hours > 0
-        ? `${hours}h${minutes > 0 ? " " + minutes + "m" : ""}`
-        : `${minutes}m`;
-
-    label += ` • ${durationLabel}`;
-  }
+if (totalMinutes > 0) {
+  label += ` • ${formatDuration(totalMinutes)}`;
+}
 
   countEl.textContent = label;
   countEl.classList.toggle("zero", n === 0);
@@ -1681,30 +1689,21 @@ function printTasks() {
         </thead>
         <tbody>
   `;
-
   tasks.forEach(t => {
-    let durLabel = "-";
-    if (t.duration_min != null) {
-      const h = Math.floor(t.duration_min / 60);
-      const m = t.duration_min % 60;
-      if (h > 0 && m > 0) durLabel = `${h}h ${m}m`;
-      else if (h > 0) durLabel = `${h}h`;
-      else durLabel = `${m}m`;
-    }
-
-    html += `
-      <tr>
-        <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
-        <td>${t.section || "-"}</td>
-        <td>${t.unit || "-"}</td>
-        <td>${t.task}</td>
-        <td>${t.type || "-"}</td>
-        <td>${formatDate(t.due_date)}</td>
-        <td>${durLabel}</td>
-        <td></td>
-      </tr>
-    `;
-  });
+  const durLabel = formatDuration(t.duration_min);
+  html += `
+    <tr>
+      <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
+      <td>${t.section || "-"}</td>
+      <td>${t.unit || "-"}</td>
+      <td>${t.task}</td>
+      <td>${t.type || "-"}</td>
+      <td>${formatDate(t.due_date)}</td>
+      <td>${durLabel}</td>
+      <td></td>
+    </tr>
+  `;
+});
 
   html += `
         </tbody>
@@ -2970,15 +2969,7 @@ function generateStatusReportPdf() {
   tasks.forEach(t => {
     const due = new Date(t.due_date);
     const isOverdue = due < new Date() && t.status !== "Done";
-
-    let durLabel = "-";
-    if (t.duration_min != null) {
-      const h = Math.floor(t.duration_min / 60);
-      const m = t.duration_min % 60;
-      if (h > 0 && m > 0) durLabel = `${h}h ${m}m`;
-      else if (h > 0) durLabel = `${h}h`;
-      else durLabel = `${m}m`;
-    }
+    const durLabel = formatDuration(t.duration_min);
 
     html += `
       <tr>
