@@ -650,6 +650,30 @@ app.get("/kpis/workload/overdue", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/*================================================
+ KPI – PLANNING MIX (PLANNED vs UNPLANNED WORKLOAD)
+=================================================*/
+app.get("/kpis/planning-mix", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN is_planned = true  THEN duration_min END), 0)::int AS planned_minutes,
+        COALESCE(SUM(CASE WHEN is_planned = false THEN duration_min END), 0)::int AS unplanned_minutes
+      FROM maintenance_tasks
+      WHERE
+        duration_min IS NOT NULL
+        AND status != 'Done'
+        AND deleted_at IS NULL
+    `);
+
+    res.json(rows[0]);
+    // { planned_minutes: xxx, unplanned_minutes: yyy }
+  } catch (err) {
+    console.error("GET /kpis/planning-mix ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)

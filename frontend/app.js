@@ -3936,7 +3936,7 @@ async function loadKpiOverdueWorkload() {
     if (!kpiValueEl) return;
 
     kpiValueEl.textContent =
-      minutes > 0 ? formatDuration(minutes) : "0";
+      minutes > 0 ? formatDuration(minutes) : "—";
 
   } catch (err) {
     console.error("Overdue workload KPI error:", err);
