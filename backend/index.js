@@ -651,7 +651,6 @@ app.get("/kpis/workload/overdue", async (req, res) => {
   }
 });
 
-
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */

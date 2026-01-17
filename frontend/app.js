@@ -3880,7 +3880,7 @@ function openAnalyticsModal() {
   overlay.style.display = "flex";
   overlay.style.pointerEvents = "auto";
   loadKpiEstimatedWorkloadNext7Days();
-}
+  loadKpiOverdueWorkload();}
 
 function closeAnalyticsModal() {
   const overlay = document.getElementById("analyticsOverlay");
@@ -3915,6 +3915,33 @@ async function loadKpiEstimatedWorkloadNext7Days() {
     console.error("KPI workload fetch error:", err);
   }
 }
+/* =====================
+   KPI: Overdue Workload
+===================== */
+
+async function loadKpiOverdueWorkload() {
+  try {
+    const res = await fetch("/kpis/workload/overdue");
+    if (!res.ok) throw new Error("Failed to fetch overdue workload KPI");
+
+    const data = await res.json();
+    const minutes = data.total_minutes || 0;
+
+    // Second analytics card (Overdue workload)
+    const kpiValueEl = document.querySelector(
+      "#analyticsOverlay .analytics-section:first-of-type .analytics-card:nth-child(2) .value"
+    );
+
+    if (!kpiValueEl) return;
+
+    kpiValueEl.textContent =
+      minutes > 0 ? formatDuration(minutes) : "—";
+
+  } catch (err) {
+    console.error("Overdue workload KPI error:", err);
+  }
+}
+
 
 
 /* =====================
