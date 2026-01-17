@@ -1318,9 +1318,6 @@ res.json({
   }
 });
 
-/* =====================
-   RESTORE SNAPSHOT
-===================== */
 app.post("/snapshot/restore", async (req, res) => {
   const client = await pool.connect();
 
@@ -1339,7 +1336,7 @@ app.post("/snapshot/restore", async (req, res) => {
     await client.query("BEGIN");
 
     /* =====================
-   0️⃣ FULL WIPE BASE TABLES
+       0️⃣ FULL WIPE
     ===================== */
     await client.query(`TRUNCATE TABLE task_executions RESTART IDENTITY CASCADE`);
     await client.query(`TRUNCATE TABLE maintenance_tasks RESTART IDENTITY CASCADE`);
@@ -1347,31 +1344,19 @@ app.post("/snapshot/restore", async (req, res) => {
     await client.query(`TRUNCATE TABLE lines RESTART IDENTITY CASCADE`);
 
     /* =====================
-   1️⃣ RESTORE LINES (SAFE)
+       1️⃣ RESTORE LINES
     ===================== */
-
     for (const l of lines) {
-      const code =
-      (l.code || l.line || l.name || "").toString().trim();
+      const code = (l.code || l.line || l.name || "").toString().trim();
+      if (!code) continue;
 
-    if (!code) {
-      console.warn("SKIP LINE (no code):", l);
-      continue;
-  }
+      await client.query(
+        `INSERT INTO lines (code, name, description)
+         VALUES ($1,$2,$3)`,
+        [code, l.name || code, l.description || null]
+      );
+    }
 
-  await client.query(
-    `
-    INSERT INTO lines (code, name, description)
-    VALUES ($1,$2,$3)
-    `,
-    [
-      code,
-      l.name || code,
-      l.description || null
-    ]
-  );
-}
-     
     /* =====================
        2️⃣ RESTORE ASSETS
     ===================== */
@@ -1384,79 +1369,149 @@ app.post("/snapshot/restore", async (req, res) => {
       );
       if (!lineRes.rows.length) continue;
 
-      const lineId = lineRes.rows[0].id;
-
-      await client.query(`
-      INSERT INTO assets (line_id, model, serial_number, description, active)
-      VALUES ($1,$2,$3,$4,$5)
-      `, [
-        lineId,
-        a.model,
-        a.serial_number,
-        a.description || null,
-        a.active !== false
-      ]);
+      await client.query(
+        `INSERT INTO assets (line_id, model, serial_number, description, active)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [
+          lineRes.rows[0].id,
+          a.model,
+          a.serial_number,
+          a.description || null,
+          a.active !== false
+        ]
+      );
     }
-  
-    /* =====================
-   4️⃣ RESTORE TASKS (WITH SOFT DELETE)
-===================== */
-for (const t of tasks) {
-  const assetRes = await client.query(`
-    SELECT a.id
-    FROM assets a
-    JOIN lines l ON l.id = a.line_id
-    WHERE l.code = $1 AND a.model = $2 AND a.serial_number = $3
-  `, [t.line, t.machine_name, t.serial_number]);
 
-  if (!assetRes.rows.length) continue;
-  const assetId = assetRes.rows[0].id;
-
-  await client.query(`
-    INSERT INTO maintenance_tasks (
-      asset_id, section, unit, task, type, qty,
-      duration_min, frequency_hours,
-      due_date, status,
-      completed_by, completed_at,
-      is_planned, notes,
-      created_at, updated_at,
-      deleted_at
-    )
-    VALUES (
-      $1,$2,$3,$4,$5,$6,
-      $7,$8,
-      $9,$10,
-      $11,$12,
-      $13,$14,
-      COALESCE($15,NOW()), COALESCE($16,NOW()),
-      $17
-    )
-  `, [
-    assetId,
-    t.section || null,
-    t.unit || null,
-    t.task,
-    t.type || null,
-    t.qty ?? null,
-    t.duration_min ?? null,
-    t.frequency_hours ?? null,
-    t.due_date ? new Date(t.due_date) : null,
-    t.status,
-    t.completed_by || null,
-    t.completed_at ? new Date(t.completed_at) : null,
-    t.is_planned,
-    t.notes || null,
-    t.created_at ? new Date(t.created_at) : null,
-    t.updated_at ? new Date(t.updated_at) : null,
-    t.deleted_at ? new Date(t.deleted_at) : null   // ⭐ KEY FIX
-  ]);
-}
-    
     /* =====================
-       5️⃣ RESTORE HISTORY
+       3️⃣ PREP: TASK IDS USED IN HISTORY
+    ===================== */
+    const historyTaskIds = new Set(executions.map(e => e.task_id));
+
+    /* =====================
+       4️⃣ RESTORE TASKS
+       - tasks WITH history → preserve ID
+       - tasks WITHOUT history → new ID
+    ===================== */
+    for (const t of tasks) {
+      const assetRes = await client.query(
+        `
+        SELECT a.id
+        FROM assets a
+        JOIN lines l ON l.id = a.line_id
+        WHERE l.code = $1
+          AND a.model = $2
+          AND a.serial_number = $3
+        `,
+        [t.line, t.machine_name, t.serial_number]
+      );
+      if (!assetRes.rows.length) continue;
+
+      const assetId = assetRes.rows[0].id;
+      const hasHistory = historyTaskIds.has(t.id);
+
+      if (hasHistory) {
+        // 🔒 PRESERVE ID
+        await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            id,
+            asset_id, section, unit, task, type, qty,
+            duration_min, frequency_hours,
+            due_date, status,
+            completed_by, completed_at,
+            is_planned, notes,
+            created_at, updated_at,
+            deleted_at
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,$6,$7,
+            $8,$9,$10,$11,$12,$13,
+            $14,$15,$16,$17,$18
+          )
+          `,
+          [
+            t.id,
+            assetId,
+            t.section || null,
+            t.unit || null,
+            t.task,
+            t.type || null,
+            t.qty ?? null,
+            t.duration_min ?? null,
+            t.frequency_hours ?? null,
+            t.due_date ? new Date(t.due_date) : null,
+            t.status,
+            t.completed_by || null,
+            t.completed_at ? new Date(t.completed_at) : null,
+            t.is_planned,
+            t.notes || null,
+            t.created_at ? new Date(t.created_at) : null,
+            t.updated_at ? new Date(t.updated_at) : null,
+            t.deleted_at ? new Date(t.deleted_at) : null
+          ]
+        );
+      } else {
+        // 🆕 NEW ID (preventive rollover etc)
+        await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            asset_id, section, unit, task, type, qty,
+            duration_min, frequency_hours,
+            due_date, status,
+            completed_by, completed_at,
+            is_planned, notes,
+            created_at, updated_at,
+            deleted_at
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,$6,
+            $7,$8,
+            $9,$10,
+            $11,$12,
+            $13,$14,
+            COALESCE($15,NOW()), COALESCE($16,NOW()),
+            $17
+          )
+          `,
+          [
+            assetId,
+            t.section || null,
+            t.unit || null,
+            t.task,
+            t.type || null,
+            t.qty ?? null,
+            t.duration_min ?? null,
+            t.frequency_hours ?? null,
+            t.due_date ? new Date(t.due_date) : null,
+            t.status,
+            t.completed_by || null,
+            t.completed_at ? new Date(t.completed_at) : null,
+            t.is_planned,
+            t.notes || null,
+            t.created_at ? new Date(t.created_at) : null,
+            t.updated_at ? new Date(t.updated_at) : null,
+            t.deleted_at ? new Date(t.deleted_at) : null
+          ]
+        );
+      }
+    }
+
+    /* =====================
+       5️⃣ FIX SEQUENCE (CRITICAL)
+    ===================== */
+    await client.query(`
+      SELECT setval(
+        pg_get_serial_sequence('maintenance_tasks','id'),
+        (SELECT MAX(id) FROM maintenance_tasks)
+      )
+    `);
+
+    /* =====================
+       6️⃣ RESTORE HISTORY (SAFE)
     ===================== */
     for (const e of executions) {
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO task_executions (
           task_id,
           asset_id,
@@ -1465,13 +1520,15 @@ for (const t of tasks) {
           prev_due_date
         )
         VALUES ($1,$2,$3,$4,$5)
-      `, [
-        e.task_id,
-        e.asset_id,
-        e.executed_by || null,
-        e.executed_at ? new Date(e.executed_at) : null,
-        e.prev_due_date ? new Date(e.prev_due_date) : null
-      ]);
+        `,
+        [
+          e.task_id,
+          e.asset_id,
+          e.executed_by || null,
+          e.executed_at ? new Date(e.executed_at) : null,
+          e.prev_due_date ? new Date(e.prev_due_date) : null
+        ]
+      );
     }
 
     await client.query("COMMIT");
@@ -1485,6 +1542,7 @@ for (const t of tasks) {
     client.release();
   }
 });
+
 
 /* =====================================================
    DOCUMENTATION (MasterPlan PDF)
