@@ -2105,29 +2105,62 @@ tr.history-unplanned {
   height: auto;
 }
 
+/* =====================
+   KPI / Analytics – Risk List Styling
+===================== */
 
+.analytics-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.analytics-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
+  padding: 10px 12px;
+  border-radius: 8px;
 
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
 
+.analytics-list-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
 
+.analytics-list-row .asset {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
+.analytics-list-row .asset strong {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
 
+.analytics-list-row .asset small {
+  font-size: 12px;
+  opacity: 0.7;
+}
 
+.analytics-list-row .meta {
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Empty state */
+.analytics-empty {
+  font-size: 13px;
+  opacity: 0.6;
+  padding: 6px 0;
+}
