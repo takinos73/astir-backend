@@ -3879,11 +3879,17 @@ function openAnalyticsModal() {
 
   overlay.style.display = "flex";
   overlay.style.pointerEvents = "auto";
+
   loadKpiEstimatedWorkloadNext7Days();
   loadKpiOverdueWorkload();
   loadKpiPlanningMix();
   loadKpiTopAssetsOverdue();
+
+  // 🔗 Enable drill-down AFTER KPI render
+  setTimeout(enableKpiAssetDrilldown, 0);
 }
+
+
 
 function closeAnalyticsModal() {
   const overlay = document.getElementById("analyticsOverlay");
@@ -4031,6 +4037,56 @@ async function loadKpiTopAssetsOverdue() {
   } catch (err) {
     console.error("Top assets overdue KPI error:", err);
   }
+}
+/* =====================
+   KPI Drill-down → Tasks
+===================== */
+
+function enableKpiAssetDrilldown() {
+  const listEl = document.getElementById("kpiTopAssetsOverdueList");
+  if (!listEl) return;
+
+  listEl.addEventListener("click", e => {
+    const row = e.target.closest(".analytics-list-row");
+    if (!row) return;
+
+    const machine = row.dataset.machine;
+    const serial = row.dataset.serial;
+
+    if (!machine || !serial) return;
+
+    // 1️⃣ Close Analytics modal
+    const analyticsOverlay = document.getElementById("analyticsOverlay");
+    if (analyticsOverlay) analyticsOverlay.style.display = "none";
+
+    // 2️⃣ Switch to Tasks tab
+    document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
+    document.querySelector('.main-tab[data-tab="tasks"]')?.classList.add("active");
+
+    document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+      tab.style.display = "none";
+    });
+    const tasksTab = document.getElementById("tab-tasks");
+    if (tasksTab) tasksTab.style.display = "block";
+
+    // 3️⃣ Apply filters (reuse existing UI)
+    const searchInput = document.getElementById("taskSearch");
+    if (searchInput) {
+      searchInput.value = `${machine} ${serial}`;
+    }
+
+    // Force overdue filter button
+    document.querySelectorAll(".date-filter-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.filter === "overdue");
+    });
+
+    // Trigger re-filter
+    if (typeof applyFilters === "function") {
+      applyFilters();
+    } else if (typeof renderTasks === "function") {
+      renderTasks();
+    }
+  });
 }
 
 
