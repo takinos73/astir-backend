@@ -28,29 +28,30 @@ function closeAnalyticsModal() {
 /* =====================
    KPI: Estimated Workload – Next 7 Days
 ===================== */
-
 async function loadKpiEstimatedWorkloadNext7Days() {
   try {
     const res = await fetch("/kpis/workload/next-7-days");
     if (!res.ok) throw new Error("Failed to fetch KPI");
 
     const data = await res.json();
-    const minutes = data.total_minutes || 0;
+    const minutes = data.total_minutes;
 
-    // Find KPI value element (first workload card)
-    const kpiValueEl = document.querySelector(
-      "#analyticsOverlay .analytics-section:first-of-type .analytics-card .value"
-    );
+    const el = document.getElementById("kpiEstimatedWorkload7d");
+    if (!el) {
+      console.warn("kpiEstimatedWorkload7d element not found");
+      return;
+    }
 
-    if (!kpiValueEl) return;
-
-    kpiValueEl.textContent =
-      minutes > 0 ? formatDuration(minutes) : "—";
+    el.textContent =
+      minutes && minutes > 0
+        ? formatDuration(minutes)
+        : "—";
 
   } catch (err) {
     console.error("KPI workload fetch error:", err);
   }
 }
+
 /* =====================
    KPI: Overdue Workload
 ===================== */
