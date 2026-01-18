@@ -69,3 +69,20 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
   alert("Snapshot restored successfully");
   location.reload();
 });
+// =====================
+// SHOW LAST RESTORED SNAPSHOT
+// =====================
+document.addEventListener("DOMContentLoaded", () => {
+  const last = localStorage.getItem("lastRestoredSnapshot");
+  const statusEl = document.getElementById("snapshotStatus");
+
+  if (!statusEl) return;
+
+  if (last) {
+    statusEl.textContent = `Last restored: ${last}`;
+    statusEl.classList.add("loaded");
+  } else {
+    statusEl.textContent = "No snapshot loaded";
+    statusEl.classList.remove("loaded");
+  }
+});

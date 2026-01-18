@@ -94,17 +94,6 @@ function loginAsRole() {
 document.getElementById("loginAsRoleBtn")
   ?.addEventListener("click", loginAsRole);
 
-// =====================
-// SHOW LAST RESTORED SNAPSHOT
-// =====================
-const last = localStorage.getItem("lastRestoredSnapshot");
-const statusEl = document.getElementById("snapshotStatus");
-
-if (statusEl && last) {
-  statusEl.textContent = `Last restored: ${last}`;
-  statusEl.classList.add("loaded");
-}
-
 /* =====================
    Date Filters
 ===================== */
