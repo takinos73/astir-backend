@@ -32,6 +32,11 @@ let historyTypeFilter = "all";
 // EDIT BREAKDOWN STATE
 // =====================
 let editingBreakdownId = null;
+// =====================
+// ASSET-SCOPED TASKS STATE
+// =====================
+let currentAssetSerial = null;
+let assetScopedTasks = [];
 
 
 /* =====================
@@ -1810,6 +1815,185 @@ taskTypeSelect?.addEventListener("change", e => {
   }
 });
 
+// =====================
+// ASSET VIEW (BY SERIAL NUMBER)
+// =====================
+
+function openAssetViewBySerial(serial) {
+  currentAssetSerial = serial;
+
+  // ACTIVE TASKS (Planned + Overdue)
+  assetScopedTasks = tasksData.filter(
+    t => t.serial_number === serial
+  );
+
+  // HISTORY (Done / Executions)
+  assetScopedHistory = executionsData.filter(
+    e => e.serial_number === serial
+  );
+
+  if (assetScopedTasks.length === 0 && assetScopedHistory.length === 0) {
+    alert("No tasks found for this asset");
+    return;
+  }
+
+  const headerSource =
+    assetScopedTasks[0] || assetScopedHistory[0];
+
+  renderAssetViewHeader(headerSource);
+  renderAssetKpis(assetScopedTasks, assetScopedHistory);
+  renderAssetTasksTable(assetScopedTasks);
+  bindAssetKpiFilters();
+
+  const overlay = document.getElementById("assetViewOverlay");
+  overlay.style.display = "flex";
+  overlay.style.pointerEvents = "auto";
+}
+
+// =====================
+// HEADER
+// =====================
+function renderAssetViewHeader(src) {
+  document.getElementById("assetViewTitle").innerHTML = `
+    ${src.machine_name}
+    <small class="asset-sn">SN: ${src.serial_number}</small>
+  `;
+
+  document.getElementById("assetViewLine").textContent =
+    src.line_code || "-";
+
+  document.getElementById("assetViewStatus").textContent = "Active";
+}
+
+// =====================
+// KPI COUNTS
+// =====================
+function renderAssetKpis(tasks, history) {
+  const planned = tasks.filter(t => t.status === "Planned").length;
+  const overdue = tasks.filter(t => t.status === "Overdue").length;
+  const done = history.length;
+
+  document.getElementById("assetPlannedCount").textContent = planned;
+  document.getElementById("assetOverdueCount").textContent = overdue;
+  document.getElementById("assetHistoryCount").textContent = done;
+}
+
+// =====================
+// ACTIVE TASKS TABLE
+// =====================
+function renderAssetTasksTable(tasks) {
+  const tbody = document.querySelector("#assetTasksTable tbody");
+  tbody.innerHTML = "";
+
+  if (tasks.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty">No active tasks</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tasks.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.classList.add("clickable");
+
+    const dur =
+      t.duration_min != null
+        ? formatDuration(t.duration_min)
+        : "—";
+
+    tr.innerHTML = `
+      <td>${t.status}</td>
+      <td>${t.task}</td>
+      <td>${t.type || "-"}</td>
+      <td>${formatDate(t.due_date)}</td>
+      <td>${dur}</td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openTaskView(t.id);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// =====================
+// KPI → TABLE FILTER
+// =====================
+function bindAssetKpiFilters() {
+  document
+    .querySelectorAll(".asset-kpis .kpi-card.clickable")
+    .forEach(card => {
+      card.onclick = () => {
+        const filter = card.dataset.filter;
+
+        if (filter === "planned") {
+          renderAssetTasksTable(
+            assetScopedTasks.filter(t => t.status === "Planned")
+          );
+        } else if (filter === "overdue") {
+          renderAssetTasksTable(
+            assetScopedTasks.filter(t => t.status === "Overdue")
+          );
+        } else if (filter === "history") {
+          renderAssetHistoryTable(assetScopedHistory);
+        } else {
+          renderAssetTasksTable(assetScopedTasks);
+        }
+      };
+    });
+}
+
+// =====================
+// HISTORY TABLE (EXECUTIONS)
+// =====================
+function renderAssetHistoryTable(history) {
+  const tbody = document.querySelector("#assetTasksTable tbody");
+  tbody.innerHTML = "";
+
+  if (history.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty">No history records</td>
+      </tr>
+    `;
+    return;
+  }
+
+  history.forEach(e => {
+    const tr = document.createElement("tr");
+    tr.classList.add("clickable");
+
+    tr.innerHTML = `
+      <td>Done</td>
+      <td>${e.task}</td>
+      <td>${e.type || "-"}</td>
+      <td>${formatDate(e.executed_at)}</td>
+      <td>—</td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openHistoryView(e.id);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// =====================
+// CLOSE
+// =====================
+function closeAssetView() {
+  document.getElementById("assetViewOverlay").style.display = "none";
+  document.querySelector("#assetTasksTable tbody").innerHTML = "";
+
+  currentAssetSerial = null;
+  assetScopedTasks = [];
+  assetScopedHistory = [];
+}
+
 
 /* =====================
    SAVE TASK (PLANNED / UNPLANNED)
@@ -2358,20 +2542,30 @@ function renderAssetsTable() {
   }
 
   filteredAssets.forEach(a => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${a.line || "-"}</td>
-      <td>${a.model || "-"}</td>
-      <td>${a.serial_number || "-"}</td>
-      <td class="asset-admin-only">
-        <button class="btn-warning"
-          onclick="deactivateAsset(${a.id})">
-          🚫 Deactivate
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+  const tr = document.createElement("tr");
+  tr.classList.add("clickable");
+
+  tr.innerHTML = `
+    <td>${a.line || "-"}</td>
+    <td>${a.model || "-"}</td>
+    <td>${a.serial_number || "-"}</td>
+    <td class="asset-admin-only">
+      <button
+        class="btn-warning"
+        onclick="event.stopPropagation(); deactivateAsset(${a.id})">
+        🚫 Deactivate
+      </button>
+    </td>
+  `;
+
+  // 🔗 Open Asset View by SERIAL NUMBER
+  tr.addEventListener("click", () => {
+  console.log("ASSET CLICK:", a.serial_number);
+  openAssetViewBySerial(a.serial_number);
+});
+
+  tbody.appendChild(tr);
+});
 }
 
 /* =====================

@@ -1698,6 +1698,45 @@ tr.history-unplanned {
   font-size: 0.8em;
   opacity: 0.85;
 }
+/* =====================
+   ASSET VIEW – TABLE-ONLY SCROLL
+===================== */
+
+/* ΜΗΝ κάνει scroll όλο το modal */
+#assetViewOverlay .modal-box {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+/* Scroll ΜΟΝΟ στο table container */
+.asset-tasks-table {
+  max-height: 320px;        /* ~6–8 rows */
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
+}
+
+/* Sticky table header */
+.asset-tasks-table thead th {
+  position: sticky;
+  top: 0;
+  background: #1e222b;
+  z-index: 2;
+}
+
+/* Προαιρετικό – πιο καθαρό scrollbar */
+.asset-tasks-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.asset-tasks-table::-webkit-scrollbar-thumb {
+  background: #3a4050;
+  border-radius: 4px;
+}
+
+.asset-tasks-table::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 
 /* =====================
