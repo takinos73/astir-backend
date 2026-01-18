@@ -119,7 +119,7 @@ function applyDateFilter(tasks) {
 }
 
 /* =====================
-   TASK TABLE
+   TASK TABLE – STATUS PILL
 ===================== */
 
 function statusPill(task) {
@@ -128,26 +128,48 @@ function statusPill(task) {
   let cls = "status-pill";
   let txt = "Planned";
 
+  // 🔒 DONE
   if (task.status === "Done") {
     cls += " status-done";
     txt = "Done";
-  } 
+  }
+
+  // 🔴 OVERDUE
   else if (st === "overdue") {
     cls += " status-overdue";
     txt = "Overdue";
-  } 
-  else if (st === "soon") {
+  }
+
+  // 🔵 TODAY
+  else if (task.due_date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const due = new Date(task.due_date);
+    due.setHours(0, 0, 0, 0);
+
+    if (due.getTime() === today.getTime()) {
+      cls += " status-today";
+      txt = "Today";
+      return `<span class="${cls}">${txt}</span>`;
+    }
+  }
+
+  // 🟠 DUE SOON
+  if (st === "soon") {
     cls += " status-soon";
     txt = "Due Soon";
-  } 
+  }
+
+  // ⚪ PLANNED (default)
   else {
-    // ⭐ ΕΔΩ Η ΔΙΟΡΘΩΣΗ
     cls += " status-planned";
     txt = "Planned";
   }
 
   return `<span class="${cls}">${txt}</span>`;
 }
+
 
 function buildRow(task) {
   const tr = document.createElement("tr");
