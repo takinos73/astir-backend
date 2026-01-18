@@ -42,16 +42,6 @@ let assetAllTasks = [];
 let assetActiveTasks = [];
 let assetHistoryTasks = [];
 
-
-window.addEventListener("error", e => {
-  console.error("GLOBAL ERROR:", e.message, "at", e.filename + ":" + e.lineno + ":" + e.colno);
-});
-
-window.addEventListener("unhandledrejection", e => {
-  console.error("UNHANDLED PROMISE REJECTION:", e.reason);
-});
-
-
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
@@ -93,6 +83,7 @@ function loginAsRole() {
 
 document.getElementById("loginAsRoleBtn")
   ?.addEventListener("click", loginAsRole);
+
 
 /* =====================
    Date Filters
@@ -4326,4 +4317,3 @@ function onTaskDateRangeChange() {
 
   renderTable();
 }
-

@@ -116,3 +116,20 @@ function matchesSearch(task, q) {
     (task.unit || "").toLowerCase().includes(s)
   );
 }
+/* =====================
+   GLOBAL ERROR HANDLING
+===================== */
+
+window.addEventListener("error", e => {
+  console.error(
+    "GLOBAL ERROR:",
+    e.message,
+    "at",
+    `${e.filename}:${e.lineno}:${e.colno}`
+  );
+});
+
+window.addEventListener("unhandledrejection", e => {
+  console.error("UNHANDLED PROMISE REJECTION:", e.reason);
+});
+
