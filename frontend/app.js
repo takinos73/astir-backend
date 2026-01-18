@@ -456,6 +456,40 @@ function printCurrentTask() {
   w.document.close();
 }
 
+// =====================
+// MTBF CALCULATION (FRONTEND ONLY)
+// =====================
+
+function calculateMtbfMinutes(breakdownExecutions) {
+  if (!Array.isArray(breakdownExecutions) || breakdownExecutions.length < 2) {
+    return null; // MTBF not applicable
+  }
+
+  // sort by execution date ASC
+  const sorted = [...breakdownExecutions].sort(
+    (a, b) => new Date(a.executed_at) - new Date(b.executed_at)
+  );
+
+  let totalDiffMin = 0;
+  let intervals = 0;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1].executed_at);
+    const curr = new Date(sorted[i].executed_at);
+
+    const diffMin = (curr - prev) / 60000;
+    if (diffMin > 0) {
+      totalDiffMin += diffMin;
+      intervals++;
+    }
+  }
+
+  if (intervals === 0) return null;
+
+  return Math.round(totalDiffMin / intervals);
+}
+
+
 
 /* =====================
    TASK TABLE
@@ -1928,6 +1962,9 @@ taskTypeSelect?.addEventListener("change", e => {
     modal.classList.toggle("unplanned-mode", !isPlanned);
   }
 });
+// =====================
+// OPEN ASSET VIEW BY SERIAL (FRONTEND)
+// =====================
 
 function openAssetViewBySerial(serial) {
   try {
@@ -2000,6 +2037,9 @@ function openAssetViewBySerial(serial) {
     // 🔑 THEN force default tab
     activateAssetTab("active");
 
+    // MTBF
+    renderAssetMtbf(currentAssetSerial);
+
     console.log("✅ Asset view opened");
     console.groupEnd();
 
@@ -2007,6 +2047,27 @@ function openAssetViewBySerial(serial) {
     console.error("💥 openAssetViewBySerial crashed:", err);
     alert("Asset view error (see console).");
   }
+}
+// =====================
+// RENDER ASSET MTBF KPI
+// =====================
+
+function renderAssetMtbf(serial) {
+  const mtbfEl = document.getElementById("assetMtbfValue");
+  if (!mtbfEl) return;
+
+  const breakdowns = assetHistoryTasks.filter(
+    e => e.is_planned === false
+  );
+
+  const mtbfMin = calculateMtbfMinutes(breakdowns);
+
+  if (mtbfMin == null) {
+    mtbfEl.textContent = "—";
+    return;
+  }
+
+  mtbfEl.textContent = formatDuration(mtbfMin);
 }
 
 
