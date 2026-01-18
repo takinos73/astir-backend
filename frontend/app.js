@@ -431,8 +431,6 @@ function buildRow(task) {
       : ""
   }
 </td>
-
-
     <!-- SECTION -->
     <td>${task.section ? highlight(task.section, q) : "-"}</td>
     <!-- UNIT -->
@@ -488,7 +486,6 @@ function buildRow(task) {
   return tr;
 }
 
-
 /* =====================
    LOAD TASK HISTORY
 ===================== */
@@ -520,7 +517,6 @@ function getExecutionType(h) {
 function printExecution(executionId) {
   window.open(`${API}/api/executions/${executionId}/print`, "_blank");
 }
-
 
 /* =====================
    Render HISTORY table
@@ -830,7 +826,6 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
   assetSel.disabled = false;
 });
 
-
 /* =====================
    VIEW TASK MODAL
 ===================== */
@@ -949,7 +944,6 @@ ${
 }
 
 `;
-
   document.getElementById("taskViewOverlay").style.display = "flex";
 
   // =====================
@@ -987,7 +981,6 @@ ${
     followupBtn.style.display = "none";
   }
 }
-
 
 // =====================
 // TASK EDITING (COLLAPSE / EXPAND) — SAFE
@@ -1091,7 +1084,6 @@ function openHistory() {
   overlay.style.pointerEvents = "auto"; // 👈 ΚΡΙΣΙΜΟ
 }
 
-
 function closeHistory() {
   getEl("historyOverlay").style.display = "none";
 }
@@ -1169,12 +1161,10 @@ async function saveBreakdownEdit() {
   }
 }
 
-
 function closeEditBreakdown() {
   editingBreakdownId = null;
   document.getElementById("editBreakdownOverlay").style.display = "none";
 }
-
 
 /* =====================
    FILTERS
@@ -1287,7 +1277,6 @@ function initAssetDropdown() {
   });
 }
 
-
 function getFilteredTasksForPrint() {
 
   const today = new Date();
@@ -1375,20 +1364,6 @@ function populateAssetFilter() {
     opt.textContent = `${a.line} | ${a.machine} — SN: ${a.serial}`;
     sel.appendChild(opt);
   });
-}
-
-// Search matching
-function matchesSearch(task, q) {
-  if (!q) return true;
-  const s = q.toLowerCase();
-
-  return (
-    (task.task || "").toLowerCase().includes(s) ||
-    (task.machine_name || "").toLowerCase().includes(s) ||
-    (task.serial_number || "").toLowerCase().includes(s) ||
-    (task.section || "").toLowerCase().includes(s) ||
-    (task.unit || "").toLowerCase().includes(s)
-  );
 }
 
 /* =====================
@@ -1498,6 +1473,9 @@ function bindAssetTabs() {
   });
 }
 
+// =====================
+// RENDER TASKS TABLE (WITH FILTERS)
+// =====================
 
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
@@ -1517,7 +1495,6 @@ function renderTable() {
   const filtered = tasksData
     
   .filter(t => matchesSearch(t, q))
-
 
     // MACHINE FILTER
     .filter(t => {
@@ -1625,8 +1602,6 @@ function printTask(taskId) {
   if (!taskId) return;
   window.open(`${API}/api/tasks/${taskId}/print`, "_blank");
 }
-
-
 /* =====================
    PRINT TASKS (WITH ESTIMATED DURATION)
 ===================== */
@@ -1760,8 +1735,6 @@ document
     console.log("SEARCH INPUT:", e.target.value);
     renderTable();
   });
-
-
 
 /* =====================
    LOAD TASKS
@@ -2008,7 +1981,6 @@ function renderAssetTasksTable(tasks) {
   tbody.offsetHeight;
 }
 
-
 // =====================
 // KPI → TABLE FILTER
 // =====================
@@ -2114,7 +2086,6 @@ function renderAssetHistoryTable(history) {
   tbody.offsetHeight;
 }
 
-
 // =====================
 // CLOSE
 // =====================
@@ -2128,7 +2099,6 @@ function renderAssetHistoryTable(history) {
 
   document.querySelector("#assetTasksTable tbody").innerHTML = "";
 }
-
 
 
 /* =====================
@@ -2234,7 +2204,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   }
 });
 
-
 // =====================
 // SAVE TASK EDIT (PUT – METADATA ONLY)
 // =====================
@@ -2288,7 +2257,6 @@ async function saveTaskEdit() {
     alert(err.message);
   }
 }
-
 
 /* =====================
    OPEN ADD TASK MODAL
@@ -2421,7 +2389,9 @@ document.addEventListener("click", async (e) => {
   if (tv) tv.style.display = "none";
 });
 
-
+// =====================
+// POPULATE LINES IN ADD TASK MODAL
+// =====================
 
 function populateAssetSelectForLine(line) {
   const assetSel = document.getElementById("nt-asset");
@@ -2443,7 +2413,6 @@ function populateAssetSelectForLine(line) {
 
   assetSel.disabled = false;
 }
-
 
 
 document.getElementById("nt-line")?.addEventListener("change", e => {
@@ -2573,7 +2542,6 @@ getEl("confirmDone")?.addEventListener("click", async () => {
   }
 });
 
-
 /* ===========================
    LOAD TASK DONE from HISTORY
 ==============================*/
@@ -2594,7 +2562,6 @@ async function loadCompletedKpi() {
     console.error("Failed to load completed KPI", err);
   }
 }
-
 
 async function undoTask(id) {
   await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
@@ -2763,7 +2730,6 @@ async function loadMachineModelsForAsset() {
   }
 }
 
-
 /* =====================
    ADD ASSET MODAL – SAFE OPEN
 ===================== */
@@ -2797,10 +2763,12 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.style.display = "none";
   });
 });
+
 /* =====================
    ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
    Works with value="__other__"
 ===================== */
+
 document.addEventListener("DOMContentLoaded", () => {
   const lineSelect = document.getElementById("assetLine");
   const machineSelect = document.getElementById("assetMachine");
@@ -3042,7 +3010,6 @@ document.getElementById("assetMachine")?.addEventListener("change", e => {
     e.target.value === "_other" ? "block" : "none";
 });
 
-
 /* =====================
    LOAD REPORTS TAB
 ===================== */
@@ -3222,7 +3189,6 @@ function getFilteredTasksForStatusReport() {
       return true;
     });
 }
-
 
 /* =====================
    STATUS REPORT – PDF (WITH ESTIMATED DURATION)
@@ -3489,7 +3455,6 @@ function generateCompletedReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
-
 
 /* =====================
    COMPLETED REPORT – DATA
@@ -4125,7 +4090,6 @@ document.getElementById("snapshotFile")?.addEventListener("change", e => {
   statusEl.classList.add("loaded");
 });
 
-
 /* =====================
    SNAPSHOT RESTORE
 ===================== */
@@ -4156,7 +4120,6 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
   alert("Snapshot restored successfully");
   location.reload();
 });
-
 
 /* =====================
    LINE TABS
@@ -4206,7 +4169,6 @@ document.querySelectorAll(".main-tab").forEach(tab => {
   });
 });
 
-
 /* =====================
    KPI / ANALYTICS MODAL
 ===================== */
@@ -4226,8 +4188,6 @@ function openAnalyticsModal() {
   // 🔗 Enable drill-down AFTER KPI render
   setTimeout(enableKpiAssetDrilldown, 0);
 }
-
-
 
 function closeAnalyticsModal() {
   const overlay = document.getElementById("analyticsOverlay");
@@ -4551,5 +4511,4 @@ function onTaskDateRangeChange() {
 
   renderTable();
 }
-
 

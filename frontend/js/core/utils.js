@@ -98,3 +98,19 @@ function calculateMtbfMinutes(breakdownExecutions) {
 
   return Math.round(totalDiffMin / intervals);
 }
+// =====================
+// SEARCH MATCHING
+// =====================
+
+function matchesSearch(task, q) {
+  if (!q) return true;
+  const s = q.toLowerCase();
+
+  return (
+    (task.task || "").toLowerCase().includes(s) ||
+    (task.machine_name || "").toLowerCase().includes(s) ||
+    (task.serial_number || "").toLowerCase().includes(s) ||
+    (task.section || "").toLowerCase().includes(s) ||
+    (task.unit || "").toLowerCase().includes(s)
+  );
+}
