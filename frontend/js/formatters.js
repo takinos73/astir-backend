@@ -15,3 +15,20 @@ function formatDuration(min) {
   if (h > 0) return `${h}h`;
   return `${m}m`; 
 }
+/* =====================
+   DATE TIME FORMATTER
+===================== */
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleString("el-GR");
+}
+/* =====================
+   DATE ONLY FORMATTER
+===================== */
+function formatDateOnly(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "-";
+  return d.toLocaleDateString("el-GR");
+}

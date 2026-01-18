@@ -67,45 +67,6 @@ function canEditTask(task) {
   );
 }
 
-
-
-/* =====================
-   DATE TIME FORMATTER
-===================== */
-function formatDateTime(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  return d.toLocaleString("el-GR");
-}
-/* =====================
-   DATE ONLY FORMATTER
-===================== */
-function formatDateOnly(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return "-";
-  return d.toLocaleDateString("el-GR");
-}
-
-function diffDays(a, b) {
-  return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
-}
-
-function getDueState(t) {
-  if (t.status === "Done") return "done";
-  if (!t.due_date) return "unknown";
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(t.due_date);
-  due.setHours(0, 0, 0, 0);
-
-  const d = diffDays(today, due);
-  if (d < 0) return "overdue";
-  if (d <= 7) return "soon";
-  return "ok";
-}
-
 /* =====================
    CURRENT USER (DEV)
 ===================== */
@@ -113,15 +74,6 @@ const CURRENT_USER = {
   name: "Dev User",
   role: "planner" // technician | planner | admin
 };
-
-
-/* =====================
-   ROLE HELPERS
-===================== */
-function hasRole(...roles) {
-  return roles.includes(CURRENT_USER.role);
-}
-
 
 /* =====================
    DEV LOGIN AS ROLE

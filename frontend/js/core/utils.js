@@ -26,3 +26,27 @@ function isPlannedManual(task) {
     task.status !== "Done"
   );
 }
+function diffDays(a, b) {
+  return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function getDueState(t) {
+  if (t.status === "Done") return "done";
+  if (!t.due_date) return "unknown";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(t.due_date);
+  due.setHours(0, 0, 0, 0);
+
+  const d = diffDays(today, due);
+  if (d < 0) return "overdue";
+  if (d <= 7) return "soon";
+  return "ok";
+}
+/* =====================
+   ROLE HELPERS
+===================== */
+function hasRole(...roles) {
+  return roles.includes(CURRENT_USER.role);
+}
