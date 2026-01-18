@@ -50,7 +50,7 @@ window.addEventListener("error", e => {
 window.addEventListener("unhandledrejection", e => {
   console.error("UNHANDLED PROMISE REJECTION:", e.reason);
 });
-const getEl = id => document.getElementById(id);
+
 
 function formatDate(d) {
   if (!d) return "-";
