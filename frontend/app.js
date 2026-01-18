@@ -50,41 +50,13 @@ window.addEventListener("error", e => {
 window.addEventListener("unhandledrejection", e => {
   console.error("UNHANDLED PROMISE REJECTION:", e.reason);
 });
-
-/* =====================
-   Helpers
-===================== */
-
 const getEl = id => document.getElementById(id);
-
-function norm(v) {
-  return (v ?? "").toString().trim().toUpperCase();
-}
-
-function taskLine(t) {
-  return (t.line_code || "").toString().trim().toUpperCase();
-}
 
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
-function isPreventive(task) {
-  return task.frequency_hours && Number(task.frequency_hours) > 0;
-}
 
-function isUnplanned(task) {
-  return task.is_planned === false;
-}
-
-function isPlannedManual(task) {
-  return (
-    !isPreventive(task) &&
-    !isUnplanned(task) &&
-    !!task.due_date &&
-    task.status !== "Done"
-  );
-}
 let currentViewedTask = null;
 
 function canEditTask(task) {
