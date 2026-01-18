@@ -1097,16 +1097,18 @@
     </div>
   </div>
 
-<!-- CORE -->
+<!-- CORE (helpers, globals, formatters) -->
 <script src="js/core/utils.js" defer></script>
 <script src="js/formatters.js" defer></script>
 
-<!-- FEATURES -->
+<!-- APP (state, data loading, init) -->
+<script src="app.js" defer></script>
+
+<!-- FEATURES (depend on app.js) -->
 <script src="js/features/importExcel.js" defer></script>
 <script src="js/features/snapshot.js" defer></script>
+<script src="js/features/printWorkOrder.js" defer></script>
 
-<!-- APP -->
-<script src="app.js" defer></script>
 
 </body>
 </html>
