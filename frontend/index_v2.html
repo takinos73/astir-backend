@@ -918,81 +918,106 @@
      ASSET VIEW MODAL
 ===================== -->
 <div id="assetViewOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box modal-wide">
+  <div class="modal-box modal-wide asset-view">
 
     <!-- HEADER -->
     <div class="asset-view-header">
       <h3 id="assetViewTitle">
-        PMC250
-        <small class="asset-sn">SN: 10009961</small>
+        Asset
+        <small class="asset-sn">SN</small>
       </h3>
 
       <div class="asset-view-meta">
-        <span class="pill">Line: <strong id="assetViewLine">L4</strong></span>
-        <span class="pill">Status: <strong id="assetViewStatus">Active</strong></span>
+        <span class="pill">Line: <strong id="assetViewLine">—</strong></span>
+        <span class="pill">Status: <strong id="assetViewStatus">—</strong></span>
       </div>
     </div>
 
     <!-- =====================
-         ASSET DESCRIPTION
+         TABS
     ===================== -->
-    <div class="asset-view-description">
-      <p id="assetViewDescription">
-        Asset description / notes will appear here.
-      </p>
+    <div class="asset-tabs">
+      <button class="asset-tab active" data-tab="overview">Overview</button>
+      <button class="asset-tab" data-tab="active">Active Tasks</button>
+      <button class="asset-tab" data-tab="history">History</button>
     </div>
 
     <!-- =====================
-         ASSET KPI STRIP
+         TAB: OVERVIEW
     ===================== -->
-    <section class="kpi-strip asset-kpis">
+    <div class="asset-tab-panel active" data-panel="overview">
 
-      <article class="kpi-card clickable" data-filter="planned">
-        <span class="kpi-label">Planned</span>
-        <span class="kpi-value" id="assetPlannedCount">0</span>
-      </article>
+      <div class="asset-view-description">
+        <p id="assetViewDescription">
+          Asset description / notes will appear here.
+        </p>
+      </div>
 
-      <article class="kpi-card clickable" data-filter="overdue">
-        <span class="kpi-label">Overdue</span>
-        <span class="kpi-value" id="assetOverdueCount">0</span>
-      </article>
+      <section class="kpi-strip asset-kpis">
+        <article class="kpi-card">
+          <span class="kpi-label">Planned</span>
+          <span class="kpi-value" id="assetPlannedCount">0</span>
+        </article>
 
-      <article class="kpi-card clickable" data-filter="history">
-        <span class="kpi-label">History</span>
-        <span class="kpi-value" id="assetHistoryCount">0</span>
-      </article>
+        <article class="kpi-card">
+          <span class="kpi-label">Overdue</span>
+          <span class="kpi-value" id="assetOverdueCount">0</span>
+        </article>
 
-    </section>
+        <article class="kpi-card">
+          <span class="kpi-label">History</span>
+          <span class="kpi-value" id="assetHistoryCount">0</span>
+        </article>
+      </section>
+    </div>
 
     <!-- =====================
-         TASKS TABLE (ASSET-SCOPED)
+         TAB: ACTIVE TASKS
     ===================== -->
-    <div class="table-card asset-tasks-table">
+    <div class="asset-tab-panel" data-panel="active">
 
-      <table id="assetTasksTable">
-        <thead>
-          <tr>
-            <th>Status</th>
-            <th>Task</th>
-            <th>Type</th>
-            <th>Due Date</th>
-            <th>Duration</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- rendered by JS -->
-        </tbody>
-      </table>
+      <div class="table-card asset-tasks-table">
+        <table id="assetTasksTable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Task</th>
+              <th>Type</th>
+              <th>Due Date</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
 
     </div>
 
     <!-- =====================
-         ACTIONS
+         TAB: HISTORY
     ===================== -->
+    <div class="asset-tab-panel" data-panel="history">
+
+      <div class="table-card asset-history-table">
+        <table id="assetHistoryTable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Task</th>
+              <th>Type</th>
+              <th>Executed At</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ACTIONS -->
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeAssetView()">
-        Close
-      </button>
+      <button class="btn-secondary" onclick="closeAssetView()">Close</button>
     </div>
 
   </div>

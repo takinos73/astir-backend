@@ -38,6 +38,18 @@ let editingBreakdownId = null;
 let currentAssetSerial = null;
 let assetScopedTasks = [];
 
+let assetAllTasks = [];
+let assetActiveTasks = [];
+let assetHistoryTasks = [];
+
+
+window.addEventListener("error", e => {
+  console.error("GLOBAL ERROR:", e.message, "at", e.filename + ":" + e.lineno + ":" + e.colno);
+});
+
+window.addEventListener("unhandledrejection", e => {
+  console.error("UNHANDLED PROMISE REJECTION:", e.reason);
+});
 
 /* =====================
    Helpers
@@ -505,14 +517,30 @@ function buildRow(task) {
 
   tr.innerHTML = `
     <!-- MACHINE / ASSET -->
-    <td class="machine-cell">
-      <div class="machine-name">${highlight(task.machine_name || "", q)}</div>
-      ${
-        task.serial_number
-          ? `<div class="machine-sn"><small>${highlight(task.serial_number, q)}</small></div>`
-          : ""
-      }
-    </td>
+<td class="machine-cell">
+  <div
+    class="machine-name clickable"
+    onclick="openAssetViewBySerial('${task.serial_number}')"
+    title="Open asset view"
+  >
+    ${highlight(task.machine_name || "", q)}
+  </div>
+
+  ${
+    task.serial_number
+      ? `
+        <div
+          class="machine-sn clickable"
+          onclick="openAssetViewBySerial('${task.serial_number}')"
+          title="Open asset view"
+        >
+          <small>${highlight(task.serial_number, q)}</small>
+        </div>
+      `
+      : ""
+  }
+</td>
+
 
     <!-- SECTION -->
     <td>${task.section ? highlight(task.section, q) : "-"}</td>
@@ -1492,6 +1520,92 @@ function populateAssetLineFilter() {
     sel.appendChild(opt);
   });
 }
+// =====================
+// ASSET VIEW TABS (FIX 1 – EVENT DELEGATION)
+// =====================
+
+function bindAssetTabs() {
+  // ⚠️ ΜΟΝΟ ΕΝΑΣ handler – όχι onclick σε κάθε tab
+  document.addEventListener("click", e => {
+    const tab = e.target.closest(".asset-tab");
+    if (!tab) return;
+
+    const target = tab.dataset.tab;
+    if (!target) return;
+
+    const tabs = document.querySelectorAll(".asset-tab");
+    const panels = document.querySelectorAll(".asset-tab-panel");
+
+    // reset UI
+    tabs.forEach(t => t.classList.remove("active"));
+    panels.forEach(p => p.classList.remove("active"));
+
+    // activate tab + panel
+    tab.classList.add("active");
+
+    const panel = document.querySelector(
+      `.asset-tab-panel[data-panel="${target}"]`
+    );
+    if (panel) panel.classList.add("active");
+
+    // 🔥 DATA SWITCH (SAFE)
+    if (target === "active") {
+    renderAssetTasksTable(assetActiveTasks);
+    }
+
+    if (target === "history") {
+    renderAssetHistoryTable(assetHistoryTasks);
+    }
+  });
+}
+// =====================
+// ACTIVATE ASSET TAB (STABLE VERSION)
+// =====================
+
+function activateAssetTab(tabName) {
+  if (!tabName) return;
+
+  // --- UI state ---
+  document.querySelectorAll(".asset-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.tab === tabName);
+  });
+
+  document.querySelectorAll(".asset-tab-panel").forEach(panel => {
+    panel.style.display =
+      panel.dataset.panel === tabName ? "block" : "none";
+  });
+
+  // --- DATA render (SAFE) ---
+  if (tabName === "active") {
+    renderAssetTasksTable(
+      Array.isArray(assetActiveTasks) ? assetActiveTasks : []
+    );
+  }
+
+  if (tabName === "history") {
+    renderAssetHistoryTable(
+      Array.isArray(assetHistoryTasks) ? assetHistoryTasks : []
+    );
+  }
+}
+
+// =====================
+// TAB CLICK HANDLER (SCOPED)
+// =====================
+function bindAssetTabs() {
+  const container = document.getElementById("assetViewOverlay");
+  if (!container) return;
+
+  container.addEventListener("click", e => {
+    const tab = e.target.closest(".asset-tab");
+    if (!tab) return;
+
+    const tabName = tab.dataset.tab;
+    if (!tabName) return;
+
+    activateAssetTab(tabName);
+  });
+}
 
 
 function renderTable() {
@@ -1815,40 +1929,86 @@ taskTypeSelect?.addEventListener("change", e => {
   }
 });
 
-// =====================
-// ASSET VIEW (BY SERIAL NUMBER)
-// =====================
-
 function openAssetViewBySerial(serial) {
-  currentAssetSerial = serial;
+  try {
+    console.group("ASSET VIEW DEBUG");
 
-  // ACTIVE TASKS (Planned + Overdue)
-  assetScopedTasks = tasksData.filter(
-    t => t.serial_number === serial
-  );
+    // reset state
+    assetAllTasks = [];
+    assetActiveTasks = [];
+    assetHistoryTasks = [];
+    currentAssetSerial = serial;
 
-  // HISTORY (Done / Executions)
-  assetScopedHistory = executionsData.filter(
-    e => e.serial_number === serial
-  );
+    if (serial == null || serial === "") {
+      alert("Missing serial number");
+      console.groupEnd();
+      return;
+    }
 
-  if (assetScopedTasks.length === 0 && assetScopedHistory.length === 0) {
-    alert("No tasks found for this asset");
-    return;
+    serial = String(serial).trim();
+
+    const overlay = document.getElementById("assetViewOverlay");
+    if (!overlay) {
+      alert("Asset modal not found");
+      console.groupEnd();
+      return;
+    }
+
+    if (!Array.isArray(tasksData)) {
+      alert("tasksData not ready");
+      console.groupEnd();
+      return;
+    }
+
+    // datasets
+    assetAllTasks = tasksData.filter(
+      t => String(t.serial_number || "").trim() === serial
+    );
+
+    assetActiveTasks = assetAllTasks.filter(
+      t => t.status === "Planned" || t.status === "Overdue"
+    );
+
+    assetHistoryTasks = (Array.isArray(executionsData) ? executionsData : []).filter(
+      e => String(e.serial_number || "").trim() === serial
+    );
+
+    if (assetAllTasks.length === 0 && assetHistoryTasks.length === 0) {
+      alert("No records found for this asset");
+      console.groupEnd();
+      return;
+    }
+
+    // header
+    const ref = assetAllTasks[0] || assetHistoryTasks[0];
+    renderAssetViewHeader({
+      machine_name: ref.machine_name || ref.machine || "-",
+      serial_number: serial,
+      line_code: ref.line_code || ref.line || "-"
+    });
+
+    // KPIs
+    renderAssetKpis(assetAllTasks, assetHistoryTasks);
+
+    // 🔑 bind tabs ONCE per open
+    bindAssetTabs();
+
+    // 🔑 open modal FIRST
+    overlay.style.display = "flex";
+    overlay.style.pointerEvents = "auto";
+
+    // 🔑 THEN force default tab
+    activateAssetTab("active");
+
+    console.log("✅ Asset view opened");
+    console.groupEnd();
+
+  } catch (err) {
+    console.error("💥 openAssetViewBySerial crashed:", err);
+    alert("Asset view error (see console).");
   }
-
-  const headerSource =
-    assetScopedTasks[0] || assetScopedHistory[0];
-
-  renderAssetViewHeader(headerSource);
-  renderAssetKpis(assetScopedTasks, assetScopedHistory);
-  renderAssetTasksTable(assetScopedTasks);
-  bindAssetKpiFilters();
-
-  const overlay = document.getElementById("assetViewOverlay");
-  overlay.style.display = "flex";
-  overlay.style.pointerEvents = "auto";
 }
+
 
 // =====================
 // HEADER
@@ -1871,26 +2031,39 @@ function renderAssetViewHeader(src) {
 function renderAssetKpis(tasks, history) {
   const planned = tasks.filter(t => t.status === "Planned").length;
   const overdue = tasks.filter(t => t.status === "Overdue").length;
-  const done = history.length;
+  const historyCount = history.length;
 
   document.getElementById("assetPlannedCount").textContent = planned;
   document.getElementById("assetOverdueCount").textContent = overdue;
-  document.getElementById("assetHistoryCount").textContent = done;
+  document.getElementById("assetHistoryCount").textContent = historyCount;
 }
 
+
 // =====================
-// ACTIVE TASKS TABLE
+// ASSET ACTIVE TASKS TABLE – BULLETPROOF
 // =====================
 function renderAssetTasksTable(tasks) {
+  const tasksWrap = document.querySelector(".asset-tasks-table");
+  const historyWrap = document.querySelector(".asset-history-table");
   const tbody = document.querySelector("#assetTasksTable tbody");
+
+  if (!tasksWrap || !tbody) return;
+
+  // ✅ Toggle tables (SYMMETRIC)
+  tasksWrap.style.display = "block";
+  if (historyWrap) historyWrap.style.display = "none";
+
   tbody.innerHTML = "";
 
-  if (tasks.length === 0) {
+  if (!tasks || tasks.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="5" class="empty">No active tasks</td>
       </tr>
     `;
+    // 🔥 Force reflow on WRAPPER + TBODY
+    tasksWrap.offsetHeight;
+    tbody.offsetHeight;
     return;
   }
 
@@ -1898,10 +2071,7 @@ function renderAssetTasksTable(tasks) {
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
 
-    const dur =
-      t.duration_min != null
-        ? formatDuration(t.duration_min)
-        : "—";
+    const dur = t.duration_min != null ? formatDuration(t.duration_min) : "—";
 
     tr.innerHTML = `
       <td>${t.status}</td>
@@ -1911,13 +2081,15 @@ function renderAssetTasksTable(tasks) {
       <td>${dur}</td>
     `;
 
-    tr.addEventListener("click", () => {
-      openTaskView(t.id);
-    });
-
+    tr.addEventListener("click", () => openTaskView(t.id));
     tbody.appendChild(tr);
   });
+
+  // 🔥 Force reflow on WRAPPER + TBODY (critical after display:none -> block)
+  tasksWrap.offsetHeight;
+  tbody.offsetHeight;
 }
+
 
 // =====================
 // KPI → TABLE FILTER
@@ -1929,6 +2101,23 @@ function bindAssetKpiFilters() {
       card.onclick = () => {
         const filter = card.dataset.filter;
 
+        const tasksWrap =
+          document.querySelector(".asset-tasks-table");
+        const historyWrap =
+          document.querySelector(".asset-history-table");
+
+        if (filter === "history") {
+          // 🔄 Show history
+          tasksWrap.style.display = "none";
+          historyWrap.style.display = "block";
+          renderAssetHistoryTable(assetScopedHistory);
+          return;
+        }
+
+        // 🔄 Show active tasks
+        historyWrap.style.display = "none";
+        tasksWrap.style.display = "block";
+
         if (filter === "planned") {
           renderAssetTasksTable(
             assetScopedTasks.filter(t => t.status === "Planned")
@@ -1937,28 +2126,47 @@ function bindAssetKpiFilters() {
           renderAssetTasksTable(
             assetScopedTasks.filter(t => t.status === "Overdue")
           );
-        } else if (filter === "history") {
-          renderAssetHistoryTable(assetScopedHistory);
         } else {
           renderAssetTasksTable(assetScopedTasks);
         }
       };
     });
 }
+document.addEventListener("click", e => {
+  const row = e.target.closest(".clickable-asset-row");
+  if (!row) return;
+
+  const serial = row.dataset.serial;
+  if (!serial) return;
+
+  openAssetViewBySerial(serial);
+});
 
 // =====================
-// HISTORY TABLE (EXECUTIONS)
+// ASSET HISTORY TABLE (EXECUTIONS) – BULLETPROOF
 // =====================
 function renderAssetHistoryTable(history) {
-  const tbody = document.querySelector("#assetTasksTable tbody");
+  const tasksWrap = document.querySelector(".asset-tasks-table");
+  const historyWrap = document.querySelector(".asset-history-table");
+  const tbody = document.querySelector("#assetHistoryTable tbody");
+
+  if (!historyWrap || !tbody) return;
+
+  // ✅ Toggle tables (SYMMETRIC)
+  if (tasksWrap) tasksWrap.style.display = "none";
+  historyWrap.style.display = "block";
+
   tbody.innerHTML = "";
 
-  if (history.length === 0) {
+  if (!history || history.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="empty">No history records</td>
+        <td colspan="6" class="empty">No history records</td>
       </tr>
     `;
+    // 🔥 Force reflow on WRAPPER + TBODY
+    historyWrap.offsetHeight;
+    tbody.offsetHeight;
     return;
   }
 
@@ -1967,32 +2175,42 @@ function renderAssetHistoryTable(history) {
     tr.classList.add("clickable");
 
     tr.innerHTML = `
-      <td>Done</td>
+      <td>${formatDate(e.executed_at)}</td>
       <td>${e.task}</td>
       <td>${e.type || "-"}</td>
-      <td>${formatDate(e.executed_at)}</td>
-      <td>—</td>
+      <td>${e.executed_by || "-"}</td>
+      <td>${e.notes || "-"}</td>
+      <td><button class="btn-secondary btn-sm">View</button></td>
     `;
 
-    tr.addEventListener("click", () => {
+    tr.querySelector("button").onclick = ev => {
+      ev.stopPropagation();
       openHistoryView(e.id);
-    });
+    };
 
     tbody.appendChild(tr);
   });
+
+  // 🔥 Force reflow on WRAPPER + TBODY
+  historyWrap.offsetHeight;
+  tbody.offsetHeight;
 }
+
 
 // =====================
 // CLOSE
 // =====================
-function closeAssetView() {
+ function closeAssetView() {
   document.getElementById("assetViewOverlay").style.display = "none";
-  document.querySelector("#assetTasksTable tbody").innerHTML = "";
 
+  assetAllTasks = [];
+  assetActiveTasks = [];
+  assetHistoryTasks = [];
   currentAssetSerial = null;
-  assetScopedTasks = [];
-  assetScopedHistory = [];
+
+  document.querySelector("#assetTasksTable tbody").innerHTML = "";
 }
+
 
 
 /* =====================
@@ -2541,28 +2759,22 @@ function renderAssetsTable() {
     return;
   }
 
-  filteredAssets.forEach(a => {
+ filteredAssets.forEach(a => {
   const tr = document.createElement("tr");
-  tr.classList.add("clickable");
+  tr.classList.add("clickable-asset-row");
+  tr.dataset.serial = a.serial_number;
 
   tr.innerHTML = `
     <td>${a.line || "-"}</td>
     <td>${a.model || "-"}</td>
     <td>${a.serial_number || "-"}</td>
     <td class="asset-admin-only">
-      <button
-        class="btn-warning"
-        onclick="event.stopPropagation(); deactivateAsset(${a.id})">
+      <button class="btn-warning"
+        onclick="deactivateAsset(${a.id}); event.stopPropagation();">
         🚫 Deactivate
       </button>
     </td>
   `;
-
-  // 🔗 Open Asset View by SERIAL NUMBER
-  tr.addEventListener("click", () => {
-  console.log("ASSET CLICK:", a.serial_number);
-  openAssetViewBySerial(a.serial_number);
-});
 
   tbody.appendChild(tr);
 });
