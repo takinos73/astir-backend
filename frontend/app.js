@@ -2304,6 +2304,28 @@ function askTechnician(id) {
   // show modal
   getEl("modalOverlay").style.display = "flex";
 }
+/* =====================
+   OPEN CONFIRM DONE MODAL (BULK)
+===================== */
+function openBulkDoneModal() {
+  pendingTaskId = null;
+
+  // 📅 default completion date = today
+  const today = new Date().toISOString().split("T")[0];
+  const dateInput = getEl("completedDateInput");
+  if (dateInput) {
+    dateInput.value = today;
+  }
+
+  // 📝 clear notes (bulk = mixed tasks)
+  const notesInput = getEl("doneNotesInput");
+  if (notesInput) {
+    notesInput.value = "";
+  }
+
+  // show modal
+  getEl("modalOverlay").style.display = "flex";
+}
 
 /* =====================
    CANCEL TASK COMPLETION
