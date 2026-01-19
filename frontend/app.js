@@ -2353,30 +2353,54 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     : new Date().toISOString();
 
   try {
-    // =====================
-    // 🟢 BULK DONE PATH
-    // =====================
-    if (bulkDoneMode === true) {
-      const res = await fetch(`${API}/tasks/bulk-done`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskIds: [...assetSelectedTaskIds],
-          completed_by: name,
-          completed_at: completedAt,
-          notes
-        })
-      });
+  // =====================
+// 🟢 BULK DONE PATH
+// =====================
+if (bulkDoneMode === true) {
+  const res = await fetch(`${API}/tasks/bulk-done`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      taskIds: [...assetSelectedTaskIds],
+      completed_by: name,
+      completed_at: completedAt,
+      notes
+    })
+  });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Bulk complete failed");
-      }
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Bulk complete failed");
+  }
 
-      // cleanup BULK
-      bulkDoneMode = false;
-      assetSelectedTaskIds.clear();
-    }
+  const completedCount = assetSelectedTaskIds.size;
+
+  // =====================
+  // 🧹 RESET BULK STATE + UI
+  // =====================
+  bulkDoneMode = false;
+  assetSelectedTaskIds.clear();
+
+  document
+    .querySelectorAll(".asset-task-checkbox")
+    .forEach(cb => (cb.checked = false));
+
+  const bar = getEl("assetBulkActionsBar");
+  if (bar) bar.style.display = "none";
+
+ // =====================
+// 🔄 REFRESH ASSET VIEW (SAFE)
+// =====================
+if (currentAssetSerial) {
+  await openAssetViewBySerial(currentAssetSerial);
+  activateAssetTab("active");
+}
+
+  // =====================
+  // ✅ FEEDBACK
+  // =====================
+  alert(`✔ ${completedCount} εργασίες ολοκληρώθηκαν`);
+}
 
     // =====================
     // 🔵 SINGLE DONE PATH
