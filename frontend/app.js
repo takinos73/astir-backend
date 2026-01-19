@@ -46,7 +46,10 @@ let currentViewedTask = null;
 // ASSET VIEW – MULTISELECT STATE (STEP 1)
 // =====================
 const assetSelectedTaskIds = new Set();
-
+// =====================
+// BULK DONE STATE
+// =====================
+let bulkDoneMode = false;
 
 function formatDate(d) {
   if (!d) return "-";
@@ -1919,10 +1922,9 @@ document.addEventListener("click", e => {
   }
 
   if (e.target.id === "assetBulkDoneBtn") {
-    // 🚧 STEP 3 θα μπει εδώ
-    alert(
-      `Bulk Done (stub)\nTasks: ${[...assetSelectedTaskIds].join(", ")}`
-    );
+    if (assetSelectedTaskIds.size === 0) return;
+    bulkDoneMode = true;
+    openDoneModal(); // 👈 ΥΠΑΡΧΟΥΣΑ function
   }
 });
 
@@ -2313,9 +2315,8 @@ getEl("cancelDone")?.addEventListener("click", () => {
   pendingTaskId = null;
 });
 
-
 /* =====================
-   CONFIRM TASK DONE
+   CONFIRM TASK DONE (SINGLE + BULK)
 ===================== */
 getEl("confirmDone")?.addEventListener("click", async () => {
   const name = getEl("technicianInput")?.value.trim();
@@ -2330,22 +2331,56 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     : new Date().toISOString();
 
   try {
-    const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        completed_by: name,
-        completed_at: completedAt,
-        notes          // 🆕 execution notes
-      })
-    });
+    // =====================
+    // 🟢 BULK DONE PATH
+    // =====================
+    if (bulkDoneMode === true) {
+      const res = await fetch(`${API}/tasks/bulk-done`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskIds: [...assetSelectedTaskIds],
+          completed_by: name,
+          completed_at: completedAt,
+          notes
+        })
+      });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to complete task");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Bulk complete failed");
+      }
+
+      // cleanup BULK
+      bulkDoneMode = false;
+      assetSelectedTaskIds.clear();
     }
 
-    // cleanup
+    // =====================
+    // 🔵 SINGLE DONE PATH
+    // =====================
+    else {
+      const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          completed_by: name,
+          completed_at: completedAt,
+          notes
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to complete task");
+      }
+
+      pendingTaskId = null;
+    }
+
+    // =====================
+    // 🧹 COMMON CLEANUP
+    // =====================
     getEl("modalOverlay").style.display = "none";
     getEl("technicianInput").value = "";
     if (getEl("completedDateInput")) {
@@ -2355,17 +2390,19 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       getEl("doneNotesInput").value = "";
     }
 
-    pendingTaskId = null;
-
     // 🔄 REFRESH
     loadTasks();
     loadHistory();
+    if (typeof refreshAssetView === "function") {
+      refreshAssetView();
+    }
 
   } catch (err) {
     alert(err.message);
     console.error("CONFIRM DONE ERROR:", err);
   }
 });
+
 
 /* ===========================
    LOAD TASK DONE from HISTORY
