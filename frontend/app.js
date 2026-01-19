@@ -1559,8 +1559,7 @@ taskTypeSelect?.addEventListener("change", e => {
 // =====================
 // OPEN ASSET VIEW BY SERIAL (FRONTEND)
 // =====================
-
-function openAssetViewBySerial(serial) {
+async function openAssetViewBySerial(serial) {
   try {
     console.group("ASSET VIEW DEBUG");
 
@@ -1570,7 +1569,7 @@ function openAssetViewBySerial(serial) {
     assetHistoryTasks = [];
     currentAssetSerial = serial;
 
-    if (serial == null || serial === "") {
+    if (!serial) {
       alert("Missing serial number");
       console.groupEnd();
       return;
@@ -1591,7 +1590,9 @@ function openAssetViewBySerial(serial) {
       return;
     }
 
-    // datasets
+    // =====================
+    // BUILD DATASETS FROM GLOBAL STATE
+    // =====================
     assetAllTasks = tasksData.filter(
       t => String(t.serial_number || "").trim() === serial
     );
@@ -1610,7 +1611,9 @@ function openAssetViewBySerial(serial) {
       return;
     }
 
-    // header
+    // =====================
+    // HEADER + KPIs
+    // =====================
     const ref = assetAllTasks[0] || assetHistoryTasks[0];
     renderAssetViewHeader({
       machine_name: ref.machine_name || ref.machine || "-",
@@ -1618,17 +1621,16 @@ function openAssetViewBySerial(serial) {
       line_code: ref.line_code || ref.line || "-"
     });
 
-    // KPIs
     renderAssetKpis(assetAllTasks, assetHistoryTasks);
 
-    // 🔑 bind tabs ONCE per open
+    // bind tabs ONCE
     bindAssetTabs();
 
-    // 🔑 open modal FIRST
+    // open modal
     overlay.style.display = "flex";
     overlay.style.pointerEvents = "auto";
 
-    // 🔑 THEN force default tab
+    // default tab
     activateAssetTab("active");
 
     // MTBF
@@ -1643,27 +1645,35 @@ function openAssetViewBySerial(serial) {
   }
 }
 // =====================
-// REFRESH ASSET VIEW DATA (NO UI TOGGLE)
+// REFRESH ASSET VIEW DATA (FROM GLOBALS)
 // =====================
 async function refreshAssetView() {
   if (!currentAssetSerial) return;
 
-  // ⛔ ΜΗΝ κλείνεις / ανοίγεις modal
-  // 🔄 ΜΟΝΟ reload data
+  // 🔄 1️⃣ reload GLOBAL data
+  await loadTasks();
+  await loadHistory();
 
-  const res = await fetch(`${API}/assets/${currentAssetSerial}/tasks`);
-  if (!res.ok) return;
+  // 🔄 2️⃣ rebuild asset view data
+  assetAllTasks = tasksData.filter(
+    t => String(t.serial_number || "").trim() === currentAssetSerial
+  );
 
-  const data = await res.json();
+  assetActiveTasks = assetAllTasks.filter(
+    t => t.status === "Planned" || t.status === "Overdue"
+  );
 
-  assetAllTasks = data.all || [];
-  assetActiveTasks = data.active || [];
-  assetHistoryTasks = data.history || [];
+  assetHistoryTasks = executionsData.filter(
+    e => String(e.serial_number || "").trim() === currentAssetSerial
+  );
 
-  // re-render current tab
-  const activeTab = document.querySelector(".asset-tab.active")?.dataset.tab;
-  activateAssetTab(activeTab || "active");
+  // 🔄 3️⃣ re-render active tab
+  const activeTab =
+    document.querySelector(".asset-tab.active")?.dataset.tab || "active";
+
+  activateAssetTab(activeTab);
 }
+
 
 // =====================
 // RENDER ASSET MTBF KPI
@@ -2415,7 +2425,8 @@ if (bulkDoneMode === true) {
 // 🔄 REFRESH ASSET VIEW (SAFE)
 // =====================
 if (currentAssetSerial) {
-  await refreshAssetView();
+  await openAssetViewBySerial(currentAssetSerial);
+  activateAssetTab("active");
 }
 
   // =====================
