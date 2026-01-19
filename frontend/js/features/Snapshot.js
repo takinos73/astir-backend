@@ -1,20 +1,16 @@
-/* =====================
-   SNAPSHOT EXPORT
-===================== */
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("exportSnapshot");
+// =====================
+// SNAPSHOT EXPORT (DELEGATED - SAFE)
+// =====================
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("#exportSnapshot");
+  if (!btn) return;
 
-  if (!btn) {
-    console.warn("exportSnapshot button not found at DOMContentLoaded");
-    return;
-  }
+  e.preventDefault();
+  e.stopPropagation();
 
-  btn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  console.log("EXPORT SNAPSHOT CLICKED");
 
-    console.log("EXPORT SNAPSHOT CLICKED");
-
+  try {
     const res = await fetch(`${API}/snapshot/export`);
     if (!res.ok) {
       alert("Snapshot export failed");
@@ -37,7 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  });
+  } catch (err) {
+    console.error("Snapshot export error:", err);
+    alert("Snapshot export error");
+  }
 });
 
 // =====================
