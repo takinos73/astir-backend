@@ -1602,8 +1602,8 @@ tr.history-unplanned {
 
 
 .modal-wide {
-  width: 580px;
-  max-width: 95%;  
+  width: 620px;
+  max-width: 96%;  
   max-height: 100%;     /* 👈 όριο: μόνο όταν ξεπεραστεί */
   overflow-y: auto;     /* 👈 scroll εμφανίζεται ΜΟΝΟ τότε */  
 }
@@ -1625,8 +1625,6 @@ tr.history-unplanned {
   display: flex;
   gap: 8px;
 }
-
-
 
 /* =====================
    ADD ASSET MODAL – POLISH
