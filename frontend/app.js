@@ -1742,6 +1742,7 @@ function renderAssetTasksTable(tasks) {
 
   tbody.innerHTML = "";
   assetSelectedTaskIds.clear(); // reset on render
+  updateAssetBulkActionsBar();  // 🆕 hide bar on refresh
 
   if (!tasks || tasks.length === 0) {
     tbody.innerHTML = `
@@ -1758,35 +1759,59 @@ function renderAssetTasksTable(tasks) {
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
 
-    const dur = t.duration_min != null ? formatDuration(t.duration_min) : "—";
+    const dur =
+      t.duration_min != null ? formatDuration(t.duration_min) : "—";
 
-    // 🆕 checkbox cell
+    // =====================
+    // STATUS (USING HELPERS ✅)
+    // =====================
+    let statusLabel = t.status;
+    let statusClass = "";
+
+    if (isPreventive(t)) {
+      statusLabel = "Preventive";
+      statusClass = "preventive";
+    } else if (isPlannedManual(t)) {
+      statusLabel = "Planned";
+      statusClass = "planned";
+    }
+
+    // =====================
+    // 🆕 CHECKBOX CELL
+    // =====================
     const checkboxTd = document.createElement("td");
     checkboxTd.className = "select-cell";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
+    checkbox.className = "asset-task-checkbox";
 
     checkbox.addEventListener("click", e => {
-      e.stopPropagation(); // 🔒 DO NOT open task
+      e.stopPropagation(); // 🔒 do not open task modal
+
       if (checkbox.checked) {
         assetSelectedTaskIds.add(t.id);
       } else {
         assetSelectedTaskIds.delete(t.id);
       }
-      updateAssetBulkActionsBar(); // 🆕
+
+      updateAssetBulkActionsBar();
     });
 
     checkboxTd.appendChild(checkbox);
-
     tr.appendChild(checkboxTd);
 
+    // =====================
+    // ROW CONTENT
+    // =====================
     tr.insertAdjacentHTML(
       "beforeend",
       `
-      <td>${t.status}</td>
+      <td class="asset-status ${statusClass}">
+        ${statusLabel}
+      </td>
       <td>${t.unit || "-"}</td>
-      <td>${t.task}</td>  
+      <td>${t.task}</td>
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
@@ -1797,9 +1822,11 @@ function renderAssetTasksTable(tasks) {
     tbody.appendChild(tr);
   });
 
+  // 🔥 force reflow (display:none → block safety)
   tasksWrap.offsetHeight;
   tbody.offsetHeight;
 }
+
 // =====================
 // ASSET BULK ACTION BAR – UI ONLY (STEP 2)
 // =====================

@@ -1787,6 +1787,58 @@ tr.history-unplanned {
 .asset-tab-panel.active .asset-tasks-table {
   max-height: 360px;
 }
+/* =====================
+   ASSET ACTIVE TASKS – STATUS COLORS
+===================== */
+
+/* legend container */
+.asset-status-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  align-items: center;
+}
+
+/* legend item */
+.asset-status-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.9;
+}
+
+/* dots */
+.asset-status-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* preventive = blue */
+.asset-status-legend .preventive .dot {
+  background: #2b6cb0;
+}
+
+/* manual planned = yellow */
+.asset-status-legend .planned .dot {
+  background: #d69e2e;
+}
+
+/* =====================
+   STATUS CELL COLORS
+===================== */
+.asset-status.preventive {
+  color: #2b6cb0;
+  font-weight: 600;
+}
+
+.asset-status.planned {
+  color: #d69e2e;
+  font-weight: 600;
+}
+
 
 
 
