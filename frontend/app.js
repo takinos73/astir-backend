@@ -1178,44 +1178,7 @@ function populateAssetLineFilter() {
     sel.appendChild(opt);
   });
 }
-// =====================
-// ASSET VIEW TABS (FIX 1 – EVENT DELEGATION)
-// =====================
 
-function bindAssetTabs() {
-  // ⚠️ ΜΟΝΟ ΕΝΑΣ handler – όχι onclick σε κάθε tab
-  document.addEventListener("click", e => {
-    const tab = e.target.closest(".asset-tab");
-    if (!tab) return;
-
-    const target = tab.dataset.tab;
-    if (!target) return;
-
-    const tabs = document.querySelectorAll(".asset-tab");
-    const panels = document.querySelectorAll(".asset-tab-panel");
-
-    // reset UI
-    tabs.forEach(t => t.classList.remove("active"));
-    panels.forEach(p => p.classList.remove("active"));
-
-    // activate tab + panel
-    tab.classList.add("active");
-
-    const panel = document.querySelector(
-      `.asset-tab-panel[data-panel="${target}"]`
-    );
-    if (panel) panel.classList.add("active");
-
-    // 🔥 DATA SWITCH (SAFE)
-    if (target === "active") {
-    renderAssetTasksTable(assetActiveTasks);
-    }
-
-    if (target === "history") {
-    renderAssetHistoryTable(assetHistoryTasks);
-    }
-  });
-}
 // =====================
 // ACTIVATE ASSET TAB (STABLE VERSION)
 // =====================
