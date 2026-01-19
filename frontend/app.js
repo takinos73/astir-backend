@@ -1924,7 +1924,7 @@ document.addEventListener("click", e => {
   if (e.target.id === "assetBulkDoneBtn") {
     if (assetSelectedTaskIds.size === 0) return;
     bulkDoneMode = true;
-    openDoneModal(); // 👈 ΥΠΑΡΧΟΥΣΑ function
+    openBulkDoneModal();
   }
 });
 
