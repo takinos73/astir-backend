@@ -979,26 +979,58 @@
     </div>
 
     <!-- =====================
-         TAB: ACTIVE TASKS
+     TAB: ACTIVE TASKS
     ===================== -->
-    <div class="asset-tab-panel" data-panel="active">
+<div class="asset-tab-panel" data-panel="active">
 
-      <div class="table-card asset-tasks-table">
-        <table id="assetTasksTable">
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Task</th>
-              <th>Type</th>
-              <th>Due Date</th>
-              <th>Duration</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+  <div class="table-card asset-tasks-table">
+    <table id="assetTasksTable">
+      <thead>
+        <tr>
+          <th></th> <!-- checkbox column -->
+          <th>Status</th>
+          <th>Task</th>
+          <th>Type</th>
+          <th>Due Date</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
+  <!-- =====================
+       ASSET BULK ACTION BAR (STEP 2)
+  ===================== -->
+  <div
+    id="assetBulkActionsBar"
+    class="bulk-actions"
+    style="display:none; margin-top:10px;"
+  >
+    <div class="bulk-actions-left">
+      <strong id="assetBulkSelectedCount">0</strong>
+      <span>selected</span>
+      <button
+        class="btn-secondary"
+        type="button"
+        id="assetBulkClearBtn"
+      >
+        Clear
+      </button>
     </div>
+
+    <div class="bulk-actions-right">
+      <button
+        class="btn-table"
+        type="button"
+        id="assetBulkDoneBtn"
+      >
+        ✔ Bulk Done
+      </button>
+    </div>
+  </div>
+
+</div>
 
     <!-- =====================
          TAB: HISTORY

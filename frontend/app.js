@@ -41,13 +41,19 @@ let assetScopedTasks = [];
 let assetAllTasks = [];
 let assetActiveTasks = [];
 let assetHistoryTasks = [];
+let currentViewedTask = null;
+// =====================
+// ASSET VIEW – MULTISELECT STATE (STEP 1)
+// =====================
+const assetSelectedTaskIds = new Set();
+
 
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
 
-let currentViewedTask = null;
+
 
 function canEditTask(task) {
   return (
@@ -1684,9 +1690,8 @@ function renderAssetKpis(tasks, history) {
   document.getElementById("assetHistoryCount").textContent = historyCount;
 }
 
-
 // =====================
-// ASSET ACTIVE TASKS TABLE – BULLETPROOF
+// ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT (STEP 1)
 // =====================
 function renderAssetTasksTable(tasks) {
   const tasksWrap = document.querySelector(".asset-tasks-table");
@@ -1695,19 +1700,19 @@ function renderAssetTasksTable(tasks) {
 
   if (!tasksWrap || !tbody) return;
 
-  // ✅ Toggle tables (SYMMETRIC)
+  // ✅ Toggle tables
   tasksWrap.style.display = "block";
   if (historyWrap) historyWrap.style.display = "none";
 
   tbody.innerHTML = "";
+  assetSelectedTaskIds.clear(); // reset on render
 
   if (!tasks || tasks.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="empty">No active tasks</td>
+        <td colspan="6" class="empty">No active tasks</td>
       </tr>
     `;
-    // 🔥 Force reflow on WRAPPER + TBODY
     tasksWrap.offsetHeight;
     tbody.offsetHeight;
     return;
@@ -1719,21 +1724,72 @@ function renderAssetTasksTable(tasks) {
 
     const dur = t.duration_min != null ? formatDuration(t.duration_min) : "—";
 
-    tr.innerHTML = `
+    // 🆕 checkbox cell
+    const checkboxTd = document.createElement("td");
+    checkboxTd.className = "select-cell";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+
+    checkbox.addEventListener("click", e => {
+      e.stopPropagation(); // 🔒 DO NOT open task
+      if (checkbox.checked) {
+        assetSelectedTaskIds.add(t.id);
+      } else {
+        assetSelectedTaskIds.delete(t.id);
+      }
+      updateAssetBulkActionsBar(); // 🆕
+    });
+
+    checkboxTd.appendChild(checkbox);
+
+    tr.appendChild(checkboxTd);
+
+    tr.insertAdjacentHTML(
+      "beforeend",
+      `
       <td>${t.status}</td>
       <td>${t.task}</td>
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
-    `;
+      `
+    );
 
     tr.addEventListener("click", () => openTaskView(t.id));
     tbody.appendChild(tr);
   });
 
-  // 🔥 Force reflow on WRAPPER + TBODY (critical after display:none -> block)
   tasksWrap.offsetHeight;
   tbody.offsetHeight;
+}
+// =====================
+// ASSET BULK ACTION BAR – UI ONLY (STEP 2)
+// =====================
+function updateAssetBulkActionsBar() {
+  const bar = document.getElementById("assetBulkActionsBar");
+  const countEl = document.getElementById("assetBulkSelectedCount");
+
+  if (!bar || !countEl) return;
+
+  const count = assetSelectedTaskIds.size;
+
+  if (count > 0) {
+    countEl.textContent = count;
+    bar.style.display = "flex";
+  } else {
+    bar.style.display = "none";
+  }
+}
+
+function clearAssetBulkSelection() {
+  assetSelectedTaskIds.clear();
+
+  document
+    .querySelectorAll("#assetTasksTable tbody input[type='checkbox']")
+    .forEach(cb => (cb.checked = false));
+
+  updateAssetBulkActionsBar();
 }
 
 // =====================
@@ -1854,7 +1910,21 @@ function renderAssetHistoryTable(history) {
 
   document.querySelector("#assetTasksTable tbody").innerHTML = "";
 }
+// =====================
+// ASSET BULK ACTIONS – EVENT HANDLERS (STEP 2)
+// =====================
+document.addEventListener("click", e => {
+  if (e.target.id === "assetBulkClearBtn") {
+    clearAssetBulkSelection();
+  }
 
+  if (e.target.id === "assetBulkDoneBtn") {
+    // 🚧 STEP 3 θα μπει εδώ
+    alert(
+      `Bulk Done (stub)\nTasks: ${[...assetSelectedTaskIds].join(", ")}`
+    );
+  }
+});
 
 /* =====================
    SAVE TASK (PLANNED / UNPLANNED)

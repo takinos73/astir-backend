@@ -330,6 +330,159 @@ app.patch("/tasks/:id", async (req, res) => {
   }
 });
 
+/* =====================
+   BULK COMPLETE TASKS (ASSET-SCOPED)
+   - Planned & Preventive only
+   - Single execution context
+   - Preventive rotates
+===================== */
+app.post("/tasks/bulk-done", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { taskIds, completed_by, completed_at, notes } = req.body || {};
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      return res.status(400).json({ error: "No tasks selected" });
+    }
+
+    if (!completed_by) {
+      return res.status(400).json({ error: "completed_by is required" });
+    }
+
+    const completedAt = completed_at
+      ? new Date(completed_at)
+      : new Date();
+
+    await client.query("BEGIN");
+
+    /* =====================
+       1️⃣ FETCH TASKS (LOCK)
+    ===================== */
+    const { rows: tasks } = await client.query(
+      `
+      SELECT *
+      FROM maintenance_tasks
+      WHERE id = ANY($1)
+        AND deleted_at IS NULL
+      FOR UPDATE
+      `,
+      [taskIds]
+    );
+
+    if (tasks.length !== taskIds.length) {
+      throw new Error("Some tasks not found or deleted");
+    }
+
+    /* =====================
+       2️⃣ VALIDATION
+    ===================== */
+    const assetId = tasks[0].asset_id;
+
+    for (const t of tasks) {
+      if (t.asset_id !== assetId) {
+        throw new Error("Tasks must belong to the same asset");
+      }
+
+      if (!["Planned"].includes(t.status)) {
+        throw new Error(`Task ${t.id} is not in Planned state`);
+      }
+
+      if (t.is_planned !== true) {
+        throw new Error(`Task ${t.id} is not planned`);
+      }
+    }
+
+    /* =====================
+       3️⃣ EXECUTE EACH TASK
+    ===================== */
+    for (const task of tasks) {
+      const hasFrequency =
+        task.frequency_hours &&
+        Number(task.frequency_hours) > 0;
+
+      // 3️⃣a HISTORY (always)
+      await client.query(
+        `
+        INSERT INTO task_executions (
+          task_id,
+          asset_id,
+          executed_by,
+          prev_due_date,
+          executed_at
+        )
+        VALUES ($1,$2,$3,$4,$5)
+        `,
+        [
+          task.id,
+          task.asset_id,
+          completed_by,
+          task.due_date,
+          completedAt
+        ]
+      );
+
+      // 3️⃣b PREVENTIVE → ROTATE
+      if (hasFrequency) {
+        const nextDue = new Date(task.due_date);
+        nextDue.setHours(
+          nextDue.getHours() + Number(task.frequency_hours)
+        );
+
+        await client.query(
+          `
+          UPDATE maintenance_tasks
+          SET
+            due_date = $2,
+            completed_by = $3,
+            completed_at = $4,
+            notes = COALESCE($5, notes),
+            updated_at = NOW()
+          WHERE id = $1
+          `,
+          [
+            task.id,
+            nextDue,
+            completed_by,
+            completedAt,
+            notes || null
+          ]
+        );
+
+      } else {
+        // 3️⃣c PLANNED → DONE
+        await client.query(
+          `
+          UPDATE maintenance_tasks
+          SET
+            status = 'Done',
+            completed_by = $2,
+            completed_at = $3,
+            notes = COALESCE($4, notes),
+            updated_at = NOW()
+          WHERE id = $1
+          `,
+          [
+            task.id,
+            completed_by,
+            completedAt,
+            notes || null
+          ]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    res.json({ success: true, count: tasks.length });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("POST /tasks/bulk-done ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 
 /* =====================
    SOFT DELETE PLANNED MANUAL TASK
