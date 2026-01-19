@@ -1576,6 +1576,12 @@ tr.history-unplanned {
   padding-top: 16px;         /* αντί για margin-top */
   pointer-events: auto;
 }
+/* =====================
+   CONFIRM DONE MODAL – ALWAYS ON TOP
+===================== */
+#modalOverlay {
+  z-index: 2000;
+}
 
 
 .modal-overlay[style*="display: none"] {
