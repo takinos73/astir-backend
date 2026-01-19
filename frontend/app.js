@@ -3150,25 +3150,45 @@ function onTaskDateRangeChange() {
   /* =====================
    SNAPSHOT EXPORT
 ===================== */
-document.getElementById("exportSnapshot")?.addEventListener("click", async (e) => {
-  e.preventDefault();   // 🔥 ΚΡΙΣΙΜΟ
-  e.stopPropagation();
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("exportSnapshot");
 
-  const res = await fetch(`${API}/snapshot/export`);
-  const data = await res.json();
+  if (!btn) {
+    console.warn("exportSnapshot button not found at DOMContentLoaded");
+    return;
+  }
 
-  const name = `CMMS_snapshot_${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json"
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("EXPORT SNAPSHOT CLICKED");
+
+    const res = await fetch(`${API}/snapshot/export`);
+    if (!res.ok) {
+      alert("Snapshot export failed");
+      return;
+    }
+
+    const data = await res.json();
+
+    const name = `CMMS_snapshot_${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.json`;
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json"
+    });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   });
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
 });
+
 // =====================
 // SNAPSHOT FILE LOAD LABEL
 // =====================
