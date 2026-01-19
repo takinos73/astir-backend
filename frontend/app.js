@@ -1643,6 +1643,29 @@ function openAssetViewBySerial(serial) {
   }
 }
 // =====================
+// REFRESH ASSET VIEW DATA (NO UI TOGGLE)
+// =====================
+async function refreshAssetView() {
+  if (!currentAssetSerial) return;
+
+  // ⛔ ΜΗΝ κλείνεις / ανοίγεις modal
+  // 🔄 ΜΟΝΟ reload data
+
+  const res = await fetch(`${API}/assets/${currentAssetSerial}/tasks`);
+  if (!res.ok) return;
+
+  const data = await res.json();
+
+  assetAllTasks = data.all || [];
+  assetActiveTasks = data.active || [];
+  assetHistoryTasks = data.history || [];
+
+  // re-render current tab
+  const activeTab = document.querySelector(".asset-tab.active")?.dataset.tab;
+  activateAssetTab(activeTab || "active");
+}
+
+// =====================
 // RENDER ASSET MTBF KPI
 // =====================
 
@@ -2392,8 +2415,7 @@ if (bulkDoneMode === true) {
 // 🔄 REFRESH ASSET VIEW (SAFE)
 // =====================
 if (currentAssetSerial) {
-  await openAssetViewBySerial(currentAssetSerial);
-  activateAssetTab("active");
+  await refreshAssetView();
 }
 
   // =====================
