@@ -1746,7 +1746,7 @@ function renderAssetTasksTable(tasks) {
   if (!tasks || tasks.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty">No active tasks</td>
+        <td colspan="7" class="empty">No active tasks</td>
       </tr>
     `;
     tasksWrap.offsetHeight;
@@ -1785,7 +1785,8 @@ function renderAssetTasksTable(tasks) {
       "beforeend",
       `
       <td>${t.status}</td>
-      <td>${t.task}</td>
+      <td>${t.unit || "-"}</td>
+      <td>${t.task}</td>  
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
