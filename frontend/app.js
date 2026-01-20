@@ -128,56 +128,60 @@ function applyDateFilter(tasks) {
 }
 
 /* =====================
-   TASK TABLE – STATUS PILL
+   TASK TABLE – STATUS PILL (FIXED)
 ===================== */
 
 function statusPill(task) {
   const st = getDueState(task);
 
   let cls = "status-pill";
-  let txt = "Planned";
+  let txt = "";
 
-  // 🔒 DONE
+  // 1️⃣ DONE
   if (task.status === "Done") {
     cls += " status-done";
     txt = "Done";
   }
 
-  // 🔴 OVERDUE
+  // 2️⃣ OVERDUE
   else if (st === "overdue") {
     cls += " status-overdue";
     txt = "Overdue";
   }
 
-  // 🔵 TODAY
-  else if (task.due_date) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const due = new Date(task.due_date);
-    due.setHours(0, 0, 0, 0);
-
-    if (due.getTime() === today.getTime()) {
-      cls += " status-today";
-      txt = "Today";
-      return `<span class="${cls}">${txt}</span>`;
-    }
+  // 3️⃣ TODAY
+  else if (st === "today") {
+    cls += " status-today";
+    txt = "Today";
   }
 
-  // 🟠 DUE SOON
-  if (st === "soon") {
+  // 4️⃣ DUE SOON
+  else if (st === "soon") {
     cls += " status-soon";
     txt = "Due Soon";
   }
 
-  // ⚪ PLANNED (default)
-  else {
+  // 5️⃣ PREVENTIVE
+  else if (isPreventive(task)) {
+    cls += " status-preventive";
+    txt = "Preventive";
+  }
+
+  // 6️⃣ PLANNED MANUAL
+  else if (isPlannedManual(task)) {
     cls += " status-planned";
     txt = "Planned";
   }
 
+  // FALLBACK (safety)
+  else {
+    cls += " status-unknown";
+    txt = task.status || "—";
+  }
+
   return `<span class="${cls}">${txt}</span>`;
 }
+
 
 
 function buildRow(task) {

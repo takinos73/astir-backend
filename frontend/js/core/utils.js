@@ -38,14 +38,19 @@ function getDueState(t) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
   const due = new Date(t.due_date);
   due.setHours(0, 0, 0, 0);
 
   const d = diffDays(today, due);
+
   if (d < 0) return "overdue";
+  if (d === 0) return "today";
   if (d <= 7) return "soon";
+
   return "ok";
 }
+
 /* =====================
    ROLE HELPERS
 ===================== */
