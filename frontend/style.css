@@ -110,6 +110,36 @@ body {
 }
 
 /* =====================
+   KPI ANALYTICS – SCROLL ONLY TOP ASSETS LIST
+===================== */
+
+/* ❌ Modal itself should NOT scroll */
+#analyticsOverlay .modal-box {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+/* ✅ Scroll ONLY the overdue assets list */
+#kpiTopAssetsOverdueList {
+  max-height: 220px;      /* adjust if needed */
+  overflow-y: auto;
+  padding-right: 6px;     /* space for scrollbar */
+}
+
+/* Optional: nicer scrollbar (safe) */
+#kpiTopAssetsOverdueList::-webkit-scrollbar {
+  width: 6px;
+}
+#kpiTopAssetsOverdueList::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+}
+#kpiTopAssetsOverdueList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+/* =====================
    CONTROLS / BUTTONS
 ===================== */
 .controls-row {
@@ -2337,4 +2367,18 @@ tr.history-unplanned {
 .analytics-list-row:hover .asset strong {
   text-decoration: underline;
 }
+/* =====================
+    TASK TYPE BUTTONS – ACTIVE STATE
+===================== */
+   
+.task-type-btn.planned.active {
+  background: #f2c94c;
+  color: #000;
+}
+
+.task-type-btn.preventive.active {
+  background: #2f80ed;
+  color: #fff;
+}
+
 

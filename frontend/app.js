@@ -50,13 +50,17 @@ const assetSelectedTaskIds = new Set();
 // BULK DONE STATE
 // =====================
 let bulkDoneMode = false;
+// =====================
+// TASK TYPE FILTER STATE
+// =====================
+let activeTaskTypeFilter = "all"; 
+// values: all | planned | preventive
+
 
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
 }
-
-
 
 function canEditTask(task) {
   return (
@@ -181,8 +185,78 @@ function statusPill(task) {
 
   return `<span class="${cls}">${txt}</span>`;
 }
+//----------------------
+// TASK TYPE HELPER
+//----------------------
 
+function getStatusFilterLabel() {
+  if (activeTaskTypeFilter === "planned") return "Planned (Manual)";
+  if (activeTaskTypeFilter === "preventive") return "Preventive";
+  return "ALL";
+}
 
+// =====================
+// TASK TYPE FILTER UI
+// - 2 active → ALL
+// - 1 active → that type
+// - 0 active → FORCED back to ALL
+// =====================
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".task-type-btn");
+  if (!btn) return;
+
+  const type = btn.dataset.type;
+  if (!type) return;
+
+  // toggle clicked button
+  btn.classList.toggle("active");
+
+  const buttons = Array.from(
+    document.querySelectorAll(".task-type-btn")
+  );
+
+  const active = buttons.filter(b =>
+    b.classList.contains("active")
+  );
+
+  // ❌ 0 active → force ALL (activate both)
+  if (active.length === 0) {
+    buttons.forEach(b => b.classList.add("active"));
+    activeTaskTypeFilter = "all";
+  }
+
+  // ✅ 2 active → ALL
+  else if (active.length === 2) {
+    activeTaskTypeFilter = "all";
+  }
+
+  // 🎯 1 active → that type
+  else {
+    activeTaskTypeFilter = active[0].dataset.type;
+  }
+
+  renderTable();
+});
+
+// =====================
+// TASK TYPE FILTER
+// =====================
+function filterByTaskType(tasks) {
+  
+
+  if (!Array.isArray(tasks)) return [];
+
+  if (activeTaskTypeFilter === "planned") {
+    return tasks.filter(t => isPlannedManual(t));
+  }
+
+  if (activeTaskTypeFilter === "preventive") {
+    return tasks.filter(t => isPreventive(t));
+  }
+console.log("filterByTaskType():", activeTaskTypeFilter, "sample:", tasks?.[0]);
+  // implicit ALL
+  return tasks;
+}
 
 function buildRow(task) {
   const tr = document.createElement("tr");
@@ -1081,6 +1155,9 @@ function initAssetDropdown() {
     options: menu.querySelectorAll(".asset-option").length
   });
 }
+//======================
+// FILTERED TASKS FOR PRINTING
+//======================
 
 function getFilteredTasksForPrint() {
 
@@ -1090,7 +1167,7 @@ function getFilteredTasksForPrint() {
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  return tasksData
+  return filterByTaskType(tasksData)   // 🟢 ← ΜΟΝΗ ΑΛΛΑΓΗ
 
     // ASSET FILTER (CUSTOM DROPDOWN)
     .filter(t => {
@@ -1121,7 +1198,7 @@ function getFilteredTasksForPrint() {
       return true;
     })
 
-    // 🆕 TASK DATE RANGE FILTER (From – To)
+    // TASK DATE RANGE FILTER (From – To)
     .filter(t => {
       if (!taskDateFrom && !taskDateTo) return true;
       if (!t.due_date) return false;
@@ -1134,6 +1211,7 @@ function getFilteredTasksForPrint() {
       return true;
     });
 }
+
 
 function populateAssetFilter() {
   const sel = getEl("machineFilter");
@@ -1244,7 +1322,6 @@ function bindAssetTabs() {
 // =====================
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
-
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
@@ -1253,116 +1330,133 @@ function renderTable() {
 
   const q = document.getElementById("taskSearch")?.value || "";
 
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const filtered = tasksData
-    
+  const source = filterByTaskType(tasksData);
+console.log("renderTable(): tasksData =", tasksData.length, "source(after type) =", source.length, "type =", activeTaskTypeFilter);
+
+const filtered = source
+
+
+  // 🔍 SEARCH
   .filter(t => matchesSearch(t, q))
+
+  // 🟨🔵 TASK TYPE FILTER (MASTER)
+  .filter(t => {
+    if (activeTaskTypeFilter === "planned") {
+      return isPlannedManual(t);
+    }
+    if (activeTaskTypeFilter === "preventive") {
+      return isPreventive(t);
+    }
+    return true; // ALL
+  })
+
 
     // MACHINE FILTER
     .filter(t => {
-            if (activeAssetFilter === "all") return true;
-           return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
-     })  
+      if (activeAssetFilter === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
+    })
+
+    // =====================
+    // DATE FILTER (UNIFIED – FIXED)
+    // =====================
+    .filter(t => {
+      const hasDue = !!t.due_date;
+
+      // 🔴 Custom date range (priority)
+      if (taskDateFrom || taskDateTo) {
+        if (!hasDue) return false;
+
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+
+        if (taskDateFrom && due < taskDateFrom) return false;
+        if (taskDateTo && due > taskDateTo) return false;
+        return true;
+      }
+
+      // 🟢 Quick date filters
+      if (activeDateFilter === "today") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === today.getTime();
+      }
+
+      if (activeDateFilter === "week") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due >= today && due <= weekEnd;
+      }
+
+      if (activeDateFilter === "overdue") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due < today;
+      }
+
+      // ⚪ ALL → ΔΕΝ φιλτράρουμε τίποτα
+      return true;
+    })
+
+    // =====================
+    // SORT (STABLE & CORRECT)
+    // =====================
+    .sort((a, b) => {
+      const order = {
+        overdue: 0,
+        today: 1,
+        soon: 2,
+        ok: 3,
+        unknown: 4,
+        done: 5
+      };
+
+      const da = order[getDueState(a)] ?? 99;
+      const db = order[getDueState(b)] ?? 99;
+
+      if (da !== db) return da - db;
+
+      // secondary sort by due_date
+      if (!a.due_date && b.due_date) return 1;
+      if (!b.due_date && a.due_date) return -1;
+      if (!a.due_date && !b.due_date) return 0;
+
+      return new Date(a.due_date) - new Date(b.due_date);
+    });
 
   // =====================
-// DATE FILTER (UNIFIED – FIXED)
-// =====================
-.filter(t => {
-  const hasDue = !!t.due_date;
-
-  // 🔴 Custom date range (priority)
-  if (taskDateFrom || taskDateTo) {
-    if (!hasDue) return false;
-
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-
-    if (taskDateFrom && due < taskDateFrom) return false;
-    if (taskDateTo && due > taskDateTo) return false;
-    return true;
-  }
-
-  // 🟢 Quick date filters
-  if (activeDateFilter === "today") {
-    if (!hasDue) return false;
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-    return due.getTime() === today.getTime();
-  }
-
-  if (activeDateFilter === "week") {
-    if (!hasDue) return false;
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-    return due >= today && due <= weekEnd;
-  }
-
-  if (activeDateFilter === "overdue") {
-    if (!hasDue) return false;
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-    return due < today;
-  }
-
-  // ⚪ ALL → ΔΕΝ φιλτράρουμε τίποτα
-  return true;
-})
-
-// =====================
-// SORT (STABLE & CORRECT)
-// =====================
-.sort((a, b) => {
-  const order = {
-    overdue: 0,
-    today: 1,
-    soon: 2,
-    ok: 3,
-    unknown: 4,
-    done: 5
-  };
-
-  const da = order[getDueState(a)] ?? 99;
-  const db = order[getDueState(b)] ?? 99;
-
-  if (da !== db) return da - db;
-
-  // secondary sort by due_date
-  if (!a.due_date && b.due_date) return 1;
-  if (!b.due_date && a.due_date) return -1;
-  if (!a.due_date && !b.due_date) return 0;
-
-  return new Date(a.due_date) - new Date(b.due_date);
-});
-
-  // =====================
-  // UPDATE TASKS COUNT + DURATION (h + min)
+  // UPDATE TASKS COUNT + DURATION
   // =====================
   const countEl = document.getElementById("tasksCountLabel");
   if (countEl) {
     const n = filtered.length;
-  // ⏱ sum duration_min (ONLY not null)
-  const totalMinutes = filtered.reduce((sum, t) => {
-  return t.duration_min != null ? sum + Number(t.duration_min) : sum;
-}, 0);
 
-let label = `${n} task${n === 1 ? "" : "s"}`;
+    const totalMinutes = filtered.reduce((sum, t) => {
+      return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+    }, 0);
 
-if (totalMinutes > 0) {
-  label += ` • ${formatDuration(totalMinutes)}`;
+    let label = `${n} task${n === 1 ? "" : "s"}`;
+
+    if (totalMinutes > 0) {
+      label += ` • ${formatDuration(totalMinutes)}`;
+    }
+
+    countEl.textContent = label;
+    countEl.classList.toggle("zero", n === 0);
+  }
+
+  filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
-  countEl.textContent = label;
-  countEl.classList.toggle("zero", n === 0);
-}
-
-filtered.forEach(t => tbody.appendChild(buildRow(t)));
-}
 
 function getAssetFilterLabel() {
   if (activeAssetFilter === "all" || !activeAssetFilter) {
@@ -1449,14 +1543,14 @@ function printTasks() {
     </head>
     <body>
       <h2>Maintenance Tasks Schedule</h2>
-      <div class="meta">
-        Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
-        Περίοδος: ${getCurrentPeriodLabel()}<br>
-        Asset: ${getAssetFilterLabel()}<br>
-        <strong>Σύνολο εργασιών: ${tasks.length}</strong>
-        ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
-      </div>
-
+        <div class="meta">
+          Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
+          Περίοδος: ${getCurrentPeriodLabel()}<br>
+          Asset: ${getAssetFilterLabel()}<br>
+          Status: <strong>${getStatusFilterLabel()}</strong><br>
+          <strong>Σύνολο εργασιών: ${tasks.length}</strong>
+          ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
+        </div>
       <table>
         <thead>
           <tr>
@@ -1465,6 +1559,7 @@ function printTasks() {
             <th>Unit</th>
             <th>Task</th>
             <th>Type</th>
+            <th>Status</th>
             <th>Due Date</th>
             <th>Estimated Duration</th>
             <th>✔</th>
@@ -1481,6 +1576,11 @@ function printTasks() {
       <td>${t.unit || "-"}</td>
       <td>${t.task}</td>
       <td>${t.type || "-"}</td>
+      <td>${getDueState(t) === "overdue" ? "Overdue" :
+            getDueState(t) === "today"   ? "Today" :
+            getDueState(t) === "soon"    ? "Due Soon" :
+            "Planned"}
+      </td>
       <td>${formatDate(t.due_date)}</td>
       <td>${durLabel}</td>
       <td></td>
