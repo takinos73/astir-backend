@@ -288,7 +288,7 @@ select,
 ===================== */
 .table-card {
   background: var(--bg-card);
-  padding: 8px;
+  padding: 4px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   overflow-x: auto;
@@ -1505,6 +1505,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #addTaskModal select {
   text-align: left;
 }
+
 /* =====================
    Add Task – Planned Scheduling Grid Fix
 ===================== */
@@ -1643,6 +1644,7 @@ tr.history-unplanned {
 .modal-history {
   width: 96%;
   max-width: 1200px;
+  max-height: 90vh;     /* 👈όριο */
 }
 
 .modal-box input {
@@ -1737,20 +1739,48 @@ tr.history-unplanned {
   opacity: 0.85;
 }
 /* =====================
-   ASSET VIEW – TABLE-ONLY SCROLL
+   ASSET VIEW – MODAL LAYOUT
 ===================== */
 
-/* ΜΗΝ κάνει scroll όλο το modal */
+/* ⛔ ΜΗΝ κάνει scroll όλο το modal */
 #assetViewOverlay .modal-box {
   max-height: 90vh;
   overflow: hidden;
 }
-/* ASSET VIEW MODAL – WIDTH OVERRIDE(does NOT affect other modals) */
+
+/* ✅ Asset View modal width ONLY */
 #assetViewOverlay .modal-box.asset-view {
-  max-width: 800px;   /* διάλεξε 1100–1300 ανά οθόνη */
-  width: 95vw;         /* responsive */
+  max-width: 800px;   /* adjust 1000–1300 αν θες */
+  width: 95vw;
 }
 
+
+/* =====================
+   ASSET VIEW – ACTION BARS (CLEAN)
+===================== */
+
+#assetViewOverlay .modal-actions,
+#assetViewOverlay .bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ⬅ κρατά ΜΟΝΟ το info αριστερά */
+#assetViewOverlay .modal-actions span,
+#assetViewOverlay .bulk-actions span {
+  margin-right: auto;
+  opacity: 0.85;
+}
+.bulk-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.bulk-actions-left #assetBulkClearBtn {
+  margin-left: auto;    
+}
 /* Scroll ΜΟΝΟ στο table container */
 .asset-tasks-table {
   max-height: 320px;        /* ~6–8 rows */
@@ -2427,5 +2457,3 @@ tr.history-unplanned {
   background: #2f80ed;
   color: #fff;
 }
-
-

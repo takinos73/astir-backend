@@ -2064,15 +2064,6 @@ function bindAssetKpiFilters() {
       };
     });
 }
-document.addEventListener("click", e => {
-  const row = e.target.closest(".clickable-asset-row");
-  if (!row) return;
-
-  const serial = row.dataset.serial;
-  if (!serial) return;
-
-  openAssetViewBySerial(serial);
-});
 
 // =====================
 // ASSET HISTORY TABLE (EXECUTIONS) – BULLETPROOF
@@ -3600,3 +3591,21 @@ document.addEventListener("DOMContentLoaded", () => {
     statusEl.classList.remove("loaded");
   }
 });
+
+document.addEventListener(
+  "click",
+  e => {
+    const row = e.target.closest(".clickable-asset-row");
+    if (!row) return;
+
+    console.log(
+      "🔍 KPI CLICK DETECTED",
+      {
+        target: e.target,
+        row,
+        serial: row.dataset.serial
+      }
+    );
+  },
+  true // capture
+);

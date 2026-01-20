@@ -15,7 +15,7 @@ function openAnalyticsModal() {
   loadKpiTopAssetsOverdue();
 
   // 🔗 Enable drill-down AFTER KPI render
-  setTimeout(enableKpiAssetDrilldown, 0);
+  //setTimeout(enableKpiAssetDrilldown, 0); στέλνει το φίλτρο στο task view
 }
 
 function closeAnalyticsModal() {
@@ -214,3 +214,27 @@ function enableKpiAssetDrilldown() {
     }
   };
 }
+// =====================
+// KPI → OPEN ASSET VIEW (BY SERIAL)
+// =====================
+document
+  .getElementById("analyticsOverlay")
+  ?.addEventListener("click", e => {
+    const row = e.target.closest(".analytics-list-row");
+    if (!row) return;
+
+    const serial = row.dataset.serial;
+    if (!serial) return;
+
+    console.log("OPEN ASSET VIEW FROM KPI", serial);
+
+    // 🧹 close analytics modal
+    const analyticsOverlay = document.getElementById("analyticsOverlay");
+    if (analyticsOverlay) {
+      analyticsOverlay.style.display = "none";
+    }
+
+    // 🟢 open asset view
+    openAssetViewBySerial(serial);
+  });
+
