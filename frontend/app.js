@@ -186,6 +186,34 @@ function statusPill(task) {
   return `<span class="${cls}">${txt}</span>`;
 }
 //----------------------
+// ASSET TASK TYPE HELPERS
+//----------------------
+
+function assetStatusLabel(t) {
+  let typeLabel = "Planned";
+  let typeClass = "type-planned";
+
+  if (isPreventive(t)) {
+    typeLabel = "Preventive";
+    typeClass = "type-preventive";
+  }
+
+  const dueState = getDueState(t);
+  let dueLabel = "";
+
+  if (dueState === "overdue") dueLabel = "Overdue";
+  else if (dueState === "today") dueLabel = "Today";
+  else if (dueState === "soon") dueLabel = "Due soon";
+
+  return `
+    <div class="asset-status ${typeClass}">
+      <span class="asset-status-type">${typeLabel}</span>
+      ${dueLabel ? `<span class="asset-status-due ${dueState}">${dueLabel}</span>` : ""}
+    </div>
+  `;
+}
+
+//----------------------
 // TASK TYPE HELPER
 //----------------------
 
@@ -1861,7 +1889,7 @@ function renderAssetKpis(tasks, history) {
 }
 
 // =====================
-// ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT (STEP 1)
+// ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
 // =====================
 function renderAssetTasksTable(tasks) {
   const tasksWrap = document.querySelector(".asset-tasks-table");
@@ -1876,7 +1904,7 @@ function renderAssetTasksTable(tasks) {
 
   tbody.innerHTML = "";
   assetSelectedTaskIds.clear(); // reset on render
-  updateAssetBulkActionsBar();  // 🆕 hide bar on refresh
+  updateAssetBulkActionsBar();  // hide bar on refresh
 
   if (!tasks || tasks.length === 0) {
     tbody.innerHTML = `
@@ -1897,21 +1925,25 @@ function renderAssetTasksTable(tasks) {
       t.duration_min != null ? formatDuration(t.duration_min) : "—";
 
     // =====================
-    // STATUS (USING HELPERS ✅)
+    // STATUS (TYPE + DUE STATE)
     // =====================
-    let statusLabel = t.status;
-    let statusClass = "";
+    let typeLabel = "Planned";
+    let typeClass = "planned";
 
     if (isPreventive(t)) {
-      statusLabel = "Preventive";
-      statusClass = "preventive";
-    } else if (isPlannedManual(t)) {
-      statusLabel = "Planned";
-      statusClass = "planned";
+      typeLabel = "Preventive";
+      typeClass = "preventive";
     }
 
+    const dueState = getDueState(t); // overdue | today | soon | ok
+    let dueLabel = "";
+
+    if (dueState === "overdue") dueLabel = "Overdue";
+    else if (dueState === "today") dueLabel = "Today";
+    else if (dueState === "soon") dueLabel = "Due soon";
+
     // =====================
-    // 🆕 CHECKBOX CELL
+    // CHECKBOX CELL
     // =====================
     const checkboxTd = document.createElement("td");
     checkboxTd.className = "select-cell";
@@ -1921,7 +1953,7 @@ function renderAssetTasksTable(tasks) {
     checkbox.className = "asset-task-checkbox";
 
     checkbox.addEventListener("click", e => {
-      e.stopPropagation(); // 🔒 do not open task modal
+      e.stopPropagation();
 
       if (checkbox.checked) {
         assetSelectedTaskIds.add(t.id);
@@ -1941,8 +1973,9 @@ function renderAssetTasksTable(tasks) {
     tr.insertAdjacentHTML(
       "beforeend",
       `
-      <td class="asset-status ${statusClass}">
-        ${statusLabel}
+      <td class="asset-status ${typeClass}">
+        <span class="status-type">${typeLabel}</span>
+        ${dueLabel ? `<span class="status-due ${dueState}">• ${dueLabel}</span>` : ""}
       </td>
       <td>${t.unit || "-"}</td>
       <td>${t.task}</td>

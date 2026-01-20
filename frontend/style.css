@@ -1460,7 +1460,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
-  gap: 2px;               /* 👈 λίγο πιο σφιχτό */  
+  gap: 2px;
+  width:500px ;               /* 👈 λίγο πιο σφιχτό */  
 }
 #addTaskOverlay .modal-box {
   padding-top: 2px;   /* 👈 πριν ήταν ~20px */
@@ -1744,6 +1745,11 @@ tr.history-unplanned {
   max-height: 90vh;
   overflow: hidden;
 }
+/* ASSET VIEW MODAL – WIDTH OVERRIDE(does NOT affect other modals) */
+#assetViewOverlay .modal-box.asset-view {
+  max-width: 800px;   /* διάλεξε 1100–1300 ανά οθόνη */
+  width: 95vw;         /* responsive */
+}
 
 /* Scroll ΜΟΝΟ στο table container */
 .asset-tasks-table {
@@ -1860,6 +1866,24 @@ tr.history-unplanned {
 /* =====================
    STATUS CELL COLORS
 ===================== */
+.asset-status {
+  display: flex;
+  flex-direction: column;   /* ⬅ πάνω / κάτω */
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+/* κρατάμε το type πιο έντονο */
+.asset-status .status-type {
+  font-weight: 600;
+}
+
+/* due state λίγο πιο "δευτερεύον" */
+.asset-status .status-due {
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .asset-status.preventive {
   color: #2b6cb0;
   font-weight: 600;
@@ -1870,6 +1894,29 @@ tr.history-unplanned {
   font-weight: 600;
 }
 
+/* =====================
+   DUE STATE (TEXT ONLY)
+   – does NOT override type color
+===================== */
+
+.asset-status .status-due {
+  font-weight: 600;
+}
+
+/* overdue = red */
+.asset-status .status-due.overdue {
+  color: #c53030;
+}
+
+/* today = orange */
+.asset-status .status-due.today {
+  color: #dd6b20;
+}
+
+/* due soon = amber */
+.asset-status .status-due.soon {
+  color: #d69e2e;
+}
 
 
 
