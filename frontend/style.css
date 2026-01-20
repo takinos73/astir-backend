@@ -334,10 +334,10 @@ tbody tr:hover { background: #131520; }
 }
 
 .status-pill.status-done { background: #b9ffb9; color: #005500; }
-.status-pill.status-overdue { background: #ffbaba; color: #5a0000; }
+.status-pill.status-overdue { background: #fb9191; color: #5a0000; }
 .status-pill.status-soon { background: #fff6a5; color: #6b5200; }
 .status-pill.status-unknown { background: #c0c0c0; color: #222; }
-.status-pill.status-planned {background: #9bbdf9; color: #061825;}
+.status-pill.status-planned {background: #f9f97e; color: #061825;}
 .status-pill.status-preventive {background: #389efd; color: #061825;}
 .status-today {
   background: #1e88e5;
