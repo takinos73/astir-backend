@@ -1271,18 +1271,18 @@ function renderTable() {
      })  
 
   // =====================
-  // DATE FILTER (UNIFIED)
-  // - Date range (From–To) has priority
-  // - Quick filters used only if range is empty
-  // =====================
+// DATE FILTER (UNIFIED – FIXED)
+// =====================
 .filter(t => {
-  if (!t.due_date) return false;
-
-  const due = new Date(t.due_date);
-  due.setHours(0, 0, 0, 0);
+  const hasDue = !!t.due_date;
 
   // 🔴 Custom date range (priority)
   if (taskDateFrom || taskDateTo) {
+    if (!hasDue) return false;
+
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
+
     if (taskDateFrom && due < taskDateFrom) return false;
     if (taskDateTo && due > taskDateTo) return false;
     return true;
@@ -1290,26 +1290,56 @@ function renderTable() {
 
   // 🟢 Quick date filters
   if (activeDateFilter === "today") {
+    if (!hasDue) return false;
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
     return due.getTime() === today.getTime();
   }
 
   if (activeDateFilter === "week") {
+    if (!hasDue) return false;
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
     return due >= today && due <= weekEnd;
   }
 
   if (activeDateFilter === "overdue") {
+    if (!hasDue) return false;
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
     return due < today;
   }
 
-  // ⚪ ALL
+  // ⚪ ALL → ΔΕΝ φιλτράρουμε τίποτα
   return true;
 })
 
-    // SORT (kept as-is)
-    .sort((a, b) => {
-      const o = { overdue: 0, soon: 1, ok: 2, done: 3, unknown: 4 };
-      return (o[getDueState(a)] ?? 99) - (o[getDueState(b)] ?? 99);
-    });
+// =====================
+// SORT (STABLE & CORRECT)
+// =====================
+.sort((a, b) => {
+  const order = {
+    overdue: 0,
+    today: 1,
+    soon: 2,
+    ok: 3,
+    unknown: 4,
+    done: 5
+  };
+
+  const da = order[getDueState(a)] ?? 99;
+  const db = order[getDueState(b)] ?? 99;
+
+  if (da !== db) return da - db;
+
+  // secondary sort by due_date
+  if (!a.due_date && b.due_date) return 1;
+  if (!b.due_date && a.due_date) return -1;
+  if (!a.due_date && !b.due_date) return 0;
+
+  return new Date(a.due_date) - new Date(b.due_date);
+});
+
   // =====================
   // UPDATE TASKS COUNT + DURATION (h + min)
   // =====================
