@@ -1854,6 +1854,18 @@ tr.history-unplanned {
 .asset-tab-panel.active .asset-tasks-table {
   max-height: 360px;
 }
+.asset-kpi-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.asset-kpi-line .sep {
+  opacity: 0.6;
+}
+
 /* =====================
    ASSET ACTIVE TASKS – STATUS COLORS
 ===================== */

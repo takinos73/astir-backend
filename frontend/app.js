@@ -55,6 +55,8 @@ let bulkDoneMode = false;
 // =====================
 let activeTaskTypeFilter = "all"; 
 // values: all | planned | preventive
+let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
+
 
 
 function formatDate(d) {
@@ -1900,15 +1902,14 @@ function renderAssetKpis(tasks, history) {
 
   // 🟨 Planned KPI → colored breakdown
   const plannedLabel = `
-  <span class="asset-status preventive">${preventiveCount} prev</span>
-  +
-  <span class="asset-status planned">${plannedManualCount} planned</span>
+  <div class="asset-kpi-line">
+    <span class="asset-status preventive">${preventiveCount} prev</span>
+    <span class="sep">,</span>
+    <span class="asset-status planned">${plannedManualCount} planned (manual)</span>
+  </div>
 `;
 
-
-  const plannedEl = document.getElementById("assetPlannedCount");
-  if (plannedEl) plannedEl.innerHTML = plannedLabel;
-
+  document.getElementById("assetPlannedCount").innerHTML = plannedLabel;
   document.getElementById("assetOverdueCount").textContent = overdueCount;
   document.getElementById("assetHistoryCount").textContent = historyCount;
 }

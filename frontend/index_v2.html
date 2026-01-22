@@ -192,25 +192,37 @@
         </tbody>
       </table>
     </div>
-      <!-- =====================
-     HISTORY LEGEND
-      ===================== -->
+<!-- =====================
+     HISTORY LEGEND (CLICKABLE FILTERS)
+===================== -->
 <div class="history-legend">
-  <div class="legend-item red">
+
+  <div
+    class="legend-item red history-type-label active"
+    data-type="breakdown"
+  >
     <span class="dot"></span>
     <span>Unplanned / Breakdown</span>
   </div>
 
-  <div class="legend-item green">
+  <div
+    class="legend-item green history-type-label active"
+    data-type="preventive"
+  >
     <span class="dot"></span>
     <span>Preventive Maintenance</span>
   </div>
 
-  <div class="legend-item yellow">
+  <div
+    class="legend-item yellow history-type-label active"
+    data-type="planned"
+  >
     <span class="dot"></span>
     <span>Planned (Manual)</span>
   </div>
+
 </div>
+
 
     <div class="modal-actions">
       <button class="btn-secondary" id="closeHistoryBtn">Close</button>
