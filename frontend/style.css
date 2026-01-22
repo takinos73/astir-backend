@@ -1750,8 +1750,8 @@ tr.history-unplanned {
 
 /* ✅ Asset View modal width ONLY */
 #assetViewOverlay .modal-box.asset-view {
-  max-width: 800px;   /* adjust 1000–1300 αν θες */
-  width: 95vw;
+  max-width: 900px;   /* adjust 1000–1300 αν θες */
+  width: 100vw;
 }
 
 

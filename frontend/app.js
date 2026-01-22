@@ -1878,15 +1878,41 @@ function renderAssetViewHeader(src) {
 // =====================
 // KPI COUNTS
 // =====================
+
 function renderAssetKpis(tasks, history) {
-  const planned = tasks.filter(t => t.status === "Planned").length;
-  const overdue = tasks.filter(t => t.status === "Overdue").length;
+  if (!Array.isArray(tasks)) tasks = [];
+  if (!Array.isArray(history)) history = [];
+
+  // μόνο ενεργά (όχι Done)
+  const activeTasks = tasks.filter(t => t.status !== "Done");
+
+  const preventiveCount = activeTasks.filter(t => isPreventive(t)).length;
+
+  const plannedManualCount = activeTasks.filter(t =>
+    isPlannedManual(t)
+  ).length;
+
+  const overdueCount = activeTasks.filter(
+    t => getDueState(t) === "overdue"
+  ).length;
+
   const historyCount = history.length;
 
-  document.getElementById("assetPlannedCount").textContent = planned;
-  document.getElementById("assetOverdueCount").textContent = overdue;
+  // 🟨 Planned KPI → colored breakdown
+  const plannedLabel = `
+  <span class="asset-status preventive">${preventiveCount} prev</span>
+  +
+  <span class="asset-status planned">${plannedManualCount} planned</span>
+`;
+
+
+  const plannedEl = document.getElementById("assetPlannedCount");
+  if (plannedEl) plannedEl.innerHTML = plannedLabel;
+
+  document.getElementById("assetOverdueCount").textContent = overdueCount;
   document.getElementById("assetHistoryCount").textContent = historyCount;
 }
+
 
 // =====================
 // ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
