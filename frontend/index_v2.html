@@ -192,44 +192,39 @@
         </tbody>
       </table>
     </div>
-<!-- =====================
-     HISTORY LEGEND (CLICKABLE FILTERS)
+  <!-- =====================
+     HISTORY LEGEND (CENTRAL)
 ===================== -->
 <div class="history-legend">
 
-  <div
-    class="legend-item red history-type-label active"
-    data-type="breakdown"
-  >
+  <div class="legend-item red">
     <span class="dot"></span>
     <span>Unplanned / Breakdown</span>
+    <span class="count" id="centralHistoryBreakdownCount">0</span>
   </div>
 
-  <div
-    class="legend-item green history-type-label active"
-    data-type="preventive"
-  >
+  <div class="legend-item green">
     <span class="dot"></span>
     <span>Preventive Maintenance</span>
+    <span class="count" id="centralHistoryPreventiveCount">0</span>
   </div>
 
-  <div
-    class="legend-item yellow history-type-label active"
-    data-type="planned"
-  >
+  <div class="legend-item yellow">
     <span class="dot"></span>
     <span>Planned (Manual)</span>
+    <span class="count" id="centralHistoryPlannedCount">0</span>
   </div>
 
 </div>
 
 
+  <!-- =====================
+       ACTIONS
+  ===================== -->
     <div class="modal-actions">
       <button class="btn-secondary" id="closeHistoryBtn">Close</button>
-    </div>
-    
-  </div>
-  
+    </div>    
+  </div>  
 </div>
 
     <!-- ====================

@@ -406,8 +406,10 @@ async function loadHistory() {
 
     renderHistoryTable(executionsData);
   } catch (err) {
-    console.error("LOAD HISTORY ERROR:", err);
+    console.error("LOAD HISTORY ERROR:", err);        
   }
+  // 🆕 εδώ ΜΟΝΟ
+  updateCentralHistoryLegendCounts(executionsData);
 }
 
 function getExecutionType(h) {
@@ -667,6 +669,55 @@ document.getElementById("historyTechnicianSearch")?.addEventListener("input", e 
   historyTechnicianQuery = e.target.value.toLowerCase();
   renderHistoryTable(executionsData);
 });
+
+// =====================
+// CENTRAL HISTORY – LEGEND COUNTERS (CORRECT & SAFE)
+// =====================
+function updateCentralHistoryLegendCounts(history) {
+   console.log("🔥 updateCentralHistoryLegendCounts CALLED", history?.length);
+  if (!Array.isArray(history)) return;
+
+  let breakdown = 0;
+  let preventive = 0;
+  let planned = 0;
+
+  history.forEach(e => {
+    // 🔴 Breakdown / Unplanned
+    if (e.is_planned === false) {
+      breakdown++;
+      return;
+    }
+
+    // 🟢 Preventive
+    if (
+      e.is_planned === true &&
+      e.frequency_hours != null &&
+      Number(e.frequency_hours) > 0
+    ) {
+      preventive++;
+      return;
+    }
+
+    // 🟡 Planned manual
+    if (e.is_planned === true) {
+      planned++;
+    }
+  });
+
+  const b = document.getElementById("centralHistoryBreakdownCount");
+  const p = document.getElementById("centralHistoryPreventiveCount");
+  const m = document.getElementById("centralHistoryPlannedCount");
+
+  if (b) b.textContent = breakdown;
+  if (p) p.textContent = preventive;
+  if (m) m.textContent = planned;
+
+  console.log("CENTRAL HISTORY COUNTS", {
+    breakdown,
+    preventive,
+    planned
+  });
+}
 
 
 /* =====================
