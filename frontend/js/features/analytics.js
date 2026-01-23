@@ -78,33 +78,59 @@ async function loadKpiOverdueWorkload() {
 }
 
 /* =====================
-   KPI: Planning Mix (Planned vs Unplanned)
+   KPI: Planning Mix – DUAL KPI
+   - Primary: workload (minutes)
+   - Secondary: task count
 ===================== */
+
 async function loadKpiPlanningMix() {
   try {
     const res = await fetch(`${API}/kpis/planning-mix`);
     if (!res.ok) throw new Error("Failed to fetch planning mix KPI");
 
     const data = await res.json();
-    const planned = data.planned_minutes || 0;
-    const unplanned = data.unplanned_minutes || 0;
-    const total = planned + unplanned;
 
-    const kpiValueEl = document.querySelector(
+    const plannedMin = data.planned_minutes || 0;
+    const unplannedMin = data.unplanned_minutes || 0;
+
+    const totalMin = plannedMin + unplannedMin;
+
+    const kpiCard = document.querySelector(
       "#analyticsOverlay .analytics-section:nth-of-type(2) .analytics-card .value"
     );
-    if (!kpiValueEl) return;
+    if (!kpiCard) return;
 
-    if (total === 0) {
-      kpiValueEl.textContent = "—";
-      return;
+    // =====================
+    // PRIMARY KPI (minutes)
+    // =====================
+    let primaryLabel = "—";
+    if (totalMin > 0) {
+      const pPct = Math.round((plannedMin / totalMin) * 100);
+      const uPct = 100 - pPct;
+      primaryLabel = `${pPct}% planned / ${uPct}% unplanned`;
     }
 
-    const plannedPct = Math.round((planned / total) * 100);
-    const unplannedPct = 100 - plannedPct;
+    // =====================
+    // SECONDARY KPI (counts)
+    // =====================
+    const plannedCount = tasksData.filter(
+      t => t.is_planned === true
+    ).length;
 
-    kpiValueEl.textContent =
-      `${plannedPct}% planned / ${unplannedPct}% unplanned`;
+    const unplannedCount = tasksData.filter(
+      t => t.is_planned === false
+    ).length;
+
+    const secondaryLabel =
+      `${plannedCount} planned • ${unplannedCount} unplanned`;
+
+    // =====================
+    // RENDER
+    // =====================
+    kpiCard.innerHTML = `
+      ${primaryLabel}
+      <span class="subvalue">${secondaryLabel}</span>
+    `;
 
   } catch (err) {
     console.error("Planning mix KPI error:", err);

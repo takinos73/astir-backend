@@ -137,6 +137,57 @@ body {
 #kpiTopAssetsOverdueList::-webkit-scrollbar-track {
   background: transparent;
 }
+/* =====================
+   KPI – PLANNING MIX (DUAL)
+===================== */
+
+#analyticsOverlay .analytics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+/* PRIMARY KPI (minutes / percentage) */
+#kpiPlanningMixTime {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1a202c; /* dark neutral */
+}
+
+/* SECONDARY KPI (counts) */
+#kpiPlanningMixCount {
+  font-size: 13px;
+  color: #4a5568;
+  opacity: 0.9;
+}
+
+/* Optional subtle separator look */
+#kpiPlanningMixCount::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 2px;
+  background: #e2e8f0;
+  margin-bottom: 6px;
+}
+
+/* Color hinting (optional, safe) */
+#kpiPlanningMixTime .planned {
+  color: #2b6cb0; /* preventive / planned blue */
+}
+
+#kpiPlanningMixTime .unplanned {
+  color: #c53030; /* breakdown red */
+}
+
+/* Responsive tightening */
+@media (max-width: 768px) {
+  #kpiPlanningMixTime {
+    font-size: 20px;
+  }
+}
 
 
 /* =====================
