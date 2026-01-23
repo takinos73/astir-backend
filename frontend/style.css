@@ -138,55 +138,27 @@ body {
   background: transparent;
 }
 /* =====================
-   KPI – PLANNING MIX (DUAL)
+   KPI – PLANNING MIX
 ===================== */
-
-#analyticsOverlay .analytics-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-}
-
-/* PRIMARY KPI (minutes / percentage) */
 #kpiPlanningMixTime {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: #1a202c; /* dark neutral */
+ font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
-/* SECONDARY KPI (counts) */
 #kpiPlanningMixCount {
-  font-size: 13px;
-  color: #4a5568;
-  opacity: 0.9;
-}
-
-/* Optional subtle separator look */
-#kpiPlanningMixCount::before {
-  content: "";
   display: block;
-  width: 36px;
-  height: 2px;
-  background: #e2e8f0;
-  margin-bottom: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
 }
 
-/* Color hinting (optional, safe) */
-#kpiPlanningMixTime .planned {
-  color: #2b6cb0; /* preventive / planned blue */
+.mix-prev {
+  color: #2b6cb0; /* preventive blue */
 }
 
-#kpiPlanningMixTime .unplanned {
-  color: #c53030; /* breakdown red */
-}
-
-/* Responsive tightening */
-@media (max-width: 768px) {
-  #kpiPlanningMixTime {
-    font-size: 20px;
-  }
+.mix-plan {
+  color: #d69e2e; /* planned yellow */
 }
 
 
@@ -2445,10 +2417,10 @@ tr.history-unplanned {
 ===================== */
 
 .analytics-list {
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .analytics-list-row {
@@ -2456,7 +2428,7 @@ tr.history-unplanned {
   justify-content: space-between;
   align-items: center;
 
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 8px;
 
   background: rgba(255, 255, 255, 0.03);
@@ -2478,25 +2450,25 @@ tr.history-unplanned {
 }
 
 .analytics-list-row .asset strong {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.2px;
 }
 
 .analytics-list-row .asset small {
-  font-size: 12px;
+  font-size: 10px;
   opacity: 0.7;
 }
 
 .analytics-list-row .meta {
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
   opacity: 0.85;
 }
 
 /* Empty state */
 .analytics-empty {
-  font-size: 13px;
+  font-size: 12px;
   opacity: 0.6;
   padding: 6px 0;
 }

@@ -78,58 +78,53 @@ async function loadKpiOverdueWorkload() {
 }
 
 /* =====================
-   KPI: Planning Mix – DUAL KPI
-   - Primary: workload (minutes)
-   - Secondary: task count
+   KPI: Planning Mix (TIME-BASED)
 ===================== */
-
 async function loadKpiPlanningMix() {
   try {
-    const res = await fetch(`${API}/kpis/planning-mix`);
-    if (!res.ok) throw new Error("Failed to fetch planning mix KPI");
+    const res = await fetch(`${API}/tasks`);
+    if (!res.ok) throw new Error("Failed to fetch tasks");
 
-    const data = await res.json();
+    const tasks = await res.json();
 
-    const plannedMin = data.planned_minutes || 0;
-    const unplannedMin = data.unplanned_minutes || 0;
+    let preventiveMin = 0;
+    let plannedMin = 0;
 
-    const totalMin = plannedMin + unplannedMin;
+    tasks.forEach(t => {
+      if (t.status === "Done") return;
+      if (t.duration_min == null) return;
 
-    const kpiCard = document.querySelector(
-      "#analyticsOverlay .analytics-section:nth-of-type(2) .analytics-card .value"
-    );
-    if (!kpiCard) return;
+      if (isPreventive(t)) {
+        preventiveMin += Number(t.duration_min);
+      } else if (isPlannedManual(t)) {
+        plannedMin += Number(t.duration_min);
+      }
+    });
 
-    // =====================
-    // PRIMARY KPI (minutes)
-    // =====================
-    let primaryLabel = "—";
-    if (totalMin > 0) {
-      const pPct = Math.round((plannedMin / totalMin) * 100);
-      const uPct = 100 - pPct;
-      primaryLabel = `${pPct}% planned / ${uPct}% unplanned`;
+    const total = preventiveMin + plannedMin;
+
+    const timeEl = document.getElementById("kpiPlanningMixTime");
+    const countEl = document.getElementById("kpiPlanningMixCount");
+
+    if (!timeEl || !countEl || total === 0) {
+      timeEl.textContent = "—";
+      countEl.textContent = "—";
+      return;
     }
 
-    // =====================
-    // SECONDARY KPI (counts)
-    // =====================
-    const plannedCount = tasksData.filter(
-      t => t.is_planned === true
-    ).length;
+    const prevPct = Math.round((preventiveMin / total) * 100);
+    const planPct = 100 - prevPct;
 
-    const unplannedCount = tasksData.filter(
-      t => t.is_planned === false
-    ).length;
+    timeEl.innerHTML = `
+      <span class="mix-prev">${prevPct}% preventive</span>
+      /
+      <span class="mix-plan">${planPct}% manual</span>
+    `;
 
-    const secondaryLabel =
-      `${plannedCount} planned • ${unplannedCount} unplanned`;
-
-    // =====================
-    // RENDER
-    // =====================
-    kpiCard.innerHTML = `
-      ${primaryLabel}
-      <span class="subvalue">${secondaryLabel}</span>
+    countEl.innerHTML = `
+      <span class="mix-prev">${formatDuration(preventiveMin)}</span>
+      •
+      <span class="mix-plan">${formatDuration(plannedMin)}</span>
     `;
 
   } catch (err) {
