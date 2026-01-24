@@ -112,8 +112,24 @@ async function loadKpiPlanningMix() {
       return;
     }
 
-    const prevPct = Math.round((preventiveMin / total) * 100);
-    const planPct = 100 - prevPct;
+    // ✅ PERCENTAGES (robust)
+let prevPct = Math.round((preventiveMin * 100) / total);
+let planPct = Math.round((plannedMin * 100) / total);
+
+// ✅ Force sum = 100 (handles rounding edge cases)
+const diff = 100 - (prevPct + planPct);
+if (diff !== 0) {
+  // push the rounding error to the larger bucket
+  if (preventiveMin >= plannedMin) prevPct += diff;
+  else planPct += diff;
+}
+
+// ✅ Guard: if plannedMin > 0, never show 0%
+if (plannedMin > 0 && planPct === 0) {
+  planPct = 1;
+  prevPct = 99;
+}
+
 
     timeEl.innerHTML = `
       <span class="mix-prev">${prevPct}% preventive</span>
