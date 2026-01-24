@@ -210,22 +210,18 @@ function printCurrentTask() {
 // PRINT TASK SCHEDULE (GROUPED BY LINE)
 // =====================
 
-window.printTaskSchedule = function ({
-  tasks,
-  meta,
-  helpers
-}) {
-  /* =====================
-   PRINT TASKS (GROUPED BY LINE + PAGE BREAK + LINE FOOTER + FINAL SIGNATURE)
-===================== */
+window.printTaskSchedule = function ({ tasks, meta, helpers }) {
 
-function printTasks() {
-  const tasks = getFilteredTasksForPrint();
-
-  if (tasks.length === 0) {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
     alert("No tasks to print");
     return;
   }
+
+  const {
+    formatDate,
+    formatDuration,
+    getDueState
+  } = helpers;
 
   // 🔽 SORT BY ASSET LINE (PRINT ONLY – SAFE)
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -240,28 +236,20 @@ function printTasks() {
   });
 
   // ⏱ GRAND TOTAL
-  const totalMinutes = tasks.reduce((sum, t) => {
-    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
-  }, 0);
+  const totalMinutes = tasks.reduce(
+    (sum, t) => t.duration_min != null ? sum + Number(t.duration_min) : sum,
+    0
+  );
 
-  let totalDurationLabel = "";
-  if (totalMinutes > 0) {
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    if (h > 0 && m > 0) totalDurationLabel = `${h}h ${m}m`;
-    else if (h > 0) totalDurationLabel = `${h}h`;
-    else totalDurationLabel = `${m}m`;
-  }
+  const totalDurationLabel =
+    totalMinutes > 0 ? formatDuration(totalMinutes) : "";
 
   let html = `
     <html>
     <head>
       <title>Maintenance Tasks</title>
       <style>
-        @page {
-          size: A4;
-          margin: 15mm;
-        }
+        @page { size: A4; margin: 15mm; }
         body { font-family: Arial, sans-serif; }
         h2 { margin-bottom: 5px; }
         h3 { margin: 0 0 6px; }
@@ -278,7 +266,6 @@ function printTasks() {
 
         .line-break { page-break-before: always; }
 
-        /* LINE FOOTER */
         .line-footer {
           margin-top: 8px;
           padding-top: 6px;
@@ -288,14 +275,11 @@ function printTasks() {
           text-align: right;
         }
 
-        /* FINAL SIGNATURE (ONLY ONCE) */
         .final-signature {
           margin-top: 40px;
           padding-top: 12px;
           border-top: 2px solid #333;
           font-size: 12px;
-
-          /* 🧷 never split */
           page-break-inside: avoid;
           break-inside: avoid;
         }
@@ -306,10 +290,7 @@ function printTasks() {
           margin-top: 30px;
         }
 
-        .sig-box {
-          width: 45%;
-        }
-
+        .sig-box { width: 45%; }
         .sig-line {
           border-bottom: 1px solid #000;
           height: 22px;
@@ -320,10 +301,10 @@ function printTasks() {
     <body>
       <h2>Maintenance Tasks Schedule</h2>
       <div class="meta">
-        Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
-        Περίοδος: ${getCurrentPeriodLabel()}<br>
-        Asset: ${getAssetFilterLabel()}<br>
-        Status: <strong>${getStatusFilterLabel()}</strong><br>
+        Ημερομηνία: ${meta.date}<br>
+        Περίοδος: ${meta.period}<br>
+        Asset: ${meta.asset}<br>
+        Status: <strong>${meta.status}</strong><br>
         <strong>Σύνολο εργασιών: ${tasks.length}</strong>
         ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
       </div>
@@ -397,7 +378,6 @@ function printTasks() {
     `;
   });
 
-  // 🔚 CLOSE LAST LINE
   html += `
             </tbody>
           </table>
@@ -406,7 +386,6 @@ function printTasks() {
           </div>
         </div>
 
-        <!-- ✍️ FINAL SIGNATURE (ONCE) -->
         <div class="final-signature">
           <div class="signature-row">
             <div class="sig-box">
@@ -444,5 +423,4 @@ function printTasks() {
   setTimeout(() => {
     document.body.removeChild(iframe);
   }, 1000);
-}
 };
