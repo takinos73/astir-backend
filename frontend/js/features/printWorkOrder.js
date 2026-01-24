@@ -398,7 +398,7 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
             </div>
           </div>
         </div>
-
+        
     </body>
     </html>
   `;

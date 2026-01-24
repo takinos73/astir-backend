@@ -1,5 +1,5 @@
 /* =====================
-   STATUS REPORT – PDF (WITH ESTIMATED DURATION)
+   STATUS REPORT – PDF (GROUPED BY LINE / ASSET)
 ===================== */
 function generateStatusReportPdf() {
   const tasks = getFilteredTasksForStatusReport();
@@ -11,10 +11,23 @@ function generateStatusReportPdf() {
 
   const from = document.getElementById("dateFrom")?.value || "—";
   const to = document.getElementById("dateTo")?.value || "—";
-  const line = document.getElementById("reportLine")?.value || "ALL";
+  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
   const status = document.getElementById("reportStatus")?.value || "ALL";
 
-  // ⏱ TOTAL ESTIMATED DURATION (ONLY NOT NULL)
+  // 🔽 SORT: LINE → ASSET → DUE DATE
+  const sorted = [...tasks].sort((a, b) => {
+    const la = (a.line_code || a.line || "");
+    const lb = (b.line_code || b.line || "");
+    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+
+    const aa = `${a.machine_name} ${a.serial_number || ""}`;
+    const ab = `${b.machine_name} ${b.serial_number || ""}`;
+    if (aa !== ab) return aa.localeCompare(ab, "el");
+
+    return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+  });
+
+  // ⏱ GRAND TOTAL
   const totalMinutes = tasks.reduce((sum, t) => {
     return t.duration_min != null ? sum + Number(t.duration_min) : sum;
   }, 0);
@@ -23,78 +36,119 @@ function generateStatusReportPdf() {
   if (totalMinutes > 0) {
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
-    if (h > 0 && m > 0) totalDurationLabel = `${h}h ${m}m`;
-    else if (h > 0) totalDurationLabel = `${h}h`;
-    else totalDurationLabel = `${m}m`;
+    totalDurationLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
 
   let html = `
-    <html>
-    <head>
-      <title>Maintenance Status Report</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        h2 { margin-bottom: 6px; }
-        .meta { margin-bottom: 14px; color: #555; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td {
-          border: 1px solid #999;
-          padding: 6px 8px;
-          vertical-align: top;
-        }
-        th { background: #eee; }
-        .sn { font-size: 11px; color: #666; }
-        .status-planned { color: #1e88e5; font-weight: bold; }
-        .status-overdue { color: #c62828; font-weight: bold; }
-      </style>
-    </head>
-    <body>
+  <html>
+  <head>
+    <title>Maintenance Status Report</title>
+    <style>
+      @page { size: A4; margin: 15mm; }
+      body { font-family: Arial, sans-serif; font-size: 12px; }
+      h2 { margin-bottom: 6px; }
+      h3 { margin: 14px 0 6px; border-bottom: 2px solid #ccc; padding-bottom: 2px; }
+      h4 { margin: 10px 0 4px; font-size: 13px; }
+      .meta { margin-bottom: 14px; color: #555; }
 
-      <h2>Maintenance Status Report</h2>
+      table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        vertical-align: top;
+      }
+      th { background: #eee; }
 
-      <div class="meta">
-        Date: ${new Date().toLocaleDateString("el-GR")}<br>
-        Period: ${from} → ${to}<br>
-        Line: ${line.toUpperCase()}<br>
-        Status: ${status.toUpperCase()}<br>
-        <strong>Tasks: ${tasks.length}</strong>
-        ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
-      </div>
+      .sn { font-size: 11px; color: #666; }
 
-      <table>
-        <thead>
-          <tr>
-            <th>Machine</th>
-            <th>Section</th>
-            <th>Unit</th>
-            <th>Task</th>
-            <th>Type</th>
-            <th>Due Date</th>
-            <th>Estimated Duration</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
+      .status-overdue { color: #c62828; font-weight: bold; }
+      .status-planned { color: #1e88e5; font-weight: bold; }
+
+      .line-footer {
+        margin: 8px 0 12px;
+        padding-top: 4px;
+        border-top: 1px dashed #d6d6d6;
+        font-size: 11px;
+        color: #666;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+
+    <h2>Maintenance Status Report</h2>
+
+    <div class="meta">
+      Date: ${new Date().toLocaleDateString("el-GR")}<br>
+      Period: ${from} → ${to}<br>
+      Line: ${lineFilter.toUpperCase()}<br>
+      Status: ${status.toUpperCase()}<br>
+      <strong>Tasks: ${tasks.length}</strong>
+      ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
+    </div>
   `;
 
-  tasks.forEach(t => {
-    const due = new Date(t.due_date);
-    const isOverdue = due < new Date() && t.status !== "Done";
-    const durLabel = formatDuration(t.duration_min);
+  let currentLine = null;
+  let currentAsset = null;
+  let lineMinutes = 0;
+
+  sorted.forEach(t => {
+    const line = t.line_code || t.line || "—";
+    const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
+
+    // 🟦 NEW LINE
+    if (line !== currentLine) {
+      if (currentLine !== null) {
+        html += `
+          <div class="line-footer">
+            LINE total duration: ${formatDuration(lineMinutes)}
+          </div>
+        `;
+      }
+
+      html += `<h3>LINE ${line}</h3>`;
+      currentLine = line;
+      currentAsset = null;
+      lineMinutes = 0;
+    }
+
+    // 🟨 NEW ASSET
+    if (assetKey !== currentAsset) {
+      html += `
+        <h4>
+          ${t.machine_name}
+          <span class="sn">SN: ${t.serial_number || "-"}</span>
+        </h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Type</th>
+              <th>Due Date</th>
+              <th>Duration</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      currentAsset = assetKey;
+    }
+
+    if (t.duration_min != null) {
+      lineMinutes += Number(t.duration_min);
+    }
+
+    const isOverdue =
+      t.status !== "Done" &&
+      t.due_date &&
+      new Date(t.due_date) < new Date();
 
     html += `
       <tr>
-        <td>
-          ${t.machine_name}<br>
-          <span class="sn">${t.serial_number || ""}</span>
-        </td>
-        <td>${t.section || "-"}</td>
-        <td>${t.unit || "-"}</td>
         <td>${t.task}</td>
         <td>${t.type || "-"}</td>
-        <td>${due.toLocaleDateString("el-GR")}</td>
-        <td>${durLabel}</td>
+        <td>${formatDate(t.due_date)}</td>
+        <td>${formatDuration(t.duration_min)}</td>
         <td class="${isOverdue ? "status-overdue" : "status-planned"}">
           ${isOverdue ? "Overdue" : "Planned"}
         </td>
@@ -102,14 +156,21 @@ function generateStatusReportPdf() {
     `;
   });
 
+  // 🔚 LAST LINE FOOTER
   html += `
         </tbody>
       </table>
-    </body>
-    </html>
+      <div class="line-footer">
+        LINE total duration: ${formatDuration(lineMinutes)}
+      </div>
   `;
 
-  // Hidden iframe print
+  html += `
+  </body>
+  </html>
+  `;
+
+  // 🔹 PRINT VIA IFRAME (SAFE)
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.width = "0";
@@ -130,8 +191,9 @@ function generateStatusReportPdf() {
   }, 1000);
 }
 
+
 /* =====================
-   COMPLETED REPORT – PDF
+   COMPLETED REPORT – PDF (SORTED BY LINE)
 ===================== */
 function generateCompletedReportPdf() {
 
@@ -143,29 +205,70 @@ function generateCompletedReportPdf() {
     return;
   }
 
+  const from = document.getElementById("dateFrom")?.value || "—";
+  const to = document.getElementById("dateTo")?.value || "—";
+  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
+
+  // 🔽 SORT: LINE → DATE → TECHNICIAN
+  const sorted = [...data].sort((a, b) => {
+    const la = (a.line || "").toString();
+    const lb = (b.line || "").toString();
+    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+
+    const da = new Date(a.executed_at || 0);
+    const db = new Date(b.executed_at || 0);
+    if (da.getTime() !== db.getTime()) return da - db;
+
+    return (a.executed_by || "").localeCompare(b.executed_by || "");
+  });
+
+  // 📊 TOTAL INFO
+  const totalTasks = sorted.length;
+  const totalTechs = Object.keys(totalsByTech).length;
+  const totalLines = new Set(sorted.map(e => e.line)).size;
+
   let html = `
     <html>
     <head>
       <title>Completed Tasks Report</title>
       <style>
-        body { font-family: Arial, sans-serif; }
+        @page { size: A4; margin: 15mm; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
+
         h2 { margin-bottom: 6px; }
-        h3 { margin: 12px 0 6px; }
-        .meta { font-size: 12px; margin-bottom: 12px; color: #555; }
-        table { width: 100%; border-collapse: collapse; }
+        h3 { margin: 14px 0 6px; }
+        .meta { font-size: 12px; margin-bottom: 14px; color: #555; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         th, td {
-          border: 1px solid #999;
+          border: 1px solid #ddd;
           padding: 6px 8px;
           font-size: 12px;
+          vertical-align: top;
         }
         th { background: #eee; }
+
         /* COLUMN WIDTHS */
         th.col-date, td.col-date { width: 10%; }
         th.col-line, td.col-line { width: 7%; }
-        th.col-machine, td.col-machine { width: 12%; }
-        th.col-secunit, td.col-secunit { width: 22%; }
-        th.col-task, td.col-task { width: 32%; }
+        th.col-machine, td.col-machine { width: 14%; }
+        th.col-secunit, td.col-secunit { width: 20%; }
+        th.col-task, td.col-task { width: 29%; }
         th.col-tech, td.col-tech { width: 20%; }
+
+        .small { font-size: 11px; color: #666; }
+
+        .report-summary {
+          margin-top: 26px;
+          padding-top: 10px;
+          border-top: 1px solid #e0e0e0;
+          font-size: 11px;
+          color: #555;
+        }
+
+        .report-summary strong {
+          color: #111;
+        }
       </style>
     </head>
     <body>
@@ -173,19 +276,16 @@ function generateCompletedReportPdf() {
       <h2>Completed Tasks Report</h2>
 
       <div class="meta">
-        Period:
-        ${document.getElementById("dateFrom")?.value || "—"}
-        →
-        ${document.getElementById("dateTo")?.value || "—"}<br>
-        Line: ${document.getElementById("reportLine")?.value.toUpperCase()}
+        Period: ${from} → ${to}<br>
+        Line: ${lineFilter.toUpperCase()}
       </div>
 
       <h3>Summary by Technician</h3>
-      <table style="margin-bottom:15px;">
+      <table>
         <thead>
           <tr>
             <th>Technician</th>
-            <th>Completed Tasks</th>
+            <th style="text-align:center;">Completed Tasks</th>
           </tr>
         </thead>
         <tbody>
@@ -202,13 +302,14 @@ function generateCompletedReportPdf() {
         </tbody>
       </table>
 
+      <h3>Completed Tasks Details</h3>
       <table>
         <thead>
           <tr>
             <th class="col-date">Date</th>
             <th class="col-line">Line</th>
             <th class="col-machine">Machine</th>
-            <th class="col-secunit">Section / Unit</th>            
+            <th class="col-secunit">Section / Unit</th>
             <th class="col-task">Task</th>
             <th class="col-tech">Technician</th>
           </tr>
@@ -216,23 +317,23 @@ function generateCompletedReportPdf() {
         <tbody>
   `;
 
-  data.forEach(e => {
+  sorted.forEach(e => {
     html += `
       <tr>
-          <td class="col-date">
-            ${new Date(e.executed_at).toLocaleDateString("el-GR")}
-          </td>
-          <td class="col-line">${e.line}</td>
-          <td class="col-machine">
-            ${e.machine}<br>
-            <small>${e.serial_number || ""}</small>
-          </td>
-          <td class="col-secunit">
-            <strong>${e.section || "-"}</strong><br>
-            <small>${e.unit || ""}</small>
-          </td>          
-          <td class="col-task">${e.task}</td>
-          <td class="col-tech">${e.executed_by || "-"}</td>   
+        <td class="col-date">
+          ${new Date(e.executed_at).toLocaleDateString("el-GR")}
+        </td>
+        <td class="col-line">${e.line}</td>
+        <td class="col-machine">
+          ${e.machine}<br>
+          <span class="small">${e.serial_number || ""}</span>
+        </td>
+        <td class="col-secunit">
+          <strong>${e.section || "-"}</strong><br>
+          <span class="small">${e.unit || ""}</span>
+        </td>
+        <td class="col-task">${e.task}</td>
+        <td class="col-tech">${e.executed_by || "-"}</td>
       </tr>
     `;
   });
@@ -240,10 +341,18 @@ function generateCompletedReportPdf() {
   html += `
         </tbody>
       </table>
+
+      <div class="report-summary">
+        <strong>Total completed tasks:</strong> ${totalTasks}<br>
+        <strong>Technicians involved:</strong> ${totalTechs}<br>
+        <strong>Lines involved:</strong> ${totalLines}
+      </div>
+
     </body>
     </html>
   `;
 
+  /* 🔹 PRINT VIA HIDDEN IFRAME */
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.width = "0";
@@ -263,6 +372,7 @@ function generateCompletedReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+
 
 /* =====================
    COMPLETED REPORT – DATA
@@ -451,29 +561,65 @@ function generateNonPlannedReportPdf() {
     return;
   }
 
-  const from = document.getElementById("dateFrom")?.value;
-  const to = document.getElementById("dateTo")?.value;
-  const line = document.getElementById("reportLine")?.value || "ALL";
+  const from = document.getElementById("dateFrom")?.value || "—";
+  const to = document.getElementById("dateTo")?.value || "—";
+  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
   const technician =
     document.getElementById("reportTechnician")?.value || "ALL";
+
+  // 🔽 SORT: LINE → ASSET → DATE
+  const sorted = [...rows].sort((a, b) => {
+    const la = (a.line || "");
+    const lb = (b.line || "");
+    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+
+    const aa = `${a.machine} ${a.serial_number || ""}`;
+    const ab = `${b.machine} ${b.serial_number || ""}`;
+    if (aa !== ab) return aa.localeCompare(ab);
+
+    return new Date(a.executed_at || 0) - new Date(b.executed_at || 0);
+  });
+
+  // 📊 TOTALS & SERVICE TIME
+  const totalBreakdowns = rows.length;
+  const totalLines = new Set(rows.map(r => r.line)).size;
+  const totalAssets = new Set(
+    rows.map(r => `${r.machine}||${r.serial_number || ""}`)
+  ).size;
+
+  const totalServiceMinutes = rows.reduce(
+    (sum, r) =>
+      r.duration_min != null ? sum + Number(r.duration_min) : sum,
+    0
+  );
+
+  const avgServiceMinutes =
+    totalServiceMinutes && totalBreakdowns
+      ? Math.round(totalServiceMinutes / totalBreakdowns)
+      : 0;
 
   let html = `
     <html>
     <head>
       <title>Non-Planned Maintenance Report</title>
       <style>
-        @page {
-          size: A4;
-          margin: 15mm;
-        }
+        @page { size: A4; margin: 15mm; }
 
         body {
           font-family: Arial, sans-serif;
           color: #111;
+          font-size: 12px;
         }
 
-        h2 {
-          margin-bottom: 6px;
+        h2 { margin-bottom: 6px; }
+        h3 {
+          margin: 16px 0 6px;
+          padding-bottom: 2px;
+          border-bottom: 2px solid #ccc;
+        }
+        h4 {
+          margin: 10px 0 4px;
+          font-size: 13px;
         }
 
         .meta {
@@ -486,10 +632,11 @@ function generateNonPlannedReportPdf() {
           width: 100%;
           border-collapse: collapse;
           font-size: 11px;
+          margin-bottom: 6px;
         }
 
         th, td {
-          border: 1px solid #999;
+          border: 1px solid #ddd;
           padding: 6px 8px;
           vertical-align: top;
         }
@@ -503,6 +650,27 @@ function generateNonPlannedReportPdf() {
           font-size: 10px;
           color: #555;
         }
+
+        .line-footer {
+          margin: 8px 0 14px;
+          padding-top: 4px;
+          border-top: 1px dashed #d6d6d6;
+          font-size: 11px;
+          color: #666;
+          text-align: right;
+        }
+
+        .report-summary {
+          margin-top: 30px;
+          padding-top: 10px;
+          border-top: 1px solid #e0e0e0;
+          font-size: 11px;
+          color: #555;
+        }
+
+        .report-summary strong {
+          color: #111;
+        }
       </style>
     </head>
     <body>
@@ -510,37 +678,63 @@ function generateNonPlannedReportPdf() {
       <h2>Non-Planned Maintenance / Breakdown Report</h2>
 
       <div class="meta">
-        Period: ${from || "—"} → ${to || "—"}<br>
-        Line: ${line}<br>
+        Period: ${from} → ${to}<br>
+        Line: ${lineFilter}<br>
         Technician: ${technician}<br>
         Generated: ${new Date().toLocaleDateString("en-GB")}
       </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th style="width:10%">Date</th>
-            <th style="width:12%">Line</th>
-            <th style="width:20%">Machine</th>
-            <th style="width:38%">Breakdown Description</th>
-            <th style="width:20%">Executed By</th>
-          </tr>
-        </thead>
-        <tbody>
   `;
 
-  rows.forEach(r => {
+  let currentLine = null;
+  let currentAsset = null;
+  let lineCount = 0;
+
+  sorted.forEach(r => {
+    const line = r.line || "—";
+    const assetKey = `${r.machine}||${r.serial_number || ""}`;
+
+    // 🟦 NEW LINE
+    if (line !== currentLine) {
+      if (currentLine !== null) {
+        html += `
+          <div class="line-footer">
+            Breakdowns in LINE: ${lineCount}
+          </div>
+        `;
+      }
+
+      html += `<h3>LINE ${line}</h3>`;
+      currentLine = line;
+      currentAsset = null;
+      lineCount = 0;
+    }
+
+    // 🟨 NEW ASSET
+    if (assetKey !== currentAsset) {
+      html += `
+        <h4>
+          ${r.machine}
+          <span class="small">SN: ${r.serial_number || "-"}</span>
+        </h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:15%">Date</th>
+              <th style="width:55%">Breakdown Description</th>
+              <th style="width:15%">Technician</th>
+              <th style="width:15%">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      currentAsset = assetKey;
+    }
+
+    lineCount++;
+
     html += `
       <tr>
         <td>${formatDateOnly(r.executed_at)}</td>
-
-        <td>${r.line || "-"}</td>
-
-        <td>
-          ${r.machine}<br>
-          <span class="small">SN: ${r.serial_number || "-"}</span>
-        </td>
-
         <td>
           <strong>${r.task}</strong><br>
           <span class="small">
@@ -549,21 +743,34 @@ function generateNonPlannedReportPdf() {
             ${r.unit || ""}
           </span>
         </td>
-
         <td>${r.executed_by || "-"}</td>
+        <td>${formatDuration(r.duration_min)}</td>
       </tr>
     `;
   });
 
+  // 🔚 LAST LINE FOOTER + SUMMARY
   html += `
         </tbody>
       </table>
+      <div class="line-footer">
+        Breakdowns in LINE: ${lineCount}
+      </div>
+
+      <div class="report-summary">
+        <strong>Total breakdowns:</strong> ${totalBreakdowns}<br>
+        <strong>Lines affected:</strong> ${totalLines}<br>
+        <strong>Assets affected:</strong> ${totalAssets}<br>
+        <strong>Total service time:</strong> ${formatDuration(totalServiceMinutes)}<br>
+        <strong>Average service time / breakdown:</strong>
+        ${avgServiceMinutes ? formatDuration(avgServiceMinutes) : "—"}
+      </div>
 
     </body>
     </html>
   `;
 
-  /* 🔹 PRINT VIA HIDDEN IFRAME (NO NEW TAB) */
+  /* 🔹 PRINT VIA HIDDEN IFRAME */
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -586,6 +793,7 @@ function generateNonPlannedReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+
 /* =====================
    OVERDUE REPORT – DATA
    (Active tasks only)
@@ -617,7 +825,7 @@ function getFilteredOverdueTasksForReport() {
   });
 }
 /* =====================
-   OVERDUE TASKS REPORT – PDF
+   OVERDUE TASKS REPORT – PDF (GROUPED BY LINE / ASSET)
 ===================== */
 
 function generateOverdueReportPdf() {
@@ -628,25 +836,50 @@ function generateOverdueReportPdf() {
     return;
   }
 
-  const line = document.getElementById("reportLine")?.value || "ALL";
+  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
+
+  // 🔽 SORT: LINE → ASSET → DUE DATE
+  const sorted = [...rows].sort((a, b) => {
+    const la = (a.line_code || "");
+    const lb = (b.line_code || "");
+    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+
+    const aa = `${a.machine_name} ${a.serial_number || ""}`;
+    const ab = `${b.machine_name} ${b.serial_number || ""}`;
+    if (aa !== ab) return aa.localeCompare(ab, "el");
+
+    return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+  });
+
+  // 📊 TOTALS
+  const totalTasks = rows.length;
+  const totalLines = new Set(rows.map(r => r.line_code)).size;
+  const totalAssets = new Set(
+    rows.map(r => `${r.machine_name}||${r.serial_number || ""}`)
+  ).size;
 
   let html = `
     <html>
     <head>
       <title>Overdue Tasks Report</title>
       <style>
-        @page {
-          size: A4;
-          margin: 15mm;
-        }
+        @page { size: A4; margin: 15mm; }
 
         body {
           font-family: Arial, sans-serif;
           color: #111;
+          font-size: 12px;
         }
 
-        h2 {
-          margin-bottom: 6px;
+        h2 { margin-bottom: 6px; }
+        h3 {
+          margin: 16px 0 6px;
+          padding-bottom: 2px;
+          border-bottom: 2px solid #ccc;
+        }
+        h4 {
+          margin: 10px 0 4px;
+          font-size: 13px;
         }
 
         .meta {
@@ -659,10 +892,11 @@ function generateOverdueReportPdf() {
           width: 100%;
           border-collapse: collapse;
           font-size: 11px;
+          margin-bottom: 6px;
         }
 
         th, td {
-          border: 1px solid #999;
+          border: 1px solid #ddd;
           padding: 6px 8px;
           vertical-align: top;
         }
@@ -676,6 +910,27 @@ function generateOverdueReportPdf() {
           font-size: 10px;
           color: #555;
         }
+
+        .line-footer {
+          margin: 8px 0 14px;
+          padding-top: 4px;
+          border-top: 1px dashed #d6d6d6;
+          font-size: 11px;
+          color: #666;
+          text-align: right;
+        }
+
+        .report-summary {
+          margin-top: 30px;
+          padding-top: 10px;
+          border-top: 1px solid #e0e0e0;
+          font-size: 11px;
+          color: #555;
+        }
+
+        .report-summary strong {
+          color: #111;
+        }
       </style>
     </head>
     <body>
@@ -683,34 +938,59 @@ function generateOverdueReportPdf() {
       <h2>Overdue Maintenance Tasks</h2>
 
       <div class="meta">
-        Line: ${line}<br>
+        Line: ${lineFilter}<br>
         Generated: ${new Date().toLocaleDateString("en-GB")}
       </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th style="width:12%">Due Date</th>
-            <th style="width:18%">Line</th>
-            <th style="width:25%">Machine</th>
-            <th style="width:45%">Task</th>
-          </tr>
-        </thead>
-        <tbody>
   `;
 
-  rows.forEach(t => {
+  let currentLine = null;
+  let currentAsset = null;
+  let lineCount = 0;
+
+  sorted.forEach(t => {
+    const line = t.line_code || "—";
+    const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
+
+    // 🟦 NEW LINE
+    if (line !== currentLine) {
+      if (currentLine !== null) {
+        html += `
+          <div class="line-footer">
+            Overdue tasks in LINE: ${lineCount}
+          </div>
+        `;
+      }
+
+      html += `<h3>LINE ${line}</h3>`;
+      currentLine = line;
+      currentAsset = null;
+      lineCount = 0;
+    }
+
+    // 🟨 NEW ASSET
+    if (assetKey !== currentAsset) {
+      html += `
+        <h4>
+          ${t.machine_name}
+          <span class="small">SN: ${t.serial_number || "-"}</span>
+        </h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%">Due Date</th>
+              <th style="width:82%">Task</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      currentAsset = assetKey;
+    }
+
+    lineCount++;
+
     html += `
       <tr>
         <td>${formatDate(t.due_date)}</td>
-
-        <td>${t.line_code}</td>
-
-        <td>
-          ${t.machine_name}<br>
-          <span class="small">SN: ${t.serial_number || "-"}</span>
-        </td>
-
         <td>
           <strong>${t.task}</strong><br>
           <span class="small">
@@ -723,9 +1003,19 @@ function generateOverdueReportPdf() {
     `;
   });
 
+  // 🔚 LAST LINE FOOTER
   html += `
         </tbody>
       </table>
+      <div class="line-footer">
+        Overdue tasks in LINE: ${lineCount}
+      </div>
+
+      <div class="report-summary">
+        <strong>Total overdue tasks:</strong> ${totalTasks}<br>
+        <strong>Lines affected:</strong> ${totalLines}<br>
+        <strong>Assets affected:</strong> ${totalAssets}
+      </div>
 
     </body>
     </html>

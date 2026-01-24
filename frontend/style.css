@@ -658,10 +658,13 @@ tbody tr:hover { background: #131520; }
   break-inside: avoid;
 }
 
-/* LINE FOOTER */
 .line-footer {
-  font-size: 12px;
-  font-weight: bold;
+  margin-top: 10px;
+  padding-top: 4px;
+  border-top: 1px dashed #bbb;   /* πιο soft */
+  font-size: 11px;               /* μικρότερο */
+  font-weight: 500;              /* όχι bold */
+  color: rgb(193, 193, 204);                   /* muted */
   text-align: right;
 }
 

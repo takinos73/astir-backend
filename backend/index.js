@@ -649,7 +649,9 @@ app.get("/executions", async (req, res) => {
         e.id,
         e.executed_at,
         e.executed_by,
-        e.updated_at,       -- 👈 ΝΕΟ
+        e.updated_at,
+        e.duration_min,      -- 👈 ΝΕΟ (SERVICE TIME)
+
         t.task,
         t.section,
         t.unit,
@@ -675,6 +677,7 @@ app.get("/executions", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 /* =====================
    UPDATE BREAKDOWN
