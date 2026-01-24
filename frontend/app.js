@@ -1576,7 +1576,7 @@ function printTask(taskId) {
   window.open(`${API}/api/tasks/${taskId}/print`, "_blank");
 }
 /* =====================
-   PRINT TASKS (WITH ESTIMATED DURATION)
+   PRINT TASKS (GROUPED BY LINE + PAGE BREAK + LINE FOOTER + FINAL SIGNATURE)
 ===================== */
 
 function printTasks() {
@@ -1587,7 +1587,19 @@ function printTasks() {
     return;
   }
 
-  // ⏱ TOTAL ESTIMATED DURATION (ONLY NOT NULL)
+  // 🔽 SORT BY ASSET LINE (PRINT ONLY – SAFE)
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const la = (a.line_code || a.line || "").toString();
+    const lb = (b.line_code || b.line || "").toString();
+
+    if (!la && !lb) return 0;
+    if (!la) return 1;
+    if (!lb) return -1;
+
+    return la.localeCompare(lb, "el", { numeric: true });
+  });
+
+  // ⏱ GRAND TOTAL
   const totalMinutes = tasks.reduce((sum, t) => {
     return t.duration_min != null ? sum + Number(t.duration_min) : sum;
   }, 0);
@@ -1610,9 +1622,11 @@ function printTasks() {
           size: A4;
           margin: 15mm;
         }
-        body { font-family: Arial, sans-serif; padding: 0; }
+        body { font-family: Arial, sans-serif; }
         h2 { margin-bottom: 5px; }
+        h3 { margin: 0 0 6px; }
         .meta { margin-bottom: 15px; font-size: 12px; color: #555; }
+
         table { width: 100%; border-collapse: collapse; }
         th, td {
           border: 1px solid #999;
@@ -1620,67 +1634,159 @@ function printTasks() {
           font-size: 12px;
         }
         th { background: #eee; }
+        thead { display: table-header-group; }
+
+        .line-break { page-break-before: always; }
+
+        /* LINE FOOTER */
+        .line-footer {
+          margin-top: 8px;
+          padding-top: 6px;
+          border-top: 2px solid #333;
+          font-size: 12px;
+          font-weight: bold;
+          text-align: right;
+        }
+
+        /* FINAL SIGNATURE (ONLY ONCE) */
+        .final-signature {
+          margin-top: 40px;
+          padding-top: 12px;
+          border-top: 2px solid #333;
+          font-size: 12px;
+
+          /* 🧷 never split */
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        .signature-row {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 30px;
+        }
+
+        .sig-box {
+          width: 45%;
+        }
+
+        .sig-line {
+          border-bottom: 1px solid #000;
+          height: 22px;
+          margin-top: 10px;
+        }
       </style>
     </head>
     <body>
       <h2>Maintenance Tasks Schedule</h2>
-        <div class="meta">
-          Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
-          Περίοδος: ${getCurrentPeriodLabel()}<br>
-          Asset: ${getAssetFilterLabel()}<br>
-          Status: <strong>${getStatusFilterLabel()}</strong><br>
-          <strong>Σύνολο εργασιών: ${tasks.length}</strong>
-          ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
-        </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Machine</th>
-            <th>Section</th>
-            <th>Unit</th>
-            <th>Task</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Due Date</th>
-            <th>Estimated Duration</th>
-            <th>✔</th>
-          </tr>
-        </thead>
-        <tbody>
+      <div class="meta">
+        Ημερομηνία: ${new Date().toLocaleDateString("el-GR")}<br>
+        Περίοδος: ${getCurrentPeriodLabel()}<br>
+        Asset: ${getAssetFilterLabel()}<br>
+        Status: <strong>${getStatusFilterLabel()}</strong><br>
+        <strong>Σύνολο εργασιών: ${tasks.length}</strong>
+        ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
+      </div>
   `;
-  tasks.forEach(t => {
-  const durLabel = formatDuration(t.duration_min);
-  html += `
-    <tr>
-      <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
-      <td>${t.section || "-"}</td>
-      <td>${t.unit || "-"}</td>
-      <td>${t.task}</td>
-      <td>${t.type || "-"}</td>
-      <td>${getDueState(t) === "overdue" ? "Overdue" :
-            getDueState(t) === "today"   ? "Today" :
-            getDueState(t) === "soon"    ? "Due Soon" :
-            "Planned"}
-      </td>
-      <td>${formatDate(t.due_date)}</td>
-      <td>${durLabel}</td>
-      <td></td>
-    </tr>
-  `;
-});
 
+  let currentLine = null;
+  let isFirstLine = true;
+  let lineMinutes = 0;
+
+  sortedTasks.forEach(t => {
+    const line = t.line_code || t.line || "—";
+
+    if (line !== currentLine) {
+      if (currentLine !== null) {
+        html += `
+            </tbody>
+          </table>
+          <div class="line-footer">
+            Σύνολο LINE: ${formatDuration(lineMinutes)}
+          </div>
+        </div>
+        `;
+      }
+
+      html += `
+        <div class="${isFirstLine ? "" : "line-break"}">
+          <h3>LINE: ${line}</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Machine</th>
+                <th>Section</th>
+                <th>Unit</th>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Estimated Duration</th>
+                <th>✔</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      currentLine = line;
+      isFirstLine = false;
+      lineMinutes = 0;
+    }
+
+    if (t.duration_min != null) {
+      lineMinutes += Number(t.duration_min);
+    }
+
+    html += `
+      <tr>
+        <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
+        <td>${t.section || "-"}</td>
+        <td>${t.unit || "-"}</td>
+        <td>${t.task}</td>
+        <td>${t.type || "-"}</td>
+        <td>${
+          getDueState(t) === "overdue" ? "Overdue" :
+          getDueState(t) === "today"   ? "Today" :
+          getDueState(t) === "soon"    ? "Due Soon" :
+          "Planned"
+        }</td>
+        <td>${formatDate(t.due_date)}</td>
+        <td>${formatDuration(t.duration_min)}</td>
+        <td></td>
+      </tr>
+    `;
+  });
+
+  // 🔚 CLOSE LAST LINE
   html += `
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+          <div class="line-footer">
+            Σύνολο LINE: ${formatDuration(lineMinutes)}
+          </div>
+        </div>
+
+        <!-- ✍️ FINAL SIGNATURE (ONCE) -->
+        <div class="final-signature">
+          <div class="signature-row">
+            <div class="sig-box">
+              Τεχνικός
+              <div class="sig-line"></div>
+            </div>
+            <div class="sig-box">
+              Υπογραφή
+              <div class="sig-line"></div>
+            </div>
+          </div>
+        </div>
+
     </body>
     </html>
   `;
 
-  // 🔹 HIDDEN IFRAME PRINT (NO NEW TAB)
+  // 🔹 HIDDEN IFRAME PRINT
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
   iframe.style.width = "0";
   iframe.style.height = "0";
   iframe.style.border = "0";
@@ -2869,6 +2975,19 @@ function renderAssetsTable() {
   tbody.appendChild(tr);
 });
 }
+// =====================
+// ASSET INDEX → OPEN ASSET VIEW (FIX)
+// =====================
+document.addEventListener("click", e => {
+  const row = e.target.closest(".clickable-asset-row");
+  if (!row) return;
+
+  const serial = row.dataset.serial;
+  if (!serial) return;
+
+  console.log("🟢 OPEN ASSET VIEW FROM ASSET INDEX", serial);
+  openAssetViewBySerial(serial);
+});
 
 /* =====================
    LOAD LINES (FOR ADD ASSET)

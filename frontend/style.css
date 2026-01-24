@@ -115,7 +115,7 @@ body {
 
 /* ❌ Modal itself should NOT scroll */
 #analyticsOverlay .modal-box {
-  max-height: 90vh;
+  max-height: 99vh;
   overflow: hidden;
 }
 
@@ -642,7 +642,45 @@ tbody tr:hover { background: #131520; }
   transform: translateY(0);
   opacity: 0.9;
 }
+/* LINE FOOTER + SIGNATURE WRAPPER */
+.line-summary {
+  margin-top: 24px;                 /* ⬆️ περισσότερο κενό */
+  padding-top: 10px;
+  border-top: 2px solid #333;
 
+  /* 🧷 CRITICAL: never split across pages */
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* LINE FOOTER */
+.line-footer {
+  font-size: 12px;
+  font-weight: bold;
+  text-align: right;
+}
+
+/* SIGNATURE AREA */
+.signature {
+  margin-top: 28px;                 /* ⬆️ πιο άνετο */
+  font-size: 12px;
+}
+
+.signature-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.sig-box {
+  width: 30%;
+}
+
+.sig-line {
+  border-bottom: 1px solid #000;
+  height: 22px;
+  margin-top: 8px;
+}
 
 /* =====================
    TASK EDIT PANEL – POLISH
@@ -1657,7 +1695,6 @@ tr.history-unplanned {
   border: 1px solid var(--border-subtle);
   text-align: left;
   pointer-events: auto;
-
   /* 🔑 default: fit content */
   overflow: visible;
 }
@@ -2503,3 +2540,30 @@ tr.history-unplanned {
   background: #2f80ed;
   color: #fff;
 }
+/* =====================
+   ANALYTICS DIVIDER + GLOW
+===================== */
+
+.analytics-section {
+  position: relative;
+  padding-top: 12px;
+  margin-top: 22px;
+}
+
+/* subtle divider line */
+.analytics-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+}
+
