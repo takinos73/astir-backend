@@ -2170,9 +2170,14 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     return;
   }
 
-  // 🕒 Estimated duration (planned only, optional)
+  /* =====================
+     DURATION HANDLING
+  ===================== */
+
   let durationMin = null;
+
   if (isPlanned) {
+    // 🕒 Planned → estimated duration (optional)
     const d = document.getElementById("nt-duration")?.value;
     if (d !== "" && d != null) {
       const n = Number(d);
@@ -2180,6 +2185,15 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
         durationMin = n;
       }
     }
+  } else {
+    // 🔥 Breakdown → actual service time (REQUIRED)
+    const d = document.getElementById("nt-breakdown-duration")?.value;
+    const n = Number(d);
+    if (!Number.isFinite(n) || n <= 0) {
+      alert("Service time (minutes) is required for breakdown tasks.");
+      return;
+    }
+    durationMin = n;
   }
 
   const payload = {
@@ -2197,7 +2211,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       ? document.getElementById("nt-due")?.value
       : new Date().toISOString(),
 
-    duration_min: durationMin, // ✅ NEW
+    duration_min: durationMin, // ✅ PLANNED = estimated | UNPLANNED = actual
 
     // 🔥 Technician for unplanned history
     executed_by: technician
@@ -2231,6 +2245,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert(err.message);
   }
 });
+
 
 // =====================
 // SAVE TASK EDIT (PUT – METADATA ONLY)

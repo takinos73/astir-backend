@@ -181,22 +181,24 @@ app.post("/tasks", async (req, res) => {
 
     const newTask = taskRes.rows[0];
 
-    // 2️⃣ 🔥 IF UNPLANNED → write directly to HISTORY
-    if (is_planned === false) {
-      await client.query(
-        `
-        INSERT INTO task_executions
-          (task_id, asset_id, executed_by, executed_at)
-        VALUES
-          ($1, $2, $3, NOW())
-        `,
-        [
-          newTask.id,
-          asset_id,
-          executed_by || null
-        ]
-      );
-    }
+    // 2️⃣ 🔥 IF UNPLANNED → write directly to HISTORY (WITH SERVICE TIME)
+if (is_planned === false) {
+  await client.query(
+    `
+    INSERT INTO task_executions
+      (task_id, asset_id, executed_by, executed_at, duration_minutes)
+    VALUES
+      ($1, $2, $3, NOW(), $4)
+    `,
+    [
+      newTask.id,
+      asset_id,
+      executed_by || null,
+      duration_min ?? null   // 👈 ✅ ACTUAL SERVICE TIME
+    ]
+  );
+}
+
 
     await client.query("COMMIT");
     res.json(newTask);

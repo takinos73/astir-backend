@@ -446,15 +446,29 @@
           id="nt-type"
           placeholder="Inspection / Repair / Adjustment"
         />
-      </div>
+      </div>    
+    
+    <div class="field unplanned-only">
+      <label>Technician</label>
+      <input
+        id="nt-technician"
+        placeholder="Technician name"
+      />
+    </div>
 
-      <div class="field unplanned-only">
-        <label>Technician</label>
-        <input
-          id="nt-technician"
-          placeholder="Technician name"
-        />
-      </div>
+    <div class="field unplanned-only">
+      <label>Service Time (minutes)</label>
+      <input
+        id="nt-breakdown-duration"
+        type="number"
+        min="1"
+        step="1"
+        placeholder="e.g. 45"
+      />
+      <small class="field-hint">
+        Actual time spent resolving the breakdown
+      </small>
+    </div>
 
     </div>
 
