@@ -223,6 +223,7 @@ app.post("/tasks", async (req, res) => {
 
     await client.query("COMMIT");
     res.json(newTask);
+    console.log("POST /tasks duration_min =", duration_min);
 
   } catch (err) {
     await client.query("ROLLBACK");

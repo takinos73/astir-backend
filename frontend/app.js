@@ -2246,6 +2246,10 @@ if (isPlanned) {
   };
 
   try {
+    console.log("BREAKDOWN DURATION RAW =", document.getElementById("nt-breakdown-duration"));
+    console.log("BREAKDOWN DURATION VALUE =", document.getElementById("nt-breakdown-duration")?.value);
+    console.log("FINAL durationMin =", durationMin);
+
     const res = await fetch(`${API}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
