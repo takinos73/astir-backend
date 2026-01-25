@@ -1601,6 +1601,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 11px;
   opacity: 0.75;
 }
+/* ================================
+   Add Task – UNPLANNED FIELDS POLISH
+===================== */
+
+.addtask-grid.unplanned-only {
+  align-items: flex-start;
+}
+
+.addtask-grid.unplanned-only .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.addtask-grid.unplanned-only .field-hint {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9aa4b2;
+  line-height: 1.3;
+}
+
+/* spacing between execution fields */
+.addtask-grid.unplanned-only .field + .field {
+  margin-top: 4px;
+}
+
+/* ✅ FULL WIDTH FIELD (Breakdown Date, future fields) */
+.addtask-grid.unplanned-only .field.full-width {
+  grid-column: 1 / -1;
+}
+
 
 /* =====================
    ADD TASK – HEADER COMPACT

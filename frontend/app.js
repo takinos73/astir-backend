@@ -1647,10 +1647,7 @@ if (menu) menu.classList.remove("open");
    Planned vs Unplanned
 ===================== */
 
-const taskTypeSelect = document.getElementById("taskPlannedType");
-
-taskTypeSelect?.addEventListener("change", e => {
-  const isPlanned = e.target.value === "planned";
+function applyAddTaskTypeUI(isPlanned) {
 
   // 🔹 Title
   const title = document.getElementById("addTaskTitle");
@@ -1665,7 +1662,7 @@ taskTypeSelect?.addEventListener("change", e => {
     el.style.display = isPlanned ? "block" : "none";
   });
 
-  // 🔹 Unplanned-only fields (Technician)
+  // 🔹 Unplanned-only fields
   document.querySelectorAll(".unplanned-only").forEach(el => {
     el.style.display = isPlanned ? "none" : "block";
   });
@@ -1675,7 +1672,15 @@ taskTypeSelect?.addEventListener("change", e => {
   if (modal) {
     modal.classList.toggle("unplanned-mode", !isPlanned);
   }
+}
+
+// 🔁 Change handler
+const taskTypeSelect = document.getElementById("taskPlannedType");
+
+taskTypeSelect?.addEventListener("change", e => {
+  applyAddTaskTypeUI(e.target.value === "planned");
 });
+
 // =====================
 // OPEN ASSET VIEW BY SERIAL (FRONTEND)
 // =====================
@@ -2334,37 +2339,28 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
   const overlay = document.getElementById("addTaskOverlay");
   if (!overlay) return;
 
-  // Reset task type
+  // 🔹 Reset task type → Planned (DEFAULT)
   const typeSelect = document.getElementById("taskPlannedType");
-  if (typeSelect) typeSelect.value = "planned";
+  if (typeSelect) {
+    typeSelect.value = "planned";
+    applyAddTaskTypeUI(true); // ✅ FORCE correct UI state
+  }
 
-  // Reset title
-  const title = document.getElementById("addTaskTitle");
-  if (title) title.textContent = "New Planned Task";
-
-  // Show planned-only fields
-  document.querySelectorAll(".planned-only").forEach(el => {
-    el.style.display = "block";
-  });
-
-  // Remove unplanned visual state
-  document
-    .getElementById("addTaskModal")
-    ?.classList.remove("unplanned-mode");
-console.log("ASSETS DATA:", assetsData);
-
-  // Populate Line dropdown
+  // 🔹 Populate Line dropdown
   populateAddTaskLines();
 
-  // Reset asset dropdown
+  // 🔹 Reset asset dropdown
   const assetSel = document.getElementById("nt-asset");
   if (assetSel) {
     assetSel.innerHTML = `<option value="">Select Asset</option>`;
     assetSel.disabled = true;
   }
 
+  console.log("ASSETS DATA:", assetsData);
+
   overlay.style.display = "flex";
 });
+
 
 // =====================
 // FOLLOW-UP TASK (PREFILL FROM VIEW) — FINAL

@@ -133,7 +133,10 @@ app.post("/tasks", async (req, res) => {
     is_planned,
     status,
     executed_by,
-    duration_min            // ✅ NEW
+
+    // ⬇️ ΣΗΜΑΝΤΙΚΟ
+    duration_min,            // 👉 ESTIMATED (PLANNED ONLY)
+    execution_duration_min   // 👉 ACTUAL (BREAKDOWN ONLY)
   } = req.body;
 
   if (!asset_id || !task) {
@@ -145,7 +148,11 @@ app.post("/tasks", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1️⃣ Insert task
+    /* =====================
+       1️⃣ INSERT TASK
+       (duration_min ONLY if planned)
+    ===================== */
+
     const taskRes = await client.query(
       `
       INSERT INTO maintenance_tasks
@@ -158,7 +165,7 @@ app.post("/tasks", async (req, res) => {
           due_date,
           status,
           is_planned,
-          duration_min,        -- ✅ NEW
+          duration_min,
           notes
         )
       VALUES
@@ -174,31 +181,45 @@ app.post("/tasks", async (req, res) => {
         due_date ? new Date(due_date) : null,
         status || "Planned",
         is_planned === true,
-        duration_min ?? null,   // ✅ safe
+
+        // 🔑 ΜΟΝΟ PLANNED ΠΑΙΡΝΕΙ duration στο maintenance_tasks
+        is_planned === true ? duration_min ?? null : null,
+
         notes || null
       ]
     );
 
     const newTask = taskRes.rows[0];
 
-    // 2️⃣ 🔥 IF UNPLANNED → write directly to HISTORY (WITH SERVICE TIME)
-if (is_planned === false) {
-  await client.query(
-    `
-    INSERT INTO task_executions
-      (task_id, asset_id, executed_by, executed_at, duration_minutes)
-    VALUES
-      ($1, $2, $3, NOW(), $4)
-    `,
-    [
-      newTask.id,
-      asset_id,
-      executed_by || null,
-      duration_min ?? null   // 👈 ✅ ACTUAL SERVICE TIME
-    ]
-  );
-}
+    /* =====================
+       2️⃣ BREAKDOWN → HISTORY
+       (ACTUAL SERVICE TIME)
+    ===================== */
 
+    if (is_planned === false) {
+      await client.query(
+        `
+        INSERT INTO task_executions
+          (
+            task_id,
+            asset_id,
+            executed_by,
+            executed_at,
+            duration_minutes
+          )
+        VALUES
+          ($1, $2, $3, NOW(), $4)
+        `,
+        [
+          newTask.id,
+          asset_id,
+          executed_by || null,
+
+          // 🔥 ACTUAL SERVICE TIME (BREAKDOWN ONLY)
+          execution_duration_min ?? null
+        ]
+      );
+    }
 
     await client.query("COMMIT");
     res.json(newTask);
@@ -211,7 +232,6 @@ if (is_planned === false) {
     client.release();
   }
 });
-
 
 
 /* =====================

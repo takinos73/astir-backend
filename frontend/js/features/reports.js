@@ -207,15 +207,12 @@ if (assetKey !== currentAsset && currentAsset !== null) {
   }, 1000);
 }
 
-
 /* =====================
-   COMPLETED REPORT – PDF (SORTED BY LINE)
+   COMPLETED REPORT – PDF (SORTED BY LINE → ASSET → DATE → TECH)
 ===================== */
 function generateCompletedReportPdf() {
 
   const data = getFilteredExecutionsForReport();
-  // ✅ ΝΕΟ – ΠΑΝΩ ΣΤΟ SORTED DATASET
-
 
   if (!Array.isArray(data) || data.length === 0) {
     alert("No completed tasks found for this report");
@@ -226,28 +223,34 @@ function generateCompletedReportPdf() {
   const to = document.getElementById("dateTo")?.value || "—";
   const lineFilter = document.getElementById("reportLine")?.value || "ALL";
 
-  // 🔽 SORT: LINE → DATE → TECHNICIAN
+  // 🔽 SORT: LINE → ASSET → DATE → TECHNICIAN
   const sorted = [...data].sort((a, b) => {
+    // 1️⃣ LINE
     const la = (a.line || "").toString();
     const lb = (b.line || "").toString();
     if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
 
+    // 2️⃣ ASSET (Machine + SN)
+    const aa = `${a.machine || ""} ${a.serial_number || ""}`;
+    const ab = `${b.machine || ""} ${b.serial_number || ""}`;
+    if (aa !== ab) return aa.localeCompare(ab, "el");
+
+    // 3️⃣ DATE
     const da = new Date(a.executed_at || 0);
     const db = new Date(b.executed_at || 0);
     if (da.getTime() !== db.getTime()) return da - db;
 
+    // 4️⃣ TECHNICIAN (tie-break)
     return (a.executed_by || "").localeCompare(b.executed_by || "");
   });
-  const totalsByTech = getExecutionTotalsByTechnician(sorted);
 
-  // 📊 TOTAL INFO
+  // 📊 TOTALS (on sorted dataset)
+  const totalsByTech = getExecutionTotalsByTechnician(sorted);
   const totalTasks = sorted.length;
   const totalTechs = Object.keys(totalsByTech).length;
   const totalLines = new Set(
-  sorted
-    .map(e => e.line)
-    .filter(Boolean)
-).size;
+    sorted.map(e => e.line).filter(Boolean)
+  ).size;
 
   let html = `
     <html>
@@ -270,7 +273,6 @@ function generateCompletedReportPdf() {
         }
         th { background: #eee; }
 
-        /* COLUMN WIDTHS */
         th.col-date, td.col-date { width: 10%; }
         th.col-line, td.col-line { width: 7%; }
         th.col-machine, td.col-machine { width: 14%; }
@@ -312,7 +314,7 @@ function generateCompletedReportPdf() {
         </thead>
         <tbody>
           ${Object.entries(totalsByTech)
-            .sort((a, b) => b[1] - a[1]) // περισσότερα tasks πρώτα
+            .sort((a, b) => b[1] - a[1])
             .map(
               ([tech, count]) => `
                 <tr>
@@ -321,9 +323,7 @@ function generateCompletedReportPdf() {
                 </tr>
               `
             )
-            .join("")
-          }
-
+            .join("")}
         </tbody>
       </table>
 
@@ -345,9 +345,7 @@ function generateCompletedReportPdf() {
   sorted.forEach(e => {
     html += `
       <tr>
-        <td class="col-date">
-          ${new Date(e.executed_at).toLocaleDateString("el-GR")}
-        </td>
+        <td class="col-date">${new Date(e.executed_at).toLocaleDateString("el-GR")}</td>
         <td class="col-line">${e.line}</td>
         <td class="col-machine">
           ${e.machine}<br>
@@ -377,7 +375,6 @@ function generateCompletedReportPdf() {
     </html>
   `;
 
-  /* 🔹 PRINT VIA HIDDEN IFRAME */
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.width = "0";
@@ -393,11 +390,8 @@ function generateCompletedReportPdf() {
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
 
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  setTimeout(() => document.body.removeChild(iframe), 1000);
 }
-
 
 /* =====================
    COMPLETED REPORT – DATA

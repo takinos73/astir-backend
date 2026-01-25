@@ -428,54 +428,70 @@
     </div>
 
     <!-- =====================
-         TASK DEFINITION
-    ====================== -->
-    <div class="addtask-block">
-      <label>Task Description</label>
-      <input
-        id="nt-task"
-        placeholder="Describe the maintenance task"
-      />
-    </div>
+     TASK DEFINITION
+===================== -->
+<div class="addtask-block">
+  <label>Task Description</label>
+  <input
+    id="nt-task"
+    placeholder="Describe the maintenance task"
+  />
+</div>
 
+    <!-- =====================
+        TASK TYPE
+    ===================== -->
     <div class="addtask-block addtask-grid">
-
       <div class="field">
         <label>Task Type</label>
         <input
           id="nt-type"
           placeholder="Inspection / Repair / Adjustment"
         />
-      </div>    
-    
-    <div class="field unplanned-only">
-      <label>Technician</label>
-      <input
-        id="nt-technician"
-        placeholder="Technician name"
-      />
-    </div>
-
-    <div class="field unplanned-only">
-      <label>Service Time (minutes)</label>
-      <input
-        id="nt-breakdown-duration"
-        type="number"
-        min="1"
-        step="1"
-        placeholder="e.g. 45"
-      />
-      <small class="field-hint">
-        Actual time spent resolving the breakdown
-      </small>
-    </div>
-
+      </div>
     </div>
 
     <!-- =====================
-     SCHEDULING (PLANNED)
+        EXECUTION (UNPLANNED / BREAKDOWN)
     ===================== -->
-    <div class="addtask-block addtask-grid planned-only"> <!-- -->
+    <div class="addtask-block addtask-grid unplanned-only">
+
+      <div class="field">
+        <label>Technician</label>
+        <input
+          id="nt-technician"
+          placeholder="Technician name"
+        />
+      </div>
+
+      <div class="field">
+        <label>Service Time (minutes)</label>
+        <input
+          id="nt-breakdown-duration"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 45"
+        />
+        <small class="field-hint">
+          Actual time spent resolving the breakdown
+        </small>
+      </div>
+
+      <!-- ✅ FULL WIDTH – WORKS NOW -->
+      <div class="field full-width">
+        <label>Breakdown Date</label>
+        <input
+          id="nt-breakdown-date"
+          type="date"
+        />
+      </div>
+    </div>
+
+    <!-- =====================
+        SCHEDULING (PLANNED)
+    ===================== -->
+    <div class="addtask-block addtask-grid planned-only">
 
       <div class="field">
         <label>Due Date</label>
@@ -493,16 +509,17 @@
           min="1"
           step="1"
           placeholder="e.g. 30"
-      />
-    <small class="field-hint">
-      Used for planning & workload KPIs
-    </small>
-  </div>
-</div>
+        />
+        <small class="field-hint">
+          Used for planning & workload KPIs
+        </small>
+      </div>
+
+    </div>
 
     <!-- =====================
-         NOTES
-    ====================== -->
+        NOTES
+    ===================== -->
     <div class="addtask-block">
       <label>Notes</label>
       <textarea
