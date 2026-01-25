@@ -2199,25 +2199,30 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   let durationMin = null;
 
-  if (isPlanned) {
-    // 🕒 Planned → estimated duration (optional)
-    const d = document.getElementById("nt-duration")?.value;
-    if (d !== "" && d != null) {
-      const n = Number(d);
-      if (Number.isFinite(n) && n > 0) {
-        durationMin = n;
-      }
-    }
-  } else {
-    // 🔥 Breakdown → actual service time (REQUIRED)
-    const d = document.getElementById("nt-breakdown-duration")?.value;
-    const n = Number(d);
-    if (!Number.isFinite(n) || n <= 0) {
-      alert("Service time (minutes) is required for breakdown tasks.");
-      return;
-    }
+if (isPlanned) {
+  const d = document.getElementById("nt-duration")?.value;
+  const n = Number(d);
+  if (Number.isFinite(n) && n > 0) {
     durationMin = n;
   }
+} else {
+  const input = document.getElementById("nt-breakdown-duration");
+
+  if (!input) {
+    alert("Internal error: breakdown duration field not found");
+    return;
+  }
+
+  const n = Number(input.value);
+
+  if (!Number.isFinite(n) || n <= 0) {
+    alert("Service time (minutes) is required for breakdown tasks.");
+    input.focus();
+    return;
+  }
+
+  durationMin = n;
+}
 
   const payload = {
     asset_id: assetId,
