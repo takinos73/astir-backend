@@ -210,7 +210,7 @@ app.post("/tasks", async (req, res) => {
             duration_minutes
           )
         VALUES
-          ($1, $2, $3, NOW(), $4)
+          ($1, $2, $3, $4, $5)
         `,
         [
           newTask.id,
