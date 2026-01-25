@@ -215,7 +215,7 @@ function generateCompletedReportPdf() {
 
   const data = getFilteredExecutionsForReport();
   // ✅ ΝΕΟ – ΠΑΝΩ ΣΤΟ SORTED DATASET
-const totalsByTech = getExecutionTotalsByTechnician(sorted);
+
 
   if (!Array.isArray(data) || data.length === 0) {
     alert("No completed tasks found for this report");
@@ -238,6 +238,7 @@ const totalsByTech = getExecutionTotalsByTechnician(sorted);
 
     return (a.executed_by || "").localeCompare(b.executed_by || "");
   });
+  const totalsByTech = getExecutionTotalsByTechnician(sorted);
 
   // 📊 TOTAL INFO
   const totalTasks = sorted.length;
