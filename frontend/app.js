@@ -2079,6 +2079,17 @@ function renderAssetHistoryTable(history) {
   history.forEach(e => {
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
+        // 👇 👇 👇 CLASSIFICATION / COLOR LOGIC
+          if (e.is_planned === false) {
+        // 🔴 Breakdown / Unplanned
+          tr.classList.add("history-breakdown");
+      } else if (e.is_planned === true && e.frequency_hours == null) {
+        // 🟡 Planned (Manual)
+          tr.classList.add("history-planned");
+      } else if (e.is_planned === true && e.frequency_hours != null) {
+        // 🟢 Preventive
+          tr.classList.add("history-preventive");
+      }
 
     tr.innerHTML = `
       <td>${formatDate(e.executed_at)}</td>
@@ -2100,8 +2111,6 @@ function renderAssetHistoryTable(history) {
   // 🔥 Ανοίγουμε History modal
   viewHistoryEntry(e.id);
 };
-
-
     tbody.appendChild(tr);
   });
 
@@ -2109,7 +2118,6 @@ function renderAssetHistoryTable(history) {
   historyWrap.offsetHeight;
   tbody.offsetHeight;
 }
-
 
 // =====================
 // CLOSE
