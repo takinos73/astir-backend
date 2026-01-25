@@ -2225,21 +2225,34 @@ if (isPlanned) {
 }
 
   const payload = {
-    asset_id: assetId,
-    section: document.getElementById("nt-section")?.value || null,
-    unit: document.getElementById("nt-unit")?.value || null,
-    task: taskDesc,
-    type: document.getElementById("nt-type")?.value || null,
-    notes: document.getElementById("nt-notes")?.value || null,
+  asset_id: assetId,
+  section: document.getElementById("nt-section")?.value || null,
+  unit: document.getElementById("nt-unit")?.value || null,
+  task: taskDesc,
+  type: document.getElementById("nt-type")?.value || null,
+  notes: document.getElementById("nt-notes")?.value || null,
 
-    is_planned: isPlanned,
+  is_planned: isPlanned,
   status: isPlanned ? "Planned" : "Done",
 
-  // ⬇️ μόνο για planned
+  // 🗓️ Planned → due date | Breakdown → execution date
+  due_date: isPlanned
+    ? document.getElementById("nt-due")?.value
+    : null,
+
+  /* =====================
+     DURATION & EXECUTION
+  ===================== */
+
+  // ⏱️ Estimated (planned)
   duration_min: isPlanned ? durationMin : null,
 
-  // ⬇️ μόνο για breakdown
+  // 🔥 Breakdown ONLY
   execution_duration_min: !isPlanned ? durationMin : null,
+
+  execution_date: !isPlanned
+    ? document.getElementById("nt-breakdown-date")?.value || null
+    : null,
 
   executed_by: technician
 };

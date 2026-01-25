@@ -194,36 +194,41 @@ app.post("/tasks", async (req, res) => {
     const newTask = taskRes.rows[0];
 
     /* =====================
-       2️⃣ BREAKDOWN → HISTORY
-       (ACTUAL SERVICE TIME)
-    ===================== */
+   2️⃣ BREAKDOWN → HISTORY
+   (ACTUAL SERVICE TIME + EXECUTION DATE)
+===================== */
 
-    if (is_planned === false) {
-      await client.query(
-        `
-        INSERT INTO task_executions
-          (
-            task_id,
-            asset_id,
-            executed_by,
-            executed_at,
-            duration_minutes
-          )
-        VALUES
-          ($1, $2, $3, $4, $5)
-        `,
-        [
-          newTask.id,
-          asset_id,
-          executed_by || null,
+if (is_planned === false) {
+  await client.query(
+    `
+    INSERT INTO task_executions
+      (
+        task_id,
+        asset_id,
+        executed_by,
+        executed_at,
+        duration_minutes
+      )
+    VALUES
+      ($1, $2, $3, $4, $5)
+    `,
+    [
+      newTask.id,
+      asset_id,
+      executed_by || null,
 
-          // 🔥 ACTUAL SERVICE TIME (BREAKDOWN ONLY)
-          Number.isFinite(Number(execution_duration_min))
-            ? Number(execution_duration_min)
-            : null
-        ]
-      );
-    }
+      // 🗓️ Breakdown Date (from frontend or fallback NOW)
+      req.body.execution_date
+        ? new Date(req.body.execution_date)
+        : new Date(),
+
+      // 🔥 ACTUAL SERVICE TIME
+      Number.isFinite(Number(execution_duration_min))
+        ? Number(execution_duration_min)
+        : null
+    ]
+  );
+}
 
     await client.query("COMMIT");
 
