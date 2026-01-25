@@ -96,6 +96,15 @@ function generateStatusReportPdf() {
     const line = t.line_code || t.line || "—";
     const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
 
+    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
+if (line !== currentLine && currentAsset !== null) {
+  html += `
+        </tbody>
+      </table>
+  `;
+  currentAsset = null;
+}
+
     // 🟦 NEW LINE
     if (line !== currentLine) {
       if (currentLine !== null) {
@@ -111,6 +120,13 @@ function generateStatusReportPdf() {
       currentAsset = null;
       lineMinutes = 0;
     }
+    // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
+if (assetKey !== currentAsset && currentAsset !== null) {
+  html += `
+        </tbody>
+      </table>
+  `;
+}
 
     // 🟨 NEW ASSET
     if (assetKey !== currentAsset) {
@@ -198,7 +214,8 @@ function generateStatusReportPdf() {
 function generateCompletedReportPdf() {
 
   const data = getFilteredExecutionsForReport();
-  const totalsByTech = getExecutionTotalsByTechnician(data);
+  // ✅ ΝΕΟ – ΠΑΝΩ ΣΤΟ SORTED DATASET
+const totalsByTech = getExecutionTotalsByTechnician(sorted);
 
   if (!Array.isArray(data) || data.length === 0) {
     alert("No completed tasks found for this report");
@@ -225,7 +242,11 @@ function generateCompletedReportPdf() {
   // 📊 TOTAL INFO
   const totalTasks = sorted.length;
   const totalTechs = Object.keys(totalsByTech).length;
-  const totalLines = new Set(sorted.map(e => e.line)).size;
+  const totalLines = new Set(
+  sorted
+    .map(e => e.line)
+    .filter(Boolean)
+).size;
 
   let html = `
     <html>
@@ -290,6 +311,7 @@ function generateCompletedReportPdf() {
         </thead>
         <tbody>
           ${Object.entries(totalsByTech)
+            .sort((a, b) => b[1] - a[1]) // περισσότερα tasks πρώτα
             .map(
               ([tech, count]) => `
                 <tr>
@@ -298,7 +320,9 @@ function generateCompletedReportPdf() {
                 </tr>
               `
             )
-            .join("")}
+            .join("")
+          }
+
         </tbody>
       </table>
 
@@ -455,6 +479,9 @@ document.getElementById("generatePdfBtn")
         generateNonPlannedReportPdf();
         break;
 
+        case "kpi": // ✅ NEW
+        generateKpiReportPdf();
+        break;
 
       default:
         alert(`Report type "${type}" is not implemented yet.`);
@@ -692,6 +719,14 @@ function generateNonPlannedReportPdf() {
   sorted.forEach(r => {
     const line = r.line || "—";
     const assetKey = `${r.machine}||${r.serial_number || ""}`;
+    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
+    if (line !== currentLine && currentAsset !== null) {
+      html += `
+            </tbody>
+          </table>
+      `;
+      currentAsset = null;
+}
 
     // 🟦 NEW LINE
     if (line !== currentLine) {
@@ -707,6 +742,13 @@ function generateNonPlannedReportPdf() {
       currentLine = line;
       currentAsset = null;
       lineCount = 0;
+    }
+      // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
+    if (assetKey !== currentAsset && currentAsset !== null) {
+      html += `
+            </tbody>
+          </table>
+      `;
     }
 
     // 🟨 NEW ASSET
@@ -950,6 +992,15 @@ function generateOverdueReportPdf() {
   sorted.forEach(t => {
     const line = t.line_code || "—";
     const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
+    
+    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
+    if (line !== currentLine && currentAsset !== null) {
+      html += `
+            </tbody>
+          </table>
+      `;
+      currentAsset = null;
+    }
 
     // 🟦 NEW LINE
     if (line !== currentLine) {
@@ -965,6 +1016,13 @@ function generateOverdueReportPdf() {
       currentLine = line;
       currentAsset = null;
       lineCount = 0;
+    }
+    // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
+    if (assetKey !== currentAsset && currentAsset !== null) {
+      html += `
+            </tbody>
+          </table>
+      `;
     }
 
     // 🟨 NEW ASSET
@@ -1044,3 +1102,398 @@ function generateOverdueReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+/* =====================
+   KPI REPORT – PRINT (1 PAGE)
+   Uses: tasksData, executionsData, formatDuration()
+   Filters: #dateFrom, #dateTo, #reportLine
+===================== */
+function generateKpiReportPdf() {
+  // --------- INPUTS ----------
+  const fromVal = document.getElementById("dateFrom")?.value || "";
+  const toVal = document.getElementById("dateTo")?.value || "";
+  const lineSel = (document.getElementById("reportLine")?.value || "all").toString();
+
+  const fromDate = fromVal ? new Date(fromVal) : null;
+  const toDate = toVal ? new Date(toVal) : null;
+  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // --------- SAFE HELPERS ----------
+  const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const safe = (v) => (v == null || v === "" ? "—" : String(v));
+  const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
+
+  const inRange = (d) => {
+    if (!d) return false;
+    const x = new Date(d);
+    if (fromDate && x < fromDate) return false;
+    if (toDate && x > toDate) return false;
+    return true;
+  };
+
+  const sameLine = (row) => {
+    if (!row) return false;
+    if (lineSel === "all") return true;
+    const l = (row.line_code || row.line || "").toString();
+    return l === lineSel;
+  };
+
+  const isPreventiveRow = (row) =>
+    row && row.frequency_hours != null && safeNum(row.frequency_hours) > 0;
+
+  const isBreakdownExec = (row) =>
+    row && row.is_planned === false;
+
+  const getExecType = (e) => {
+    if (isBreakdownExec(e)) return "breakdown";
+    if (isPreventiveRow(e)) return "preventive";
+    return "planned";
+  };
+
+  // --------- DATASETS ----------
+  const allTasks = Array.isArray(tasksData) ? tasksData : [];
+  const allExec = Array.isArray(executionsData) ? executionsData : [];
+
+  // Tasks scoped (for overdue + due-in-period)
+  const scopedTasks = allTasks.filter(t => sameLine(t));
+  const activeTasksWithDue = scopedTasks.filter(t => t.status !== "Done" && !!t.due_date);
+
+  const overdueTasks = activeTasksWithDue.filter(t => {
+    const due = new Date(t.due_date);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
+  });
+
+  // Preventive Due in period (from tasks)
+  const preventiveDue = scopedTasks.filter(t =>
+    t.status !== "Done" &&
+    isPreventiveRow(t) &&
+    !!t.due_date &&
+    inRange(t.due_date)
+  );
+
+  // Executions scoped + period
+  const scopedExecPeriod = allExec
+    .filter(e => {
+      if (lineSel === "all") return true;
+      return (e.line || "").toString() === lineSel;
+    })
+    .filter(e => inRange(e.executed_at));
+
+  if (scopedExecPeriod.length === 0 && activeTasksWithDue.length === 0) {
+    alert("No KPI data found for selected criteria");
+    return;
+  }
+
+  // Completed preventive in period (from executions)
+  const preventiveCompleted = scopedExecPeriod.filter(e => getExecType(e) === "preventive");
+
+  // Mix (period)
+  const breakdownExec = scopedExecPeriod.filter(e => getExecType(e) === "breakdown");
+  const plannedExec = scopedExecPeriod.filter(e => getExecType(e) === "planned");
+
+  // Service time (period) from executions.duration_min
+  const totalServiceMin = scopedExecPeriod.reduce((sum, e) => sum + safeNum(e.duration_min), 0);
+  const avgServiceMin = scopedExecPeriod.length ? Math.round(totalServiceMin / scopedExecPeriod.length) : 0;
+
+  // Top line impact (ONLY meaningful when scope=ALL)
+  let topLine = "—";
+  let topLineMin = 0;
+  if (lineSel === "all") {
+    const map = new Map(); // line -> minutes
+    scopedExecPeriod.forEach(e => {
+      const l = (e.line || "—").toString();
+      map.set(l, (map.get(l) || 0) + safeNum(e.duration_min));
+    });
+    for (const [l, m] of map.entries()) {
+      if (m > topLineMin) {
+        topLineMin = m;
+        topLine = l;
+      }
+    }
+  } else {
+    topLine = lineSel.toUpperCase();
+    topLineMin = totalServiceMin;
+  }
+
+  // KPIs
+  const overdueCount = overdueTasks.length;
+  const overdueRate = pct(overdueCount, activeTasksWithDue.length);
+
+  const prevDueCount = preventiveDue.length;
+  const prevCompletedCount = preventiveCompleted.length;
+  const prevCompliance = pct(prevCompletedCount, prevDueCount);
+
+  const execTotal = scopedExecPeriod.length;
+  const breakdownCount = breakdownExec.length;
+
+  const prevPct = pct(prevCompletedCount, execTotal);
+  const plannedPct = pct(plannedExec.length, execTotal);
+  const breakdownPct = pct(breakdownCount, execTotal);
+
+  // Insights (max 3)
+  const insights = [];
+  if (prevDueCount > 0 && prevCompliance < 90) {
+    insights.push(`Preventive compliance below target (${prevCompliance}%).`);
+  }
+  if (overdueRate >= 10) {
+    insights.push(`Overdue rate is ${overdueRate}%, review scheduling & staffing.`);
+  }
+  if (breakdownPct >= 25) {
+    insights.push(`Breakdown ratio is high (${breakdownPct}%) — consider RCA / preventive reinforcement.`);
+  }
+  // top-line share insight (only for ALL)
+  if (lineSel === "all" && totalServiceMin > 0 && topLineMin > 0) {
+    const share = pct(topLineMin, totalServiceMin);
+    if (share >= 35) insights.push(`Line ${topLine} accounts for ${share}% of service time.`);
+  }
+  const finalInsights = insights.slice(0, 3);
+
+  const periodLabel =
+    fromVal || toVal ? `${fromVal || "—"} → ${toVal || "—"}` : "ALL";
+
+  const scopeLabel = lineSel === "all" ? "ALL LINES" : `LINE ${lineSel.toUpperCase()}`;
+
+  // --------- HTML ----------
+  const html = `
+<html>
+<head>
+  <title>Maintenance KPI Report</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+
+    body {
+      font-family: Arial, sans-serif;
+      color: #111;
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 6px;
+      letter-spacing: .2px;
+    }
+
+    .meta {
+      color: #555;
+      font-size: 11px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      border: 1px solid #d6d6d6;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .kpi-title {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .kpi-sub {
+      margin-top: 6px;
+      color: #444;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .label { color: #666; }
+    .value { font-weight: 700; }
+
+    .mix {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .divider {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #cfcfcf;
+    }
+
+    .insights {
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .insights h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .insights ul {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .footer {
+      margin-top: 10px;
+      color: #777;
+      font-size: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-top: 1px solid #d9d9d9;
+      padding-top: 8px;
+    }
+
+    .end-divider {
+      margin-top: 8px;
+      text-align: center;
+      color: #8a8a8a;
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Maintenance KPI Report</h1>
+  <div class="meta">
+    <div><strong>Period:</strong> ${periodLabel}</div>
+    <div><strong>Scope:</strong> ${scopeLabel}</div>
+    <div><strong>Generated:</strong> ${new Date().toLocaleDateString("el-GR")}</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="kpi-title">Overdue Performance</div>
+      <div class="kpi-value">${overdueCount}</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Overdue rate</span><span class="value">${overdueRate}%</span></div>
+        <div class="row"><span class="label">Active tasks (with due)</span><span class="value">${activeTasksWithDue.length}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-title">Preventive Compliance</div>
+      <div class="kpi-value">${prevCompliance}%</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Preventive due (period)</span><span class="value">${prevDueCount}</span></div>
+        <div class="row"><span class="label">Preventive completed</span><span class="value">${prevCompletedCount}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-title">Maintenance Mix</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Preventive</span><span class="value">${prevPct}%</span></div>
+        <div class="row"><span class="label">Planned (manual)</span><span class="value">${plannedPct}%</span></div>
+        <div class="row"><span class="label">Breakdown</span><span class="value">${breakdownPct}%</span></div>
+      </div>
+      <div class="divider kpi-sub">
+        <div class="row"><span class="label">Executions (period)</span><span class="value">${execTotal}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-title">Service Time</div>
+      <div class="kpi-value">${formatDuration(totalServiceMin)}</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Average per execution</span><span class="value">${avgServiceMin} min</span></div>
+        <div class="row"><span class="label">Data source</span><span class="value">executions.duration_min</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-title">Top Line Impact</div>
+      <div class="kpi-value">${safe(topLine)}</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Service time</span><span class="value">${formatDuration(topLineMin)}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-title">Execution Volume</div>
+      <div class="kpi-value">${execTotal}</div>
+      <div class="kpi-sub">
+        <div class="row"><span class="label">Breakdowns</span><span class="value">${breakdownCount}</span></div>
+        <div class="row"><span class="label">Non-breakdown</span><span class="value">${execTotal - breakdownCount}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insights">
+    <h3>Insights</h3>
+    ${
+      finalInsights.length
+        ? `<ul>${finalInsights.map(x => `<li>${x}</li>`).join("")}</ul>`
+        : `<div style="color:#666;">No notable exceptions detected for the selected scope.</div>`
+    }
+  </div>
+
+  <div class="footer">
+    <div>ASTIR CMMS • KPI Report</div>
+    <div>${scopeLabel}</div>
+  </div>
+
+  <div class="end-divider">End of Report</div>
+
+</body>
+</html>
+`;
+
+  // --------- PRINT VIA HIDDEN IFRAME (no new tab) ----------
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
+
