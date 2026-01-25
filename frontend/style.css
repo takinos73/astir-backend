@@ -1816,9 +1816,13 @@ tr.history-unplanned {
    ASSET VIEW – MODAL LAYOUT
 ===================== */
 
+/* Asset View (base layer) */
+#assetViewOverlay {
+  z-index: 1000;
+}
 /* ⛔ ΜΗΝ κάνει scroll όλο το modal */
 #assetViewOverlay .modal-box {
-  max-height: 90vh;
+  max-height: 90vh;  
   overflow: hidden;
 }
 
@@ -1826,6 +1830,10 @@ tr.history-unplanned {
 #assetViewOverlay .modal-box.asset-view {
   max-width: 900px;   /* adjust 1000–1300 αν θες */
   width: 100vw;
+}
+/* History / Execution modal (above Asset View) */
+#historyViewOverlay {
+  z-index: 1100;
 }
 
 

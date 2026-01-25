@@ -638,6 +638,7 @@ function viewHistoryEntry(executionId) {
 
   document.getElementById("historyViewOverlay").style.display = "flex";
 }
+
 function closeHistoryView() {
   document.getElementById("historyViewOverlay").style.display = "none";
 }
@@ -2048,7 +2049,7 @@ function bindAssetKpiFilters() {
 }
 
 // =====================
-// ASSET HISTORY TABLE (EXECUTIONS) – BULLETPROOF
+// ASSET HISTORY TABLE (EXECUTIONS) – TASK VIEW INTEGRATED
 // =====================
 function renderAssetHistoryTable(history) {
   const tasksWrap = document.querySelector(".asset-tasks-table");
@@ -2085,13 +2086,21 @@ function renderAssetHistoryTable(history) {
       <td>${e.type || "-"}</td>
       <td>${e.executed_by || "-"}</td>
       <td>${e.notes || "-"}</td>
-      <td><button class="btn-secondary btn-sm">View</button></td>
+      <td>
+        <button class="btn-secondary btn-sm">View</button>
+      </td>
     `;
 
     tr.querySelector("button").onclick = ev => {
-      ev.stopPropagation();
-      openHistoryView(e.id);
-    };
+  ev.stopPropagation();
+
+  // 🔒 Κλείνουμε AssetView ΜΟΝΟ εδώ
+  //document.getElementById("assetViewOverlay").style.display = "none";
+
+  // 🔥 Ανοίγουμε History modal
+  viewHistoryEntry(e.id);
+};
+
 
     tbody.appendChild(tr);
   });
@@ -2100,6 +2109,7 @@ function renderAssetHistoryTable(history) {
   historyWrap.offsetHeight;
   tbody.offsetHeight;
 }
+
 
 // =====================
 // CLOSE
