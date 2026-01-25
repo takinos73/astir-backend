@@ -615,8 +615,6 @@ app.post("/executions/:id/undo", async (req, res) => {
   }
 });
 
-
-
 // Undo to planned
 app.patch("/tasks/:id/undo", async (req, res) => {
   try {

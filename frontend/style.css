@@ -2585,11 +2585,13 @@ tr.history-unplanned {
 .task-type-btn.planned.active {
   background: #f2c94c;
   color: #000;
+  border-radius: 3px;
 }
 
 .task-type-btn.preventive.active {
   background: #2f80ed;
   color: #fff;
+  border-radius: 3px;
 }
 /* =====================
    ANALYTICS DIVIDER + GLOW
