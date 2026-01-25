@@ -2233,17 +2233,16 @@ if (isPlanned) {
     notes: document.getElementById("nt-notes")?.value || null,
 
     is_planned: isPlanned,
-    status: isPlanned ? "Planned" : "Done",
+  status: isPlanned ? "Planned" : "Done",
 
-    due_date: isPlanned
-      ? document.getElementById("nt-due")?.value
-      : document.getElementById("nt-breakdown-date")?.value || new Date().toISOString(),
+  // ⬇️ μόνο για planned
+  duration_min: isPlanned ? durationMin : null,
 
-    duration_min: durationMin, // ✅ Planned = estimated | Breakdown = actual
+  // ⬇️ μόνο για breakdown
+  execution_duration_min: !isPlanned ? durationMin : null,
 
-    // 🔥 Technician for unplanned execution history
-    executed_by: technician
-  };
+  executed_by: technician
+};
 
   try {
     console.log("BREAKDOWN DURATION RAW =", document.getElementById("nt-breakdown-duration"));

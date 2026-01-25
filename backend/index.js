@@ -135,8 +135,8 @@ app.post("/tasks", async (req, res) => {
     executed_by,
 
     // ⬇️ ΣΗΜΑΝΤΙΚΟ
-    duration_min,            // 👉 ESTIMATED (PLANNED ONLY)
-    execution_duration_min   // 👉 ACTUAL (BREAKDOWN ONLY)
+    duration_min,              // 👉 ESTIMATED (PLANNED ONLY)
+    execution_duration_min     // 👉 ACTUAL (BREAKDOWN ONLY)
   } = req.body;
 
   if (!asset_id || !task) {
@@ -182,8 +182,10 @@ app.post("/tasks", async (req, res) => {
         status || "Planned",
         is_planned === true,
 
-        // 🔑 ΜΟΝΟ PLANNED ΠΑΙΡΝΕΙ duration στο maintenance_tasks
-        is_planned === true ? duration_min ?? null : null,
+        // 🔑 ΜΟΝΟ PLANNED → estimated duration
+        is_planned === true && Number.isFinite(Number(duration_min))
+          ? Number(duration_min)
+          : null,
 
         notes || null
       ]
@@ -216,14 +218,23 @@ app.post("/tasks", async (req, res) => {
           executed_by || null,
 
           // 🔥 ACTUAL SERVICE TIME (BREAKDOWN ONLY)
-          execution_duration_min ?? null
+          Number.isFinite(Number(execution_duration_min))
+            ? Number(execution_duration_min)
+            : null
         ]
       );
     }
 
     await client.query("COMMIT");
+
     res.json(newTask);
-    console.log("POST /tasks duration_min =", duration_min);
+
+    // 🧪 DEBUG (safe to remove later)
+    console.log("POST /tasks:", {
+      is_planned,
+      duration_min,
+      execution_duration_min
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
