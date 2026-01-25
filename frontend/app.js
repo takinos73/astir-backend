@@ -2232,11 +2232,11 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
     due_date: isPlanned
       ? document.getElementById("nt-due")?.value
-      : new Date().toISOString(),
+      : document.getElementById("nt-breakdown-date")?.value || new Date().toISOString(),
 
-    duration_min: durationMin, // ✅ PLANNED = estimated | UNPLANNED = actual
+    duration_min: durationMin, // ✅ Planned = estimated | Breakdown = actual
 
-    // 🔥 Technician for unplanned history
+    // 🔥 Technician for unplanned execution history
     executed_by: technician
   };
 
