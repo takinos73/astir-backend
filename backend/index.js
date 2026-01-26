@@ -294,16 +294,22 @@ app.patch("/tasks/:id", async (req, res) => {
         asset_id,
         executed_by,
         prev_due_date,
-        executed_at
+        executed_at,
+        duration_minutes
       )
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         task.id,
         task.asset_id,
         completed_by || null,
         task.due_date || null,
-        completedAt
+        completedAt,
+
+        // ⏱ planned / preventive → estimated duration
+        Number.isFinite(Number(task.duration_min))
+          ? Number(task.duration_min)
+          : null
       ]
     );
 
@@ -448,16 +454,22 @@ app.post("/tasks/bulk-done", async (req, res) => {
           asset_id,
           executed_by,
           prev_due_date,
-          executed_at
+          executed_at,
+          duration_minutes
         )
-        VALUES ($1,$2,$3,$4,$5)
+        VALUES ($1,$2,$3,$4,$5,$6)
         `,
         [
           task.id,
           task.asset_id,
           completed_by,
           task.due_date,
-          completedAt
+          completedAt,
+
+          // ⏱️ Planned / Preventive → actual service time
+          Number.isFinite(Number(task.duration_min))
+            ? Number(task.duration_min)
+            : null
         ]
       );
 
