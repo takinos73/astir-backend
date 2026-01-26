@@ -196,5 +196,22 @@ function getLastActivityBadge(executions, serial) {
     className: "activity-planned"
   };
 }
+// =====================
+// GLOBAL LINES CACHE
+// =====================
+let linesData = null;
+
+async function loadLinesOnce() {
+  if (Array.isArray(linesData) && linesData.length > 0) {
+    return linesData;
+  }
+
+  const res = await fetch(`${API}/lines`);
+  if (!res.ok) throw new Error("Failed to load lines");
+
+  linesData = await res.json();
+  return linesData;
+}
+
 
 

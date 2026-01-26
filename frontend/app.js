@@ -3056,38 +3056,41 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-  // =====================
-  // EDIT ASSET MODAL
-  // =====================
-
  let editingAssetId = null;
 
-function editAsset(assetId) {
-  const asset = assetsData.find(a => a.id === assetId);
-  if (!asset) return alert("Asset not found");
+async function editAsset(assetId) {
+  try {
+    const asset = assetsData.find(a => a.id === assetId);
+    if (!asset) return alert("Asset not found");
 
-  editingAssetId = assetId;
+    editingAssetId = assetId;
 
-  // Populate fields
-  getEl("edit-asset-model").value = asset.model || "";
-  getEl("edit-asset-serial").value = asset.serial_number || "";
-  getEl("edit-asset-description").value = asset.description || "";
+    // ⬇️ LOAD LINES SAFELY
+    const lines = await loadLinesOnce();
 
-  // Populate line dropdown
-  const lineSel = getEl("edit-asset-line");
-  lineSel.innerHTML = "";
+    // Populate fields
+    getEl("edit-asset-model").value = asset.model || "";
+    getEl("edit-asset-serial").value = asset.serial_number || "";
+    getEl("edit-asset-description").value = asset.description || "";
 
-  linesData.forEach(l => {
-    const opt = document.createElement("option");
-    opt.value = l.id;
-    opt.textContent = l.code;
-    if (l.id === asset.line_id) opt.selected = true;
-    lineSel.appendChild(opt);
-  });
+    // Populate line dropdown
+    const lineSel = getEl("edit-asset-line");
+    lineSel.innerHTML = "";
 
-  getEl("editAssetOverlay").style.display = "flex";
+    lines.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.code;
+      if (l.id === asset.line_id) opt.selected = true;
+      lineSel.appendChild(opt);
+    });
+
+    getEl("editAssetOverlay").style.display = "flex";
+  } catch (err) {
+    console.error("editAsset ERROR:", err);
+    alert("Failed to open edit asset");
+  }
 }
-
 
   function closeEditAsset() {
     editingAssetId = null;
