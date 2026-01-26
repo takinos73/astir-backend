@@ -3056,7 +3056,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
- let editingAssetId = null;
+  // =====================
+  // EDIT ASSET MODAL
+  // =====================
+
+let editingAssetId = null;
 
 async function editAsset(assetId) {
   try {
