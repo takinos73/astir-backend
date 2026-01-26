@@ -3060,22 +3060,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // EDIT ASSET MODAL
   // =====================
 
-  let editingAssetId = null;
+ let editingAssetId = null;
 
-  function editAsset(assetId) {
-    const asset = assetsData.find(a => a.id === assetId);
-    if (!asset) return alert("Asset not found");
+function editAsset(assetId) {
+  const asset = assetsData.find(a => a.id === assetId);
+  if (!asset) return alert("Asset not found");
 
-    editingAssetId = assetId;
+  editingAssetId = assetId;
 
-    // populate fields
-    document.getElementById("ea-line").value = asset.line || "";
-    document.getElementById("ea-model").value = asset.model || "";
-    document.getElementById("ea-serial").value = asset.serial_number || "";
-    document.getElementById("ea-notes").value = asset.notes || "";
+  // Populate fields
+  getEl("edit-asset-model").value = asset.model || "";
+  getEl("edit-asset-serial").value = asset.serial_number || "";
+  getEl("edit-asset-description").value = asset.description || "";
 
-    document.getElementById("editAssetOverlay").style.display = "flex";
-  }
+  // Populate line dropdown
+  const lineSel = getEl("edit-asset-line");
+  lineSel.innerHTML = "";
+
+  linesData.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.id;
+    opt.textContent = l.code;
+    if (l.id === asset.line_id) opt.selected = true;
+    lineSel.appendChild(opt);
+  });
+
+  getEl("editAssetOverlay").style.display = "flex";
+}
+
 
   function closeEditAsset() {
     editingAssetId = null;
@@ -3086,38 +3098,38 @@ document.addEventListener("DOMContentLoaded", () => {
       SAVE EDIT ASSET (PATCH)
   ===================== */
 
-    async function saveEditAsset() {
-    if (!editingAssetId) return;
+getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
+  if (!editingAssetId) return;
 
-    const payload = {
-      line: document.getElementById("ea-line").value.trim(),
-      model: document.getElementById("ea-model").value.trim(),
-      serial_number: document.getElementById("ea-serial").value.trim(),
-      notes: document.getElementById("ea-notes").value.trim() || null
-    };
+  const payload = {
+    model: getEl("edit-asset-model").value.trim(),
+    serial_number: getEl("edit-asset-serial").value.trim(),
+    description: getEl("edit-asset-description").value.trim(),
+    line_id: Number(getEl("edit-asset-line").value)
+  };
 
-    try {
-      const res = await fetch(`${API}/assets/${editingAssetId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to update asset");
-      }
-
-      closeEditAsset();
-
-      // 🔄 reload assets (safe)
-      await loadAssets();
-
-    } catch (err) {
-      console.error("EDIT ASSET ERROR:", err);
-      alert(err.message);
-    }
+  if (!payload.model || !payload.serial_number || !payload.line_id) {
+    return alert("Line, Machine and Serial are required");
   }
+
+  try {
+    const res = await fetch(`${API}/assets/${editingAssetId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Update failed");
+    }
+
+    closeEditAsset();
+    await loadAssets(); // 🔄 refresh table
+  } catch (err) {
+    alert(err.message);
+  }
+});
 
 /* =====================
    ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
