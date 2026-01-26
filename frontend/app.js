@@ -753,7 +753,6 @@ function updateCentralHistoryLegendCounts(history) {
   });
 }
 
-
 /* =====================
    KPIs
 ===================== */
@@ -3056,6 +3055,69 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.style.display = "none";
   });
 });
+
+  // =====================
+  // EDIT ASSET MODAL
+  // =====================
+
+  let editingAssetId = null;
+
+  function editAsset(assetId) {
+    const asset = assetsData.find(a => a.id === assetId);
+    if (!asset) return alert("Asset not found");
+
+    editingAssetId = assetId;
+
+    // populate fields
+    document.getElementById("ea-line").value = asset.line || "";
+    document.getElementById("ea-model").value = asset.model || "";
+    document.getElementById("ea-serial").value = asset.serial_number || "";
+    document.getElementById("ea-notes").value = asset.notes || "";
+
+    document.getElementById("editAssetOverlay").style.display = "flex";
+  }
+
+  function closeEditAsset() {
+    editingAssetId = null;
+    document.getElementById("editAssetOverlay").style.display = "none";
+  }
+
+  /* =====================
+      SAVE EDIT ASSET (PATCH)
+  ===================== */
+
+    async function saveEditAsset() {
+    if (!editingAssetId) return;
+
+    const payload = {
+      line: document.getElementById("ea-line").value.trim(),
+      model: document.getElementById("ea-model").value.trim(),
+      serial_number: document.getElementById("ea-serial").value.trim(),
+      notes: document.getElementById("ea-notes").value.trim() || null
+    };
+
+    try {
+      const res = await fetch(`${API}/assets/${editingAssetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update asset");
+      }
+
+      closeEditAsset();
+
+      // 🔄 reload assets (safe)
+      await loadAssets();
+
+    } catch (err) {
+      console.error("EDIT ASSET ERROR:", err);
+      alert(err.message);
+    }
+  }
 
 /* =====================
    ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
