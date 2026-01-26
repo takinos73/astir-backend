@@ -1158,29 +1158,33 @@ app.patch("/assets/:id/deactivate", async (req, res) => {
   }
 });
 /* =====================
-    EDIT ASSET
+   EDIT ASSET
 ===================== */
-
 app.patch("/assets/:id", async (req, res) => {
-  const { line, model, serial_number, notes } = req.body;
+  const {
+    line_id,
+    model,
+    serial_number,
+    description
+  } = req.body;
 
   try {
     const result = await pool.query(
       `
       UPDATE assets
       SET
-        line = $1,
+        line_id = $1,
         model = $2,
         serial_number = $3,
-        notes = $4
+        description = $4
       WHERE id = $5
       RETURNING *
       `,
       [
-        line || null,
+        Number.isFinite(Number(line_id)) ? Number(line_id) : null,
         model || null,
         serial_number || null,
-        notes || null,
+        description || null,
         req.params.id
       ]
     );
@@ -1192,7 +1196,7 @@ app.patch("/assets/:id", async (req, res) => {
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("PATCH /assets ERROR:", err);
+    console.error("PATCH /assets ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
