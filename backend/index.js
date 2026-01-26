@@ -287,31 +287,31 @@ app.patch("/tasks/:id", async (req, res) => {
       Number(task.frequency_hours) > 0;
 
     // 2️⃣ Log execution (HISTORY) — ALWAYS
-    await client.query(
-      `
-      INSERT INTO task_executions (
-        task_id,
-        asset_id,
-        executed_by,
-        prev_due_date,
-        executed_at,
-        duration_minutes
-      )
-      VALUES ($1, $2, $3, $4, $5, $6)
-      `,
-      [
-        task.id,
-        task.asset_id,
-        completed_by || null,
-        task.due_date || null,
-        completedAt,
+      await client.query(
+        `
+        INSERT INTO task_executions (
+          task_id,
+          asset_id,
+          executed_by,
+          prev_due_date,
+          executed_at,
+          duration_minutes
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        `,
+        [
+          task.id,
+          task.asset_id,
+          completed_by || null,
+          task.due_date || null,
+          completedAt,
 
-        // ⏱ planned / preventive → estimated duration
-        Number.isFinite(Number(task.duration_min))
-          ? Number(task.duration_min)
-          : null
-      ]
-    );
+          // ⏱ planned / preventive → estimated duration (REAL → INTEGER)
+          Number.isFinite(Number(task.duration_min))
+            ? Math.round(Number(task.duration_min))
+            : null
+        ]
+      );    
 
     // 3️⃣ PREVENTIVE → ROTATE
     if (hasFrequency) {
@@ -466,13 +466,12 @@ app.post("/tasks/bulk-done", async (req, res) => {
           task.due_date,
           completedAt,
 
-          // ⏱️ Planned / Preventive → actual service time
+          // ⏱️ Planned / Preventive → estimated duration (REAL → INTEGER)
           Number.isFinite(Number(task.duration_min))
-            ? Number(task.duration_min)
+            ? Math.round(Number(task.duration_min))
             : null
         ]
       );
-
       // 3️⃣b PREVENTIVE → ROTATE
       if (hasFrequency) {
         const nextDue = new Date(task.due_date);
