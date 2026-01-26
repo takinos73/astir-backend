@@ -446,8 +446,8 @@ tbody tr:hover { background: #131520; }
 ===================== */
 
 .task-view-title {
-  margin-top: 8px;
-  margin-bottom: 8px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-size: 1.4em;
   font-weight: 200;
   line-height: 1.25;
@@ -486,7 +486,7 @@ tbody tr:hover { background: #131520; }
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px 14px;
-  max-width: 520px;
+  max-width: 99%;
   margin-top: 20px;
 }
 
