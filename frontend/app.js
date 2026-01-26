@@ -669,7 +669,19 @@ function viewHistoryEntry(executionId) {
   document.getElementById("historyViewOverlay").style.display = "flex";
 }
 
+function openHistoryViewByExecutionId(executionId) {
+  const overlay = document.getElementById("historyViewOverlay");
+  if (!overlay) {
+    console.warn("HistoryView overlay not found");
+    return;
+  }
 
+  // άνοιξε modal
+  overlay.style.display = "flex";
+
+  // γέμισε περιεχόμενο
+  viewHistoryEntry(executionId);
+}
 
 // Close history view
 function closeHistoryView() {
@@ -2870,71 +2882,135 @@ function renderAssetsTable() {
     tr.classList.add("clickable-asset-row");
     tr.dataset.serial = a.serial_number || "";
 
-    /* =====================
-       LAST ACTIVITY (SAFE)
-    ===================== */
+// =====================
+// LAST ACTIVITY (ICON + DURATION + "X ago")
+// =====================
+let lastActivityHtml = "—";
 
-    let lastActivityText = "—";
+// local relative (no dependency)
+const relativeAgo = (iso) => {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return "—";
 
-    if (Array.isArray(executionsData) && executionsData.length > 0) {
-      const serialA = String(a.serial_number || "").trim();
+  const now = new Date();
+  let diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
 
-      const lastExec = executionsData
-        .filter(
-          e => String(e.serial_number || "").trim() === serialA
-        )
-        .sort(
-          (x, y) =>
-            new Date(y.executed_at || 0) -
-            new Date(x.executed_at || 0)
-        )[0];
+  // future date safeguard
+  if (diffSec < 0) diffSec = 0;
 
-      if (lastExec?.executed_at) {
-        lastActivityText =
-          typeof formatRelativeDate === "function"
-            ? formatRelativeDate(lastExec.executed_at)
-            : new Date(lastExec.executed_at).toLocaleDateString("el-GR");
-      }
+  const min = Math.floor(diffSec / 60);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  return `${day}d ago`;
+};
+
+if (Array.isArray(executionsData)) {
+  const serialA = String(a.serial_number || "").trim();
+
+  const lastExec = executionsData
+    .filter(e => String(e.serial_number || "").trim() === serialA)
+    .sort((x, y) => new Date(y.executed_at || 0) - new Date(x.executed_at || 0))[0];
+
+  if (lastExec?.executed_at) {
+    const when = relativeAgo(lastExec.executed_at);
+
+    // ⏱ duration (minutes)
+    const rawDuration = lastExec.duration_minutes ?? lastExec.duration_min ?? null;
+    const durMin = Number.isFinite(Number(rawDuration)) ? Number(rawDuration) : null;
+    const durLabel = durMin ? `${durMin}m` : "—";
+
+    // 🎯 type → icon + class
+    let icon = "🛠";
+    let cls = "activity-planned";
+
+    if (lastExec.is_planned === false) {
+      icon = "⚠";
+      cls = "activity-breakdown";
+    } else if (
+      (lastExec.type || "").toLowerCase().includes("ΕΛΕΓΧΟΣ") ||
+      (lastExec.type || "").toLowerCase().includes("ΛΙΠΑΝΣΗ")
+    ) {
+      icon = "🟢";
+      cls = "activity-check";
     }
 
-    //  RENDER ROW (LOCKED)    
-
-    tr.innerHTML = `
-      <td>${a.line || "-"}</td>
-      <td>${a.model || "-"}</td>
-      <td>${a.serial_number || "-"}</td>
-
-      <td class="last-activity">
-        <div class="last-activity-cell">
-          ${lastActivityText}
-        </div>
-      </td>
-
-      <td class="asset-admin-only">
-        <div class="asset-actions">
-          <button class="btn-secondary btn-sm"
-            onclick="editAsset(${a.id}); event.stopPropagation();">
-            ✏️ Edit
-          </button>
-
-          <button class="btn-warning btn-sm"
-            onclick="deactivateAsset(${a.id}); event.stopPropagation();">
-            🚫 Archive
-          </button>
-        </div>
-      </td>
+    lastActivityHtml = `
+      <span
+        class="activity-badge ${cls}"
+        data-exec-id="${lastExec.id}"
+        title="View history entry"
+      >
+        ${icon}
+        <span class="activity-duration">${durLabel}</span>
+        <span class="activity-sep">•</span>
+        <span class="activity-when">${when}</span>
+      </span>
     `;
 
-    tbody.appendChild(tr);
-
-  } catch (err) {
-    // ❌ ΠΟΤΕ μην αφήσεις ένα row να σπάσει όλο το table
-    console.error("renderAssetsTable row crash:", err, a);
   }
-});
-
-
 }
+
+
+      //  RENDER ROW (LOCKED)    
+
+      tr.innerHTML = `
+        <td>${a.line || "-"}</td>
+        <td>${a.model || "-"}</td>
+        <td>${a.serial_number || "-"}</td>
+
+        <td class="last-activity">
+          <div class="last-activity-cell">
+            ${lastActivityHtml}
+          </div>
+        </td>
+
+        <td class="asset-admin-only">
+          <div class="asset-actions">
+            <button class="btn-secondary btn-sm"
+              onclick="editAsset(${a.id}); event.stopPropagation();">
+              ✏️ Edit
+            </button>
+
+            <button class="btn-warning btn-sm"
+              onclick="deactivateAsset(${a.id}); event.stopPropagation();">
+              🚫 Archive
+            </button>
+          </div>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+
+    } catch (err) {
+      // ❌ ΠΟΤΕ μην αφήσεις ένα row να σπάσει όλο το table
+      console.error("renderAssetsTable row crash:", err, a);
+    }
+  });
+}
+  // =====================
+  // LAST ACTIVITY → OPEN HISTORY ENTRY
+  // =====================
+  document.addEventListener("click", e => {
+  // πιάσε badge Ή child του badge
+  const badge = e.target.closest(".activity-badge");
+  if (!badge) return;
+
+  e.stopPropagation(); // ⛔ μην ανοίξει AssetView row
+
+  const execId = Number(badge.dataset.execId);
+  if (!Number.isFinite(execId)) {
+    console.warn("No execId on activity badge", badge);
+    return;
+  }
+
+  console.log("🕘 Open History Entry:", execId);
+
+  openHistoryViewByExecutionId(execId);
+});
 
 // =====================
 // ASSET INDEX → OPEN ASSET VIEW (FIX)
