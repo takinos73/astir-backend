@@ -651,7 +651,7 @@ function viewHistoryEntry(executionId) {
         <div>${h.task}</div>
       </div>
 
-      <div class="history-view-section">
+      <div class="history-view-section full-width">
         <strong>Section / Unit</strong>
         <div>
           ${h.section || "-"}${h.unit ? " / " + h.unit : ""}

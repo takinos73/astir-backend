@@ -1829,7 +1829,7 @@ tr.history-unplanned {
 .modal-history {
   width: 96%;
   max-width: 1200px;
-  max-height: 90vh;     /* 👈όριο */
+  max-height: 92vh;     /* 👈όριο */
 }
 
 .modal-box input {
