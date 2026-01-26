@@ -1243,6 +1243,67 @@ tbody tr:hover { background: #131520; }
   margin-left: auto;
 }
 
+  /* ASSET ACTION BUTTONS */
+
+.asset-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.asset-actions button {
+  white-space: nowrap;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin: 4px;
+}
+
+/* Optional: κάνε το Edit πιο "quiet" */
+.asset-actions .btn-secondary {
+  opacity: 0.85;
+}
+
+.asset-actions .btn-secondary:hover {
+  opacity: 1;
+}
+/* =====================
+   LAST ACTIVITY BADGES
+===================== */
+
+.last-activity {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* 🟥 Breakdown */
+.activity-breakdown {
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+/* 🟩 Preventive */
+.activity-preventive {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+}
+
+/* 🟨 Planned manual */
+.activity-planned {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ffc107;
+}
+
+/* — none */
+.activity-none {
+  color: #8a8f98;
+}
+
+
 /* =====================
    TAB TASKS – FIX CLICK LAYER
 ===================== */
@@ -1252,8 +1313,7 @@ tbody tr:hover { background: #131520; }
   z-index: 1;
 }
 /* ACTIONS column – force vertical layout */
-td:last-child {
-  display: flex;
+td:last-child {  
   flex-direction: column;
   gap: 6px;
   white-space: normal;
@@ -2235,7 +2295,7 @@ tr.history-unplanned {
 
 .history-view-grid {
   display: grid;
-  grid-template-columns: 30% 70%;
+  grid-template-columns: 31% 65%;
   gap: 12px 18px;
 }
 

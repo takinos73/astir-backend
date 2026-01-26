@@ -590,7 +590,7 @@ function renderHistoryTable(data) {
     });
 }
 
-// =====================================================
+// ====================================================
 // VIEW HISTORY ENTRY – ASSET HEADER FIRST– WITH TYPE COLOR
 // ======================================================
 
@@ -2837,41 +2837,117 @@ function renderAssetsTable() {
 
   tbody.innerHTML = "";
 
+  // ✅ Guard: αν δεν έχει φορτώσει assetsData ακόμα
+  if (!Array.isArray(assetsData)) {
+    console.warn("renderAssetsTable: assetsData is not ready", assetsData);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" style="text-align:center;">No assets</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
   const filteredAssets = assetsData.filter(a =>
     selectedLine === "all" || a.line === selectedLine
   );
 
   if (filteredAssets.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="4" style="text-align:center;">No assets</td>`;
+    tr.innerHTML = `<td colspan="5" style="text-align:center;">No assets</td>`;
     tbody.appendChild(tr);
     return;
   }
 
- filteredAssets.forEach(a => {
-  const tr = document.createElement("tr");
-  tr.classList.add("clickable-asset-row");
-  tr.dataset.serial = a.serial_number;
+  // ✅ Guard: executionsData μπορεί να μην υπάρχει καν σαν μεταβλητή
+  const hasExecutionsData =
+    (typeof executionsData !== "undefined") && Array.isArray(executionsData);
 
-  tr.innerHTML = `
-    <td>${a.line || "-"}</td>
-    <td>${a.model || "-"}</td>
-    <td>${a.serial_number || "-"}</td>
-    <td class="asset-admin-only">
-      <button class="btn-warning"
-        onclick="deactivateAsset(${a.id}); event.stopPropagation();">
-        🚫 Deactivate
-      </button>
-    </td>
-  `;
+  if (!hasExecutionsData) {
+    console.warn("renderAssetsTable: executionsData not ready yet (Last Activity will be —)");
+  }
 
-  tbody.appendChild(tr);
+  filteredAssets.forEach(a => {
+  try {
+    const tr = document.createElement("tr");
+    tr.classList.add("clickable-asset-row");
+    tr.dataset.serial = a.serial_number || "";
+
+    /* =====================
+       LAST ACTIVITY (SAFE)
+    ===================== */
+
+    let lastActivityText = "—";
+
+    if (Array.isArray(executionsData) && executionsData.length > 0) {
+      const serialA = String(a.serial_number || "").trim();
+
+      const lastExec = executionsData
+        .filter(
+          e => String(e.serial_number || "").trim() === serialA
+        )
+        .sort(
+          (x, y) =>
+            new Date(y.executed_at || 0) -
+            new Date(x.executed_at || 0)
+        )[0];
+
+      if (lastExec?.executed_at) {
+        lastActivityText =
+          typeof formatRelativeDate === "function"
+            ? formatRelativeDate(lastExec.executed_at)
+            : new Date(lastExec.executed_at).toLocaleDateString("el-GR");
+      }
+    }
+
+    //  RENDER ROW (LOCKED)    
+
+    tr.innerHTML = `
+      <td>${a.line || "-"}</td>
+      <td>${a.model || "-"}</td>
+      <td>${a.serial_number || "-"}</td>
+
+      <td class="last-activity">
+        <div class="last-activity-cell">
+          ${lastActivityText}
+        </div>
+      </td>
+
+      <td class="asset-admin-only">
+        <div class="asset-actions">
+          <button class="btn-secondary btn-sm"
+            onclick="editAsset(${a.id}); event.stopPropagation();">
+            ✏️ Edit
+          </button>
+
+          <button class="btn-warning btn-sm"
+            onclick="deactivateAsset(${a.id}); event.stopPropagation();">
+            🚫 Archive
+          </button>
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+
+  } catch (err) {
+    // ❌ ΠΟΤΕ μην αφήσεις ένα row να σπάσει όλο το table
+    console.error("renderAssetsTable row crash:", err, a);
+  }
 });
+
+
 }
+
 // =====================
 // ASSET INDEX → OPEN ASSET VIEW (FIX)
 // =====================
+
 document.addEventListener("click", e => {
+
+  // ❌ ΜΗΝ ανοίγεις asset view αν το click είναι σε action
+  if (e.target.closest(".asset-actions")) {
+    return;
+  }
+
   const row = e.target.closest(".clickable-asset-row");
   if (!row) return;
 

@@ -157,3 +157,44 @@ window.addEventListener("unhandledrejection", e => {
   console.error("UNHANDLED PROMISE REJECTION:", e.reason);
 });
 
+/* =====================
+    ACTIVITY BADGE
+===================== */
+
+function getLastActivityBadge(executions, serial) {
+  if (!Array.isArray(executions)) {
+    return { label: "—", className: "activity-none" };
+  }
+
+  const last = executions
+    .filter(e => e.serial_number === serial)
+    .sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at))[0];
+
+  if (!last) {
+    return { label: "—", className: "activity-none" };
+  }
+
+  const date = new Date(last.executed_at).toLocaleDateString("el-GR");
+
+  // 🔑 classification
+  if (last.is_planned === false) {
+    return {
+      label: `Breakdown • ${date}`,
+      className: "activity-breakdown"
+    };
+  }
+
+  if (last.is_planned === true && last.frequency_hours) {
+    return {
+      label: `Preventive • ${date}`,
+      className: "activity-preventive"
+    };
+  }
+
+  return {
+    label: `Planned • ${date}`,
+    className: "activity-planned"
+  };
+}
+
+
