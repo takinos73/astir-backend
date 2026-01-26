@@ -105,6 +105,25 @@ function calculateMtbfMinutes(breakdownExecutions) {
 
   return Math.round(totalDiffMin / intervals);
 }
+
+// =====================
+// LAST BREAKDOWN DATE
+// =====================
+function getLastBreakdownDate(breakdowns) {
+  if (!Array.isArray(breakdowns) || breakdowns.length === 0) {
+    return null;
+  }
+
+  const last = breakdowns.reduce((latest, e) => {
+    return new Date(e.executed_at) > new Date(latest.executed_at)
+      ? e
+      : latest;
+  });
+
+  return last.executed_at;
+}
+
+
 // =====================
 // SEARCH MATCHING
 // =====================

@@ -1799,29 +1799,39 @@ async function refreshAssetView() {
   activateAssetTab(activeTab);
 }
 
-
 // =====================
-// RENDER ASSET MTBF KPI
+// RENDER ASSET MTBF + LAST BREAKDOWN
 // =====================
-
 function renderAssetMtbf(serial) {
   const mtbfEl = document.getElementById("assetMtbfValue");
-  if (!mtbfEl) return;
+  const lastEl = document.getElementById("assetLastBreakdown");
 
+  if (!mtbfEl || !lastEl) return;
+
+  // breakdowns μόνο
   const breakdowns = assetHistoryTasks.filter(
     e => e.is_planned === false
   );
 
+  // MTBF
   const mtbfMin = calculateMtbfMinutes(breakdowns);
 
   if (mtbfMin == null) {
     mtbfEl.textContent = "—";
-    return;
+  } else {
+    mtbfEl.textContent = formatDuration(mtbfMin);
   }
 
-  mtbfEl.textContent = formatDuration(mtbfMin);
-}
+  // Last Breakdown
+  const lastDate = getLastBreakdownDate(breakdowns);
 
+  if (!lastDate) {
+    lastEl.textContent = "No breakdowns recorded";
+  } else {
+    lastEl.textContent =
+      `Last breakdown: ${formatDate(lastDate)}`;
+  }
+}
 
 // =====================
 // HEADER
@@ -2087,7 +2097,7 @@ function renderAssetHistoryTable(history) {
         // 👇 👇 👇 CLASSIFICATION / COLOR LOGIC
           if (e.is_planned === false) {
         // 🔴 Breakdown / Unplanned
-          tr.classList.add("history-breakdown");
+          tr.classList.add("history-unplanned");
       } else if (e.is_planned === true && e.frequency_hours == null) {
         // 🟡 Planned (Manual)
           tr.classList.add("history-planned");
@@ -2639,13 +2649,15 @@ if (bulkDoneMode === true) {
   const bar = getEl("assetBulkActionsBar");
   if (bar) bar.style.display = "none";
 
- // =====================
-// 🔄 REFRESH ASSET VIEW (SAFE)
-// =====================
-if (currentAssetSerial) {
-  await openAssetViewBySerial(currentAssetSerial);
-  activateAssetTab("active");
-}
+  // 🔄 REFRESH GLOBAL DATA
+  await loadTasks();
+  await loadHistory();
+
+  // 🔄 REFRESH ASSET VIEW (AFTER DATA IS FRESH)
+  if (currentAssetSerial) {
+    await openAssetViewBySerial(currentAssetSerial);
+    activateAssetTab("active");
+  }
 
   // =====================
   // ✅ FEEDBACK

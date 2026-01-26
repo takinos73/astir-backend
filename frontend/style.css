@@ -1978,6 +1978,14 @@ tr.history-unplanned {
 .asset-kpi-line .sep {
   opacity: 0.6;
 }
+
+.kpi-sub {
+  font-size: 11px;
+  color: #9aa4b2;
+  margin-top: 2px;
+  display: block;
+}
+
 /* =====================
    SCROLLABLE HISTORY TABLE
 ===================== */
