@@ -590,55 +590,88 @@ function renderHistoryTable(data) {
     });
 }
 
-// =====================
-// VIEW HISTORY ENTRY
-// =====================
+// =====================================================
+// VIEW HISTORY ENTRY – ASSET HEADER FIRST– WITH TYPE COLOR
+// ======================================================
+
 function viewHistoryEntry(executionId) {
   const h = executionsData.find(e => e.id === executionId);
   if (!h) return;
 
   const el = document.getElementById("historyViewContent");
 
+  // 🎨 TYPE CLASS
+  let typeClass = "history-type-planned";
+  if (h.is_planned === false) {
+    typeClass = "history-type-breakdown";
+  } else if (h.frequency_hours) {
+    typeClass = "history-type-preventive";
+  }
+
+  const durationLabel =
+    Number.isFinite(Number(h.duration_min))
+      ? `${h.duration_min} min`
+      : "—";
+
   el.innerHTML = `
-    <div class="history-view-section">
-      <strong>Date</strong>
-      <div>${formatDateTime(h.executed_at)}</div>
-    </div>
-
-    <div class="history-view-section">
-      <strong>Asset</strong>
-      <div>
-        ${h.machine}<br>
-        <small>SN: ${h.serial_number} • Line ${h.line}</small>
+    <!-- =====================
+         ASSET HEADER
+    ====================== -->
+    <div class="history-asset-header ${typeClass}">
+      <div class="history-asset-main">
+        ${h.machine}
+      </div>
+      <div class="history-asset-sub">
+        SN: ${h.serial_number} • Line ${h.line}
       </div>
     </div>
 
-    <div class="history-view-section">
-      <strong>Task</strong>
-      <div>${h.task}</div>
-    </div>
+    <!-- =====================
+         EXECUTION DETAILS
+    ====================== -->
+    <div class="history-view-grid">
 
-    <div class="history-view-section">
-      <strong>Details</strong>
-      <div>
-        ${h.section || "-"} ${h.unit ? " / " + h.unit : ""}
+      <div class="history-view-section">
+        <strong>Date</strong>
+        <div>${formatDateTime(h.executed_at)}</div>
       </div>
-    </div>
 
-    <div class="history-view-section">
-      <strong>Executed By</strong>
-      <div>${h.executed_by || "-"}</div>
-    </div>
+      <div class="history-view-section">
+        <strong>Service Time</strong>
+        <div class="history-emphasis">${durationLabel}</div>
+      </div>
 
-    <div class="history-view-section">
-      <strong>Notes</strong>
-      <div>${h.notes || "-"}</div>
+      <div class="history-view-section">
+        <strong>Executed By</strong>
+        <div>${h.executed_by || "-"}</div>
+      </div>
+
+      <div class="history-view-section">
+        <strong>Task</strong>
+        <div>${h.task}</div>
+      </div>
+
+      <div class="history-view-section">
+        <strong>Section / Unit</strong>
+        <div>
+          ${h.section || "-"}${h.unit ? " / " + h.unit : ""}
+        </div>
+      </div>
+
+      <div class="history-view-section full-width">
+        <strong>Notes</strong>
+        <div>${h.notes || "—"}</div>
+      </div>
+
     </div>
   `;
 
   document.getElementById("historyViewOverlay").style.display = "flex";
 }
 
+
+
+// Close history view
 function closeHistoryView() {
   document.getElementById("historyViewOverlay").style.display = "none";
 }
