@@ -2125,6 +2125,36 @@ function buildExecutionReportHTML(e) {
 </html>
 `;
 }
+/* =====================================================
+    KPIs - MTTR (Mean Time To Repair) per Asset
+===================================================== */
+
+app.get("/kpis/mttr", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        a.id AS asset_id,
+        a.serial_number,
+        a.model,
+        l.code AS line,
+        ROUND(AVG(e.duration_minutes)) AS mttr_minutes,
+        COUNT(*) AS breakdown_count
+      FROM task_executions e
+      JOIN maintenance_tasks t ON t.id = e.task_id
+      JOIN assets a ON a.id = e.asset_id
+      JOIN lines l ON l.id = a.line_id
+      WHERE t.is_planned = false
+        AND e.duration_minutes IS NOT NULL
+      GROUP BY a.id, a.serial_number, a.model, l.code
+      ORDER BY mttr_minutes DESC
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET /kpis/mttr ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 /* =====================================================

@@ -56,7 +56,7 @@ let bulkDoneMode = false;
 let activeTaskTypeFilter = "all"; 
 // values: all | planned | preventive
 let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
-
+let mttrData = [];
 
 
 function formatDate(d) {
@@ -1791,6 +1791,7 @@ async function openAssetViewBySerial(serial) {
     });
 
     renderAssetKpis(assetAllTasks, assetHistoryTasks);
+    renderAssetMttrKpis(currentAssetSerial);
 
     // bind tabs ONCE
     bindAssetTabs();
@@ -1927,6 +1928,36 @@ function renderAssetKpis(tasks, history) {
   document.getElementById("assetPlannedCount").innerHTML = plannedLabel;
   document.getElementById("assetOverdueCount").textContent = overdueCount;
   document.getElementById("assetHistoryCount").textContent = historyCount;
+}
+// =====================
+// RENDER ASSET MTTR KPI
+// =====================
+
+function renderAssetMttrKpis(serial) {
+  const mttrEl = document.getElementById("assetMtbfValue");
+  if (!mttrEl) return;
+
+  const mttr = getAssetMttrBySerial(serial);
+  const last = getLastBreakdownInfo(serial);
+
+  let mttrLabel = "—";
+  let breakdownLabel = "";
+  let lastLabel = "";
+
+  if (mttr?.mttrMinutes) {
+    mttrLabel = `${mttr.mttrMinutes}m`;
+    breakdownLabel = ` • ${mttr.breakdownCount} breakdowns`;
+  }
+
+  if (last?.executed_at && typeof formatRelativeDate === "function") {
+    lastLabel = `<div class="kpi-sub">Last breakdown: ${formatRelativeDate(last.executed_at)}</div>`;
+  }
+
+  mttrEl.innerHTML = `
+    ${mttrLabel}
+    ${breakdownLabel}
+    ${lastLabel}
+  `;
 }
 
 
@@ -3459,6 +3490,56 @@ document.getElementById("assetMachine")?.addEventListener("change", e => {
   document.getElementById("newMachineField").style.display =
     e.target.value === "_other" ? "block" : "none";
 });
+/* =====================
+   LOAD MTTR DATA
+===================== */
+
+async function loadMttrData() {
+  try {
+    const res = await fetch(`${API}/kpis/mttr`);
+    mttrData = await res.json();
+  } catch (err) {
+    console.error("Failed to load MTTR data", err);
+    mttrData = [];
+  }
+}
+/* =====================
+   GET ASSET MTTR BY SERIAL
+===================== */
+
+function getAssetMttrBySerial(serial) {
+  if (!Array.isArray(mttrData)) return null;
+
+  const row = mttrData.find(
+    r => String(r.serial_number || "").trim() === String(serial).trim()
+  );
+
+  if (!row) return null;
+
+  return {
+    mttrMinutes: Number(row.mttr_minutes) || null,
+    breakdownCount: Number(row.breakdown_count) || 0
+  };
+}
+/* =====================
+   GET LAST BREAKDOWN INFO BY SERIAL
+===================== */
+
+function getLastBreakdownInfo(serial) {
+  const list = (Array.isArray(executionsData) ? executionsData : [])
+    .filter(e =>
+      String(e.serial_number || "").trim() === String(serial).trim() &&
+      e.is_planned === false
+    )
+    .sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
+
+  if (!list.length) return null;
+
+  return {
+    executed_at: list[0].executed_at
+  };
+}
+
 
 /* =====================
    LOAD REPORTS TAB
