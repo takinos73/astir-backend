@@ -1934,7 +1934,7 @@ function renderAssetKpis(tasks, history) {
 // =====================
 
 function renderAssetMttrKpis(serial) {
-  const mttrEl = document.getElementById("assetMtbfValue");
+  const mttrEl = document.getElementById("assetMttrValue");
   if (!mttrEl) return;
 
   const mttr = getAssetMttrBySerial(serial);
