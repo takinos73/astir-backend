@@ -3516,24 +3516,40 @@ async function loadMttrData() {
     mttrData = [];
   }
 }
-/* =====================
-   GET ASSET MTTR BY SERIAL
-===================== */
-
+// =====================
+// MTTR PER ASSET (minutes)
+// =====================
 function getAssetMttrBySerial(serial) {
-  if (!Array.isArray(mttrData)) return null;
+  if (!serial || !Array.isArray(executionsData)) {
+    return null;
+  }
 
-  const row = mttrData.find(
-    r => String(r.serial_number || "").trim() === String(serial).trim()
+  const serialKey = String(serial).trim();
+
+  // 🔥 ΜΟΝΟ breakdown executions
+  const breakdowns = executionsData.filter(e =>
+    String(e.serial_number || "").trim() === serialKey &&
+    e.is_planned === false &&
+    Number.isFinite(Number(e.duration_min)) &&
+    Number(e.duration_min) > 0
   );
 
-  if (!row) return null;
+  if (breakdowns.length === 0) {
+    return null;
+  }
+
+  let totalMin = 0;
+
+  breakdowns.forEach(e => {
+    totalMin += Number(e.duration_min);
+  });
 
   return {
-    mttrMinutes: Number(row.mttr_minutes) || null,
-    breakdownCount: Number(row.breakdown_count) || 0
+    mttrMinutes: Math.round(totalMin / breakdowns.length),
+    breakdownCount: breakdowns.length
   };
 }
+
 /* =====================
    GET LAST BREAKDOWN INFO BY SERIAL
 ===================== */
