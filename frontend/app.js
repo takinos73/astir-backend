@@ -1944,13 +1944,26 @@ function renderAssetMttrKpis(serial) {
   let breakdownLabel = "";
   let lastLabel = "";
 
-  if (mttr?.mttrMinutes) {
-    mttrLabel = `${mttr.mttrMinutes}m`;
-    breakdownLabel = ` • ${mttr.breakdownCount} breakdowns`;
+  // MTTR value
+  if (
+    mttr &&
+    Number.isFinite(Number(mttr.mttrMinutes)) &&
+    mttr.mttrMinutes > 0
+  ) {
+    mttrLabel = `${Math.round(mttr.mttrMinutes)}m`;
+
+    if (Number.isFinite(Number(mttr.breakdownCount)) && mttr.breakdownCount > 0) {
+      breakdownLabel = ` • ${mttr.breakdownCount} breakdowns`;
+    }
   }
 
-  if (last?.executed_at && typeof formatRelativeDate === "function") {
-    lastLabel = `<div class="kpi-sub">Last breakdown: ${formatRelativeDate(last.executed_at)}</div>`;
+  // Last breakdown info
+  if (last && last.executed_at && typeof formatRelativeDate === "function") {
+    lastLabel = `
+      <div class="kpi-sub">
+        Last breakdown: ${formatRelativeDate(last.executed_at)}
+      </div>
+    `;
   }
 
   mttrEl.innerHTML = `

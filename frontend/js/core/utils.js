@@ -122,6 +122,15 @@ function getLastBreakdownDate(breakdowns) {
 
   return last.executed_at;
 }
+// =====================
+// SAFE EXECUTION DURATION (minutes)
+// =====================
+function getExecutionDurationMin(exec) {
+  if (!exec) return null;
+
+  const n = Number(exec.duration_min);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 
 // =====================
