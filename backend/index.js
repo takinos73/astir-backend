@@ -1838,29 +1838,38 @@ for (const t of tasks) {
     `);
 
     /* =====================
-       6️⃣ RESTORE HISTORY (SAFE)
-    ===================== */
-    for (const e of executions) {
-      await client.query(
-        `
-        INSERT INTO task_executions (
-          task_id,
-          asset_id,
-          executed_by,
-          executed_at,
-          prev_due_date
-        )
-        VALUES ($1,$2,$3,$4,$5)
-        `,
-        [
-          e.task_id,
-          e.asset_id,
-          e.executed_by || null,
-          e.executed_at ? new Date(e.executed_at) : null,
-          e.prev_due_date ? new Date(e.prev_due_date) : null
-        ]
-      );
-    }
+   5️⃣ RESTORE TASK EXECUTIONS (HISTORY)
+===================== */
+for (const e of executions) {
+  await client.query(
+    `
+    INSERT INTO task_executions (
+      id,
+      task_id,
+      asset_id,
+      executed_by,
+      executed_at,
+      duration_minutes,
+      notes,
+      created_at
+    )
+    VALUES (
+      $1,$2,$3,$4,$5,$6,$7,$8
+    )
+    `,
+    [
+      e.id,
+      e.task_id,
+      e.asset_id,
+      e.executed_by || null,
+      e.executed_at ? new Date(e.executed_at) : null,
+      e.duration_minutes ?? null,
+      e.notes || null,
+      e.created_at ? new Date(e.created_at) : new Date()
+    ]
+  );
+}
+
 
     await client.query("COMMIT");
     res.json({ message: "Snapshot restored successfully" });
