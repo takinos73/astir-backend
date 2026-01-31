@@ -54,7 +54,10 @@ function getTopWorstAssetsDashboard(limit = 6) {
         dueSoon: 0,
         breakdowns: 0,
         totalRepairMin: 0,
-        lastBreakdownDate: null
+        lastBreakdownDate: null,
+
+        // 🆕 Manual planned workload (last 30 days)
+        manualPlanned30d: 0
       };
     }
 
@@ -69,6 +72,17 @@ function getTopWorstAssetsDashboard(limit = 6) {
       assetsMap[assetKey].overdue++;
     } else if (diffDays <= DUE_SOON_DAYS) {
       assetsMap[assetKey].dueSoon++;
+    }
+
+    // 🧩 Planned Manual load (±30 days window)
+    if (
+      typeof isPlannedManual === "function" &&
+      isPlannedManual(t)
+    ) {
+      const diffFromToday = Math.floor((today - due) / 86400000);
+      if (diffFromToday >= -30 && diffFromToday <= 30) {
+        assetsMap[assetKey].manualPlanned30d++;
+      }
     }
   });
 
@@ -120,6 +134,10 @@ function getTopWorstAssetsDashboard(limit = 6) {
     if (avgMTTR && avgMTTR > MTTR_THRESHOLD) score += 10;
     if (daysSinceLastBreakdown !== null && daysSinceLastBreakdown <= 7) score += 5;
 
+    // 🧩 Manual planned workload signal (LOW weight)
+    if (a.manualPlanned30d >= 5) score += 4;
+    if (a.manualPlanned30d >= 10) score += 8;
+
     return {
       machine: a.machine,
       serial: a.serial,
@@ -128,6 +146,10 @@ function getTopWorstAssetsDashboard(limit = 6) {
       dueSoon: a.dueSoon,
       avgMTTR,
       lastBreakdownDays: daysSinceLastBreakdown,
+
+      // 🆕 expose manual workload
+      manualPlanned30d: a.manualPlanned30d,
+
       score
     };
   });
@@ -140,6 +162,7 @@ function getTopWorstAssetsDashboard(limit = 6) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
 // =====================
 // PUBLIC API – ASSET DASHBOARD RENDER
 // =====================
@@ -176,11 +199,15 @@ window.renderAssetDashboard = function () {
           ⏱ MTTR: ${a.avgMTTR ?? "—"} min
           <span class="trend">${a.mttrTrend || ""}</span>
         </div>
+        <div class="metric manual">
+          🧩 Manual load (30d): ${a.manualPlanned30d}
+        </div>
 
         <div class="metric last">
           ⚡ Last breakdown:
           ${a.lastBreakdownDays != null ? `${a.lastBreakdownDays} days ago` : "—"}
         </div>
+        
       </div>
 
       <div class="asset-actions">

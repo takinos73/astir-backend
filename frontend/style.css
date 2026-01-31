@@ -2944,6 +2944,11 @@ tr.history-unplanned {
   opacity: 0.6;
   font-size: 12px;
 }
+.metric.manual {
+  color: #bdbdbd;
+  font-size: 12px;
+}
+
 
 
 
