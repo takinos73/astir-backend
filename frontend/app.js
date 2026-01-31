@@ -3701,14 +3701,10 @@ function getFilteredTasksForStatusReport() {
   const status = document.getElementById("reportStatus")?.value || "all";
 
   const fromDate = from ? new Date(from) : null;
-  if (fromDate) {
-    fromDate.setHours(0, 0, 0, 0);
-  }
+  if (fromDate) fromDate.setHours(0, 0, 0, 0);
 
   const toDate = to ? new Date(to) : null;
-  if (toDate) {
-    toDate.setHours(23, 59, 59, 999);
-  }
+  if (toDate) toDate.setHours(23, 59, 59, 999);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -3734,21 +3730,25 @@ function getFilteredTasksForStatusReport() {
     .filter(t => {
       if (status === "all") return true;
 
+      // Planned (ALL: preventive + manual, not overdue)
       if (status === "planned") {
-        return t.status === "Planned" && new Date(t.due_date) >= today;
+        return isPreventive(t) && new Date(t.due_date) >= today;
       }
 
+      // Planned (Manual ONLY)
+      if (status === "planned_manual") {
+        return isPlannedManual(t) && new Date(t.due_date) >= today;
+      }
+
+      // Overdue
       if (status === "overdue") {
         return t.status !== "Done" && new Date(t.due_date) < today;
-      }
-
-      if (status === "done") {
-        return t.status === "Done";
       }
 
       return true;
     });
 }
+
 
 /* =====================
    LINE TABS

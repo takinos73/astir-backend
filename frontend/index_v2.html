@@ -946,8 +946,8 @@
         <label for="reportStatus">Status</label>
         <select id="reportStatus">
           <option value="all">ALL</option>
-          <option value="planned">Planned</option>
-          <option value="done">Done</option>
+          <option value="planned">Preventive</option>
+          <option value="planned_manual">Planned_manual</option>
           <option value="overdue">Overdue</option>
         </select>
       </div>
@@ -1033,13 +1033,26 @@
           <span class="kpi-value" id="assetHistoryCount">0</span>
         </article>
 
-        <article class="kpi-card">
-          <span class="kpi-label">MTBF</span>
-          <span class="kpi-value" id="assetMtbfValue">—</span>
-          <span class="kpi-label">MTTR</span>
-          <span class="kpi-value" id="assetMttrValue">—</span>
-          <span class="kpi-sub" id="assetLastBreakdown">—</span>
-        </article>        
+        <article class="kpi-card kpi-metrics">
+          <div class="kpi-metric">
+            <span class="kpi-label">MTBF</span>
+            <span class="kpi-value" id="assetMtbfValue">—</span>
+          </div>
+
+          <div class="kpi-divider"></div>
+
+          <div class="kpi-metric">
+            <span class="kpi-label">MTTR</span>
+            <span class="kpi-sub" id="assetMttrValue">—</span>
+          </div>
+
+          
+           <span class="kpi-sub" id="assetLastBreakdown">
+            <span class="kpi-icon">🕒</span>
+            —
+          </span>
+          
+        </article>      
       </section>
     </div>
 

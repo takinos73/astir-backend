@@ -61,8 +61,23 @@ function generateStatusReportPdf() {
 
       .sn { font-size: 11px; color: #666; }
 
-      .status-overdue { color: #c62828; font-weight: bold; }
-      .status-planned { color: #1e88e5; font-weight: bold; }
+      .status-overdue {
+  color: #c62828;
+  font-weight: bold;
+}
+
+/* Preventive tasks */
+.status-planned {
+  color: #2e7d32;   /* πράσινο */
+  font-weight: bold;
+}
+
+/* Planned manual tasks */
+.status-planned_manual {
+  color: #f9a825;   /* amber */
+  font-weight: bold;
+}
+
 
       .line-footer {
         margin: 8px 0 12px;
@@ -91,86 +106,149 @@ function generateStatusReportPdf() {
   let currentLine = null;
   let currentAsset = null;
   let lineMinutes = 0;
+  const lineSummary = {}; 
 
   sorted.forEach(t => {
-    const line = t.line_code || t.line || "—";
-    const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
+  const line = t.line_code || t.line || "—";
+  const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
 
-    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
-if (line !== currentLine && currentAsset !== null) {
-  html += `
-        </tbody>
-      </table>
-  `;
-  currentAsset = null;
-}
+  // =====================
+  // INIT LINE SUMMARY
+  // =====================
+  if (!lineSummary[line]) {
+    lineSummary[line] = {
+      preventive: 0,
+      manual: 0,
+      overdue: 0
+    };
+  }
 
-    // 🟦 NEW LINE
-    if (line !== currentLine) {
-      if (currentLine !== null) {
-        html += `
-          <div class="line-footer">
-            LINE total duration: ${formatDuration(lineMinutes)}
-          </div>
-        `;
-      }
-
-      html += `<h3>LINE ${line}</h3>`;
-      currentLine = line;
-      currentAsset = null;
-      lineMinutes = 0;
-    }
-    // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
-if (assetKey !== currentAsset && currentAsset !== null) {
-  html += `
-        </tbody>
-      </table>
-  `;
-}
-
-    // 🟨 NEW ASSET
-    if (assetKey !== currentAsset) {
-      html += `
-        <h4>
-          ${t.machine_name}
-          <span class="sn">SN: ${t.serial_number || "-"}</span>
-        </h4>
-        <table>
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Type</th>
-              <th>Due Date</th>
-              <th>Duration</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-      currentAsset = assetKey;
-    }
-
-    if (t.duration_min != null) {
-      lineMinutes += Number(t.duration_min);
-    }
-
-    const isOverdue =
-      t.status !== "Done" &&
-      t.due_date &&
-      new Date(t.due_date) < new Date();
-
+  // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
+  if (line !== currentLine && currentAsset !== null) {
     html += `
-      <tr>
-        <td>${t.task}</td>
-        <td>${t.type || "-"}</td>
-        <td>${formatDate(t.due_date)}</td>
-        <td>${formatDuration(t.duration_min)}</td>
-        <td class="${isOverdue ? "status-overdue" : "status-planned"}">
-          ${isOverdue ? "Overdue" : "Planned"}
-        </td>
-      </tr>
+          </tbody>
+        </table>
     `;
-  });
+    currentAsset = null;
+  }
+
+  // 🟦 NEW LINE
+  if (line !== currentLine) {
+    if (currentLine !== null) {
+      html += `
+        <div class="line-footer">
+          <strong>Summary:</strong>
+          <span class="status-planned">
+            Preventive: ${lineSummary[currentLine]?.preventive || 0}
+          </span>
+          &nbsp;•&nbsp;
+          <span class="status-planned_manual">
+            Planned (Manual): ${lineSummary[currentLine]?.manual || 0}
+          </span>
+          &nbsp;•&nbsp;
+          <span class="status-overdue">
+            Overdue: ${lineSummary[currentLine]?.overdue || 0}
+          </span>
+          <br>
+          LINE total duration: ${formatDuration(lineMinutes)}
+        </div>
+      `;
+    }
+
+    html += `<h3>LINE ${line}</h3>`;
+    currentLine = line;
+    currentAsset = null;
+    lineMinutes = 0;
+  }
+
+  // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
+  if (assetKey !== currentAsset && currentAsset !== null) {
+    html += `
+          </tbody>
+        </table>
+    `;
+  }
+
+  // 🟨 NEW ASSET
+  if (assetKey !== currentAsset) {
+    html += `
+      <h4>
+        ${t.machine_name}
+        <span class="sn">SN: ${t.serial_number || "-"}</span>
+      </h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Type</th>
+            <th>Due Date</th>
+            <th>Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    currentAsset = assetKey;
+  }
+
+  if (t.duration_min != null) {
+    lineMinutes += Number(t.duration_min);
+  }
+
+  const isOverdue =
+    t.status !== "Done" &&
+    t.due_date &&
+    new Date(t.due_date) < new Date();
+
+  // ✅ TYPE CLASS (preventive vs planned manual)
+  let statusClass = "status-planned";
+  let statusLabel = "Preventive";
+
+  if (typeof isPlannedManual === "function" && isPlannedManual(t)) {
+    statusClass = "status-planned_manual";
+    statusLabel = "Planned (Manual)";
+  }
+
+  if (isOverdue) {
+    statusClass = "status-overdue";
+    statusLabel = "Overdue";
+  }
+
+  // =====================
+  // UPDATE LINE SUMMARY
+  // =====================
+  if (isOverdue) {
+    lineSummary[line].overdue++;
+  } else if (typeof isPlannedManual === "function" && isPlannedManual(t)) {
+    lineSummary[line].manual++;
+  } else {
+    lineSummary[line].preventive++;
+  }
+
+  html += `
+    <tr>
+      <td>
+        <div>${t.task}</div>
+        ${
+          t.section || t.unit
+            ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">
+                ${t.section || ""}
+                ${t.section && t.unit ? " / " : ""}
+                ${t.unit || ""}
+              </div>`
+            : ""
+        }
+      </td>
+      <td>${t.type || "-"}</td>
+      <td>${formatDate(t.due_date)}</td>
+      <td>${formatDuration(t.duration_min)}</td>
+      <td class="${statusClass}">
+        ${statusLabel}
+      </td>
+    </tr>
+  `;
+});
+
 
   // 🔚 LAST LINE FOOTER
   html += `
@@ -252,6 +330,58 @@ function generateCompletedReportPdf() {
     sorted.map(e => e.line).filter(Boolean)
   ).size;
 
+  // =====================
+// MTTR BY LINE (BREAKDOWNS)
+// =====================
+const mttrByLine = {};
+
+sorted.forEach(e => {
+  if (e.is_planned === false && e.duration_min != null) {
+    const line = e.line || "—";
+    if (!mttrByLine[line]) {
+      mttrByLine[line] = { total: 0, count: 0 };
+    }
+    mttrByLine[line].total += Number(e.duration_min);
+    mttrByLine[line].count += 1;
+  }
+});
+
+const mttrLineRows = Object.entries(mttrByLine)
+  .map(([line, v]) => ({
+    line,
+    avg: Math.round(v.total / v.count),
+    count: v.count
+  }))
+  .sort((a, b) => b.avg - a.avg);
+  // =====================
+// EXECUTION MIX
+// =====================
+const execMix = {
+  preventive: 0,
+  planned: 0,
+  breakdown: 0
+};
+
+sorted.forEach(e => {
+  if (e.is_planned === false) {
+    execMix.breakdown++;
+  } else if (e.frequency_hours != null && Number(e.frequency_hours) > 0) {
+    execMix.preventive++;
+  } else {
+    execMix.planned++;
+  }
+});
+
+const execTotal = execMix.preventive + execMix.planned + execMix.breakdown;
+
+const execPct = {
+  preventive: execTotal ? Math.round(execMix.preventive * 100 / execTotal) : 0,
+  planned: execTotal ? Math.round(execMix.planned * 100 / execTotal) : 0,
+  breakdown: execTotal ? Math.round(execMix.breakdown * 100 / execTotal) : 0
+};
+
+
+
   let html = `
     <html>
     <head>
@@ -293,6 +423,10 @@ function generateCompletedReportPdf() {
         .report-summary strong {
           color: #111;
         }
+          .page-break {
+            page-break-before: always;
+          }
+
       </style>
     </head>
     <body>
@@ -326,19 +460,69 @@ function generateCompletedReportPdf() {
             .join("")}
         </tbody>
       </table>
+<h3>Execution Mix</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th style="text-align:center;">Tasks</th>
+      <th style="text-align:right;">%</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Preventive</td>
+      <td style="text-align:center;">${execMix.preventive}</td>
+      <td style="text-align:right;">${execPct.preventive}%</td>
+    </tr>
+    <tr>
+      <td>Planned (Manual)</td>
+      <td style="text-align:center;">${execMix.planned}</td>
+      <td style="text-align:right;">${execPct.planned}%</td>
+    </tr>
+    <tr>
+      <td>Breakdown</td>
+      <td style="text-align:center;">${execMix.breakdown}</td>
+      <td style="text-align:right;"><strong>${execPct.breakdown}%</strong></td>
+    </tr>
+  </tbody>
+</table>
 
-      <h3>Completed Tasks Details</h3>
-      <table>
-        <thead>
-          <tr>
-            <th class="col-date">Date</th>
-            <th class="col-line">Line</th>
-            <th class="col-machine">Machine</th>
-            <th class="col-secunit">Section / Unit</th>
-            <th class="col-task">Task</th>
-            <th class="col-tech">Technician</th>
-          </tr>
-        </thead>
+      ${mttrLineRows.length ? `
+<h3>MTTR by Line (Breakdowns)</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Line</th>
+      <th style="text-align:center;">Breakdowns</th>
+      <th style="text-align:right;">Avg MTTR</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${mttrLineRows.map(r => `
+      <tr>
+        <td>${r.line}</td>
+        <td style="text-align:center;">${r.count}</td>
+        <td style="text-align:right;"><strong>${formatDuration(r.avg)}</strong></td>
+      </tr>
+    `).join("")}
+  </tbody>
+</table>
+` : ""}
+
+      <div class="page-break"></div>
+        <h3>Completed Tasks Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-date">Date</th>
+              <th class="col-line">Line</th>
+              <th class="col-machine">Machine</th>
+              <th class="col-secunit">Section / Unit</th>
+              <th class="col-task">Task</th>
+              <th class="col-tech">Technician</th>
+            </tr>
+          </thead>
         <tbody>
   `;
 
@@ -1139,8 +1323,7 @@ function generateKpiReportPdf() {
   const isPreventiveRow = (row) =>
     row && row.frequency_hours != null && safeNum(row.frequency_hours) > 0;
 
-  const isBreakdownExec = (row) =>
-    row && row.is_planned === false;
+  const isBreakdownExec = (row) => row && row.is_planned === false;
 
   const getExecType = (e) => {
     if (isBreakdownExec(e)) return "breakdown";
@@ -1228,6 +1411,35 @@ function generateKpiReportPdf() {
   const prevPct = pct(prevCompletedCount, execTotal);
   const plannedPct = pct(plannedExec.length, execTotal);
   const breakdownPct = pct(breakdownCount, execTotal);
+  // =====================
+// MTTR per Asset (Top offenders)
+// =====================
+const mttrByAssetMap = new Map();
+
+breakdownExec.forEach(e => {
+  const key = `${e.machine}||${e.serial_number || "—"}||${e.line || "—"}`;
+  const curr = mttrByAssetMap.get(key) || {
+    machine: e.machine,
+    serial: e.serial_number || "—",
+    line: e.line || "—",
+    totalMin: 0,
+    count: 0
+  };
+
+  curr.totalMin += safeNum(e.duration_min);
+  curr.count += 1;
+  mttrByAssetMap.set(key, curr);
+});
+
+const mttrTopAssets = [...mttrByAssetMap.values()]
+  .map(a => ({
+    ...a,
+    mttr: a.count ? Math.round(a.totalMin / a.count) : 0
+  }))
+  .filter(a => a.mttr > 0)
+  .sort((a, b) => b.mttr - a.mttr)
+  .slice(0, 5);
+
 
   // Insights (max 3)
   const insights = [];
@@ -1446,6 +1658,38 @@ function generateKpiReportPdf() {
         <div class="row"><span class="label">Non-breakdown</span><span class="value">${execTotal - breakdownCount}</span></div>
       </div>
     </div>
+    ${mttrTopAssets.length ? `
+<div class="card" style="margin-top:10px;">
+  <div class="kpi-title">Top 5 Assets by MTTR (Breakdowns)</div>
+
+  <table style="width:100%; border-collapse:collapse; font-size:11px;">
+    <thead>
+      <tr style="background:#eee;">
+        <th style="text-align:left; padding:6px;">Asset</th>
+        <th style="text-align:left; padding:6px;">Line</th>
+        <th style="text-align:center; padding:6px;">Breakdowns</th>
+        <th style="text-align:right; padding:6px;">MTTR</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${mttrTopAssets.map(a => `
+        <tr>
+          <td style="padding:6px;">
+            <strong>${a.machine}</strong><br>
+            <span style="font-size:10px; color:#666;">SN: ${a.serial}</span>
+          </td>
+          <td style="padding:6px;">${a.line}</td>
+          <td style="padding:6px; text-align:center;">${a.count}</td>
+          <td style="padding:6px; text-align:right;">
+            <strong>${formatDuration(a.mttr)}</strong>
+          </td>
+        </tr>
+      `).join("")}
+    </tbody>
+  </table>
+</div>
+` : ""}
+
   </div>
 
   <div class="insights">
