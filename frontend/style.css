@@ -84,6 +84,20 @@ body {
   font-size: 11px;
   opacity: 0.7;
 }
+/* =====================
+   LOGIN FORM
+===================== */
+.login-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.login-error {
+  color: #ef5350;
+  font-size: 12px;
+  margin-top: 4px;
+}
 
 /* =====================
    KPI STRIP

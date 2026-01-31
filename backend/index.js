@@ -46,6 +46,93 @@ const uploadDisk = multer({
 app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
+// =====================
+// AUTH: LOGIN
+// =====================
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { password } = req.body || {};
+
+    if (!password) {
+      return res.status(400).json({ error: "Password required" });
+    }
+
+    const result = await pool.query(
+      `SELECT admin_password, planner_password, technician_password
+       FROM roles_config
+       ORDER BY id DESC
+       LIMIT 1`
+    );
+
+    if (!result.rows.length) {
+      return res.status(500).json({ error: "Roles not configured" });
+    }
+
+    const cfg = result.rows[0];
+
+    let role = null;
+
+    if (password === cfg.admin_password) role = "admin";
+    else if (password === cfg.planner_password) role = "planner";
+    else if (password === cfg.technician_password) role = "technician";
+
+    if (!role) {
+      return res.status(401).json({ error: "Invalid access code" });
+    }
+
+    res.json({ role });
+
+  } catch (err) {
+    console.error("AUTH LOGIN ERROR:", err.message);
+    res.status(500).json({ error: "Auth error" });
+  }
+});
+// =====================
+// MIDDLEWARE: REQUIRE ADMIN
+// =====================
+
+function requireAdmin(req, res, next) {
+  const role = req.headers["x-cmms-role"];
+
+  if (role !== "admin") {
+    return res.status(403).json({ error: "Admin only" });
+  }
+
+  next();
+}
+
+// =====================
+// AUTH: UPDATE CREDENTIALS (ADMIN)
+// =====================
+app.post("/auth/update-credentials", requireAdmin, async (req, res) => {
+  try {
+    const { admin, planner, technician } = req.body || {};
+
+    if (!admin || !planner || !technician) {
+      return res.status(400).json({ error: "All passwords required" });
+    }
+
+    await pool.query(
+      `
+      UPDATE roles_config
+      SET admin_password = $1,
+          planner_password = $2,
+          technician_password = $3,
+          updated_at = NOW()
+      WHERE id = (
+        SELECT id FROM roles_config ORDER BY id DESC LIMIT 1
+      )
+      `,
+      [admin, planner, technician]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("UPDATE CREDENTIALS ERROR:", err.message);
+    res.status(500).json({ error: "Update failed" });
+  }
+});
 
 /* =====================
    GET LINES

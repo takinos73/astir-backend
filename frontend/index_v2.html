@@ -8,6 +8,54 @@
 </head>
 
 <!-- =====================
+     LOGIN MODAL
+===================== -->
+<div id="loginOverlay" class="modal-overlay">
+  <div class="modal-box modal-small">
+
+    <h3>🔐 CMMS Login</h3>
+    <p class="modal-subtitle">
+      Enter access code to continue
+    </p>
+
+    <div class="login-form">
+
+      <div class="field">
+        <label>Role</label>
+        <select id="loginRole">
+          <option value="technician">Technician</option>
+          <option value="planner">Planner</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Access code"
+          autocomplete="off"
+        />
+      </div>
+
+      <div id="loginError" class="login-error" style="display:none;">
+        ❌ Invalid credentials
+      </div>
+
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-primary" id="loginBtn">
+        Login
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- =====================
      TASK VIEW MODAL (SINGLE – CLEAN)
 ===================== -->
 <div id="taskViewOverlay" class="modal-overlay" style="display:none;">
@@ -666,6 +714,15 @@
           Login
         </button>
       </div>
+
+      <button
+        id="logoutBtn"
+        class="btn-secondary"
+        style="display:none;"
+      >
+        🚪 Logout
+      </button>
+
   </header>
   
 
@@ -1289,6 +1346,7 @@
   <script src="./js/formatters.js" defer></script>
 
   <!-- FEATURES -->
+  <script src="./js/features/auth.js" defer></script>
   <script src="./js/features/analytics.js" defer></script>
   <script src="./js/features/importExcel.js" defer></script>
   <script src="./js/features/reports.js" defer></script>
