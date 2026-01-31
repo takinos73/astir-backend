@@ -146,10 +146,11 @@ window.renderAssetDashboard = function () {
 
   container.innerHTML = assets.map(a => `
     <div class="asset-card">
-    <div class="asset-line">LINE ${a.line}</div>
-    <div class="asset-title">
+      <div class="asset-line">LINE ${a.line}</div>
+
+      <div class="asset-title">
         ${a.machine} <span class="sn">SN ${a.serial}</span>
-      </div>      
+      </div>
 
       <div class="asset-metrics">
         <div class="metric overdue">🔴 ${a.overdue} overdue</div>
@@ -162,7 +163,7 @@ window.renderAssetDashboard = function () {
       </div>
 
       <div class="asset-actions">
-        <button onclick="openAssetView('${a.machine}','${a.serial}')">
+        <button onclick="openAssetViewBySerial('${a.serial}')">
           View Asset
         </button>
         <button onclick="openCreateTaskForAsset('${a.machine}','${a.serial}','${a.line}')">
@@ -172,3 +173,4 @@ window.renderAssetDashboard = function () {
     </div>
   `).join("");
 };
+
