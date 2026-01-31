@@ -2502,6 +2502,90 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
 
   overlay.style.display = "flex";
 });
+// =====================
+// OPEN ADD TASK WITH ASSET CONTEXT (FROM DASHBOARD)
+// =====================
+async function openAddTaskForAsset(machine, serial, line) {
+  console.group("ADD TASK FROM DASHBOARD");
+
+  if (!machine || !serial) {
+    alert("Missing asset context");
+    console.groupEnd();
+    return;
+  }
+
+  // 🔑 Ensure assets are loaded
+  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+    await loadAssets();
+  }
+
+  const overlay = document.getElementById("addTaskOverlay");
+  if (!overlay) {
+    console.groupEnd();
+    return;
+  }
+
+  // 🔹 Default Planned
+  const typeSelect = document.getElementById("taskPlannedType");
+  if (typeSelect) {
+    typeSelect.value = "planned";
+    applyAddTaskTypeUI(true);
+  }
+
+  // 🔹 Context labels
+  const ctxAsset = document.getElementById("ctx-asset");
+  const ctxLocation = document.getElementById("ctx-location");
+
+  if (ctxAsset) ctxAsset.textContent = `🏭 ${machine} • SN ${serial}`;
+  if (ctxLocation) ctxLocation.textContent = `Line ${line || "—"}`;
+
+  // 🔹 Populate lines
+  populateAddTaskLines();
+
+  // 🔹 Preselect + LOCK line
+  const lineSelect = document.getElementById("nt-line");
+  if (lineSelect && line) {
+    lineSelect.value = line;
+    lineSelect.dispatchEvent(new Event("change"));
+    lineSelect.disabled = true;
+    lineSelect.classList.add("locked");
+  }
+
+  // 🔁 Wait until asset dropdown is populated, then select + LOCK by SERIAL
+  const waitForAssetDropdown = () => {
+    const assetSel = document.getElementById("nt-asset");
+    if (!assetSel) return;
+
+    // enable temporarily (in case it's disabled by default)
+    assetSel.disabled = false;
+
+    const option = [...assetSel.options].find(opt =>
+      opt.textContent.includes(serial)
+    );
+
+    if (option) {
+      assetSel.value = option.value;
+      assetSel.disabled = true;
+      assetSel.classList.add("locked");
+      return;
+  }
+
+  // ⏳ retry until options exist
+  setTimeout(waitForAssetDropdown, 30);
+};
+
+waitForAssetDropdown();
+
+
+  waitForAssetDropdown();
+
+  overlay.style.display = "flex";
+  console.log("Context:", { machine, serial, line });
+  console.groupEnd();
+
+  // ✨ UX polish
+  document.getElementById("nt-task")?.focus();
+}
 
 
 // =====================

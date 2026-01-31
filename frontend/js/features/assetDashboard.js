@@ -166,7 +166,11 @@ window.renderAssetDashboard = function () {
         <button onclick="openAssetViewBySerial('${a.serial}')">
           View Asset
         </button>
-        <button onclick="openCreateTaskForAsset('${a.machine}','${a.serial}','${a.line}')">
+        <button onclick="openAddTaskForAsset(
+            '${a.machine}',
+            '${a.serial}',
+            '${a.line}'
+          )">
           Create WO
         </button>
       </div>
