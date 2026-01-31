@@ -13,6 +13,16 @@ function getAssetKey(row) {
 
   return `${line}||${machine}||${sn}`;
 }
+// =====================
+// TREND ARROW UTILITY
+// =====================
+
+function trendArrow(current, previous) {
+  if (previous == null || current == null) return "";
+  if (current > previous) return "↗︎";
+  if (current < previous) return "↘︎";
+  return "→";
+}
 
 /* =====================
    TOP WORST ASSETS DASHBOARD
@@ -153,9 +163,20 @@ window.renderAssetDashboard = function () {
       </div>
 
       <div class="asset-metrics">
-        <div class="metric overdue">🔴 ${a.overdue} overdue</div>
-        <div class="metric soon">🟠 ${a.dueSoon} due soon</div>
-        <div class="metric mttr">⏱ Avg MTTR: ${a.avgMTTR ?? "—"} min</div>
+        <div class="metric overdue">
+          🔴 Overdue: ${a.overdue}
+          <span class="trend">${a.overdueTrend || ""}</span>
+        </div>
+
+        <div class="metric soon">
+          🟠 Due soon: ${a.dueSoon}
+        </div>
+
+        <div class="metric mttr">
+          ⏱ MTTR: ${a.avgMTTR ?? "—"} min
+          <span class="trend">${a.mttrTrend || ""}</span>
+        </div>
+
         <div class="metric last">
           ⚡ Last breakdown:
           ${a.lastBreakdownDays != null ? `${a.lastBreakdownDays} days ago` : "—"}

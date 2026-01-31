@@ -2939,6 +2939,12 @@ tr.history-unplanned {
   font-size: 11px;
   color: #888;
 }
+.trend {
+  margin-left: 6px;
+  opacity: 0.6;
+  font-size: 12px;
+}
+
 
 
 
