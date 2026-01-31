@@ -2846,4 +2846,99 @@ tr.history-unplanned {
     transparent
   );
 }
+.asset-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 16px;
+}
+
+.asset-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 14px;
+  color: #eaeaea;
+  font-size: 13px;
+}
+.asset-card .asset-title{
+  margin-bottom: 8px;
+}
+
+.asset-card h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.asset-meta {
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.asset-metric {
+  margin: 4px 0;
+}
+
+.asset-metric.red { color: #ef5350; }
+.asset-metric.orange { color: #ffb300; }
+
+.asset-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.asset-actions button {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #eee;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.asset-actions button:hover {
+  background: #333;
+}
+#assetDashboard {
+  position: relative;   /* ⬅️ ΚΡΙΣΙΜΟ */
+  top: auto;
+  left: auto;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+
+  margin: 20px auto 12px;
+  padding: 0 16px;
+  max-width: 1400px;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.dashboard-header {
+  margin: 6px 16px 14px;
+}
+
+.dashboard-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.dashboard-count {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+}
+
+.dashboard-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #888;
+}
+
+
 

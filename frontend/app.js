@@ -287,6 +287,24 @@ console.log("filterByTaskType():", activeTaskTypeFilter, "sample:", tasks?.[0]);
   // implicit ALL
   return tasks;
 }
+/* =====================
+    ASSET DASHBOARD – DATA
+===================== */
+function showDefaultDashboard() {
+  // tabs
+  document.querySelectorAll(".main-tab").forEach(b => b.classList.remove("active"));
+  document.querySelector('[data-tab="assets"]').classList.add("active");
+
+  // panels
+  document.querySelectorAll('[id^="tab-"]').forEach(t => (t.style.display = "none"));
+  document.getElementById("tab-assets").style.display = "block";
+
+  // render dashboard
+  if (typeof renderAssetDashboard === "function") {
+    renderAssetDashboard();
+  }
+}
+
 
 function buildRow(task) {
   const tr = document.createElement("tr");
@@ -394,6 +412,7 @@ function buildRow(task) {
 
   return tr;
 }
+
 
 /* =====================
    LOAD TASK HISTORY
@@ -1685,6 +1704,10 @@ if (menu) menu.classList.remove("open");
   initAssetDropdown();
 
   renderTable();
+  // ✅ 🔥 ASSET DASHBOARD (TOP 6 WORST)
+  if (typeof renderAssetDashboard === "function") {
+    renderAssetDashboard();
+  }
 }
 /* =====================
    ADD TASK TYPE LOGIC
@@ -3770,23 +3793,23 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 
 document.querySelectorAll(".main-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    // Active state
+    // 1️⃣ Active state (κουμπιά)
     document.querySelectorAll(".main-tab")
       .forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
-    // Hide all tabs
-    ["tasks", "assets", "docs", "reports"].forEach(t => {
+    // 2️⃣ Hide all tab panels (⬅️ προσθέσαμε dashboard)
+    ["dashboard", "tasks", "assets", "docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
 
-    // Show selected tab
+    // 3️⃣ Show selected tab
     const sel = tab.dataset.tab;
     const active = getEl(`tab-${sel}`);
     if (active) active.style.display = "block";
 
-    // Tab-specific loaders
+    // 4️⃣ Tab-specific loaders (ΟΠΩΣ ΗΤΑΝ)
     if (sel === "assets") {
       loadAssets();
     }
@@ -3795,8 +3818,14 @@ document.querySelectorAll(".main-tab").forEach(tab => {
       loadHistory();   // 👈 γεμίζει executionsData
       loadReports();   // 👈 populate lines + preview
     }
+
+    // 5️⃣ Dashboard render (ΝΕΟ, SAFE)
+    if (sel === "dashboard" && typeof renderAssetDashboard === "function") {
+      renderAssetDashboard();
+    }
   });
 });
+
 
 /* =====================
    EVENT LISTENERS
@@ -4042,3 +4071,11 @@ document.addEventListener(
   },
   true // capture
 );
+// =====================
+// DEFAULT TAB ON LOAD
+// =====================
+window.addEventListener("DOMContentLoaded", () => {
+  const dashTab = document.querySelector('.main-tab[data-tab="dashboard"]');
+  if (dashTab) dashTab.click();
+});
+

@@ -626,6 +626,7 @@
 
   </div>
 </div>
+
     <!-- HEADER -->
     <header class="app-header">
       <div class="app-header-main">
@@ -648,46 +649,66 @@
         </span>        
       </div>
 
-    <!-- =====================
-     DEV LOGIN (ROLE SWITCH)
-      ===================== -->
+      <!-- =====================
+      DEV LOGIN (ROLE SWITCH)
+        ===================== -->
 
-<div id="devLogin" style="display:flex; gap:8px; align-items:center;">
-  <span style="opacity:0.7;">👤 Role:</span>
+      <div id="devLogin" style="display:flex; gap:8px; align-items:center;">
+        <span style="opacity:0.7;">👤 Role:</span>
 
-  <select id="roleSelect">
-    <option value="technician">Technician</option>
-    <option value="planner">Planner</option>
-    <option value="admin">Admin</option>
-  </select>
+        <select id="roleSelect">
+          <option value="technician">Technician</option>
+          <option value="planner">Planner</option>
+          <option value="admin">Admin</option>
+        </select>
 
-  <button class="btn-secondary" id="loginAsRoleBtn">
-    Login
-  </button>
-</div>
+        <button class="btn-secondary" id="loginAsRoleBtn">
+          Login
+        </button>
+      </div>
   </header>
+  
 
-    <!-- MAIN TABS -->
-    <section class="main-tabs">
-      <button class="main-tab" data-tab="assets">Assets</button>
-      <button class="main-tab active" data-tab="tasks">Tasks</button>
-      <button class="main-tab" data-tab="reports">Reports</button>
-      <button class="main-tab" data-tab="docs">Documentation</button>
+  <!-- MAIN TABS -->
+<section class="main-tabs">
+  <button class="main-tab active" data-tab="dashboard">Dashboard</button>
+  <button class="main-tab" data-tab="assets">Assets</button>
+  <button class="main-tab" data-tab="tasks">Tasks</button>
+  <button class="main-tab" data-tab="reports">Reports</button>
+  <button class="main-tab" data-tab="docs">Documentation</button>
 
-    <!-- 🔧 ADMIN / TOOLS -->      
-    <div class="top-tools">
-      
-      <label class="btn-secondary admin-only">
-          📂 Upload Excel
-        <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" hidden />
-      </label> 
-        <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import Excel</button>
-        <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
-        <label class="btn-secondary admin-only">♻ Load Snapshot  <input type="file" id="snapshotFile" accept="application/json" hidden /></label>
-        <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
-        </div>      
-    </section>
+  <!-- 🔧 ADMIN / TOOLS -->
+  <div class="top-tools">
+    <label class="btn-secondary admin-only">
+      📂 Upload Excel
+      <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" hidden />
+    </label>
+    <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import Excel</button>
+    <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
+    <label class="btn-secondary admin-only">
+      ♻ Load Snapshot
+      <input type="file" id="snapshotFile" accept="application/json" hidden />
+    </label>
+    <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
+  </div>
+</section>
 
+<!-- DASHBOARD TAB -->
+<div id="tab-dashboard" class="tab-panel active">
+  <div class="dashboard-header">
+  <div class="dashboard-title">
+    Asset Overview
+    <span id="dashboardRiskCount" class="dashboard-count"></span>
+  </div>
+  <div class="dashboard-subtitle">
+    Assets with overdue tasks, upcoming work or recent breakdowns
+  </div>
+</div>
+
+<div id="assetDashboard" class="asset-dashboard"></div>
+
+</div>
+    
     <!-- ===================== -->
     <!-- TAB: TASKS -->
     <!-- ===================== -->
@@ -853,7 +874,9 @@
       </section>
 
     </div>
-<!-- TAB: ASSETS -->
+    
+<!-- TAB: ASSETS --> 
+
 <div id="tab-assets" style="display:none;">
 
   <section class="assets-header">
@@ -886,8 +909,9 @@
       </thead>
       <tbody></tbody>
     </table>
-  </div>
+  </div>  
 </div>
+
     
     <!-- ===================== 
       TAB: REPORTS
@@ -926,7 +950,7 @@
 
         <input id="dateTo" type="date" />
       </div>
-
+      
       <!-- Line -->
       <div class="field field-right">
         <label for="reportLine">Line</label>
@@ -1272,7 +1296,7 @@
 
   <!-- APP (state, loaders, globals) -->
   <script src="./app.js" defer></script>
-
+  <script src="./js/assetDashboard.js" defer></script>
 
 </body>
 </html>
