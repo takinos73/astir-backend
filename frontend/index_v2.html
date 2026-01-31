@@ -703,16 +703,9 @@
 
       <div id="devLogin" style="display:flex; gap:8px; align-items:center;">
         <span style="opacity:0.7;">👤 Role:</span>
-
-        <select id="roleSelect">
-          <option value="technician">Technician</option>
-          <option value="planner">Planner</option>
-          <option value="admin">Admin</option>
-        </select>
-
-        <button class="btn-secondary" id="loginAsRoleBtn">
-          Login
-        </button>
+        <span id="loggedRoleBadge" class="role-badge" style="display:none;">
+          Logged as: <strong id="loggedRoleText"></strong>
+        </span>        
       </div>
 
       <button

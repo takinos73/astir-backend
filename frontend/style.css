@@ -98,6 +98,14 @@ body {
   font-size: 12px;
   margin-top: 4px;
 }
+.role-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #1e2533;
+  border: 1px solid #2e3648;
+  color: #cfd6e4;
+}
 
 /* =====================
    KPI STRIP

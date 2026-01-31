@@ -24,21 +24,27 @@ function hideLogin() {
   if (overlay) overlay.style.display = "none";
 }
 
-/* =====================
-   APPLY ROLE UI
-===================== */
 function applyRoleUI(role) {
   document.body.dataset.role = role;
 
-  // Admin-only elements
   document.querySelectorAll(".admin-only").forEach(el => {
     el.style.display = role === "admin" ? "" : "none";
   });
 
-  // Show logout button
+  // 🔹 Logged as badge
+  const badge = document.getElementById("loggedRoleBadge");
+  const text = document.getElementById("loggedRoleText");
+
+  if (badge && text) {
+    text.textContent = role;
+    badge.style.display = "inline-block";
+  }
+
+  // 🔹 Logout button
   const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.style.display = "inline-flex";
+  if (logoutBtn) logoutBtn.style.display = "inline-block";
 }
+
 
 /* =====================
    LOGIN HANDLER
@@ -61,30 +67,6 @@ document.getElementById("loginBtn")?.addEventListener("click", () => {
 });
 
 /* =====================
-   LOGOUT
-===================== */
-function logout() {
-  console.log("LOGOUT");
-
-  localStorage.removeItem(ROLE_STORAGE_KEY);
-  document.body.dataset.role = "";
-
-  // Hide admin-only
-  document.querySelectorAll(".admin-only").forEach(el => {
-    el.style.display = "none";
-  });
-
-  // Hide logout button
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.style.display = "none";
-
-  showLogin();
-}
-
-document.getElementById("logoutBtn")
-  ?.addEventListener("click", logout);
-
-/* =====================
    INIT LOGIN ON LOAD
 ===================== */
 document.addEventListener("DOMContentLoaded", () => {
@@ -96,3 +78,23 @@ document.addEventListener("DOMContentLoaded", () => {
     applyRoleUI(role);
   }
 });
+
+/* =====================
+   LOGOUT
+===================== */
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("cmmsRole");
+
+  // hide badge + logout
+  const badge = document.getElementById("loggedRoleBadge");
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (badge) badge.style.display = "none";
+  if (logoutBtn) logoutBtn.style.display = "none";
+
+  // clear password field for safety
+  const pass = document.getElementById("loginPassword");
+  if (pass) pass.value = "";
+
+  showLogin();
+});
+
