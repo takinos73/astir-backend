@@ -1830,15 +1830,6 @@ app.post("/snapshot/restore", async (req, res) => {
         );
       }
     }
-    /* =====================
-       5️⃣ FIX SEQUENCE (CRITICAL)
-    ===================== */
-    await client.query(`
-      SELECT setval(
-        pg_get_serial_sequence('maintenance_tasks','id'),
-        (SELECT MAX(id) FROM maintenance_tasks)
-      )
-    `);
 
     /* =====================
    5️⃣ RESTORE TASK EXECUTIONS (HISTORY)
@@ -1866,11 +1857,11 @@ for (const e of executions) {
       e.executed_by || null,
       e.executed_at ? new Date(e.executed_at) : null,
       e.duration_minutes ?? null,
-      e.notes || null ? new Date(e.created_at) : new Date()
+      e.notes || null
     ]
   );}
 /* =====================
-   6️⃣ FIX SEQUENCES
+   6️⃣ FIX ALL SEQUENCES (FINAL)
 ===================== */
 await client.query(`
   SELECT setval(
