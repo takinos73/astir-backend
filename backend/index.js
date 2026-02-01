@@ -1885,13 +1885,6 @@ for (const e of executions) {
 /* =====================
    6️⃣ FIX SEQUENCES
 ===================== */
-await client.query(`
-  SELECT setval(
-    'task_executions_id_seq',
-    COALESCE((SELECT MAX(id) FROM task_executions), 1),
-    true
-  )
-`);
 
 await client.query(`
   SELECT setval(
