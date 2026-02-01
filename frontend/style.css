@@ -294,14 +294,14 @@ body {
 
 select,
 .btn-secondary {
-  padding: 7px 10px;
+  padding: 4px 8px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   color: var(--text-main);
   font-size: 13px;
   cursor: pointer;
-  margin:8px 2px;
+  margin:6px 2px;
 }
 
 .btn-secondary:hover { background: #222838; }
