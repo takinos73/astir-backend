@@ -1850,11 +1850,10 @@ for (const e of executions) {
       executed_by,
       executed_at,
       duration_minutes,
-      notes,
-      created_at
+      notes
     )
     VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8
+      $1,$2,$3,$4,$5,$6,$7
     )
     `,
     [
@@ -1864,11 +1863,9 @@ for (const e of executions) {
       e.executed_by || null,
       e.executed_at ? new Date(e.executed_at) : null,
       e.duration_minutes ?? null,
-      e.notes || null,
-      e.created_at ? new Date(e.created_at) : new Date()
+      e.notes || null ? new Date(e.created_at) : new Date()
     ]
-  );
-}
+  );}
 
 
     await client.query("COMMIT");
