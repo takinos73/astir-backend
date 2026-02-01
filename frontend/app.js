@@ -3876,37 +3876,52 @@ document.querySelectorAll(".line-tab").forEach(btn => {
 ===================== */
 
 document.querySelectorAll(".main-tab").forEach(tab => {
+  console.log("MAIN TABS SCRIPT LOADED");
+
   tab.addEventListener("click", () => {
-    // 1️⃣ Active state (κουμπιά)
+    // 1️⃣ Active state
     document.querySelectorAll(".main-tab")
       .forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
+    console.log("TAB CLICKED:", tab.dataset.tab);
 
-    // 2️⃣ Hide all tab panels (⬅️ προσθέσαμε dashboard)
-    ["dashboard", "tasks", "assets", "library","docs", "reports"].forEach(t => {
+    // 2️⃣ Hide all panels
+    ["dashboard", "tasks", "assets", "library", "docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
 
-    // 3️⃣ Show selected tab
+    // 3️⃣ Show selected panel
     const sel = tab.dataset.tab;
     const active = getEl(`tab-${sel}`);
     if (active) active.style.display = "block";
 
-    // 4️⃣ Tab-specific loaders (ΟΠΩΣ ΗΤΑΝ)
+    // 4️⃣ Existing logic (unchanged)
     if (sel === "assets") {
       loadAssets();
     }
 
     if (sel === "reports") {
-      loadHistory();   // 👈 γεμίζει executionsData
-      loadReports();   // 👈 populate lines + preview
+      loadHistory();
+      loadReports();
     }
 
-    // 5️⃣ Dashboard render (ΝΕΟ, SAFE)
     if (sel === "dashboard" && typeof renderAssetDashboard === "function") {
       renderAssetDashboard();
     }
+
+    // ✅ 🔥 THE FIX – LIBRARY
+    if (sel === "library") {
+      (async () => {
+        if (!Array.isArray(assetsData) || assetsData.length === 0) {
+          await loadAssets(); // ⬅️ ΤΟ ΕΛΕΙΠΕ
+        }
+        loadLibrary();
+        populateLibraryModels();
+        renderLibraryTable();
+      })();
+    }
+
   });
 });
 

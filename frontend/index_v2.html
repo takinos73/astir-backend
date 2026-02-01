@@ -757,6 +757,47 @@
       </div>
       <div id="assetDashboard" class="asset-dashboard"></div>
   </div>
+  <!-- ===================== -->
+<!-- TAB: PREVENTIVE LIBRARY -->
+<!-- ===================== -->
+<div id="tab-library" style="display:none;">  
+  <section class="library-header">
+    <h2>
+    Preventive Maintenance Library
+    <span title="Πρότυπα σχέδια προληπτικής συντήρησης ανά μοντέλο">ⓘ</span>
+  </h2>
+  </section>
+
+  <section class="library-controls">
+    <label for="libraryModelSelect">Asset Model</label>
+    <select id="libraryModelSelect">
+      <option value="">— Select model —</option>
+      <option value="PMC250">PMC250</option>
+      <option value="PMC300">PMC300</option>
+      <option value="PMC500">PMC500</option>
+      <option value="PTC027">PTC027</option>
+    </select>
+    <button
+      class="btn-secondary"
+      onclick="generateLibraryFromTasks()">
+      🔁 Generate from Live Tasks
+    </button>
+    <div id="librarySummary" class="library-summary">
+      <span class="summary-item">
+        ⏱ Monthly preventive workload:
+        <strong id="libraryMonthlyWorkload">—</strong>
+      </span>
+    </div>
+
+  </section>
+
+  <section class="library-content" id="libraryContent">
+    <div class="library-empty">
+      Select an asset model to view its preventive plan
+    </div>
+  </section>
+
+</div>
     
     <!-- ===================== -->
     <!-- TAB: TASKS -->
@@ -853,65 +894,6 @@
   />
   <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
 </section>
-
-<!-- ===================== -->
-<!-- TAB: PREVENTIVE LIBRARY -->
-<!-- ===================== -->
-<div id="tab-library" style="display:none;">
-
-  <section class="reports-header">
-    <h2>Preventive Library</h2>
-    <p class="reports-subtitle">
-      Maintenance plans ανά Asset Model (PTC027, PMC250, PMC300, PMC500)
-    </p>
-  </section>
-
-  <section class="reports-card">
-    <div class="reports-grid">
-
-      <div class="field">
-        <label for="libraryModelSelect">Asset Model</label>
-        <select id="libraryModelSelect">
-          <option value="all">ALL</option>
-          <option value="PTC027">PTC027</option>
-          <option value="PMC250">PMC250</option>
-          <option value="PMC300">PMC300</option>
-          <option value="PMC500">PMC500</option>
-        </select>
-      </div>
-
-      <div class="field field-right">
-        <label>&nbsp;</label>
-        <button class="btn-secondary" id="libraryAddRowBtn">➕ Add Library Task</button>
-      </div>
-
-    </div>
-
-    <div class="table-card" style="margin-top:12px;">
-      <table id="libraryTable">
-        <thead>
-          <tr>
-            <th style="width:12%;">Model</th>
-            <th style="width:38%;">Task</th>
-            <th style="width:16%;">Type</th>
-            <th style="width:12%;">Frequency</th>
-            <th style="width:12%;">Duration</th>
-            <th style="width:10%;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="6" style="color:#777; padding:12px;">
-              Library empty — next step θα το γεμίσουμε με data + render.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </section>
-</div>
-
 
   <!-- =====================
      GROUP DONE ACTION BAR (MOCK)

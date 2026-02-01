@@ -41,7 +41,7 @@ body {
   background: #10131a;
   padding: 8px;
   border-radius: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   border: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
@@ -301,6 +301,7 @@ select,
   color: var(--text-main);
   font-size: 13px;
   cursor: pointer;
+  margin:8px 2px;
 }
 
 .btn-secondary:hover { background: #222838; }
@@ -2972,6 +2973,52 @@ tr.history-unplanned {
   color: #bdbdbd;
   font-size: 12px;
 }
+/* =====================
+   PREVENTIVE LIBRARY TABLE
+===================== */
+
+.library-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.library-table th,
+.library-table td {
+  border: 1px solid #333;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.library-table th {
+  background: #1f1f1f;
+  font-weight: 600;
+}
+
+.library-table tr:nth-child(even) {
+  background: #171717;
+}
+
+.library-table .small {
+  font-size: 11px;
+  color: #aaa;
+}
+.library-summary {
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: #d8e2f7;
+  border: 1px solid #e1e4ea;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #272727;
+}
+
+.library-summary strong {
+  color: #111;
+}
+
+
+
 
 
 
