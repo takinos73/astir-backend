@@ -1882,6 +1882,40 @@ for (const e of executions) {
     client.release();
   }
 });
+/* =====================
+   6️⃣ FIX SEQUENCES
+===================== */
+await client.query(`
+  SELECT setval(
+    'task_executions_id_seq',
+    COALESCE((SELECT MAX(id) FROM task_executions), 1),
+    true
+  )
+`);
+
+await client.query(`
+  SELECT setval(
+    'maintenance_tasks_id_seq',
+    COALESCE((SELECT MAX(id) FROM maintenance_tasks), 1),
+    true
+  )
+`);
+
+await client.query(`
+  SELECT setval(
+    'assets_id_seq',
+    COALESCE((SELECT MAX(id) FROM assets), 1),
+    true
+  )
+`);
+
+await client.query(`
+  SELECT setval(
+    'lines_id_seq',
+    COALESCE((SELECT MAX(id) FROM lines), 1),
+    true
+  )
+`);
 
 
 /* =====================================================
