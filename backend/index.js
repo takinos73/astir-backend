@@ -1869,22 +1869,16 @@ for (const e of executions) {
       e.notes || null ? new Date(e.created_at) : new Date()
     ]
   );}
-
-
-    await client.query("COMMIT");
-    res.json({ message: "Snapshot restored successfully" });
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("SNAPSHOT RESTORE ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
-  }
-});
 /* =====================
    6️⃣ FIX SEQUENCES
 ===================== */
+await client.query(`
+  SELECT setval(
+    'task_executions_id_seq',
+    COALESCE((SELECT MAX(id) FROM task_executions), 1),
+    true
+  )
+`);
 
 await client.query(`
   SELECT setval(
@@ -1909,6 +1903,18 @@ await client.query(`
     true
   )
 `);
+
+    await client.query("COMMIT");
+    res.json({ message: "Snapshot restored successfully" });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("SNAPSHOT RESTORE ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 
 
 /* =====================================================
