@@ -3883,7 +3883,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     tab.classList.add("active");
 
     // 2️⃣ Hide all tab panels (⬅️ προσθέσαμε dashboard)
-    ["dashboard", "tasks", "assets", "docs", "reports"].forEach(t => {
+    ["dashboard", "tasks", "assets", "library","docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });

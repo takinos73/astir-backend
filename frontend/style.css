@@ -1944,7 +1944,9 @@ tr.history-unplanned {
   color: #9aa4b2;
   letter-spacing: 0.4px;
 }
-
+#addAssetBtn {
+  margin-left: 100px;
+}
 /* inputs & selects */
 #addAssetOverlay select,
 #addAssetOverlay input {

@@ -723,8 +723,9 @@
 <section class="main-tabs">
   <button class="main-tab active" data-tab="dashboard">Dashboard</button>
   <button class="main-tab" data-tab="assets">Assets</button>
-  <button class="main-tab" data-tab="tasks">Tasks</button>
+  <button class="main-tab" data-tab="tasks">Tasks</button>  
   <button class="main-tab" data-tab="reports">Reports</button>
+  <button class="main-tab" data-tab="library">Library</button>
   <button class="main-tab" data-tab="docs">Documentation</button>
 
   <!-- 🔧 ADMIN / TOOLS -->
@@ -744,20 +745,18 @@
 </section>
 
 <!-- DASHBOARD TAB -->
-<div id="tab-dashboard" class="tab-panel active">
-  <div class="dashboard-header">
-  <div class="dashboard-title">
-    Asset Overview
-    <span id="dashboardRiskCount" class="dashboard-count"></span>
+  <div id="tab-dashboard" class="tab-panel active">
+      <div class="dashboard-header">
+          <div class="dashboard-title">
+            Asset Overview
+            <span id="dashboardRiskCount" class="dashboard-count"></span>
+          </div>
+          <div class="dashboard-subtitle">
+          Assets with overdue tasks, upcoming work or recent breakdowns
+          </div>
+      </div>
+      <div id="assetDashboard" class="asset-dashboard"></div>
   </div>
-  <div class="dashboard-subtitle">
-    Assets with overdue tasks, upcoming work or recent breakdowns
-  </div>
-</div>
-
-<div id="assetDashboard" class="asset-dashboard"></div>
-
-</div>
     
     <!-- ===================== -->
     <!-- TAB: TASKS -->
@@ -855,6 +854,65 @@
   <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
 </section>
 
+<!-- ===================== -->
+<!-- TAB: PREVENTIVE LIBRARY -->
+<!-- ===================== -->
+<div id="tab-library" style="display:none;">
+
+  <section class="reports-header">
+    <h2>Preventive Library</h2>
+    <p class="reports-subtitle">
+      Maintenance plans ανά Asset Model (PTC027, PMC250, PMC300, PMC500)
+    </p>
+  </section>
+
+  <section class="reports-card">
+    <div class="reports-grid">
+
+      <div class="field">
+        <label for="libraryModelSelect">Asset Model</label>
+        <select id="libraryModelSelect">
+          <option value="all">ALL</option>
+          <option value="PTC027">PTC027</option>
+          <option value="PMC250">PMC250</option>
+          <option value="PMC300">PMC300</option>
+          <option value="PMC500">PMC500</option>
+        </select>
+      </div>
+
+      <div class="field field-right">
+        <label>&nbsp;</label>
+        <button class="btn-secondary" id="libraryAddRowBtn">➕ Add Library Task</button>
+      </div>
+
+    </div>
+
+    <div class="table-card" style="margin-top:12px;">
+      <table id="libraryTable">
+        <thead>
+          <tr>
+            <th style="width:12%;">Model</th>
+            <th style="width:38%;">Task</th>
+            <th style="width:16%;">Type</th>
+            <th style="width:12%;">Frequency</th>
+            <th style="width:12%;">Duration</th>
+            <th style="width:10%;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" style="color:#777; padding:12px;">
+              Library empty — next step θα το γεμίσουμε με data + render.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+</div>
+
+
   <!-- =====================
      GROUP DONE ACTION BAR (MOCK)
      εμφανίζεται όταν υπάρχουν selected tasks (στο JS)
@@ -936,14 +994,15 @@
     </p>
   </section>
 
-  <section class="controls-row">
-    <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
-  </section>
+  
   <div class="filter-group">
     <label for="assetLineFilter">Line:</label>
     <select id="assetLineFilter">
       <option value="all">All</option>
     </select>
+    <section class="controls-row">
+      <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
+    </section>
   </div>
 
   <div class="table-card assets-scroll">
@@ -1193,7 +1252,6 @@
       </button>
     </div>
   </div>
-
 </div>
 
     <!-- =====================
@@ -1345,6 +1403,7 @@
   <script src="./js/features/reports.js" defer></script>
   <script src="./js/features/printWorkOrder.js" defer></script>
   <script src="./js/features/assetDashboard.js" defer></script>
+  <script src="./js/features/preventiveLibrary.js" defer></script>
 
   <!-- APP (state, loaders, globals) -->
   <script src="./app.js" defer></script>
