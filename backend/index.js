@@ -1716,121 +1716,120 @@ app.post("/snapshot/restore", async (req, res) => {
         ]
       );
     }
-  /* =====================
-   3️⃣ PREP: TASK IDS USED IN HISTORY
-===================== */
-const historyTaskIds = new Set(executions.map(e => e.task_id));
 
     /* =====================
-   4️⃣ RESTORE TASKS
-   - tasks WITH status=Done → preserve ID
-   - tasks otherwise → new ID
-===================== */
-for (const t of tasks) {
-  const assetRes = await client.query(
-    `
-    SELECT a.id
-    FROM assets a
-    JOIN lines l ON l.id = a.line_id
-    WHERE l.code = $1
-      AND a.model = $2
-      AND a.serial_number = $3
-    `,
-    [t.line, t.machine_name, t.serial_number]
-  );
-  if (!assetRes.rows.length) continue;
+       3️⃣ PREP: TASK IDS USED IN HISTORY
+    ===================== */
+    const historyTaskIds = new Set(executions.map(e => e.task_id));
 
-  const assetId = assetRes.rows[0].id;
+    /* =====================
+       4️⃣ RESTORE TASKS
+       - tasks WITH history → preserve ID
+       - tasks WITHOUT history → new ID
+    ===================== */
+    for (const t of tasks) {
+      const assetRes = await client.query(
+        `
+        SELECT a.id
+        FROM assets a
+        JOIN lines l ON l.id = a.line_id
+        WHERE l.code = $1
+          AND a.model = $2
+          AND a.serial_number = $3
+        `,
+        [t.line, t.machine_name, t.serial_number]
+      );
+      if (!assetRes.rows.length) continue;
 
-  // ✅ SOURCE OF TRUTH
-  const hasHistory = t.status === "Done";
+      const assetId = assetRes.rows[0].id;
+      const hasHistory = historyTaskIds.has(t.id);
 
-  if (hasHistory) {
-    // 🔒 PRESERVE ID
-    await client.query(
-      `
-      INSERT INTO maintenance_tasks (
-        id,
-        asset_id, section, unit, task, type, qty,
-        duration_min, frequency_hours,
-        due_date, status,
-        completed_by, completed_at,
-        is_planned, notes,
-        created_at, updated_at,
-        deleted_at
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7,
-        $8,$9,$10,$11,$12,$13,
-        $14,$15,$16,$17,$18
-      )
-      `,
-      [
-        t.id,
-        assetId,
-        t.section || null,
-        t.unit || null,
-        t.task,
-        t.type || null,
-        t.qty ?? null,
-        t.duration_min ?? null,
-        t.frequency_hours ?? null,
-        t.due_date ? new Date(t.due_date) : null,
-        t.status,
-        t.completed_by || null,
-        t.completed_at ? new Date(t.completed_at) : null,
-        t.is_planned,
-        t.notes || null,
-        t.created_at ? new Date(t.created_at) : null,
-        t.updated_at ? new Date(t.updated_at) : null,
-        t.deleted_at ? new Date(t.deleted_at) : null
-      ]
-    );
-  } else {
-    // 🆕 NEW ID (active / undone / preventive rollover)
-    await client.query(
-      `
-      INSERT INTO maintenance_tasks (
-        asset_id, section, unit, task, type, qty,
-        duration_min, frequency_hours,
-        due_date, status,
-        completed_by, completed_at,
-        is_planned, notes,
-        created_at, updated_at,
-        deleted_at
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,
-        $7,$8,
-        $9,$10,
-        $11,$12,
-        $13,$14,
-        COALESCE($15,NOW()), COALESCE($16,NOW()),
-        $17
-      )
-      `,
-      [
-        assetId,
-        t.section || null,
-        t.unit || null,
-        t.task,
-        t.type || null,
-        t.qty ?? null,
-        t.duration_min ?? null,
-        t.frequency_hours ?? null,
-        t.due_date ? new Date(t.due_date) : null,
-        t.status,
-        t.completed_by || null,
-        t.completed_at ? new Date(t.completed_at) : null,
-        t.is_planned,
-        t.notes || null,
-        t.created_at ? new Date(t.created_at) : null,
-        t.updated_at ? new Date(t.updated_at) : null,
-        t.deleted_at ? new Date(t.deleted_at) : null
-      ]
-    );
-  }
-}
+      if (hasHistory) {
+        // 🔒 PRESERVE ID
+        await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            id,
+            asset_id, section, unit, task, type, qty,
+            duration_min, frequency_hours,
+            due_date, status,
+            completed_by, completed_at,
+            is_planned, notes,
+            created_at, updated_at,
+            deleted_at
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,$6,$7,
+            $8,$9,$10,$11,$12,$13,
+            $14,$15,$16,$17,$18
+          )
+          `,
+          [
+            t.id,
+            assetId,
+            t.section || null,
+            t.unit || null,
+            t.task,
+            t.type || null,
+            t.qty ?? null,
+            t.duration_min ?? null,
+            t.frequency_hours ?? null,
+            t.due_date ? new Date(t.due_date) : null,
+            t.status,
+            t.completed_by || null,
+            t.completed_at ? new Date(t.completed_at) : null,
+            t.is_planned,
+            t.notes || null,
+            t.created_at ? new Date(t.created_at) : null,
+            t.updated_at ? new Date(t.updated_at) : null,
+            t.deleted_at ? new Date(t.deleted_at) : null
+          ]
+        );
+      } else {
+        // 🆕 NEW ID (preventive rollover etc)
+        await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            asset_id, section, unit, task, type, qty,
+            duration_min, frequency_hours,
+            due_date, status,
+            completed_by, completed_at,
+            is_planned, notes,
+            created_at, updated_at,
+            deleted_at
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,$6,
+            $7,$8,
+            $9,$10,
+            $11,$12,
+            $13,$14,
+            COALESCE($15,NOW()), COALESCE($16,NOW()),
+            $17
+          )
+          `,
+          [
+            assetId,
+            t.section || null,
+            t.unit || null,
+            t.task,
+            t.type || null,
+            t.qty ?? null,
+            t.duration_min ?? null,
+            t.frequency_hours ?? null,
+            t.due_date ? new Date(t.due_date) : null,
+            t.status,
+            t.completed_by || null,
+            t.completed_at ? new Date(t.completed_at) : null,
+            t.is_planned,
+            t.notes || null,
+            t.created_at ? new Date(t.created_at) : null,
+            t.updated_at ? new Date(t.updated_at) : null,
+            t.deleted_at ? new Date(t.deleted_at) : null
+          ]
+        );
+      }
+    }
     /* =====================
        5️⃣ FIX SEQUENCE (CRITICAL)
     ===================== */
