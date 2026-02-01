@@ -1716,6 +1716,10 @@ app.post("/snapshot/restore", async (req, res) => {
         ]
       );
     }
+  /* =====================
+   3️⃣ PREP: TASK IDS USED IN HISTORY
+===================== */
+const historyTaskIds = new Set(executions.map(e => e.task_id));
 
     /* =====================
    4️⃣ RESTORE TASKS
