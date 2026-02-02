@@ -1295,7 +1295,7 @@ tbody tr:hover { background: #131520; }
 }
 
 .assets-scroll {
-  max-height: calc(6 * 52px); /* 6 rows */
+  max-height: calc(7 * 52px); /* 6 rows */
   overflow-y: auto;
 }
 .filter-group {
@@ -1946,7 +1946,7 @@ tr.history-unplanned {
   letter-spacing: 0.4px;
 }
 #addAssetBtn {
-  margin-left: 100px;
+  margin-left: 12px;
 }
 /* inputs & selects */
 #addAssetOverlay select,
@@ -2113,7 +2113,7 @@ tr.history-unplanned {
 .asset-tasks-table {
   flex: 1;
   overflow-y: auto;
-  max-height: 360px;   /* 6–8 rows */
+  max-height: 380px;   /* 6–8 rows */
 }
 
 .asset-tab-panel.active .asset-tasks-table {
