@@ -215,6 +215,7 @@ function assetStatusLabel(t) {
   `;
 }
 
+
 //----------------------
 // TASK TYPE HELPER
 //----------------------
@@ -2281,7 +2282,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   const isPlanned =
     document.getElementById("taskPlannedType")?.value === "planned";
 
-  // 🔒 Due date required for Planned tasks
+  // Due date required for Planned tasks
   if (isPlanned) {
     const due = document.getElementById("nt-due")?.value;
     if (!due) {
@@ -2295,20 +2296,20 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const assetId = document.getElementById("nt-asset")?.value;
 
-  // 🔒 Asset validation
+  // Asset validation
   if (!assetId) {
     alert("Asset is required");
     return;
   }
 
-  // 🔒 Task description validation
+  // Task description validation
   const taskDesc = document.getElementById("nt-task")?.value?.trim();
   if (!taskDesc) {
     alert("Task description is required");
     return;
   }
 
-  // 🔒 Technician required ONLY for unplanned
+  // Technician required ONLY for unplanned
   if (!isPlanned && !technician) {
     alert("Technician is required for unplanned tasks");
     return;
@@ -2320,69 +2321,65 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   let durationMin = null;
 
-if (isPlanned) {
-  const d = document.getElementById("nt-duration")?.value;
-  const n = Number(d);
-  if (Number.isFinite(n) && n > 0) {
+  if (isPlanned) {
+    const d = document.getElementById("nt-duration")?.value;
+    const n = Number(d);
+    if (Number.isFinite(n) && n > 0) {
+      durationMin = n;
+    }
+  } else {
+    const input = document.getElementById("nt-breakdown-duration");
+
+    if (!input) {
+      alert("Internal error: breakdown duration field not found");
+      return;
+    }
+
+    const n = Number(input.value);
+
+    if (!Number.isFinite(n) || n <= 0) {
+      alert("Service time (minutes) is required for breakdown tasks.");
+      input.focus();
+      return;
+    }
+
     durationMin = n;
   }
-} else {
-  const input = document.getElementById("nt-breakdown-duration");
-
-  if (!input) {
-    alert("Internal error: breakdown duration field not found");
-    return;
-  }
-
-  const n = Number(input.value);
-
-  if (!Number.isFinite(n) || n <= 0) {
-    alert("Service time (minutes) is required for breakdown tasks.");
-    input.focus();
-    return;
-  }
-
-  durationMin = n;
-}
 
   const payload = {
-  asset_id: assetId,
-  section: document.getElementById("nt-section")?.value || null,
-  unit: document.getElementById("nt-unit")?.value || null,
-  task: taskDesc,
-  type: document.getElementById("nt-type")?.value || null,
-  notes: document.getElementById("nt-notes")?.value || null,
+    asset_id: assetId,
+    section: document.getElementById("nt-section")?.value || null,
+    unit: document.getElementById("nt-unit")?.value || null,
+    task: taskDesc,
+    type: document.getElementById("nt-type")?.value || null,
+    notes: document.getElementById("nt-notes")?.value || null,
 
-  is_planned: isPlanned,
-  status: isPlanned ? "Planned" : "Done",
+    is_planned: isPlanned,
+    status: isPlanned ? "Planned" : "Done",
 
-  // 🗓️ Planned → due date | Breakdown → execution date
-  due_date: isPlanned
-    ? document.getElementById("nt-due")?.value
-    : null,
+    // Planned → due date | Breakdown → execution date
+    due_date: isPlanned
+      ? document.getElementById("nt-due")?.value
+      : null,
 
-  /* =====================
-     DURATION & EXECUTION
-  ===================== */
+    /* =====================
+       DURATION & EXECUTION
+    ===================== */
 
-  // ⏱️ Estimated (planned)
-  duration_min: isPlanned ? durationMin : null,
+    // Estimated (planned)
+    duration_min: isPlanned ? durationMin : null,
 
-  // 🔥 Breakdown ONLY
-  execution_duration_min: !isPlanned ? durationMin : null,
+    // Breakdown ONLY
+    execution_duration_min: !isPlanned ? durationMin : null,
 
-  execution_date: !isPlanned
-    ? document.getElementById("nt-breakdown-date")?.value || null
-    : null,
+    execution_date: !isPlanned
+      ? document.getElementById("nt-breakdown-date")?.value || null
+      : null,
 
-  executed_by: technician
-};
+    executed_by: technician
+  };
 
   try {
-    console.log("BREAKDOWN DURATION RAW =", document.getElementById("nt-breakdown-duration"));
-    console.log("BREAKDOWN DURATION VALUE =", document.getElementById("nt-breakdown-duration")?.value);
-    console.log("FINAL durationMin =", durationMin);
-
     const res = await fetch(`${API}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2394,8 +2391,14 @@ if (isPlanned) {
       throw new Error(err.error || "Failed to save task");
     }
 
-    // Close modal
-    document.getElementById("addTaskOverlay").style.display = "none";
+    // Close Add Task modal
+    const addOverlay = document.getElementById("addTaskOverlay");
+    if (addOverlay) {
+      addOverlay.style.display = "none";
+
+      // NEW: reset z-index in case it was opened from Asset View
+      addOverlay.style.zIndex = "";
+    }
 
     // Reset form
     document.querySelectorAll(
@@ -2403,13 +2406,72 @@ if (isPlanned) {
     ).forEach(el => el.value = "");
 
     // Refresh data
-    loadTasks();
+  loadTasks();
 
-  } catch (err) {
-    console.error("SAVE TASK ERROR:", err);
-    alert(err.message);
+  // NEW: keep Asset View in sync if it is open
+  if (currentAssetSerial) {
+
+  if (!isPlanned) {
+    await loadHistory();
+  }
+
+  await refreshAssetView();
+
+  if (isPlanned) {
+    activateAssetTab("active");
+
+    // NEW: auto-scroll to first active task row
+    requestAnimationFrame(() => {
+      const row = document.querySelector(
+        "#assetTasksTable tbody tr"
+      );
+      if (row) {
+        row.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+        row.classList.add("row-highlight");
+      }
+    });
+
+  } else {
+    activateAssetTab("history");
+
+    // NEW: auto-scroll to first history entry
+    requestAnimationFrame(() => {
+      const row = document.querySelector(
+        "#assetHistoryTable tbody tr"
+      );
+      if (row) {
+        row.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+        row.classList.add("row-highlight");
+      }
+    });
+  }
+}
+    } catch (err) {
+      console.error("SAVE TASK ERROR:", err);
+      alert(err.message);
   }
 });
+
+function resetAddTaskAssetContext() {
+  const lineSel = document.getElementById("nt-line");
+  const assetSel = document.getElementById("nt-asset");
+
+  if (!lineSel || !assetSel) return;
+
+  // Enable dropdowns
+  lineSel.disabled = false;
+  assetSel.disabled = false;
+
+  // Remove visual lock (if used)
+  lineSel.classList.remove("locked");
+  assetSel.classList.remove("locked");
+}
 
 
 // =====================
@@ -2471,6 +2533,7 @@ async function saveTaskEdit() {
 ===================== */
 
 document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
+  resetAddTaskAssetContext();
   e.preventDefault();
 
   // 🔑 Ensure assets are loaded
@@ -2495,13 +2558,13 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
   const assetSel = document.getElementById("nt-asset");
   if (assetSel) {
     assetSel.innerHTML = `<option value="">Select Asset</option>`;
-    assetSel.disabled = true;
+    assetSel.disabled = false; // allow asset selection in free Add Task
   }
-
   console.log("ASSETS DATA:", assetsData);
 
   overlay.style.display = "flex";
 });
+
 // =====================
 // OPEN ADD TASK WITH ASSET CONTEXT (FROM DASHBOARD)
 // =====================
@@ -2573,10 +2636,7 @@ async function openAddTaskForAsset(machine, serial, line) {
   // ⏳ retry until options exist
   setTimeout(waitForAssetDropdown, 30);
 };
-
-waitForAssetDropdown();
-
-
+  waitForAssetDropdown();
   waitForAssetDropdown();
 
   overlay.style.display = "flex";
@@ -2586,7 +2646,41 @@ waitForAssetDropdown();
   // ✨ UX polish
   document.getElementById("nt-task")?.focus();
 }
+// =====================
+// ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
+// =====================
 
+document.getElementById("assetAddTaskBtn")
+  ?.addEventListener("click", () => {
+
+    if (!currentAssetSerial) {
+      alert("Asset context missing");
+      return;
+    }
+
+    const ref =
+      assetAllTasks[0] ||
+      assetsData.find(a =>
+        String(a.serial_number).trim() === String(currentAssetSerial).trim()
+      );
+
+    if (!ref) {
+      alert("Asset data not found");
+      return;
+    }
+
+    // Bring Add Task modal above Asset View
+    const addOverlay = document.getElementById("addTaskOverlay");
+    if (addOverlay) {
+      addOverlay.style.zIndex = "1200"; // higher than assetViewOverlay
+    }
+
+    openAddTaskForAsset(
+      ref.machine_name || ref.model,
+      currentAssetSerial,
+      ref.line_code || ref.line
+    );
+  });
 
 // =====================
 // FOLLOW-UP TASK (PREFILL FROM VIEW) — FINAL
@@ -3104,8 +3198,6 @@ if (Array.isArray(executionsData)) {
 
   }
 }
-
-
       //  RENDER ROW (LOCKED)    
 
       tr.innerHTML = `
