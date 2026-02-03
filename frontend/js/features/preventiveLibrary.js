@@ -98,6 +98,9 @@ function populateLibraryModels() {
   console.log("Library models:", models);
 }
 
+/* =====================
+   RENDERING
+===================== */
 
 function renderLibraryTable() {
   const model = document.getElementById("libraryModelSelect")?.value;
@@ -124,10 +127,26 @@ function renderLibraryTable() {
     return;
   }
 
-  const rows = entry.plans;
-  renderLibrarySummary(rows);
+  const load = calculatePreventiveMonthlyLoad(entry.plans);
 
   container.innerHTML = `
+    <div class="library-load ${load.status}">
+      <span>
+        ⏱ Monthly preventive workload:
+        <strong>${load.hours} h</strong>
+        (${load.tasksPerMonth} tasks)
+      </span>
+      <span class="library-load-status">
+        ${
+          load.status === "ok"
+            ? "🟢 Balanced"
+            : load.status === "heavy"
+            ? "🟠 Heavy"
+            : "🔴 Overloaded"
+        }
+      </span>
+    </div>
+
     <table class="library-table">
       <thead>
         <tr>
@@ -138,14 +157,20 @@ function renderLibraryTable() {
         </tr>
       </thead>
       <tbody>
-        ${rows.map(r => `
-          <tr>
-            <td>${r.section || "-"}</td>
-            <td>${r.task}</td>
-            <td>${formatFrequency(r.frequency_hours)}</td>
-            <td>${r.duration_min ?? "—"} min</td>
-          </tr>
-        `).join("")}
+        ${entry.plans.map(r => {
+          const freq = getFrequencyBucket(r.frequency_hours);
+
+          return `
+            <tr>
+              <td>${r.section || "-"}</td>
+              <td>${r.task}</td>
+              <td class="${freq.className}">
+                ${freq.label}
+              </td>
+              <td>${r.duration_min ?? "—"} min</td>
+            </tr>
+          `;
+        }).join("")}
       </tbody>
     </table>
   `;
@@ -262,6 +287,103 @@ function renderLibrarySummary(plans) {
 
   wrap.style.display = "block";
 }
+/* =====================
+   PREVENTIVE LOAD INTELLIGENCE
+   - Calculates monthly workload for preventive plans
+   - Input: plans[] (from library or extracted tasks)
+   - Output: { hours, minutes, tasksPerMonth, status }
+===================== */
+function calculatePreventiveMonthlyLoad(plans = []) {
+  if (!Array.isArray(plans) || plans.length === 0) {
+    return {
+      hours: 0,
+      minutes: 0,
+      tasksPerMonth: 0,
+      status: "ok"
+    };
+  }
+
+  const HOURS_PER_MONTH = 24 * 30;
+
+  let totalMinutes = 0;
+  let totalRuns = 0;
+
+  plans.forEach(p => {
+    const freq = Number(p.frequency_hours);
+    const dur = Number(p.duration_min);
+
+    if (!freq || freq <= 0) return;
+    if (!dur || dur <= 0) return;
+
+    const runsPerMonth = HOURS_PER_MONTH / freq;
+
+    totalRuns += runsPerMonth;
+    totalMinutes += runsPerMonth * dur;
+  });
+
+  const totalHours = totalMinutes / 60;
+
+  // 🎯 Load status (tunable thresholds)
+  let status = "ok";
+  if (totalHours >= 20) status = "overload";
+  else if (totalHours >= 8) status = "heavy";
+
+  return {
+    hours: Number(totalHours.toFixed(1)),
+    minutes: Math.round(totalMinutes),
+    tasksPerMonth: Math.round(totalRuns),
+    status
+  };
+}
+function getFrequencyBucket(hours) {
+  if (!hours) {
+    return {
+      label: "—",
+      bucket: "none",
+      className: ""
+    };
+  }
+
+  if (hours < 720) {
+    return {
+      label: "Bi-Weekly",
+      bucket: "biweekly",
+      className: "freq-biweekly"
+    };
+  }
+
+  if (hours < 1440) {
+    return {
+      label: "Monthly",
+      bucket: "monthly",
+      className: "freq-monthly"
+    };
+  }
+
+  if (hours < 2160) {
+    return {
+      label: "Bi-Monthly",
+      bucket: "bimonthly",
+      className: "freq-bimonthly"
+    };
+  }
+
+  if (hours < 4320) {
+    return {
+      label: "Quarterly",
+      bucket: "quarterly",
+      className: "freq-quarterly"
+    };
+  }
+
+  return {
+    label: "Semi-Annual / Annual",
+    bucket: "annual",
+    className: "freq-annual"
+  };
+}
+
+
 
 
 

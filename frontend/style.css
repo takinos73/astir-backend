@@ -33,6 +33,12 @@ body {
   max-width: 1280px;
   margin: auto;
 }
+.docs-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 400;
+}
 
 /* =====================
    HEADER
@@ -2011,7 +2017,7 @@ tr.history-unplanned {
 
 /* ✅ Asset View modal width ONLY */
 #assetViewOverlay .modal-box.asset-view {
-  max-width: 900px;   /* adjust 1000–1300 αν θες */
+  max-width: 990px;   /* adjust 1000–1300 αν θες */
   width: 100vw;
 }
 /* History / Execution modal (above Asset View) */
@@ -3016,6 +3022,43 @@ tr.history-unplanned {
 .library-summary strong {
   color: #111;
 }
+.library-load {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.library-load.ok {
+  border-left: 4px solid #4caf50;
+}
+
+.library-load.heavy {
+  border-left: 4px solid #ff9800;
+}
+
+.library-load.overload {
+  border-left: 4px solid #f44336;
+}
+
+.library-load-status {
+  opacity: 0.85;
+  font-size: 12px;
+}
+.freq-biweekly   {
+   background: rgba(33, 150, 243, 0.06); 
+  }
+.freq-monthly    { background: rgba(2, 252, 10, 0.06); }
+.freq-bimonthly  { background: rgba(255, 193, 7, 0.06); }
+.freq-quarterly  { background: rgba(255, 152, 0, 0.06); }
+.freq-annual     { background: rgba(156, 39, 176, 0.06); }
+
 
 
 

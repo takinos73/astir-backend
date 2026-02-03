@@ -782,13 +782,7 @@
       onclick="generateLibraryFromTasks()">
       🔁 Generate from Live Tasks
     </button>
-    <div id="librarySummary" class="library-summary">
-      <span class="summary-item">
-        ⏱ Monthly preventive workload:
-        <strong id="libraryMonthlyWorkload">—</strong>
-      </span>
-    </div>
-
+    
   </section>
 
   <section class="library-content" id="libraryContent">
@@ -822,31 +816,22 @@
           <span class="kpi-label">Completed</span>
           <span id="kpiDone" class="kpi-value">0</span>
         </article>
-      </section>  
-        
-    <div class="controls-row">
-      <button
-            class="btn-secondary task-type-btn planned"
-            data-type="planned">
-            🟨 Planned
-          </button>
-
-          <button
-            class="btn-secondary task-type-btn preventive"
-            data-type="preventive">
-            🔵 Preventive
-          </button>
-    </div>
-      
+      </section>     
 
       <!-- FILTERS -->
 
   <div class="controls-row">
-   <button class="btn-secondary date-filter-btn active" data-filter="all">All</button>
+    <button class="btn-secondary task-type-btn planned" data-type="planned">
+            🟨 Planned
+    </button>
+
+    <button class="btn-secondary task-type-btn preventive" data-type="preventive">
+            🔵 Preventive
+      </button>
+    <button class="btn-secondary date-filter-btn active" data-filter="all">All</button>
     <button class="btn-secondary date-filter-btn" data-filter="today">Today</button>
     <button class="btn-secondary date-filter-btn" data-filter="week">This Week</button>
-    <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>
-                
+    <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>                
 
     <button class="btn-secondary" id="openHistoryBtn">📋 History</button>
     <button class="btn-secondary" id="openAnalyticsBtn">📊 KPI / Analytics
@@ -970,9 +955,9 @@
 <div id="tab-assets" style="display:none;">
 
   <section class="assets-header">
-    <h2>Assets Management</h2>
+    <h2>Assets Management </h2>
     <p class="docs-subtitle">
-      Διαχείριση μηχανών & Serial Numbers ανά γραμμή
+      Διαχείριση μηχανών ανά γραμμή
     </p>
   </section>
 
