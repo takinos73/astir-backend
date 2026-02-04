@@ -951,27 +951,28 @@
     </div>
     
 <!-- TAB: ASSETS --> 
-
+ 
 <div id="tab-assets" style="display:none;">
 
   <section class="assets-header">
-    <h2>Assets Management </h2>
+    <h2>Assets Management</h2>
     <p class="docs-subtitle">
       Διαχείριση μηχανών ανά γραμμή
     </p>
   </section>
 
-  
   <div class="filter-group">
     <label for="assetLineFilter">Line:</label>
     <select id="assetLineFilter">
       <option value="all">All</option>
     </select>
+
     <section class="controls-row">
       <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
     </section>
   </div>
 
+  <!-- 🔴 Legacy table (kept, but hidden by cards renderer) -->
   <div class="table-card assets-scroll">
     <table id="assetsTable">
       <thead>
@@ -985,9 +986,12 @@
       </thead>
       <tbody></tbody>
     </table>
-  </div>  
-</div>
+  </div>
 
+  <!-- 🟢 NEW: Asset Cards View -->
+  <div id="assetsCardsView" class="assets-cards"></div>
+
+</div>
     
     <!-- ===================== 
       TAB: REPORTS
@@ -1011,7 +1015,7 @@
           <option value="status">Maintenance Status Report</option>
           <option value="overdue">Overdue Tasks Report</option>
           <option value="technician">Completed by Technician</option>
-          <option value="nonplanned">Non-Planned Tasks Report</option>
+          <option value="nonplanned">Breakdowns Report</option>
           <option value="kpi">Maintenance KPI Report</option>
         </select>
       </div>

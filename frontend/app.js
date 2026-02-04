@@ -59,6 +59,9 @@ let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
 let mttrData = [];
 
 
+const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
+
+
 function formatDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("el-GR");
@@ -3063,6 +3066,31 @@ async function loadExecutions() {
     console.error("Failed to load executions", err);
   }
 }
+/* =====================
+   GET LAST ACTIVITY FOR ASSET
+===================== */
+
+function getLastActivityForAsset(serial) {
+  if (!Array.isArray(executionsData) || !serial) return null;
+
+  const list = executionsData
+    .filter(e => String(e.serial_number || "").trim() === String(serial).trim())
+    .sort((a, b) => new Date(b.executed_at || 0) - new Date(a.executed_at || 0));
+
+  if (!list.length) return null;
+
+  const last = list[0];
+
+  const when = typeof formatRelativeDate === "function"
+    ? formatRelativeDate(last.executed_at)
+    : new Date(last.executed_at).toLocaleDateString("el-GR");
+
+  return {
+    is_breakdown: last.is_planned === false,
+    when
+  };
+}
+
 
 /* =====================
    ASSETS (CRUD)
@@ -3072,17 +3100,123 @@ async function loadAssets() {
   try {
     const res = await fetch(`${API}/assets`);
     assetsData = await res.json();
-     console.log("ASSETS SAMPLE:", assetsData[0]); // 👈 ΕΔΩ
-    populateAssetLineFilter(); // 👈 ΝΕΟ
+    console.log("ASSETS SAMPLE:", assetsData[0]);
+
+    populateAssetLineFilter();
+
     const sel = document.getElementById("assetLineFilter");
     if (sel) {
-      sel.onchange = renderAssetsTable;   // 👈 ΕΔΩ
+      sel.onchange = renderAssetsCards; // use unified renderer (cards / table)
     }
-    renderAssetsTable();
+
+    renderAssetsCards(); // default render (cards)
   } catch (err) {
     console.error("Failed to load assets", err);
   }
 }
+
+function renderAssetsCards() {
+  
+  // Hide legacy table completely
+  const tableWrap = document.querySelector(".table-card.assets-scroll");
+  if (tableWrap) tableWrap.style.display = "none";
+
+  const wrap = document.getElementById("assetsCardsView");
+  if (!wrap) return;
+
+  wrap.style.display = "grid";
+
+  const selectedLine =
+    document.getElementById("assetLineFilter")?.value || "all";
+
+  wrap.innerHTML = "";
+
+  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+    wrap.innerHTML = `<div class="empty">No assets</div>`;
+    return;
+  }
+
+  const filteredAssets = assetsData.filter(a =>
+    selectedLine === "all" || a.line === selectedLine
+  );
+
+  if (filteredAssets.length === 0) {
+    wrap.innerHTML = `<div class="empty">No assets for this line</div>`;
+    return;
+  }
+
+  filteredAssets.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "asset-card";
+    card.dataset.serial = a.serial_number || "";
+
+    // Card click → open asset view
+    card.addEventListener("click", () => {
+      const serial = card.dataset.serial;
+      if (!serial) return;
+      openAssetViewBySerial(serial);
+    });
+    const activity = getLastActivityForAsset(a.serial_number);
+
+      let activityHtml = `
+        <span class="activity muted">
+          🕒 No activity
+        </span>
+      `;
+
+      if (activity) {
+        activityHtml = activity.is_breakdown
+          ? `<span class="activity danger">⚠ Breakdown · ${activity.when}</span>`
+          : `<span class="activity ok">🕒 ${activity.when}</span>`;
+      }
+
+    card.innerHTML = `
+      <div class="asset-card-header">
+        <div class="asset-card-title">${a.model || "-"}</div>
+        <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
+      </div>
+
+      <div class="asset-card-meta">
+        Line: <strong>${a.line || "-"}</strong>
+      </div>
+
+      <div class="asset-card-activity">
+        ${activityHtml}
+      </div>
+
+      <div class="asset-card-actions asset-admin-only">
+        <button class="btn-secondary btn-sm" type="button">✏️ Edit</button>
+        <button class="btn-warning btn-sm" type="button">🚫 Archive</button>
+      </div>
+    `;
+
+    // Buttons must not trigger card click
+    const btns = card.querySelectorAll("button");
+    const editBtn = btns[0];
+    const archiveBtn = btns[1];
+
+    editBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      editAsset(a.id);
+    });
+
+    archiveBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deactivateAsset(a.id);
+    });
+
+    wrap.appendChild(card);
+  });
+
+  // Apply role visibility on newly rendered action areas
+  if (typeof applyRoleVisibility === "function") {
+    applyRoleVisibility();
+  }
+}
+
+/*==========================================
+ LEGACY: Assets table view (kept as fallback)
+============================================*/
 
 function renderAssetsTable() {
   const tbody = document.querySelector("#assetsTable tbody");

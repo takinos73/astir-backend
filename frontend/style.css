@@ -3118,6 +3118,158 @@ tr.history-unplanned {
 .freq-quarterly  { background: rgba(255, 152, 0, 0.06); }
 .freq-annual     { background: rgba(156, 39, 176, 0.06); }
 
+/* =====================
+   ASSETS – GRID CARDS VIEW
+===================== */
+
+.assets-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 12px;
+}
+
+/* =====================
+   INDIVIDUAL ASSET CARD
+===================== */
+.asset-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.04),
+    rgba(255,255,255,0.02)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+/* Hover – subtle elevation & contrast */
+.asset-card:hover {
+  border-color: rgba(120, 180, 255, 0.35);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(120, 180, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* =====================
+   HEADER
+===================== */
+.asset-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.asset-card-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.asset-card-sn {
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+
+/* =====================
+   META
+===================== */
+.asset-card-meta {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+/* =====================
+   LAST ACTIVITY BADGE
+===================== */
+.asset-card-activity {
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.asset-card-activity .activity {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+
+.asset-card-activity .activity.ok {
+  color: #8fd3a8;
+}
+
+.asset-card-activity .activity.danger {
+  color: #ff8a8a;
+  background: rgba(255, 80, 80, 0.12);
+}
+
+.asset-card-activity .activity.muted {
+  color: #888;
+}
+
+/* =====================
+   ACTIONS (SUBTLE)
+===================== */
+.asset-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+}
+
+.asset-card:hover .asset-card-actions {
+  opacity: 1;
+}
+
+.asset-card-actions button {
+  flex: 1;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+}
+
+/* Edit – ghost */
+.asset-card-actions .btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #cfd6e0;
+}
+
+.asset-card-actions .btn-secondary:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* Archive – danger but calm */
+.asset-card-actions .btn-warning {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff9a9a;
+  border: 1px solid rgba(255, 80, 80, 0.25);
+}
+
+.asset-card-actions .btn-warning:hover {
+  background: rgba(255, 80, 80, 0.25);
+}
+
+
+
+
+
 
 
 
