@@ -2954,6 +2954,10 @@ tr.history-unplanned {
 }
 .asset-card .asset-title{
   margin-bottom: 8px;
+  border-bottom:solid;
+  border-radius:8px;
+  border-color:#223f3f;
+  padding-bottom:6px; 
 }
 
 .asset-card h3 {
@@ -3136,7 +3140,7 @@ tr.history-unplanned {
 .asset-card {
   background: linear-gradient(
     180deg,
-    rgba(255,255,255,0.14),
+    rgba(255,255,255,0.12),
     rgba(255,255,255,0.02)
   );
   border: 1px solid rgba(255, 255, 255, 0.08);
