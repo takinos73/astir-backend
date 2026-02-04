@@ -3114,6 +3114,9 @@ async function loadAssets() {
     console.error("Failed to load assets", err);
   }
 }
+/* =====================
+    RENDER ASSETS CARDS VIEW
+===================== */
 
 function renderAssetsCards() {
   
@@ -3185,24 +3188,68 @@ function renderAssetsCards() {
       </div>
 
       <div class="asset-card-actions asset-admin-only">
-        <button class="btn-secondary btn-sm" type="button">✏️ Edit</button>
-        <button class="btn-warning btn-sm" type="button">🚫 Archive</button>
+        <button
+          class="asset-card-more"
+          type="button"
+          title="More actions">
+          ...more
+        </button>
+
+        <div class="asset-card-menu" style="display:none;">
+          <button class="asset-card-menu-item add-task">➕ Add Task</button>
+          <button class="asset-card-menu-item edit">✏️ Edit</button>
+          <button class="asset-card-menu-item archive">🚫 Archive</button>
+        </div>
       </div>
+
     `;
 
     // Buttons must not trigger card click
-    const btns = card.querySelectorAll("button");
-    const editBtn = btns[0];
-    const archiveBtn = btns[1];
+    const moreBtn = card.querySelector(".asset-card-more");
+    const menu = card.querySelector(".asset-card-menu");
+    const addTaskItem = card.querySelector(".asset-card-menu-item.add-task");
+    const editItem = card.querySelector(".asset-card-menu-item.edit");
+    const archiveItem = card.querySelector(".asset-card-menu-item.archive");
 
-    editBtn?.addEventListener("click", (e) => {
+    moreBtn?.addEventListener("click", e => {
       e.stopPropagation();
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+
+    // Close menu when clicking elsewhere
+    document.addEventListener("click", () => {
+      if (menu) menu.style.display = "none";
+    });
+    // Add Task
+    addTaskItem?.addEventListener("click", e => {
+      e.stopPropagation();
+      menu.style.display = "none";
+      openAddTaskForAsset(
+    a.model,          // machine
+    a.serial_number,  // serial
+    a.line            // line
+  ); 
+    });
+
+    // Edit
+    editItem?.addEventListener("click", e => {
+      e.stopPropagation();
+      menu.style.display = "none";
       editAsset(a.id);
     });
 
-    archiveBtn?.addEventListener("click", (e) => {
+    // Archive
+    archiveItem?.addEventListener("click", e => {
       e.stopPropagation();
-      deactivateAsset(a.id);
+      menu.style.display = "none";
+
+      const ok = confirm(
+        "Archive this asset?\n\nThis will hide it from active views."
+      );
+
+      if (ok) {
+        deactivateAsset(a.id);
+      }
     });
 
     wrap.appendChild(card);
@@ -3213,6 +3260,7 @@ function renderAssetsCards() {
     applyRoleVisibility();
   }
 }
+
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
