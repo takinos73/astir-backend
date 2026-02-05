@@ -3374,7 +3374,7 @@ tr.history-unplanned {
 .assets-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  gap: 17px;
   padding: 12px;
 }
 

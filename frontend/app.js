@@ -4520,7 +4520,7 @@ document.addEventListener(
 // DEFAULT TAB ON LOAD
 // =====================
 window.addEventListener("DOMContentLoaded", () => {
-  const dashTab = document.querySelector('.main-tab[data-tab="dashboard"]');
+  const dashTab = document.querySelector('.main-tab[data-tab="assets"]');
   if (dashTab) dashTab.click();
 });
 
