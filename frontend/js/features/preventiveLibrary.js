@@ -97,6 +97,34 @@ function populateLibraryModels() {
 
   console.log("Library models:", models);
 }
+/* =====================
+   OPEN ADD PREVENTIVE MODAL
+===================== */
+document.getElementById("addPreventiveBtn")?.addEventListener("click", e => {
+  e.preventDefault();
+
+  const overlay = document.getElementById("addPreventiveOverlay");
+  if (!overlay) {
+    console.warn("Add Preventive modal not found");
+    return;
+  }
+
+  // Reset preventive form if exists
+  overlay
+    .querySelectorAll("input, textarea, select")
+    .forEach(el => (el.value = ""));
+
+  // Optional: mark context (useful later)
+  overlay.dataset.mode = "preventive";
+
+  overlay.style.display = "flex";
+
+  // UX: focus first meaningful field
+  overlay.querySelector("input, textarea, select")?.focus();
+  populatePreventiveAssets();
+  clearPreventiveAssetContext();
+
+});
 
 /* =====================
    RENDERING
@@ -382,6 +410,193 @@ function getFrequencyBucket(hours) {
     className: "freq-annual"
   };
 }
+
+/* =====================
+   SAVE PREVENTIVE (POST)
+===================== */
+document.getElementById("savePreventiveBtn")?.addEventListener("click", async () => {
+  clearPreventiveErrors();
+
+  const assetId = getVal("pm-asset");
+  const task = getVal("pm-task");
+  const freqValue = Number(getVal("pm-frequency-value"));
+  const freqUnit = getVal("pm-frequency-unit");
+  const firstDue = getVal("pm-first-due");
+
+  let hasError = false;
+
+  // =====================
+  // VALIDATION
+  // =====================
+  if (!assetId) {
+    setPreventiveError("pm-asset", "Asset is required");
+    hasError = true;
+  }
+
+  if (!task) {
+    setPreventiveError("pm-task", "Task description is required");
+    hasError = true;
+  }
+
+  if (!Number.isFinite(freqValue) || freqValue <= 0) {
+    setPreventiveError("pm-frequency-value", "Frequency must be greater than 0");
+    hasError = true;
+  }
+
+  if (!freqUnit) {
+    setPreventiveError("pm-frequency-unit", "Frequency unit is required");
+    hasError = true;
+  }
+
+  if (!firstDue) {
+    setPreventiveError("pm-first-due", "First due date is required");
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  // =====================
+  // PAYLOAD (MATCHES EXISTING MODEL)
+  // Preventive = Planned + Frequency
+  // =====================
+  const payload = {
+    asset_id: assetId,
+    section: getVal("pm-section") || null,
+    unit: getVal("pm-unit") || null,
+    task: task,
+    type: getVal("pm-type") || null,
+    notes: getVal("pm-notes") || null,
+
+    is_planned: true,
+    status: "Planned",
+
+    due_date: firstDue,
+
+    duration_min: Number(getVal("pm-duration")) || null,
+
+    // 👇 this is what makes it preventive
+    frequency_hours: freqUnit === "hours" ? freqValue : freqValue * 24
+  };
+
+  try {
+    const res = await fetch(`${API}/preventives`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to create preventive");
+    }
+
+    // =====================
+    // SUCCESS UX
+    // =====================
+    document.getElementById("addPreventiveOverlay").style.display = "none";
+
+    // Reset form
+    document
+      .querySelectorAll(
+        "#addPreventiveOverlay input, #addPreventiveOverlay textarea, #addPreventiveOverlay select"
+      )
+      .forEach(el => (el.value = ""));
+
+    // Refresh Library
+    if (typeof loadPreventiveLibrary === "function") {
+      loadPreventiveLibrary();
+    }
+
+    console.log("Preventive created successfully");
+
+  } catch (err) {
+    console.error("SAVE PREVENTIVE ERROR:", err);
+    alert(err.message);
+  }
+});
+
+
+function setPreventiveError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  field.classList.add("field-error");
+
+  let msg = field.parentElement.querySelector(".field-error-msg");
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.className = "field-error-msg";
+    field.parentElement.appendChild(msg);
+  }
+
+  msg.textContent = message;
+}
+
+function clearPreventiveErrors() {
+  document
+    .querySelectorAll(".field-error")
+    .forEach(el => el.classList.remove("field-error"));
+
+  document
+    .querySelectorAll(".field-error-msg")
+    .forEach(el => el.remove());
+}
+function populatePreventiveAssets() {
+  const sel = document.getElementById("pm-asset");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Select Asset</option>`;
+
+  if (!Array.isArray(assetsData)) return;
+
+  assetsData.forEach(a => {
+    const opt = document.createElement("option");
+    opt.value = a.id;
+    opt.textContent = `${a.model} • SN ${a.serial_number}`;
+    opt.dataset.line = a.line || "";
+    opt.dataset.model = a.model || "";
+    opt.dataset.serial = a.serial_number || "";
+    sel.appendChild(opt);
+  });
+}
+document.getElementById("pm-asset")?.addEventListener("change", e => {
+  const sel = e.target;
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) {
+    clearPreventiveAssetContext();
+    return;
+  }
+
+  // Auto-fill
+  setVal("pm-line", opt.dataset.line);
+  setVal("pm-machine", opt.dataset.model);
+  setVal("pm-serial", opt.dataset.serial);
+
+  // Lock fields
+  lockPreventiveAssetFields(true);
+});
+function setVal(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value || "";
+}
+
+function lockPreventiveAssetFields(lock) {
+  ["pm-line", "pm-machine", "pm-serial"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.disabled = lock;
+    el.classList.toggle("locked", lock);
+  });
+}
+
+function clearPreventiveAssetContext() {
+  setVal("pm-line", "");
+  setVal("pm-machine", "");
+  setVal("pm-serial", "");
+  lockPreventiveAssetFields(false);
+}
+
 
 
 

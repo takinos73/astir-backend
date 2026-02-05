@@ -336,6 +336,102 @@ if (is_planned === false) {
     client.release();
   }
 });
+/* =====================
+   CREATE PREVENTIVE (MANUAL)
+===================== */
+app.post("/preventives", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const {
+      asset_id,
+      section,
+      unit,
+      task,
+      type,
+      duration_min,
+      frequency_hours,
+      due_date,
+      notes
+    } = req.body;
+
+    // =====================
+    // VALIDATION (HARD)
+    // =====================
+    if (!asset_id) {
+      return res.status(400).json({ error: "asset_id is required" });
+    }
+
+    if (!task || !task.trim()) {
+      return res.status(400).json({ error: "task is required" });
+    }
+
+    if (!frequency_hours || Number(frequency_hours) <= 0) {
+      return res.status(400).json({ error: "frequency_hours must be > 0" });
+    }
+
+    if (!due_date) {
+      return res.status(400).json({ error: "due_date is required" });
+    }
+
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+      INSERT INTO maintenance_tasks (
+        asset_id,
+        section,
+        unit,
+        task,
+        type,
+        duration_min,
+        frequency_hours,
+        due_date,
+        status,
+        is_planned,
+        notes
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,'Planned',true,$9
+      )
+      ON CONFLICT ON CONSTRAINT unique_preventive_task
+      DO NOTHING
+      RETURNING *
+      `,
+      [
+        asset_id,
+        section || null,
+        unit || null,
+        task.trim(),
+        type || null,
+        duration_min || null,
+        frequency_hours,
+        due_date,
+        notes || null
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    if (result.rowCount === 0) {
+      return res.status(409).json({
+        error: "Preventive already exists for this asset"
+      });
+    }
+
+    res.json({
+      message: "Preventive created successfully",
+      preventive: result.rows[0]
+    });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("CREATE PREVENTIVE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 
 
 /* =====================

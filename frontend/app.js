@@ -2934,56 +2934,61 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     : new Date().toISOString();
 
   try {
-  // =====================
-// 🟢 BULK DONE PATH
-// =====================
-if (bulkDoneMode === true) {
-  const res = await fetch(`${API}/tasks/bulk-done`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      taskIds: [...assetSelectedTaskIds],
-      completed_by: name,
-      completed_at: completedAt,
-      notes
-    })
-  });
+    // =====================
+    // 🟢 BULK DONE PATH
+    // =====================
+    if (bulkDoneMode === true) {
+      const res = await fetch(`${API}/tasks/bulk-done`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskIds: [...assetSelectedTaskIds],
+          completed_by: name,
+          completed_at: completedAt,
+          notes
+        })
+      });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Bulk complete failed");
-  }
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Bulk complete failed");
+      }
 
-  const completedCount = assetSelectedTaskIds.size;
+      const completedCount = assetSelectedTaskIds.size;
 
-  // =====================
-  // 🧹 RESET BULK STATE + UI
-  // =====================
-  bulkDoneMode = false;
-  assetSelectedTaskIds.clear();
+      // =====================
+      // 🧹 RESET BULK STATE + UI
+      // =====================
+      bulkDoneMode = false;
+      assetSelectedTaskIds.clear();
 
-  document
-    .querySelectorAll(".asset-task-checkbox")
-    .forEach(cb => (cb.checked = false));
+      document
+        .querySelectorAll(".asset-task-checkbox")
+        .forEach(cb => (cb.checked = false));
 
-  const bar = getEl("assetBulkActionsBar");
-  if (bar) bar.style.display = "none";
+      const bar = getEl("assetBulkActionsBar");
+      if (bar) bar.style.display = "none";
 
-  // 🔄 REFRESH GLOBAL DATA
-  await loadTasks();
-  await loadHistory();
+      // 🔄 REFRESH GLOBAL DATA
+      await loadTasks();
+      await loadHistory();
 
-  // 🔄 REFRESH ASSET VIEW (AFTER DATA IS FRESH)
-  if (currentAssetSerial) {
-    await openAssetViewBySerial(currentAssetSerial);
-    activateAssetTab("active");
-  }
+      // 🔄 REFRESH ASSET CARDS (stats, risk dots, counts)
+      if (typeof renderAssetsCards === "function") {
+        renderAssetsCards();
+      }
 
-  // =====================
-  // ✅ FEEDBACK
-  // =====================
-  alert(`✔ ${completedCount} εργασίες ολοκληρώθηκαν`);
-}
+      // 🔄 REFRESH ASSET VIEW (AFTER DATA IS FRESH)
+      if (currentAssetSerial) {
+        await openAssetViewBySerial(currentAssetSerial);
+        activateAssetTab("active");
+      }
+
+      // =====================
+      // ✅ FEEDBACK
+      // =====================
+      alert(`✔ ${completedCount} εργασίες ολοκληρώθηκαν`);
+    }
 
     // =====================
     // 🔵 SINGLE DONE PATH
@@ -3019,9 +3024,15 @@ if (bulkDoneMode === true) {
       getEl("doneNotesInput").value = "";
     }
 
-    // 🔄 REFRESH
+    // 🔄 COMMON REFRESH
     loadTasks();
     loadHistory();
+
+    // 🔄 ENSURE ASSET CARDS STAY IN SYNC
+    if (typeof renderAssetsCards === "function") {
+      renderAssetsCards();
+    }
+
     if (typeof refreshAssetView === "function") {
       refreshAssetView();
     }

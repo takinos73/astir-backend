@@ -223,4 +223,9 @@ async function loadLinesOnce() {
 }
 
 
+function getVal(id) {
+  return document.getElementById(id)?.value?.trim() || "";
+}
+
+
 

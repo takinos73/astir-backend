@@ -757,15 +757,227 @@
       </div>
       <div id="assetDashboard" class="asset-dashboard"></div>
   </div>
+
+<!-- =====================
+     ADD PREVENTIVE MODAL
+===================== -->
+<div id="addPreventiveOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide preventive-modal">
+
+    <!-- HEADER -->
+    <div class="preventive-header">
+      <h3>➕ Preventive Maintenance Plan</h3>
+      <p class="modal-subtitle">
+        Create a recurring preventive maintenance rule
+      </p>
+    </div>
+
+    <!-- =====================
+         SECTION: ASSET
+    ===================== -->
+    <section class="preventive-section">
+      <h4 class="section-title">🏭 Asset</h4>
+
+      <div class="form-grid">
+        <div class="field full">
+          <label>Asset</label>
+          <select id="pm-asset">
+            <option value="">Select Asset</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Line</label>
+          <input id="pm-line" disabled placeholder="Auto" />
+        </div>
+
+        <div class="field">
+          <label>Machine</label>
+          <input id="pm-machine" disabled placeholder="Auto" />
+        </div>
+
+        <div class="field">
+          <label>Serial</label>
+          <input id="pm-serial" disabled placeholder="Auto" />
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: LOCATION
+    ===================== -->
+    <section class="preventive-section">
+      <h4 class="section-title">📍 Location</h4>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Section</label>
+          <input id="pm-section" placeholder="Section (optional)" />
+        </div>
+
+        <div class="field">
+          <label>Unit</label>
+          <input id="pm-unit" placeholder="Unit (optional)" />
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: PREVENTIVE DEFINITION
+    ===================== -->
+    <section class="preventive-section">
+      <h4 class="section-title">📝 Preventive Definition</h4>
+
+      <div class="form-grid">
+        <div class="field full">
+          <label>Task Description *</label>
+          <textarea
+            id="pm-task"
+            rows="2"
+            placeholder="Describe the preventive maintenance task"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label>Maintenance Type</label>
+          <input
+            id="pm-type"
+            placeholder="Inspection / Lubrication / Adjustment"
+          />
+        </div>
+
+        <div class="field">
+          <label>Estimated Duration (min)</label>
+          <input
+            id="pm-duration"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="e.g. 30"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: FREQUENCY
+    ===================== -->
+    <section class="preventive-section highlight">
+      <h4 class="section-title">🔁 Recurrence Rule</h4>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Every *</label>
+          <input
+            id="pm-frequency-value"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="e.g. 360"
+          />
+        </div>
+
+        <div class="field">
+          <label>Unit *</label>
+          <select id="pm-frequency-unit">
+            <option value="">Select</option>
+            <option value="hours">Hours</option>
+            <option value="days">Days</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <small class="field-hint">
+            This preventive will repeat automatically based on this rule.
+          </small>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: FIRST EXECUTION
+    ===================== -->
+    <section class="preventive-section">
+      <h4 class="section-title">📅 First Execution</h4>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>First Due Date *</label>
+          <input
+            id="pm-first-due"
+            type="date"
+          />
+        </div>
+
+        <div class="field full">
+          <small class="field-hint">
+            This date will create the first preventive work order.
+          </small>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         SECTION: NOTES
+    ===================== -->
+    <section class="preventive-section">
+      <h4 class="section-title">🗒 Notes</h4>
+
+      <div class="form-grid">
+        <div class="field full">
+          <textarea
+            id="pm-notes"
+            rows="3"
+            placeholder="Additional instructions, safety notes, observations"
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================
+         ACTIONS
+    ===================== -->
+    <div class="modal-actions">
+      <button
+        class="btn-secondary"
+        onclick="document.getElementById('addPreventiveOverlay').style.display='none'">
+        Cancel
+      </button>
+
+      <button
+        id="savePreventiveBtn"
+        class="btn-primary">
+        ✔ Save Preventive
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
   <!-- ===================== -->
 <!-- TAB: PREVENTIVE LIBRARY -->
 <!-- ===================== -->
 <div id="tab-library" style="display:none;">  
   <section class="library-header">
-    <h2>
-    Preventive Maintenance Library
-    <span title="Πρότυπα σχέδια προληπτικής συντήρησης ανά μοντέλο">ⓘ</span>
-  </h2>
+    <div class="library-header-left">
+      <h2>
+        Preventive Maintenance Library
+        <span
+          class="library-info"
+          title="Preventive maintenance plans and recurring rules">
+          ⓘ
+        </span>
+      </h2>
+    </div>
+
+    <div class="library-header-actions">
+      <button
+        id="addPreventiveBtn"
+        class="btn-secondary btn-preventive">
+        ➕ Add Preventive
+      </button>
+    </div>
   </section>
 
   <section class="library-controls">

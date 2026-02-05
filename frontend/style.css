@@ -3155,6 +3155,42 @@ tr.history-unplanned {
 .freq-bimonthly  { background: rgba(255, 193, 7, 0.06); }
 .freq-quarterly  { background: rgba(255, 152, 0, 0.06); }
 .freq-annual     { background: rgba(156, 39, 176, 0.06); }
+/* =====================
+   LIBRARY HEADER
+===================== */
+.library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.library-header-left h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-info {
+  opacity: 0.6;
+  cursor: help;
+}
+
+/* Preventive action button */
+.btn-preventive {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(46, 139, 255, 0.12);
+  border: 1px solid rgba(46, 139, 255, 0.35);
+  color: #cfe3ff;
+}
+
+.btn-preventive:hover {
+  background: rgba(46, 139, 255, 0.22);
+}
+
 
 /* =====================
    ASSETS – GRID CARDS VIEW
