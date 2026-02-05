@@ -125,9 +125,32 @@ document.getElementById("addPreventiveBtn")?.addEventListener("click", e => {
   clearPreventiveAssetContext();
 
 });
+/* =====================
+    UTILS
+    ===================*/
+
+function calculateBucketMonthlyLoad(plans) {
+  let minutes = 0;
+
+  plans.forEach(p => {
+    const freq = Number(p.frequency_hours);
+    const dur = Number(p.duration_min);
+
+    if (!freq || !dur) return;
+
+    const executionsPerMonth = (24 * 30) / freq;
+    minutes += dur * executionsPerMonth;
+  });
+
+  return {
+    tasks: plans.length,
+    hours: (minutes / 60).toFixed(1)
+  };
+}
+
 
 /* =====================
-   RENDERING
+   RENDERING (WITH BUCKET GROUP HEADERS)
 ===================== */
 
 function renderLibraryTable() {
@@ -155,16 +178,71 @@ function renderLibraryTable() {
     return;
   }
 
-  // 🔽 SORT PREVENTIVES BY FREQUENCY BUCKET (ASC)
+  // ✅ Sort by frequency ASC (numeric), then by section/task for stability
   const plansSorted = [...entry.plans].sort((a, b) => {
-    return (
-      getFrequencySortOrder(a.frequency_hours) -
-      getFrequencySortOrder(b.frequency_hours)
-    );
+    const fa = Number(a.frequency_hours ?? 999999);
+    const fb = Number(b.frequency_hours ?? 999999);
+    if (fa !== fb) return fa - fb;
+
+    const sa = (a.section || "").localeCompare(b.section || "", "el", { sensitivity: "base" });
+    if (sa !== 0) return sa;
+
+    return (a.task || "").localeCompare(b.task || "", "el", { sensitivity: "base" });
   });
 
-  // ⏱ Calculate load FROM SORTED PLANS
-  const load = calculatePreventiveMonthlyLoad(plansSorted);
+  // ✅ Group by your existing bucket function
+  const groups = new Map(); // bucket -> { label, className, rows: [] }
+
+  plansSorted.forEach(r => {
+    const freq = getFrequencyBucket(r.frequency_hours);
+    const key = freq.bucket || "none";
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        label: freq.label || "—",
+        className: freq.className || "",
+        rows: []
+      });
+    }
+
+    groups.get(key).rows.push(r);
+  });
+
+  const load = calculatePreventiveMonthlyLoad(entry.plans);
+
+  const groupRowsHtml = Array.from(groups.values()).map(g => {
+    const subtotal = calculateBucketMonthlyLoad(g.rows);
+
+    const groupHeader = `
+      <tr class="library-group-row">
+        <td colspan="4">
+          <div class="library-group-header ${g.className}">
+            <span class="library-group-title">${g.label}</span>
+            <span class="library-group-subtotal">
+              ${subtotal.tasks} task${subtotal.tasks === 1 ? "" : "s"} · ~${subtotal.hours}h / month
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    const rowsHtml = g.rows.map(r => {
+      const freq = getFrequencyBucket(r.frequency_hours);
+
+      return `
+        <tr>
+          <td>${r.section || "-"}</td>
+          <td>${r.task}</td>
+          <td class="${freq.className}">
+            ${freq.label}
+          </td>
+          <td>${r.duration_min ?? "—"} min</td>
+        </tr>
+      `;
+    }).join("");
+
+    return groupHeader + rowsHtml;
+  }).join("");
 
   container.innerHTML = `
     <div class="library-load ${load.status}">
@@ -194,23 +272,28 @@ function renderLibraryTable() {
         </tr>
       </thead>
       <tbody>
-        ${plansSorted.map(r => {
-          const freq = getFrequencyBucket(r.frequency_hours);
-
-          return `
-            <tr>
-              <td>${r.section || "-"}</td>
-              <td>${r.task}</td>
-              <td class="${freq.className}">
-                ${freq.label}
-              </td>
-              <td>${r.duration_min ?? "—"} min</td>
-            </tr>
-          `;
-        }).join("")}
+        ${groupRowsHtml}
       </tbody>
     </table>
   `;
+  /* =====================
+   LIBRARY BUCKET COLLAPSE / EXPAND
+===================== */
+
+container.querySelectorAll(".library-group-header").forEach(header => {
+  header.addEventListener("click", () => {
+    const row = header.closest("tr");
+    if (!row) return;
+
+    let next = row.nextElementSibling;
+    const collapsed = row.classList.toggle("collapsed");
+
+    while (next && !next.classList.contains("library-group-row")) {
+      next.style.display = collapsed ? "none" : "";
+      next = next.nextElementSibling;
+    }
+  });
+});
 }
 
 
