@@ -3705,6 +3705,7 @@ getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
 
     closeEditAsset();
     await loadAssets(); // 🔄 refresh table
+    await loadTasks(); // 🔄 refresh tasks for updated asset
   } catch (err) {
     alert(err.message);
   }

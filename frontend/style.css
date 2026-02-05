@@ -3190,6 +3190,149 @@ tr.history-unplanned {
 .btn-preventive:hover {
   background: rgba(46, 139, 255, 0.22);
 }
+/* =====================
+   ADD PREVENTIVE MODAL (Library)
+   Scoped to #addPreventiveOverlay
+===================== */
+
+#addPreventiveOverlay .modal-box {
+  max-width: 860px;
+}
+
+/* Header */
+#addPreventiveOverlay .preventive-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+#addPreventiveOverlay .preventive-header h3 {
+  margin: 0;
+}
+
+#addPreventiveOverlay .modal-subtitle {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+/* Body layout */
+#addPreventiveOverlay .preventive-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+/* Section card */
+#addPreventiveOverlay .preventive-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+#addPreventiveOverlay .preventive-section-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+
+/* Grid */
+#addPreventiveOverlay .preventive-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  #addPreventiveOverlay .preventive-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Fields */
+#addPreventiveOverlay .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#addPreventiveOverlay .field label {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+#addPreventiveOverlay .field input,
+#addPreventiveOverlay .field select,
+#addPreventiveOverlay .field textarea {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: inherit;
+  border-radius: 10px;
+  padding: 9px 10px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+#addPreventiveOverlay .field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+#addPreventiveOverlay .field input:focus,
+#addPreventiveOverlay .field select:focus,
+#addPreventiveOverlay .field textarea:focus {
+  border-color: rgba(46, 139, 255, 0.55);
+  background: rgba(0, 0, 0, 0.34);
+}
+
+/* Full width */
+#addPreventiveOverlay .field.full {
+  grid-column: 1 / -1;
+}
+
+/* Hints */
+#addPreventiveOverlay .field-hint {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  line-height: 1.25;
+}
+
+/* Locked fields */
+#addPreventiveOverlay .locked {
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+#addPreventiveOverlay input.locked,
+#addPreventiveOverlay select.locked {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Error styles (compatible with your helpers) */
+#addPreventiveOverlay .field-error {
+  border-color: rgba(255, 80, 80, 0.75) !important;
+  box-shadow: 0 0 0 2px rgba(255, 80, 80, 0.14);
+}
+
+#addPreventiveOverlay .field-error-msg {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: rgba(255, 140, 140, 0.95);
+}
+
+/* Footer actions */
+#addPreventiveOverlay .preventive-actions,
+#addPreventiveOverlay .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 
 
 /* =====================

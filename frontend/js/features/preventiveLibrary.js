@@ -155,7 +155,16 @@ function renderLibraryTable() {
     return;
   }
 
-  const load = calculatePreventiveMonthlyLoad(entry.plans);
+  // 🔽 SORT PREVENTIVES BY FREQUENCY BUCKET (ASC)
+  const plansSorted = [...entry.plans].sort((a, b) => {
+    return (
+      getFrequencySortOrder(a.frequency_hours) -
+      getFrequencySortOrder(b.frequency_hours)
+    );
+  });
+
+  // ⏱ Calculate load FROM SORTED PLANS
+  const load = calculatePreventiveMonthlyLoad(plansSorted);
 
   container.innerHTML = `
     <div class="library-load ${load.status}">
@@ -185,7 +194,7 @@ function renderLibraryTable() {
         </tr>
       </thead>
       <tbody>
-        ${entry.plans.map(r => {
+        ${plansSorted.map(r => {
           const freq = getFrequencyBucket(r.frequency_hours);
 
           return `
@@ -203,6 +212,7 @@ function renderLibraryTable() {
     </table>
   `;
 }
+
 
 /* =====================
    HELPERS
@@ -410,6 +420,29 @@ function getFrequencyBucket(hours) {
     className: "freq-annual"
   };
 }
+function getFrequencySortOrder(hours) {
+  if (!hours) return 99;          // no frequency → last
+
+  if (hours < 720) return 1;      // Bi-Weekly
+  if (hours < 1440) return 2;     // Monthly
+  if (hours < 2160) return 3;     // Bi-Monthly
+  if (hours < 4320) return 4;     // Quarterly
+
+  return 5;                       // Semi-Annual / Annual
+}
+
+/* =====================
+   PREVENTIVE MODAL – CLOSE
+===================== */
+function closePreventiveModal() {
+  const overlay = document.getElementById("addPreventiveOverlay");
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+  // Optional cleanup (safe)
+  clearPreventiveErrors?.();
+}
 
 /* =====================
    SAVE PREVENTIVE (POST)
@@ -489,6 +522,13 @@ document.getElementById("savePreventiveBtn")?.addEventListener("click", async ()
       const err = await res.json();
       throw new Error(err.error || "Failed to create preventive");
     }
+    // ✅ NEW
+    if (typeof loadTasks === "function") {
+      await loadTasks();
+    }
+
+    // Close modal
+    closePreventiveModal();
 
     // =====================
     // SUCCESS UX
