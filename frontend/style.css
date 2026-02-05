@@ -1310,6 +1310,22 @@ tbody tr:hover { background: #131520; }
   gap: 6px;
   margin-left: auto;
 }
+.assets-header {
+  display: flex;
+  align-items: baseline;   /* keeps text calm */
+  gap: 10px;
+}
+
+.assets-header h2 {
+  margin: 0;
+}
+
+.assets-header .docs-subtitle {
+  margin: 4px;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  font-weight: 400;
+}
 
   /* ASSET ACTION BUTTONS */
 
@@ -1335,6 +1351,7 @@ tbody tr:hover { background: #131520; }
 .asset-actions .btn-secondary:hover {
   opacity: 1;
 }
+
 /* =====================
    LAST ACTIVITY BADGES
 ===================== */
@@ -3043,6 +3060,22 @@ tr.history-unplanned {
   color: #bdbdbd;
   font-size: 12px;
 }
+.asset-card-stats {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  display: flex;
+  gap: 14px;
+}
+
+.asset-card-stats .stat strong {
+  font-weight: 600;
+}
+
+.asset-card-stats .stat:last-child strong {
+  color: #ff9a9a; /* overdue hint */
+}
+
 /* =====================
    PREVENTIVE LIBRARY TABLE
 ===================== */
@@ -3305,6 +3338,16 @@ tr.history-unplanned {
 .asset-card-menu-item.archive {
   color: #ff9a9a;
 }
+.asset-risk-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #ff4343;
+  vertical-align: middle;
+}
+
 
 /* =====================
    LINE HEADER
@@ -3317,6 +3360,12 @@ tr.history-unplanned {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* Highlight last execution in asset history */
+tr.highlight-execution {
+  background: rgba(46, 139, 255, 0.12);
+  box-shadow: inset 3px 0 0 #2e8bff;
+}
+
 
 
 

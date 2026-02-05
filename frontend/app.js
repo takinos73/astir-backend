@@ -135,6 +135,34 @@ function applyDateFilter(tasks) {
     }
   });
 }
+/* =====================
+    ASSET TASK STATS
+===================== */
+
+function getAssetTaskStats(assetId) {
+  if (!Array.isArray(tasksData)) {
+    return { active: 0, overdue: 0 };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  let active = 0;
+  let overdue = 0;
+
+  tasksData.forEach(t => {
+    if (t.asset_id !== assetId) return;
+    if (t.status === "Done") return;
+
+    active++;
+
+    if (t.due_date && t.due_date < today) {
+      overdue++;
+    }
+  });
+
+  return { active, overdue };
+}
+
 
 /* =====================
    TASK TABLE – STATUS PILL (FIXED)
@@ -3119,7 +3147,7 @@ async function loadAssets() {
 ===================== */
 
 function renderAssetsCards() {
-  
+
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");
   if (tableWrap) tableWrap.style.display = "none";
@@ -3159,28 +3187,46 @@ function renderAssetsCards() {
       if (!serial) return;
       openAssetViewBySerial(serial);
     });
-    const activity = getLastActivityForAsset(a.serial_number);
 
-      let activityHtml = `
-        <span class="activity muted">
-          🕒 No activity
-        </span>
-      `;
+    const activity = getLastActivityForAsset(a.serial_number);    
 
-      if (activity) {
-        activityHtml = activity.is_breakdown
-          ? `<span class="activity danger">⚠ Breakdown · ${activity.when}</span>`
-          : `<span class="activity ok">🕒 ${activity.when}</span>`;
-      }
+
+    let activityHtml = `
+      <span class="activity muted">
+        🕒 No activity
+      </span>
+    `;
+
+    if (activity) {
+      activityHtml = activity.is_breakdown
+        ? `<span class="activity danger activity-badge">⚠ Breakdown · ${activity.when}</span>`
+        : `<span class="activity ok activity-badge">🕒 ${activity.when}</span>`;
+    }
+    const stats = getAssetTaskStats(a.id);
+    const hasOverdue = stats.overdue > 0;
 
     card.innerHTML = `
       <div class="asset-card-header">
-        <div class="asset-card-title">${a.model || "-"}</div>
+        <div class="asset-card-title">
+          ${a.model || "-"}
+          ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
+        </div>
+
         <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
-      </div>
+      </div>      
 
       <div class="asset-card-meta">
         Line: <strong>${a.line || "-"}</strong>
+      </div>
+
+      <div class="asset-card-stats">
+        <span class="stat">
+          🛠 Active: <strong>${stats.active}</strong>
+        </span>
+
+        <span class="stat">
+          ⏰ Overdue: <strong>${stats.overdue}</strong>
+        </span>
       </div>
 
       <div class="asset-card-activity">
@@ -3201,10 +3247,23 @@ function renderAssetsCards() {
           <button class="asset-card-menu-item archive">🚫 Archive</button>
         </div>
       </div>
-
     `;
 
-    // Buttons must not trigger card click
+    // ---- Activity click → Asset History tab ----
+    
+    const activityEl = card.querySelector(".activity-badge");
+    if (activityEl) {
+      activityEl.addEventListener("click", e => {
+        e.stopPropagation();
+
+        openAssetViewBySerial(a.serial_number);
+
+        requestAnimationFrame(() => {
+          activateAssetTab("history");
+        });
+      });
+    }
+    // ---- Menu & actions ----
     const moreBtn = card.querySelector(".asset-card-more");
     const menu = card.querySelector(".asset-card-menu");
     const addTaskItem = card.querySelector(".asset-card-menu-item.add-task");
@@ -3220,15 +3279,16 @@ function renderAssetsCards() {
     document.addEventListener("click", () => {
       if (menu) menu.style.display = "none";
     });
+
     // Add Task
     addTaskItem?.addEventListener("click", e => {
       e.stopPropagation();
       menu.style.display = "none";
       openAddTaskForAsset(
-    a.model,          // machine
-    a.serial_number,  // serial
-    a.line            // line
-  ); 
+        a.model,
+        a.serial_number,
+        a.line
+      );
     });
 
     // Edit
