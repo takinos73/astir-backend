@@ -1712,6 +1712,12 @@ if (menu) menu.classList.remove("open");
   if (typeof renderAssetDashboard === "function") {
     renderAssetDashboard();
   }
+  // 🔄 Refresh asset cards if assets tab is active
+  const assetsTab = document.getElementById("tab-assets");
+  if (assetsTab?.classList.contains("active")) {
+    renderAssetsCards();
+  }
+
 }
 /* =====================
    ADD TASK TYPE LOGIC
@@ -3318,6 +3324,11 @@ function renderAssetsCards() {
 function renderAssetsTable() {
   const tbody = document.querySelector("#assetsTable tbody");
   if (!tbody) return;
+  
+  if (!Array.isArray(tasksData) || tasksData.length === 0) {
+  console.log("Assets cards waiting for tasks...");
+  return;
+}
 
   const selectedLine =
     document.getElementById("assetLineFilter")?.value || "all";
