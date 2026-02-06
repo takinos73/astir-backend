@@ -28,6 +28,103 @@ function isPlannedManual(task) {
     task.status !== "Done"
   );
 }
+/* =====================
+   ASSET TASK STATS
+===================== */
+
+function getAssetTaskStats(assetId) {
+  if (!Array.isArray(tasksData)) {
+    return {
+      active: 0,
+      overdue: 0,
+      preventiveCount: 0,
+      workloadHours30d: "0.0",
+      preventiveOverdue: 0
+    };
+  }
+
+  let active = 0;
+  let overdue = 0;
+
+  let preventiveCount = 0;
+  let preventiveOverdue = 0;
+
+  let workloadMinutes30d = 0;
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + 30);
+
+  tasksData.forEach(t => {
+    if (t.asset_id !== assetId) return;
+    if (t.status === "Done") return;
+
+    active++;
+
+    const dueState = getDueState(t);
+    if (dueState === "overdue") {
+      overdue++;
+    }
+
+    const dueDate = t.due_date ? new Date(t.due_date) : null;
+    const durMin = Number(t.duration_min);
+
+    /* =====================
+       🔁 PREVENTIVE
+    ===================== */
+    if (isPreventive(t)) {
+      preventiveCount++;
+
+      if (dueState === "overdue") {
+        preventiveOverdue++;
+      }
+
+      const freqHours = Number(t.frequency_hours);
+      if (!freqHours || !durMin || !dueDate) return;
+
+      let next = new Date(dueDate);
+
+      while (next <= horizon) {
+        if (next >= now) {
+          workloadMinutes30d += durMin;
+        }
+        next = new Date(next.getTime() + freqHours * 60 * 60 * 1000);
+      }
+
+      return;
+    }
+
+    /* =====================
+       🟨 PLANNED MANUAL
+    ===================== */
+    if (isPlannedManual(t)) {
+      if (
+        dueDate &&
+        dueDate >= now &&
+        dueDate <= horizon &&
+        durMin > 0
+      ) {
+        workloadMinutes30d += durMin;
+      }
+    }
+  });
+
+  return {
+    active,
+    overdue,
+    preventiveCount,
+    workloadHours30d: (workloadMinutes30d / 60).toFixed(1),
+    preventiveOverdue
+  };
+}
+
+
+/* =====================
+    DUE STATE
+===================== */
+
 function diffDays(a, b) {
   return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
 }

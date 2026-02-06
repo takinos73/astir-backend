@@ -135,34 +135,6 @@ function applyDateFilter(tasks) {
     }
   });
 }
-/* =====================
-    ASSET TASK STATS
-===================== */
-
-function getAssetTaskStats(assetId) {
-  if (!Array.isArray(tasksData)) {
-    return { active: 0, overdue: 0 };
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  let active = 0;
-  let overdue = 0;
-
-  tasksData.forEach(t => {
-    if (t.asset_id !== assetId) return;
-    if (t.status === "Done") return;
-
-    active++;
-
-    if (t.due_date && t.due_date < today) {
-      overdue++;
-    }
-  });
-
-  return { active, overdue };
-}
-
 
 /* =====================
    TASK TABLE – STATUS PILL (FIXED)
@@ -3228,6 +3200,12 @@ function renderAssetsCards() {
 
       <div class="asset-card-meta">
         Line: <strong>${a.line || "-"}</strong>
+      </div>
+
+      <div class="asset-card-preventive">
+        <span class="pill">
+          ⏱ ~${stats.workloadHours30d}h / next 30d
+        </span>        
       </div>
 
       <div class="asset-card-stats">

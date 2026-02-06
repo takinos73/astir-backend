@@ -2982,6 +2982,30 @@ tr.history-unplanned {
   font-size: 15px;
   font-weight: 700;
 }
+/* =====================
+   ASSET CARD – PREVENTIVE SUMMARY
+===================== */
+
+.asset-card-preventive {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.asset-card-preventive .pill {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  opacity: 0.85;
+}
+
+.asset-card-preventive .pill.danger {
+  background: rgba(255, 80, 80, 0.18);
+  color: #ff9a9a;
+}
+
 
 .asset-meta {
   color: #aaa;
@@ -3262,6 +3286,7 @@ tr.history-unplanned {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px;
+  
 }
 
 #addPreventiveOverlay .preventive-section-title {
