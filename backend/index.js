@@ -441,14 +441,16 @@ app.post("/preventives", async (req, res) => {
 
 app.patch("/preventives/apply-rule", async (req, res) => {
   const {
-    model,
-    section,
-    task,
-    frequency_hours,
-    duration_min,
-    type,
-    notes
-  } = req.body;
+  model,
+  section,
+  unit,          // ✅ ΑΥΤΟ ΛΕΙΠΕ
+  task,
+  frequency_hours,
+  duration_min,
+  type,
+  notes
+} = req.body;
+
 
   if (!model || !section || !task || !frequency_hours) {
     return res.status(400).json({ error: "Missing required fields" });
