@@ -19,19 +19,15 @@ function showLogin() {
   if (overlay) overlay.style.display = "flex";
 }
 
-function hideLogin() {
-  const overlay = document.getElementById("loginOverlay");
-  if (overlay) overlay.style.display = "none";
-}
-
 function applyRoleUI(role) {
+  window.currentUserRole = role;
+
   document.body.dataset.role = role;
 
   document.querySelectorAll(".admin-only").forEach(el => {
     el.style.display = role === "admin" ? "" : "none";
   });
 
-  // 🔹 Logged as badge
   const badge = document.getElementById("loggedRoleBadge");
   const text = document.getElementById("loggedRoleText");
 
@@ -40,11 +36,24 @@ function applyRoleUI(role) {
     badge.style.display = "inline-block";
   }
 
-  // 🔹 Logout button
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.style.display = "inline-block";
+
+  hideLogin(); // ✅ ΑΥΤΟ ΛΕΙΠΕ
 }
 
+
+function applyRoleUI(role) {
+  window.currentUserRole = role;   // ✅ ΚΡΙΣΙΜΟ
+
+  document.body.dataset.role = role;
+
+  document.querySelectorAll(".admin-only").forEach(el => {
+    el.style.display = role === "admin" ? "" : "none";
+  });
+
+  // ...
+}
 
 /* =====================
    LOGIN HANDLER
