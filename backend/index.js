@@ -509,7 +509,7 @@ app.patch("/preventives/:id", async (req, res) => {
    - Applies to all assets of the given model
 ===================== */
 
-app.patch("/preventives/apply", async (req, res) => {
+app.patch("/preventives/apply-rule", async (req, res) => {
   const {
     model,
     section,
@@ -608,8 +608,6 @@ app.patch("/preventives/apply", async (req, res) => {
     client.release();
   }
 });
-
-
 
 
 /* =====================

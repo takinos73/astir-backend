@@ -1086,7 +1086,7 @@ async function applyPreventiveRule(rule) {
     notes: getVal("ep-notes")
   };
 
-  const res = await fetch(`${API}/preventives/apply`, {
+  const res = await fetch(`${API}/preventives/apply-rule`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
