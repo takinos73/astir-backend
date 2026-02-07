@@ -97,6 +97,40 @@ function populateLibraryModels() {
 
   console.log("Library models:", models);
 }
+function detectPreventiveRuleImpact({
+  section,
+  task,
+  frequency_hours,
+  excludeAssetId
+}) {
+  if (!Array.isArray(tasksData) || !Array.isArray(assetsData)) {
+    return { assets: 0, models: 0 };
+  }
+
+  const affectedAssetIds = new Set();
+  const affectedModels = new Set();
+
+  tasksData.forEach(t => {
+    if (
+      isPreventive(t) &&
+      Number(t.frequency_hours) === Number(frequency_hours) &&
+      t.section === section &&
+      t.task === task &&
+      t.asset_id !== excludeAssetId
+    ) {
+      affectedAssetIds.add(t.asset_id);
+      if (t.machine_name) {
+        affectedModels.add(t.machine_name);
+      }
+    }
+  });
+
+  return {
+    assets: affectedAssetIds.size,
+    models: affectedModels.size
+  };
+}
+
 /* =====================
    OPEN ADD PREVENTIVE MODAL
 ===================== */
@@ -582,8 +616,64 @@ document.getElementById("savePreventiveBtn")?.addEventListener("click", async ()
   if (hasError) return;
 
   // =====================
-  // PAYLOAD (MATCHES EXISTING MODEL)
-  // Preventive = Planned + Frequency
+  // FREQUENCY (NORMALIZED)
+  // =====================
+  const frequency_hours =
+    freqUnit === "hours" ? freqValue : freqValue * 24;
+
+  // =====================
+  // MULTI-ASSET / MULTI-MODEL RULE CHECK
+  // =====================
+  const impact = detectPreventiveRuleImpact({
+    section: getVal("pm-section") || null,
+    task: task,
+    frequency_hours,
+    excludeAssetId: Number(assetId)
+  });
+
+  if (impact.assets > 0) {
+    const msg =
+      `This preventive rule matches:\n\n` +
+      `• ${impact.assets} other assets\n` +
+      `• across ${impact.models + 1} models\n\n` +
+      `Do you want to apply this rule to ALL matching assets?\n\n` +
+      `Only future work orders will be affected.`;
+
+    const applyToAll = confirm(msg);
+
+    if (applyToAll) {
+      try {
+        await applyPreventiveRule({
+          section: getVal("pm-section") || null,
+          task: task,
+          frequency_hours,
+          unit: getVal("pm-unit") || null,
+          type: getVal("pm-type") || null,
+          duration_min: Number(getVal("pm-duration")) || null,
+          notes: getVal("pm-notes") || null
+        });
+
+        // Refresh tasks & library
+        if (typeof loadTasks === "function") {
+          await loadTasks();
+        }
+        if (typeof generateLibraryFromTasks === "function") {
+          generateLibraryFromTasks();
+        }
+
+        closePreventiveModal();
+        alert("✔ Preventive rule applied to all matching assets");
+        return; // ⛔ STOP normal POST flow
+      } catch (err) {
+        console.error("APPLY PREVENTIVE RULE ERROR:", err);
+        alert(err.message);
+        return;
+      }
+    }
+  }
+
+  // =====================
+  // SINGLE-ASSET PREVENTIVE (DEFAULT FLOW)
   // =====================
   const payload = {
     asset_id: assetId,
@@ -595,13 +685,9 @@ document.getElementById("savePreventiveBtn")?.addEventListener("click", async ()
 
     is_planned: true,
     status: "Planned",
-
     due_date: firstDue,
-
     duration_min: Number(getVal("pm-duration")) || null,
-
-    // 👇 this is what makes it preventive
-    frequency_hours: freqUnit === "hours" ? freqValue : freqValue * 24
+    frequency_hours
   };
 
   try {
@@ -615,18 +701,12 @@ document.getElementById("savePreventiveBtn")?.addEventListener("click", async ()
       const err = await res.json();
       throw new Error(err.error || "Failed to create preventive");
     }
-    // ✅ NEW
+
     if (typeof loadTasks === "function") {
       await loadTasks();
     }
 
-    // Close modal
     closePreventiveModal();
-
-    // =====================
-    // SUCCESS UX
-    // =====================
-    document.getElementById("addPreventiveOverlay").style.display = "none";
 
     // Reset form
     document
@@ -635,7 +715,6 @@ document.getElementById("savePreventiveBtn")?.addEventListener("click", async ()
       )
       .forEach(el => (el.value = ""));
 
-    // Refresh Library
     if (typeof loadPreventiveLibrary === "function") {
       loadPreventiveLibrary();
     }

@@ -11,13 +11,18 @@ const ROLE_PASSWORDS = {
 const ROLE_STORAGE_KEY = "cmmsRole";
 
 /* =====================
-   LOGIN OVERLAY
+   LOGIN OVERLAY HELPERS
 ===================== */
-
 function showLogin() {
   const overlay = document.getElementById("loginOverlay");
   if (overlay) overlay.style.display = "flex";
 }
+
+function hideLogin() {
+  const overlay = document.getElementById("loginOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
 
 function applyRoleUI(role) {
   window.currentUserRole = role;
@@ -43,18 +48,6 @@ function applyRoleUI(role) {
 }
 
 
-function applyRoleUI(role) {
-  window.currentUserRole = role;   // ✅ ΚΡΙΣΙΜΟ
-
-  document.body.dataset.role = role;
-
-  document.querySelectorAll(".admin-only").forEach(el => {
-    el.style.display = role === "admin" ? "" : "none";
-  });
-
-  // ...
-}
-
 /* =====================
    LOGIN HANDLER
 ===================== */
@@ -71,8 +64,8 @@ document.getElementById("loginBtn")?.addEventListener("click", () => {
   if (error) error.style.display = "none";
 
   localStorage.setItem(ROLE_STORAGE_KEY, role);
-  hideLogin();
   applyRoleUI(role);
+  hideLogin(); // ⬅️ ΠΑΝΤΑ ΤΕΛΕΥΤΑΙΟ
 });
 
 /* =====================
@@ -85,8 +78,13 @@ document.addEventListener("DOMContentLoaded", () => {
     showLogin();
   } else {
     applyRoleUI(role);
+
+    // ✅ FORCE logout visibility (single source of truth)
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) logoutBtn.style.display = "inline-block";
   }
 });
+
 
 /* =====================
    LOGOUT
