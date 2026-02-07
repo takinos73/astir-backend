@@ -1097,15 +1097,3 @@ async function applyPreventiveRule(rule) {
     throw new Error(err.error || "Failed to apply preventive");
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
