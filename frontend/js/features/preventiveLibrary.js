@@ -1076,14 +1076,32 @@ function closePreventiveConfirm() {
 ===================== */
 
 async function applyPreventiveRule(rule) {
+  // Fallback safety: allow call without arg
+  const preventive = rule || window.currentEditPreventive;
+
+  if (!preventive) {
+    alert("No preventive rule selected");
+    return;
+  }
+
+  const model =
+    document.getElementById("libraryModelSelect")?.value;
+
+  if (!model) {
+    alert("Asset model is required");
+    return;
+  }
+
   const payload = {
-    model: rule.model,
-    section: rule.section,
-    task: rule.task,
-    frequency_hours: Number(getVal("ep-frequency")),
+    model,                               // 🔑 REQUIRED
+    section: preventive.section,         // 🔑 REQUIRED
+    task: preventive.task,               // 🔑 REQUIRED
+    frequency_hours: Number(getVal("ep-frequency")), // 🔑 REQUIRED
+
+    // optional / editable
     duration_min: Number(getVal("ep-duration")) || null,
-    type: getVal("ep-type"),
-    notes: getVal("ep-notes")
+    type: getVal("ep-type") || null,
+    notes: getVal("ep-notes") || null
   };
 
   const res = await fetch(`${API}/preventives/apply-rule`, {

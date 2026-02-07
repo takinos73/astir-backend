@@ -459,28 +459,39 @@ app.patch("/preventives/apply-rule", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    const sql = `
-      WITH target_assets AS (
-        SELECT id
-        FROM assets
-        WHERE model = $1
-      )
-
+    // 1️⃣ UPDATE existing preventive tasks
+    await client.query(
+      `
       UPDATE maintenance_tasks t
       SET
-        frequency_hours = $2,
-        duration_min = $3,
-        type = $4,
-        notes = $5,
-        due_date = NOW() + ($2 || ' hours')::interval
-      FROM target_assets a
+        frequency_hours = $1,
+        duration_min = $2,
+        type = $3,
+        notes = $4,
+        due_date = NOW() + ($1 || ' hours')::interval
+      FROM assets a
       WHERE
         t.asset_id = a.id
+        AND a.model = $5
         AND t.is_planned = true
         AND t.status = 'Planned'
         AND t.section = $6
-        AND t.task = $7;
+        AND t.task = $7
+      `,
+      [
+        frequency_hours,
+        duration_min,
+        type,
+        notes || null,
+        model,
+        section,
+        task
+      ]
+    );
 
+    // 2️⃣ INSERT missing preventive tasks
+    await client.query(
+      `
       INSERT INTO maintenance_tasks (
         asset_id,
         section,
@@ -495,41 +506,43 @@ app.patch("/preventives/apply-rule", async (req, res) => {
       )
       SELECT
         a.id,
-        $6,
-        $7,
-        $4,
         $2,
         $3,
-        NOW() + ($2 || ' hours')::interval,
+        $4,
+        $1,
+        $5,
+        NOW() + ($1 || ' hours')::interval,
         'Planned',
         true,
-        $5
-      FROM target_assets a
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM maintenance_tasks t
-        WHERE
-          t.asset_id = a.id
-          AND t.is_planned = true
-          AND t.status = 'Planned'
-          AND t.section = $6
-          AND t.task = $7
-      );
-    `;
-
-    await client.query(sql, [
-      model,
-      frequency_hours,
-      duration_min || null,
-      type || null,
-      notes || null,
-      section,
-      task
-    ]);
+        $6
+      FROM assets a
+      WHERE a.model = $7
+        AND NOT EXISTS (
+          SELECT 1
+          FROM maintenance_tasks t
+          WHERE
+            t.asset_id = a.id
+            AND t.is_planned = true
+            AND t.status = 'Planned'
+            AND t.section = $2
+            AND t.task = $3
+        )
+      `,
+      [
+        frequency_hours,
+        section,
+        task,
+        type,
+        duration_min,
+        notes || null,
+        model
+      ]
+    );
 
     await client.query("COMMIT");
 
     res.json({ message: "Preventive rule applied successfully" });
+
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("APPLY PREVENTIVE ERROR:", err);
