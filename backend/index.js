@@ -503,6 +503,113 @@ app.patch("/preventives/:id", async (req, res) => {
     client.release();
   }
 });
+/* =====================
+   APPLY PREVENTIVE RULE
+   - Creates or updates planned preventive tasks
+   - Applies to all assets of the given model
+===================== */
+
+app.patch("/preventives/apply", async (req, res) => {
+  const {
+    model,
+    section,
+    task,
+    frequency_hours,
+    duration_min,
+    type,
+    notes
+  } = req.body;
+
+  if (!model || !section || !task || !frequency_hours) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const sql = `
+      WITH target_assets AS (
+        SELECT id
+        FROM assets
+        WHERE model = $1
+      )
+
+      UPDATE maintenance_tasks t
+      SET
+        frequency_hours = $2,
+        duration_min = $3,
+        type = $4,
+        notes = $5,
+        due_date = NOW() + ($2 || ' hours')::interval
+      FROM target_assets a
+      WHERE
+        t.asset_id = a.id
+        AND t.is_planned = true
+        AND t.status = 'Planned'
+        AND t.section = $6
+        AND t.task = $7;
+
+      INSERT INTO maintenance_tasks (
+        asset_id,
+        section,
+        task,
+        type,
+        frequency_hours,
+        duration_min,
+        due_date,
+        status,
+        is_planned,
+        notes
+      )
+      SELECT
+        a.id,
+        $6,
+        $7,
+        $4,
+        $2,
+        $3,
+        NOW() + ($2 || ' hours')::interval,
+        'Planned',
+        true,
+        $5
+      FROM target_assets a
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM maintenance_tasks t
+        WHERE
+          t.asset_id = a.id
+          AND t.is_planned = true
+          AND t.status = 'Planned'
+          AND t.section = $6
+          AND t.task = $7
+      );
+    `;
+
+    await client.query(sql, [
+      model,
+      frequency_hours,
+      duration_min || null,
+      type || null,
+      notes || null,
+      section,
+      task
+    ]);
+
+    await client.query("COMMIT");
+
+    res.json({ message: "Preventive rule applied successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("APPLY PREVENTIVE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+
 
 
 /* =====================

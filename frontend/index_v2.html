@@ -1013,6 +1013,22 @@
     </div>
 
     <!-- =====================
+        AFFECTED ASSETS INFO
+    ===================== -->
+    <div
+      id="ep-affected-info"
+      class="preventive-info-banner"
+      style="display:none;"
+    >
+      ℹ️ This preventive rule applies to
+      <strong id="ep-affected-count">0</strong>
+      assets of this model.
+      <span class="muted">
+        Changes will affect future work orders only.
+      </span>
+    </div>
+
+    <!-- =====================
          FORM
     ===================== -->
     <div class="preventive-form">
@@ -1165,7 +1181,51 @@
       Select an asset model to view its preventive plan
     </div>
   </section>
+</div>
 
+<!-- =====================
+     CONFIRM PREVENTIVE APPLY
+===================== -->
+<div
+  id="confirmPreventiveApplyOverlay"
+  class="modal-overlay"
+  style="display:none;"
+>
+  <div class="modal-box modal-small">
+
+    <h3>Apply Preventive Changes</h3>
+
+    <p class="modal-subtitle">
+      This rule is used by
+      <strong id="cp-asset-count">0</strong>
+      assets.
+    </p>
+
+    <p style="font-size:0.85rem; opacity:0.85;">
+      Apply changes to all assets using this preventive rule?
+      <br>
+      <span style="opacity:0.7;">
+        Only future work orders will be affected.
+      </span>
+    </p>
+
+    <div class="modal-actions">
+      <button
+        class="btn-secondary"
+        onclick="closePreventiveConfirm()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn-primary"
+        id="confirmApplyPreventiveBtn"
+      >
+        ✔ Apply to all assets
+      </button>
+    </div>
+
+  </div>
 </div>
     
     <!-- ===================== -->

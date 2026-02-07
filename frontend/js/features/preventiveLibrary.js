@@ -754,32 +754,18 @@ document.addEventListener("click", e => {
   openEditPreventiveModal(preventive);
 });
 /* =====================
-   OPEN EDIT PREVENTIVE MODAL (STUB)
-===================== */
-
-function openEditPreventiveModal(preventive) {
-  console.group("EDIT PREVENTIVE");
-  console.log("Preventive data:", preventive);
-  console.groupEnd();
-
-  // TEMP: visual confirmation
-  alert(
-    `Edit preventive:\n\n${preventive.task}\nFrequency: ${preventive.frequency_hours}h`
-  );
-
-  // NEXT STEP:
-  // - open modal
-  // - prefill fields
-}
-/* =====================
    OPEN + PREFILL EDIT PREVENTIVE MODAL
 ===================== */
 
 function openEditPreventiveModal(preventive) {
+  console.log("Preventive object:", preventive);
   if (!preventive) return;
 
   // Keep reference for save step later
   window.currentEditPreventive = preventive;
+
+  // 🔍 Update affected assets info (requires model on preventive)
+  updatePreventiveAffectedInfo(preventive);
 
   // =====================
   // CONTEXT (READ-ONLY)
@@ -789,7 +775,7 @@ function openEditPreventiveModal(preventive) {
   const freqLabelEl = document.getElementById("ep-frequency-label");
 
   if (assetModelEl) {
-    assetModelEl.textContent = preventive.model || preventive.machine || "—";
+    assetModelEl.textContent = preventive.model || "—";
   }
 
   if (sectionLabelEl) {
@@ -813,7 +799,6 @@ function openEditPreventiveModal(preventive) {
 
   setVal("ep-task", preventive.task);
   setVal("ep-type", preventive.type);
-  setVal("ep-section-input", preventive.section);
   setVal("ep-unit", preventive.unit);
   setVal("ep-frequency", preventive.frequency_hours);
   setVal("ep-duration", preventive.duration_min);
@@ -830,6 +815,10 @@ function openEditPreventiveModal(preventive) {
   // UX polish
   document.getElementById("ep-task")?.focus();
 }
+
+/* =====================
+   CLOSE EDIT PREVENTIVE MODAL
+===================== */
 function closeEditPreventiveModal() {
   const overlay = document.getElementById("editPreventiveOverlay");
   if (overlay) overlay.style.display = "none";
@@ -955,6 +944,162 @@ async function saveEditPreventive() {
     alert(err.message);
   }
 }
+document
+  .getElementById("saveEditPreventiveBtn")
+  ?.addEventListener("click", async () => {
+
+    // basic validation (υποθέτω ότι το έχεις ήδη)
+    const freq = Number(getVal("ep-frequency"));
+    if (!freq || freq <= 0) {
+      alert("Frequency must be greater than 0");
+      return;
+    }
+
+    // 👇 ΕΔΩ ΜΠΑΙΝΕΙ
+    const affectedCount =
+      Number(document.getElementById("ep-affected-count")?.textContent) || 0;
+
+    if (affectedCount > 0) {
+      const ok = confirm(
+        `This preventive rule applies to ${affectedCount} assets.\n\nApply changes to all future work orders?`
+      );
+      if (!ok) return;
+    }
+
+    // 🔥 ΜΟΝΟ αν ο χρήστης επιβεβαιώσει
+    await applyPreventiveRule(window.currentEditPreventive);
+
+    // UX cleanup
+    await loadTasks();
+  await loadHistory();
+  closeEditPreventiveModal();
+  });
+
+
+// =====================
+// PREVENTIVE UI HELPERS
+// =====================
+
+function calculateAffectedAssetsForRule(rule) {
+  if (!Array.isArray(tasksData)) return 0;
+
+  const assets = new Set();
+
+  tasksData.forEach(t => {
+    if (
+      t.machine_name === rule.model &&
+      t.is_planned === true &&
+      t.frequency_hours &&
+      t.status === "Planned" &&
+      t.section === rule.section &&
+      t.unit === rule.unit &&
+      t.task === rule.task &&
+      t.type === rule.type
+    ) {
+      assets.add(t.asset_id);
+    }
+  });
+
+  return assets.size;
+}
+
+function updatePreventiveAffectedInfo(rule) {
+  console.log("updatePreventiveAffectedInfo called with:", rule);
+
+  const box = document.getElementById("ep-affected-info");
+  const label = document.getElementById("ep-affected-count");
+  const muted = box?.querySelector(".muted");
+
+  if (!box || !label || !Array.isArray(tasksData)) return;
+
+  const model =
+    rule.model ||
+    document.getElementById("libraryModelSelect")?.value;
+
+  if (!model) {
+    box.style.display = "none";
+    return;
+  }
+
+  const affectedAssetIds = new Set();
+
+  tasksData.forEach(t => {
+    if (
+      t.is_planned === true &&
+      Number(t.frequency_hours) === Number(rule.frequency_hours) &&
+      t.section === rule.section &&
+      t.machine_name === model
+    ) {
+      affectedAssetIds.add(t.asset_id);
+    }
+  });
+
+  const count = affectedAssetIds.size;
+
+  console.log("Affected assets count =", count);
+
+  box.style.display = "block";
+  label.textContent = count;
+
+  if (muted) {
+    muted.textContent =
+      count > 0
+        ? "Changes will affect future work orders only."
+        : "This preventive rule is not yet applied to any assets.";
+  }
+}
+
+// =====================
+// CONFIRMATION FLOW
+// =====================
+
+function openPreventiveConfirm() {
+  const overlay = document.getElementById("confirmPreventiveApplyOverlay");
+  const label = document.getElementById("cp-asset-count");
+
+  if (label) {
+    label.textContent = window.currentPreventiveAffectedCount || 0;
+  }
+
+  overlay.style.display = "flex";
+}
+
+function closePreventiveConfirm() {
+  document.getElementById("confirmPreventiveApplyOverlay").style.display = "none";
+}
+/* =====================
+   APPLY PREVENTIVE RULE TO ASSETS
+   - Creates or updates preventive tasks based on the rule's model + frequency
+    - If a preventive with the same model + frequency exists, it updates the existing one
+    - Otherwise, it creates a new preventive task
+    - This allows for both one-off and reusable preventive rules
+===================== */
+
+async function applyPreventiveRule(rule) {
+  const payload = {
+    model: rule.model,
+    section: rule.section,
+    task: rule.task,
+    frequency_hours: Number(getVal("ep-frequency")),
+    duration_min: Number(getVal("ep-duration")) || null,
+    type: getVal("ep-type"),
+    notes: getVal("ep-notes")
+  };
+
+  const res = await fetch(`${API}/preventives/apply`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to apply preventive");
+  }
+}
+
+
+
 
 
 

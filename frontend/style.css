@@ -3950,6 +3950,24 @@ tr.highlight-execution {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
 }
+/* =====================
+   PREVENTIVE INFO BANNER
+===================== */
+.preventive-info-banner {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(120, 160, 255, 0.12);
+  border: 1px solid rgba(120, 160, 255, 0.25);
+  font-size: 0.8rem;
+  color: #d8e4ff;
+}
+
+.preventive-info-banner .muted {
+  margin-left: 6px;
+  opacity: 0.75;
+}
+
 
 
 
