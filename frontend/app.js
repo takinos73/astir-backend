@@ -86,21 +86,20 @@ const CURRENT_USER = {
 /* =====================
    DEV LOGIN AS ROLE
 ===================== */
+
 function loginAsRole() {
-   console.log("LOGIN CLICKED");
+  console.log("LOGIN CLICKED");
 
   const role = document.getElementById("roleSelect").value;
 
   CURRENT_USER.role = role;
+  window.currentUserRole = role;   // ✅ ΑΥΤΟ ΛΕΙΠΕ
 
   // Re-apply UI visibility
   applyRoleVisibility();
 
   alert(`Logged in as ${role}`);
 }
-
-document.getElementById("loginAsRoleBtn")
-  ?.addEventListener("click", loginAsRole);
 
 
 /* =====================
