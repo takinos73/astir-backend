@@ -120,6 +120,55 @@ function getAssetTaskStats(assetId) {
   };
 }
 
+/* =====================
+     RISK LEVEL FUNCTION
+  ===================== */
+  
+ function getAssetRiskLevel(a) {
+  const HIGH_LOAD = 8;   // hours / next 30d
+  const MED_LOAD = 1;
+
+  // 🔴 CRITICAL — true alarm only
+  if (
+    a.overdue >= 5 ||
+    (a.lastBreakdownDays != null && a.lastBreakdownDays <= 2) ||
+    (a.overdue >= 3 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 5)
+  ) {
+    return { level: "critical", label: "CRITICAL", icon: "🔴" };
+  }
+
+  // 🟠 AT RISK — pressure building
+  if (
+    (a.overdue >= 2 && a.overdue <= 4) ||
+    a.manualPlanned30d >= HIGH_LOAD ||
+    a.dueSoon >= 4
+  ) {
+    return { level: "risk", label: "AT RISK", icon: "🟠" };
+  }
+
+  // 🟡 WATCH — light signal
+  if (
+    a.overdue === 1 ||
+    (a.dueSoon >= 1 && a.dueSoon <= 3) ||
+    (a.manualPlanned30d >= MED_LOAD && a.manualPlanned30d < HIGH_LOAD)
+  ) {
+    return { level: "watch", label: "WATCH", icon: "🟡" };
+  }
+
+  // 🟢 STABLE
+  return { level: "stable", label: "STABLE", icon: "🟢" };
+}
+/* =====================
+   RISK PRIORITY
+===================== */
+
+const RISK_PRIORITY = {
+  critical: 1,
+  risk: 2,
+  watch: 3,
+  stable: 4
+};
+
 
 /* =====================
     DUE STATE

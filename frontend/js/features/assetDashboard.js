@@ -1,3 +1,46 @@
+  
+  // =====================
+  // COMPACT MODE TOGGLE
+  // =====================
+  document
+  .getElementById("compactDashboardToggle")
+  ?.addEventListener("change", e => {
+    const container = document.getElementById("assetDashboard");
+    if (!container) return;
+
+    container.classList.toggle("compact", e.target.checked);
+  });
+  // Risk buttons
+document.querySelectorAll(".dashboard-filters .filter-btn")
+  .forEach(btn => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll(".dashboard-filters .filter-btn")
+        .forEach(b => b.classList.remove("active"));
+
+      btn.classList.add("active");
+      dashboardFilters.risk = btn.dataset.risk;
+
+      renderAssetDashboard();
+    });
+  });
+
+// Overdue only
+document
+  .getElementById("filterOverdueOnly")
+  ?.addEventListener("change", e => {
+    dashboardFilters.overdueOnly = e.target.checked;
+    renderAssetDashboard();
+  });
+
+// Broken < 7d
+document
+  .getElementById("filterBrokenRecent")
+  ?.addEventListener("change", e => {
+    dashboardFilters.brokenRecent = e.target.checked;
+    renderAssetDashboard();
+  });
+
 // =====================
 // ASSET KEY NORMALIZER
 // =====================
@@ -23,6 +66,15 @@ function trendArrow(current, previous) {
   if (current < previous) return "↘︎";
   return "→";
 }
+// =====================
+// Filters Dashboard State
+// =====================
+const dashboardFilters = {
+  risk: "all",          // all | critical | risk | watch
+  overdueOnly: false,
+  brokenRecent: false
+};
+
 
 /* =====================
    TOP WORST ASSETS DASHBOARD
@@ -86,6 +138,7 @@ function getTopWorstAssetsDashboard(limit = 6) {
     }
   });
 
+
   /* =====================
      2️⃣ AGGREGATE EXECUTIONS (BREAKDOWNS)
   ===================== */
@@ -113,6 +166,41 @@ function getTopWorstAssetsDashboard(limit = 6) {
       }
     }
   });
+  /* =====================
+     RISK LEVEL FUNCTION
+  ===================== */
+  
+  function getAssetRiskLevel(a) {
+  // thresholds (tweakable)
+  const HIGH_LOAD = 6; // hours in next 30d
+
+  if (
+    a.overdue >= 3 ||
+    (a.lastBreakdownDays != null && a.lastBreakdownDays <= 3) ||
+    (a.overdue >= 1 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 7)
+  ) {
+    return { level: "critical", label: "CRITICAL", icon: "🔴" };
+  }
+
+  if (
+    a.overdue === 1 ||
+    a.dueSoon >= 3 ||
+    a.manualPlanned30d >= HIGH_LOAD
+  ) {
+    return { level: "risk", label: "AT RISK", icon: "🟠" };
+  }
+
+  if (
+    a.dueSoon > 0 ||
+    a.manualPlanned30d > 0
+  ) {
+    return { level: "watch", label: "WATCH", icon: "🟡" };
+  }
+
+  return { level: "stable", label: "STABLE", icon: "🟢" };
+}
+
+
 
   /* =====================
      3️⃣ COMPUTE METRICS + SCORE
@@ -170,59 +258,196 @@ window.renderAssetDashboard = function () {
   const container = document.getElementById("assetDashboard");
   if (!container) return;
 
-  const assets = getTopWorstAssetsDashboard();
+  let assets = getTopWorstAssetsDashboard();
 
-  if (!assets || assets.length === 0) {
+  // =====================
+  // FILTER STATE CHECK
+  // =====================
+  const hasActiveFilter =
+    dashboardFilters.risk !== "all" ||
+    dashboardFilters.overdueOnly ||
+    dashboardFilters.brokenRecent;
+
+  // If any filter active → expand scope
+  if (hasActiveFilter && typeof getAllAssetsForDashboard === "function") {
+    assets = getAllAssetsForDashboard();
+  }
+
+  if (!Array.isArray(assets) || assets.length === 0) {
     container.innerHTML = `<div>No assets require attention 🎉</div>`;
     return;
   }
 
-  container.innerHTML = assets.map(a => `
-    <div class="asset-card">
-      <div class="asset-line">LINE ${a.line}</div>
+  // =====================
+  // RISK NORMALIZATION
+  // =====================
+  const normalizeRiskLevel = (r) => {
+    if (!r) return "watch";
 
-      <div class="asset-title">
-        ${a.machine} <span class="sn">SN ${a.serial}</span>
-      </div>
+    const v =
+      typeof r === "string"
+        ? r.toLowerCase()
+        : (r.level || "").toLowerCase();
 
-      <div class="asset-metrics">
-        <div class="metric overdue">
-          🔴 Overdue: ${a.overdue}
-          <span class="trend">${a.overdueTrend || ""}</span>
+    if (v.includes("crit")) return "critical";
+    if (v.includes("risk")) return "risk";
+    if (v.includes("watch") || v.includes("warn")) return "watch";
+
+    return "watch";
+  };
+
+  // Enrich with normalized risk
+  assets = assets.map(a => {
+    const riskRaw =
+      typeof getAssetRiskLevel === "function"
+        ? getAssetRiskLevel(a)
+        : null;
+
+    const level = normalizeRiskLevel(riskRaw);
+
+    return {
+      ...a,
+      _risk: {
+        level,
+        label: riskRaw?.label || level.toUpperCase(),
+        icon: riskRaw?.icon || (level === "critical" ? "🔴" : level === "risk" ? "🟠" : "🟡")
+      }
+    };
+  });
+
+  // =====================
+  // APPLY FILTERS
+  // =====================
+  assets = assets.filter(a => {
+    // Risk filter
+    if (
+      dashboardFilters.risk !== "all" &&
+      a._risk.level !== dashboardFilters.risk
+    ) {
+      return false;
+    }
+
+    // Overdue only
+    if (dashboardFilters.overdueOnly && Number(a.overdue) <= 0) {
+      return false;
+    }
+
+    // Broken < 7 days
+    if (
+      dashboardFilters.brokenRecent &&
+      !(
+        a.lastBreakdownDays != null &&
+        Number(a.lastBreakdownDays) <= 7
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // =====================
+  // SORT BY RISK
+  // =====================
+  assets.sort(
+    (a, b) =>
+      (RISK_PRIORITY[a._risk.level] ?? 99) -
+      (RISK_PRIORITY[b._risk.level] ?? 99)
+  );
+
+  // Limit only when NO filters
+  if (!hasActiveFilter) {
+    assets = assets.slice(0, 6);
+  }
+
+  if (assets.length === 0) {
+    container.innerHTML = `<div class="empty">No assets match filters</div>`;
+    return;
+  }
+
+  // =====================
+  // RENDER
+  // =====================
+  container.innerHTML = assets.map(a => {
+    const risk = a._risk;
+
+    return `
+      <div class="asset-card dashboard-card ${risk.level}">
+
+        <div class="asset-card-top">
+          <div class="asset-line">LINE ${a.line}</div>
+
+          <div class="asset-risk-badge ${risk.level}">
+            ${risk.icon} ${risk.label}
+          </div>
         </div>
 
-        <div class="metric soon">
-          🟠 Due soon: ${a.dueSoon}
+        <div class="asset-title">
+          ${a.machine}
+          <span class="sn">SN ${a.serial}</span>
         </div>
 
-        <div class="metric mttr">
-          ⏱ MTTR: ${a.avgMTTR ?? "—"} min
-          <span class="trend">${a.mttrTrend || ""}</span>
-        </div>
-        <div class="metric manual">
-          🧩 Manual load (30d): ${a.manualPlanned30d}
+        <div class="asset-metrics">
+
+          <div class="metric overdue">
+            🔴 Overdue: ${a.overdue}
+            <span class="trend">${a.overdueTrend || ""}</span>
+          </div>
+
+          <div class="metric soon">
+            🟠 Due soon: ${a.dueSoon}
+          </div>
+
+          <div class="metric mttr">
+            ⏱ MTTR: ${a.avgMTTR ?? "—"} min
+            <span class="trend">${a.mttrTrend || ""}</span>
+          </div>
+
+          <div class="metric manual">
+            🧩 Manual load (30d): ${a.manualPlanned30d}
+          </div>
+
+          <div class="metric last">
+            ⚡ Last breakdown:
+            ${
+              a.lastBreakdownDays != null
+                ? `${a.lastBreakdownDays} days ago`
+                : "—"
+            }
+          </div>
+
         </div>
 
-        <div class="metric last">
-          ⚡ Last breakdown:
-          ${a.lastBreakdownDays != null ? `${a.lastBreakdownDays} days ago` : "—"}
-        </div>
-        
-      </div>
+        <div class="asset-actions">
+          <button onclick="openAssetViewBySerial('${a.serial}')">
+            View Asset
+          </button>
 
-      <div class="asset-actions">
-        <button onclick="openAssetViewBySerial('${a.serial}')">
-          View Asset
-        </button>
-        <button onclick="openAddTaskForAsset(
+          <button onclick="openAddTaskForAsset(
             '${a.machine}',
             '${a.serial}',
             '${a.line}'
           )">
-          Create WO
-        </button>
+            Create WO
+          </button>
+        </div>
+
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
+
+  // =====================
+  // COMPACT MODE
+  // =====================
+  const toggle = document.getElementById("compactDashboardToggle");
+  if (toggle && toggle.checked) {
+    container.classList.add("compact");
+  } else {
+    container.classList.remove("compact");
+  }
 };
+
+
+
+
 

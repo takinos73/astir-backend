@@ -755,7 +755,36 @@
           Assets with overdue tasks, upcoming work or recent breakdowns
           </div>
       </div>
-      <div id="assetDashboard" class="asset-dashboard"></div>
+      <div class="dashboard-filters">
+        <div class="filter-group risk">
+          <button class="filter-btn active" data-risk="all">All</button>
+          <button class="filter-btn" data-risk="critical">🔴 Critical</button>
+          <button class="filter-btn" data-risk="risk">🟠 At Risk</button>
+          <button class="filter-btn" data-risk="watch">🟡 Watch</button>
+        </div>
+
+        <div class="filter-group flags">
+          <label class="filter-flag">
+            <input type="checkbox" id="filterOverdueOnly" />
+            Overdue only
+          </label>
+
+          <label class="filter-flag">
+            <input type="checkbox" id="filterBrokenRecent" />
+            ⚡ Broken &lt; 7d
+          </label>
+        </div>
+
+      </div>
+
+      <label class="dashboard-toggle">
+          <input type="checkbox" id="compactDashboardToggle" checked />
+          Compact view
+      </label>
+
+      <div id="assetDashboard">
+        <div id="assetDashboardCards"></div>
+      </div>
   </div>
 
 <!-- =====================

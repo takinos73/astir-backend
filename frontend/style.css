@@ -246,7 +246,7 @@ body {
 .controls-row {
   display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 6px 2px;
 }
 /* =====================
    TASK GLOBAL SEARCH
@@ -1308,12 +1308,13 @@ tbody tr:hover { background: #131520; }
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+  margin-left: 14px;
 }
 .assets-header {
   display: flex;
   align-items: baseline;   /* keeps text calm */
   gap: 10px;
+  margin: 2px 14px 12px;
 }
 
 .assets-header h2 {
@@ -1923,7 +1924,7 @@ tr.history-unplanned {
 .modal-history {
   width: 96%;
   max-width: 1200px;
-  max-height: 92vh;     /* 👈όριο */
+  max-height: 93vh;     /* 👈όριο */
 }
 
 .modal-box input {
@@ -2914,6 +2915,57 @@ tr.history-unplanned {
   text-decoration: underline;
 }
 /* =====================
+   DASHBOARD – RISK BADGE
+===================== */
+/* Line text stays subtle */
+.asset-line {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+.asset-card-top {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-bottom: 2px;
+}
+
+.dashboard-card {
+  position: relative;
+}
+
+/* Make badge quieter */
+.asset-risk-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  line-height: 1;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+/* Levels */
+.asset-risk-badge.critical {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff9a9a;
+}
+
+.asset-risk-badge.risk {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffd27d;
+}
+
+.asset-risk-badge.watch {
+  background: rgba(255, 255, 0, 0.15);
+  color: #f2e98c;
+}
+
+.asset-risk-badge.stable {
+  background: rgba(100, 200, 100, 0.15);
+  color: #a8e6b8;
+}
+
+/* =====================
     TASK TYPE BUTTONS – ACTIVE STATE
 ===================== */
    
@@ -3051,6 +3103,49 @@ tr.history-unplanned {
   padding: 0 16px;
   max-width: 1400px;
 }
+/* =====================
+   DASHBOARD – COMPACT MODE
+===================== */
+
+#assetDashboard.compact .dashboard-card {
+  padding: 10px 12px;
+}
+
+/* Top row tighter */
+#assetDashboard.compact .asset-card-top {
+  margin-bottom: 4px;
+}
+
+/* Machine title smaller */
+#assetDashboard.compact .asset-title {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+/* Metrics grid becomes 2 rows max */
+#assetDashboard.compact .asset-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 10px;
+  font-size: 0.75rem;
+}
+
+/* Hide less critical metrics */
+#assetDashboard.compact .metric.mttr,
+#assetDashboard.compact .metric.manual {
+  display: none;
+}
+
+/* Actions more subtle */
+#assetDashboard.compact .asset-actions {
+  margin-top: 6px;
+}
+
+#assetDashboard.compact .asset-actions button {
+  font-size: 0.7rem;
+  padding: 4px 6px;
+}
+
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 .dashboard-header {
@@ -3601,6 +3696,248 @@ tr.highlight-execution {
   background: rgba(46, 139, 255, 0.12);
   box-shadow: inset 3px 0 0 #2e8bff;
 }
+/* =====================
+   DASHBOARD – ASSET CARDS
+===================== */
+
+#assetDashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+/* Card */
+.dashboard-card {
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+
+/* Top row */
+.asset-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asset-line {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+
+/* Risk badge */
+.asset-risk-badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.asset-risk-badge.critical {
+  background: rgba(255,60,60,0.18);
+  color: #ff7a7a;
+}
+
+.asset-risk-badge.risk {
+  background: rgba(255,165,0,0.18);
+  color: #ffb84d;
+}
+
+.asset-risk-badge.watch {
+  background: rgba(255,220,120,0.15);
+  color: #ffd976;
+}
+
+/* Title */
+.asset-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.asset-title .sn {
+  font-size: 0.75rem;
+  opacity: 0.55;
+  margin-left: 6px;
+}
+
+/* Metrics */
+.asset-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.asset-metrics .metric {
+  opacity: 0.85;
+}
+
+.asset-metrics .metric.overdue {
+  color: #ff8a8a;
+}
+
+.asset-metrics .metric.soon {
+  color: #ffcc80;
+}
+
+.asset-metrics .metric.mttr {
+  color: #9ad1ff;
+}
+
+.asset-metrics .metric.manual {
+  color: #b5e0c0;
+}
+
+.asset-metrics .metric.last {
+  grid-column: 1 / -1;
+  opacity: 0.7;
+}
+
+/* Actions */
+.asset-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.asset-actions button {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.asset-actions button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* =====================
+   COMPACT MODE
+===================== */
+#assetDashboard.compact + .dashboard-toggle {
+  opacity: 0.6;
+}
+
+#assetDashboard.compact ~ .dashboard-filters {
+  margin-bottom: 6px;
+}
+
+
+#assetDashboard.compact .dashboard-card {
+  padding: 10px 12px;
+  gap: 6px;
+}
+
+#assetDashboard.compact .asset-metrics {
+  grid-template-columns: 1fr;
+}
+/* =====================
+   DASHBOARD FILTER BAR
+===================== */
+
+.dashboard-filters {
+  display: flex;
+  align-items: left;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  margin: 2px 16px 12px;
+}
+
+/* Risk buttons */
+.filter-group.risk {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #d0d0d0;
+  font-size: 0.75rem;
+  padding: 6px 12px;   /* λίγο πιο ισορροπημένο */
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.filter-btn.active {
+  border-color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+/* Flags */
+.filter-group.flags {
+  display: flex;
+  gap: 14px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.filter-flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.filter-flag input {
+  accent-color: #7aaeff;
+}
+
+/* =====================
+   COMPACT TOGGLE
+===================== */
+
+.dashboard-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  opacity: 0.75;
+  margin: 2px 14px 2px;
+  cursor: pointer;
+}
+
+.dashboard-toggle input {
+  accent-color: #7aaeff;
+}
+
+/* =====================
+   DASHBOARD GRID
+===================== */
+
+#assetDashboard {
+  margin-top: 6px;
+}
+
+#assetDashboardCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
 
 
 
