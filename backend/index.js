@@ -462,11 +462,11 @@ await client.query(
   `
   UPDATE maintenance_tasks t
   SET
-    frequency_hours = $1,
+    frequency_hours = $1::integer,
     duration_min = $2,
     type = $3,
     notes = $4,
-    due_date = NOW() + ($1 * INTERVAL '1 hour')
+    due_date = NOW() + ($1::integer * INTERVAL '1 hour')
   FROM assets a
   WHERE
     t.asset_id = a.id
@@ -507,9 +507,9 @@ await client.query(
     $2,
     $3,
     $4,
-    $1,
+    $1::integer,
     $5,
-    NOW() + ($1 * INTERVAL '1 hour'),
+    NOW() + ($1::integer * INTERVAL '1 hour'),
     'Planned',
     true,
     $6
