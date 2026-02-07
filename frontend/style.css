@@ -3484,7 +3484,21 @@ tr.history-unplanned {
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+.field-error {
+  border-color: #ff7a7a !important;
+}
 
+.field-error-msg {
+  font-size: 0.7rem;
+  color: #ff9a9a;
+  margin-top: 4px;
+}
+.field input.locked {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+  color: #aaa;
+  cursor: not-allowed;
+}
 
 /* =====================
    ASSETS – GRID CARDS VIEW

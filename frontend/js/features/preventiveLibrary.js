@@ -210,72 +210,83 @@ function renderLibraryTable() {
 
   const load = calculatePreventiveMonthlyLoad(entry.plans);
 
-  const groupRowsHtml = Array.from(groups.values()).map(g => {
-    const subtotal = calculateBucketMonthlyLoad(g.rows);
+const groupRowsHtml = Array.from(groups.values()).map(g => {
+  const subtotal = calculateBucketMonthlyLoad(g.rows);
 
-    const groupHeader = `
-      <tr class="library-group-row">
-        <td colspan="4">
-          <div class="library-group-header ${g.className}">
-            <span class="library-group-title">${g.label}</span>
-            <span class="library-group-subtotal">
-              ${subtotal.tasks} task${subtotal.tasks === 1 ? "" : "s"} · ~${subtotal.hours}h / month
-            </span>
-          </div>
+  const groupHeader = `
+    <tr class="library-group-row">
+      <td colspan="5">
+        <div class="library-group-header ${g.className}">
+          <span class="library-group-title">${g.label}</span>
+          <span class="library-group-subtotal">
+            ${subtotal.tasks} task${subtotal.tasks === 1 ? "" : "s"} · ~${subtotal.hours}h / month
+          </span>
+        </div>
+      </td>
+    </tr>
+  `;
+
+  const rowsHtml = g.rows.map(r => {
+    const freq = getFrequencyBucket(r.frequency_hours);
+
+    return `
+      <tr>
+        <td>${r.section || "-"}</td>
+        <td>${r.task}</td>
+        <td class="${freq.className}">
+          ${freq.label}
+        </td>
+        <td>${r.duration_min ?? "—"} min</td>
+        <td class="library-actions">
+          <button
+            class="btn-ghost btn-sm edit-preventive-btn"
+            title="Edit preventive"
+            data-preventive='${encodeURIComponent(JSON.stringify(r))}'
+          >
+            ✏️
+          </button>
         </td>
       </tr>
     `;
-
-    const rowsHtml = g.rows.map(r => {
-      const freq = getFrequencyBucket(r.frequency_hours);
-
-      return `
-        <tr>
-          <td>${r.section || "-"}</td>
-          <td>${r.task}</td>
-          <td class="${freq.className}">
-            ${freq.label}
-          </td>
-          <td>${r.duration_min ?? "—"} min</td>
-        </tr>
-      `;
-    }).join("");
-
-    return groupHeader + rowsHtml;
   }).join("");
 
-  container.innerHTML = `
-    <div class="library-load ${load.status}">
-      <span>
-        ⏱ Monthly preventive workload:
-        <strong>${load.hours} h</strong>
-        (${load.tasksPerMonth} tasks)
-      </span>
-      <span class="library-load-status">
-        ${
-          load.status === "ok"
-            ? "🟢 Balanced"
-            : load.status === "heavy"
-            ? "🟠 Heavy"
-            : "🔴 Overloaded"
-        }
-      </span>
-    </div>
+  return groupHeader + rowsHtml;
+}).join("");
 
-    <table class="library-table">
-      <thead>
-        <tr>
-          <th>Section</th>
-          <th>Task</th>
-          <th>Frequency</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${groupRowsHtml}
-      </tbody>
-    </table>
-  `;
+container.innerHTML = `
+  <div class="library-load ${load.status}">
+    <span>
+      ⏱ Monthly preventive workload:
+      <strong>${load.hours} h</strong>
+      (${load.tasksPerMonth} tasks)
+    </span>
+    <span class="library-load-status">
+      ${
+        load.status === "ok"
+          ? "🟢 Balanced"
+          : load.status === "heavy"
+          ? "🟠 Heavy"
+          : "🔴 Overloaded"
+      }
+    </span>
+  </div>
+
+  <table class="library-table">
+    <thead>
+      <tr>
+        <th>Section</th>
+        <th>Task</th>
+        <th>Frequency</th>
+        <th>Duration</th>
+        <th style="width:60px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${groupRowsHtml}
+    </tbody>
+  </table>
+`;
+
   /* =====================
    LIBRARY BUCKET COLLAPSE / EXPAND
 ===================== */
@@ -719,6 +730,233 @@ function clearPreventiveAssetContext() {
   setVal("pm-serial", "");
   lockPreventiveAssetFields(false);
 }
+/* =====================
+   EDIT PREVENTIVE – CLICK HANDLER
+===================== */
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".edit-preventive-btn");
+  if (!btn) return;
+
+  e.stopPropagation();
+
+  let preventive;
+  try {
+    preventive = JSON.parse(
+      decodeURIComponent(btn.dataset.preventive)
+    );
+  } catch (err) {
+    console.error("Failed to parse preventive data", err);
+    alert("Cannot open preventive (invalid data)");
+    return;
+  }
+
+  openEditPreventiveModal(preventive);
+});
+/* =====================
+   OPEN EDIT PREVENTIVE MODAL (STUB)
+===================== */
+
+function openEditPreventiveModal(preventive) {
+  console.group("EDIT PREVENTIVE");
+  console.log("Preventive data:", preventive);
+  console.groupEnd();
+
+  // TEMP: visual confirmation
+  alert(
+    `Edit preventive:\n\n${preventive.task}\nFrequency: ${preventive.frequency_hours}h`
+  );
+
+  // NEXT STEP:
+  // - open modal
+  // - prefill fields
+}
+/* =====================
+   OPEN + PREFILL EDIT PREVENTIVE MODAL
+===================== */
+
+function openEditPreventiveModal(preventive) {
+  if (!preventive) return;
+
+  // Keep reference for save step later
+  window.currentEditPreventive = preventive;
+
+  // =====================
+  // CONTEXT (READ-ONLY)
+  // =====================
+  const assetModelEl = document.getElementById("ep-asset-model");
+  const sectionLabelEl = document.getElementById("ep-section");
+  const freqLabelEl = document.getElementById("ep-frequency-label");
+
+  if (assetModelEl) {
+    assetModelEl.textContent = preventive.model || preventive.machine || "—";
+  }
+
+  if (sectionLabelEl) {
+    sectionLabelEl.textContent = preventive.section || "—";
+  }
+
+  if (freqLabelEl) {
+    freqLabelEl.textContent =
+      preventive.frequency_hours
+        ? `${preventive.frequency_hours} h`
+        : "—";
+  }
+
+  // =====================
+  // FORM FIELDS
+  // =====================
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val ?? "";
+  };
+
+  setVal("ep-task", preventive.task);
+  setVal("ep-type", preventive.type);
+  setVal("ep-section-input", preventive.section);
+  setVal("ep-unit", preventive.unit);
+  setVal("ep-frequency", preventive.frequency_hours);
+  setVal("ep-duration", preventive.duration_min);
+  setVal("ep-notes", preventive.notes);
+
+  // =====================
+  // SHOW MODAL
+  // =====================
+  const overlay = document.getElementById("editPreventiveOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
+
+  // UX polish
+  document.getElementById("ep-task")?.focus();
+}
+function closeEditPreventiveModal() {
+  const overlay = document.getElementById("editPreventiveOverlay");
+  if (overlay) overlay.style.display = "none";
+
+  window.currentEditPreventive = null;
+}
+/* =====================
+   VALIDATE EDIT PREVENTIVE
+===================== */
+
+function validateEditPreventive() {
+  clearPreventiveErrors();
+
+  let valid = true;
+
+  const task = getVal("ep-task");
+  const frequency = Number(getVal("ep-frequency"));
+  const duration = Number(getVal("ep-duration"));
+
+  // =====================
+  // REQUIRED: TASK
+  // =====================
+  if (!task) {
+    setPreventiveError("ep-task", "Task description is required");
+    valid = false;
+  }
+
+  // =====================
+  // REQUIRED: FREQUENCY
+  // =====================
+  if (!Number.isFinite(frequency) || frequency <= 0) {
+    setPreventiveError(
+      "ep-frequency",
+      "Frequency must be a number greater than 0 (hours)"
+    );
+    valid = false;
+  }
+
+  // =====================
+  // OPTIONAL BUT VALIDATED: DURATION
+  // =====================
+  if (getVal("ep-duration") && (!Number.isFinite(duration) || duration <= 0)) {
+    setPreventiveError(
+      "ep-duration",
+      "Duration must be a positive number (minutes)"
+    );
+    valid = false;
+  }
+
+  return valid;
+}
+document
+  .getElementById("saveEditPreventiveBtn")
+  ?.addEventListener("click", saveEditPreventive);
+
+/* =====================
+   SAVE EDIT PREVENTIVE
+===================== */
+
+async function saveEditPreventive() {
+  if (!window.currentEditPreventive) {
+    alert("No preventive selected");
+    return;
+  }
+
+  if (!validateEditPreventive()) {
+    return;
+  }
+
+  const id = window.currentEditPreventive.id;
+  if (!id) {
+    alert("Invalid preventive ID");
+    return;
+  }
+
+  const payload = {
+    task: getVal("ep-task"),
+    type: getVal("ep-type") || null,
+
+    // 🔒 scope fields NOT editable → NOT sent
+    // section: NOT INCLUDED
+    // asset_id: NOT INCLUDED
+
+    unit: getVal("ep-unit") || null,
+
+    frequency_hours: Number(getVal("ep-frequency")),
+
+    duration_min: getVal("ep-duration")
+      ? Number(getVal("ep-duration"))
+      : null,
+
+    notes: getVal("ep-notes") || null
+  };
+
+  try {
+    const res = await fetch(`${API}/preventives/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to update preventive");
+    }
+
+    closeEditPreventiveModal();
+
+    if (typeof loadLibraryData === "function") {
+      await loadLibraryData();
+    }
+
+    if (typeof loadTasks === "function") {
+      await loadTasks();
+    }
+
+    alert("✔ Preventive updated successfully");
+
+  } catch (err) {
+    console.error("SAVE PREVENTIVE ERROR:", err);
+    alert(err.message);
+  }
+}
+
+
 
 
 

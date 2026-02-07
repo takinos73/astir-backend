@@ -433,6 +433,77 @@ app.post("/preventives", async (req, res) => {
   }
 });
 
+// =====================
+// UPDATE PREVENTIVE RULE
+// =====================
+app.patch("/preventives/:id", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    const {
+      task,
+      type,
+      unit,
+      frequency_hours,
+      duration_min,
+      notes
+    } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing preventive id" });
+    }
+
+    if (!task || !frequency_hours || Number(frequency_hours) <= 0) {
+      return res.status(400).json({
+        error: "Task and valid frequency_hours are required"
+      });
+    }
+
+    const result = await client.query(
+      `
+      UPDATE maintenance_tasks
+      SET
+        task = $1,
+        type = $2,
+        unit = $3,
+        frequency_hours = $4,
+        duration_min = $5,
+        notes = $6
+      WHERE id = $7
+        AND is_planned = true
+        AND frequency_hours IS NOT NULL
+        AND status = 'Planned'
+      RETURNING id
+      `,
+      [
+        task,
+        type || null,
+        unit || null,
+        frequency_hours,
+        duration_min || null,
+        notes || null,
+        id
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: "Preventive not found or not editable"
+      });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("UPDATE PREVENTIVE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 
 /* =====================
    COMPLETE TASK

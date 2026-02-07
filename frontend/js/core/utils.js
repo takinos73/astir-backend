@@ -373,5 +373,32 @@ function getVal(id) {
   return document.getElementById(id)?.value?.trim() || "";
 }
 
+function setPreventiveError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  field.classList.add("field-error");
+
+  let msg = field.parentElement.querySelector(".field-error-msg");
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.className = "field-error-msg";
+    field.parentElement.appendChild(msg);
+  }
+
+  msg.textContent = message;
+}
+
+function clearPreventiveErrors() {
+  document
+    .querySelectorAll(".field-error")
+    .forEach(el => el.classList.remove("field-error"));
+
+  document
+    .querySelectorAll(".field-error-msg")
+    .forEach(el => el.remove());
+}
+
+
 
 

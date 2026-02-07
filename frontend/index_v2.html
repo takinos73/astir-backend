@@ -983,6 +983,140 @@
   </div>
 </div>
 
+<!-- =====================
+     EDIT PREVENTIVE MODAL
+===================== -->
+<div id="editPreventiveOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-wide preventive-modal">
+
+    <!-- HEADER -->
+    <div class="preventive-header">
+      <h3>✏️ Edit Preventive Maintenance</h3>
+      <p class="modal-subtitle">
+        Changes apply to future work orders only
+      </p>
+    </div>
+
+    <!-- =====================
+         CONTEXT (READ-ONLY)
+    ===================== -->
+    <div class="preventive-context">
+      <span class="pill">
+        🏭 <strong id="ep-asset-model">—</strong>
+      </span>
+      <span class="pill">
+        📍 Section: <strong id="ep-section">—</strong>
+      </span>
+      <span class="pill">
+        🔁 Frequency: <strong id="ep-frequency-label">—</strong>
+      </span>
+    </div>
+
+    <!-- =====================
+         FORM
+    ===================== -->
+    <div class="preventive-form">
+      <!-- Unit (LOCKED) -->
+      <div class="field">
+        <label>Unit</label>
+        <input
+          id="ep-unit"
+          type="text"
+          disabled
+          class="locked"
+        />
+      </div>
+
+      <!-- Task -->
+      <div class="field full-width">
+        <label>Task Description</label>
+        <input
+          id="ep-task"
+          type="text"
+          placeholder="Describe preventive task"
+        />
+      </div>
+
+      <!-- Type -->
+      <div class="field">
+        <label>Task Type</label>
+        <input
+          id="ep-type"
+          type="text"
+          placeholder="Inspection / Lubrication / Adjustment"
+        />
+      </div>      
+
+      <!-- Frequency -->
+      <div class="field">
+        <label>Frequency (hours)</label>
+        <input
+          id="ep-frequency"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 360"
+        />
+        <small class="field-hint">
+          Used to generate future preventive work orders
+        </small>
+      </div>
+
+      <!-- Duration -->
+      <div class="field">
+        <label>Estimated Duration (min)</label>
+        <input
+          id="ep-duration"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 45"
+        />
+      </div>
+
+      <!-- Notes -->
+      <div class="field full-width">
+        <label>Notes</label>
+        <textarea
+          id="ep-notes"
+          rows="3"
+          placeholder="Instructions, safety notes, tools…"
+        ></textarea>
+      </div>
+
+    </div>
+
+    <!-- =====================
+         FOOTER ACTIONS
+    ===================== -->
+    <div class="modal-actions preventive-actions">
+
+      <button
+        class="btn-warning"
+        id="disablePreventiveBtn"
+        title="Disable this preventive plan">
+        🚫 Disable Preventive
+      </button>
+
+      <div class="spacer"></div>
+
+      <button
+        class="btn-secondary"
+        onclick="closeEditPreventiveModal()">
+        Cancel
+      </button>
+
+      <button
+        class="btn-primary"
+        id="saveEditPreventiveBtn">
+        💾 Save Changes
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
 
   <!-- ===================== -->
 <!-- TAB: PREVENTIVE LIBRARY -->
