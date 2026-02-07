@@ -386,10 +386,9 @@ function generateLibraryFromTasks() {
 
   saveLibrary();
   populateLibraryModels();
-  renderLibraryTable();
-
-  alert("Preventive Library generated from live tasks ✅");
+  renderLibraryTable(); 
 }
+
 function renderLibrarySummary(plans) {
   const wrap = document.getElementById("librarySummary");
   const out = document.getElementById("libraryMonthlyWorkload");
@@ -875,7 +874,7 @@ document
   ?.addEventListener("click", saveEditPreventive);
 
 /* =====================
-   SAVE EDIT PREVENTIVE
+   SAVE + APPLY EDIT PREVENTIVE
 ===================== */
 
 async function saveEditPreventive() {
@@ -888,74 +887,40 @@ async function saveEditPreventive() {
     return;
   }
 
-  const id = window.currentEditPreventive.id;
-  if (!id) {
-    alert("Invalid preventive ID");
-    return;
-  }
-
-  const payload = {
+  // 🔒 Update rule IN MEMORY only (no backend save here)
+  window.currentEditPreventive = {
+    ...window.currentEditPreventive,
     task: getVal("ep-task"),
     type: getVal("ep-type") || null,
-
-    // 🔒 scope fields NOT editable → NOT sent
-    // section: NOT INCLUDED
-    // asset_id: NOT INCLUDED
-
     unit: getVal("ep-unit") || null,
-
     frequency_hours: Number(getVal("ep-frequency")),
-
     duration_min: getVal("ep-duration")
       ? Number(getVal("ep-duration"))
       : null,
-
     notes: getVal("ep-notes") || null
   };
-
-  try {
-    const res = await fetch(`${API}/preventives/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to update preventive");
-    }
-
-    closeEditPreventiveModal();
-
-    if (typeof loadLibraryData === "function") {
-      await loadLibraryData();
-    }
-
-    if (typeof loadTasks === "function") {
-      await loadTasks();
-    }
-
-    alert("✔ Preventive updated successfully");
-
-  } catch (err) {
-    console.error("SAVE PREVENTIVE ERROR:", err);
-    alert(err.message);
-  }
 }
+
 document
   .getElementById("saveEditPreventiveBtn")
   ?.addEventListener("click", async () => {
 
-    // basic validation (υποθέτω ότι το έχεις ήδη)
+    if (!window.currentEditPreventive) {
+      alert("No preventive selected");
+      return;
+    }
+
+    // 🔒 Basic validation
     const freq = Number(getVal("ep-frequency"));
     if (!freq || freq <= 0) {
       alert("Frequency must be greater than 0");
       return;
     }
 
-    // 👇 ΕΔΩ ΜΠΑΙΝΕΙ
+    // Save edits locally
+    saveEditPreventive();
+
+    // 🔎 Affected assets confirmation
     const affectedCount =
       Number(document.getElementById("ep-affected-count")?.textContent) || 0;
 
@@ -966,13 +931,31 @@ document
       if (!ok) return;
     }
 
-    // 🔥 ΜΟΝΟ αν ο χρήστης επιβεβαιώσει
-    await applyPreventiveRule(window.currentEditPreventive);
+    try {
+      // 🔥 APPLY RULE (single source of truth)
+      await applyPreventiveRule(window.currentEditPreventive);
 
-    // UX cleanup
-    await loadTasks();
-  await loadHistory();
-  closeEditPreventiveModal();
+      // 🔄 Refresh data
+      if (typeof loadTasks === "function") {
+        await loadTasks();
+      }
+
+      if (typeof loadHistory === "function") {
+        await loadHistory();
+      }
+
+      if (typeof generateLibraryFromTasks === "function") {
+        generateLibraryFromTasks();
+      }
+
+      closeEditPreventiveModal();
+
+      alert("✔ Preventive rule applied successfully");
+
+    } catch (err) {
+      console.error("APPLY PREVENTIVE ERROR:", err);
+      alert(err.message);
+    }
   });
 
 
@@ -1114,4 +1097,10 @@ async function applyPreventiveRule(rule) {
     const err = await res.json();
     throw new Error(err.error || "Failed to apply preventive");
   }
+  // 🔄 Refresh data after successful apply
+await loadTasks();
+
+// 🔁 Re-generate preventive library from updated tasks
+generateLibraryFromTasks();
+
 }

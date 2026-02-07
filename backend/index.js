@@ -491,50 +491,53 @@ await client.query(
 await client.query(
   `
   INSERT INTO maintenance_tasks (
-    asset_id,
-    section,
-    task,
-    type,
-    frequency_hours,
-    duration_min,
-    due_date,
-    status,
-    is_planned,
-    notes
-  )
-  SELECT
-    a.id,
-    $2,
-    $3,
-    $4,
-    $1::integer,
-    $5,
-    NOW() + ($1::integer * INTERVAL '1 hour'),
-    'Planned',
-    true,
-    $6
-  FROM assets a
-  WHERE a.model = $7
-    AND NOT EXISTS (
-      SELECT 1
-      FROM maintenance_tasks t
-      WHERE
-        t.asset_id = a.id
-        AND t.is_planned = true
-        AND t.status = 'Planned'
-        AND t.section = $2
-        AND t.task = $3
+  asset_id,
+  section,
+  unit,
+  task,
+  type,
+  frequency_hours,
+  duration_min,
+  due_date,
+  status,
+  is_planned,
+  notes
+)
+SELECT
+  a.id,
+  $2,           -- section
+  $8,           -- unit ✅
+  $3,           -- task
+  $4,           -- type
+  $1::integer,  -- frequency_hours
+  $5,           -- duration_min
+  NOW() + ($1::integer * INTERVAL '1 hour'),
+  'Planned',
+  true,
+  $6
+FROM assets a
+WHERE a.model = $7
+  AND NOT EXISTS (
+    SELECT 1
+    FROM maintenance_tasks t
+    WHERE
+      t.asset_id = a.id
+      AND t.is_planned = true
+      AND t.status = 'Planned'
+      AND t.section = $2
+      AND t.task = $3
     )
   `,
-  [
-    frequency_hours,
-    section,
-    task,
-    type,
-    duration_min,
-    notes || null,
-    model
-  ]
+[
+  frequency_hours, // $1
+  section,         // $2
+  task,            // $3
+  type,            // $4
+  duration_min,    // $5
+  notes,           // $6
+  model,           // $7
+  unit             // $8  ✅ ΝΕΟ
+]
 );
 
     await client.query("COMMIT");
