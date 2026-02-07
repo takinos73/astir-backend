@@ -1080,6 +1080,8 @@ async function applyPreventiveRule(rule) {
     section: preventive.section,         // 🔑 REQUIRED
     task: preventive.task,               // 🔑 REQUIRED
     frequency_hours: Number(getVal("ep-frequency")), // 🔑 REQUIRED
+     unit: preventive.unit || null,          // ✅ CORRECT
+
 
     // optional / editable
     duration_min: Number(getVal("ep-duration")) || null,
