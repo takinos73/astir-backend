@@ -457,87 +457,85 @@ app.patch("/preventives/apply-rule", async (req, res) => {
   const client = await pool.connect();
 
   try {
-    await client.query("BEGIN");
+    // UPDATE
+await client.query(
+  `
+  UPDATE maintenance_tasks t
+  SET
+    frequency_hours = $1,
+    duration_min = $2,
+    type = $3,
+    notes = $4,
+    due_date = NOW() + ($1 * INTERVAL '1 hour')
+  FROM assets a
+  WHERE
+    t.asset_id = a.id
+    AND a.model = $5
+    AND t.is_planned = true
+    AND t.status = 'Planned'
+    AND t.section = $6
+    AND t.task = $7
+  `,
+  [
+    frequency_hours,
+    duration_min,
+    type,
+    notes || null,
+    model,
+    section,
+    task
+  ]
+);
 
-    // 1️⃣ UPDATE existing preventive tasks
-    await client.query(
-      `
-      UPDATE maintenance_tasks t
-      SET
-        frequency_hours = $1,
-        duration_min = $2,
-        type = $3,
-        notes = $4,
-        due_date = NOW() + ($1 || ' hours')::interval
-      FROM assets a
+// INSERT
+await client.query(
+  `
+  INSERT INTO maintenance_tasks (
+    asset_id,
+    section,
+    task,
+    type,
+    frequency_hours,
+    duration_min,
+    due_date,
+    status,
+    is_planned,
+    notes
+  )
+  SELECT
+    a.id,
+    $2,
+    $3,
+    $4,
+    $1,
+    $5,
+    NOW() + ($1 * INTERVAL '1 hour'),
+    'Planned',
+    true,
+    $6
+  FROM assets a
+  WHERE a.model = $7
+    AND NOT EXISTS (
+      SELECT 1
+      FROM maintenance_tasks t
       WHERE
         t.asset_id = a.id
-        AND a.model = $5
         AND t.is_planned = true
         AND t.status = 'Planned'
-        AND t.section = $6
-        AND t.task = $7
-      `,
-      [
-        frequency_hours,
-        duration_min,
-        type,
-        notes || null,
-        model,
-        section,
-        task
-      ]
-    );
-
-    // 2️⃣ INSERT missing preventive tasks
-    await client.query(
-      `
-      INSERT INTO maintenance_tasks (
-        asset_id,
-        section,
-        task,
-        type,
-        frequency_hours,
-        duration_min,
-        due_date,
-        status,
-        is_planned,
-        notes
-      )
-      SELECT
-        a.id,
-        $2,
-        $3,
-        $4,
-        $1,
-        $5,
-        NOW() + ($1 || ' hours')::interval,
-        'Planned',
-        true,
-        $6
-      FROM assets a
-      WHERE a.model = $7
-        AND NOT EXISTS (
-          SELECT 1
-          FROM maintenance_tasks t
-          WHERE
-            t.asset_id = a.id
-            AND t.is_planned = true
-            AND t.status = 'Planned'
-            AND t.section = $2
-            AND t.task = $3
-        )
-      `,
-      [
-        frequency_hours,
-        section,
-        task,
-        type,
-        duration_min,
-        notes || null,
-        model
-      ]
-    );
+        AND t.section = $2
+        AND t.task = $3
+    )
+  `,
+  [
+    frequency_hours,
+    section,
+    task,
+    type,
+    duration_min,
+    notes || null,
+    model
+  ]
+);
 
     await client.query("COMMIT");
 
