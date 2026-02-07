@@ -957,6 +957,115 @@ document
       alert(err.message);
     }
   });
+document
+  .getElementById("disablePreventiveBtn")
+  ?.addEventListener("click", async () => {
+
+    if (!window.currentEditPreventive) {
+      alert("No preventive rule selected");
+      return;
+    }
+
+    const rule = window.currentEditPreventive;
+
+    const model =
+      document.getElementById("libraryModelSelect")?.value;
+
+    if (!model) {
+      alert("Asset model is required");
+      return;
+    }
+
+    // =====================
+    // 1️⃣ PREVIEW AFFECTED ASSETS
+    // =====================
+    let affected = 0;
+
+    try {
+      const res = await fetch(
+        `${API}/preventives/delete-rule/preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cmms-role": window.currentUserRole
+          },
+          body: JSON.stringify({
+            model,
+            section: rule.section,
+            task: rule.task,
+            unit: rule.unit || null
+          })
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Preview failed");
+      }
+
+      const data = await res.json();
+      affected = Number(data.affected_assets) || 0;
+
+    } catch (err) {
+      console.error("DELETE PREVIEW ERROR:", err);
+      alert(err.message);
+      return;
+    }
+
+    // =====================
+    // 2️⃣ CONFIRM
+    // =====================
+    const msg =
+      affected > 0
+        ? `⚠️ This preventive rule will be removed from ${affected} assets.\n\nOnly future preventive work orders will be affected.\n\nProceed?`
+        : `ℹ️ This preventive rule is not applied to any assets.\n\nDisabling it will prevent future use.\n\nProceed?`;
+
+    if (!confirm(msg)) return;
+
+    // =====================
+    // 3️⃣ SOFT DELETE
+    // =====================
+    try {
+      const res = await fetch(
+        `${API}/preventives/delete-rule`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cmms-role": window.currentUserRole
+          },
+          body: JSON.stringify({
+            model,
+            section: rule.section,
+            task: rule.task,
+            unit: rule.unit || null
+          })
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Delete failed");
+      }
+
+      // 🔄 Refresh
+      if (typeof loadTasks === "function") {
+        await loadTasks();
+      }
+
+      if (typeof generateLibraryFromTasks === "function") {
+        generateLibraryFromTasks();
+      }
+
+      closeEditPreventiveModal();
+      alert("✔ Preventive rule disabled");
+
+    } catch (err) {
+      console.error("DELETE RULE ERROR:", err);
+      alert(err.message);
+    }
+  });
 
 
 // =====================
