@@ -239,14 +239,13 @@ body {
   margin-bottom: 4px;
 }
 
-
 /* =====================
    CONTROLS / BUTTONS
 ===================== */
 .controls-row {
   display: flex;
   gap: 12px;
-  margin-bottom: 6px 2px;
+  margin: 6px 2px;
 }
 /* =====================
    TASK GLOBAL SEARCH
@@ -297,7 +296,6 @@ body {
   color: #9aa4b2;
 }
 
-
 select,
 .btn-secondary {
   padding: 4px 8px;
@@ -307,7 +305,7 @@ select,
   color: var(--text-main);
   font-size: 13px;
   cursor: pointer;
-  margin:6px 2px;
+  margin: 2px 2px;
 }
 
 .btn-secondary:hover { background: #222838; }
@@ -365,7 +363,7 @@ select,
 .main-tabs {
   display: flex;
   gap: 10px;
-  margin: 12px 0 16px;
+  margin: 12px 0 18px;
 }
 
 .main-tab {
@@ -1319,6 +1317,7 @@ tbody tr:hover { background: #131520; }
 
 .assets-header h2 {
   margin: 0;
+  font-size: 24px;
 }
 
 .assets-header .docs-subtitle {
@@ -3153,7 +3152,7 @@ tr.history-unplanned {
 }
 
 .dashboard-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #ddd;
 }
