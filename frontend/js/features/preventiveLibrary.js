@@ -51,6 +51,19 @@ const DEFAULT_LIBRARY = [
 ===================== */
 let libraryData = [];
 
+document.addEventListener("DOMContentLoaded", () => {
+  handleContextCustomInput({
+    selectId: "pm-section",
+    inputId: "pm-section-custom"
+  });
+
+  handleContextCustomInput({
+    selectId: "pm-unit",
+    inputId: "pm-unit-custom"
+  });
+});
+
+
 /* =====================
    LOAD / SAVE
 ===================== */
@@ -98,7 +111,9 @@ function populateLibraryModels() {
   console.log("Library models:", models);
 }
 function detectPreventiveRuleImpact({
+  model,
   section,
+  unit,
   task,
   frequency_hours,
   excludeAssetId
@@ -110,19 +125,35 @@ function detectPreventiveRuleImpact({
   const affectedAssetIds = new Set();
   const affectedModels = new Set();
 
+  // normalize helpers
+  const norm = v => (v ?? "").toString().trim().toUpperCase();
+
   tasksData.forEach(t => {
-    if (
-      isPreventive(t) &&
-      Number(t.frequency_hours) === Number(frequency_hours) &&
-      t.section === section &&
-      t.task === task &&
-      t.asset_id !== excludeAssetId
-    ) {
-      affectedAssetIds.add(t.asset_id);
-      if (t.machine_name) {
-        affectedModels.add(t.machine_name);
-      }
-    }
+    if (!isPreventive(t)) return;
+
+    // 🔒 frequency
+    if (Number(t.frequency_hours) !== Number(frequency_hours)) return;
+
+    // 🔒 task
+    if (norm(t.task) !== norm(task)) return;
+
+    // 🔒 section (allow empty / null = wildcard)
+    if (section && norm(t.section) !== norm(section)) return;
+
+    // 🔒 unit (allow empty / null = wildcard)
+    if (unit && norm(t.unit) !== norm(unit)) return;
+
+    // 🔒 exclude current asset
+    if (t.asset_id === excludeAssetId) return;
+
+    // 🔒 model check (via assetsData)
+    const asset = assetsData.find(a => a.id === t.asset_id);
+    if (!asset) return;
+
+    if (model && norm(asset.model) !== norm(model)) return;
+
+    affectedAssetIds.add(t.asset_id);
+    affectedModels.add(asset.model);
   });
 
   return {
@@ -130,6 +161,7 @@ function detectPreventiveRuleImpact({
     models: affectedModels.size
   };
 }
+
 
 /* =====================
    OPEN ADD PREVENTIVE MODAL
@@ -574,158 +606,178 @@ function closePreventiveModal() {
 /* =====================
    SAVE PREVENTIVE (POST)
 ===================== */
-document.getElementById("savePreventiveBtn")?.addEventListener("click", async () => {
-  clearPreventiveErrors();
+document
+  .getElementById("savePreventiveBtn")
+  ?.addEventListener("click", async () => {
 
-  const assetId = getVal("pm-asset");
-  const task = getVal("pm-task");
-  const freqValue = Number(getVal("pm-frequency-value"));
-  const freqUnit = getVal("pm-frequency-unit");
-  const firstDue = getVal("pm-first-due");
+    clearPreventiveErrors();
 
-  let hasError = false;
+    // =====================
+    // FORM VALUES
+    // =====================
+    const assetId = getVal("pm-asset");
+    const taskText = getVal("pm-task");
+    const freqValue = Number(getVal("pm-frequency-value"));
+    const freqUnit = getVal("pm-frequency-unit");
+    const firstDue = getVal("pm-first-due");
 
-  // =====================
-  // VALIDATION
-  // =====================
-  if (!assetId) {
-    setPreventiveError("pm-asset", "Asset is required");
-    hasError = true;
-  }
+    let hasError = false;
 
-  if (!task) {
-    setPreventiveError("pm-task", "Task description is required");
-    hasError = true;
-  }
+    // =====================
+    // VALIDATION
+    // =====================
+    if (!assetId) {
+      setPreventiveError("pm-asset", "Asset is required");
+      hasError = true;
+    }
 
-  if (!Number.isFinite(freqValue) || freqValue <= 0) {
-    setPreventiveError("pm-frequency-value", "Frequency must be greater than 0");
-    hasError = true;
-  }
+    if (!taskText) {
+      setPreventiveError("pm-task", "Task description is required");
+      hasError = true;
+    }
 
-  if (!freqUnit) {
-    setPreventiveError("pm-frequency-unit", "Frequency unit is required");
-    hasError = true;
-  }
+    if (!Number.isFinite(freqValue) || freqValue <= 0) {
+      setPreventiveError(
+        "pm-frequency-value",
+        "Frequency must be greater than 0"
+      );
+      hasError = true;
+    }
 
-  if (!firstDue) {
-    setPreventiveError("pm-first-due", "First due date is required");
-    hasError = true;
-  }
+    if (!freqUnit) {
+      setPreventiveError(
+        "pm-frequency-unit",
+        "Frequency unit is required"
+      );
+      hasError = true;
+    }
 
-  if (hasError) return;
+    if (!firstDue) {
+      setPreventiveError(
+        "pm-first-due",
+        "First due date is required"
+      );
+      hasError = true;
+    }
 
-  // =====================
-  // FREQUENCY (NORMALIZED)
-  // =====================
-  const frequency_hours =
-    freqUnit === "hours" ? freqValue : freqValue * 24;
+    if (hasError) return;
 
-  // =====================
-  // MULTI-ASSET / MULTI-MODEL RULE CHECK
-  // =====================
-  const impact = detectPreventiveRuleImpact({
-    section: getVal("pm-section") || null,
-    task: task,
-    frequency_hours,
-    excludeAssetId: Number(assetId)
-  });
+    // =====================
+    // FREQUENCY (NORMALIZED)
+    // =====================
+    const frequency_hours =
+      freqUnit === "hours" ? freqValue : freqValue * 24;
 
-  if (impact.assets > 0) {
-    const msg =
-      `This preventive rule matches:\n\n` +
-      `• ${impact.assets} other assets\n` +
-      `• across ${impact.models + 1} models\n\n` +
-      `Do you want to apply this rule to ALL matching assets?\n\n` +
-      `Only future work orders will be affected.`;
+    // =====================
+    // MULTI-ASSET APPLY (ADD PREVENTIVE)
+    // =====================
+    const selectedAsset = assetsData.find(
+      a => a.id === Number(assetId)
+    );
 
-    const applyToAll = confirm(msg);
+    const model = selectedAsset?.model;
 
-    if (applyToAll) {
-      try {
-        await applyPreventiveRule({
-          section: getVal("pm-section") || null,
-          task: task,
-          frequency_hours,
-          unit: getVal("pm-unit") || null,
-          type: getVal("pm-type") || null,
-          duration_min: Number(getVal("pm-duration")) || null,
-          notes: getVal("pm-notes") || null
-        });
+    const sameModelAssets = assetsData.filter(
+      a => a.model === model
+    );
 
-        // Refresh tasks & library
-        if (typeof loadTasks === "function") {
-          await loadTasks();
+    if (sameModelAssets.length > 1) {
+      const msg =
+        `This preventive rule will apply to:\n\n` +
+        `• ${sameModelAssets.length} assets\n` +
+        `• model: ${model}\n\n` +
+        `Do you want to apply this rule to ALL assets of this model?\n\n` +
+        `Only future work orders will be affected.`;
+
+      const applyToAll = confirm(msg);
+
+      if (applyToAll) {
+        try {
+          await applyPreventiveRule({
+            section: getVal("pm-section") || null,
+            task: taskText,
+            frequency_hours,
+            unit: getVal("pm-unit") || null,
+            type: getVal("pm-type") || null,
+            duration_min: Number(getVal("pm-duration")) || null,
+            notes: getVal("pm-notes") || null
+          });
+
+          if (typeof loadTasks === "function") {
+            await loadTasks();
+          }
+
+          if (typeof generateLibraryFromTasks === "function") {
+            generateLibraryFromTasks();
+          }
+
+          closePreventiveModal();
+
+          alert(
+            `✔ Preventive rule created\n\n` +
+            `Applied to ${sameModelAssets.length} assets (model ${model})`
+          );
+
+          return; // ⛔ STOP single-asset flow
+        } catch (err) {
+          console.error("APPLY PREVENTIVE RULE ERROR:", err);
+          alert(err.message);
+          return;
         }
-        if (typeof generateLibraryFromTasks === "function") {
-          generateLibraryFromTasks();
-        }
-
-        closePreventiveModal();
-        alert("✔ Preventive rule applied to all matching assets");
-        return; // ⛔ STOP normal POST flow
-      } catch (err) {
-        console.error("APPLY PREVENTIVE RULE ERROR:", err);
-        alert(err.message);
-        return;
       }
     }
-  }
 
-  // =====================
-  // SINGLE-ASSET PREVENTIVE (DEFAULT FLOW)
-  // =====================
-  const payload = {
-    asset_id: assetId,
-    section: getVal("pm-section") || null,
-    unit: getVal("pm-unit") || null,
-    task: task,
-    type: getVal("pm-type") || null,
-    notes: getVal("pm-notes") || null,
+    // =====================
+    // SINGLE-ASSET PREVENTIVE (DEFAULT FLOW)
+    // =====================
+    const payload = {
+      asset_id: assetId,
+      section: getVal("pm-section") || null,
+      unit: getVal("pm-unit") || null,
+      task: taskText,
+      type: getVal("pm-type") || null,
+      notes: getVal("pm-notes") || null,
 
-    is_planned: true,
-    status: "Planned",
-    due_date: firstDue,
-    duration_min: Number(getVal("pm-duration")) || null,
-    frequency_hours
-  };
+      is_planned: true,
+      status: "Planned",
+      due_date: firstDue,
+      duration_min: Number(getVal("pm-duration")) || null,
+      frequency_hours
+    };
 
-  try {
-    const res = await fetch(`${API}/preventives`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const res = await fetch(`${API}/preventives`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to create preventive");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create preventive");
+      }
+
+      if (typeof loadTasks === "function") {
+        await loadTasks();
+      }
+
+      closePreventiveModal();
+
+      document
+        .querySelectorAll(
+          "#addPreventiveOverlay input, #addPreventiveOverlay textarea, #addPreventiveOverlay select"
+        )
+        .forEach(el => (el.value = ""));
+
+      if (typeof loadPreventiveLibrary === "function") {
+        loadPreventiveLibrary();
+      }
+
+    } catch (err) {
+      console.error("SAVE PREVENTIVE ERROR:", err);
+      alert(err.message);
     }
-
-    if (typeof loadTasks === "function") {
-      await loadTasks();
-    }
-
-    closePreventiveModal();
-
-    // Reset form
-    document
-      .querySelectorAll(
-        "#addPreventiveOverlay input, #addPreventiveOverlay textarea, #addPreventiveOverlay select"
-      )
-      .forEach(el => (el.value = ""));
-
-    if (typeof loadPreventiveLibrary === "function") {
-      loadPreventiveLibrary();
-    }
-
-    console.log("Preventive created successfully");
-
-  } catch (err) {
-    console.error("SAVE PREVENTIVE ERROR:", err);
-    alert(err.message);
-  }
-});
+  });
 
 
 function setPreventiveError(fieldId, message) {
@@ -772,21 +824,48 @@ function populatePreventiveAssets() {
   });
 }
 document.getElementById("pm-asset")?.addEventListener("change", e => {
+  console.log("[PM ASSET CHANGE] fired");
   const sel = e.target;
   const opt = sel.options[sel.selectedIndex];
+  console.log("[PM ASSET CHANGE] selected option =", opt);
+
   if (!opt || !opt.value) {
+    console.warn("[PM ASSET CHANGE] no option or empty value");
     clearPreventiveAssetContext();
     return;
   }
+  console.log("[PM ASSET CHANGE] dataset =", opt.dataset);
 
-  // Auto-fill
+  // =====================
+  // AUTO-FILL CONTEXT
+  // =====================
   setVal("pm-line", opt.dataset.line);
   setVal("pm-machine", opt.dataset.model);
   setVal("pm-serial", opt.dataset.serial);
-
-  // Lock fields
   lockPreventiveAssetFields(true);
+
+  const model = opt.dataset.model;
+
+  // =====================
+  // POPULATE SECTION / UNIT
+  // =====================
+  populateContextDropdown({
+    model,
+    field: "section",
+    selectId: "pm-section",
+    allLabel: "All sections",
+    newLabel: "➕ New section…"
+  });
+
+  populateContextDropdown({
+    model,
+    field: "unit",
+    selectId: "pm-unit",
+    allLabel: "All units",
+    newLabel: "➕ New unit…"
+  });
 });
+
 function setVal(id, value) {
   const el = document.getElementById(id);
   if (el) el.value = value || "";
@@ -1029,7 +1108,10 @@ document
 
       closeEditPreventiveModal();
 
-      alert("✔ Preventive rule applied successfully");
+      alert(
+        "✔ New preventive rule created\n\n" +
+        "Applied to 1 asset"
+      );
 
     } catch (err) {
       console.error("APPLY PREVENTIVE ERROR:", err);
@@ -1292,5 +1374,206 @@ await loadTasks();
 
 // 🔁 Re-generate preventive library from updated tasks
 generateLibraryFromTasks();
-
 }
+/* =====================
+   UNIT DROPDOWN POPULATION
+   - Populates the unit dropdown based on the selected model's existing units
+   - Also includes options for "All units" and "New unit"
+===================== */
+
+function populateSectionDropdown(model) {
+  const select = document.getElementById("pm-section");
+  if (!select) return;
+
+  // reset
+  select.innerHTML = "";
+
+  
+  // ALL SECTIONS (DEFAULT)
+  
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All sections";
+  select.appendChild(optAll);
+
+  if (!model || !Array.isArray(assetsData)) return;
+
+  
+  // COLLECT UNIQUE SECTIONS
+  
+  const sections = Array.from(
+    new Set(
+      assetsData
+        .filter(a => a.model === model)
+        .map(a => (a.section || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  
+  // EXISTING SECTIONS
+  
+  sections.forEach(sec => {
+    const opt = document.createElement("option");
+    opt.value = sec;
+    opt.textContent = sec;
+    select.appendChild(opt);
+  });
+
+  
+  // SEPARATOR
+  
+  if (sections.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled = true;
+    sep.textContent = "──────────";
+    select.appendChild(sep);
+  }
+
+  // =====================
+  // NEW SECTION OPTION
+  // =====================
+  const optNew = document.createElement("option");
+  optNew.value = "__new__";
+  optNew.textContent = "➕ New section…";
+  select.appendChild(optNew);
+}
+/* =====================
+   POPULATE UNIT DROPDOWN BASED ON SELECTED MODEL
+===================== */
+
+function populateUnitDropdown(model) {
+  const select = document.getElementById("pm-unit");
+  if (!select) return;
+
+  // reset
+  select.innerHTML = "";
+
+  // =====================
+  // ALL UNITS (DEFAULT)
+  // =====================
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All units";
+  select.appendChild(optAll);
+
+  if (!model || !Array.isArray(assetsData)) return;
+
+  // =====================
+  // COLLECT UNIQUE UNITS
+  // =====================
+  const units = Array.from(
+    new Set(
+      assetsData
+        .filter(a => a.model === model)
+        .map(a => (a.unit || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  // =====================
+  // EXISTING UNITS
+  // =====================
+  units.forEach(unit => {
+    const opt = document.createElement("option");
+    opt.value = unit;
+    opt.textContent = unit;
+    select.appendChild(opt);
+  });
+
+  // =====================
+  // SEPARATOR
+  // =====================
+  if (units.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled = true;
+    sep.textContent = "──────────";
+    select.appendChild(sep);
+  }
+
+  // =====================
+  // NEW UNIT OPTION
+  // =====================
+  const optNew = document.createElement("option");
+  optNew.value = "__new__";
+  optNew.textContent = "➕ New unit…";
+  select.appendChild(optNew);
+}
+function populateContextDropdown({
+  model,
+  field,          // "section" | "unit"
+  selectId,
+  allLabel,
+  newLabel
+}) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  // =====================
+  // ALL (wildcard)
+  // =====================
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = allLabel;
+  select.appendChild(optAll);
+
+  if (!model || !Array.isArray(tasksData)) return;
+
+  // =====================
+  // COLLECT FROM TASKS
+  // =====================
+  const values = Array.from(
+    new Set(
+      tasksData
+        .filter(t =>
+          t.machine_name === model &&
+          t.is_planned === true &&
+          t[field]
+        )
+        .map(t => t[field].trim())
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  values.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    select.appendChild(opt);
+  });
+
+  if (values.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled = true;
+    sep.textContent = "──────────";
+    select.appendChild(sep);
+  }
+
+  const optNew = document.createElement("option");
+  optNew.value = "__new__";
+  optNew.textContent = newLabel;
+  select.appendChild(optNew);
+}
+
+function handleContextCustomInput({
+  selectId,
+  inputId
+}) {
+  const select = document.getElementById(selectId);
+  const input = document.getElementById(inputId);
+
+  if (!select || !input) return;
+
+  select.addEventListener("change", () => {
+    if (select.value === "__new__") {
+      input.style.display = "block";
+      input.value = "";
+      input.focus();
+    } else {
+      input.style.display = "none";
+      input.value = "";
+    }
+  });
+}
+

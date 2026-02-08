@@ -839,14 +839,38 @@
       <h4 class="section-title">📍 Location</h4>
 
       <div class="form-grid">
+        <!-- SECTION -->
         <div class="field">
           <label>Section</label>
-          <input id="pm-section" placeholder="Section (optional)" />
+          <select id="pm-section">
+            <option value="">All Sections</option>
+            <!-- populated dynamically -->
+            <option value="__new__">➕ New section…</option>
+          </select>
+
+          <input
+            id="pm-section-custom"
+            type="text"
+            placeholder="Enter new section"
+            style="display:none; margin-top:6px;"
+          />
         </div>
 
+        <!-- UNIT -->
         <div class="field">
           <label>Unit</label>
-          <input id="pm-unit" placeholder="Unit (optional)" />
+          <select id="pm-unit">
+            <option value="">All Units</option>
+            <!-- populated dynamically -->
+            <option value="__new__">➕ New unit…</option>
+          </select>
+
+          <input
+            id="pm-unit-custom"
+            type="text"
+            placeholder="Enter new unit"
+            style="display:none; margin-top:6px;"
+          />
         </div>
       </div>
     </section>
@@ -982,6 +1006,7 @@
 
   </div>
 </div>
+
 
 <!-- =====================
      EDIT PREVENTIVE MODAL
