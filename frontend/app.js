@@ -60,6 +60,11 @@ let mttrData = [];
 
 
 const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
+// =====================
+// ASSET HISTORY FILTER STATE
+// =====================
+let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
+
 
 
 function formatDate(d) {
@@ -786,6 +791,24 @@ function updateCentralHistoryLegendCounts(history) {
     planned
   });
 }
+// =====================
+// ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
+// =====================
+document.addEventListener("click", e => {
+  const item = e.target.closest(".asset-history-legend .legend-item");
+  if (!item) return;
+
+  const type = item.dataset.type || "all";
+
+  console.log("🟡 HISTORY LEGEND CLICK:", type);
+
+  assetHistoryTypeFilter = type;
+
+  highlightActiveHistoryLegend();
+
+  renderAssetHistoryTable(assetHistoryTasks);
+});
+
 
 /* =====================
    KPIs
@@ -1418,6 +1441,90 @@ function populateAssetLineFilter() {
   });
 }
 
+function getAssetHistoryType(e) {
+  // 🔴 Breakdown: δεν είχε frequency ΠΟΤΕ
+  if (e.frequency_hours == null && e.prev_due_date == null) {
+    return "breakdown";
+  }
+
+  // 🟢 Preventive: είχε frequency
+  if (e.frequency_hours != null) {
+    return "preventive";
+  }
+
+  // 🟡 Planned manual: planned αλλά χωρίς frequency
+  return "planned";
+}
+
+
+/* =====================
+    ASSET HISTORY LEGEND COUNTERS (SAFE)
+===================== */
+
+function updateAssetHistoryLegendCounts(history) {
+  const allEl = document.getElementById("histAllCount");
+  const bEl = document.getElementById("assetHistoryCountBreakdown");
+  const pEl = document.getElementById("assetHistoryCountPreventive");
+  const mEl = document.getElementById("assetHistoryCountPlanned");
+
+  if (!allEl || !bEl || !pEl || !mEl) return;
+
+  const list = Array.isArray(history) ? history : [];
+
+  let unplanned = 0;
+  let preventive = 0;
+  let planned = 0;
+
+  list.forEach(e => {
+    const t = getExecutionType(e);
+    if (t === "unplanned") unplanned++;
+    else if (t === "preventive") preventive++;
+    else if (t === "planned") planned++;
+  });
+
+  allEl.textContent = list.length;
+  bEl.textContent = unplanned;     // 🔴 Breakdowns = unplanned
+  pEl.textContent = preventive;    // 🟢 Preventive
+  mEl.textContent = planned;       // 🟡 Planned (manual)
+}
+
+/* =====================
+   ASSET HISTORY LEGEND FILTER (SCOPED)
+===================== */
+
+function bindAssetHistoryLegendClicks() {
+  document
+    .querySelectorAll(".asset-history-legend .legend-item")
+    .forEach(item => {
+      item.addEventListener("click", () => {
+        const type = item.dataset.type;
+
+        console.log("🟡 HISTORY LEGEND CLICK:", type);
+
+        assetHistoryTypeFilter = type || "all";
+
+        highlightActiveHistoryLegend();
+
+        renderAssetHistoryTable(assetHistoryTasks);
+      });
+    });
+}
+
+/* =====================
+   ASSET HISTORY LEGEND ACTIVE STATE (SCOPED)
+===================== */
+
+function highlightActiveHistoryLegend() {
+  document
+    .querySelectorAll(".asset-history-legend .legend-item")
+    .forEach(el => {
+      el.classList.toggle(
+        "active",
+        el.dataset.type === assetHistoryTypeFilter
+      );
+    });
+}
+
 // =====================
 // ACTIVATE ASSET TAB (STABLE VERSION)
 // =====================
@@ -1805,6 +1912,7 @@ async function openAssetViewBySerial(serial) {
     assetHistoryTasks = (Array.isArray(executionsData) ? executionsData : []).filter(
       e => String(e.serial_number || "").trim() === serial
     );
+    updateAssetHistoryLegendCounts(assetHistoryTasks);
 
     if (assetAllTasks.length === 0 && assetHistoryTasks.length === 0) {
       alert("No records found for this asset");
@@ -1868,6 +1976,11 @@ async function refreshAssetView() {
   assetHistoryTasks = executionsData.filter(
     e => String(e.serial_number || "").trim() === currentAssetSerial
   );
+  // reset history legend filter to "all" on refresh
+  assetHistoryTypeFilter = "all";
+  updateAssetHistoryLegendCounts(assetHistoryTasks);
+  bindAssetHistoryLegendClicks();
+  highlightActiveHistoryLegend();
 
   // 🔄 3️⃣ re-render active tab
   const activeTab =
@@ -2192,7 +2305,7 @@ function bindAssetKpiFilters() {
 }
 
 // =====================
-// ASSET HISTORY TABLE (EXECUTIONS) – TASK VIEW INTEGRATED
+// ASSET HISTORY TABLE (EXECUTIONS)
 // =====================
 function renderAssetHistoryTable(history) {
   const tasksWrap = document.querySelector(".asset-tasks-table");
@@ -2201,38 +2314,55 @@ function renderAssetHistoryTable(history) {
 
   if (!historyWrap || !tbody) return;
 
-  // ✅ Toggle tables (SYMMETRIC)
+  // toggle views
   if (tasksWrap) tasksWrap.style.display = "none";
   historyWrap.style.display = "block";
 
   tbody.innerHTML = "";
 
-  if (!history || history.length === 0) {
+  const list = Array.isArray(history) ? history : [];
+
+  if (list.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" class="empty">No history records</td>
       </tr>
     `;
-    // 🔥 Force reflow on WRAPPER + TBODY
-    historyWrap.offsetHeight;
-    tbody.offsetHeight;
     return;
   }
 
-  history.forEach(e => {
+  /* =====================
+     APPLY TYPE FILTER
+  ===================== */
+  const filtered =
+    assetHistoryTypeFilter === "all"
+      ? list
+      : list.filter(e => {
+          const t = getExecutionType(e);
+          return t === assetHistoryTypeFilter;
+        });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">No matching history records</td>
+      </tr>
+    `;
+    return;
+  }
+
+  /* =====================
+     RENDER ROWS (🔥 USE filtered)
+  ===================== */
+  filtered.forEach(e => {
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
-        // 👇 👇 👇 CLASSIFICATION / COLOR LOGIC
-          if (e.is_planned === false) {
-        // 🔴 Breakdown / Unplanned
-          tr.classList.add("history-unplanned");
-      } else if (e.is_planned === true && e.frequency_hours == null) {
-        // 🟡 Planned (Manual)
-          tr.classList.add("history-planned");
-      } else if (e.is_planned === true && e.frequency_hours != null) {
-        // 🟢 Preventive
-          tr.classList.add("history-preventive");
-      }
+
+    const execType = getExecutionType(e);
+
+    if (execType === "unplanned") tr.classList.add("history-unplanned");
+    else if (execType === "preventive") tr.classList.add("history-preventive");
+    else tr.classList.add("history-planned");
 
     tr.innerHTML = `
       <td>${formatDate(e.executed_at)}</td>
@@ -2246,20 +2376,12 @@ function renderAssetHistoryTable(history) {
     `;
 
     tr.querySelector("button").onclick = ev => {
-  ev.stopPropagation();
+      ev.stopPropagation();
+      viewHistoryEntry(e.id);
+    };
 
-  // 🔒 Κλείνουμε AssetView ΜΟΝΟ εδώ
-  //document.getElementById("assetViewOverlay").style.display = "none";
-
-  // 🔥 Ανοίγουμε History modal
-  viewHistoryEntry(e.id);
-};
     tbody.appendChild(tr);
   });
-
-  // 🔥 Force reflow on WRAPPER + TBODY
-  historyWrap.offsetHeight;
-  tbody.offsetHeight;
 }
 
 // =====================
@@ -2330,6 +2452,28 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert("Technician is required for unplanned tasks");
     return;
   }
+  function updateAssetHistoryLegend(history) {
+  if (!Array.isArray(history)) return;
+
+  let breakdown = 0;
+  let preventive = 0;
+  let planned = 0;
+
+  history.forEach(e => {
+    if (e.is_planned === false) {
+      breakdown++;
+    } else if (e.frequency_hours && Number(e.frequency_hours) > 0) {
+      preventive++;
+    } else {
+      planned++;
+    }
+  });
+
+  getEl("histBreakdownCount").textContent = breakdown;
+  getEl("histPreventiveCount").textContent = preventive;
+  getEl("histPlannedCount").textContent = planned;
+  getEl("histAllCount").textContent = history.length;
+}
 
   /* =====================
      DURATION HANDLING
