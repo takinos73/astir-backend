@@ -726,33 +726,33 @@ app.patch("/tasks/:id", async (req, res) => {
 
     // 3️⃣ PREVENTIVE → ROTATE
     if (hasFrequency) {
-      const nextDue = new Date(task.due_date);
-      nextDue.setHours(
-        nextDue.getHours() + Number(task.frequency_hours)
-      );
+    const nextDue = new Date(completedAt);
+    nextDue.setHours(
+      nextDue.getHours() + Number(task.frequency_hours)
+    );
 
-      await client.query(
-        `
-        UPDATE maintenance_tasks
-        SET
-          status = 'Planned',
-          due_date = $2,
-          completed_by = $3,
-          completed_at = $4,
-          notes = COALESCE($5, notes),   -- 🔵 preserve existing notes
-          updated_at = NOW()
-        WHERE id = $1
-        `,
-        [
-          id,
-          nextDue,
-          completed_by || null,
-          completedAt,
-          notes || null                  // 🔵
-        ]
-      );
-
-    } else {
+    await client.query(
+      `
+      UPDATE maintenance_tasks
+      SET
+        status = 'Planned',
+        due_date = $2,
+        completed_by = $3,
+        completed_at = $4,
+        notes = COALESCE($5, notes),
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [
+        id,
+        nextDue,
+        completed_by || null,
+        completedAt,
+        notes || null
+      ]
+    );
+  }
+ else {
       // 4️⃣ PLANNED (NO FREQUENCY) → FINISH
       await client.query(
         `
@@ -885,7 +885,7 @@ app.post("/tasks/bulk-done", async (req, res) => {
       );
       // 3️⃣b PREVENTIVE → ROTATE
       if (hasFrequency) {
-        const nextDue = new Date(task.due_date);
+        const nextDue = new Date(completedAt);
         nextDue.setHours(
           nextDue.getHours() + Number(task.frequency_hours)
         );
@@ -909,8 +909,8 @@ app.post("/tasks/bulk-done", async (req, res) => {
             notes || null
           ]
         );
-
-      } else {
+    }
+      else {
         // 3️⃣c PLANNED → DONE
         await client.query(
           `
