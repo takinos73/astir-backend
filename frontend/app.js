@@ -2103,7 +2103,15 @@ function renderAssetTasksTable(tasks) {
       `
     );
 
-    tr.addEventListener("click", () => openTaskView(t.id));
+    tr.addEventListener("click", () => {
+    // 🛑 Αν είμαστε σε bulk select mode, ΜΗΝ ανοίγεις task view
+    if (assetSelectedTaskIds.size > 0) {
+      return;
+    }
+
+  viewTask(t.id);
+});
+
     tbody.appendChild(tr);
   });
 

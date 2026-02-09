@@ -319,39 +319,50 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
   return groupHeader + rowsHtml;
 }).join("");
 
-container.innerHTML = `
-  <div class="library-load ${load.status}">
-    <span>
-      ⏱ Monthly preventive workload:
-      <strong>${load.hours} h</strong>
-      (${load.tasksPerMonth} tasks)
-    </span>
-    <span class="library-load-status">
-      ${
-        load.status === "ok"
-          ? "🟢 Balanced"
-          : load.status === "heavy"
-          ? "🟠 Heavy"
-          : "🔴 Overloaded"
-      }
-    </span>
-  </div>
+  container.innerHTML = `
+    <!-- PRINT HEADER (PRINT ONLY) -->
+    <div class="print-only">
+      <h2>Preventive Maintenance Plan</h2>
+      <div>
+        Model: <strong>${model}</strong>
+      </div>
+      <div>
+        Generated: ${new Date().toLocaleDateString()}
+      </div>
+    </div>
 
-  <table class="library-table">
-    <thead>
-      <tr>
-        <th>Section</th>
-        <th>Task</th>
-        <th>Frequency</th>
-        <th>Duration</th>
-        <th style="width:60px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      ${groupRowsHtml}
-    </tbody>
-  </table>
-`;
+    <div class="library-load ${load.status}">
+      <span>
+        ⏱ Monthly preventive workload:
+        <strong>${load.hours} h</strong>
+        (${load.tasksPerMonth} tasks)
+      </span>
+      <span class="library-load-status">
+        ${
+          load.status === "ok"
+            ? "🟢 Balanced"
+            : load.status === "heavy"
+            ? "🟠 Heavy"
+            : "🔴 Overloaded"
+        }
+      </span>
+    </div>
+
+    <table class="library-table">
+      <thead>
+        <tr>
+          <th>Section</th>
+          <th>Task</th>
+          <th>Frequency</th>
+          <th>Duration</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${groupRowsHtml}
+      </tbody>
+    </table>
+  `;
 
   /* =====================
    LIBRARY BUCKET COLLAPSE / EXPAND
@@ -1576,4 +1587,21 @@ function handleContextCustomInput({
     }
   });
 }
+/* =====================
+   PRINT PREVENTIVE PLAN
+===================== */
+
+function printPreventivePlan() {
+  if (!document.getElementById("libraryModelSelect")?.value) {
+    alert("Select an asset model first");
+    return;
+  }
+  window.print();
+}
+document.getElementById("printLibraryBtn")
+  ?.addEventListener("click", () => {
+    window.print();
+  });
+
+
 
