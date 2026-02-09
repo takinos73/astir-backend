@@ -1912,6 +1912,8 @@ async function openAssetViewBySerial(serial) {
     assetHistoryTasks = (Array.isArray(executionsData) ? executionsData : []).filter(
       e => String(e.serial_number || "").trim() === serial
     );
+
+    // 🔢 History legend counts
     updateAssetHistoryLegendCounts(assetHistoryTasks);
 
     if (assetAllTasks.length === 0 && assetHistoryTasks.length === 0) {
@@ -1932,6 +1934,21 @@ async function openAssetViewBySerial(serial) {
 
     renderAssetKpis(assetAllTasks, assetHistoryTasks);
     renderAssetMttrKpis(currentAssetSerial);
+
+    // =====================
+    // 🖨 PRINT PREVENTIVE PLAN BUTTON (SAFE)
+    // =====================
+    const printBtn = document.getElementById("printAssetPreventiveBtn");
+    if (printBtn) {
+      const hasPreventive = assetAllTasks.some(
+        t =>
+          t.is_planned === true &&
+          Number(t.frequency_hours) > 0 &&
+          t.deleted_at == null
+      );
+
+      printBtn.style.display = hasPreventive ? "inline-flex" : "none";
+    }
 
     // bind tabs ONCE
     bindAssetTabs();
@@ -1954,6 +1971,7 @@ async function openAssetViewBySerial(serial) {
     alert("Asset view error (see console).");
   }
 }
+
 // =====================
 // REFRESH ASSET VIEW DATA (FROM GLOBALS)
 // =====================
@@ -3733,6 +3751,19 @@ async function loadMachineModelsForAsset() {
     console.error("LOAD MACHINE MODELS ERROR:", err);
   }
 }
+// =====================
+// PRINT ASSET PREVENTIVE BUTTON
+// =====================
+document
+  .getElementById("printAssetPreventiveBtn")
+  ?.addEventListener("click", () => {
+    if (!currentAsset || !currentAsset.id) {
+      alert("No asset selected");
+      return;
+    }
+
+    printAssetPreventivePlan(currentAsset.id);
+  });
 
 /* =====================
    ADD ASSET MODAL – SAFE OPEN

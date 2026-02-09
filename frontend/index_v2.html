@@ -1625,126 +1625,133 @@
       </section>
     </div>
 
-    <!-- =====================
-     TAB: ACTIVE TASKS
-    ===================== -->
-<div class="asset-tab-panel" data-panel="active">
-    <!-- =====================
-     ACTIVE TASKS LEGEND
-    ===================== -->
-      <div class="asset-status-legend">
-        <span class="legend-item preventive">
-          <span class="dot"></span> Preventive
-        </span>
-        <span class="legend-item planned">
-          <span class="dot"></span> Planned (Manual)
-        </span>
-      </div>
+      <!-- =====================
+      TAB: ACTIVE TASKS
+      ===================== -->
+    <div class="asset-tab-panel" data-panel="active">
+        <!-- =====================
+        ACTIVE TASKS LEGEND
+        ===================== -->
+          <div class="asset-status-legend">
+            <span class="legend-item preventive">
+              <span class="dot"></span> Preventive
+            </span>
+            <span class="legend-item planned">
+              <span class="dot"></span> Planned (Manual)
+            </span>
+          </div>
 
-  <div class="table-card asset-tasks-table">
-    <table id="assetTasksTable">
-      <thead>
-        <tr>
-          <th></th> <!-- checkbox column -->
-          <th>Status</th>
-            <th>Unit</th>
-            <th>Task</th>            
-            <th>Type</th>
-            <th>Due Date</th>
-            <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- =====================
-       ASSET BULK ACTION BAR (STEP 2)
-  ===================== -->
-  <div
-    id="assetBulkActionsBar"
-    class="bulk-actions"
-    style="display:none; margin-top:10px;"
-  >
-    <div class="bulk-actions-left">
-      <strong id="assetBulkSelectedCount">0</strong>
-      <span>selected</span>
-      <button
-        class="btn-secondary"
-        type="button"
-        id="assetBulkClearBtn"
-      >
-        Clear
-      </button>
-    </div>
-
-    <div class="bulk-actions-right">
-      <button
-        class="btn-table"
-        type="button"
-        id="assetBulkDoneBtn"
-      >
-        ✔ Bulk Done
-      </button>
-    </div>
-  </div>
-</div>
-
-    <!-- =====================
-         TAB: HISTORY
-    ===================== -->
-    <div class="asset-tab-panel" data-panel="history">
-
-      <div class="table-card asset-history-table">
-        <table id="assetHistoryTable">
+      <div class="table-card asset-tasks-table">
+        <table id="assetTasksTable">
           <thead>
             <tr>
+              <th></th> <!-- checkbox column -->
               <th>Status</th>
-              <th>Task</th>
-              <th>Type</th>
-              <th>Executed At</th>
-              <th>Notes</th>
+                <th>Unit</th>
+                <th>Task</th>            
+                <th>Type</th>
+                <th>Due Date</th>
+                <th>Duration</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-        <div class="asset-history-legend">
-          <div class="legend-item clickable" data-type="all">
-            <strong id="histAllCount">0</strong>
-            <span>All</span>
-          </div>
 
-          <div class="legend-item clickable breakdown" data-type="unplanned">
-            <strong id="assetHistoryCountBreakdown">0</strong>
-            <span>Breakdowns</span>
-          </div>
-
-          <div class="legend-item clickable preventive" data-type="preventive">
-            <strong id="assetHistoryCountPreventive">0</strong>
-            <span>Preventive</span>
-          </div>
-
-          <div class="legend-item clickable planned" data-type="planned">
-            <strong id="assetHistoryCountPlanned">0</strong>
-            <span>Planned</span>
-          </div>
+      <!-- =====================
+          ASSET BULK ACTION BAR (STEP 2)
+      ===================== -->
+      <div
+        id="assetBulkActionsBar"
+        class="bulk-actions"
+        style="display:none; margin-top:10px;"
+      >
+        <div class="bulk-actions-left">
+          <strong id="assetBulkSelectedCount">0</strong>
+          <span>selected</span>
+          <button
+            class="btn-secondary"
+            type="button"
+            id="assetBulkClearBtn"
+          >
+            Clear
+          </button>
         </div>
+
+        <div class="bulk-actions-right">
+          <button
+            class="btn-table"
+            type="button"
+            id="assetBulkDoneBtn"
+          >
+            ✔ Bulk Done
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- ACTIONS -->
-<div class="asset-view-footer">
+      <!-- =====================
+          TAB: HISTORY
+      ===================== -->
+      <div class="asset-tab-panel" data-panel="history">
 
-  <div class="modal-actions">
-    <button
-      class="btn-secondary"
-      onclick="closeAssetView()">
-      Close
-    </button>
-  </div>
-</div>
+        <div class="table-card asset-history-table">
+          <table id="assetHistoryTable">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Executed At</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+          <div class="asset-history-legend">
+            <div class="legend-item clickable" data-type="all">
+              <strong id="histAllCount">0</strong>
+              <span>All</span>
+            </div>
+
+            <div class="legend-item clickable breakdown" data-type="unplanned">
+              <strong id="assetHistoryCountBreakdown">0</strong>
+              <span>Breakdowns</span>
+            </div>
+
+            <div class="legend-item clickable preventive" data-type="preventive">
+              <strong id="assetHistoryCountPreventive">0</strong>
+              <span>Preventive</span>
+            </div>
+
+            <div class="legend-item clickable planned" data-type="planned">
+              <strong id="assetHistoryCountPlanned">0</strong>
+              <span>Planned</span>
+            </div>
+          </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="asset-view-footer">
+        <div class="modal-actions">
+          <button
+            class="btn-secondary"
+            onclick="closeAssetView()">
+            Close
+          </button>
+
+          <button
+            id="printAssetPreventiveBtn"
+            class="btn-secondary"
+            style="display:none;">
+            🖨 Print Preventive Plan
+          </button>
+
+        </div>
       </div>
   </div>
+</div>
 
   <!-- =====================
      ADD ASSET MODAL

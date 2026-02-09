@@ -4077,12 +4077,47 @@ tr.highlight-execution {
     margin-bottom: 16px;
   }
 }
+@media print {
+  body * {
+    visibility: hidden;
+  }
 
+  #libraryPrintContainer,
+  #libraryPrintContainer * {
+    visibility: visible;
+  }
 
+  #libraryPrintContainer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+  }
+}
 
+.print-only {
+  display: none;
+}
 
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
 
+.print-table th,
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  font-size: 12px;
+}
 
-
-
+.print-summary {
+  display: flex;
+  gap: 24px;
+  margin: 12px 0;
+  font-size: 13px;
+}
 
