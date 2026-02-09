@@ -10,6 +10,8 @@ import multer from "multer";
 import XLSX from "xlsx";
 import fs from "fs";
 
+const WORKING_HOURS_PER_WEEK = 120;
+
 dotenv.config();
 
 const app = express();
@@ -726,10 +728,12 @@ app.patch("/tasks/:id", async (req, res) => {
 
     // 3️⃣ PREVENTIVE → ROTATE
     if (hasFrequency) {
+    const freqHours = Number(task.frequency_hours);
+    const calendarDays =
+      Math.round(freqHours * 7 / WORKING_HOURS_PER_WEEK);
+
     const nextDue = new Date(completedAt);
-    nextDue.setHours(
-      nextDue.getHours() + Number(task.frequency_hours)
-    );
+    nextDue.setDate(nextDue.getDate() + calendarDays);
 
     await client.query(
       `
@@ -885,10 +889,12 @@ app.post("/tasks/bulk-done", async (req, res) => {
       );
       // 3️⃣b PREVENTIVE → ROTATE
       if (hasFrequency) {
+        const freqHours = Number(task.frequency_hours);
+        const calendarDays =
+          Math.round(freqHours * 7 / WORKING_HOURS_PER_WEEK);
+
         const nextDue = new Date(completedAt);
-        nextDue.setHours(
-          nextDue.getHours() + Number(task.frequency_hours)
-        );
+        nextDue.setDate(nextDue.getDate() + calendarDays);
 
         await client.query(
           `
