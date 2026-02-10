@@ -1789,6 +1789,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     box-sizing: border-box;
     max-height: 64px;
     resize: vertical;
+    margin-top:2px
 }
 
 /* Field wrapper alignment */
@@ -1946,7 +1947,7 @@ tr.history-unplanned {
   justify-content: center;   /* οριζόντια */
   align-items: flex-start;   /* 👈 ΤΟ ΚΛΕΙΔΙ */
 
-  z-index: 999;
+  z-index: 1100;
   padding-top: 16px;         /* αντί για margin-top */
   pointer-events: auto;
 }

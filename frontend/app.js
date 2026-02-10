@@ -1,5 +1,4 @@
-// ASTIR CMMS UI v2 - Supervisor Dashboard
-console.log("APP.JS LOADED");
+// ASTIR CMMS UI v2 - Supervisor Dashboard");
 
 const API = "https://astir-backend.onrender.com";
 
@@ -64,8 +63,8 @@ const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
 // ASSET HISTORY FILTER STATE
 // =====================
 let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
-
-
+let lockSectionOnce = false;
+let followUpSectionValue = null;
 
 function formatDate(d) {
   if (!d) return "-";
@@ -275,6 +274,30 @@ document.addEventListener("click", e => {
 
   renderTable();
 });
+
+/* ===========================
+GET ASSET SECTIONS (FOR FILTERING)
+=============================*/
+
+function getSectionsForAsset(assetId) {
+  if (!assetId || !Array.isArray(tasksData)) return [];
+
+  const id = Number(assetId);
+  const set = new Set();
+
+  tasksData.forEach(t => {
+    if (
+      Number(t.asset_id) === id &&
+      t.section &&
+      String(t.section).trim() !== ""
+    ) {
+      set.add(String(t.section).trim());
+    }
+  });
+
+  return Array.from(set).sort();
+}
+
 
 // =====================
 // TASK TYPE FILTER
@@ -868,28 +891,57 @@ function populateAddTaskLines() {
   });
 }
 /* =====================
-   POPULATE ASSETS BY LINE (ADD TASK)
+   POPULATE SECTIONS BY ASSET (ADD TASK)
 ===================== */
-document.getElementById("nt-line")?.addEventListener("change", e => {
-  const line = e.target.value;
-  const assetSel = document.getElementById("nt-asset");
-  if (!assetSel) return;
+document.getElementById("nt-asset")?.addEventListener("change", e => {
+  const assetId = e.target.value;
 
-  assetSel.innerHTML = `<option value="">Select Asset</option>`;
-  assetSel.disabled = true;
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput  = document.getElementById("nt-section-input");
 
-  if (!line) return;
+  if (!assetId || !sectionSelect || !sectionInput) return;
 
-  const filtered = assetsData.filter(a => a.line === line);
+  const sections = getSectionsForAsset(assetId);
 
-  filtered.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a.id;
-    opt.textContent = `${a.model} (${a.serial_number})`;
-    assetSel.appendChild(opt);
-  });
+  sectionSelect.innerHTML = "";
 
-  assetSel.disabled = false;
+  if (sections.length > 0) {
+    sectionSelect.innerHTML =
+      `<option value="">Select section</option>` +
+      sections.map(s =>
+        `<option value="${s}">${s}</option>`
+      ).join("");
+
+    sectionSelect.style.display = "block";
+    sectionInput.style.display = "none";
+  } else {
+    sectionSelect.style.display = "none";
+    sectionInput.style.display = "block";
+  }
+
+  /* =====================
+     AUTO-LOCK SECTION (FOLLOW-UP)
+  ===================== */
+  if (lockSectionOnce && followUpSectionValue) {
+
+    if (sectionSelect.style.display !== "none") {
+      const match = [...sectionSelect.options]
+        .find(o => o.value === followUpSectionValue);
+
+      if (match) {
+        sectionSelect.value = match.value;
+        sectionSelect.disabled = true;
+        sectionSelect.classList.add("locked");
+      }
+    } else {
+      sectionInput.value = followUpSectionValue;
+      sectionInput.disabled = true;
+      sectionInput.classList.add("locked");
+    }
+
+    lockSectionOnce = false;
+    followUpSectionValue = null;
+  }
 });
 
 /* =====================
@@ -2553,7 +2605,11 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const payload = {
     asset_id: assetId,
-    section: document.getElementById("nt-section")?.value || null,
+    section:
+    document.getElementById("nt-section")?.style.display !== "none"
+      ? document.getElementById("nt-section").value || null
+      : document.getElementById("nt-section-input")?.value || null,
+
     unit: document.getElementById("nt-unit")?.value || null,
     task: taskDesc,
     type: document.getElementById("nt-type")?.value || null,
@@ -2832,11 +2888,12 @@ async function openAddTaskForAsset(machine, serial, line) {
     );
 
     if (option) {
-      assetSel.value = option.value;
-      assetSel.disabled = true;
-      assetSel.classList.add("locked");
-      return;
-  }
+  assetSel.value = option.value;
+  triggerChange(assetSel);   // 🔑 ΑΥΤΟ ΛΕΙΠΕ
+  assetSel.disabled = true;
+  assetSel.classList.add("locked");
+  return;
+}
 
   // ⏳ retry until options exist
   setTimeout(waitForAssetDropdown, 30);
@@ -2919,9 +2976,9 @@ document.addEventListener("click", async (e) => {
   const title = document.getElementById("addTaskTitle");
   if (title) title.textContent = "New Follow-up Task";
 
-  // 🔹 Prefill Section / Unit
-  const secEl = document.getElementById("nt-section");
-  if (secEl) secEl.value = t.section || "";
+  // 🔹 Prefill Section (FOLLOW-UP)
+followUpSectionValue = t.section || null;
+lockSectionOnce = !!followUpSectionValue;
 
   const unitEl = document.getElementById("nt-unit");
   if (unitEl) unitEl.value = t.unit || "";
@@ -2957,9 +3014,10 @@ document.addEventListener("click", async (e) => {
 
   const assetEl = document.getElementById("nt-asset");
   if (assetEl && match) {
-    // ⏳ Final asset select (defensive)
-    requestAnimationFrame(() => {
+      // ⏳ Final asset select (defensive)
+      requestAnimationFrame(() => {
       assetEl.value = match.id;
+      triggerChange(assetEl);   // 🔑 ΤΟ ΚΡΙΣΙΜΟ
     });
   }
 
@@ -3001,6 +3059,17 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
   const line = e.target.value;
   const assetSel = document.getElementById("nt-asset");
 
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput  = document.getElementById("nt-section-input");
+
+  // RESET section όταν αλλάζει line
+  if (sectionSelect && sectionInput) {
+    sectionSelect.innerHTML = "";
+    sectionSelect.style.display = "none";
+    sectionInput.style.display = "block";
+    sectionInput.value = "";
+  }
+
   assetSel.innerHTML = `<option value="">Select Asset</option>`;
   assetSel.disabled = true;
 
@@ -3010,13 +3079,14 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
 
   filtered.forEach(a => {
     const opt = document.createElement("option");
-    opt.value = a.id;
+    opt.value = a.id; // ✅ asset_id
     opt.textContent = `${a.model} (${a.serial_number})`;
     assetSel.appendChild(opt);
   });
 
   assetSel.disabled = false;
 });
+
 
   /* =====================
     CANCEL ADD TASK
@@ -4715,6 +4785,11 @@ document.addEventListener(
   },
   true // capture
 );
+function triggerChange(el) {
+  if (!el) return;
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 // =====================
 // DEFAULT TAB ON LOAD
 // =====================
