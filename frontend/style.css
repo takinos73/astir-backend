@@ -1958,7 +1958,6 @@ tr.history-unplanned {
   z-index: 2000;
 }
 
-
 .modal-overlay[style*="display: none"] {
   pointer-events: none;
 }
