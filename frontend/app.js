@@ -3752,18 +3752,19 @@ async function loadMachineModelsForAsset() {
   }
 }
 // =====================
-// PRINT ASSET PREVENTIVE BUTTON
+// PRINT ASSET PREVENTIVE BUTTON (SAFE)
 // =====================
 document
   .getElementById("printAssetPreventiveBtn")
   ?.addEventListener("click", () => {
-    if (!currentAsset || !currentAsset.id) {
+    if (!currentAssetSerial) {
       alert("No asset selected");
       return;
     }
 
-    printAssetPreventivePlan(currentAsset.id);
+    printAssetPreventivePlan(currentAssetSerial);
   });
+
 
 /* =====================
    ADD ASSET MODAL – SAFE OPEN

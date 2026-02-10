@@ -51,72 +51,244 @@ function buildAssetPreventivePlanReport(assetId) {
 function renderAssetPreventivePrint(report) {
   if (!report) return;
 
-  let container = document.getElementById("libraryPrintContainer");
+  // 🔥 REMOVE old instance
+  document.getElementById("libraryPrintContainer")?.remove();
 
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "libraryPrintContainer";
-    container.className = "print-only";
-    document.body.appendChild(container);
-  }
+  const container = document.createElement("div");
+  container.id = "libraryPrintContainer";
+  container.className = "print-only";
+
+  document.body.appendChild(container);
 
   const { asset, rules, metrics } = report;
 
-  container.innerHTML = `
-    <h2>Preventive Maintenance Plan</h2>
+const grouped = {};
 
-    <div class="print-meta">
-      <div><strong>Asset:</strong> ${asset.name || asset.machine_name}</div>
-      <div><strong>Model:</strong> ${asset.model}</div>
-      <div><strong>Serial:</strong> ${asset.serial || "-"}</div>
-      <div><strong>Generated:</strong> ${new Date().toLocaleDateString()}</div>
+rules.forEach(r => {
+  const f = r.frequency_hours;
+  if (!grouped[f]) grouped[f] = [];
+  grouped[f].push(r);
+});
+
+container.innerHTML += `
+<!-- =====================
+       PREVENTIVE PLAN HEADER
+  ===================== -->
+  <div class="print-header">
+
+    <div class="print-header-left">
+      <h1>Preventive Maintenance Plan</h1>
+      <div class="asset-id">
+        <strong>${asset.model}</strong>
+        ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}
+      </div>
+      ${asset.line_code ? `<div class="asset-line">Line: ${asset.line_code}</div>` : ""}
     </div>
 
-    <div class="print-summary">
-      <div><strong>${metrics.totalRules}</strong> Preventive Rules</div>
-      <div><strong>${metrics.executionsPerYear}</strong> Executions / Year</div>
-      <div><strong>${metrics.workloadHoursPerYear}</strong> Workload (hrs / year)</div>
+    <div class="print-header-right">
+      <div class="metric">
+        <div class="metric-value">${metrics.totalRules}</div>
+        <div class="metric-label">Preventive Tasks</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-value">${metrics.executionsPerYear}</div>
+        <div class="metric-label">Executions / Year</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-value">${metrics.workloadHoursPerYear}</div>
+        <div class="metric-label">Workload (hrs / year)</div>
+      </div>
     </div>
 
-    <table class="print-table">
-      <thead>
-        <tr>
-          <th>Task</th>
-          <th>Section</th>
-          <th>Unit</th>
-          <th>Frequency (hrs)</th>
-          <th>Duration (min)</th>
-          <th>Workload / Year (hrs)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rules.map(r => `
-          <tr>
-            <td>${r.task}</td>
-            <td>${r.section || "-"}</td>
-            <td>${r.unit || "-"}</td>
-            <td>${r.frequency_hours}</td>
-            <td>${r.duration_min || "-"}</td>
-            <td>${r.workloadHours}</td>
+  </div>
+
+  <div class="print-meta">
+    Generated: ${new Date().toLocaleDateString()} •
+    Source: ASTIR CMMS •
+    Scope: Asset-level preventive plan
+  </div>
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Section / Unit</th>
+        <th>Frequency (hrs)</th>
+        <th>Duration (min)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${Object.keys(grouped)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(freq => `
+          <tr class="freq-group">
+            <td colspan="4">
+              Every <strong>${freq}</strong> hours
+            </td>
           </tr>
+
+          ${grouped[freq].map(r => `
+            <tr>
+              <td>${r.task}</td>
+              <td>
+                ${r.section || "-"}
+                ${r.unit ? `<br><small>${r.unit}</small>` : ""}
+              </td>
+              <td>${r.frequency_hours}</td>
+              <td>${r.duration_min || "-"}</td>
+            </tr>
+          `).join("")}
         `).join("")}
-      </tbody>
-    </table>
-  `;
+    </tbody>
+  </table>
+`;
+
 }
+
+
 // =====================
-// PRINT ASSET PREVENTIVE PLAN
+// PRINT ASSET PREVENTIVE PLAN (BY SERIAL)
 // =====================
-function printAssetPreventivePlan(assetId) {
-  const report = buildAssetPreventivePlanReport(assetId);
-  if (!report) {
+function printAssetPreventivePlan(serial) {
+  if (!serial) {
+    alert("Missing asset serial");
+    return;
+  }
+
+  const asset = assetsData.find(
+    a => String(a.serial_number || "").trim() === String(serial).trim()
+  );
+
+  if (!asset) {
+    alert("Asset not found");
+    return;
+  }
+
+  const report = buildAssetPreventivePlanReport(asset.id);
+
+  if (!report || !Array.isArray(report.rules) || report.rules.length === 0) {
     alert("No preventive plan available for this asset");
     return;
   }
 
+  // 1️⃣ Render print HTML into hidden container
   renderAssetPreventivePrint(report);
 
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  // 2️⃣ Extract HTML safely
+  const container = document.getElementById("libraryPrintContainer");
+  if (!container) {
+    alert("Print container not found");
+    return;
+  }
+
+  const html = container.innerHTML;
+
+  // 3️⃣ Print via isolated iframe (NO dark UI, NO overlays)
+  printHtmlInIsolatedFrame(html);
 }
+
+function getAssetPreventiveTasks(serial) {
+  if (!Array.isArray(tasksData)) return [];
+
+  const s = String(serial).trim();
+
+  return tasksData.filter(t =>
+    String(t.serial_number || "").trim() === s &&
+    t.is_planned === true &&
+    Number(t.frequency_hours) > 0 &&
+    t.deleted_at == null
+  );
+}
+function calculatePreventivePlanMetrics(rules) {
+  let executionsPerYear = 0;
+  let workloadHoursPerYear = 0;
+
+  rules.forEach(r => {
+    if (!r.frequency_hours || !r.duration_min) return;
+
+    const perYear = Math.round(8760 / r.frequency_hours);
+    executionsPerYear += perYear;
+    workloadHoursPerYear += (perYear * r.duration_min) / 60;
+  });
+
+  return {
+    totalRules: rules.length,
+    executionsPerYear,
+    workloadHoursPerYear: Math.round(workloadHoursPerYear)
+  };
+}
+// =====================
+// IFRAME PRINT (BULLETPROOF)
+// =====================
+function printHtmlInIsolatedFrame(html) {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Preventive Maintenance Plan</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            margin: 0;
+            padding: 24px;
+          }
+
+          h2 {
+            margin-bottom: 8px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+          }
+
+          th, td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+          }
+
+          th {
+            background: #f2f2f2;
+          }
+
+          .freq-group td {
+            background: #e9e9e9;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        ${html}
+      </body>
+    </html>
+  `);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
+
+
+
