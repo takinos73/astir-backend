@@ -2655,6 +2655,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     // Close Add Task modal
     const addOverlay = document.getElementById("addTaskOverlay");
     if (addOverlay) {
+      resetSectionLockState();     // 🔑 ΑΥΤΟ
       addOverlay.style.display = "none";
 
       // NEW: reset z-index in case it was opened from Asset View
@@ -2991,6 +2992,7 @@ lockSectionOnce = !!followUpSectionValue;
     // ⏳ Final set (defensive against any late resets)
     requestAnimationFrame(() => {
       lineEl.value = line;
+      triggerChange(lineEl);   // 🔑 ΑΥΤΟ ΛΕΙΠΕ
     });
   }
 
@@ -3086,13 +3088,31 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
 
   assetSel.disabled = false;
 });
+function resetSectionLockState() {
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput  = document.getElementById("nt-section-input");
 
+  if (sectionSelect) {
+    sectionSelect.disabled = false;
+    sectionSelect.classList.remove("locked");
+  }
+
+  if (sectionInput) {
+    sectionInput.disabled = false;
+    sectionInput.classList.remove("locked");
+  }
+
+  // reset follow-up flags
+  lockSectionOnce = false;
+  followUpSectionValue = null;
+}
 
   /* =====================
     CANCEL ADD TASK
   ===================== */ 
     
 document.getElementById("cancelAddTask")?.addEventListener("click", () => {
+  resetSectionLockState();
   document.getElementById("addTaskOverlay").style.display = "none";
 });
 
