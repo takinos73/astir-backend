@@ -382,6 +382,22 @@ container.querySelectorAll(".library-group-header").forEach(header => {
     }
   });
 });
+const rules320 = tasksData.filter(t =>
+  t.frequency_hours === 320 &&
+  t.is_planned === true &&
+  t.deleted_at == null
+);
+
+console.table(
+  rules320.map(t => ({
+    task: t.task,
+    section: t.section,
+    unit: t.unit,
+    freq: t.frequency_hours,
+    duration: t.duration_min
+  }))
+);
+
 }
 
 
@@ -438,8 +454,11 @@ function generateLibraryFromTasks() {
     // avoid duplicates (same section + task + frequency)
     const exists = map[model].some(p =>
       p.section === t.section &&
+      (p.unit || "") === (t.unit || "") &&
       p.task === t.task &&
-      Number(p.frequency_hours) === Number(t.frequency_hours)
+      Number(p.frequency_hours) === Number(t.frequency_hours) &&
+      Number(p.duration_min || 0) === Number(t.duration_min || 0) &&
+      (p.type || "") === (t.type || "")
     );
 
     if (exists) return;
@@ -464,6 +483,7 @@ function generateLibraryFromTasks() {
   saveLibrary();
   populateLibraryModels();
   renderLibraryTable(); 
+
 }
 
 function renderLibrarySummary(plans) {

@@ -71,80 +71,85 @@ rules.forEach(r => {
 });
 
 container.innerHTML += `
-<!-- =====================
-       PREVENTIVE PLAN HEADER
-  ===================== -->
-  <div class="print-header">
+    <!-- =====================
+        PREVENTIVE PLAN HEADER
+    ===================== -->
+    <div class="print-header">
 
-    <div class="print-header-left">
-      <h1>Preventive Maintenance Plan</h1>
-      <div class="asset-id">
-        <strong>${asset.model}</strong>
-        ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}
+      <div class="print-header-left">
+        <h1>Preventive Maintenance Plan</h1>
+
+        <div class="asset-id">
+          <strong>${asset.model}</strong>
+          ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}
+          ${asset.line_code ? ` • Line: ${asset.line_code}` : ""}
+        </div>
       </div>
-      ${asset.line_code ? `<div class="asset-line">Line: ${asset.line_code}</div>` : ""}
+
     </div>
 
-    <div class="print-header-right">
-      <div class="metric">
-        <div class="metric-value">${metrics.totalRules}</div>
-        <div class="metric-label">Preventive Tasks</div>
-      </div>
-
-      <div class="metric">
-        <div class="metric-value">${metrics.executionsPerYear}</div>
-        <div class="metric-label">Executions / Year</div>
-      </div>
-
-      <div class="metric">
-        <div class="metric-value">${metrics.workloadHoursPerYear}</div>
-        <div class="metric-label">Workload (hrs / year)</div>
-      </div>
+    <!-- INLINE METRICS -->
+    <div class="print-metrics-inline">
+      <span>
+        <strong>Preventive Tasks:</strong> ${metrics.totalRules}
+      </span>
+      <span class="dot">•</span>
+      <span>
+        <strong>Executions / Year:</strong> ${metrics.executionsPerYear}
+      </span>
+      <span class="dot">•</span>
+      <span>
+        <strong>Workload:</strong> ${metrics.workloadHoursPerYear} hrs / year
+      </span>
     </div>
 
-  </div>
+    <div class="print-meta">
+      Generated: ${new Date().toLocaleDateString()} •
+      Source: ASTIR CMMS •
+      Scope: Asset-level preventive plan
+    </div>
 
-  <div class="print-meta">
-    Generated: ${new Date().toLocaleDateString()} •
-    Source: ASTIR CMMS •
-    Scope: Asset-level preventive plan
-  </div>
-  <table class="print-table">
-    <thead>
-      <tr>
-        <th>Task</th>
-        <th>Section / Unit</th>
-        <th>Frequency (hrs)</th>
-        <th>Duration (min)</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${Object.keys(grouped)
-        .sort((a, b) => Number(a) - Number(b))
-        .map(freq => `
-          <tr class="freq-group">
-            <td colspan="4">
-              Every <strong>${freq}</strong> hours
-            </td>
-          </tr>
-
-          ${grouped[freq].map(r => `
-            <tr>
-              <td>${r.task}</td>
-              <td>
-                ${r.section || "-"}
-                ${r.unit ? `<br><small>${r.unit}</small>` : ""}
+    <!-- =====================
+        PREVENTIVE TABLE
+    ===================== -->
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Section / Unit</th>
+          <th>Frequency (hrs)</th>
+          <th>Duration (min)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Object.keys(grouped)
+          .sort((a, b) => Number(a) - Number(b))
+          .map(freq => `
+            <tr class="freq-group">
+              <td colspan="4">
+                Every <strong>${freq}</strong> hours
               </td>
-              <td>${r.frequency_hours}</td>
-              <td>${r.duration_min || "-"}</td>
             </tr>
-          `).join("")}
-        `).join("")}
-    </tbody>
-  </table>
-`;
 
-}
+            ${grouped[freq]
+              .map(r => `
+                <tr>
+                  <td>${r.task}</td>
+                  <td>
+                    ${r.section || "-"}
+                    ${r.unit ? `<br><small>${r.unit}</small>` : ""}
+                  </td>
+                  <td>${r.frequency_hours}</td>
+                  <td>${r.duration_min || "-"}</td>
+                </tr>
+              `)
+              .join("")}
+          `)
+          .join("")}
+      </tbody>
+    </table>
+    `;
+  }
 
 
 // =====================
