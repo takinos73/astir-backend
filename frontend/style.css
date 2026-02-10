@@ -487,6 +487,66 @@ tbody tr:hover { background: #131520; }
 .task-view-grid {
   display: block;
 }
+/* =====================
+   DONE BUTTON (Task View)
+===================== */
+#taskViewDoneBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 14px;
+  border-radius: 10px;
+
+  font-weight: 700;
+  letter-spacing: 0.2px;
+
+  color: #ffffff;
+  background: linear-gradient(180deg, #2ecc71 0%, #24b863 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+
+  box-shadow:
+    0 10px 24px rgba(46, 204, 113, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+/* Hover */
+#taskViewDoneBtn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 30px rgba(46, 204, 113, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Active press */
+#taskViewDoneBtn:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+  box-shadow:
+    0 8px 18px rgba(46, 204, 113, 0.20),
+    inset 0 2px 10px rgba(0, 0, 0, 0.10);
+}
+
+/* Focus (keyboard accessibility) */
+#taskViewDoneBtn:focus-visible {
+  outline: 3px solid rgba(46, 204, 113, 0.35);
+  outline-offset: 2px;
+}
+
+/* Disabled state (αν το χρησιμοποιήσεις στο JS) */
+#taskViewDoneBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.2);
+  transform: none;
+  box-shadow: none;
+}
+
 
 /* =====================
    ASSET HEADER
@@ -4108,6 +4168,7 @@ tr.highlight-execution {
   border: 1px solid #ccc;
   padding: 6px 8px;
   font-size: 12px;
+  margin-top:20px
 }
 
 .print-summary {
@@ -4126,8 +4187,8 @@ tr.highlight-execution {
   align-items: center;
   gap: 32px;
   border-bottom: 2px solid #111;
-  padding-bottom: 16px;
-  margin-bottom: 20px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 /* LEFT SIDE */
@@ -4136,7 +4197,7 @@ tr.highlight-execution {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  margin-bottom: 30px;
+  margin-bottom: 8px;
 }
 
 .asset-id {
@@ -4148,7 +4209,7 @@ tr.highlight-execution {
 .asset-line {
   font-size: 12px;
   margin-top: 2px;
-  color: #555;
+  color: #a8a8a8;
 }
 
 /* RIGHT SIDE METRICS */

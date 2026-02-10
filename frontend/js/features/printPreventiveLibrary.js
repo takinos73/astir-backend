@@ -75,10 +75,8 @@ container.innerHTML += `
         PREVENTIVE PLAN HEADER
     ===================== -->
     <div class="print-header">
-
       <div class="print-header-left">
         <h1>Preventive Maintenance Plan</h1>
-
         <div class="asset-id">
           <strong>${asset.model}</strong>
           ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}

@@ -808,6 +808,22 @@ document.addEventListener("click", e => {
 
   renderAssetHistoryTable(assetHistoryTasks);
 });
+/* =====================
+TASK VIEW DONE BUTTON HANDLER
+=====================*/
+document
+  .getElementById("taskViewDoneBtn")
+  ?.addEventListener("click", () => {
+
+    if (!currentViewedTask) return;
+
+    // Κλείσε Task View (UX καθαρό)
+    document.getElementById("taskViewOverlay").style.display = "none";
+
+    // Χρησιμοποίησε ΥΠΑΡΧΟΝ flow
+    askTechnician(currentViewedTask.id);
+  });
+
 
 
 /* =====================
@@ -997,9 +1013,20 @@ ${
   document.getElementById("taskViewOverlay").style.display = "flex";
 
   // =====================
-  // EDIT / DELETE VISIBILITY
+  // EDIT / DONE/ DELETE VISIBILITY
   // =====================
   currentViewedTask = task;
+
+  const doneBtn = document.getElementById("taskViewDoneBtn");
+
+    if (
+      doneBtn &&
+      task.status !== "Done"
+    ) {
+      doneBtn.style.display = "inline-flex";
+    } else if (doneBtn) {
+      doneBtn.style.display = "none";}
+
 
   const editBtn = document.getElementById("editTaskBtn");
   const deleteBtn = document.getElementById("deleteTaskBtn");
