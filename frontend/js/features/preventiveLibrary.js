@@ -1587,21 +1587,82 @@ function handleContextCustomInput({
     }
   });
 }
-/* =====================
-   PRINT PREVENTIVE PLAN
-===================== */
 
+
+/* =====================
+   PRINT PREVENTIVE PLAN (LIBRARY / MODEL)
+===================== */
 function printPreventivePlan() {
-  if (!document.getElementById("libraryModelSelect")?.value) {
-    alert("Select an asset model first");
+  console.log("PRINT CLICK HANDLER FIRED");
+
+  const model = document.getElementById("libraryModelSelect")?.value;
+  console.log("MODEL SELECTED:", model);
+
+  if (!model) {
+    alert("Select a model first");
     return;
   }
-  window.print();
+
+  const asset = assetsData.find(a => a.model === model);
+
+  if (!asset) {
+    alert("No asset found for selected model");
+    return;
+  }
+
+  // ♻ reuse WORKING asset print
+  printAssetPreventivePlan(asset.serial_number);
 }
-document.getElementById("printLibraryBtn")
-  ?.addEventListener("click", () => {
-    window.print();
+/* =====================
+   BUILD PREVENTIVE PLAN REPORT
+   - Aggregates rules for a model and calculates metrics
+===================== */
+
+function buildModelPreventivePlanReport(model, rules) {
+  let executionsPerYear = 0;
+  let workloadHoursPerYear = 0;
+
+  const enriched = rules.map(r => {
+    const perYear = 8760 / Number(r.frequency_hours);
+    const workload = perYear * ((Number(r.duration_min) || 0) / 60);
+
+    executionsPerYear += perYear;
+    workloadHoursPerYear += workload;
+
+    return {
+      task: r.task,
+      section: r.section,
+      unit: r.unit,
+      frequency_hours: r.frequency_hours,
+      duration_min: r.duration_min
+    };
   });
+
+  return {
+    model,
+    rules: enriched,
+    metrics: {
+      totalRules: enriched.length,
+      executionsPerYear: Math.round(executionsPerYear),
+      workloadHoursPerYear: Math.round(workloadHoursPerYear)
+    }
+  };
+}
+console.log("📌 printPreventiveLibrary.js loaded");
+
+const printBtn = document.getElementById("printLibraryBtn");
+console.log("🖨 printLibraryBtn =", printBtn);
+
+if (printBtn) {
+  printBtn.addEventListener("click", printPreventivePlan);
+  console.log("✅ Print button handler attached");
+} else {
+  console.error("❌ printLibraryBtn NOT FOUND in DOM");
+}
+
+
+
+
 
 
 
