@@ -4818,8 +4818,19 @@ function triggerChange(el) {
 // =====================
 // DEFAULT TAB ON LOAD
 // =====================
-window.addEventListener("DOMContentLoaded", () => {
+
+window.addEventListener("DOMContentLoaded", async () => {
+
+  // 🔥 Ensure all global data is ready
+  if (typeof loadAssets === "function") await loadAssets();
+  if (typeof loadTasks === "function") await loadTasks();
+  if (typeof loadHistory === "function") await loadHistory(); 
+  // ή loadExecutions αν αυτό χρησιμοποιείς
+
+  // τώρα άνοιξε το tab
   const dashTab = document.querySelector('.main-tab[data-tab="assets"]');
   if (dashTab) dashTab.click();
+
 });
+
 
