@@ -2645,52 +2645,56 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
     ).forEach(el => el.value = "");
 
-      // Refresh data
-loadTasks();
+    // 🔄 Refresh global tasks FIRST
+      await loadTasks();
 
-// Always refresh central history for breakdown
-if (!isPlanned) {
-  await loadHistory();
-}
-
-// Keep Asset View in sync if it is open
-if (currentAssetSerial) {
-
-  await refreshAssetView();
-
-  if (isPlanned) {
-    activateAssetTab("active");
-
-    requestAnimationFrame(() => {
-      const row = document.querySelector(
-        "#assetTasksTable tbody tr"
-      );
-      if (row) {
-        row.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-        row.classList.add("row-highlight");
-      }
-    });
-
-  } else {
-    activateAssetTab("history");
-
-    requestAnimationFrame(() => {
-      const row = document.querySelector(
-        "#assetHistoryTable tbody tr"
-      );
-      if (row) {
-        row.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-        row.classList.add("row-highlight");
-      }
-    });
+    // Always refresh central history for breakdown
+    if (!isPlanned) {
+      await loadHistory();
   }
-}
+
+      // 🔍 Find asset serial from selected assetId
+    const assetObj = (assetsData || []).find(a =>
+      String(a.id) === String(assetId)
+    );
+
+    if (assetObj) {
+
+      const serial = assetObj.serial_number;
+
+      // 🔓 Always open Asset View after save
+      await openAssetViewBySerial(serial);      
+
+      // 🔄 Refresh view data
+      await refreshAssetView();
+
+      // 🟨 Planned → Active tab
+      if (isPlanned) {
+        activateAssetTab("active");
+      }
+
+      // 🟥 Breakdown → History tab
+      if (!isPlanned) {
+        activateAssetTab("history");
+      }
+
+      // 🔥 Scroll to new row
+      requestAnimationFrame(() => {
+        const selector = isPlanned
+          ? "#assetTasksTable tbody tr"
+          : "#assetHistoryTable tbody tr";
+
+        const row = document.querySelector(selector);
+
+        if (row) {
+          row.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+          row.classList.add("row-highlight");
+        }
+      });
+    }
 
   } catch (err) {
       console.error("SAVE TASK ERROR:", err);
