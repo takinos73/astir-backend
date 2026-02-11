@@ -4810,6 +4810,7 @@ document.addEventListener(
   },
   true // capture
 );
+
 function triggerChange(el) {
   if (!el) return;
   el.dispatchEvent(new Event("change", { bubbles: true }));

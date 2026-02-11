@@ -587,7 +587,19 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  if (hours < 720) {
+  const h = Number(hours);
+
+  // Weekly (~180h)
+  if (h <= 200) {
+    return {
+      label: "Weekly",
+      bucket: "weekly",
+      className: "freq-weekly"
+    };
+  }
+
+  // Bi-Weekly (~360h)
+  if (h <= 400) {
     return {
       label: "Bi-Weekly",
       bucket: "biweekly",
@@ -595,7 +607,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  if (hours < 1440) {
+  // Monthly (~720h)
+  if (h <= 800) {
     return {
       label: "Monthly",
       bucket: "monthly",
@@ -603,7 +616,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  if (hours < 2160) {
+  // Bi-Monthly (~1440h)
+  if (h <= 1600) {
     return {
       label: "Bi-Monthly",
       bucket: "bimonthly",
@@ -611,7 +625,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  if (hours < 4320) {
+  // Quarterly (~2160h)
+  if (h <= 2400) {
     return {
       label: "Quarterly",
       bucket: "quarterly",
@@ -619,22 +634,47 @@ function getFrequencyBucket(hours) {
     };
   }
 
+  // Semi-Annual (~4320h)
+  if (h <= 4500) {
+    return {
+      label: "Semi-Annual",
+      bucket: "semiannual",
+      className: "freq-semiannual"
+    };
+  }
+
+  // Annual (~8140h+)
+  if (h <= 9000) {
+    return {
+      label: "Annual",
+      bucket: "annual",
+      className: "freq-annual"
+    };
+  }
+
   return {
-    label: "Semi-Annual / Annual",
-    bucket: "annual",
-    className: "freq-annual"
+    label: "Long-Term",
+    bucket: "longterm",
+    className: "freq-longterm"
   };
 }
+
 function getFrequencySortOrder(hours) {
-  if (!hours) return 99;          // no frequency → last
+  if (!hours) return 99;
 
-  if (hours < 720) return 1;      // Bi-Weekly
-  if (hours < 1440) return 2;     // Monthly
-  if (hours < 2160) return 3;     // Bi-Monthly
-  if (hours < 4320) return 4;     // Quarterly
+  const h = Number(hours);
 
-  return 5;                       // Semi-Annual / Annual
+  if (h <= 200) return 1;       // Weekly
+  if (h <= 400) return 2;       // Bi-Weekly
+  if (h <= 800) return 3;       // Monthly
+  if (h <= 1600) return 4;      // Bi-Monthly
+  if (h <= 2400) return 5;      // Quarterly
+  if (h <= 4500) return 6;      // Semi-Annual
+  if (h <= 9000) return 7;      // Annual
+
+  return 8;
 }
+
 
 /* =====================
    PREVENTIVE MODAL – CLOSE

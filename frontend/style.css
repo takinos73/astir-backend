@@ -3417,11 +3417,15 @@ tr.history-unplanned {
   opacity: 0.85;
   font-size: 12px;
 }
-.freq-biweekly   {background: rgba(33, 150, 243, 0.14);}
-.freq-monthly    { background: rgba(2, 252, 10, 0.14);}
-.freq-bimonthly  { background: rgba(255, 193, 7, 0.14);}
-.freq-quarterly  { background: rgba(255, 152, 0, 0.14);}
-.freq-annual     { background: rgba(156, 39, 176, 0.14);}
+.freq-weekly { color: #2e7d32; font-weight: 600; }
+.freq-biweekly { color: #43a047; }
+.freq-monthly { color: #0288d1; }
+.freq-bimonthly { color: #5e35b1; }
+.freq-quarterly { color: #f9a825; }
+.freq-semiannual { color: #ef6c00; }
+.freq-annual { color: #c62828; font-weight: 600; }
+.freq-longterm { color: #6d4c41; }
+
 /* =====================
    LIBRARY HEADER
 ===================== */
