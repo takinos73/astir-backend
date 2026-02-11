@@ -2549,28 +2549,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert("Technician is required for unplanned tasks");
     return;
   }
-  function updateAssetHistoryLegend(history) {
-  if (!Array.isArray(history)) return;
-
-  let breakdown = 0;
-  let preventive = 0;
-  let planned = 0;
-
-  history.forEach(e => {
-    if (e.is_planned === false) {
-      breakdown++;
-    } else if (e.frequency_hours && Number(e.frequency_hours) > 0) {
-      preventive++;
-    } else {
-      planned++;
-    }
-  });
-
-  getEl("histBreakdownCount").textContent = breakdown;
-  getEl("histPreventiveCount").textContent = preventive;
-  getEl("histPlannedCount").textContent = planned;
-  getEl("histAllCount").textContent = history.length;
-}
 
   /* =====================
      DURATION HANDLING
@@ -2667,22 +2645,22 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
     ).forEach(el => el.value = "");
 
-    // Refresh data
-  loadTasks();
+      // Refresh data
+loadTasks();
 
-  // NEW: keep Asset View in sync if it is open
-  if (currentAssetSerial) {
+// Always refresh central history for breakdown
+if (!isPlanned) {
+  await loadHistory();
+}
 
-  if (!isPlanned) {
-    await loadHistory();
-  }
+// Keep Asset View in sync if it is open
+if (currentAssetSerial) {
 
   await refreshAssetView();
 
   if (isPlanned) {
     activateAssetTab("active");
 
-    // NEW: auto-scroll to first active task row
     requestAnimationFrame(() => {
       const row = document.querySelector(
         "#assetTasksTable tbody tr"
@@ -2699,7 +2677,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   } else {
     activateAssetTab("history");
 
-    // NEW: auto-scroll to first history entry
     requestAnimationFrame(() => {
       const row = document.querySelector(
         "#assetHistoryTable tbody tr"
@@ -2714,11 +2691,35 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     });
   }
 }
-    } catch (err) {
+
+  } catch (err) {
       console.error("SAVE TASK ERROR:", err);
       alert(err.message);
-  }
+    }
 });
+
+ function updateAssetHistoryLegend(history) {
+  if (!Array.isArray(history)) return;
+
+  let breakdown = 0;
+  let preventive = 0;
+  let planned = 0;
+
+  history.forEach(e => {
+    if (e.is_planned === false) {
+      breakdown++;
+    } else if (e.frequency_hours && Number(e.frequency_hours) > 0) {
+      preventive++;
+    } else {
+      planned++;
+    }
+  });
+
+    getEl("histBreakdownCount").textContent = breakdown;
+    getEl("histPreventiveCount").textContent = preventive;
+    getEl("histPlannedCount").textContent = planned;
+    getEl("histAllCount").textContent = history.length;
+  }
 
 function resetAddTaskAssetContext() {
   const lineSel = document.getElementById("nt-line");
