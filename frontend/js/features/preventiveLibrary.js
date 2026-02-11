@@ -404,6 +404,7 @@ console.table(
 /* =====================
    HELPERS
 ===================== */
+
 function formatFrequency(hours) {
   if (!hours) return "—";
   if (hours % 720 === 0) return `${hours / 720} mo`;
@@ -411,6 +412,20 @@ function formatFrequency(hours) {
   if (hours % 24 === 0) return `${hours / 24} d`;
   return `${hours} h`;
 }
+
+function getContextValue(selectId, customInputId) {
+  const select = document.getElementById(selectId);
+  const custom = document.getElementById(customInputId);
+
+  if (!select) return null;
+
+  if (select.value === "__new__") {
+    return custom?.value?.trim() || null;
+  }
+
+  return select.value || null;
+}
+
 
 /* =====================
    EVENTS
@@ -763,8 +778,8 @@ document
     // =====================
     const payload = {
       asset_id: assetId,
-      section: getVal("pm-section") || null,
-      unit: getVal("pm-unit") || null,
+      section: getContextValue("pm-section", "pm-section-custom"),
+      unit: getContextValue("pm-unit", "pm-unit-custom"),
       task: taskText,
       type: getVal("pm-type") || null,
       notes: getVal("pm-notes") || null,
@@ -1381,8 +1396,7 @@ async function applyPreventiveRule(rule) {
     section: preventive.section,         // 🔑 REQUIRED
     task: preventive.task,               // 🔑 REQUIRED
     frequency_hours: Number(getVal("ep-frequency")), // 🔑 REQUIRED
-     unit: preventive.unit || null,          // ✅ CORRECT
-
+    unit: preventive.unit || null,          // ✅ CORRECT
 
     // optional / editable
     duration_min: Number(getVal("ep-duration")) || null,
