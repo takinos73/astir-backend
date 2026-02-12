@@ -284,11 +284,50 @@ function generateStatusReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+function generateExecutionMixPie(execPct) {
+  const radius = 80;
+  const circumference = 2 * Math.PI * radius;
+
+  const segments = [
+    { pct: execPct.preventive, color: "#2e7d32" },
+    { pct: execPct.planned, color: "#f57c00" },
+    { pct: execPct.breakdown, color: "#c62828" }
+  ];
+
+  let offset = 0;
+
+  return `
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      <g transform="translate(110,110) rotate(-90)">
+        ${segments.map(seg => {
+          const dash = (seg.pct / 100) * circumference;
+          const svg = `
+            <circle
+              r="${radius}"
+              cx="0"
+              cy="0"
+              fill="transparent"
+              stroke="${seg.color}"
+              stroke-width="40"
+              stroke-dasharray="${dash} ${circumference}"
+              stroke-dashoffset="${-offset}"
+            />
+          `;
+          offset += dash;
+          return svg;
+        }).join("")}
+      </g>
+    </svg>
+  `;
+}
 
 /* =====================
    COMPLETED REPORT – PDF (SORTED BY LINE → ASSET → DATE → TECH)
 ===================== */
 function generateCompletedReportPdf() {
+
+  const includeDetails =
+  document.getElementById("reportIncludeDetails")?.checked;
 
   const data = getFilteredExecutionsForReport();
 
@@ -330,7 +369,7 @@ function generateCompletedReportPdf() {
     sorted.map(e => e.line).filter(Boolean)
   ).size;
 
-  // =====================
+// =====================
 // MTTR BY LINE (BREAKDOWNS)
 // =====================
 const mttrByLine = {};
@@ -353,7 +392,7 @@ const mttrLineRows = Object.entries(mttrByLine)
     count: v.count
   }))
   .sort((a, b) => b.avg - a.avg);
-  // =====================
+// =====================
 // EXECUTION MIX
 // =====================
 const execMix = {
@@ -379,8 +418,59 @@ const execPct = {
   planned: execTotal ? Math.round(execMix.planned * 100 / execTotal) : 0,
   breakdown: execTotal ? Math.round(execMix.breakdown * 100 / execTotal) : 0
 };
+// =====================
+// EXECUTIVE KPIs
+// =====================
 
+// 🔹 Breakdown Rate
+const breakdownRate = execPct.breakdown;
 
+// 🔹 Average MTTR (overall)
+const avgMttrAll = mttrLineRows.length
+  ? Math.round(
+      mttrLineRows.reduce((s, r) => s + r.avg, 0) /
+      mttrLineRows.length
+    )
+  : 0;
+
+// 🔹 Top Technician
+const sortedTech = Object.entries(totalsByTech)
+  .sort((a, b) => b[1] - a[1]);
+
+const topTech = sortedTech.length
+  ? sortedTech[0]
+  : ["—", 0];
+
+const topTechShare = totalTasks
+  ? Math.round((topTech[1] / totalTasks) * 100)
+  : 0;
+
+// 🔹 Total Downtime (Breakdowns)
+const totalBreakdownMinutes = sorted
+  .filter(e => e.is_planned === false && e.duration_min)
+  .reduce((s, e) => s + Number(e.duration_min), 0);
+
+const totalBreakdownHours = Math.round(totalBreakdownMinutes / 60);
+
+// 🔹 Maintenance Profile
+let maintenanceProfile = "Balanced";
+let maintenanceIcon = "🟠";
+
+if (breakdownRate < 15) {
+  maintenanceProfile = "Preventive-Driven";
+  maintenanceIcon = "🟢";
+} else if (breakdownRate > 30) {
+  maintenanceProfile = "Reactive / Breakdown-Heavy";
+  maintenanceIcon = "🔴";
+}
+
+// 🔹 Workload Concentration
+const workloadRisk =
+  topTechShare > 60
+    ? "🔴 High concentration risk"
+    : topTechShare > 40
+    ? "🟠 Moderate concentration"
+    : "🟢 Balanced distribution";
 
   let html = `
     <html>
@@ -437,6 +527,62 @@ const execPct = {
         Period: ${from} → ${to}<br>
         Line: ${lineFilter.toUpperCase()}
       </div>
+      <h3>Executive Summary</h3>
+        <table>
+          <tbody>
+            <tr>
+              <td><strong>Total Completed Tasks</strong></td>
+              <td style="text-align:right;"><strong>${totalTasks}</strong></td>
+            </tr>
+            <tr>
+              <td>Technicians Involved</td>
+              <td style="text-align:right;">${totalTechs}</td>
+            </tr>
+            <tr>
+              <td>Lines Covered</td>
+              <td style="text-align:right;">${totalLines}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table>
+          <tbody>
+            <tr>
+              <td><strong>Breakdown Rate</strong></td>
+              <td style="text-align:right;"><strong>${breakdownRate}%</strong></td>
+            </tr>
+            <tr>
+              <td>Total Downtime (Breakdowns)</td>
+              <td style="text-align:right;">${totalBreakdownHours} h</td>
+            </tr>
+            <tr>
+              <td>Average MTTR</td>
+              <td style="text-align:right;">${formatDuration(avgMttrAll)}</td>
+            </tr>
+            <tr>
+              <td>Top Technician</td>
+              <td style="text-align:right;">
+                ${topTech[0]} (${topTech[1]} tasks – ${topTechShare}%)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table>
+          <tbody>
+            <tr>
+              <td><strong>Maintenance Profile</strong></td>
+              <td style="text-align:right;">
+                ${maintenanceIcon} ${maintenanceProfile}
+              </td>
+            </tr>
+            <tr>
+              <td>Workload Distribution</td>
+              <td style="text-align:right;">${workloadRisk}</td>
+            </tr>
+          </tbody>
+        </table>
+
 
       <h3>Summary by Technician</h3>
       <table>
@@ -461,6 +607,17 @@ const execPct = {
         </tbody>
       </table>
 <h3>Execution Mix</h3>
+<div style="display:flex; gap:40px; align-items:center;">
+  <div>
+    ${generateExecutionMixPie(execPct)}
+  </div>
+  <div>
+    <p><strong>Preventive:</strong> ${execPct.preventive}%</p>
+    <p><strong>Planned:</strong> ${execPct.planned}%</p>
+    <p><strong>Breakdown:</strong> ${execPct.breakdown}%</p>
+  </div>
+</div>
+
 <table>
   <thead>
     <tr>
@@ -490,6 +647,8 @@ const execPct = {
 
       ${mttrLineRows.length ? `
 <h3>MTTR by Line (Breakdowns)</h3>
+${generateMttrBarChart(mttrLineRows)}
+
 <table>
   <thead>
     <tr>
@@ -510,9 +669,11 @@ const execPct = {
 </table>
 ` : ""}
 
-      <div class="page-break"></div>
+      ${includeDetails ? `
+        <div class="page-break"></div>
         <h3>Completed Tasks Details</h3>
         <table>
+      ` : ``}
           <thead>
             <tr>
               <th class="col-date">Date</th>
@@ -526,38 +687,43 @@ const execPct = {
         <tbody>
   `;
 
-  sorted.forEach(e => {
+  if (includeDetails) {
+
+      sorted.forEach(e => {
+        html += `
+          <tr>
+            <td class="col-date">${new Date(e.executed_at).toLocaleDateString("el-GR")}</td>
+            <td class="col-line">${e.line}</td>
+            <td class="col-machine">
+              ${e.machine}<br>
+              <span class="small">${e.serial_number || ""}</span>
+            </td>
+            <td class="col-secunit">
+              <strong>${e.section || "-"}</strong><br>
+              <span class="small">${e.unit || ""}</span>
+            </td>
+            <td class="col-task">${e.task}</td>
+            <td class="col-tech">${e.executed_by || "-"}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+      `;
+    }
+
     html += `
-      <tr>
-        <td class="col-date">${new Date(e.executed_at).toLocaleDateString("el-GR")}</td>
-        <td class="col-line">${e.line}</td>
-        <td class="col-machine">
-          ${e.machine}<br>
-          <span class="small">${e.serial_number || ""}</span>
-        </td>
-        <td class="col-secunit">
-          <strong>${e.section || "-"}</strong><br>
-          <span class="small">${e.unit || ""}</span>
-        </td>
-        <td class="col-task">${e.task}</td>
-        <td class="col-tech">${e.executed_by || "-"}</td>
-      </tr>
+          <div class="report-summary">
+            <strong>Total completed tasks:</strong> ${totalTasks}<br>
+            <strong>Technicians involved:</strong> ${totalTechs}<br>
+            <strong>Lines involved:</strong> ${totalLines}
+          </div>
+
+        </body>
+        </html>
     `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-
-      <div class="report-summary">
-        <strong>Total completed tasks:</strong> ${totalTasks}<br>
-        <strong>Technicians involved:</strong> ${totalTechs}<br>
-        <strong>Lines involved:</strong> ${totalLines}
-      </div>
-
-    </body>
-    </html>
-  `;
 
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -1735,4 +1901,29 @@ const mttrTopAssets = [...mttrByAssetMap.values()]
     document.body.removeChild(iframe);
   }, 1000);
 }
+
+function generateMttrBarChart(mttrLineRows) {
+  const max = Math.max(...mttrLineRows.map(r => r.avg), 1);
+
+  return `
+    <svg width="500" height="250">
+      ${mttrLineRows.map((r, i) => {
+        const barHeight = (r.avg / max) * 150;
+        const x = 80 + i * 120;
+        const y = 200 - barHeight;
+
+        return `
+          <rect x="${x}" y="${y}" width="60" height="${barHeight}" fill="#1976d2" />
+          <text x="${x + 30}" y="220" text-anchor="middle" font-size="12">
+            ${r.line}
+          </text>
+          <text x="${x + 30}" y="${y - 5}" text-anchor="middle" font-size="12">
+            ${r.avg}m
+          </text>
+        `;
+      }).join("")}
+    </svg>
+  `;
+}
+
 
