@@ -4626,7 +4626,7 @@ loadHistory();
 ===================== */
 function applyRoleVisibility() {
 
-  const isAdmin = hasRole("planner", "admin");
+  const isAdmin = hasRole("admin");   // 🔥 ΜΟΝΟ ADMIN
 
   // Admin-only elements (generic)
   document.querySelectorAll(".admin-only")
@@ -4634,19 +4634,20 @@ function applyRoleVisibility() {
       el.style.display = isAdmin ? "" : "none";
     });
 
-  // Asset admin actions (legacy)
+  // Asset admin actions
   document.querySelectorAll(".asset-admin-only")
     .forEach(el => {
       el.style.display = isAdmin ? "" : "none";
     });
 
-  // Optional: specific buttons by id (αν υπάρχουν)
+  // Optional: specific buttons by id
   const addTaskBtn = document.getElementById("addTaskBtn");
   if (addTaskBtn) addTaskBtn.style.display = isAdmin ? "" : "none";
 
   const importBtn = document.getElementById("importExcelBtn");
   if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
+
 applyRoleVisibility();
 
 getEl("printTasksBtn")?.addEventListener("click", printTasks);

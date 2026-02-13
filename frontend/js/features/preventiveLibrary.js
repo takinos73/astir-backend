@@ -308,9 +308,9 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
           ${freq.label}
         </td>
         <td>${r.duration_min ?? "—"} min</td>
-        <td class="library-actions">
+        <td class="library-actions ">
           <button
-            class="btn-ghost btn-sm edit-preventive-btn"
+            class="btn-ghost btn-sm edit-preventive-btn admin-only"
             title="Edit preventive"
             data-preventive='${encodeURIComponent(JSON.stringify(r))}'
           >
@@ -402,9 +402,9 @@ console.table(
     duration: t.duration_min
   }))
 );
+applyRoleVisibility();
 
 }
-
 
 /* =====================
    HELPERS

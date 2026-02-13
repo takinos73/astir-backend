@@ -201,8 +201,9 @@ function getDueState(t) {
    ROLE HELPERS
 ===================== */
 function hasRole(...roles) {
-  return roles.includes(CURRENT_USER.role);
+  return roles.includes(window.currentUserRole);
 }
+
 /* =====================
     SEARCH HIGHLIGHT
 ===================== */
