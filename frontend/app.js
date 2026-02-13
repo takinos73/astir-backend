@@ -3923,8 +3923,8 @@ document.addEventListener("DOMContentLoaded", () => {
   addBtn.addEventListener("click", e => {
     e.preventDefault();
 
-    if (!hasRole("planner", "admin")) {
-      alert("You are not allowed to add assets");
+    if (window.currentUserRole !== "admin") {
+      alert("Admin only action");
       return;
     }
     loadLinesForAsset(); // 👈 ΕΔΩ

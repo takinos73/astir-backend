@@ -167,6 +167,11 @@ function detectPreventiveRuleImpact({
    OPEN ADD PREVENTIVE MODAL
 ===================== */
 document.getElementById("addPreventiveBtn")?.addEventListener("click", e => {
+   if (window.currentUserRole !== "admin") {
+      e.preventDefault();
+      alert("Admin only feature");
+      return;
+    }
   e.preventDefault();
 
   const overlay = document.getElementById("addPreventiveOverlay");
