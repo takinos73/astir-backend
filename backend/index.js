@@ -610,7 +610,7 @@ app.post("/preventives/delete-rule/preview", async (req, res) => {
    - Soft delete only
    - Admin only
 ===================== */
-app.patch("/preventives/delete-rule", async (req, res) => {
+app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
   const role = req.headers["x-cmms-role"];
   if (role !== "admin") {
     return res.status(403).json({ error: "Admin only" });
@@ -1561,7 +1561,7 @@ app.delete("/assets/:id", async (req, res) => {
 /* =====================
    DEACTIVATE ASSET
 ===================== */
-app.patch("/assets/:id/deactivate", async (req, res) => {
+app.patch("/assets/:id/deactivate",requireAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -1588,7 +1588,8 @@ app.patch("/assets/:id/deactivate", async (req, res) => {
 /* =====================
    EDIT ASSET
 ===================== */
-app.patch("/assets/:id", async (req, res) => {
+app.patch("/assets/:id", requireAdmin, async (req, res) => {
+
   const {
     line_id,
     model,

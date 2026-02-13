@@ -1446,7 +1446,8 @@ async function applyPreventiveRule(rule) {
 
   const res = await fetch(`${API}/preventives/apply-rule`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json",
+    "x-cmms-role": window.currentUserRole },
     body: JSON.stringify(payload)
   });
 

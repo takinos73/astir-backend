@@ -3988,7 +3988,8 @@ getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
   try {
     const res = await fetch(`${API}/assets/${editingAssetId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json",
+    "x-cmms-role": window.currentUserRole },
       body: JSON.stringify(payload)
     });
 
@@ -3998,8 +3999,7 @@ getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
     }
 
     closeEditAsset();
-    await loadAssets(); // 🔄 refresh table
-    await loadTasks(); // 🔄 refresh tasks for updated asset
+    await loadAssets(); // 🔄 refresh table    
   } catch (err) {
     alert(err.message);
   }
@@ -4096,7 +4096,8 @@ getEl("saveAssetBtn")?.addEventListener("click", async () => {
   try {
     await fetch(`${API}/assets`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json",
+    "x-cmms-role": window.currentUserRole},
       body: JSON.stringify({
         line,              // είτε existing είτε new
         model,             // είτε existing είτε new

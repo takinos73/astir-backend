@@ -1629,6 +1629,35 @@ const mttrTopAssets = [...mttrByAssetMap.values()]
     fromVal || toVal ? `${fromVal || "—"} → ${toVal || "—"}` : "ALL";
 
   const scopeLabel = lineSel === "all" ? "ALL LINES" : `LINE ${lineSel.toUpperCase()}`;
+  // 🔹 KPI Status Flags
+const overdueStatus =
+  overdueRate >= 15 ? "🔴 Critical"
+  : overdueRate >= 5 ? "🟠 Attention"
+  : "🟢 Healthy";
+
+const complianceStatus =
+  prevCompliance >= 95 ? "🟢 Excellent"
+  : prevCompliance >= 85 ? "🟠 Acceptable"
+  : "🔴 At Risk";
+
+const breakdownStatus =
+  breakdownPct >= 30 ? "🔴 Reactive"
+  : breakdownPct >= 15 ? "🟠 Monitor"
+  : "🟢 Controlled";
+  // 🔹 Maintenance Maturity Score (0–100)
+let maturityScore = 100;
+
+maturityScore -= overdueRate * 0.5;
+maturityScore -= breakdownPct * 0.7;
+maturityScore += (prevCompliance - 80) * 0.3;
+
+maturityScore = Math.max(0, Math.min(100, Math.round(maturityScore)));
+
+const maturityLevel =
+  maturityScore >= 85 ? "🟢 Optimized"
+  : maturityScore >= 65 ? "🟠 Controlled"
+  : "🔴 Reactive";
+
 
   // --------- HTML ----------
   const html = `
@@ -1779,7 +1808,7 @@ const mttrTopAssets = [...mttrByAssetMap.values()]
     </div>
 
     <div class="card">
-      <div class="kpi-title">Preventive Compliance</div>
+      <div class="kpi-title">Preventive Compliance • ${complianceStatus}</div>
       <div class="kpi-value">${prevCompliance}%</div>
       <div class="kpi-sub">
         <div class="row"><span class="label">Preventive due (period)</span><span class="value">${prevDueCount}</span></div>
@@ -1825,47 +1854,56 @@ const mttrTopAssets = [...mttrByAssetMap.values()]
       </div>
     </div>
     ${mttrTopAssets.length ? `
-<div class="card" style="margin-top:10px;">
-  <div class="kpi-title">Top 5 Assets by MTTR (Breakdowns)</div>
+  <div class="card" style="margin-top:10px;">
+    <div class="kpi-title">Top 5 Assets by MTTR (Breakdowns)</div>
 
-  <table style="width:100%; border-collapse:collapse; font-size:11px;">
-    <thead>
-      <tr style="background:#eee;">
-        <th style="text-align:left; padding:6px;">Asset</th>
-        <th style="text-align:left; padding:6px;">Line</th>
-        <th style="text-align:center; padding:6px;">Breakdowns</th>
-        <th style="text-align:right; padding:6px;">MTTR</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${mttrTopAssets.map(a => `
-        <tr>
-          <td style="padding:6px;">
-            <strong>${a.machine}</strong><br>
-            <span style="font-size:10px; color:#666;">SN: ${a.serial}</span>
-          </td>
-          <td style="padding:6px;">${a.line}</td>
-          <td style="padding:6px; text-align:center;">${a.count}</td>
-          <td style="padding:6px; text-align:right;">
-            <strong>${formatDuration(a.mttr)}</strong>
-          </td>
+    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <thead>
+        <tr style="background:#eee;">
+          <th style="text-align:left; padding:6px;">Asset</th>
+          <th style="text-align:left; padding:6px;">Line</th>
+          <th style="text-align:center; padding:6px;">Breakdowns</th>
+          <th style="text-align:right; padding:6px;">MTTR</th>
         </tr>
-      `).join("")}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        ${mttrTopAssets.map(a => `
+          <tr>
+            <td style="padding:6px;">
+              <strong>${a.machine}</strong><br>
+              <span style="font-size:10px; color:#666;">SN: ${a.serial}</span>
+            </td>
+            <td style="padding:6px;">${a.line}</td>
+            <td style="padding:6px; text-align:center;">${a.count}</td>
+            <td style="padding:6px; text-align:right;">
+              <strong>${formatDuration(a.mttr)}</strong>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  </div>    
 ` : ""}
+<div class="card">
+      <div class="kpi-title">Maintenance Health Index</div>
+      <div class="kpi-value">${maturityScore}/100</div>
+      <div class="kpi-sub">
+        <div class="row">
+          <span class="label">Maturity Level</span>
+          <span class="value">${maturityLevel}</span>
+        </div>
+      </div>
+    </div>
 
   </div>
-
-  <div class="insights">
-    <h3>Insights</h3>
-    ${
-      finalInsights.length
-        ? `<ul>${finalInsights.map(x => `<li>${x}</li>`).join("")}</ul>`
-        : `<div style="color:#666;">No notable exceptions detected for the selected scope.</div>`
-    }
-  </div>
+    <div class="insights">
+      <h3>Insights</h3>
+      ${
+        finalInsights.length
+          ? `<ul>${finalInsights.map(x => `<li>${x}</li>`).join("")}</ul>`
+          : `<div style="color:#666;">No notable exceptions detected for the selected scope.</div>`
+      }
+    </div>
 
   <div class="footer">
     <div>ASTIR CMMS • KPI Report</div>
