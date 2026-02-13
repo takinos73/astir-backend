@@ -87,23 +87,37 @@ const CURRENT_USER = {
   role: "planner" // technician | planner | admin
 };
 
-/* =====================
-   DEV LOGIN AS ROLE
-===================== */
-
 function loginAsRole() {
   console.log("LOGIN CLICKED");
 
   const role = document.getElementById("roleSelect").value;
 
   CURRENT_USER.role = role;
-  window.currentUserRole = role;   // ✅ ΑΥΤΟ ΛΕΙΠΕ
+  window.currentUserRole = role;
 
-  // Re-apply UI visibility
+  // optional persist
+  localStorage.setItem("cmmsRole", role);
+
+  // 🔒 Apply restrictions
   applyRoleVisibility();
+  applyRolePermissions();   // ✅ ΠΡΟΣΘΗΚΗ
 
   alert(`Logged in as ${role}`);
 }
+
+
+function applyRolePermissions() {
+  const role = window.currentUserRole;
+
+  if (role !== "admin") {
+    document.querySelectorAll(".asset-card-menu .edit")
+      .forEach(btn => btn.remove());
+
+    document.querySelectorAll(".asset-card-menu .archive")
+      .forEach(btn => btn.remove());
+  }
+}
+
 
 
 /* =====================
@@ -3605,6 +3619,11 @@ function renderAssetsCards() {
   if (typeof applyRoleVisibility === "function") {
     applyRoleVisibility();
   }
+  // 🔒 Apply admin restrictions (hide Edit / Archive for non-admin)
+if (typeof applyRolePermissions === "function") {
+  applyRolePermissions();
+}
+
 }
 
 
