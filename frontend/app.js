@@ -3620,12 +3620,10 @@ function renderAssetsCards() {
     applyRoleVisibility();
   }
   // 🔒 Apply admin restrictions (hide Edit / Archive for non-admin)
-if (typeof applyRolePermissions === "function") {
-  applyRolePermissions();
+  if (typeof applyRolePermissions === "function") {
+    applyRolePermissions();
+  }
 }
-
-}
-
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
