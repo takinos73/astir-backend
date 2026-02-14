@@ -2857,7 +2857,7 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
 // =====================
 async function openAddTaskForAsset(machine, serial, line) {
   console.group("ADD TASK FROM DASHBOARD");
-
+  
   if (!machine || !serial) {
     alert("Missing asset context");
     console.groupEnd();
@@ -2875,11 +2875,13 @@ async function openAddTaskForAsset(machine, serial, line) {
     return;
   }
 
-  // 🔹 Default Planned
+  // =====================
+  // 🔥 HARD RESET TYPE STATE (FIX BUG)
+  // =====================
   const typeSelect = document.getElementById("taskPlannedType");
   if (typeSelect) {
     typeSelect.value = "planned";
-    applyAddTaskTypeUI(true);
+    typeSelect.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   // 🔹 Context labels
@@ -2914,17 +2916,17 @@ async function openAddTaskForAsset(machine, serial, line) {
     );
 
     if (option) {
-  assetSel.value = option.value;
-  triggerChange(assetSel);   // 🔑 ΑΥΤΟ ΛΕΙΠΕ
-  assetSel.disabled = true;
-  assetSel.classList.add("locked");
-  return;
-}
+      assetSel.value = option.value;
+      triggerChange(assetSel);   // 🔑 keep this
+      assetSel.disabled = true;
+      assetSel.classList.add("locked");
+      return;
+    }
 
-  // ⏳ retry until options exist
-  setTimeout(waitForAssetDropdown, 30);
-};
-  waitForAssetDropdown();
+    // ⏳ retry until options exist
+    setTimeout(waitForAssetDropdown, 30);
+  };
+
   waitForAssetDropdown();
 
   overlay.style.display = "flex";
@@ -2934,6 +2936,7 @@ async function openAddTaskForAsset(machine, serial, line) {
   // ✨ UX polish
   document.getElementById("nt-task")?.focus();
 }
+
 // =====================
 // ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
 // =====================
