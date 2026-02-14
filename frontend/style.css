@@ -647,11 +647,10 @@ tbody tr:hover { background: #131520; }
    TASK VIEW ACTIONS
 ===================== */
 
-.task-view-actions {
+.modal-actions .task-view-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-
+  justify-content:space-evenly;
   margin-top: 26px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -1100,6 +1099,36 @@ tbody tr:hover { background: #131520; }
   text-align: left;          /* 👈 ΑΡΙΣΤΕΡΑ */
   padding-left: 10px;        /* 👈 ΑΕΡΑΣ ΑΠΟ BORDER */
 }
+.history-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap; /* responsive */
+}
+
+.date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+.date-label input[type="date"] {
+  height: 30px;
+  padding: 2px 6px;
+}
+
+/* Buttons aligned */
+#historyApplyDate,
+#historyResetDate {
+  height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+
 /* =====================
    HISTORY – EDIT (BREAKDOWN)
 ===================== */
@@ -1984,7 +2013,7 @@ tr.history-unplanned {
 .modal-history {
   width: 96%;
   max-width: 1200px;
-  max-height: 93vh;     /* 👈όριο */
+  max-height: 95vh;     /* 👈όριο */
 }
 
 .modal-box input {
@@ -1995,9 +2024,14 @@ tr.history-unplanned {
   border: 1px solid var(--border-subtle);
 }
 
+/* Actions always at bottom */
 .modal-actions {
+  flex-shrink: 0;
+  margin: 2px 2px;
+  padding-top: 2px;
+  /* border-top: 1px solid #ddd; */
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
 }
 
 /* =====================
@@ -2491,58 +2525,74 @@ tr.history-unplanned {
   color: #d69e2e;
 }
 
-
-
 /* =====================
-   HISTORY FILTER BAR – UNIFIED HEIGHT
+   HISTORY FILTER BAR – COMPACT INLINE
 ===================== */
 
 .history-filters {
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap; /* responsive */
 }
 
-/* κοινή βάση για ΟΛΑ τα inputs / selects */
+/* groups aligned inline */
+.history-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* κοινή βάση για ΟΛΑ */
 .history-filters select,
 .history-filters input {
-  height: 36px;              /* 👈 ίδιο, minimal ύψος */
-  padding: 0 12px;
-  line-height: 36px;
+  height: 32px;                 /* 👈 μικρότερο */
+  padding: 0 10px;
+  line-height: 32px;
 
   background: linear-gradient(180deg, #121826, #0f1520);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
+  border-radius: 8px;           /* 👈 λίγο πιο compact */
 
-  color: #676b6d;
-  font-size: 13px;
+  color: #d0d3d6;
+  font-size: 12px;              /* 👈 μικρότερο */
 
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,0.02),
-    0 4px 14px rgba(0,0,0,0.35);
+    0 3px 10px rgba(0,0,0,0.35);
 }
 
-/* inputs λίγο πιο “μαζεμένα” */
+/* inputs πιο compact */
 .history-filters input {
-  min-width: 220px;
+  min-width: 180px;
 }
 
-/* selects λίγο πιο compact */
+/* selects πιο compact */
 .history-filters select {
-  min-width: 140px;
+  min-width: 130px;
   cursor: pointer;
 }
 
-/* remove default focus ugliness */
+/* date labels inline */
+.date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #aeb4bb;
+  white-space: nowrap;
+}
+
+/* focus */
 .history-filters select:focus,
 .history-filters input:focus {
   outline: none;
   border-color: rgba(88,166,255,0.6);
 }
 
-/* icons μέσα σε inputs (αν έχεις pseudo icons) */
+/* placeholder */
 .history-filters input::placeholder {
-  color: #cacccf;
+  color: #8f96a0;
 }
 
 
@@ -2553,10 +2603,30 @@ tr.history-unplanned {
 .history-legend {
   display: flex;
   justify-content: flex-end;   /* 👈 δεξιά στοίχιση */
-  gap: 18px;
+  gap: 16px;
   margin: 6px 6px 12px auto;   /* δεξιά ανάσα */
   font-size: 12px;
   color: #9aa4b2;
+}
+/* HISTORY MODAL LAYOUT */
+.modal-history {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 95%;
+  max-width: 1200px;
+}
+
+/* Filters stay fixed */
+.history-filters {
+  flex-shrink: 0;
+}
+
+/* Table area becomes scrollable block */
+.modal-history .table-card {
+  flex: 1;
+  overflow: auto;
+  margin-top: 10px;
 }
 
 .legend-item {
@@ -2774,6 +2844,21 @@ tr.history-unplanned {
   filter: invert(1) opacity(0.6);
   cursor: pointer;
 }
+.flatpickr-calendar {
+  background: #0f1520;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  border-radius: 12px;
+}
+
+.flatpickr-day {
+  color: #ddd;
+}
+
+.flatpickr-day.selected {
+  background: #2e7cf6;
+}
+
 /* =====================
    ICON ACTION BUTTONS
 ===================== */
@@ -4266,4 +4351,5 @@ tr.highlight-execution {
 .print-metrics-inline .dot {
   opacity: 0.5;
 }
+
 

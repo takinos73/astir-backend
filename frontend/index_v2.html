@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASTIR CMMS – Supervisor Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 
 <!-- =====================
@@ -184,38 +186,58 @@
     <!-- =====================
      HISTORY FILTERS
     ===================== -->
-<div class="history-filters">
+  <div class="history-filters">
 
-  <!-- Date filter -->
-  <select id="historyDateFilter">
-    <option value="7">📅 Last 7 days</option>
-    <option value="30">📅 Last 30 days</option>
-    <option value="all">📅 All</option>
-  </select>
-<!-- Type filter -->
-  <select id="historyTypeFilter">
-  <option value="all">📂 All</option>
-  <option value="unplanned">🟥 Breakdown</option>
-  <option value="planned">🟨 Planned</option>
-  <option value="preventive">🟩 Preventive</option>
-</select>
-  <!-- Machine / SN search -->
-  <input
-    type="text"
-    id="historyMachineSearch"
-    placeholder="🔍 Machine / SN"
-  />
-  
+    <!-- LEFT GROUP: Quick Filters -->
+    <div class="history-filter-group">
 
-  <!-- Technician -->
-  <input
-    type="text"
-    id="historyTechnicianSearch"
-    placeholder="👤 Technician"
-  />
+      <!-- Rolling Date Filter -->
+      <select id="historyDateFilter">
+        <option value="7">📅 Last 7 days</option>
+        <option value="30">📅 Last 30 days</option>
+        <option value="90">📅 Last 90 days</option>
+        <option value="all">📅 All</option>
+      </select>
 
-</div>
-    <div class="table-card" style="max-height:67vh; overflow:auto;">
+      <!-- Type Filter -->
+      <select id="historyTypeFilter">
+        <option value="all">📂 All</option>
+        <option value="unplanned">🟥 Breakdown</option>
+        <option value="planned">🟨 Planned</option>
+        <option value="preventive">🟩 Preventive</option>
+      </select>
+
+    </div>
+
+    <!-- MIDDLE GROUP: Search -->
+    <div class="history-filter-group">
+
+      <!-- Machine / SN -->
+      <input
+        type="text"
+        id="historyMachineSearch"
+        placeholder="🔍 Machine / SN"
+      />
+
+      <!-- Technician -->
+      <input
+        type="text"
+        id="historyTechnicianSearch"
+        placeholder="👤 Technician"
+      />
+
+    </div>
+
+    <!-- RIGHT GROUP: Custom Date Period -->
+    <div class="history-filter-group history-date-filter">
+
+      <input type="text" id="historyDateRange" placeholder="📅 Select period">      
+
+    </div>
+
+  </div>
+
+    <div class="table-card" style="max-height:69vh; overflow:auto;">
       <table id="historyTable">
         <thead>
           <tr>
@@ -250,35 +272,34 @@
   <!-- =====================
      HISTORY LEGEND (CENTRAL)
 ===================== -->
-<div class="history-legend">
+  <div class="history-legend">
 
-  <div class="legend-item red">
-    <span class="dot"></span>
-    <span>Unplanned / Breakdown</span>
-    <span class="count" id="centralHistoryBreakdownCount">0</span>
+    <div class="legend-item red">
+      <span class="dot"></span>
+      <span>Unplanned / Breakdown</span>
+      <span class="count" id="centralHistoryBreakdownCount">0</span>
+    </div>
+
+    <div class="legend-item green">
+      <span class="dot"></span>
+      <span>Preventive Maintenance</span>
+      <span class="count" id="centralHistoryPreventiveCount">0</span>
+    </div>
+
+    <div class="legend-item yellow">
+      <span class="dot"></span>
+      <span>Planned (Manual)</span>
+      <span class="count" id="centralHistoryPlannedCount">0</span>
+    </div>
   </div>
 
-  <div class="legend-item green">
-    <span class="dot"></span>
-    <span>Preventive Maintenance</span>
-    <span class="count" id="centralHistoryPreventiveCount">0</span>
-  </div>
 
-  <div class="legend-item yellow">
-    <span class="dot"></span>
-    <span>Planned (Manual)</span>
-    <span class="count" id="centralHistoryPlannedCount">0</span>
-  </div>
-
-</div>
-
-
-  <!-- =====================
-       ACTIONS
-  ===================== -->
-    <div class="modal-actions">
-      <button class="btn-secondary" id="closeHistoryBtn">Close</button>
-    </div>    
+      <!-- =====================
+        ACTIONS
+      ===================== -->
+      <div class="modal-actions">
+        <button class="btn-secondary" id="closeHistoryBtn">Close</button>
+      </div>    
   </div>  
 </div>
 
@@ -592,17 +613,15 @@
          ACTIONS
     ====================== -->
     <div class="modal-actions">
-      <button id="cancelAddTask" class="btn-cancel">
-        Cancel
-      </button>
-      <button id="saveTaskBtn" class="btn-table">
-        ✔ Create Work Order
-      </button>
+          <button id="cancelAddTask" class="btn-cancel">
+            Cancel
+          </button>
+          <button id="saveTaskBtn" class="btn-table">
+            ✔ Create
+          </button>
+        </div>
     </div>
-
   </div>
-</div>
-
 <body>
 
    

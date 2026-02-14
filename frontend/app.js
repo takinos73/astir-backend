@@ -27,6 +27,8 @@ let historyDateRange = 7;
 let historyMachineQuery = "";
 let historyTechnicianQuery = "";
 let historyTypeFilter = "all";
+let historyDateFrom = null;
+let historyDateTo = null;
 // =====================
 // EDIT BREAKDOWN STATE
 // =====================
@@ -65,6 +67,24 @@ const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
 let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
 let lockSectionOnce = false;
 let followUpSectionValue = null;
+
+flatpickr("#historyDateRange", {
+  mode: "range",
+  dateFormat: "d-m-Y",
+  allowInput: true,
+  onClose: function(selectedDates) {
+
+    if (selectedDates.length === 2) {
+      historyDateFrom = selectedDates[0];
+      historyDateTo = selectedDates[1];
+
+      historyDateFrom.setHours(0,0,0,0);
+      historyDateTo.setHours(23,59,59,999);
+
+      renderHistoryTable(executionsData);
+    }
+  }
+});
 
 function formatDate(d) {
   if (!d) return "-";
@@ -501,6 +521,50 @@ function wasEditedAfterExecution(h) {
   if (!h.updated_at || !h.executed_at) return false;
   return new Date(h.updated_at) > new Date(h.executed_at);
 }
+/* =====================
+   HISTORY DATE AUTO MODE
+===================== */
+
+const historyDateFromEl = document.getElementById("historyDateFrom");
+const historyDateToEl = document.getElementById("historyDateTo");
+const historyRollingEl = document.getElementById("historyDateFilter");
+
+// 🟢 Custom range auto apply
+function applyCustomHistoryRange() {
+
+  const fromVal = historyDateFromEl?.value;
+  const toVal = historyDateToEl?.value;
+
+  historyDateFrom = fromVal ? new Date(fromVal) : null;
+  historyDateTo = toVal ? new Date(toVal) : null;
+
+  if (historyDateTo) {
+    historyDateTo.setHours(23, 59, 59, 999);
+  }
+
+  renderHistoryTable(executionsData);
+}
+
+
+historyDateFromEl?.addEventListener("change", applyCustomHistoryRange);
+historyDateToEl?.addEventListener("change", applyCustomHistoryRange);
+
+
+// 🟡 Rolling filter auto apply
+historyRollingEl?.addEventListener("change", (e) => {
+
+  historyDateRange = e.target.value;
+
+  // reset custom
+  historyDateFrom = null;
+  historyDateTo = null;
+
+  if (historyDateFromEl) historyDateFromEl.value = "";
+  if (historyDateToEl) historyDateToEl.value = "";
+
+  renderHistoryTable(executionsData);
+});
+
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
@@ -511,7 +575,8 @@ function renderHistoryTable(data) {
   const now = new Date();
   now.setHours(23, 59, 59, 999);
 
-  const fromDate =
+  // 🔹 Existing rolling date filter (7 / 30 / 90 days etc)
+  const rangeFromDate =
     historyDateRange === "all"
       ? null
       : new Date(
@@ -519,13 +584,50 @@ function renderHistoryTable(data) {
             Number(historyDateRange) * 24 * 60 * 60 * 1000
         );
 
+  // 🔹 NEW: Custom period filter
+  const customFrom =
+    typeof historyDateFrom !== "undefined" && historyDateFrom
+      ? new Date(historyDateFrom)
+      : null;
+
+  const customTo =
+    typeof historyDateTo !== "undefined" && historyDateTo
+      ? new Date(historyDateTo)
+      : null;
+
+  if (customFrom) customFrom.setHours(0, 0, 0, 0);
+  if (customTo) customTo.setHours(23, 59, 59, 999);
+
   data
-    // 📅 DATE FILTER
+    // 📅 DATE FILTER (range + custom period combined safely)
     .filter(h => {
-      if (!fromDate) return true;
-      const exec = new Date(h.executed_at);
-      return exec >= fromDate;
-    })
+
+  const exec = new Date(h.executed_at);
+
+  // ============================
+  // 1️⃣ CUSTOM RANGE has priority
+  // ============================
+  if (historyDateFrom || historyDateTo) {
+
+    if (historyDateFrom && exec < historyDateFrom) return false;
+    if (historyDateTo && exec > historyDateTo) return false;
+
+    return true;
+  }
+
+  // ============================
+  // 2️⃣ Rolling range
+  // ============================
+  if (historyDateRange && historyDateRange !== "all") {
+    if (!rangeFromDate) return true;
+    return exec >= rangeFromDate;
+  }
+
+  // ============================
+  // 3️⃣ ALL
+  // ============================
+  return true;
+})
 
     // 🔍 MACHINE / SERIAL FILTER
     .filter(h => {
@@ -556,12 +658,9 @@ function renderHistoryTable(data) {
       const execType = getExecutionType(h);
       tr.classList.add(`history-${execType}`);
 
-      /* =====================
-         ACTIONS (SAFE UX)
-      ===================== */
       let actionHtml = `<span class="muted">—</span>`;
 
-      // 🟩 Preventive & 🟨 Planned → View + Restore + Print
+      // 🟩 Preventive & 🟨 Planned
       if (execType === "planned" || execType === "preventive") {
         actionHtml = `
           <div class="history-action-group">
@@ -585,12 +684,11 @@ function renderHistoryTable(data) {
               onclick="printExecution(${h.id})">
               🖨
             </button>
-
           </div>
         `;
       }
 
-      // 🟥 Unplanned / Breakdown → View + Edit + Print
+      // 🟥 Breakdown
       else if (execType === "unplanned") {
         actionHtml = `
           <div class="history-action-group">
@@ -618,7 +716,6 @@ function renderHistoryTable(data) {
         `;
       }
 
-      // ✏️ Edited badge
       const editedBadge = wasEditedAfterExecution(h)
         ? `<span class="badge-edited" title="Edited after execution">✏️ Edited</span>`
         : "";
@@ -652,7 +749,8 @@ function renderHistoryTable(data) {
 
       tbody.appendChild(tr);
     });
-    applyRoleVisibility();
+
+  applyRoleVisibility();
 }
 
 // ====================================================
@@ -758,26 +856,106 @@ function editBreakdown(id) {
   alert("Breakdown edit coming next (id: " + id + ")");
 }
 
-   /* =====================
-    HISTORY FILTER HANDLERS
-   ===================== */
+/* =====================
+   HISTORY FILTER HANDLERS (FIXED)
+   - supports BOTH rolling period AND custom from/to
+   - custom dates override rolling when at least one is set
+   - historyDateFrom / historyDateTo are ALWAYS Date|null
+===================== */
 
+function readCustomDatesFromInputs() {
+  const fromVal = document.getElementById("historyDateFrom")?.value || "";
+  const toVal = document.getElementById("historyDateTo")?.value || "";
+
+  historyDateFrom = fromVal ? new Date(fromVal) : null;
+  historyDateTo = toVal ? new Date(toVal) : null;
+
+  if (historyDateFrom) historyDateFrom.setHours(0, 0, 0, 0);
+  if (historyDateTo) historyDateTo.setHours(23, 59, 59, 999);
+}
+
+function clearCustomDatesInputsAndState() {
+  historyDateFrom = null;
+  historyDateTo = null;
+
+  const fromEl = document.getElementById("historyDateFrom");
+  const toEl = document.getElementById("historyDateTo");
+  if (fromEl) fromEl.value = "";
+  if (toEl) toEl.value = "";
+}
+
+function applyHistoryFiltersAndRender() {
+  // sync custom dates from inputs (Date|null always)
+  readCustomDatesFromInputs();
+  renderHistoryTable(executionsData);
+}
+
+/* ---------------------
+   Rolling period dropdown
+--------------------- */
 document.getElementById("historyDateFilter")?.addEventListener("change", e => {
-  historyDateRange = e.target.value;
+  historyDateRange = e.target.value; // "7" | "30" | "90" | "all"
+
+  // όταν αλλάζει rolling -> καθαρίζει custom (για να μην καπελώνει)
+  clearCustomDatesInputsAndState();
+
   renderHistoryTable(executionsData);
 });
 
+/* ---------------------
+   Machine / SN search
+--------------------- */
 document.getElementById("historyMachineSearch")?.addEventListener("input", e => {
-  historyMachineQuery = e.target.value.toLowerCase();
+  historyMachineQuery = (e.target.value || "").toLowerCase().trim();
   renderHistoryTable(executionsData);
 });
-document.getElementById("historyTypeFilter")?.addEventListener("change", e => {
-    historyTypeFilter = e.target.value;
-    renderHistoryTable(executionsData);
-  });
 
+/* ---------------------
+   Type filter
+--------------------- */
+document.getElementById("historyTypeFilter")?.addEventListener("change", e => {
+  historyTypeFilter = e.target.value;
+  renderHistoryTable(executionsData);
+});
+
+/* ---------------------
+   Technician search
+--------------------- */
 document.getElementById("historyTechnicianSearch")?.addEventListener("input", e => {
-  historyTechnicianQuery = e.target.value.toLowerCase();
+  historyTechnicianQuery = (e.target.value || "").toLowerCase().trim();
+  renderHistoryTable(executionsData);
+});
+
+/* ---------------------
+   Custom date inputs (AUTO APPLY)
+   - typing/choosing dates overrides rolling (set to "all")
+--------------------- */
+document.getElementById("historyDateFrom")?.addEventListener("change", () => {
+  const rolling = document.getElementById("historyDateFilter");
+  if (rolling) rolling.value = "all";
+  historyDateRange = "all";
+  applyHistoryFiltersAndRender();
+});
+
+document.getElementById("historyDateTo")?.addEventListener("change", () => {
+  const rolling = document.getElementById("historyDateFilter");
+  if (rolling) rolling.value = "all";
+  historyDateRange = "all";
+  applyHistoryFiltersAndRender();
+});
+
+/* ---------------------
+   Optional buttons (αν υπάρχουν ακόμα στο DOM)
+--------------------- */
+document.getElementById("historyApplyDate")?.addEventListener("click", () => {
+  const rolling = document.getElementById("historyDateFilter");
+  if (rolling) rolling.value = "all";
+  historyDateRange = "all";
+  applyHistoryFiltersAndRender();
+});
+
+document.getElementById("historyResetDate")?.addEventListener("click", () => {
+  clearCustomDatesInputsAndState();
   renderHistoryTable(executionsData);
 });
 
@@ -1924,9 +2102,10 @@ if (menu) menu.classList.remove("open");
   }
 
 }
+
 /* =====================
    ADD TASK TYPE LOGIC
-   Planned vs Unplanned
+   Planned vs Unplanned (SAFE TOGGLE)
 ===================== */
 
 function applyAddTaskTypeUI(isPlanned) {
@@ -1939,15 +2118,18 @@ function applyAddTaskTypeUI(isPlanned) {
       : "New Unplanned Task (Breakdown)";
   }
 
-  // 🔹 Planned-only fields
-  document.querySelectorAll(".planned-only").forEach(el => {
-    el.style.display = isPlanned ? "block" : "none";
-  });
+  // 🔹 HARD RESET (hide everything first)
+  document.querySelectorAll(".planned-only, .unplanned-only")
+    .forEach(el => el.style.display = "none");
 
-  // 🔹 Unplanned-only fields
-  document.querySelectorAll(".unplanned-only").forEach(el => {
-    el.style.display = isPlanned ? "none" : "block";
-  });
+  // 🔹 Show correct mode
+  if (isPlanned) {
+    document.querySelectorAll(".planned-only")
+      .forEach(el => el.style.display = "block");
+  } else {
+    document.querySelectorAll(".unplanned-only")
+      .forEach(el => el.style.display = "block");
+  }
 
   // 🔹 Visual cue on modal
   const modal = document.getElementById("addTaskModal");
@@ -1957,11 +2139,11 @@ function applyAddTaskTypeUI(isPlanned) {
 }
 
 // 🔁 Change handler
-const taskTypeSelect = document.getElementById("taskPlannedType");
+document.getElementById("taskPlannedType")
+  ?.addEventListener("change", e => {
+    applyAddTaskTypeUI(e.target.value === "planned");
+  });
 
-taskTypeSelect?.addEventListener("change", e => {
-  applyAddTaskTypeUI(e.target.value === "planned");
-});
 
 // =====================
 // OPEN ASSET VIEW BY SERIAL (FRONTEND)
@@ -2997,10 +3179,12 @@ document.addEventListener("click", async (e) => {
     "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
   ).forEach(el => el.value = "");
 
-  // 🔹 Default task type = Planned
-  const typeSelect = document.getElementById("taskPlannedType");
-  if (typeSelect) typeSelect.value = "planned";
-
+  // 🔹 Default task type = Planned (SYNC UI)
+const typeSelect = document.getElementById("taskPlannedType");
+if (typeSelect) {
+  typeSelect.value = "planned";
+  applyAddTaskTypeUI(true); // 🔥 CRITICAL
+}  
   // 🔹 Modal title
   const title = document.getElementById("addTaskTitle");
   if (title) title.textContent = "New Follow-up Task";
