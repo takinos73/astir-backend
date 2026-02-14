@@ -77,7 +77,8 @@ container.innerHTML += `
     <div class="print-header">
       <div class="print-header-left">
         <h1>Preventive Maintenance Plan</h1>
-        <div class="asset-id">
+        
+        <div class="asset-id" style="margin-bottom:2px;">
           <strong>${asset.model}</strong>
           ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}
           ${asset.line_code ? ` • Line: ${asset.line_code}` : ""}
@@ -88,20 +89,19 @@ container.innerHTML += `
 
     <!-- INLINE METRICS -->
     <div class="print-metrics-inline">
-      <span>
-        <strong>Preventive Tasks:</strong> ${metrics.totalRules}
-      </span>
-      <span class="dot">•</span>
-      <span>
-        <strong>Executions / Year:</strong> ${metrics.executionsPerYear}
-      </span>
-      <span class="dot">•</span>
-      <span>
-        <strong>Workload:</strong> ${metrics.workloadHoursPerYear} hrs / year
-      </span>
-    </div>
+      <div style="margin-bottom:2px;">
+        <span>
+          <strong>Preventive Tasks:</strong> ${metrics.totalRules}
+        </span>
+      </div>
 
-    <div class="print-meta">
+      <div style="margin-bottom:2px;">
+        <span>
+          <strong>Workload:</strong> ${metrics.workloadHoursPerYear} hrs / year
+        </span>
+      </div>
+
+    <div class="print-meta" style="margin-bottom:12px;">
       Generated: ${new Date().toLocaleDateString()} •
       Source: ASTIR CMMS •
       Scope: Asset-level preventive plan

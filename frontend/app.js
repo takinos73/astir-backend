@@ -652,6 +652,7 @@ function renderHistoryTable(data) {
 
       tbody.appendChild(tr);
     });
+    applyRoleVisibility();
 }
 
 // ====================================================
@@ -1242,6 +1243,11 @@ getEl("closeHistoryBtn")
 // OPEN EDIT BREAKDOWN
 // =====================
 function editBreakdown(executionId) {
+  if (!hasRole("admin", "planner")) {
+    alert("You are not allowed to edit executions");
+    return;
+  }
+  
   const h = executionsData.find(e => e.id === executionId);
   if (!h) return;
 
@@ -3533,7 +3539,7 @@ function renderAssetsCards() {
         ${activityHtml}
       </div>
 
-      <div class="asset-card-actions asset-admin-only">
+      <div class="asset-card-actions">
         <button
           class="asset-card-more"
           type="button"
@@ -4198,25 +4204,22 @@ async function deleteAsset(id) {
    DEACTIVATE ASSET
 ===================== */
 async function deactivateAsset(id) {
-  // ROLE GUARD
-  if (!hasRole("planner", "admin")) {
-    alert("You are not allowed to deactivate assets");
-    return;
+  const res = await fetch(`${API}/assets/${id}/deactivate`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-cmms-role": window.currentUserRole  // 👈 ΚΡΙΣΙΜΟ
+    }
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Deactivate failed");
   }
 
-  if (!confirm("Deactivate this asset?")) return;
-
-  try {
-    await fetch(`${API}/assets/${id}/deactivate`, {
-      method: "PATCH"
-    });
-
-    loadAssets();
-  } catch (err) {
-    alert("Failed to deactivate asset");
-    console.error(err);
-  }
+  await loadAssets();
 }
+
 /*============================
     POPULATE ASSET LINE FILTER
  ============================*/
