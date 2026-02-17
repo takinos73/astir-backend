@@ -2204,9 +2204,9 @@ app.post("/snapshot/restore", async (req, res) => {
     `);
 
     // ✅ TEST MODE
-    await client.query("ROLLBACK");
+    await client.query("COMMIT");
     res.json({
-      message: "Snapshot restore TEST MODE OK (rolled back)",
+      message: "Snapshot restore Normal Mode",
       stats: {
         lines_in: lines.length,
         assets_in: assets.length,
