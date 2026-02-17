@@ -1962,21 +1962,21 @@ app.get("/snapshot/export", async (req, res) => {
     ).rows;
 
     const executions = (
-  await pool.query(`
-    SELECT *
-    FROM task_executions
-    ORDER BY id ASC
-  `)
-).rows;
+      await pool.query(`
+        SELECT *
+        FROM task_executions
+        ORDER BY id ASC
+      `)
+    ).rows;
 
-res.json({
-  version: 3,
-  created_at: new Date().toISOString(),
-  lines,
-  assets,
-  tasks,
-  executions
-});
+    res.json({
+      version: 3,
+      created_at: new Date().toISOString(),
+      lines,
+      assets,
+      tasks,
+      executions
+    });
 
   } catch (err) {
     console.error("SNAPSHOT EXPORT ERROR:", err.message);
@@ -1984,6 +1984,13 @@ res.json({
   }
 });
 
+/* =====================
+   RESTORE SNAPSHOT (TEST MODE = ROLLBACK)
+   - FULL WIPE in transaction
+   - Rebuild lines/assets/tasks/executions
+   - ID-safe: always creates fresh task IDs
+   - Maps old asset/task IDs -> new ones
+===================== */
 app.post("/snapshot/restore", async (req, res) => {
   const client = await pool.connect();
 
@@ -2025,7 +2032,10 @@ app.post("/snapshot/restore", async (req, res) => {
 
     /* =====================
        2️⃣ RESTORE ASSETS
+       - Map oldAssetId -> newAssetId (CRITICAL)
     ===================== */
+    const assetIdMap = new Map(); // oldId -> newId
+
     for (const a of assets) {
       if (!a.line_code || !a.model || !a.serial_number) continue;
 
@@ -2035,9 +2045,10 @@ app.post("/snapshot/restore", async (req, res) => {
       );
       if (!lineRes.rows.length) continue;
 
-      await client.query(
+      const result = await client.query(
         `INSERT INTO assets (line_id, model, serial_number, description, active)
-         VALUES ($1,$2,$3,$4,$5)`,
+         VALUES ($1,$2,$3,$4,$5)
+         RETURNING id`,
         [
           lineRes.rows[0].id,
           a.model,
@@ -2046,94 +2057,36 @@ app.post("/snapshot/restore", async (req, res) => {
           a.active !== false
         ]
       );
+
+      // 👇 old snapshot asset id -> new inserted id
+      assetIdMap.set(a.id, result.rows[0].id);
     }
 
     /* =====================
-       3️⃣ PREP: TASK IDS USED IN HISTORY
+      4️⃣ RESTORE TASKS (ID SAFE MODE)
+      - Always insert fresh
+      - Map oldTaskId -> newTaskId
     ===================== */
-    const historyTaskIds = new Set(executions.map(e => e.task_id));
+    const taskIdMap = new Map(); // oldId -> newId
 
-    /* =====================
-    4️⃣ RESTORE TASKS (SAFE)
-    - preserve ID ONLY if exists in history
-    - skip duplicate IDs safely
-    ===================== */
-
-  const insertedTaskIds = new Set();
-
-  for (const t of tasks) {
-
-    const assetRes = await client.query(
-      `
-      SELECT a.id
-      FROM assets a
-      JOIN lines l ON l.id = a.line_id
-      WHERE l.code = $1
-        AND a.model = $2
-        AND a.serial_number = $3
-      `,
-      [t.line, t.machine_name, t.serial_number]
-    );
-
-    if (!assetRes.rows.length) continue;
-
-    const assetId = assetRes.rows[0].id;
-    const hasHistory = historyTaskIds.has(t.id);
-
-    // 🔒 Prevent duplicate insert in same restore
-    if (insertedTaskIds.has(t.id)) {
-      console.warn("Duplicate task id skipped:", t.id);
-      continue;
-    }
-
-    if (hasHistory && t.id) {
-
-      await client.query(
+    for (const t of tasks) {
+      const assetRes = await client.query(
         `
-        INSERT INTO maintenance_tasks (
-          id,
-          asset_id, section, unit, task, type, qty,
-          duration_min, frequency_hours,
-          due_date, status,
-          completed_by, completed_at,
-          is_planned, notes,
-          created_at, updated_at,
-          deleted_at
-        )
-        VALUES (
-          $1,$2,$3,$4,$5,$6,$7,
-          $8,$9,$10,$11,$12,$13,
-          $14,$15,$16,$17,$18
-        )
-        ON CONFLICT (id) DO NOTHING
+        SELECT a.id
+        FROM assets a
+        JOIN lines l ON l.id = a.line_id
+        WHERE l.code = $1
+          AND a.model = $2
+          AND a.serial_number = $3
         `,
-        [
-          t.id,
-          assetId,
-          t.section || null,
-          t.unit || null,
-          t.task,
-          t.type || null,
-          t.qty ?? null,
-          t.duration_min ?? null,
-          t.frequency_hours ?? null,
-          t.due_date ? new Date(t.due_date) : null,
-          t.status,
-          t.completed_by || null,
-          t.completed_at ? new Date(t.completed_at) : null,
-          t.is_planned,
-          t.notes || null,
-          t.created_at ? new Date(t.created_at) : null,
-          t.updated_at ? new Date(t.updated_at) : null,
-          t.deleted_at ? new Date(t.deleted_at) : null
-        ]
+        [t.line, t.machine_name, t.serial_number]
       );
 
-      insertedTaskIds.add(t.id);
+      if (!assetRes.rows.length) continue;
 
-    } else {
+      const assetId = assetRes.rows[0].id;
 
-      await client.query(
+      const result = await client.query(
         `
         INSERT INTO maintenance_tasks (
           asset_id, section, unit, task, type, qty,
@@ -2154,6 +2107,7 @@ app.post("/snapshot/restore", async (req, res) => {
           COALESCE($16,NOW()),
           $17
         )
+        RETURNING id
         `,
         [
           assetId,
@@ -2175,75 +2129,93 @@ app.post("/snapshot/restore", async (req, res) => {
           t.deleted_at ? new Date(t.deleted_at) : null
         ]
       );
+
+      taskIdMap.set(t.id, result.rows[0].id);
     }
-  }
 
     /* =====================
-   5️⃣ RESTORE TASK EXECUTIONS (HISTORY)
-===================== */
-for (const e of executions) {
-  await client.query(
-    `
-    INSERT INTO task_executions (
-      id,
-      task_id,
-      asset_id,
-      executed_by,
-      executed_at,
-      duration_minutes,
-      notes
-    )
-    VALUES (
-      $1,$2,$3,$4,$5,$6,$7
-    )
-    `,
-    [
-      e.id,
-      e.task_id,
-      e.asset_id,
-      e.executed_by || null,
-      e.executed_at ? new Date(e.executed_at) : null,
-      e.duration_minutes ?? null,
-      e.notes || null
-    ]
-  );}
-/* =====================
-   6️⃣ FIX ALL SEQUENCES (FINAL)
-===================== */
-await client.query(`
-  SELECT setval(
-    'task_executions_id_seq',
-    COALESCE((SELECT MAX(id) FROM task_executions), 1),
-    true
-  )
-`);
+       5️⃣ RESTORE EXECUTIONS (WITH MAPPED IDS)
+       - task_id MUST be mapped
+       - asset_id MUST be mapped (CRITICAL)
+    ===================== */
+    for (const e of executions) {
+      const newTaskId = taskIdMap.get(e.task_id);
+      if (!newTaskId) continue;
 
-await client.query(`
-  SELECT setval(
-    'maintenance_tasks_id_seq',
-    COALESCE((SELECT MAX(id) FROM maintenance_tasks), 1),
-    true
-  )
-`);
+      const newAssetId = assetIdMap.get(e.asset_id);
+      if (!newAssetId) continue;
 
-await client.query(`
-  SELECT setval(
-    'assets_id_seq',
-    COALESCE((SELECT MAX(id) FROM assets), 1),
-    true
-  )
-`);
+      await client.query(
+        `
+        INSERT INTO task_executions (
+          task_id,
+          asset_id,
+          executed_by,
+          executed_at,
+          duration_minutes,
+          notes
+        )
+        VALUES ($1,$2,$3,$4,$5,$6)
+        `,
+        [
+          newTaskId,
+          newAssetId,
+          e.executed_by || null,
+          e.executed_at ? new Date(e.executed_at) : null,
+          e.duration_minutes ?? null,
+          e.notes || null
+        ]
+      );
+    }
 
-await client.query(`
-  SELECT setval(
-    'lines_id_seq',
-    COALESCE((SELECT MAX(id) FROM lines), 1),
-    true
-  )
-`);
+    /* =====================
+       6️⃣ FIX ALL SEQUENCES (FINAL)
+    ===================== */
+    await client.query(`
+      SELECT setval(
+        'task_executions_id_seq',
+        COALESCE((SELECT MAX(id) FROM task_executions), 1),
+        true
+      )
+    `);
 
+    await client.query(`
+      SELECT setval(
+        'maintenance_tasks_id_seq',
+        COALESCE((SELECT MAX(id) FROM maintenance_tasks), 1),
+        true
+      )
+    `);
+
+    await client.query(`
+      SELECT setval(
+        'assets_id_seq',
+        COALESCE((SELECT MAX(id) FROM assets), 1),
+        true
+      )
+    `);
+
+    await client.query(`
+      SELECT setval(
+        'lines_id_seq',
+        COALESCE((SELECT MAX(id) FROM lines), 1),
+        true
+      )
+    `);
+
+    // ✅ TEST MODE
     await client.query("ROLLBACK");
-    res.json({ message: "Snapshot restored successfully" });
+    res.json({
+      message: "Snapshot restore TEST MODE OK (rolled back)",
+      stats: {
+        lines_in: lines.length,
+        assets_in: assets.length,
+        tasks_in: tasks.length,
+        executions_in: executions.length,
+        assets_mapped: assetIdMap.size,
+        tasks_mapped: taskIdMap.size
+      }
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
