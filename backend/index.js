@@ -2226,6 +2226,136 @@ app.post("/snapshot/restore", async (req, res) => {
   }
 });
 
+/* =====================
+   SNAPSHOT VERIFY
+   - Compares current DB state
+   - Ignores internal IDs
+===================== */
+
+app.post("/snapshot/verify", async (req, res) => {
+  try {
+    const { lines, assets, tasks, executions } = req.body || {};
+
+    if (!lines || !assets || !tasks || !executions) {
+      return res.status(400).json({ error: "Invalid snapshot format" });
+    }
+
+    // 🔹 Current DB export (normalized)
+    const dbLines = (
+      await pool.query(`SELECT code, name, description FROM lines ORDER BY code`)
+    ).rows;
+
+    const dbAssets = (
+      await pool.query(`
+        SELECT l.code AS line_code, a.model, a.serial_number, a.description, a.active
+        FROM assets a
+        JOIN lines l ON l.id = a.line_id
+        ORDER BY l.code, a.model, a.serial_number
+      `)
+    ).rows;
+
+    const dbTasks = (
+      await pool.query(`
+        SELECT
+          l.code AS line,
+          a.model AS machine_name,
+          a.serial_number,
+          mt.section,
+          mt.unit,
+          mt.task,
+          mt.type,
+          mt.qty,
+          mt.duration_min,
+          mt.frequency_hours,
+          mt.due_date,
+          mt.status,
+          mt.completed_by,
+          mt.completed_at,
+          mt.is_planned,
+          mt.notes
+        FROM maintenance_tasks mt
+        JOIN assets a ON a.id = mt.asset_id
+        JOIN lines l ON l.id = a.line_id
+        ORDER BY l.code, a.model, a.serial_number, mt.task
+      `)
+    ).rows;
+
+    const dbExecutions = (
+      await pool.query(`
+        SELECT
+          l.code AS line,
+          a.model AS machine_name,
+          a.serial_number,
+          te.executed_by,
+          te.executed_at,
+          te.duration_minutes,
+          te.notes
+        FROM task_executions te
+        JOIN maintenance_tasks mt ON mt.id = te.task_id
+        JOIN assets a ON a.id = mt.asset_id
+        JOIN lines l ON l.id = a.line_id
+        ORDER BY te.executed_at
+      `)
+    ).rows;
+
+    // 🔹 Normalize input snapshot (strip ids)
+    const normalize = obj => JSON.stringify(obj, null, 2);
+
+    const equal =
+      normalize(dbLines) === normalize(lines.map(l => ({
+        code: l.code,
+        name: l.name,
+        description: l.description
+      }))) &&
+      normalize(dbAssets) === normalize(assets.map(a => ({
+        line_code: a.line_code,
+        model: a.model,
+        serial_number: a.serial_number,
+        description: a.description,
+        active: a.active
+      }))) &&
+      normalize(dbTasks) === normalize(tasks.map(t => ({
+        line: t.line,
+        machine_name: t.machine_name,
+        serial_number: t.serial_number,
+        section: t.section,
+        unit: t.unit,
+        task: t.task,
+        type: t.type,
+        qty: t.qty,
+        duration_min: t.duration_min,
+        frequency_hours: t.frequency_hours,
+        due_date: t.due_date,
+        status: t.status,
+        completed_by: t.completed_by,
+        completed_at: t.completed_at,
+        is_planned: t.is_planned,
+        notes: t.notes
+      }))) &&
+      normalize(dbExecutions) === normalize(executions.map(e => ({
+        line: e.line,
+        machine_name: e.machine_name,
+        serial_number: e.serial_number,
+        executed_by: e.executed_by,
+        executed_at: e.executed_at,
+        duration_minutes: e.duration_minutes,
+        notes: e.notes
+      })));
+
+
+    res.json({
+      identical: equal,
+      message: equal
+        ? "Snapshot matches database state"
+        : "Differences detected"
+    });
+
+  } catch (err) {
+    console.error("SNAPSHOT VERIFY ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 /* =====================================================
    DOCUMENTATION (MasterPlan PDF)

@@ -4955,9 +4955,10 @@ document.getElementById("snapshotFile")?.addEventListener("change", e => {
 });
 
 /* =====================
-   SNAPSHOT RESTORE
+   SNAPSHOT RESTORE + VERIFY
 ===================== */
 document.getElementById("restoreSnapshot")?.addEventListener("click", async () => {
+
   const file = document.getElementById("snapshotFile")?.files[0];
   if (!file) return alert("Select snapshot file");
 
@@ -4965,25 +4966,57 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
   const json = JSON.parse(text);
 
   if (!confirm("⚠️ This will fully restore the system. Continue?")) return;
-  localStorage.setItem(
-  "lastRestoredSnapshot",
-  file.name
-);
 
-  const res = await fetch(`${API}/snapshot/restore`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(json)
-  });
+  try {
 
-  if (!res.ok) {
-    const err = await res.json();
-    return alert(err.error || "Restore failed");
+    // 🔹 STORE snapshot name
+    localStorage.setItem("lastRestoredSnapshot", file.name);
+
+    // =====================
+    // 1️⃣ RESTORE
+    // =====================
+    const restoreRes = await fetch(`${API}/snapshot/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json)
+    });
+
+    const restoreData = await restoreRes.json();
+
+    if (!restoreRes.ok) {
+      return alert(restoreData.error || "Restore failed");
+    }
+
+    // =====================
+    // 2️⃣ VERIFY
+    // =====================
+    const verifyRes = await fetch(`${API}/snapshot/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json)
+    });
+
+    const verifyData = await verifyRes.json();
+
+    if (!verifyRes.ok) {
+      return alert("Restore completed but verification failed");
+    }
+
+    if (verifyData.identical) {
+      alert("✅ Snapshot restored and verified successfully (100% match)");
+    } else {
+      alert("⚠ Snapshot restored but differences detected.\nCheck server logs.");
+    }
+
+    location.reload();
+
+  } catch (err) {
+    console.error("SNAPSHOT RESTORE ERROR:", err);
+    alert("Unexpected restore error");
   }
 
-  alert("Snapshot restored successfully");
-  location.reload();
 });
+
 // =====================
 // SHOW LAST RESTORED SNAPSHOT
 // =====================
