@@ -2227,127 +2227,132 @@ app.post("/snapshot/restore", async (req, res) => {
 });
 
 /* =====================
-   SNAPSHOT VERIFY
-   - Compares current DB state
-   - Ignores internal IDs
+   SNAPSHOT VERIFY (ADVANCED DIFF MODE)
+   - Compares DB state with snapshot
+   - Ignores ID differences
+   - Returns detailed differences
 ===================== */
-
 app.post("/snapshot/verify", async (req, res) => {
   try {
     const { lines, assets, tasks, executions } = req.body || {};
 
-    if (!lines || !assets || !tasks || !executions) {
+    if (
+      !Array.isArray(lines) ||
+      !Array.isArray(assets) ||
+      !Array.isArray(tasks) ||
+      !Array.isArray(executions)
+    ) {
       return res.status(400).json({ error: "Invalid snapshot format" });
     }
 
-    // 🔹 Current DB export (normalized)
+    /* =====================
+       LOAD CURRENT DB STATE
+    ===================== */
+
     const dbLines = (
-      await pool.query(`SELECT code, name, description FROM lines ORDER BY code`)
-    ).rows;
+      await pool.query(`SELECT code FROM lines ORDER BY code`)
+    ).rows.map(r => r.code).sort();
 
     const dbAssets = (
       await pool.query(`
-        SELECT l.code AS line_code, a.model, a.serial_number, a.description, a.active
+        SELECT l.code AS line, a.model, a.serial_number
         FROM assets a
         JOIN lines l ON l.id = a.line_id
         ORDER BY l.code, a.model, a.serial_number
       `)
-    ).rows;
+    ).rows.map(r => `${r.line}|${r.model}|${r.serial_number}`).sort();
 
     const dbTasks = (
       await pool.query(`
-        SELECT
-          l.code AS line,
-          a.model AS machine_name,
-          a.serial_number,
-          mt.section,
-          mt.unit,
-          mt.task,
-          mt.type,
-          mt.qty,
-          mt.duration_min,
-          mt.frequency_hours,
-          mt.due_date,
-          mt.status,
-          mt.completed_by,
-          mt.completed_at,
-          mt.is_planned,
-          mt.notes
+        SELECT l.code AS line, a.model, a.serial_number, mt.task
         FROM maintenance_tasks mt
         JOIN assets a ON a.id = mt.asset_id
         JOIN lines l ON l.id = a.line_id
         ORDER BY l.code, a.model, a.serial_number, mt.task
       `)
-    ).rows;
+    ).rows.map(r => `${r.line}|${r.model}|${r.serial_number}|${r.task}`).sort();
 
-    const dbExecutions = (
+    const dbExec = (
       await pool.query(`
-        SELECT
-          l.code AS line,
-          a.model AS machine_name,
-          a.serial_number,
-          te.executed_by,
-          te.executed_at,
-          te.duration_minutes,
-          te.notes
-        FROM task_executions te
-        JOIN maintenance_tasks mt ON mt.id = te.task_id
-        JOIN assets a ON a.id = mt.asset_id
-        JOIN lines l ON l.id = a.line_id
-        ORDER BY te.executed_at
+        SELECT executed_by, executed_at, duration_minutes
+        FROM task_executions
+        ORDER BY executed_at
       `)
-    ).rows;
+    ).rows.map(r =>
+      `${r.executed_by || ""}|${new Date(r.executed_at).toISOString()}|${r.duration_minutes || 0}`
+    ).sort();
 
-    // 🔹 Normalize input snapshot (strip ids)
-    const normalize = obj => JSON.stringify(obj, null, 2);
+    /* =====================
+       NORMALIZE SNAPSHOT DATA
+    ===================== */
 
-    const equal =
-      normalize(dbLines) === normalize(lines.map(l => ({
-        code: l.code,
-        name: l.name,
-        description: l.description
-      }))) &&
-      normalize(dbAssets) === normalize(assets.map(a => ({
-        line_code: a.line_code,
-        model: a.model,
-        serial_number: a.serial_number,
-        description: a.description,
-        active: a.active
-      }))) &&
-      normalize(dbTasks) === normalize(tasks.map(t => ({
-        line: t.line,
-        machine_name: t.machine_name,
-        serial_number: t.serial_number,
-        section: t.section,
-        unit: t.unit,
-        task: t.task,
-        type: t.type,
-        qty: t.qty,
-        duration_min: t.duration_min,
-        frequency_hours: t.frequency_hours,
-        due_date: t.due_date,
-        status: t.status,
-        completed_by: t.completed_by,
-        completed_at: t.completed_at,
-        is_planned: t.is_planned,
-        notes: t.notes
-      }))) &&
-      normalize(dbExecutions) === normalize(executions.map(e => ({
-        line: e.line,
-        machine_name: e.machine_name,
-        serial_number: e.serial_number,
-        executed_by: e.executed_by,
-        executed_at: e.executed_at,
-        duration_minutes: e.duration_minutes,
-        notes: e.notes
-      })));
+    const snapLines = lines
+      .map(l => (l.code || l.line || "").toString().trim())
+      .sort();
 
+    const snapAssets = assets
+      .map(a => `${a.line_code}|${a.model}|${a.serial_number}`)
+      .sort();
+
+    const snapTasks = tasks
+      .map(t => `${t.line}|${t.machine_name}|${t.serial_number}|${t.task}`)
+      .sort();
+
+    const snapExec = executions
+      .map(e =>
+        `${e.executed_by || ""}|${new Date(e.executed_at).toISOString()}|${e.duration_minutes || 0}`
+      )
+      .sort();
+
+    /* =====================
+       DIFF HELPER
+    ===================== */
+
+    function diffArrays(dbArr, snapArr) {
+      const dbSet = new Set(dbArr);
+      const snapSet = new Set(snapArr);
+
+      const missingInDb = snapArr.filter(x => !dbSet.has(x));
+      const extraInDb = dbArr.filter(x => !snapSet.has(x));
+
+      return { missingInDb, extraInDb };
+    }
+
+    const linesDiff = diffArrays(dbLines, snapLines);
+    const assetsDiff = diffArrays(dbAssets, snapAssets);
+    const tasksDiff = diffArrays(dbTasks, snapTasks);
+    const execDiff = diffArrays(dbExec, snapExec);
+
+    const identical =
+      linesDiff.missingInDb.length === 0 &&
+      linesDiff.extraInDb.length === 0 &&
+      assetsDiff.missingInDb.length === 0 &&
+      assetsDiff.extraInDb.length === 0 &&
+      tasksDiff.missingInDb.length === 0 &&
+      tasksDiff.extraInDb.length === 0 &&
+      execDiff.missingInDb.length === 0 &&
+      execDiff.extraInDb.length === 0;
 
     res.json({
-      identical: equal,
-      message: equal
-        ? "Snapshot matches database state"
-        : "Differences detected"
+      identical,
+      dbCounts: {
+        lines: dbLines.length,
+        assets: dbAssets.length,
+        tasks: dbTasks.length,
+        executions: dbExec.length
+      },
+      snapshotCounts: {
+        lines: snapLines.length,
+        assets: snapAssets.length,
+        tasks: snapTasks.length,
+        executions: snapExec.length
+      },
+      differences: {
+        lines: linesDiff,
+        assets: assetsDiff,
+        tasks: tasksDiff,
+        executions: execDiff
+      }
     });
 
   } catch (err) {
