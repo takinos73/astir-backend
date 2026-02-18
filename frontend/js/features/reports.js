@@ -1246,89 +1246,108 @@ function generateOverdueReportPdf() {
   ).size;
 
   let html = `
-    <html>
-    <head>
-      <title>Overdue Tasks Report</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
+  <html>
+  <head>
+    <title>Overdue Tasks Report</title>
+    <style>
+      @page { size: A4; margin: 15mm; }
 
-        body {
-          font-family: Arial, sans-serif;
-          color: #111;
-          font-size: 12px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        color: #111;
+        font-size: 12px;
+      }
 
-        h2 { margin-bottom: 6px; }
-        h3 {
-          margin: 16px 0 6px;
-          padding-bottom: 2px;
-          border-bottom: 2px solid #ccc;
-        }
-        h4 {
-          margin: 10px 0 4px;
-          font-size: 13px;
-        }
+      h2 { margin-bottom: 6px; }
 
-        .meta {
-          font-size: 12px;
-          margin-bottom: 14px;
-          color: #444;
-        }
+      h3 {
+        margin: 20px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 2px solid #333;
+        font-size: 15px;
+      }
 
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-          margin-bottom: 6px;
-        }
+      .asset-block {
+        margin: 14px 0 10px;
+        padding: 8px 10px;
+        background: #f6f6f6;
+        border-left: 4px solid #999;
+      }
 
-        th, td {
-          border: 1px solid #ddd;
-          padding: 6px 8px;
-          vertical-align: top;
-        }
+      .asset-title {
+        font-size: 13px;
+        font-weight: 600;
+      }
 
-        th {
-          background: #eee;
-          text-align: left;
-        }
+      .asset-sn {
+        font-size: 11px;
+        color: #555;
+      }
 
-        .small {
-          font-size: 10px;
-          color: #555;
-        }
+      .meta {
+        font-size: 12px;
+        margin-bottom: 16px;
+        color: #444;
+      }
 
-        .line-footer {
-          margin: 8px 0 14px;
-          padding-top: 4px;
-          border-top: 1px dashed #d6d6d6;
-          font-size: 11px;
-          color: #666;
-          text-align: right;
-        }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        margin-bottom: 10px;
+      }
 
-        .report-summary {
-          margin-top: 30px;
-          padding-top: 10px;
-          border-top: 1px solid #e0e0e0;
-          font-size: 11px;
-          color: #555;
-        }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px 10px;
+        vertical-align: top;
+      }
 
-        .report-summary strong {
-          color: #111;
-        }
-      </style>
-    </head>
-    <body>
+      th {
+        background: #eee;
+        text-align: left;
+      }
 
-      <h2>Overdue Maintenance Tasks</h2>
+      .due-col {
+        width: 22%;
+        white-space: nowrap;
+      }
 
-      <div class="meta">
-        Line: ${lineFilter}<br>
-        Generated: ${new Date().toLocaleDateString("en-GB")}
-      </div>
-  `;
+      .task-col {
+        width: 78%;
+      }
+
+      .small {
+        font-size: 10px;
+        color: #555;
+      }
+
+      .line-footer {
+        margin: 6px 0 18px;
+        padding-top: 6px;
+        border-top: 1px dashed #ccc;
+        font-size: 11px;
+        color: #666;
+        text-align: right;
+      }
+
+      .report-summary {
+        margin-top: 30px;
+        padding-top: 12px;
+        border-top: 2px solid #333;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <h2>Overdue Maintenance Tasks</h2>
+
+    <div class="meta">
+      Line filter: ${lineFilter}<br>
+      Generated: ${new Date().toLocaleDateString("en-GB")}
+    </div>
+`;
 
   let currentLine = null;
   let currentAsset = null;
@@ -1373,21 +1392,23 @@ function generateOverdueReportPdf() {
     // 🟨 NEW ASSET
     if (assetKey !== currentAsset) {
       html += `
-        <h4>
-          ${t.machine_name}
-          <span class="small">SN: ${t.serial_number || "-"}</span>
-        </h4>
+        <div class="asset-block">
+          <div class="asset-title">${t.machine_name}</div>
+          <div class="asset-sn">SN: ${t.serial_number || "-"}</div>
+        </div>
+
         <table>
           <thead>
             <tr>
-              <th style="width:18%">Due Date</th>
-              <th style="width:82%">Task</th>
+              <th class="due-col">Due Date</th>
+              <th class="task-col">Overdue Task</th>
             </tr>
           </thead>
           <tbody>
       `;
       currentAsset = assetKey;
     }
+
 
     lineCount++;
 
@@ -1408,21 +1429,22 @@ function generateOverdueReportPdf() {
 
   // 🔚 LAST LINE FOOTER
   html += `
-        </tbody>
-      </table>
-      <div class="line-footer">
-        Overdue tasks in LINE: ${lineCount}
-      </div>
+      </tbody>
+    </table>
 
-      <div class="report-summary">
-        <strong>Total overdue tasks:</strong> ${totalTasks}<br>
-        <strong>Lines affected:</strong> ${totalLines}<br>
-        <strong>Assets affected:</strong> ${totalAssets}
-      </div>
+    <div class="line-footer">
+      Overdue tasks in LINE: ${lineCount}
+    </div>
 
-    </body>
-    </html>
-  `;
+    <div class="report-summary">
+      <strong>Total overdue tasks:</strong> ${totalTasks}<br>
+      <strong>Lines affected:</strong> ${totalLines}<br>
+      <strong>Assets affected:</strong> ${totalAssets}
+    </div>
+
+  </body>
+  </html>
+`;
 
   /* 🔹 PRINT VIA HIDDEN IFRAME */
   const iframe = document.createElement("iframe");

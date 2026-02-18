@@ -223,17 +223,24 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
     getDueState
   } = helpers;
 
-  // 🔽 SORT BY ASSET LINE (PRINT ONLY – SAFE)
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const la = (a.line_code || a.line || "").toString();
-    const lb = (b.line_code || b.line || "").toString();
+    // 🔽 SORT BY LINE → MACHINE → DUE DATE
+    const sortedTasks = [...tasks].sort((a, b) => {
 
-    if (!la && !lb) return 0;
-    if (!la) return 1;
-    if (!lb) return -1;
+      const la = (a.line_code || a.line || "").toString();
+      const lb = (b.line_code || b.line || "").toString();
+      if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
 
-    return la.localeCompare(lb, "el", { numeric: true });
-  });
+      const ma = (a.machine_name || "").toString();
+      const mb = (b.machine_name || "").toString();
+      if (ma !== mb) return ma.localeCompare(mb, "el");
+
+      const sa = (a.serial_number || "").toString();
+      const sb = (b.serial_number || "").toString();
+      if (sa !== sb) return sa.localeCompare(sb, "el");
+
+      return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+    });
+
 
   // ⏱ GRAND TOTAL
   const totalMinutes = tasks.reduce(
@@ -312,71 +319,98 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
 
   let currentLine = null;
   let isFirstLine = true;
+  let currentMachine = null;
   let lineMinutes = 0;
 
   sortedTasks.forEach(t => {
-    const line = t.line_code || t.line || "—";
+  const line = t.line_code || t.line || "—";
+  const machineKey = `${t.machine_name}||${t.serial_number || ""}`;
 
-    if (line !== currentLine) {
-      if (currentLine !== null) {
-        html += `
+  // 🟦 NEW LINE
+  if (line !== currentLine) {
+
+    if (currentLine !== null) {
+      html += `
             </tbody>
           </table>
           <div class="line-footer">
             Σύνολο LINE: ${formatDuration(lineMinutes)}
           </div>
         </div>
-        `;
-      }
-
-      html += `
-        <div class="${isFirstLine ? "" : "line-break"}">
-          <h3>LINE: ${line}</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Machine</th>
-                <th>Section</th>
-                <th>Unit</th>
-                <th>Task</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Due Date</th>
-                <th>Estimated Duration</th>
-                <th>✔</th>
-              </tr>
-            </thead>
-            <tbody>
       `;
-
-      currentLine = line;
-      isFirstLine = false;
-      lineMinutes = 0;
-    }
-
-    if (t.duration_min != null) {
-      lineMinutes += Number(t.duration_min);
     }
 
     html += `
-      <tr>
-        <td>${t.machine_name}<br><small>${t.serial_number || ""}</small></td>
-        <td>${t.section || "-"}</td>
-        <td>${t.unit || "-"}</td>
-        <td>${t.task}</td>
-        <td>${t.type || "-"}</td>
-        <td>${
-          getDueState(t) === "overdue" ? "Overdue" :
-          getDueState(t) === "today"   ? "Today" :
-          getDueState(t) === "soon"    ? "Due Soon" :
-          "Planned"
-        }</td>
-        <td>${formatDate(t.due_date)}</td>
-        <td>${formatDuration(t.duration_min)}</td>
-        <td></td>
-      </tr>
+      <div class="${isFirstLine ? "" : "line-break"}">
+        <h3>LINE: ${line}</h3>
     `;
-  });
+
+    currentLine = line;
+    currentMachine = null;
+    isFirstLine = false;
+    lineMinutes = 0;
+  }
+
+  // 🟨 NEW MACHINE
+  if (machineKey !== currentMachine) {
+
+    if (currentMachine !== null) {
+      html += `
+            </tbody>
+          </table>
+      `;
+    }
+
+    html += `
+      <div style="margin:10px 0 4px; font-weight:bold;">
+        🏭 ${t.machine_name}
+        <span style="margin-bottom:20px; font-weight:normal; font-size:11px;">
+          (SN: ${t.serial_number || "-"})
+        </span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>Unit</th>
+            <th>Task</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th>Est. Duration</th>
+            <th>✔</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    currentMachine = machineKey;
+  }
+
+  if (t.duration_min != null) {
+    lineMinutes += Number(t.duration_min);
+  }
+
+  html += `
+    <tr>
+      <td>${t.section || "-"}</td>
+      <td>${t.unit || "-"}</td>
+      <td>${t.task}</td>
+      <td>${t.type || "-"}</td>
+      <td>${
+        getDueState(t) === "overdue" ? "Overdue" :
+        getDueState(t) === "today"   ? "Today" :
+        getDueState(t) === "soon"    ? "Due Soon" :
+        "Planned"
+      }</td>
+      <td>${formatDate(t.due_date)}</td>
+      <td>${formatDuration(t.duration_min)}</td>
+      <td></td>
+    </tr>
+  `;
+});
+
 
   html += `
             </tbody>
