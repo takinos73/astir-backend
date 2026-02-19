@@ -1413,6 +1413,7 @@ app.get("/assets", async (req, res) => {
         a.serial_number,
         a.description,
         a.active
+        a.idle_since   -- ✅ ADD THIS
       FROM assets a
       JOIN lines l ON l.id = a.line_id
       WHERE a.active = true
