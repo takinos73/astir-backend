@@ -372,6 +372,8 @@ function showDefaultDashboard() {
 
 
 function buildRow(task) {
+  const isIdle = !task.asset_active && task.asset_idle_since;
+
   const tr = document.createElement("tr");
 
   // 🔍 search query
@@ -407,6 +409,11 @@ function buildRow(task) {
     title="Open asset view"
   >
     ${highlight(task.machine_name || "", q)}
+    <td>
+  ${task.machine_name}
+  ${isIdle ? `<span class="task-idle-badge">IDLE</span>` : ""}
+</td>
+
   </div>
 
   ${
@@ -2100,7 +2107,6 @@ if (menu) menu.classList.remove("open");
   if (assetsTab?.classList.contains("active")) {
     renderAssetsCards();
   }
-
 }
 
 /* =====================
@@ -3635,6 +3641,8 @@ async function loadAssets() {
 
 function renderAssetsCards() {
 
+  const isIdle = !a.active && a.idle_since;
+
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");
   if (tableWrap) tableWrap.style.display = "none";
@@ -3697,6 +3705,7 @@ function renderAssetsCards() {
         <div class="asset-card-title">
           ${a.model || "-"}
           ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
+          ${isIdle ? `<span class="asset-status idle">IDLE</span>` : ""}
         </div>
 
         <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
@@ -3738,6 +3747,8 @@ function renderAssetsCards() {
           <button class="asset-card-menu-item add-task">➕ Add Task</button>
           <button class="asset-card-menu-item edit">✏️ Edit</button>
           <button class="asset-card-menu-item archive">🚫 Archive</button>
+          <button class="asset-card-menu-item idle">⏸ Set Idle</button>
+          <button class="asset-card-menu-item resume">▶ Resume</button>
         </div>
       </div>
     `;
@@ -3817,6 +3828,22 @@ function renderAssetsCards() {
     applyRolePermissions();
   }
 }
+
+const idleBtn = card.querySelector(".idle");
+const resumeBtn = card.querySelector(".resume");
+
+idleBtn?.addEventListener("click", async e => {
+  e.stopPropagation();
+  await fetch(`${API}/assets/${a.id}/idle`, { method: "POST" });
+  loadAssets();
+});
+
+resumeBtn?.addEventListener("click", async e => {
+  e.stopPropagation();
+  await fetch(`${API}/assets/${a.id}/resume`, { method: "POST" });
+  loadAssets();
+});
+
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)

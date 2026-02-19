@@ -1655,6 +1655,76 @@ app.get("/asset-models", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/* IDLE ASSET */
+app.post("/assets/:id/idle", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.query(`
+      UPDATE assets
+      SET active = false,
+          idle_since = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("SET IDLE ERROR:", err.message);
+    res.status(500).json({ error: "Idle failed" });
+  }
+});
+/*RESUME ASSET FROM IDLE*/
+app.post("/assets/:id/resume", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    await client.query("BEGIN");
+
+    const assetRes = await client.query(
+      `SELECT idle_since FROM assets WHERE id = $1`,
+      [id]
+    );
+
+    const idleSince = assetRes.rows[0]?.idle_since;
+    if (!idleSince) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Asset not idle" });
+    }
+
+    const idleMs = Date.now() - new Date(idleSince).getTime();
+
+    // 🔁 SHIFT ONLY OPEN TASKS
+    await client.query(`
+      UPDATE maintenance_tasks
+      SET due_date = due_date + ($1 || ' milliseconds')::interval
+      WHERE asset_id = $2
+        AND status != 'Done'
+        AND due_date IS NOT NULL
+    `, [idleMs, id]);
+
+    // 🔄 Reactivate
+    await client.query(`
+      UPDATE assets
+      SET active = true,
+          idle_since = NULL
+      WHERE id = $1
+    `, [id]);
+
+    await client.query("COMMIT");
+
+    res.json({ success: true });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("RESUME ERROR:", err.message);
+    res.status(500).json({ error: "Resume failed" });
+  } finally {
+    client.release();
+  }
+});
 
 
 /* =====================================================

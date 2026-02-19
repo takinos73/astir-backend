@@ -321,6 +321,24 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
   let isFirstLine = true;
   let currentMachine = null;
   let lineMinutes = 0;
+  // =====================
+  // MTBF PRE-CALCULATION (BY ASSET)
+  // =====================
+
+  const mtbfMap = {}; // serial -> mtbf minutes
+
+  sortedTasks.forEach(t => {
+    const serial = t.serial_number;
+    if (!serial || mtbfMap[serial] !== undefined) return;
+
+    const breakdowns = (executionsData || []).filter(e =>
+      e.serial_number === serial &&
+      e.is_planned === false
+    );
+
+    const mtbfMin = calculateMtbfMinutes(breakdowns);
+    mtbfMap[serial] = mtbfMin;
+  });
 
   sortedTasks.forEach(t => {
   const line = t.line_code || t.line || "—";
@@ -361,11 +379,16 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
       `;
     }
 
+    const mtbfMin = mtbfMap[t.serial_number];
+    const mtbfLabel = mtbfMin
+      ? ` • MTBF: ${formatDuration(mtbfMin)}`
+      : "";
+
     html += `
       <div style="margin:10px 0 4px; font-weight:bold;">
         🏭 ${t.machine_name}
         <span style="margin-bottom:20px; font-weight:normal; font-size:11px;">
-          (SN: ${t.serial_number || "-"})
+          (SN: ${t.serial_number || "-"})${mtbfLabel}
         </span>
       </div>
 
