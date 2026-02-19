@@ -372,7 +372,7 @@ function showDefaultDashboard() {
 
 
 function buildRow(task) {
-  const isIdle = !task.asset_active && task.asset_idle_since;
+  const isIdle = !!task.asset_idle_since;
 
   const tr = document.createElement("tr");
 
@@ -409,11 +409,7 @@ function buildRow(task) {
     title="Open asset view"
   >
     ${highlight(task.machine_name || "", q)}
-    <td>
-  ${task.machine_name}
-  ${isIdle ? `<span class="task-idle-badge">IDLE</span>` : ""}
-</td>
-
+    ${isIdle ? `<span class="task-idle-badge">IDLE</span>` : ""}     
   </div>
 
   ${
@@ -3641,8 +3637,7 @@ async function loadAssets() {
 
 function renderAssetsCards() {
 
-  const isIdle = !a.active && a.idle_since;
-
+  
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");
   if (tableWrap) tableWrap.style.display = "none";
@@ -3672,152 +3667,174 @@ function renderAssetsCards() {
   }
 
   filteredAssets.forEach(a => {
-    const card = document.createElement("div");
-    card.className = "asset-card";
-    card.dataset.serial = a.serial_number || "";
 
-    // Card click → open asset view
-    card.addEventListener("click", () => {
-      const serial = card.dataset.serial;
-      if (!serial) return;
-      openAssetViewBySerial(serial);
-    });
+  const isIdle = !!a.idle_since; // ✅ FIX
 
-    const activity = getLastActivityForAsset(a.serial_number);    
+  const card = document.createElement("div");
+  card.className = "asset-card";
+  card.dataset.serial = a.serial_number || "";
 
-
-    let activityHtml = `
-      <span class="activity muted">
-        🕒 No activity
-      </span>
-    `;
-
-    if (activity) {
-      activityHtml = activity.is_breakdown
-        ? `<span class="activity danger activity-badge">⚠ Breakdown · ${activity.when}</span>`
-        : `<span class="activity ok activity-badge">🕒 ${activity.when}</span>`;
-    }
-    const stats = getAssetTaskStats(a.id);
-    const hasOverdue = stats.overdue > 0;
-
-    card.innerHTML = `
-      <div class="asset-card-header">
-        <div class="asset-card-title">
-          ${a.model || "-"}
-          ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
-          ${isIdle ? `<span class="asset-status idle">IDLE</span>` : ""}
-        </div>
-
-        <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
-      </div>      
-
-      <div class="asset-card-meta">
-        Line: <strong>${a.line || "-"}</strong>
-      </div>
-
-      <div class="asset-card-preventive">
-        <span class="pill">
-          ⏱ ~${stats.workloadHours30d}h / next 30d
-        </span>        
-      </div>
-
-      <div class="asset-card-stats">
-        <span class="stat">
-          🛠 Active: <strong>${stats.active}</strong>
-        </span>
-
-        <span class="stat">
-          ⏰ Overdue: <strong>${stats.overdue}</strong>
-        </span>
-      </div>
-
-      <div class="asset-card-activity">
-        ${activityHtml}
-      </div>
-
-      <div class="asset-card-actions">
-        <button
-          class="asset-card-more"
-          type="button"
-          title="More actions">
-          ...more
-        </button>
-
-        <div class="asset-card-menu" style="display:none;">
-          <button class="asset-card-menu-item add-task">➕ Add Task</button>
-          <button class="asset-card-menu-item edit">✏️ Edit</button>
-          <button class="asset-card-menu-item archive">🚫 Archive</button>
-          <button class="asset-card-menu-item idle">⏸ Set Idle</button>
-          <button class="asset-card-menu-item resume">▶ Resume</button>
-        </div>
-      </div>
-    `;
-
-    // ---- Activity click → Asset History tab ----
-    
-    const activityEl = card.querySelector(".activity-badge");
-    if (activityEl) {
-      activityEl.addEventListener("click", e => {
-        e.stopPropagation();
-
-        openAssetViewBySerial(a.serial_number);
-
-        requestAnimationFrame(() => {
-          activateAssetTab("history");
-        });
-      });
-    }
-    // ---- Menu & actions ----
-    const moreBtn = card.querySelector(".asset-card-more");
-    const menu = card.querySelector(".asset-card-menu");
-    const addTaskItem = card.querySelector(".asset-card-menu-item.add-task");
-    const editItem = card.querySelector(".asset-card-menu-item.edit");
-    const archiveItem = card.querySelector(".asset-card-menu-item.archive");
-
-    moreBtn?.addEventListener("click", e => {
-      e.stopPropagation();
-      menu.style.display = menu.style.display === "block" ? "none" : "block";
-    });
-
-    // Close menu when clicking elsewhere
-    document.addEventListener("click", () => {
-      if (menu) menu.style.display = "none";
-    });
-
-    // Add Task
-    addTaskItem?.addEventListener("click", e => {
-      e.stopPropagation();
-      menu.style.display = "none";
-      openAddTaskForAsset(
-        a.model,
-        a.serial_number,
-        a.line
-      );
-    });
-
-    // Edit
-    editItem?.addEventListener("click", e => {
-      e.stopPropagation();
-      menu.style.display = "none";
-      editAsset(a.id);
-    });
-
-    // Archive
-    archiveItem?.addEventListener("click", e => {
-      e.stopPropagation();
-      menu.style.display = "none";
-
-      const ok = confirm(
-        "Archive this asset?\n\nThis will hide it from active views."
-      );
-
-      if (ok) {
-        deactivateAsset(a.id);
-      }
-    });
-
-    wrap.appendChild(card);
+  // Card click → open asset view
+  card.addEventListener("click", () => {
+    const serial = card.dataset.serial;
+    if (!serial) return;
+    openAssetViewBySerial(serial);
   });
+
+  const activity = getLastActivityForAsset(a.serial_number);
+
+  let activityHtml = `
+    <span class="activity muted">
+      🕒 No activity
+    </span>
+  `;
+
+  if (activity) {
+    activityHtml = activity.is_breakdown
+      ? `<span class="activity danger activity-badge">⚠ Breakdown · ${activity.when}</span>`
+      : `<span class="activity ok activity-badge">🕒 ${activity.when}</span>`;
+  }
+
+  const stats = getAssetTaskStats(a.id);
+  const hasOverdue = stats.overdue > 0;
+
+  card.innerHTML = `
+    <div class="asset-card-header">
+      <div class="asset-card-title">
+        ${a.model || "-"}
+        ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
+        ${isIdle ? `<span class="asset-status idle">IDLE</span>` : ""}
+      </div>
+
+      <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
+    </div>
+
+    <div class="asset-card-meta">
+      Line: <strong>${a.line || "-"}</strong>
+    </div>
+
+    <div class="asset-card-preventive">
+      <span class="pill">
+        ⏱ ~${stats.workloadHours30d}h / next 30d
+      </span>
+    </div>
+
+    <div class="asset-card-stats">
+      <span class="stat">
+        🛠 Active: <strong>${stats.active}</strong>
+      </span>
+
+      <span class="stat">
+        ⏰ Overdue: <strong>${stats.overdue}</strong>
+      </span>
+    </div>
+
+    <div class="asset-card-activity">
+      ${activityHtml}
+    </div>
+
+    <div class="asset-card-actions">
+      <button
+        class="asset-card-more"
+        type="button"
+        title="More actions">
+        ...more
+      </button>
+
+      <div class="asset-card-menu" style="display:none;">
+        <button class="asset-card-menu-item add-task">➕ Add Task</button>
+        <button class="asset-card-menu-item edit">✏️ Edit</button>
+        <button type="button" class="asset-card-menu-item archive">🚫 Archive</button>
+        <button type="button" class="asset-card-menu-item idle">⏸ Set Idle</button>
+        <button type="button" class="asset-card-menu-item resume">▶ Resume</button>
+      </div>
+    </div>
+  `;
+
+  // ---- Activity click → Asset History tab ----
+  const activityEl = card.querySelector(".activity-badge");
+  if (activityEl) {
+    activityEl.addEventListener("click", e => {
+      e.stopPropagation();
+      openAssetViewBySerial(a.serial_number);
+      requestAnimationFrame(() => {
+        activateAssetTab("history");
+      });
+    });
+  }
+
+  // ---- Menu & actions ----
+  const moreBtn = card.querySelector(".asset-card-more");
+  const menu = card.querySelector(".asset-card-menu");
+  const addTaskItem = card.querySelector(".asset-card-menu-item.add-task");
+  const editItem = card.querySelector(".asset-card-menu-item.edit");
+  const archiveItem = card.querySelector(".asset-card-menu-item.archive");
+  const idleItem = card.querySelector(".asset-card-menu-item.idle");
+  const resumeItem = card.querySelector(".asset-card-menu-item.resume");
+
+  moreBtn?.addEventListener("click", e => {
+    e.stopPropagation();
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!card.contains(e.target)) {
+      menu.style.display = "none";
+    }
+  });
+
+
+  // Add Task
+  addTaskItem?.addEventListener("click", e => {
+    e.stopPropagation();
+    menu.style.display = "none";
+    openAddTaskForAsset(a.model, a.serial_number, a.line);
+  });
+
+  // Edit
+  editItem?.addEventListener("click", e => {
+    e.stopPropagation();
+    menu.style.display = "none";
+    editAsset(a.id);
+  });
+
+  // Archive
+  archiveItem?.addEventListener("click", e => {
+    e.stopPropagation();
+    console.warn("DEACTIVATE CALLED", a.id);
+    menu.style.display = "none";
+
+    const ok = confirm(
+      "Archive this asset?\n\nThis will hide it from active views."
+    );
+
+    if (ok) {
+      deactivateAsset(a.id);
+    }
+  });
+
+  // 🟡 Set Idle
+  idleItem?.addEventListener("click", async e => {
+    e.stopPropagation();
+    console.warn("IDLE CALLED", a.id);
+    menu.style.display = "none";
+
+    await fetch(`${API}/assets/${a.id}/idle`, { method: "POST" });
+    loadAssets();
+  });
+
+  // 🟢 Resume
+  resumeItem?.addEventListener("click", async e => {
+    e.stopPropagation();
+    menu.style.display = "none";
+
+    await fetch(`${API}/assets/${a.id}/resume`, { method: "POST" });
+    loadAssets();
+  });
+
+  wrap.appendChild(card);
+});
+
 
   // Apply role visibility on newly rendered action areas
   if (typeof applyRoleVisibility === "function") {
@@ -3829,20 +3846,6 @@ function renderAssetsCards() {
   }
 }
 
-const idleBtn = card.querySelector(".idle");
-const resumeBtn = card.querySelector(".resume");
-
-idleBtn?.addEventListener("click", async e => {
-  e.stopPropagation();
-  await fetch(`${API}/assets/${a.id}/idle`, { method: "POST" });
-  loadAssets();
-});
-
-resumeBtn?.addEventListener("click", async e => {
-  e.stopPropagation();
-  await fetch(`${API}/assets/${a.id}/resume`, { method: "POST" });
-  loadAssets();
-});
 
 
 /*==========================================

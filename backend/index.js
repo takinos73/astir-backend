@@ -1662,8 +1662,7 @@ app.post("/assets/:id/idle", async (req, res) => {
 
     await pool.query(`
       UPDATE assets
-      SET active = false,
-          idle_since = NOW()
+      SET idle_since = NOW()
       WHERE id = $1
     `, [id]);
 
@@ -1708,8 +1707,7 @@ app.post("/assets/:id/resume", async (req, res) => {
     // 🔄 Reactivate
     await client.query(`
       UPDATE assets
-      SET active = true,
-          idle_since = NULL
+      SET idle_since = NULL
       WHERE id = $1
     `, [id]);
 
