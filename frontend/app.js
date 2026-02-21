@@ -2523,8 +2523,8 @@ function renderAssetTasksTable(tasks) {
       return;
     }
 
-  viewTask(t.id);
-});
+    viewTask(t.id);
+  });
 
     tbody.appendChild(tr);
   });
