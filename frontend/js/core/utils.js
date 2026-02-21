@@ -399,6 +399,15 @@ function clearPreventiveErrors() {
     .querySelectorAll(".field-error-msg")
     .forEach(el => el.remove());
 }
+async function refreshSystemState() {
+  await Promise.all([
+    loadAssets(),
+    loadTasks()
+  ]);
+  renderAssetsCards();
+  renderAssetTasksTable();
+  renderHistoryTable
+}
 
 
 
