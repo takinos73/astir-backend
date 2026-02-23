@@ -2,67 +2,6 @@
 
 const API = "https://astir-backend.onrender.com";
 
-//let tasksData = [];
-//let assetsData = [];
-// =====================
-// TASKS – DATE RANGE STATE
-// =====================
-//let taskDateFrom = null;
-//let taskDateTo = null;
-
-//let activeLine = "all";
-//let pendingTaskId = null;
-//let activeDateFilter = "all";
-//let activeAssetFilter = "all";
-//let executionsData = [];
-//let dueDateFrom = null; // Date | null
-//let dueDateTo = null;   // Date | null
-// =====================
-// HISTORY FILTER STATE
-// =====================
-//let historyDateRange = 7;
-//let historyMachineQuery = "";
-//let historyTechnicianQuery = "";
-//let historyTypeFilter = "all";
-//let historyDateFrom = null;
-//let historyDateTo = null;
-// =====================
-// EDIT BREAKDOWN STATE
-// =====================
-//let editingBreakdownId = null;
-// =====================
-// ASSET-SCOPED TASKS STATE
-// =====================
-//let currentAssetSerial = null;
-//let assetScopedTasks = [];
-
-//let assetAllTasks = [];
-//let assetActiveTasks = [];
-//let assetHistoryTasks = [];
-//let currentViewedTask = null;
-// =====================
-// ASSET VIEW – MULTISELECT STATE (STEP 1)
-// =====================
-//const assetSelectedTaskIds = new Set();
-// =====================
-// BULK DONE STATE
-// =====================
-//let bulkDoneMode = false;
-// =====================
-// TASK TYPE FILTER STATE
-// =====================
-//let activeTaskTypeFilter = "all"; 
-// values: all | planned | preventive
-//let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
-//let mttrData = [];
-
-// =====================
-// ASSET HISTORY FILTER STATE
-// =====================
-//let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
-//let lockSectionOnce = false;
-//let followUpSectionValue = null;
-
 const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
 
 flatpickr("#historyDateRange", {
