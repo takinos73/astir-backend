@@ -3798,11 +3798,11 @@ tr.history-unplanned {
 }
 .asset-status.idle {
   background: #f6c343;
-  color: #111;
+  color: #000000;
   font-size: 10px;
   padding: 3px 6px;
   border-radius: 6px;
-  margin-left: 6px;
+  margin-left: 1px;
 }
 
 /* =====================

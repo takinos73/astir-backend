@@ -489,6 +489,7 @@ async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
     executionsData = await res.json();   // 👈 ΚΡΙΣΙΜΟ: cache για reports
+    state.executionsData = executionsData; // sync to global state for access in reports and other features
     console.log("HISTORY DATA:", executionsData);
 
     renderHistoryTable(executionsData);
@@ -2084,6 +2085,8 @@ if (menu) menu.classList.remove("open");
 
   const res = await fetch(`${API}/tasks`);
   tasksData = await res.json();
+   // 🔥 SYNC με το νέο state
+  state.tasksData = tasksData;
 
   console.log("SAMPLE TASK:", tasksData[0]);
 
@@ -3617,6 +3620,7 @@ async function loadAssets() {
   try {
     const res = await fetch(`${API}/assets`);
     assetsData = await res.json();
+    state.assetsData = assetsData; // sync to global state
     console.log("ASSETS SAMPLE:", assetsData[0]);
 
     populateAssetLineFilter();

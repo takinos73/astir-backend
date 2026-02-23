@@ -80,7 +80,7 @@ container.innerHTML += `
         
         <div class="asset-id" style="margin-bottom:2px;">
           <strong>${asset.model}</strong>
-          ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""}
+          <!-- ${asset.serial_number ? ` • SN: ${asset.serial_number}` : ""} -->
           ${asset.line_code ? ` • Line: ${asset.line_code}` : ""}
         </div>
       </div>
