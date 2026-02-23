@@ -331,7 +331,7 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
     const serial = t.serial_number;
     if (!serial || mtbfMap[serial] !== undefined) return;
 
-    const breakdowns = (executionsData || []).filter(e =>
+    const breakdowns = (state.executionsData || []).filter(e =>
       e.serial_number === serial &&
       e.is_planned === false
     );

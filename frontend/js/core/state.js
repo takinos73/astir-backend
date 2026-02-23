@@ -1,30 +1,24 @@
 // frontend/js/core/state.js
 
-export const state = {
+window.state = {
 
-  // =====================
   // DATA
-  // =====================
   tasksData: [],
   assetsData: [],
   executionsData: [],
   mttrData: [],
 
-  // =====================
-  // TASKS FILTERS
-  // =====================
+  // TASK FILTERS
   taskDateFrom: null,
   taskDateTo: null,
+  pendingTaskId : null,
   activeDateFilter: "all",
   activeAssetFilter: "all",
   activeTaskTypeFilter: "all",
-
   dueDateFrom: null,
   dueDateTo: null,
 
-  // =====================
   // HISTORY FILTERS
-  // =====================
   historyDateRange: 7,
   historyMachineQuery: "",
   historyTechnicianQuery: "",
@@ -33,21 +27,15 @@ export const state = {
   historyDateTo: null,
   historyTypeFilters: new Set(["preventive", "planned", "breakdown"]),
 
-  // =====================
   // SNAPSHOT / IMPORT
-  // =====================
   pendingSnapshotJson: null,
   loadedSnapshotName: null,
   importExcelFile: null,
 
-  // =====================
   // BREAKDOWN EDIT
-  // =====================
   editingBreakdownId: null,
 
-  // =====================
   // ASSET VIEW
-  // =====================
   currentAssetSerial: null,
   assetScopedTasks: [],
   assetAllTasks: [],
@@ -58,8 +46,11 @@ export const state = {
   assetSelectedTaskIds: new Set(),
   bulkDoneMode: false,
 
-  // =====================
-  // TASK DONE FLOW
-  // =====================
-  pendingTaskId: null
+// =====================
+// ASSET HISTORY FILTER STATE
+// =====================
+ assetHistoryTypeFilter : "all", // all | breakdown | preventive | planned
+ lockSectionOnce : false,
+ followUpSectionValue : null,
+  
 };

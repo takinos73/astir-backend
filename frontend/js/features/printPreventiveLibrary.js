@@ -2,10 +2,10 @@
 // BUILD ASSET PREVENTIVE PLAN REPORT
 // =====================
 function buildAssetPreventivePlanReport(assetId) {
-  const asset = assetsData.find(a => a.id === Number(assetId));
+  const asset = state.assetsData.find(a => a.id === Number(assetId));
   if (!asset) return null;
 
-  const rules = tasksData.filter(t =>
+  const rules = state.tasksData.filter(t =>
     t.asset_id === asset.id &&
     t.is_planned === true &&
     Number(t.frequency_hours) > 0 &&
@@ -159,7 +159,7 @@ function printAssetPreventivePlan(serial) {
     return;
   }
 
-  const asset = assetsData.find(
+  const asset = state.assetsData.find(
     a => String(a.serial_number || "").trim() === String(serial).trim()
   );
 
@@ -192,11 +192,11 @@ function printAssetPreventivePlan(serial) {
 }
 
 function getAssetPreventiveTasks(serial) {
-  if (!Array.isArray(tasksData)) return [];
+  if (!Array.isArray(state.tasksData)) return [];
 
   const s = String(serial).trim();
 
-  return tasksData.filter(t =>
+  return state.tasksData.filter(t =>
     String(t.serial_number || "").trim() === s &&
     t.is_planned === true &&
     Number(t.frequency_hours) > 0 &&

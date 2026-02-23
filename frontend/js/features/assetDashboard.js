@@ -1,4 +1,3 @@
-  
   // =====================
   // COMPACT MODE TOGGLE
   // =====================
@@ -91,7 +90,7 @@ function getTopWorstAssetsDashboard(limit = 6) {
   /* =====================
      1️⃣ AGGREGATE TASKS
   ===================== */
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
     const assetKey = getAssetKey(t);
@@ -142,7 +141,7 @@ function getTopWorstAssetsDashboard(limit = 6) {
   /* =====================
      2️⃣ AGGREGATE EXECUTIONS (BREAKDOWNS)
   ===================== */
-  executionsData.forEach(e => {
+  state.executionsData.forEach(e => {
     if (!e.serial_number) return;
     if (e.is_planned !== false) return; // breakdowns only
 
@@ -446,8 +445,3 @@ window.renderAssetDashboard = function () {
     container.classList.remove("compact");
   }
 };
-
-
-
-
-

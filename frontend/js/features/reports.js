@@ -763,7 +763,7 @@ function getFilteredExecutionsForReport() {
   const toDate = to ? new Date(to) : null;
   if (toDate) toDate.setHours(23, 59, 59, 999);
 
-  return executionsData.filter(e => {
+  return state.executionsData.filter(e => {
     if (!e.executed_at) return false;
 
     const execDate = new Date(e.executed_at);
@@ -897,7 +897,7 @@ function getFilteredNonPlannedExecutionsForReport() {
   const toDate = to ? new Date(to) : null;
   if (toDate) toDate.setHours(23, 59, 59, 999);
 
-  return executionsData.filter(e => {
+  return state.executionsData.filter(e => {
     // ❌ must have execution date
     if (!e.executed_at) return false;
 
@@ -1192,7 +1192,7 @@ function getFilteredOverdueTasksForReport() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return tasksData.filter(t => {
+  return state.tasksData.filter(t => {
     // ❌ must have due date
     if (!t.due_date) return false;
 
@@ -1520,8 +1520,8 @@ function generateKpiReportPdf() {
   };
 
   // --------- DATASETS ----------
-  const allTasks = Array.isArray(tasksData) ? tasksData : [];
-  const allExec = Array.isArray(executionsData) ? executionsData : [];
+  const allTasks = Array.isArray(state.tasksData) ? state.tasksData : [];
+  const allExec = Array.isArray(state.executionsData) ? state.executionsData : [];
 
   // Tasks scoped (for overdue + due-in-period)
   const scopedTasks = allTasks.filter(t => sameLine(t));

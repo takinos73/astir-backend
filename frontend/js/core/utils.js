@@ -33,7 +33,7 @@ function isPlannedManual(task) {
 ===================== */
 
 function getAssetTaskStats(assetId) {
-  if (!Array.isArray(tasksData)) {
+  if (!Array.isArray(state.tasksData)) {
     return {
       active: 0,
       overdue: 0,
@@ -57,7 +57,7 @@ function getAssetTaskStats(assetId) {
   const horizon = new Date(now);
   horizon.setDate(horizon.getDate() + 30);
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (t.asset_id !== assetId) return;
     if (t.status === "Done") return;
 
@@ -404,11 +404,15 @@ async function refreshSystemState() {
     loadAssets(),
     loadTasks()
   ]);
+
   renderAssetsCards();
-  renderAssetTasksTable();
-  renderHistoryTable
+
+  // Αν υπάρχει active asset view, κάνε proper refresh
+  if (state.currentAssetSerial) {
+    await refreshAssetView();
+  }
+
+  if (typeof renderHistoryTable === "function") {
+    renderHistoryTable();
+  }
 }
-
-
-
-

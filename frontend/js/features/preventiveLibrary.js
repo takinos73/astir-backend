@@ -90,13 +90,13 @@ function populateLibraryModels() {
 
   select.innerHTML = `<option value="">— Select model —</option>`;
 
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     console.warn("Library: assetsData not ready");
     return;
   }
 
   const models = [...new Set(
-    assetsData
+    state.assetsData
       .map(a => a.model)
       .filter(Boolean)
   )];
@@ -118,7 +118,7 @@ function detectPreventiveRuleImpact({
   frequency_hours,
   excludeAssetId
 }) {
-  if (!Array.isArray(tasksData) || !Array.isArray(assetsData)) {
+  if (!Array.isArray(tasksData) || !Array.isArray(state.assetsData)) {
     return { assets: 0, models: 0 };
   }
 
@@ -128,7 +128,7 @@ function detectPreventiveRuleImpact({
   // normalize helpers
   const norm = v => (v ?? "").toString().trim().toUpperCase();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (!isPreventive(t)) return;
 
     // 🔒 frequency
@@ -147,7 +147,7 @@ function detectPreventiveRuleImpact({
     if (t.asset_id === excludeAssetId) return;
 
     // 🔒 model check (via assetsData)
-    const asset = assetsData.find(a => a.id === t.asset_id);
+    const asset = state.assetsData.find(a => a.id === t.asset_id);
     if (!asset) return;
 
     if (model && norm(asset.model) !== norm(model)) return;
@@ -387,7 +387,7 @@ container.querySelectorAll(".library-group-header").forEach(header => {
     }
   });
 });
-const rules320 = tasksData.filter(t =>
+const rules320 = state.tasksData.filter(t =>
   t.frequency_hours === 320 &&
   t.is_planned === true &&
   t.deleted_at == null
@@ -451,14 +451,14 @@ document.addEventListener("DOMContentLoaded", () => {
    GENERATE LIBRARY FROM LIVE TASKS
 ===================== */
 function generateLibraryFromTasks() {
-  if (!Array.isArray(tasksData) || tasksData.length === 0) {
+  if (!Array.isArray(state.tasksData) || state.tasksData.length === 0) {
     alert("No tasks available to generate library");
     return;
   }
 
   const map = {};
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (
       t.is_planned !== true ||
       !t.frequency_hours ||
@@ -762,13 +762,13 @@ document
     // =====================
     // MULTI-ASSET APPLY (ADD PREVENTIVE)
     // =====================
-    const selectedAsset = assetsData.find(
+    const selectedAsset = state.assetsData.find(
       a => a.id === Number(assetId)
     );
 
     const model = selectedAsset?.model;
 
-    const sameModelAssets = assetsData.filter(
+    const sameModelAssets = state.assetsData.filter(
       a => a.model === model
     );
 
@@ -902,9 +902,9 @@ function populatePreventiveAssets() {
 
   sel.innerHTML = `<option value="">Select Asset</option>`;
 
-  if (!Array.isArray(assetsData)) return;
+  if (!Array.isArray(state.assetsData)) return;
 
-  assetsData.forEach(a => {
+    state.assetsData.forEach(a => {
     const opt = document.createElement("option");
     opt.value = a.id;
     opt.textContent = `${a.model} • SN ${a.serial_number}`;
@@ -1329,7 +1329,7 @@ function calculateAffectedAssetsForRule(rule) {
 
   const assets = new Set();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (
       t.machine_name === rule.model &&
       t.is_planned === true &&
@@ -1354,7 +1354,7 @@ function updatePreventiveAffectedInfo(rule) {
   const label = document.getElementById("ep-affected-count");
   const muted = box?.querySelector(".muted");
 
-  if (!box || !label || !Array.isArray(tasksData)) return;
+  if (!box || !label || !Array.isArray(state.tasksData)) return;
 
   const model =
     rule.model ||
@@ -1367,7 +1367,7 @@ function updatePreventiveAffectedInfo(rule) {
 
   const affectedAssetIds = new Set();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (
       t.is_planned === true &&
       Number(t.frequency_hours) === Number(rule.frequency_hours) &&
@@ -1487,14 +1487,14 @@ function populateSectionDropdown(model) {
   optAll.textContent = "All sections";
   select.appendChild(optAll);
 
-  if (!model || !Array.isArray(assetsData)) return;
+  if (!model || !Array.isArray(state.assetsData)) return;
 
   
   // COLLECT UNIQUE SECTIONS
   
   const sections = Array.from(
     new Set(
-      assetsData
+      state.assetsData
         .filter(a => a.model === model)
         .map(a => (a.section || "").trim())
         .filter(Boolean)
@@ -1555,7 +1555,7 @@ function populateUnitDropdown(model) {
   // =====================
   const units = Array.from(
     new Set(
-      assetsData
+      state.assetsData
         .filter(a => a.model === model)
         .map(a => (a.unit || "").trim())
         .filter(Boolean)
@@ -1617,7 +1617,7 @@ function populateContextDropdown({
   // =====================
   const values = Array.from(
     new Set(
-      tasksData
+      state.tasksData
         .filter(t =>
           t.machine_name === model &&
           t.is_planned === true &&
@@ -1683,7 +1683,7 @@ function printPreventivePlan() {
     return;
   }
 
-  const asset = assetsData.find(a => a.model === model);
+  const asset = state.assetsData.find(a => a.model === model);
 
   if (!asset) {
     alert("No asset found for selected model");

@@ -2,71 +2,68 @@
 
 const API = "https://astir-backend.onrender.com";
 
-let tasksData = [];
-let assetsData = [];
+//let tasksData = [];
+//let assetsData = [];
 // =====================
 // TASKS – DATE RANGE STATE
 // =====================
-let taskDateFrom = null;
-let taskDateTo = null;
+//let taskDateFrom = null;
+//let taskDateTo = null;
 
 //let activeLine = "all";
-let pendingTaskId = null;
-let pendingSnapshotJson = null;
-let loadedSnapshotName = null;
-let importExcelFile = null;
-let activeDateFilter = "all";
-let activeAssetFilter = "all";
-let executionsData = [];
-let dueDateFrom = null; // Date | null
-let dueDateTo = null;   // Date | null
+//let pendingTaskId = null;
+//let activeDateFilter = "all";
+//let activeAssetFilter = "all";
+//let executionsData = [];
+//let dueDateFrom = null; // Date | null
+//let dueDateTo = null;   // Date | null
 // =====================
 // HISTORY FILTER STATE
 // =====================
-let historyDateRange = 7;
-let historyMachineQuery = "";
-let historyTechnicianQuery = "";
-let historyTypeFilter = "all";
-let historyDateFrom = null;
-let historyDateTo = null;
+//let historyDateRange = 7;
+//let historyMachineQuery = "";
+//let historyTechnicianQuery = "";
+//let historyTypeFilter = "all";
+//let historyDateFrom = null;
+//let historyDateTo = null;
 // =====================
 // EDIT BREAKDOWN STATE
 // =====================
-let editingBreakdownId = null;
+//let editingBreakdownId = null;
 // =====================
 // ASSET-SCOPED TASKS STATE
 // =====================
-let currentAssetSerial = null;
-let assetScopedTasks = [];
+//let currentAssetSerial = null;
+//let assetScopedTasks = [];
 
-let assetAllTasks = [];
-let assetActiveTasks = [];
-let assetHistoryTasks = [];
-let currentViewedTask = null;
+//let assetAllTasks = [];
+//let assetActiveTasks = [];
+//let assetHistoryTasks = [];
+//let currentViewedTask = null;
 // =====================
 // ASSET VIEW – MULTISELECT STATE (STEP 1)
 // =====================
-const assetSelectedTaskIds = new Set();
+//const assetSelectedTaskIds = new Set();
 // =====================
 // BULK DONE STATE
 // =====================
-let bulkDoneMode = false;
+//let bulkDoneMode = false;
 // =====================
 // TASK TYPE FILTER STATE
 // =====================
-let activeTaskTypeFilter = "all"; 
+//let activeTaskTypeFilter = "all"; 
 // values: all | planned | preventive
-let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
-let mttrData = [];
+//let historyTypeFilters = new Set(["preventive", "planned", "breakdown"]);
+//let mttrData = [];
 
-
-const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
 // =====================
 // ASSET HISTORY FILTER STATE
 // =====================
-let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
-let lockSectionOnce = false;
-let followUpSectionValue = null;
+//let assetHistoryTypeFilter = "all"; // all | breakdown | preventive | planned
+//let lockSectionOnce = false;
+//let followUpSectionValue = null;
+
+const ASSETS_VIEW_MODE = "cards"; // "cards" | "table"
 
 flatpickr("#historyDateRange", {
   mode: "range",
@@ -75,13 +72,13 @@ flatpickr("#historyDateRange", {
   onClose: function(selectedDates) {
 
     if (selectedDates.length === 2) {
-      historyDateFrom = selectedDates[0];
-      historyDateTo = selectedDates[1];
+      state.historyDateFrom = selectedDates[0];
+      state.historyDateTo = selectedDates[1];
 
-      historyDateFrom.setHours(0,0,0,0);
-      historyDateTo.setHours(23,59,59,999);
+      state.historyDateFrom.setHours(0,0,0,0);
+      state.historyDateTo.setHours(23,59,59,999);
 
-      renderHistoryTable(executionsData);
+      renderHistoryTable(state.executionsData);
     }
   }
 });
@@ -157,7 +154,7 @@ function applyDateFilter(tasks) {
     const due = new Date(t.due_date);
     due.setHours(0, 0, 0, 0);
 
-    switch (activeDateFilter) {
+    switch (state.activeDateFilter) {
       case "today":
         return due.getTime() === today.getTime();
 
@@ -261,8 +258,8 @@ function assetStatusLabel(t) {
 //----------------------
 
 function getStatusFilterLabel() {
-  if (activeTaskTypeFilter === "planned") return "Planned (Manual)";
-  if (activeTaskTypeFilter === "preventive") return "Preventive";
+  if (state.activeTaskTypeFilter === "planned") return "Planned (Manual)";
+  if (state.activeTaskTypeFilter === "preventive") return "Preventive";
   return "ALL";
 }
 
@@ -293,7 +290,7 @@ document.addEventListener("click", e => {
   // ❌ 0 active → force ALL (activate both)
   if (active.length === 0) {
     buttons.forEach(b => b.classList.add("active"));
-    activeTaskTypeFilter = "all";
+    state.activeTaskTypeFilter = "all";
   }
 
   // ✅ 2 active → ALL
@@ -303,7 +300,7 @@ document.addEventListener("click", e => {
 
   // 🎯 1 active → that type
   else {
-    activeTaskTypeFilter = active[0].dataset.type;
+    state.activeTaskTypeFilter = active[0].dataset.type;
   }
 
   renderTable();
@@ -314,12 +311,12 @@ GET ASSET SECTIONS (FOR FILTERING)
 =============================*/
 
 function getSectionsForAsset(assetId) {
-  if (!assetId || !Array.isArray(tasksData)) return [];
+  if (!assetId || !Array.isArray(state.tasksData)) return [];
 
   const id = Number(assetId);
   const set = new Set();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (
       Number(t.asset_id) === id &&
       t.section &&
@@ -341,14 +338,14 @@ function filterByTaskType(tasks) {
 
   if (!Array.isArray(tasks)) return [];
 
-  if (activeTaskTypeFilter === "planned") {
+  if (state.activeTaskTypeFilter === "planned") {
     return tasks.filter(t => isPlannedManual(t));
   }
 
-  if (activeTaskTypeFilter === "preventive") {
+  if (state.activeTaskTypeFilter === "preventive") {
     return tasks.filter(t => isPreventive(t));
   }
-console.log("filterByTaskType():", activeTaskTypeFilter, "sample:", tasks?.[0]);
+console.log("filterByTaskType():", state.activeTaskTypeFilter, "sample:", tasks?.[0]);
   // implicit ALL
   return tasks;
 }
@@ -488,16 +485,16 @@ function buildRow(task) {
 async function loadHistory() {
   try {
     const res = await fetch(`${API}/executions`);
-    executionsData = await res.json();   // 👈 ΚΡΙΣΙΜΟ: cache για reports
-    state.executionsData = executionsData; // sync to global state for access in reports and other features
-    console.log("HISTORY DATA:", executionsData);
+    state.executionsData = await res.json();   // ✅ source of truth
 
-    renderHistoryTable(executionsData);
+    console.log("HISTORY DATA:", state.executionsData);
+
+    renderHistoryTable(state.executionsData);
+    updateCentralHistoryLegendCounts(state.executionsData); // ✅ καλύτερα μέσα στο try
   } catch (err) {
-    console.error("LOAD HISTORY ERROR:", err);        
+    console.error("LOAD HISTORY ERROR:", err);
+    updateCentralHistoryLegendCounts([]); // ✅ fail-safe (προαιρετικό αλλά safe)
   }
-  // 🆕 εδώ ΜΟΝΟ
-  updateCentralHistoryLegendCounts(executionsData);
 }
 
 function getExecutionType(h) {
@@ -539,14 +536,14 @@ function applyCustomHistoryRange() {
   const fromVal = historyDateFromEl?.value;
   const toVal = historyDateToEl?.value;
 
-  historyDateFrom = fromVal ? new Date(fromVal) : null;
-  historyDateTo = toVal ? new Date(toVal) : null;
+  state.historyDateFrom = fromVal ? new Date(fromVal) : null;
+  state.historyDateTo = toVal ? new Date(toVal) : null;
 
-  if (historyDateTo) {
-    historyDateTo.setHours(23, 59, 59, 999);
+  if (state.historyDateTo) {
+    state.historyDateTo.setHours(23, 59, 59, 999);
   }
 
-  renderHistoryTable(executionsData);
+  renderHistoryTable(state.executionsData);
 }
 
 
@@ -557,16 +554,16 @@ historyDateToEl?.addEventListener("change", applyCustomHistoryRange);
 // 🟡 Rolling filter auto apply
 historyRollingEl?.addEventListener("change", (e) => {
 
-  historyDateRange = e.target.value;
+  state.historyDateRange = e.target.value;
 
   // reset custom
-  historyDateFrom = null;
-  historyDateTo = null;
+  state.historyDateFrom = null;
+  state.historyDateTo = null;
 
   if (historyDateFromEl) historyDateFromEl.value = "";
   if (historyDateToEl) historyDateToEl.value = "";
 
-  renderHistoryTable(executionsData);
+  renderHistoryTable(state.executionsData);
 });
 
 
@@ -581,22 +578,22 @@ function renderHistoryTable(data) {
 
   // 🔹 Existing rolling date filter (7 / 30 / 90 days etc)
   const rangeFromDate =
-    historyDateRange === "all"
+    state.historyDateRange === "all"
       ? null
       : new Date(
           now.getTime() -
-            Number(historyDateRange) * 24 * 60 * 60 * 1000
+            Number(state.historyDateRange) * 24 * 60 * 60 * 1000
         );
 
   // 🔹 NEW: Custom period filter
   const customFrom =
-    typeof historyDateFrom !== "undefined" && historyDateFrom
-      ? new Date(historyDateFrom)
+    typeof state.historyDateFrom !== "undefined" && state.historyDateFrom
+      ? new Date(state.historyDateFrom)
       : null;
 
   const customTo =
-    typeof historyDateTo !== "undefined" && historyDateTo
-      ? new Date(historyDateTo)
+    typeof state.historyDateTo !== "undefined" && state.historyDateTo
+      ? new Date(state.historyDateTo)
       : null;
 
   if (customFrom) customFrom.setHours(0, 0, 0, 0);
@@ -611,10 +608,10 @@ function renderHistoryTable(data) {
   // ============================
   // 1️⃣ CUSTOM RANGE has priority
   // ============================
-  if (historyDateFrom || historyDateTo) {
+  if (state.historyDateFrom || state.historyDateTo) {
 
-    if (historyDateFrom && exec < historyDateFrom) return false;
-    if (historyDateTo && exec > historyDateTo) return false;
+    if (state.historyDateFrom && exec < state.historyDateFrom) return false;
+    if (state.historyDateTo && exec > state.historyDateTo) return false;
 
     return true;
   }
@@ -622,7 +619,7 @@ function renderHistoryTable(data) {
   // ============================
   // 2️⃣ Rolling range
   // ============================
-  if (historyDateRange && historyDateRange !== "all") {
+  if (state.historyDateRange && state.historyDateRange !== "all") {
     if (!rangeFromDate) return true;
     return exec >= rangeFromDate;
   }
@@ -635,24 +632,24 @@ function renderHistoryTable(data) {
 
     // 🔍 MACHINE / SERIAL FILTER
     .filter(h => {
-      if (!historyMachineQuery) return true;
+      if (!state.historyMachineQuery) return true;
       const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
-      return txt.includes(historyMachineQuery);
+      return txt.includes(state.historyMachineQuery);
     })
 
     // 🧩 TYPE FILTER
     .filter(h => {
-      if (historyTypeFilter === "all") return true;
+      if (state.historyTypeFilter === "all") return true;
       const execType = getExecutionType(h);
-      return execType === historyTypeFilter;
+      return execType === state.historyTypeFilter;
     })
 
     // 👤 TECHNICIAN FILTER
     .filter(h => {
-      if (!historyTechnicianQuery) return true;
+      if (!state.historyTechnicianQuery) return true;
       return (h.executed_by || "")
         .toLowerCase()
-        .includes(historyTechnicianQuery);
+        .includes(state.historyTechnicianQuery);
     })
 
     // ⬇️ RENDER ROWS
@@ -762,7 +759,7 @@ function renderHistoryTable(data) {
 // ======================================================
 
 function viewHistoryEntry(executionId) {
-  const h = executionsData.find(e => e.id === executionId);
+  const h = state.executionsData.find(e => e.id === executionId);
   if (!h) return;
 
   const el = document.getElementById("historyViewContent");
@@ -871,16 +868,16 @@ function readCustomDatesFromInputs() {
   const fromVal = document.getElementById("historyDateFrom")?.value || "";
   const toVal = document.getElementById("historyDateTo")?.value || "";
 
-  historyDateFrom = fromVal ? new Date(fromVal) : null;
-  historyDateTo = toVal ? new Date(toVal) : null;
+  state.historyDateFrom = fromVal ? new Date(fromVal) : null;
+  state.historyDateTo = toVal ? new Date(toVal) : null;
 
-  if (historyDateFrom) historyDateFrom.setHours(0, 0, 0, 0);
-  if (historyDateTo) historyDateTo.setHours(23, 59, 59, 999);
+  if (state.historyDateFrom) state.historyDateFrom.setHours(0, 0, 0, 0);
+  if (state.historyDateTo) state.historyDateTo.setHours(23, 59, 59, 999);
 }
 
 function clearCustomDatesInputsAndState() {
-  historyDateFrom = null;
-  historyDateTo = null;
+  state.historyDateFrom = null;
+  state.historyDateTo = null;
 
   const fromEl = document.getElementById("historyDateFrom");
   const toEl = document.getElementById("historyDateTo");
@@ -891,43 +888,43 @@ function clearCustomDatesInputsAndState() {
 function applyHistoryFiltersAndRender() {
   // sync custom dates from inputs (Date|null always)
   readCustomDatesFromInputs();
-  renderHistoryTable(executionsData);
+  renderHistoryTable(state.executionsData);
 }
 
 /* ---------------------
    Rolling period dropdown
 --------------------- */
 document.getElementById("historyDateFilter")?.addEventListener("change", e => {
-  historyDateRange = e.target.value; // "7" | "30" | "90" | "all"
+  state.historyDateRange = e.target.value; // "7" | "30" | "90" | "all"
 
   // όταν αλλάζει rolling -> καθαρίζει custom (για να μην καπελώνει)
   clearCustomDatesInputsAndState();
 
-  renderHistoryTable(executionsData);
+  renderHistoryTable(state.executionsData);
 });
 
 /* ---------------------
    Machine / SN search
 --------------------- */
 document.getElementById("historyMachineSearch")?.addEventListener("input", e => {
-  historyMachineQuery = (e.target.value || "").toLowerCase().trim();
-  renderHistoryTable(executionsData);
+  state.historyMachineQuery = (e.target.value || "").toLowerCase().trim();
+  renderHistoryTable(state.executionsData);
 });
 
 /* ---------------------
    Type filter
 --------------------- */
 document.getElementById("historyTypeFilter")?.addEventListener("change", e => {
-  historyTypeFilter = e.target.value;
-  renderHistoryTable(executionsData);
+  state.historyTypeFilter = e.target.value;
+  renderHistoryTable(state.executionsData);
 });
 
 /* ---------------------
    Technician search
 --------------------- */
 document.getElementById("historyTechnicianSearch")?.addEventListener("input", e => {
-  historyTechnicianQuery = (e.target.value || "").toLowerCase().trim();
-  renderHistoryTable(executionsData);
+  state.historyTechnicianQuery = (e.target.value || "").toLowerCase().trim();
+  renderHistoryTable(state.executionsData);
 });
 
 /* ---------------------
@@ -937,14 +934,14 @@ document.getElementById("historyTechnicianSearch")?.addEventListener("input", e 
 document.getElementById("historyDateFrom")?.addEventListener("change", () => {
   const rolling = document.getElementById("historyDateFilter");
   if (rolling) rolling.value = "all";
-  historyDateRange = "all";
+  state.historyDateRange = "all";
   applyHistoryFiltersAndRender();
 });
 
 document.getElementById("historyDateTo")?.addEventListener("change", () => {
   const rolling = document.getElementById("historyDateFilter");
   if (rolling) rolling.value = "all";
-  historyDateRange = "all";
+  state.historyDateRange = "all";
   applyHistoryFiltersAndRender();
 });
 
@@ -954,13 +951,13 @@ document.getElementById("historyDateTo")?.addEventListener("change", () => {
 document.getElementById("historyApplyDate")?.addEventListener("click", () => {
   const rolling = document.getElementById("historyDateFilter");
   if (rolling) rolling.value = "all";
-  historyDateRange = "all";
+  state.historyDateRange = "all";
   applyHistoryFiltersAndRender();
 });
 
 document.getElementById("historyResetDate")?.addEventListener("click", () => {
   clearCustomDatesInputsAndState();
-  renderHistoryTable(executionsData);
+  renderHistoryTable(state.executionsData);
 });
 
 // =====================
@@ -1022,11 +1019,11 @@ document.addEventListener("click", e => {
 
   console.log("🟡 HISTORY LEGEND CLICK:", type);
 
-  assetHistoryTypeFilter = type;
+  state.assetHistoryTypeFilter = type;
 
   highlightActiveHistoryLegend();
 
-  renderAssetHistoryTable(assetHistoryTasks);
+  renderAssetHistoryTable(state.assetHistoryTasks);
 });
 /* =====================
 TASK VIEW DONE BUTTON HANDLER
@@ -1035,13 +1032,13 @@ document
   .getElementById("taskViewDoneBtn")
   ?.addEventListener("click", () => {
 
-    if (!currentViewedTask) return;
+    if (!state.currentViewedTask) return;
 
     // Κλείσε Task View (UX καθαρό)
     document.getElementById("taskViewOverlay").style.display = "none";
 
     // Χρησιμοποίησε ΥΠΑΡΧΟΝ flow
-    askTechnician(currentViewedTask.id);
+    askTechnician(state.currentViewedTask.id);
   });
 
 
@@ -1053,14 +1050,14 @@ document
 function updateKpis() {
   let overdue = 0, soon = 0, done = 0;
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (t.status === "Done") return done++;
     const st = getDueState(t);
     if (st === "overdue") overdue++;
     if (st === "soon") soon++;
   });
 
-  getEl("kpiTotal").textContent = tasksData.length;
+  getEl("kpiTotal").textContent = state.tasksData.length;
   getEl("kpiOverdue").textContent = overdue;
   getEl("kpiSoon").textContent = soon;
   getEl("kpiDone").textContent = done;
@@ -1074,10 +1071,10 @@ function populateAddTaskLines() {
 
   sel.innerHTML = `<option value="">Select Line</option>`;
 
-  if (!Array.isArray(assetsData)) return;
+  if (!Array.isArray(state.assetsData)) return;
 
   const lines = [...new Set(
-    assetsData.map(a => a.line).filter(Boolean)
+    state.assetsData.map(a => a.line).filter(Boolean)
   )];
 
   lines.sort().forEach(line => {
@@ -1119,11 +1116,11 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
   /* =====================
      AUTO-LOCK SECTION (FOLLOW-UP)
   ===================== */
-  if (lockSectionOnce && followUpSectionValue) {
+  if (state.lockSectionOnce && state.followUpSectionValue) {
 
     if (sectionSelect.style.display !== "none") {
       const match = [...sectionSelect.options]
-        .find(o => o.value === followUpSectionValue);
+        .find(o => o.value === state.followUpSectionValue);
 
       if (match) {
         sectionSelect.value = match.value;
@@ -1131,13 +1128,13 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
         sectionSelect.classList.add("locked");
       }
     } else {
-      sectionInput.value = followUpSectionValue;
+      sectionInput.value = state.followUpSectionValue;
       sectionInput.disabled = true;
       sectionInput.classList.add("locked");
     }
 
-    lockSectionOnce = false;
-    followUpSectionValue = null;
+    state.lockSectionOnce = false;
+    state.followUpSectionValue = null;
   }
 });
 
@@ -1146,7 +1143,7 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
 ===================== */
 
 function viewTask(taskId) {
-  const task = tasksData.find(t => t.id === taskId);
+  const task = state.tasksData.find(t => t.id === taskId);
   if (!task) return;
 
   const el = document.getElementById("taskViewContent");
@@ -1264,7 +1261,7 @@ ${
   // =====================
   // EDIT / DONE/ DELETE VISIBILITY
   // =====================
-  currentViewedTask = task;
+  state.currentViewedTask = task;
 
   const doneBtn = document.getElementById("taskViewDoneBtn");
 
@@ -1313,9 +1310,9 @@ ${
 // =====================
 
 function enableTaskEdit() {
-  if (!currentViewedTask) return;
+  if (!state.currentViewedTask) return;
 
-  const t = currentViewedTask;
+  const t = state.currentViewedTask;
 
   // Fill edit fields (guarded)
   const descEl = document.getElementById("edit-task-desc");
@@ -1356,7 +1353,7 @@ function cancelTaskEdit() {
 
   // Show Edit button again (only if allowed)
   const editBtn = document.getElementById("editTaskBtn");
-  if (editBtn && currentViewedTask && canEditTask(currentViewedTask)) {
+  if (editBtn && state.currentViewedTask && canEditTask(state.currentViewedTask)) {
     editBtn.style.display = "inline-flex";
   }
 }
@@ -1365,7 +1362,7 @@ function cancelTaskEdit() {
 // CONFIRM + SOFT DELETE TASK
 // =====================
 async function confirmDeleteTask() {
-  if (!currentViewedTask) return;
+  if (!state.currentViewedTask) return;
 
   const ok = confirm(
     "Are you sure you want to cancel this planned task?\nThis action cannot be undone."
@@ -1375,7 +1372,7 @@ async function confirmDeleteTask() {
 
   try {
     const res = await fetch(
-      `${API}/tasks/${currentViewedTask.id}`,
+      `${API}/tasks/${state.currentViewedTask.id}`,
       { method: "DELETE" }
     );
 
@@ -1384,7 +1381,7 @@ async function confirmDeleteTask() {
       throw new Error(err.error || "Delete failed");
     }
 
-    currentViewedTask = null;
+    state.currentViewedTask = null;
 
     closeTaskView();
     loadTasks();
@@ -1430,10 +1427,10 @@ function editBreakdown(executionId) {
     return;
   }
   
-  const h = executionsData.find(e => e.id === executionId);
+  const h = state.executionsData.find(e => e.id === executionId);
   if (!h) return;
 
-  editingBreakdownId = h.id;
+  state.editingBreakdownId = h.id;
 
   document.getElementById("eb-task").value = h.task || "";
   document.getElementById("eb-executed-by").value = h.executed_by || "";
@@ -1448,7 +1445,7 @@ function editBreakdown(executionId) {
 // SAVE BREAKDOWN EDIT (FINAL)
 // =====================
 async function saveBreakdownEdit() {
-  if (!editingBreakdownId) return;
+  if (!state.editingBreakdownId) return;
 
   const taskDesc = document.getElementById("eb-task").value.trim();
   const executedBy = document.getElementById("eb-executed-by").value.trim();
@@ -1472,7 +1469,7 @@ async function saveBreakdownEdit() {
   };
 
   try {
-    const res = await fetch(`${API}/executions/${editingBreakdownId}`, {
+    const res = await fetch(`${API}/executions/${state.editingBreakdownId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -1493,7 +1490,7 @@ async function saveBreakdownEdit() {
 }
 
 function closeEditBreakdown() {
-  editingBreakdownId = null;
+  state.editingBreakdownId = null;
   document.getElementById("editBreakdownOverlay").style.display = "none";
 }
 
@@ -1510,7 +1507,7 @@ function buildAssetDropdown() {
 
   const map = new Map();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
     const key = `${t.machine_name}||${t.serial_number}`;
@@ -1538,7 +1535,7 @@ function buildAssetDropdown() {
   menu.appendChild(all);
 
   btn.textContent = "All Machines";
-  activeAssetFilter = "all";
+  state.activeAssetFilter = "all";
 
   assets.forEach(a => {
     const div = document.createElement("div");
@@ -1589,7 +1586,7 @@ function initAssetDropdown() {
 
     opt.classList.add("active");
 
-    activeAssetFilter = opt.dataset.value;
+    state.activeAssetFilter = opt.dataset.value;
 
     // αν το label έχει HTML (line | machine | small SN)
     btn.innerHTML = opt.innerHTML;
@@ -1619,31 +1616,31 @@ function getFilteredTasksForPrint() {
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  return filterByTaskType(tasksData)   // 🟢 ← ΜΟΝΗ ΑΛΛΑΓΗ
+  return filterByTaskType(state.tasksData)   // 🟢 ← ΜΟΝΗ ΑΛΛΑΓΗ
 
     // ASSET FILTER (CUSTOM DROPDOWN)
     .filter(t => {
-      if (activeAssetFilter === "all") return true;
-      return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
+      if (state.activeAssetFilter === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === state.activeAssetFilter;
     })
 
     // QUICK DATE FILTER (Today / Week / Overdue)
     .filter(t => {
-      if (activeDateFilter === "all") return true;
+      if (state.activeDateFilter === "all") return true;
       if (!t.due_date) return false;
 
       const due = new Date(t.due_date);
       due.setHours(0, 0, 0, 0);
 
-      if (activeDateFilter === "today") {
+      if (state.activeDateFilter === "today") {
         return due.getTime() === today.getTime();
       }
 
-      if (activeDateFilter === "week") {
+      if (state.activeDateFilter === "week") {
         return due >= today && due <= weekEnd;
       }
 
-      if (activeDateFilter === "overdue") {
+      if (state.activeDateFilter === "overdue") {
         return due < today;
       }
 
@@ -1652,13 +1649,13 @@ function getFilteredTasksForPrint() {
 
     // TASK DATE RANGE FILTER (From – To)
     .filter(t => {
-      if (!taskDateFrom && !taskDateTo) return true;
+      if (!state.taskDateFrom && !state.taskDateTo) return true;
       if (!t.due_date) return false;
 
       const due = new Date(t.due_date);
 
-      if (taskDateFrom && due < taskDateFrom) return false;
-      if (taskDateTo && due > taskDateTo) return false;
+      if (state.taskDateFrom && due < state.taskDateFrom) return false;
+      if (state.taskDateTo && due > state.taskDateTo) return false;
 
       return true;
     });
@@ -1673,7 +1670,7 @@ function populateAssetFilter() {
 
   const map = new Map();
 
-  tasksData.forEach(t => {
+  state.tasksData.forEach(t => {
     if (!t.machine_name || !t.serial_number) return;
 
     const key = `${t.machine_name}||${t.serial_number}`;
@@ -1711,7 +1708,7 @@ function populateAssetLineFilter() {
   sel.innerHTML = `<option value="all">All</option>`;
 
   const lines = [...new Set(
-    assetsData.map(a => a.line).filter(Boolean)
+    state.assetsData.map(a => a.line).filter(Boolean)
   )];
 
   lines.sort().forEach(line => {
@@ -1782,11 +1779,11 @@ function bindAssetHistoryLegendClicks() {
 
         console.log("🟡 HISTORY LEGEND CLICK:", type);
 
-        assetHistoryTypeFilter = type || "all";
+        state.assetHistoryTypeFilter = type || "all";   // ✅ FIX
 
         highlightActiveHistoryLegend();
 
-        renderAssetHistoryTable(assetHistoryTasks);
+        renderAssetHistoryTable(state.assetHistoryTasks); // ✅ FIX
       });
     });
 }
@@ -1801,7 +1798,7 @@ function highlightActiveHistoryLegend() {
     .forEach(el => {
       el.classList.toggle(
         "active",
-        el.dataset.type === assetHistoryTypeFilter
+        el.dataset.type === state.assetHistoryTypeFilter // ✅ FIX
       );
     });
 }
@@ -1826,13 +1823,13 @@ function activateAssetTab(tabName) {
   // --- DATA render (SAFE) ---
   if (tabName === "active") {
     renderAssetTasksTable(
-      Array.isArray(assetActiveTasks) ? assetActiveTasks : []
+      Array.isArray(state.assetActiveTasks) ? state.assetActiveTasks : []
     );
   }
 
   if (tabName === "history") {
     renderAssetHistoryTable(
-      Array.isArray(assetHistoryTasks) ? assetHistoryTasks : []
+      Array.isArray(state.assetHistoryTasks) ? state.assetHistoryTasks : []
     );
   }
 }
@@ -1872,8 +1869,8 @@ function renderTable() {
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const source = filterByTaskType(tasksData);
-console.log("renderTable(): tasksData =", tasksData.length, "source(after type) =", source.length, "type =", activeTaskTypeFilter);
+  const source = filterByTaskType(state.tasksData);
+console.log("renderTable(): tasksData =", state.tasksData.length, "source(after type) =", source.length, "type =", state.activeTaskTypeFilter);
 
 const filtered = source
 
@@ -1883,10 +1880,10 @@ const filtered = source
 
   // 🟨🔵 TASK TYPE FILTER (MASTER)
   .filter(t => {
-    if (activeTaskTypeFilter === "planned") {
+    if (state.activeTaskTypeFilter === "planned") {
       return isPlannedManual(t);
     }
-    if (activeTaskTypeFilter === "preventive") {
+    if (state.activeTaskTypeFilter === "preventive") {
       return isPreventive(t);
     }
     return true; // ALL
@@ -1895,8 +1892,8 @@ const filtered = source
 
     // MACHINE FILTER
     .filter(t => {
-      if (activeAssetFilter === "all") return true;
-      return `${t.machine_name}||${t.serial_number}` === activeAssetFilter;
+      if (state.activeAssetFilter === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === state.activeAssetFilter;
     })
 
     // =====================
@@ -1906,33 +1903,33 @@ const filtered = source
       const hasDue = !!t.due_date;
 
       // 🔴 Custom date range (priority)
-      if (taskDateFrom || taskDateTo) {
+      if (state.taskDateFrom || state.taskDateTo) {
         if (!hasDue) return false;
 
         const due = new Date(t.due_date);
         due.setHours(0, 0, 0, 0);
 
-        if (taskDateFrom && due < taskDateFrom) return false;
-        if (taskDateTo && due > taskDateTo) return false;
+        if (state.taskDateFrom && due < state.taskDateFrom) return false;
+        if (state.taskDateTo && due > state.taskDateTo) return false;
         return true;
       }
 
       // 🟢 Quick date filters
-      if (activeDateFilter === "today") {
+      if (state.activeDateFilter === "today") {
         if (!hasDue) return false;
         const due = new Date(t.due_date);
         due.setHours(0, 0, 0, 0);
         return due.getTime() === today.getTime();
       }
 
-      if (activeDateFilter === "week") {
+      if (state.activeDateFilter === "week") {
         if (!hasDue) return false;
         const due = new Date(t.due_date);
         due.setHours(0, 0, 0, 0);
         return due >= today && due <= weekEnd;
       }
 
-      if (activeDateFilter === "overdue") {
+      if (state.activeDateFilter === "overdue") {
         if (!hasDue) return false;
         const due = new Date(t.due_date);
         due.setHours(0, 0, 0, 0);
@@ -1995,7 +1992,7 @@ const filtered = source
 
 
 function getAssetFilterLabel() {
-  if (activeAssetFilter === "all" || !activeAssetFilter) {
+  if (state.activeAssetFilter === "all" || !state.activeAssetFilter) {
     return "ALL MACHINES";
   }
 
@@ -2010,15 +2007,15 @@ function getAssetFilterLabel() {
 }
 function getCurrentPeriodLabel() {
   // 🟢 αν υπάρχει custom date range
-  if (taskDateFrom || taskDateTo) {
-    const from = taskDateFrom ? formatDate(taskDateFrom) : "—";
-    const to = taskDateTo ? formatDate(taskDateTo) : "—";
+  if (state.taskDateFrom || state.taskDateTo) {
+    const from = state.taskDateFrom ? formatDate(state.taskDateFrom) : "—";
+    const to = state.taskDateTo ? formatDate(state.taskDateTo) : "—";
     return `${from} → ${to}`;
   }
 
   // 🟢 αλλιώς quick filter
-  if (activeDateFilter && activeDateFilter !== "all") {
-    return activeDateFilter.toUpperCase();
+  if (state.activeDateFilter && state.activeDateFilter !== "all") {
+    return state.activeDateFilter.toUpperCase();
   }
 
   return "ALL";
@@ -2079,29 +2076,27 @@ document
 ===================== */
 
 async function loadTasks() {
-// 🔒 force-close asset dropdown before rebuild
-const menu = document.getElementById("assetDropdownMenu");
-if (menu) menu.classList.remove("open");
+  // 🔒 force-close asset dropdown before rebuild
+  const menu = document.getElementById("assetDropdownMenu");
+  if (menu) menu.classList.remove("open");
 
   const res = await fetch(`${API}/tasks`);
-  tasksData = await res.json();
-   // 🔥 SYNC με το νέο state
-  state.tasksData = tasksData;
+  state.tasksData = await res.json(); // ✅ ΜΟΝΟ ΑΥΤΟ
 
-  console.log("SAMPLE TASK:", tasksData[0]);
+  console.log("SAMPLE TASK:", state.tasksData[0]);
 
-  updateKpis();          // Total / Overdue / Soon (active tasks)
-  loadCompletedKpi();    // ✅ Completed from task_executions
+  updateKpis();
+  loadCompletedKpi();
 
   buildAssetDropdown();
   initAssetDropdown();
 
   renderTable();
-  // ✅ 🔥 ASSET DASHBOARD (TOP 6 WORST)
+
   if (typeof renderAssetDashboard === "function") {
     renderAssetDashboard();
   }
-  // 🔄 Refresh asset cards if assets tab is active
+
   const assetsTab = document.getElementById("tab-assets");
   if (assetsTab?.classList.contains("active")) {
     renderAssetsCards();
@@ -2150,18 +2145,16 @@ document.getElementById("taskPlannedType")
   });
 
 
-// =====================
-// OPEN ASSET VIEW BY SERIAL (FRONTEND)
-// =====================
 async function openAssetViewBySerial(serial) {
   try {
     console.group("ASSET VIEW DEBUG");
 
     // reset state
-    assetAllTasks = [];
-    assetActiveTasks = [];
-    assetHistoryTasks = [];
-    currentAssetSerial = serial;
+    state.assetAllTasks = [];
+    state.assetActiveTasks = [];
+    state.assetHistoryTasks = [];
+    state.currentAssetSerial = serial;
+    state.assetHistoryTypeFilter = "all";   // 🔥 IMPORTANT
 
     if (!serial) {
       alert("Missing serial number");
@@ -2178,31 +2171,37 @@ async function openAssetViewBySerial(serial) {
       return;
     }
 
-    if (!Array.isArray(tasksData)) {
+    if (!Array.isArray(state.tasksData)) {
       alert("tasksData not ready");
       console.groupEnd();
       return;
     }
 
     // =====================
-    // BUILD DATASETS FROM GLOBAL STATE
+    // BUILD DATASETS FROM STATE
     // =====================
-    assetAllTasks = tasksData.filter(
+    state.assetAllTasks = state.tasksData.filter(
       t => String(t.serial_number || "").trim() === serial
     );
 
-    assetActiveTasks = assetAllTasks.filter(
+    state.assetActiveTasks = state.assetAllTasks.filter(
       t => t.status === "Planned" || t.status === "Overdue"
     );
 
-    assetHistoryTasks = (Array.isArray(executionsData) ? executionsData : []).filter(
+    state.assetHistoryTasks = (Array.isArray(state.executionsData)
+      ? state.executionsData
+      : []
+    ).filter(
       e => String(e.serial_number || "").trim() === serial
     );
 
     // 🔢 History legend counts
-    updateAssetHistoryLegendCounts(assetHistoryTasks);
+    updateAssetHistoryLegendCounts(state.assetHistoryTasks);
 
-    if (assetAllTasks.length === 0 && assetHistoryTasks.length === 0) {
+    if (
+      state.assetAllTasks.length === 0 &&
+      state.assetHistoryTasks.length === 0
+    ) {
       alert("No records found for this asset");
       console.groupEnd();
       return;
@@ -2211,22 +2210,26 @@ async function openAssetViewBySerial(serial) {
     // =====================
     // HEADER + KPIs
     // =====================
-    const ref = assetAllTasks[0] || assetHistoryTasks[0];
+    const ref =
+      state.assetAllTasks[0] || state.assetHistoryTasks[0];
+
     renderAssetViewHeader({
       machine_name: ref.machine_name || ref.machine || "-",
       serial_number: serial,
       line_code: ref.line_code || ref.line || "-"
     });
 
-    renderAssetKpis(assetAllTasks, assetHistoryTasks);
-    renderAssetMttrKpis(currentAssetSerial);
+    renderAssetKpis(
+      state.assetAllTasks,
+      state.assetHistoryTasks
+    );
 
-    // =====================
-    // 🖨 PRINT PREVENTIVE PLAN BUTTON (SAFE)
-    // =====================
+    renderAssetMttrKpis(state.currentAssetSerial);
+
+    // 🖨 PRINT PREVENTIVE PLAN BUTTON
     const printBtn = document.getElementById("printAssetPreventiveBtn");
     if (printBtn) {
-      const hasPreventive = assetAllTasks.some(
+      const hasPreventive = state.assetAllTasks.some(
         t =>
           t.is_planned === true &&
           Number(t.frequency_hours) > 0 &&
@@ -2236,18 +2239,14 @@ async function openAssetViewBySerial(serial) {
       printBtn.style.display = hasPreventive ? "inline-flex" : "none";
     }
 
-    // bind tabs ONCE
     bindAssetTabs();
 
-    // open modal
     overlay.style.display = "flex";
     overlay.style.pointerEvents = "auto";
 
-    // default tab
     activateAssetTab("active");
 
-    // MTBF
-    renderAssetMtbf(currentAssetSerial);
+    renderAssetMtbf(state.currentAssetSerial);
 
     console.log("✅ Asset view opened");
     console.groupEnd();
@@ -2259,30 +2258,33 @@ async function openAssetViewBySerial(serial) {
 }
 
 // =====================
-// REFRESH ASSET VIEW DATA (FROM GLOBALS)
+// REFRESH ASSET VIEW DATA (FROM STATE)
 // =====================
 async function refreshAssetView() {
-  if (!currentAssetSerial) return;
+  if (!state.currentAssetSerial) return;
 
-  // 🔄 1️⃣ reload GLOBAL data
+  // 🔄 1️⃣ reload GLOBAL data (θα γεμίσουν state.tasksData / state.executionsData)
   await loadTasks();
   await loadHistory();
 
+  const serial = String(state.currentAssetSerial).trim();
+
   // 🔄 2️⃣ rebuild asset view data
-  assetAllTasks = tasksData.filter(
-    t => String(t.serial_number || "").trim() === currentAssetSerial
+  state.assetAllTasks = state.tasksData.filter(
+    t => String(t.serial_number || "").trim() === serial
   );
 
-  assetActiveTasks = assetAllTasks.filter(
+  state.assetActiveTasks = state.assetAllTasks.filter(
     t => t.status === "Planned" || t.status === "Overdue"
   );
 
-  assetHistoryTasks = executionsData.filter(
-    e => String(e.serial_number || "").trim() === currentAssetSerial
+  state.assetHistoryTasks = state.executionsData.filter(
+    e => String(e.serial_number || "").trim() === serial
   );
+
   // reset history legend filter to "all" on refresh
-  assetHistoryTypeFilter = "all";
-  updateAssetHistoryLegendCounts(assetHistoryTasks);
+  state.assetHistoryTypeFilter = "all"; // ⚠ αν υπάρχει στο state, αλλιώς πρόσθεσέ το
+  updateAssetHistoryLegendCounts(state.assetHistoryTasks);
   bindAssetHistoryLegendClicks();
   highlightActiveHistoryLegend();
 
@@ -2302,29 +2304,21 @@ function renderAssetMtbf(serial) {
 
   if (!mtbfEl || !lastEl) return;
 
-  // breakdowns μόνο
-  const breakdowns = assetHistoryTasks.filter(
-    e => e.is_planned === false
-  );
+  const breakdowns = Array.isArray(state.assetHistoryTasks)
+    ? state.assetHistoryTasks.filter(e => e.is_planned === false)
+    : [];
 
-  // MTBF
   const mtbfMin = calculateMtbfMinutes(breakdowns);
 
-  if (mtbfMin == null) {
-    mtbfEl.textContent = "—";
-  } else {
-    mtbfEl.textContent = formatDuration(mtbfMin);
-  }
+  mtbfEl.textContent =
+    mtbfMin == null ? "—" : formatDuration(mtbfMin);
 
-  // Last Breakdown
   const lastDate = getLastBreakdownDate(breakdowns);
 
-  if (!lastDate) {
-    lastEl.textContent = "No breakdowns recorded";
-  } else {
-    lastEl.textContent =
-      `Last breakdown: ${formatDate(lastDate)}`;
-  }
+  lastEl.textContent =
+    !lastDate
+      ? "No breakdowns recorded"
+      : `Last breakdown: ${formatDate(lastDate)}`;
 }
 
 // =====================
@@ -2438,7 +2432,7 @@ function renderAssetTasksTable(tasks) {
   if (historyWrap) historyWrap.style.display = "none";
 
   tbody.innerHTML = "";
-  assetSelectedTaskIds.clear(); // reset on render
+  state.assetSelectedTaskIds.clear(); // reset on render
   updateAssetBulkActionsBar();  // hide bar on refresh
 
   if (!tasks || tasks.length === 0) {
@@ -2491,9 +2485,9 @@ function renderAssetTasksTable(tasks) {
       e.stopPropagation();
 
       if (checkbox.checked) {
-        assetSelectedTaskIds.add(t.id);
+        state.assetSelectedTaskIds.add(t.id);
       } else {
-        assetSelectedTaskIds.delete(t.id);
+        state.assetSelectedTaskIds.delete(t.id);
       }
 
       updateAssetBulkActionsBar();
@@ -2522,7 +2516,7 @@ function renderAssetTasksTable(tasks) {
 
     tr.addEventListener("click", () => {
     // 🛑 Αν είμαστε σε bulk select mode, ΜΗΝ ανοίγεις task view
-    if (assetSelectedTaskIds.size > 0) {
+    if (state.assetSelectedTaskIds.size > 0) {
       return;
     }
 
@@ -2546,7 +2540,7 @@ function updateAssetBulkActionsBar() {
 
   if (!bar || !countEl) return;
 
-  const count = assetSelectedTaskIds.size;
+  const count = state.assetSelectedTaskIds.size;
 
   if (count > 0) {
     countEl.textContent = count;
@@ -2557,7 +2551,7 @@ function updateAssetBulkActionsBar() {
 }
 
 function clearAssetBulkSelection() {
-  assetSelectedTaskIds.clear();
+  state.assetSelectedTaskIds.clear();
 
   document
     .querySelectorAll("#assetTasksTable tbody input[type='checkbox']")
@@ -2595,14 +2589,14 @@ function bindAssetKpiFilters() {
 
         if (filter === "planned") {
           renderAssetTasksTable(
-            assetScopedTasks.filter(t => t.status === "Planned")
+            state.assetScopedTasks.filter(t => t.status === "Planned")
           );
         } else if (filter === "overdue") {
           renderAssetTasksTable(
-            assetScopedTasks.filter(t => t.status === "Overdue")
+            state.assetScopedTasks.filter(t => t.status === "Overdue")
           );
         } else {
-          renderAssetTasksTable(assetScopedTasks);
+          renderAssetTasksTable(state.assetScopedTasks);
         }
       };
     });
@@ -2639,11 +2633,11 @@ function renderAssetHistoryTable(history) {
      APPLY TYPE FILTER
   ===================== */
   const filtered =
-    assetHistoryTypeFilter === "all"
+    state.assetHistoryTypeFilter === "all"
       ? list
       : list.filter(e => {
           const t = getExecutionType(e);
-          return t === assetHistoryTypeFilter;
+          return t === state.assetHistoryTypeFilter;
         });
 
   if (filtered.length === 0) {
@@ -2691,16 +2685,24 @@ function renderAssetHistoryTable(history) {
 // =====================
 // CLOSE
 // =====================
- function closeAssetView() {
-  document.getElementById("assetViewOverlay").style.display = "none";
+function closeAssetView() {
+  const overlay = document.getElementById("assetViewOverlay");
+  if (overlay) overlay.style.display = "none";
 
-  assetAllTasks = [];
-  assetActiveTasks = [];
-  assetHistoryTasks = [];
-  currentAssetSerial = null;
+  // ✅ reset state (asset view scope)
+  state.assetAllTasks = [];
+  state.assetActiveTasks = [];
+  state.assetHistoryTasks = [];
+  state.currentAssetSerial = null;
 
-  document.querySelector("#assetTasksTable tbody").innerHTML = "";
+  // ✅ reset selection / filter (safe)
+  state.assetSelectedTaskIds?.clear?.();
+  state.assetHistoryTypeFilter = "all";
+
+  const tbody = document.querySelector("#assetTasksTable tbody");
+  if (tbody) tbody.innerHTML = "";
 }
+
 // =====================
 // ASSET BULK ACTIONS – EVENT HANDLERS (STEP 2)
 // =====================
@@ -2710,8 +2712,8 @@ document.addEventListener("click", e => {
   }
 
   if (e.target.id === "assetBulkDoneBtn") {
-    if (assetSelectedTaskIds.size === 0) return;
-    bulkDoneMode = true;
+    if (state.assetSelectedTaskIds.size === 0) return;
+    state.bulkDoneMode = true;
     openBulkDoneModal();
   }
 });
@@ -2861,7 +2863,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   }
 
       // 🔍 Find asset serial from selected assetId
-    const assetObj = (assetsData || []).find(a =>
+    const assetObj = (state.assetsData || []).find(a =>
       String(a.id) === String(assetId)
     );
 
@@ -2952,10 +2954,10 @@ function resetAddTaskAssetContext() {
 // SAVE TASK EDIT (PUT – METADATA ONLY)
 // =====================
 async function saveTaskEdit() {
-  if (!currentViewedTask) return;
+  if (!state.currentViewedTask) return;
 
   // 🔒 Safety check
-  if (!canEditTask(currentViewedTask)) {
+  if (!canEditTask(state.currentViewedTask)) {
     alert("This task cannot be edited");
     return;
   }
@@ -2976,7 +2978,7 @@ async function saveTaskEdit() {
   }
 
   try {
-    const res = await fetch(`${API}/tasks/${currentViewedTask.id}`, {
+    const res = await fetch(`${API}/tasks/${state.currentViewedTask.id}`, {
       method: "PUT", // 👈 ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -2988,7 +2990,7 @@ async function saveTaskEdit() {
     }
 
     // success
-    currentViewedTask = null;
+    state.currentViewedTask = null;
 
     // Close modal
     closeTaskView();
@@ -3011,7 +3013,7 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
   e.preventDefault();
 
   // 🔑 Ensure assets are loaded
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     await loadAssets();
   }
 
@@ -3034,7 +3036,7 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
     assetSel.innerHTML = `<option value="">Select Asset</option>`;
     assetSel.disabled = false; // allow asset selection in free Add Task
   }
-  console.log("ASSETS DATA:", assetsData);
+  console.log("ASSETS DATA:", state.assetsData);
 
   overlay.style.display = "flex";
 });
@@ -3052,7 +3054,7 @@ async function openAddTaskForAsset(machine, serial, line) {
   }
 
   // 🔑 Ensure assets are loaded
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     await loadAssets();
   }
 
@@ -3131,15 +3133,15 @@ async function openAddTaskForAsset(machine, serial, line) {
 document.getElementById("assetAddTaskBtn")
   ?.addEventListener("click", () => {
 
-    if (!currentAssetSerial) {
+    if (!state.currentAssetSerial) {
       alert("Asset context missing");
       return;
     }
 
     const ref =
       assetAllTasks[0] ||
-      assetsData.find(a =>
-        String(a.serial_number).trim() === String(currentAssetSerial).trim()
+      state.assetsData.find(a =>
+        String(a.serial_number).trim() === String(state.currentAssetSerial).trim()
       );
 
     if (!ref) {
@@ -3155,7 +3157,7 @@ document.getElementById("assetAddTaskBtn")
 
     openAddTaskForAsset(
       ref.machine_name || ref.model,
-      currentAssetSerial,
+      state.currentAssetSerial,
       ref.line_code || ref.line
     );
   });
@@ -3167,11 +3169,11 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("#createFollowupTaskBtn");
   if (!btn) return;
 
-  if (!currentViewedTask) return;
-  const t = currentViewedTask;
+  if (!state.currentViewedTask) return;
+  const t = state.currentViewedTask;
 
   // 🔒 Ensure assets loaded (CRITICAL)
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     await loadAssets();
   }
 
@@ -3195,8 +3197,8 @@ if (typeSelect) {
   if (title) title.textContent = "New Follow-up Task";
 
   // 🔹 Prefill Section (FOLLOW-UP)
-followUpSectionValue = t.section || null;
-lockSectionOnce = !!followUpSectionValue;
+state.followUpSectionValue = t.section || null;
+state.lockSectionOnce = !!state.followUpSectionValue;
 
   const unitEl = document.getElementById("nt-unit");
   if (unitEl) unitEl.value = t.unit || "";
@@ -3221,13 +3223,13 @@ lockSectionOnce = !!followUpSectionValue;
     (v ?? "").toString().trim().toUpperCase();
 
   const match =
-    (assetsData || []).find(a =>
+    (state.assetsData || []).find(a =>
       normStr(a.line) === normStr(line) &&
       normStr(a.model) === normStr(t.machine_name) &&
       normStr(a.serial_number) === normStr(t.serial_number)
     )
     // fallback: serial usually unique
-    || (assetsData || []).find(a =>
+    || (state.assetsData || []).find(a =>
       normStr(a.serial_number) === normStr(t.serial_number)
     );
 
@@ -3261,7 +3263,7 @@ function populateAssetSelectForLine(line) {
 
   if (!line) return;
 
-  const filtered = (assetsData || []).filter(a => (a.line || "") === line);
+  const filtered = (state.assetsData || []).filter(a => (a.line || "") === line);
 
   filtered.forEach(a => {
     const opt = document.createElement("option");
@@ -3294,7 +3296,7 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
 
   if (!line) return;
 
-  const filtered = assetsData.filter(a => a.line === line);
+  const filtered = state.assetsData.filter(a => a.line === line);
 
   filtered.forEach(a => {
     const opt = document.createElement("option");
@@ -3320,8 +3322,8 @@ function resetSectionLockState() {
   }
 
   // reset follow-up flags
-  lockSectionOnce = false;
-  followUpSectionValue = null;
+  state.lockSectionOnce = false;
+  state.followUpSectionValue = null;
 }
 
   /* =====================
@@ -3340,10 +3342,10 @@ document.getElementById("cancelAddTask")?.addEventListener("click", () => {
    - Prefills existing task notes (if any)
 ===================== */
 function askTechnician(id) {
-  pendingTaskId = id;
+  state.pendingTaskId = id;
 
   // 🔍 find task from loaded tasks
-  const task = tasksData.find(t => t.id === id);
+  const task = state.tasksData.find(t => t.id === id);
 
   if (!task) {
     alert("Task not found");
@@ -3370,7 +3372,7 @@ function askTechnician(id) {
    OPEN CONFIRM DONE MODAL (BULK)
 ===================== */
 function openBulkDoneModal() {
-  pendingTaskId = null;
+  state.pendingTaskId = null;
 
   // 📅 default completion date = today
   const today = new Date().toISOString().split("T")[0];
@@ -3396,7 +3398,7 @@ function openBulkDoneModal() {
 ===================== */
 getEl("cancelDone")?.addEventListener("click", () => {
   getEl("modalOverlay").style.display = "none";
-  pendingTaskId = null;
+  state.pendingTaskId = null;
 });
 
 /* =====================
@@ -3418,12 +3420,12 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     // =====================
     // 🟢 BULK DONE PATH
     // =====================
-    if (bulkDoneMode === true) {
+    if (state.bulkDoneMode === true) {
       const res = await fetch(`${API}/tasks/bulk-done`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          taskIds: [...assetSelectedTaskIds],
+          taskIds: [...state.assetSelectedTaskIds],
           completed_by: name,
           completed_at: completedAt,
           notes
@@ -3435,13 +3437,13 @@ getEl("confirmDone")?.addEventListener("click", async () => {
         throw new Error(err.error || "Bulk complete failed");
       }
 
-      const completedCount = assetSelectedTaskIds.size;
+      const completedCount = state.assetSelectedTaskIds.size;
 
       // =====================
       // 🧹 RESET BULK STATE + UI
       // =====================
-      bulkDoneMode = false;
-      assetSelectedTaskIds.clear();
+      state.bulkDoneMode = false;
+      state.assetSelectedTaskIds.clear();
 
       document
         .querySelectorAll(".asset-task-checkbox")
@@ -3460,8 +3462,8 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       }
 
       // 🔄 REFRESH ASSET VIEW (AFTER DATA IS FRESH)
-      if (currentAssetSerial) {
-        await openAssetViewBySerial(currentAssetSerial);
+      if (state.currentAssetSerial) {
+        await openAssetViewBySerial(state.currentAssetSerial);
         activateAssetTab("active");
       }
 
@@ -3475,7 +3477,7 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     // 🔵 SINGLE DONE PATH
     // =====================
     else {
-      const res = await fetch(`${API}/tasks/${pendingTaskId}`, {
+      const res = await fetch(`${API}/tasks/${state.pendingTaskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3490,7 +3492,7 @@ getEl("confirmDone")?.addEventListener("click", async () => {
         throw new Error(err.error || "Failed to complete task");
       }
 
-      pendingTaskId = null;
+      state.pendingTaskId = null;
     }
 
     // =====================
@@ -3580,7 +3582,7 @@ window.undoExecution = undoExecution;
 async function loadExecutions() {
   try {
     const res = await fetch(`${API}/executions`);
-    executionsData = await res.json();
+    state.executionsData = await res.json();
     console.log("EXECUTIONS LOADED:", executionsData.length);
   } catch (err) {
     console.error("Failed to load executions", err);
@@ -3591,9 +3593,9 @@ async function loadExecutions() {
 ===================== */
 
 function getLastActivityForAsset(serial) {
-  if (!Array.isArray(executionsData) || !serial) return null;
+  if (!Array.isArray(state.executionsData) || !serial) return null;
 
-  const list = executionsData
+  const list = state.executionsData
     .filter(e => String(e.serial_number || "").trim() === String(serial).trim())
     .sort((a, b) => new Date(b.executed_at || 0) - new Date(a.executed_at || 0));
 
@@ -3612,25 +3614,21 @@ function getLastActivityForAsset(serial) {
 }
 
 
-/* =====================
-   ASSETS (CRUD)
-===================== */
-
 async function loadAssets() {
   try {
     const res = await fetch(`${API}/assets`);
-    assetsData = await res.json();
-    state.assetsData = assetsData; // sync to global state
-    console.log("ASSETS SAMPLE:", assetsData[0]);
+    state.assetsData = await res.json(); // ✅ μόνο αυτό
+
+    console.log("ASSETS SAMPLE:", state.assetsData[0]);
 
     populateAssetLineFilter();
 
     const sel = document.getElementById("assetLineFilter");
     if (sel) {
-      sel.onchange = renderAssetsCards; // use unified renderer (cards / table)
+      sel.onchange = renderAssetsCards;
     }
 
-    renderAssetsCards(); // default render (cards)
+    renderAssetsCards();
   } catch (err) {
     console.error("Failed to load assets", err);
   }
@@ -3656,12 +3654,12 @@ function renderAssetsCards() {
 
   wrap.innerHTML = "";
 
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     wrap.innerHTML = `<div class="empty">No assets</div>`;
     return;
   }
 
-  const filteredAssets = assetsData.filter(a =>
+  const filteredAssets = state.assetsData.filter(a =>
     selectedLine === "all" || a.line === selectedLine
   );
 
@@ -3858,7 +3856,6 @@ function renderAssetsCards() {
 }
 
 
-
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
 ============================================*/
@@ -3867,7 +3864,7 @@ function renderAssetsTable() {
   const tbody = document.querySelector("#assetsTable tbody");
   if (!tbody) return;
   
-  if (!Array.isArray(tasksData) || tasksData.length === 0) {
+  if (!Array.isArray(state.tasksData) || tasksData.length === 0) {
   console.log("Assets cards waiting for tasks...");
   return;
 }
@@ -3878,15 +3875,15 @@ function renderAssetsTable() {
   tbody.innerHTML = "";
 
   // ✅ Guard: αν δεν έχει φορτώσει assetsData ακόμα
-  if (!Array.isArray(assetsData)) {
-    console.warn("renderAssetsTable: assetsData is not ready", assetsData);
+  if (!Array.isArray(state.assetsData)) {
+    console.warn("renderAssetsTable: assetsData is not ready", state.assetsData);
     const tr = document.createElement("tr");
     tr.innerHTML = `<td colspan="5" style="text-align:center;">No assets</td>`;
     tbody.appendChild(tr);
     return;
   }
 
-  const filteredAssets = assetsData.filter(a =>
+  const filteredAssets = state.assetsData.filter(a =>
     selectedLine === "all" || a.line === selectedLine
   );
 
@@ -3899,7 +3896,7 @@ function renderAssetsTable() {
 
   // ✅ Guard: executionsData μπορεί να μην υπάρχει καν σαν μεταβλητή
   const hasExecutionsData =
-    (typeof executionsData !== "undefined") && Array.isArray(executionsData);
+    (typeof state.executionsData !== "undefined") && Array.isArray(state.executionsData);
 
   if (!hasExecutionsData) {
     console.warn("renderAssetsTable: executionsData not ready yet (Last Activity will be —)");
@@ -3937,10 +3934,10 @@ const relativeAgo = (iso) => {
   return `${day}d ago`;
 };
 
-if (Array.isArray(executionsData)) {
+if (Array.isArray(state.executionsData)) {
   const serialA = String(a.serial_number || "").trim();
 
-  const lastExec = executionsData
+  const lastExec = state.executionsData
     .filter(e => String(e.serial_number || "").trim() === serialA)
     .sort((x, y) => new Date(y.executed_at || 0) - new Date(x.executed_at || 0))[0];
 
@@ -4130,12 +4127,12 @@ async function loadMachineModelsForAsset() {
 document
   .getElementById("printAssetPreventiveBtn")
   ?.addEventListener("click", () => {
-    if (!currentAssetSerial) {
+    if (!state.currentAssetSerial) {
       alert("No asset selected");
       return;
     }
 
-    printAssetPreventivePlan(currentAssetSerial);
+    printAssetPreventivePlan(state.currentAssetSerial);
   });
 
 
@@ -4181,7 +4178,7 @@ let editingAssetId = null;
 
 async function editAsset(assetId) {
   try {
-    const asset = assetsData.find(a => a.id === assetId);
+    const asset = state.assetsData.find(a => a.id === assetId);
     if (!asset) return alert("Asset not found");
 
     editingAssetId = assetId;
@@ -4459,7 +4456,7 @@ function populateAssetLineFilter() {
   sel.innerHTML = `<option value="all">All</option>`;
 
   const lines = [...new Set(
-    assetsData.map(a => a.line).filter(Boolean)
+    state.assetsData.map(a => a.line).filter(Boolean)
   )];
 
   lines.sort().forEach(line => {
@@ -4506,24 +4503,24 @@ document.getElementById("assetMachine")?.addEventListener("change", e => {
 async function loadMttrData() {
   try {
     const res = await fetch(`${API}/kpis/mttr`);
-    mttrData = await res.json();
+    state.mttrData = await res.json();
   } catch (err) {
     console.error("Failed to load MTTR data", err);
-    mttrData = [];
+    state.mttrData = [];
   }
 }
 // =====================
 // MTTR PER ASSET (minutes)
 // =====================
 function getAssetMttrBySerial(serial) {
-  if (!serial || !Array.isArray(executionsData)) {
+  if (!serial || !Array.isArray(state.executionsData)) {
     return null;
   }
 
   const serialKey = String(serial).trim();
 
   // 🔥 ΜΟΝΟ breakdown executions
-  const breakdowns = executionsData.filter(e =>
+  const breakdowns = state.executionsData.filter(e =>
     String(e.serial_number || "").trim() === serialKey &&
     e.is_planned === false &&
     Number.isFinite(Number(e.duration_min)) &&
@@ -4551,7 +4548,7 @@ function getAssetMttrBySerial(serial) {
 ===================== */
 
 function getLastBreakdownInfo(serial) {
-  const list = (Array.isArray(executionsData) ? executionsData : [])
+  const list = (Array.isArray(state.executionsData) ? state.executionsData : [])
     .filter(e =>
       String(e.serial_number || "").trim() === String(serial).trim() &&
       e.is_planned === false
@@ -4571,7 +4568,7 @@ function getLastBreakdownInfo(serial) {
 ===================== */
 async function loadReports() {
   // 🔴 αν δεν έχουμε assets, φόρτωσέ τα πρώτα
-  if (!Array.isArray(assetsData) || assetsData.length === 0) {
+  if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
     await loadAssets();
   }
 
@@ -4594,17 +4591,17 @@ async function loadReports() {
 ===================== */
 function populateReportLines() {
 
-  console.log("REPORT LINES assetsData =", assetsData);
+  console.log("REPORT LINES assetsData =", state.assetsData);
 
   const sel = document.getElementById("reportLine");
   if (!sel) return;
 
   sel.innerHTML = `<option value="all">ALL</option>`;
 
-  if (!Array.isArray(assetsData)) return;
+  if (!Array.isArray(state.assetsData)) return;
 
   const lines = [...new Set(
-    assetsData.map(a => a.line).filter(Boolean)
+    state.assetsData.map(a => a.line).filter(Boolean)
   )];
 
   lines.sort().forEach(line => {
@@ -4705,7 +4702,7 @@ function getFilteredTasksForStatusReport() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return tasksData
+  return state.tasksData
 
     // LINE FILTER
     .filter(t => {
@@ -4802,7 +4799,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     // ✅ 🔥 THE FIX – LIBRARY
     if (sel === "library") {
       (async () => {
-        if (!Array.isArray(assetsData) || assetsData.length === 0) {
+        if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {
           await loadAssets(); // ⬅️ ΤΟ ΕΛΕΙΠΕ
         }
         loadLibrary();
@@ -4893,11 +4890,11 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 
   btns.forEach(btn => {
     btn.addEventListener("click", () => {
-      activeDateFilter = btn.dataset.filter;
+      state.activeDateFilter = btn.dataset.filter;
 
       // 🔴 RESET custom date range (MASTER FIX)
-      taskDateFrom = null;
-      taskDateTo = null;
+      state.taskDateFrom = null;
+      state.taskDateTo = null;
 
       const fromEl = document.getElementById("taskDateFrom");
       const toEl = document.getElementById("taskDateTo");
@@ -4919,14 +4916,14 @@ function onTaskDateRangeChange() {
   const fromVal = document.getElementById("taskDateFrom")?.value;
   const toVal = document.getElementById("taskDateTo")?.value;
 
-  taskDateFrom = fromVal ? new Date(fromVal) : null;
-  taskDateTo = toVal ? new Date(toVal) : null;
+  state.taskDateFrom = fromVal ? new Date(fromVal) : null;
+  state.taskDateTo = toVal ? new Date(toVal) : null;
 
-  if (taskDateFrom) taskDateFrom.setHours(0, 0, 0, 0);
-  if (taskDateTo) taskDateTo.setHours(23, 59, 59, 999);
+  if (state.taskDateFrom) state.taskDateFrom.setHours(0, 0, 0, 0);
+  if (state.taskDateTo) state.taskDateTo.setHours(23, 59, 59, 999);
 
   // 🔁 RESET QUICK DATE FILTERS (ALL / TODAY / WEEK / OVERDUE)
-  activeDateFilter = "all";
+  state.activeDateFilter = "all";
 
   document
     .querySelectorAll(".date-filter-btn")
