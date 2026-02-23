@@ -118,7 +118,7 @@ function detectPreventiveRuleImpact({
   frequency_hours,
   excludeAssetId
 }) {
-  if (!Array.isArray(tasksData) || !Array.isArray(state.assetsData)) {
+  if (!Array.isArray(state.tasksData) || !Array.isArray(state.assetsData)) {
     return { assets: 0, models: 0 };
   }
 
@@ -503,7 +503,6 @@ function generateLibraryFromTasks() {
   saveLibrary();
   populateLibraryModels();
   renderLibraryTable(); 
-
 }
 
 function renderLibrarySummary(plans) {
@@ -914,32 +913,82 @@ function populatePreventiveAssets() {
     sel.appendChild(opt);
   });
 }
+// =====================
+// POPULATE SECTION / UNIT FROM TASKS (BY MODEL)
+// =====================
+function populateContextDropdown({
+  model,
+  field,
+  selectId,
+  allLabel,
+  newLabel
+}) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = allLabel || "All";
+  select.appendChild(optAll);
+
+  if (!model || !Array.isArray(state.tasksData)) return;
+
+  const values = Array.from(
+    new Set(
+      state.tasksData
+        .filter(t => t.machine_name === model)
+        .map(t => (t[field] || "").toString().trim())
+        .filter(v => v !== "")
+    )
+  ).sort((a, b) => a.localeCompare(b, "el"));
+
+  values.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    select.appendChild(opt);
+  });
+
+  if (values.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled = true;
+    sep.textContent = "──────────";
+    select.appendChild(sep);
+  }
+
+  const optNew = document.createElement("option");
+  optNew.value = "__new__";
+  optNew.textContent = newLabel || "➕ New";
+  select.appendChild(optNew);
+
+  console.log(`[populateContextDropdown] ${field}:`, values);
+}
+
+
+// =====================
+// ASSET CHANGE HANDLER
+// =====================
 document.getElementById("pm-asset")?.addEventListener("change", e => {
-  console.log("[PM ASSET CHANGE] fired");
+
   const sel = e.target;
   const opt = sel.options[sel.selectedIndex];
-  console.log("[PM ASSET CHANGE] selected option =", opt);
 
   if (!opt || !opt.value) {
-    console.warn("[PM ASSET CHANGE] no option or empty value");
     clearPreventiveAssetContext();
     return;
   }
-  console.log("[PM ASSET CHANGE] dataset =", opt.dataset);
-
-  // =====================
-  // AUTO-FILL CONTEXT
-  // =====================
-  setVal("pm-line", opt.dataset.line);
-  setVal("pm-machine", opt.dataset.model);
-  setVal("pm-serial", opt.dataset.serial);
-  lockPreventiveAssetFields(true);
 
   const model = opt.dataset.model;
 
-  // =====================
-  // POPULATE SECTION / UNIT
-  // =====================
+  // AUTO-FILL
+  setVal("pm-line", opt.dataset.line || "");
+  setVal("pm-machine", model || "");
+  setVal("pm-serial", opt.dataset.serial || "");
+  lockPreventiveAssetFields(true);
+
+  // SECTION
   populateContextDropdown({
     model,
     field: "section",
@@ -948,6 +997,7 @@ document.getElementById("pm-asset")?.addEventListener("change", e => {
     newLabel: "➕ New section…"
   });
 
+  // UNIT
   populateContextDropdown({
     model,
     field: "unit",
@@ -1325,7 +1375,7 @@ document
 // =====================
 
 function calculateAffectedAssetsForRule(rule) {
-  if (!Array.isArray(tasksData)) return 0;
+  if (!Array.isArray(state.tasksData)) return 0;
 
   const assets = new Set();
 
@@ -1610,7 +1660,7 @@ function populateContextDropdown({
   optAll.textContent = allLabel;
   select.appendChild(optAll);
 
-  if (!model || !Array.isArray(tasksData)) return;
+  if (!model || !Array.isArray(state.tasksData)) return;
 
   // =====================
   // COLLECT FROM TASKS
@@ -1644,6 +1694,63 @@ function populateContextDropdown({
   const optNew = document.createElement("option");
   optNew.value = "__new__";
   optNew.textContent = newLabel;
+  select.appendChild(optNew);
+}
+document.getElementById("pm-section")?.addEventListener("change", e => {
+  const section = e.target.value;
+  const model = document.getElementById("pm-machine")?.value;
+
+  const unitSelect = document.getElementById("pm-unit");
+  if (!unitSelect) return;
+
+  unitSelect.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All units";
+  unitSelect.appendChild(optAll);
+
+  if (!section || !model || !Array.isArray(state.tasksData)) {
+    addNewUnitOption(unitSelect);
+    return;
+  }
+
+  const values = Array.from(
+    new Set(
+      state.tasksData
+        .filter(t =>
+          t.machine_name === model &&
+          t.section === section
+        )
+        .map(t => (t.unit || "").toString().trim())
+        .filter(v => v !== "")
+    )
+  ).sort((a, b) => a.localeCompare(b, "el"));
+
+  values.forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = val;
+    unitSelect.appendChild(opt);
+  });
+
+  if (values.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled = true;
+    sep.textContent = "──────────";
+    unitSelect.appendChild(sep);
+  }
+
+  addNewUnitOption(unitSelect);
+
+  console.log("Units for section:", values);
+});
+
+
+function addNewUnitOption(select) {
+  const optNew = document.createElement("option");
+  optNew.value = "__new__";
+  optNew.textContent = "➕ New unit…";
   select.appendChild(optNew);
 }
 
