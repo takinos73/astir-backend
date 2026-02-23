@@ -63,6 +63,3 @@ export const state = {
   // =====================
   pendingTaskId: null
 };
-
-// 🔥 CRITICAL: expose globally για να μη σπάσει τίποτα
-window.state = state;
