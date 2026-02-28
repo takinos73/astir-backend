@@ -783,6 +783,15 @@ document
 
       if (applyToAll) {
         try {
+          console.log("APPLY DEBUG:", {
+            assetId,
+            selectedAsset,
+            model,
+            section: getContextValue("pm-section", "pm-section-custom"),
+            unit: getContextValue("pm-unit", "pm-unit-custom"),
+            taskText,
+            frequency_hours
+          });
           await applyPreventiveRule({
             model, // 🔥 ΑΥΤΟ ΛΕΙΠΕ
             section: getContextValue("pm-section", "pm-section-custom"),
