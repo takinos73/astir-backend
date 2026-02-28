@@ -762,16 +762,26 @@ document
     // MULTI-ASSET APPLY (ADD PREVENTIVE)
     // =====================
     const selectedAsset = state.assetsData.find(
-      a => a.id === Number(assetId)
+      a => String(a.id) === String(assetId)
     );
 
-    const model = selectedAsset?.model;
+    // 🔥 SAFE MODEL RESOLVE
+    const model =
+      selectedAsset?.model ||
+      document.getElementById("libraryModelSelect")?.value ||
+      null;
+
+    if (!model) {
+      alert("Asset model not found");
+      return;
+    }
 
     const sameModelAssets = state.assetsData.filter(
       a => a.model === model
     );
 
     if (sameModelAssets.length > 1) {
+
       const msg =
         `This preventive rule will apply to:\n\n` +
         `• ${sameModelAssets.length} assets\n` +
@@ -783,21 +793,26 @@ document
 
       if (applyToAll) {
         try {
+
+          const sectionValue = getContextValue("pm-section", "pm-section-custom");
+          const unitValue = getContextValue("pm-unit", "pm-unit-custom");
+
           console.log("APPLY DEBUG:", {
             assetId,
             selectedAsset,
             model,
-            section: getContextValue("pm-section", "pm-section-custom"),
-            unit: getContextValue("pm-unit", "pm-unit-custom"),
+            section: sectionValue,
+            unit: unitValue,
             taskText,
             frequency_hours
           });
+
           await applyPreventiveRule({
-            model, // 🔥 ΑΥΤΟ ΛΕΙΠΕ
-            section: getContextValue("pm-section", "pm-section-custom"),
+            model,
+            section: sectionValue,
             task: taskText,
             frequency_hours,
-            unit: getContextValue("pm-unit", "pm-unit-custom"),
+            unit: unitValue,
             type: getVal("pm-type") || null,
             duration_min: Number(getVal("pm-duration")) || null,
             notes: getVal("pm-notes") || null
@@ -818,7 +833,8 @@ document
             `Applied to ${sameModelAssets.length} assets (model ${model})`
           );
 
-          return; // ⛔ STOP single-asset flow
+          return;
+
         } catch (err) {
           console.error("APPLY PREVENTIVE RULE ERROR:", err);
           alert(err.message);
