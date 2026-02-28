@@ -1487,14 +1487,6 @@ function openPreventiveConfirm() {
 function closePreventiveConfirm() {
   document.getElementById("confirmPreventiveApplyOverlay").style.display = "none";
 }
-/* =====================
-   APPLY PREVENTIVE RULE TO ASSETS
-   - Creates or updates preventive tasks based on the rule's model + frequency
-    - If a preventive with the same model + frequency exists, it updates the existing one
-    - Otherwise, it creates a new preventive task
-    - This allows for both one-off and reusable preventive rules
-===================== */
-
 async function applyPreventiveRule(rule) {
 
   if (!rule) {
@@ -1502,8 +1494,15 @@ async function applyPreventiveRule(rule) {
     return;
   }
 
+  // 🔥 SAFE MODEL RESOLUTION
+  const resolvedModel =
+    rule.model ||
+    document.getElementById("libraryModelSelect")?.value ||
+    window.currentEditPreventive?.model ||
+    null;
+
   const payload = {
-    model: rule.model,
+    model: resolvedModel,
     section: rule.section,
     task: rule.task,
     frequency_hours: rule.frequency_hours,
@@ -1513,7 +1512,7 @@ async function applyPreventiveRule(rule) {
     notes: rule.notes || null
   };
 
-  // 🔎 HARD VALIDATION (frontend safety)
+  // 🔎 FRONTEND VALIDATION
   if (!payload.model || !payload.section || !payload.task || !payload.frequency_hours) {
     console.error("INVALID PAYLOAD:", payload);
     alert("Missing required fields");
