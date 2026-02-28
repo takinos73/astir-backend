@@ -784,10 +784,10 @@ document
       if (applyToAll) {
         try {
           await applyPreventiveRule({
-            section: getVal("pm-section") || null,
+            section: getContextValue("pm-section", "pm-section-custom"),
             task: taskText,
             frequency_hours,
-            unit: getVal("pm-unit") || null,
+            unit: getContextValue("pm-unit", "pm-unit-custom"),
             type: getVal("pm-type") || null,
             duration_min: Number(getVal("pm-duration")) || null,
             notes: getVal("pm-notes") || null
@@ -1745,7 +1745,6 @@ document.getElementById("pm-section")?.addEventListener("change", e => {
 
   console.log("Units for section:", values);
 });
-
 
 function addNewUnitOption(select) {
   const optNew = document.createElement("option");
