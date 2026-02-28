@@ -3291,11 +3291,30 @@ function resetSectionLockState() {
     CANCEL ADD TASK
   ===================== */ 
     
-document.getElementById("cancelAddTask")?.addEventListener("click", () => {
+  document.getElementById("cancelAddTask")?.addEventListener("click", () => {
   resetSectionLockState();
   document.getElementById("addTaskOverlay").style.display = "none";
 });
+  /* =================================
+  TECHNITIANS DROPDOWN (ADD + EDIT TASK)
+  =================================== */
 
+  function populateTechnicianDropdown() {
+    const sel = document.getElementById("technicianSelect");
+    if (!sel || !Array.isArray(state.techniciansData)) return;
+
+    sel.innerHTML = `<option value="">Επιλέξτε τεχνικό</option>`;
+
+    state.techniciansData
+      .filter(t => t.active !== false)
+      .sort((a, b) => a.name.localeCompare(b.name, "el"))
+      .forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;          // 👈 IMPORTANT (ID)
+        opt.textContent = t.name;  // 👈 Visible name
+        sel.appendChild(opt);
+      });
+  }
 
 /* =====================
    OPEN CONFIRM DONE MODAL
@@ -3366,8 +3385,18 @@ getEl("cancelDone")?.addEventListener("click", () => {
    CONFIRM TASK DONE (SINGLE + BULK)
 ===================== */
 getEl("confirmDone")?.addEventListener("click", async () => {
-  const name = getEl("technicianInput")?.value.trim();
-  if (!name) return alert("Δώσε όνομα τεχνικού");
+
+  // 🔑 NEW: technician dropdown
+  const technicianSelect = getEl("technicianSelect");
+  const technicianId = technicianSelect?.value;
+
+  if (!technicianId) {
+    return alert("Επέλεξε τεχνικό");
+  }
+
+  // 👇 Keep name for backward compatibility
+  const technicianName =
+    technicianSelect.options[technicianSelect.selectedIndex]?.textContent || null;
 
   const notes =
     getEl("doneNotesInput")?.value.trim() || null;
@@ -3378,16 +3407,19 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     : new Date().toISOString();
 
   try {
+
     // =====================
     // 🟢 BULK DONE PATH
     // =====================
     if (state.bulkDoneMode === true) {
+
       const res = await fetch(`${API}/tasks/bulk-done`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           taskIds: [...state.assetSelectedTaskIds],
-          completed_by: name,
+          technician_id: Number(technicianId),   // ✅ NEW
+          completed_by: technicianName,          // ✅ keep legacy
           completed_at: completedAt,
           notes
         })
@@ -3417,20 +3449,15 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       await loadTasks();
       await loadHistory();
 
-      // 🔄 REFRESH ASSET CARDS (stats, risk dots, counts)
       if (typeof renderAssetsCards === "function") {
         renderAssetsCards();
       }
 
-      // 🔄 REFRESH ASSET VIEW (AFTER DATA IS FRESH)
       if (state.currentAssetSerial) {
         await openAssetViewBySerial(state.currentAssetSerial);
         activateAssetTab("active");
       }
 
-      // =====================
-      // ✅ FEEDBACK
-      // =====================
       alert(`✔ ${completedCount} εργασίες ολοκληρώθηκαν`);
     }
 
@@ -3438,11 +3465,13 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     // 🔵 SINGLE DONE PATH
     // =====================
     else {
+
       const res = await fetch(`${API}/tasks/${state.pendingTaskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          completed_by: name,
+          technician_id: Number(technicianId),   // ✅ NEW
+          completed_by: technicianName,          // ✅ keep legacy
           completed_at: completedAt,
           notes
         })
@@ -3460,10 +3489,15 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     // 🧹 COMMON CLEANUP
     // =====================
     getEl("modalOverlay").style.display = "none";
-    getEl("technicianInput").value = "";
+
+    if (technicianSelect) {
+      technicianSelect.value = "";
+    }
+
     if (getEl("completedDateInput")) {
       getEl("completedDateInput").value = "";
     }
+
     if (getEl("doneNotesInput")) {
       getEl("doneNotesInput").value = "";
     }
@@ -3472,7 +3506,6 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     loadTasks();
     loadHistory();
 
-    // 🔄 ENSURE ASSET CARDS STAY IN SYNC
     if (typeof renderAssetsCards === "function") {
       renderAssetsCards();
     }
@@ -3486,7 +3519,6 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     console.error("CONFIRM DONE ERROR:", err);
   }
 });
-
 
 /* ===========================
    LOAD TASK DONE from HISTORY

@@ -624,7 +624,6 @@
   </div>
 <body>
 
-   
 <!-- =====================
      CONFIRM TASK DONE MODAL
 ===================== -->
@@ -635,11 +634,9 @@
 
     <!-- Technician -->
     <p>Ποιος ολοκλήρωσε την εργασία;</p>
-    <input
-      type="text"
-      id="technicianInput"
-      placeholder="Όνομα τεχνικού"
-    />
+    <select id="technicianSelect" style="width:100%;">
+      <option value="">Επιλέξτε τεχνικό</option>
+    </select>
 
     <!-- Completion date -->
     <p style="margin-top:10px;">Ημερομηνία ολοκλήρωσης</p>
@@ -648,7 +645,7 @@
       id="completedDateInput"
     />
 
-    <!-- 🆕 Execution Notes -->
+    <!-- Execution Notes -->
     <p style="margin-top:10px;">Σημειώσεις</p>
     <textarea
       id="doneNotesInput"
@@ -664,7 +661,7 @@
     </div>
 
   </div>
-</div>
+</div> 
 
   
 <div class="app-shell">
