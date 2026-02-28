@@ -594,7 +594,7 @@ function getFrequencyBucket(hours) {
   const h = Number(hours);
 
   // Weekly (~180h)
-  if (h <= 200) {
+  if (h <= 240) {
     return {
       label: "Weekly",
       bucket: "weekly",
@@ -611,8 +611,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  // Monthly (~720h)
-  if (h <= 800) {
+  // Monthly (~480h)
+  if (h <= 600) {
     return {
       label: "Monthly",
       bucket: "monthly",
@@ -620,8 +620,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  // Bi-Monthly (~1440h)
-  if (h <= 1600) {
+  // Bi-Monthly (~720h)
+  if (h <= 800) {
     return {
       label: "Bi-Monthly",
       bucket: "bimonthly",
@@ -629,8 +629,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  // Quarterly (~2160h)
-  if (h <= 2400) {
+  // Quarterly (~1440)
+  if (h <= 1500) {
     return {
       label: "Quarterly",
       bucket: "quarterly",
@@ -638,8 +638,8 @@ function getFrequencyBucket(hours) {
     };
   }
 
-  // Semi-Annual (~4320h)
-  if (h <= 4500) {
+  // Semi-Annual (~2160)
+  if (h <= 3000) {
     return {
       label: "Semi-Annual",
       bucket: "semiannual",

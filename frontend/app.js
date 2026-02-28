@@ -1936,7 +1936,7 @@ function getAssetFilterLabel() {
   }
 
   // expected format: "PMC250||437063"
-  const [machine, serial] = activeAssetFilter.split("||");
+  const [machine, serial] = state.activeAssetFilter.split("||");
 
   if (!machine) return "ALL MACHINES";
 
@@ -1968,6 +1968,11 @@ function printTask(taskId) {
 }
 function printTasks() {
   const tasks = getFilteredTasksForPrint();
+  console.log("PRINT DEBUG:", {
+  activeAssetFilter: state.activeAssetFilter,
+  tasksLength: state.tasksData.length,
+  filtered: getFilteredTasksForPrint()
+});
 
   if (!Array.isArray(tasks) || tasks.length === 0) {
     alert("No tasks to print");
