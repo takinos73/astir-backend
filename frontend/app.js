@@ -2089,6 +2089,8 @@ function applyAddTaskTypeUI(isPlanned) {
   } else {
     document.querySelectorAll(".unplanned-only")
       .forEach(el => el.style.display = "block");
+      // 🔥 NEW — Populate technicians when breakdown mode
+      populateBreakdownTechnicians();
   }
 
   // 🔹 Visual cue on modal
@@ -2695,26 +2697,35 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     }
   }
 
-  const technician =
-    document.getElementById("nt-technician")?.value?.trim() || null;
-
   const assetId = document.getElementById("nt-asset")?.value;
 
-  // Asset validation
   if (!assetId) {
     alert("Asset is required");
     return;
   }
 
-  // Task description validation
   const taskDesc = document.getElementById("nt-task")?.value?.trim();
   if (!taskDesc) {
     alert("Task description is required");
     return;
   }
 
-  // Technician required ONLY for unplanned
-  if (!isPlanned && !technician) {
+  /* =====================
+     TECHNICIAN (UNPLANNED ONLY)
+  ===================== */
+
+  const technicianSelect = document.getElementById("nt-technician");
+
+  const technicianId = !isPlanned
+    ? Number(technicianSelect?.value) || null
+    : null;
+
+  const technicianName =
+    !isPlanned && technicianSelect?.selectedIndex >= 0
+      ? technicianSelect.options[technicianSelect.selectedIndex]?.textContent || null
+      : null;
+
+  if (!isPlanned && !technicianId) {
     alert("Technician is required for unplanned tasks");
     return;
   }
@@ -2752,10 +2763,11 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
   const payload = {
     asset_id: assetId,
+
     section:
-    document.getElementById("nt-section")?.style.display !== "none"
-      ? document.getElementById("nt-section").value || null
-      : document.getElementById("nt-section-input")?.value || null,
+      document.getElementById("nt-section")?.style.display !== "none"
+        ? document.getElementById("nt-section").value || null
+        : document.getElementById("nt-section-input")?.value || null,
 
     unit: document.getElementById("nt-unit")?.value || null,
     task: taskDesc,
@@ -2774,17 +2786,17 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
        DURATION & EXECUTION
     ===================== */
 
-    // Estimated (planned)
     duration_min: isPlanned ? durationMin : null,
 
-    // Breakdown ONLY
     execution_duration_min: !isPlanned ? durationMin : null,
 
     execution_date: !isPlanned
       ? document.getElementById("nt-breakdown-date")?.value || null
       : null,
 
-    executed_by: technician
+    // 🔥 NEW SAFE ADDITIONS
+    technician_id: technicianId,
+    executed_by: technicianName
   };
 
   try {
@@ -2799,30 +2811,23 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       throw new Error(err.error || "Failed to save task");
     }
 
-    // Close Add Task modal
     const addOverlay = document.getElementById("addTaskOverlay");
     if (addOverlay) {
-      resetSectionLockState();     // 🔑 ΑΥΤΟ
+      resetSectionLockState();
       addOverlay.style.display = "none";
-
-      // NEW: reset z-index in case it was opened from Asset View
       addOverlay.style.zIndex = "";
     }
 
-    // Reset form
     document.querySelectorAll(
       "#addTaskModal input, #addTaskModal textarea, #addTaskModal select"
     ).forEach(el => el.value = "");
 
-    // 🔄 Refresh global tasks FIRST
-      await loadTasks();
+    await loadTasks();
 
-    // Always refresh central history for breakdown
     if (!isPlanned) {
       await loadHistory();
-  }
+    }
 
-      // 🔍 Find asset serial from selected assetId
     const assetObj = (state.assetsData || []).find(a =>
       String(a.id) === String(assetId)
     );
@@ -2831,23 +2836,17 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
 
       const serial = assetObj.serial_number;
 
-      // 🔓 Always open Asset View after save
-      await openAssetViewBySerial(serial);      
-
-      // 🔄 Refresh view data
+      await openAssetViewBySerial(serial);
       await refreshAssetView();
 
-      // 🟨 Planned → Active tab
       if (isPlanned) {
         activateAssetTab("active");
       }
 
-      // 🟥 Breakdown → History tab
       if (!isPlanned) {
         activateAssetTab("history");
       }
 
-      // 🔥 Scroll to new row
       requestAnimationFrame(() => {
         const selector = isPlanned
           ? "#assetTasksTable tbody tr"
@@ -2866,9 +2865,9 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     }
 
   } catch (err) {
-      console.error("SAVE TASK ERROR:", err);
-      alert(err.message);
-    }
+    console.error("SAVE TASK ERROR:", err);
+    alert(err.message);
+  }
 });
 
  function updateAssetHistoryLegend(history) {
@@ -3314,6 +3313,25 @@ function resetSectionLockState() {
         sel.appendChild(opt);
       });
   }
+  /* =====================
+    TECHNICIANS DROPDOWN (BREAKDOWN TASK)
+  ===================== */
+  function populateBreakdownTechnicians() {
+  const sel = document.getElementById("nt-technician");
+  if (!sel || !Array.isArray(state.techniciansData)) return;
+
+  sel.innerHTML = `<option value="">Select Technician</option>`;
+
+  state.techniciansData
+    .filter(t => t.active !== false)
+    .sort((a, b) => a.name.localeCompare(b.name, "el"))
+    .forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;         // 👈 FK
+      opt.textContent = t.name; // 👈 visible
+      sel.appendChild(opt);
+    });
+}
     /*==============
     LOAD TECHNICIANS
     ===============*/
