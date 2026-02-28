@@ -234,7 +234,7 @@ document.addEventListener("click", e => {
 
   // ✅ 2 active → ALL
   else if (active.length === 2) {
-    activeTaskTypeFilter = "all";
+    state.activeTaskTypeFilter = "all";
   }
 
   // 🎯 1 active → that type
@@ -1818,15 +1818,32 @@ const filtered = source
   .filter(t => matchesSearch(t, q))
 
   // 🟨🔵 TASK TYPE FILTER (MASTER)
-  .filter(t => {
-    if (state.activeTaskTypeFilter === "planned") {
-      return isPlannedManual(t);
-    }
-    if (state.activeTaskTypeFilter === "preventive") {
-      return isPreventive(t);
-    }
-    return true; // ALL
-  })
+.filter(t => {
+
+  const plannedOn =
+    document.querySelector('[data-type="planned"]')?.classList.contains("active");
+
+  const preventiveOn =
+    document.querySelector('[data-type="preventive"]')?.classList.contains("active");
+
+  // 🔵 και τα 2 ON → όλα
+  if (plannedOn && preventiveOn) {
+    return true;
+  }
+
+  // 🟢 μόνο preventive
+  if (preventiveOn) {
+    return isPreventive(t);
+  }
+
+  // 🟡 μόνο planned
+  if (plannedOn) {
+    return isPlannedManual(t);
+  }
+
+  // ⚠ safety (αν κατά λάθος είναι και τα 2 OFF → δείξε όλα)
+  return true;
+})
 
 
     // MACHINE FILTER
