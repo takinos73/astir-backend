@@ -2798,8 +2798,10 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     technician_id: technicianId,
     executed_by: technicianName
   };
+  console.log("BREAKDOWN PAYLOAD:", payload);
 
   try {
+    console.log("BREAKDOWN PAYLOAD:", payload);
     const res = await fetch(`${API}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
