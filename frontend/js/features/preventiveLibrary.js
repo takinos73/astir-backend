@@ -1480,39 +1480,36 @@ function closePreventiveConfirm() {
 ===================== */
 
 async function applyPreventiveRule(rule) {
-  // Fallback safety: allow call without arg
-  const preventive = rule || window.currentEditPreventive;
 
-  if (!preventive) {
-    alert("No preventive rule selected");
-    return;
-  }
-
-  const model =
-    document.getElementById("libraryModelSelect")?.value;
-
-  if (!model) {
-    alert("Asset model is required");
+  if (!rule) {
+    alert("No preventive rule provided");
     return;
   }
 
   const payload = {
-    model,                               // 🔑 REQUIRED
-    section: preventive.section,         // 🔑 REQUIRED
-    task: preventive.task,               // 🔑 REQUIRED
-    frequency_hours: Number(getVal("ep-frequency")), // 🔑 REQUIRED
-    unit: preventive.unit || null,          // ✅ CORRECT
-
-    // optional / editable
-    duration_min: Number(getVal("ep-duration")) || null,
-    type: getVal("ep-type") || null,
-    notes: getVal("ep-notes") || null
+    model: rule.model,
+    section: rule.section,
+    task: rule.task,
+    frequency_hours: rule.frequency_hours,
+    unit: rule.unit || null,
+    duration_min: rule.duration_min || null,
+    type: rule.type || null,
+    notes: rule.notes || null
   };
+
+  // 🔎 HARD VALIDATION (frontend safety)
+  if (!payload.model || !payload.section || !payload.task || !payload.frequency_hours) {
+    console.error("INVALID PAYLOAD:", payload);
+    alert("Missing required fields");
+    return;
+  }
 
   const res = await fetch(`${API}/preventives/apply-rule`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json",
-    "x-cmms-role": window.currentUserRole },
+    headers: {
+      "Content-Type": "application/json",
+      "x-cmms-role": window.currentUserRole
+    },
     body: JSON.stringify(payload)
   });
 
@@ -1520,11 +1517,9 @@ async function applyPreventiveRule(rule) {
     const err = await res.json();
     throw new Error(err.error || "Failed to apply preventive");
   }
-  // 🔄 Refresh data after successful apply
-await loadTasks();
 
-// 🔁 Re-generate preventive library from updated tasks
-generateLibraryFromTasks();
+  await loadTasks();
+  generateLibraryFromTasks();
 }
 /* =====================
    UNIT DROPDOWN POPULATION
