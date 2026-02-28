@@ -688,7 +688,7 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
    - Planned without frequency: FINISH
 ===================== */
 app.patch("/tasks/:id", async (req, res) => {
-  const { completed_by, completed_at, notes } = req.body; // 🔵 notes added
+  const { completed_by, completed_at, notes, technician_id } = req.body; // 🔵 notes added
   const { id } = req.params;
 
   const client = await pool.connect();
@@ -724,16 +724,18 @@ app.patch("/tasks/:id", async (req, res) => {
           task_id,
           asset_id,
           executed_by,
+          technician_id,
           prev_due_date,
           executed_at,
           duration_minutes
         )
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         `,
         [
           task.id,
           task.asset_id,
           completed_by || null,
+          technician_id || null,   // ✅ NEW
           task.due_date || null,
           completedAt,
 
@@ -818,7 +820,7 @@ app.post("/tasks/bulk-done", async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const { taskIds, completed_by, completed_at, notes } = req.body || {};
+    const { taskIds, completed_by, completed_at, notes, technician_id } = req.body || {};
 
     if (!Array.isArray(taskIds) || taskIds.length === 0) {
       return res.status(400).json({ error: "No tasks selected" });
@@ -886,16 +888,18 @@ app.post("/tasks/bulk-done", async (req, res) => {
           task_id,
           asset_id,
           executed_by,
+          technician_id,
           prev_due_date,
           executed_at,
           duration_minutes
         )
-        VALUES ($1,$2,$3,$4,$5,$6)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
         `,
         [
           task.id,
           task.asset_id,
           completed_by,
+          technician_id || null,   // ✅ NEW
           task.due_date,
           completedAt,
 
