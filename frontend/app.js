@@ -268,7 +268,6 @@ function getSectionsForAsset(assetId) {
   return Array.from(set).sort();
 }
 
-
 // =====================
 // TASK TYPE FILTER
 // =====================
@@ -3315,22 +3314,30 @@ function resetSectionLockState() {
         sel.appendChild(opt);
       });
   }
+    /*==============
+    LOAD TECHNICIANS
+    ===============*/
+
+    async function loadTechnicians() {
+    const res = await fetch(`${API}/technicians`);
+    state.techniciansData = await res.json();
+  }
 
 /* =====================
    OPEN CONFIRM DONE MODAL
-   - Prefills technician date
-   - Prefills existing task notes (if any)
 ===================== */
 function askTechnician(id) {
   state.pendingTaskId = id;
 
-  // 🔍 find task from loaded tasks
   const task = state.tasksData.find(t => t.id === id);
 
   if (!task) {
     alert("Task not found");
     return;
   }
+
+  // 🔥 ENSURE DROPDOWN IS FILLED
+  populateTechnicianDropdown();
 
   // 📅 default completion date = today
   const today = new Date().toISOString().split("T")[0];
@@ -3339,13 +3346,12 @@ function askTechnician(id) {
     dateInput.value = today;
   }
 
-  // 📝 PREFILL NOTES (if exist)
+  // 📝 PREFILL NOTES
   const notesInput = getEl("doneNotesInput");
   if (notesInput) {
     notesInput.value = task.notes || "";
   }
 
-  // show modal
   getEl("modalOverlay").style.display = "flex";
 }
 /* =====================
@@ -3354,20 +3360,20 @@ function askTechnician(id) {
 function openBulkDoneModal() {
   state.pendingTaskId = null;
 
-  // 📅 default completion date = today
+  // 🔥 ENSURE DROPDOWN IS FILLED
+  populateTechnicianDropdown();
+
   const today = new Date().toISOString().split("T")[0];
   const dateInput = getEl("completedDateInput");
   if (dateInput) {
     dateInput.value = today;
   }
 
-  // 📝 clear notes (bulk = mixed tasks)
   const notesInput = getEl("doneNotesInput");
   if (notesInput) {
     notesInput.value = "";
   }
 
-  // show modal
   getEl("modalOverlay").style.display = "flex";
 }
 
@@ -4838,10 +4844,16 @@ document.addEventListener("keydown", (e) => {
 /* =====================
    INIT
 ===================== */
-console.log("BEFORE LOAD TASKS");
+(async function initApp() {
+  console.log("INIT START");
 
-loadTasks();
-loadHistory();
+  await loadTechnicians();  // 🔥 ΠΡΩΤΑ reference data
+  await loadTasks();
+  await loadHistory();
+
+  console.log("INIT DONE");
+})();
+
 /* =====================
    APPLY ROLE VISIBILITY
 ===================== */

@@ -135,6 +135,24 @@ app.post("/auth/update-credentials", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Update failed" });
   }
 });
+// =====================
+// GET TECHNICIANS
+// =====================
+app.get("/technicians", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, role, active
+       FROM technicians
+       WHERE active = true
+       ORDER BY name ASC`
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET TECHNICIANS ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 /* =====================
    GET LINES
