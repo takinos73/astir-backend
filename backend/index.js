@@ -240,6 +240,7 @@ app.post("/tasks", async (req, res) => {
     is_planned,
     status,
     executed_by,
+    technician_id,          // 🔥 NEW
 
     // ⬇️ ΣΗΜΑΝΤΙΚΟ
     duration_min,              // 👉 ESTIMATED (PLANNED ONLY)
@@ -305,38 +306,35 @@ app.post("/tasks", async (req, res) => {
    (ACTUAL SERVICE TIME + EXECUTION DATE)
 ===================== */
 
-if (is_planned === false) {
-  await client.query(
-    `
-    INSERT INTO task_executions
-      (
-        task_id,
+  if (is_planned === false) {
+    await client.query(
+      `
+      INSERT INTO task_executions
+        (
+          task_id,
+          asset_id,
+          technician_id,   -- 🔥 NEW
+          executed_by,
+          executed_at,
+          duration_minutes
+        )
+      VALUES
+        ($1, $2, $3, $4, $5, $6)
+      `,
+      [
+        newTask.id,
         asset_id,
-        executed_by,
-        executed_at,
-        duration_minutes
-      )
-    VALUES
-      ($1, $2, $3, $4, $5)
-    `,
-    [
-      newTask.id,
-      asset_id,
-      executed_by || null,
-
-      // 🗓️ Breakdown Date (from frontend or fallback NOW)
-      req.body.execution_date
-        ? new Date(req.body.execution_date)
-        : new Date(),
-
-      // 🔥 ACTUAL SERVICE TIME
-      Number.isFinite(Number(execution_duration_min))
-        ? Number(execution_duration_min)
-        : null
-    ]
-  );
-}
-
+        technician_id || null,  // 🔥 NEW
+        executed_by || null,
+        req.body.execution_date
+          ? new Date(req.body.execution_date)
+          : new Date(),
+        Number.isFinite(Number(execution_duration_min))
+          ? Number(execution_duration_min)
+          : null
+      ]
+    );
+  }
     await client.query("COMMIT");
 
     res.json(newTask);

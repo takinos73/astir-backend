@@ -2801,7 +2801,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   console.log("BREAKDOWN PAYLOAD:", payload);
 
   try {
-    console.log("BREAKDOWN PAYLOAD:", payload);
     const res = await fetch(`${API}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
