@@ -784,6 +784,7 @@ document
       if (applyToAll) {
         try {
           await applyPreventiveRule({
+            model, // 🔥 ΑΥΤΟ ΛΕΙΠΕ
             section: getContextValue("pm-section", "pm-section-custom"),
             task: taskText,
             frequency_hours,
