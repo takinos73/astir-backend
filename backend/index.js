@@ -238,8 +238,7 @@ app.post("/tasks", async (req, res) => {
     due_date,
     notes,
     is_planned,
-    status,
-    executed_by,
+    status,// executed_by,
     technician_id,          // 🔥 NEW
 
     // ⬇️ ΣΗΜΑΝΤΙΚΟ
@@ -304,37 +303,53 @@ app.post("/tasks", async (req, res) => {
     /* =====================
    2️⃣ BREAKDOWN → HISTORY
    (ACTUAL SERVICE TIME + EXECUTION DATE)
-===================== */
+    ===================== */
 
   if (is_planned === false) {
-    await client.query(
-      `
-      INSERT INTO task_executions
-        (
-          task_id,
+
+      // 🔎 Fetch technician name safely
+      let technicianName = null;
+
+      if (technician_id) {
+        const techRes = await client.query(
+          `SELECT name FROM technicians WHERE id = $1 AND active = true`,
+          [technician_id]
+        );
+
+        if (techRes.rows.length) {
+          technicianName = techRes.rows[0].name;
+        }
+      }
+
+      await client.query(
+        `
+        INSERT INTO task_executions
+          (
+            task_id,
+            asset_id,
+            technician_id,
+            executed_by,
+            executed_at,
+            duration_minutes
+          )
+        VALUES
+          ($1, $2, $3, $4, $5, $6)
+        `,
+        [
+          newTask.id,
           asset_id,
-          technician_id,   -- 🔥 NEW
-          executed_by,
-          executed_at,
-          duration_minutes
-        )
-      VALUES
-        ($1, $2, $3, $4, $5, $6)
-      `,
-      [
-        newTask.id,
-        asset_id,
-        technician_id || null,  // 🔥 NEW
-        executed_by || null,
-        req.body.execution_date
-          ? new Date(req.body.execution_date)
-          : new Date(),
-        Number.isFinite(Number(execution_duration_min))
-          ? Number(execution_duration_min)
-          : null
-      ]
-    );
-  }
+          technician_id || null,
+          technicianName,   // 🔥 backend controlled
+          req.body.execution_date
+            ? new Date(req.body.execution_date)
+            : new Date(),
+          Number.isFinite(Number(execution_duration_min))
+            ? Number(execution_duration_min)
+            : null
+        ]
+      );
+    }
+
     await client.query("COMMIT");
 
     res.json(newTask);
