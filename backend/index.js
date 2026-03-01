@@ -1182,15 +1182,15 @@ app.get("/executions", async (req, res) => {
 /* =====================
    UPDATE BREAKDOWN
    - Update task description & notes
-   - Update execution technician
+   - Update execution technician (FK safe)
 ===================== */
 app.patch("/executions/:id", async (req, res) => {
   const { id } = req.params;
-  const { task, executed_by, notes } = req.body;
+  const { task, technician_id, notes } = req.body;
 
-  if (!task || !executed_by) {
+  if (!task || !technician_id) {
     return res.status(400).json({
-      error: "task and executed_by are required"
+      error: "task and technician_id are required"
     });
   }
 
@@ -1212,7 +1212,20 @@ app.patch("/executions/:id", async (req, res) => {
 
     const taskId = execRes.rows[0].task_id;
 
-    // 2️⃣ Update task (description + notes)
+    // 2️⃣ Get technician name safely from FK
+    const techRes = await client.query(
+      `SELECT name FROM technicians WHERE id = $1 AND active = true`,
+      [technician_id]
+    );
+
+    if (techRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Invalid technician" });
+    }
+
+    const technicianName = techRes.rows[0].name;
+
+    // 3️⃣ Update task (description + notes)
     await client.query(
       `
       UPDATE maintenance_tasks
@@ -1229,17 +1242,19 @@ app.patch("/executions/:id", async (req, res) => {
       ]
     );
 
-    // 3️⃣ Update execution metadata (technician + audit)
+    // 4️⃣ Update execution (FK + synced name)
     await client.query(
       `
       UPDATE task_executions
       SET
-        executed_by = $1,
+        technician_id = $1,
+        executed_by = $2,
         updated_at = NOW()
-      WHERE id = $2
+      WHERE id = $3
       `,
       [
-        executed_by,
+        technician_id,
+        technicianName,
         id
       ]
     );
@@ -1255,7 +1270,6 @@ app.patch("/executions/:id", async (req, res) => {
     client.release();
   }
 });
-
 
 /*================================================
  COMPLETED KPI

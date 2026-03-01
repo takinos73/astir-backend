@@ -1364,6 +1364,15 @@ function editBreakdown(executionId) {
     alert("You are not allowed to edit executions");
     return;
   }
+  const execution = state.executionsData.find(e => e.id === id);
+
+    if (!execution) {
+      alert("Execution not found");
+      return;
+    }
+
+    // 🔥 Populate + preselect technician
+    populateEditTechnicianDropdown(execution.technician_id);
   
   const h = state.executionsData.find(e => e.id === executionId);
   if (!h) return;
@@ -1402,7 +1411,7 @@ async function saveBreakdownEdit() {
 
   const payload = {
     task: taskDesc,
-    executed_by: executedBy,
+    technician_id: Number(getVal("eb-technician")),
     notes
   };
 
@@ -3314,9 +3323,9 @@ function resetSectionLockState() {
         sel.appendChild(opt);
       });
   }
-  /* =====================
+  /* ===================================
     TECHNICIANS DROPDOWN (BREAKDOWN TASK)
-  ===================== */
+  ===================================== */
   function populateBreakdownTechnicians() {
   const sel = document.getElementById("nt-technician");
   if (!sel || !Array.isArray(state.techniciansData)) return;
@@ -3333,6 +3342,32 @@ function resetSectionLockState() {
       sel.appendChild(opt);
     });
 }
+  /* =============================================
+    TECHNICIANS DROPDOWN (EDIT TASK + PRESELECTION)
+  ================================================*/
+
+  function populateEditTechnicianDropdown(selectedId = null) {
+    const select = document.getElementById("eb-technician");
+    if (!select) return;
+
+    select.innerHTML = `<option value="">Select Technician</option>`;
+
+    if (!Array.isArray(state.techniciansData)) return;
+
+    state.techniciansData
+      .filter(t => t.active === true)
+      .forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.name;
+
+        if (selectedId && Number(selectedId) === Number(t.id)) {
+          opt.selected = true; // 🔥 PRESELECT
+        }
+
+        select.appendChild(opt);
+      });
+  }
     /*==============
     LOAD TECHNICIANS
     ===============*/
@@ -3342,59 +3377,59 @@ function resetSectionLockState() {
     state.techniciansData = await res.json();
   }
 
-/* =====================
-   OPEN CONFIRM DONE MODAL
-===================== */
-function askTechnician(id) {
-  state.pendingTaskId = id;
+  /* =====================
+    OPEN CONFIRM DONE MODAL
+  ===================== */
+  function askTechnician(id) {
+    state.pendingTaskId = id;
 
-  const task = state.tasksData.find(t => t.id === id);
+    const task = state.tasksData.find(t => t.id === id);
 
-  if (!task) {
-    alert("Task not found");
-    return;
+    if (!task) {
+      alert("Task not found");
+      return;
+    }
+
+    // 🔥 ENSURE DROPDOWN IS FILLED
+    populateTechnicianDropdown();
+
+    // 📅 default completion date = today
+    const today = new Date().toISOString().split("T")[0];
+    const dateInput = getEl("completedDateInput");
+    if (dateInput) {
+      dateInput.value = today;
+    }
+
+    // 📝 PREFILL NOTES
+    const notesInput = getEl("doneNotesInput");
+    if (notesInput) {
+      notesInput.value = task.notes || "";
+    }
+
+    getEl("modalOverlay").style.display = "flex";
   }
+  /* =====================
+    OPEN CONFIRM DONE MODAL (BULK)
+  ===================== */
+  function openBulkDoneModal() {
+    state.pendingTaskId = null;
 
-  // 🔥 ENSURE DROPDOWN IS FILLED
-  populateTechnicianDropdown();
+    // 🔥 ENSURE DROPDOWN IS FILLED
+    populateTechnicianDropdown();
 
-  // 📅 default completion date = today
-  const today = new Date().toISOString().split("T")[0];
-  const dateInput = getEl("completedDateInput");
-  if (dateInput) {
-    dateInput.value = today;
+    const today = new Date().toISOString().split("T")[0];
+    const dateInput = getEl("completedDateInput");
+    if (dateInput) {
+      dateInput.value = today;
+    }
+
+    const notesInput = getEl("doneNotesInput");
+    if (notesInput) {
+      notesInput.value = "";
+    }
+
+    getEl("modalOverlay").style.display = "flex";
   }
-
-  // 📝 PREFILL NOTES
-  const notesInput = getEl("doneNotesInput");
-  if (notesInput) {
-    notesInput.value = task.notes || "";
-  }
-
-  getEl("modalOverlay").style.display = "flex";
-}
-/* =====================
-   OPEN CONFIRM DONE MODAL (BULK)
-===================== */
-function openBulkDoneModal() {
-  state.pendingTaskId = null;
-
-  // 🔥 ENSURE DROPDOWN IS FILLED
-  populateTechnicianDropdown();
-
-  const today = new Date().toISOString().split("T")[0];
-  const dateInput = getEl("completedDateInput");
-  if (dateInput) {
-    dateInput.value = today;
-  }
-
-  const notesInput = getEl("doneNotesInput");
-  if (notesInput) {
-    notesInput.value = "";
-  }
-
-  getEl("modalOverlay").style.display = "flex";
-}
 
 /* =====================
    CANCEL TASK COMPLETION
