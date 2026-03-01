@@ -1360,34 +1360,52 @@ getEl("closeHistoryBtn")
 // OPEN EDIT BREAKDOWN
 // =====================
 function editBreakdown(executionId) {
+
   if (!hasRole("admin", "planner")) {
     alert("You are not allowed to edit executions");
     return;
   }
-  const execution = state.executionsData.find(e => e.id === id);
 
-    if (!execution) {
-      alert("Execution not found");
-      return;
-    }
+  if (!executionId) {
+    console.error("editBreakdown called without executionId");
+    return;
+  }
 
-    // 🔥 Populate + preselect technician
-    populateEditTechnicianDropdown(execution.technician_id);
+  const execution = state.executionsData.find(
+    e => Number(e.id) === Number(executionId)
+  );
+
+  if (!execution) {
+    alert("Execution not found");
+    return;
+  }
+
+  // =====================
+  // STORE EDITING ID
+  // =====================
+  state.editingBreakdownId = execution.id;
+
+  /*PREFILL TASK*/
+  const taskInput = document.getElementById("eb-task");
+  if (taskInput) {
+    taskInput.value = execution.task || "";
+  }
+
+  /*PREFILL NOTES*/
   
-  const h = state.executionsData.find(e => e.id === executionId);
-  if (!h) return;
+  const notesInput = document.getElementById("eb-notes");
+  if (notesInput) {
+    notesInput.value = execution.notes || "";
+  }
 
-  state.editingBreakdownId = h.id;
+  /*🔥 POPULATE + PRESELECT TECHNICIAN*/
+  
+  populateEditTechnicianDropdown(execution.technician_id);
 
-  document.getElementById("eb-task").value = h.task || "";
-  document.getElementById("eb-executed-by").value = h.executed_by || "";
-
-  const notesEl = document.getElementById("eb-notes");
-  if (notesEl) notesEl.value = h.notes || "";
+  /*SHOW MODAL*/
 
   document.getElementById("editBreakdownOverlay").style.display = "flex";
 }
-
 // =====================
 // SAVE BREAKDOWN EDIT (FINAL)
 // =====================
