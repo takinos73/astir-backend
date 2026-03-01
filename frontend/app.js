@@ -1409,11 +1409,15 @@ function editBreakdown(executionId) {
 // =====================
 // SAVE BREAKDOWN EDIT (FINAL)
 // =====================
+
 async function saveBreakdownEdit() {
   if (!state.editingBreakdownId) return;
 
-  const taskDesc = document.getElementById("eb-task").value.trim();
-  const executedBy = document.getElementById("eb-executed-by").value.trim();
+  const taskDesc = document.getElementById("eb-task")?.value?.trim();
+
+  const technicianSelect = document.getElementById("eb-technician");
+  const technicianId = Number(technicianSelect?.value) || null;
+
   const notesEl = document.getElementById("eb-notes");
   const notes = notesEl ? notesEl.value.trim() : null;
 
@@ -1422,14 +1426,14 @@ async function saveBreakdownEdit() {
     return;
   }
 
-  if (!executedBy) {
-    alert("Executed by is required");
+  if (!technicianId) {
+    alert("Technician is required");
     return;
   }
 
   const payload = {
     task: taskDesc,
-    technician_id: Number(getVal("eb-technician")),
+    technician_id: technicianId,
     notes
   };
 
@@ -1446,7 +1450,7 @@ async function saveBreakdownEdit() {
     }
 
     closeEditBreakdown();
-    loadHistory(); // refresh history
+    await loadHistory(); // refresh history
 
   } catch (err) {
     console.error("EDIT BREAKDOWN ERROR:", err);
