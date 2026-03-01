@@ -3368,27 +3368,31 @@ function resetSectionLockState() {
   ================================================*/
 
   function populateEditTechnicianDropdown(selectedId = null) {
-    const select = document.getElementById("eb-technician");
-    if (!select) return;
 
-    select.innerHTML = `<option value="">Select Technician</option>`;
+  const select = document.getElementById("eb-technician");
+  if (!select) return;
 
-    if (!Array.isArray(state.techniciansData)) return;
+  select.innerHTML = `<option value="">Select Technician</option>`;
 
-    state.techniciansData
-      .filter(t => t.active === true)
-      .forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.textContent = t.name;
-
-        if (selectedId && Number(selectedId) === Number(t.id)) {
-          opt.selected = true; // 🔥 PRESELECT
-        }
-
-        select.appendChild(opt);
-      });
+  if (!Array.isArray(state.techniciansData) || state.techniciansData.length === 0) {
+    console.warn("Technicians not loaded yet");
+    return;
   }
+
+  state.techniciansData
+    .filter(t => t.active === true)
+    .forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = String(t.id);   // 🔥 force string
+      opt.textContent = t.name;
+      select.appendChild(opt);
+    });
+
+  // 🔥 FORCE SELECT AFTER OPTIONS EXIST
+  if (selectedId) {
+    select.value = String(selectedId);
+  }
+}
     /*==============
     LOAD TECHNICIANS
     ===============*/
