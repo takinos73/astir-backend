@@ -791,10 +791,6 @@ function closeHistoryView() {
 }
 
 
-function editBreakdown(id) {
-  alert("Breakdown edit coming next (id: " + id + ")");
-}
-
 /* =====================
    HISTORY FILTER HANDLERS (FIXED)
    - supports BOTH rolling period AND custom from/to
@@ -1397,7 +1393,8 @@ function editBreakdown(executionId) {
   if (notesInput) {
     notesInput.value = execution.notes || "";
   }
-
+  console.log("Execution technician_id:", execution.technician_id);
+  console.log("Technicians loaded:", state.techniciansData);
   /*🔥 POPULATE + PRESELECT TECHNICIAN*/
   
   populateEditTechnicianDropdown(execution.technician_id);
