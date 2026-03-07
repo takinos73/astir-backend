@@ -504,6 +504,13 @@ historyRollingEl?.addEventListener("change", (e) => {
   renderHistoryTable(state.executionsData);
 });
 
+  /* ==================================
+      RENDER HISTORY TABLE WITH FILTERS
+      - rolling range OR custom from/to (custom overrides rolling)
+      - machine search
+      - type filter (planned/unplanned/preventive)
+      - technician search
+  =================================== */
 
 function renderHistoryTable(data) {
   const tbody = document.querySelector("#historyTable tbody");
@@ -514,7 +521,6 @@ function renderHistoryTable(data) {
   const now = new Date();
   now.setHours(23, 59, 59, 999);
 
-  // 🔹 Existing rolling date filter (7 / 30 / 90 days etc)
   const rangeFromDate =
     state.historyDateRange === "all"
       ? null
@@ -523,7 +529,6 @@ function renderHistoryTable(data) {
             Number(state.historyDateRange) * 24 * 60 * 60 * 1000
         );
 
-  // 🔹 NEW: Custom period filter
   const customFrom =
     typeof state.historyDateFrom !== "undefined" && state.historyDateFrom
       ? new Date(state.historyDateFrom)
@@ -537,157 +542,153 @@ function renderHistoryTable(data) {
   if (customFrom) customFrom.setHours(0, 0, 0, 0);
   if (customTo) customTo.setHours(23, 59, 59, 999);
 
-  data
-    // 📅 DATE FILTER (range + custom period combined safely)
+  /* =====================
+     🔥 FILTER FIRST
+  ===================== */
+
+  const filtered = data
     .filter(h => {
 
-  const exec = new Date(h.executed_at);
+      const exec = new Date(h.executed_at);
 
-  // ============================
-  // 1️⃣ CUSTOM RANGE has priority
-  // ============================
-  if (state.historyDateFrom || state.historyDateTo) {
+      if (state.historyDateFrom || state.historyDateTo) {
+        if (state.historyDateFrom && exec < state.historyDateFrom) return false;
+        if (state.historyDateTo && exec > state.historyDateTo) return false;
+        return true;
+      }
 
-    if (state.historyDateFrom && exec < state.historyDateFrom) return false;
-    if (state.historyDateTo && exec > state.historyDateTo) return false;
+      if (state.historyDateRange && state.historyDateRange !== "all") {
+        if (!rangeFromDate) return true;
+        return exec >= rangeFromDate;
+      }
 
-    return true;
-  }
+      return true;
+    })
 
-  // ============================
-  // 2️⃣ Rolling range
-  // ============================
-  if (state.historyDateRange && state.historyDateRange !== "all") {
-    if (!rangeFromDate) return true;
-    return exec >= rangeFromDate;
-  }
-
-  // ============================
-  // 3️⃣ ALL
-  // ============================
-  return true;
-})
-
-    // 🔍 MACHINE / SERIAL FILTER
     .filter(h => {
       if (!state.historyMachineQuery) return true;
       const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
       return txt.includes(state.historyMachineQuery);
     })
 
-    // 🧩 TYPE FILTER
     .filter(h => {
       if (state.historyTypeFilter === "all") return true;
       const execType = getExecutionType(h);
       return execType === state.historyTypeFilter;
     })
 
-    // 👤 TECHNICIAN FILTER
     .filter(h => {
       if (!state.historyTechnicianQuery) return true;
       return (h.executed_by || "")
         .toLowerCase()
         .includes(state.historyTechnicianQuery);
-    })
-
-    // ⬇️ RENDER ROWS
-    .forEach(h => {
-      const tr = document.createElement("tr");
-
-      const execType = getExecutionType(h);
-      tr.classList.add(`history-${execType}`);
-
-      let actionHtml = `<span class="muted">—</span>`;
-
-      // 🟩 Preventive & 🟨 Planned
-      if (execType === "planned" || execType === "preventive") {
-        actionHtml = `
-          <div class="history-action-group">
-            <button
-              class="btn-icon btn-view"
-              title="View details"
-              onclick="viewHistoryEntry(${h.id})">
-              👁
-            </button>
-            
-            <button
-              class="btn-icon btn-restore"
-              title="Restore task"
-              onclick="undoExecution(${h.id})">
-              ↩
-            </button>
-
-            <button
-              class="btn-icon btn-print"
-              title="Print job report"
-              onclick="printExecution(${h.id})">
-              🖨
-            </button>
-          </div>
-        `;
-      }
-
-      // 🟥 Breakdown
-      else if (execType === "unplanned") {
-        actionHtml = `
-          <div class="history-action-group">
-            <button
-              class="btn-icon btn-view"
-              title="View breakdown details"
-              onclick="viewHistoryEntry(${h.id})">
-              👁
-            </button>
-            
-            <button
-              class="btn-icon btn-edit"
-              title="Edit breakdown details"
-              onclick="editBreakdown(${h.id})">
-              ✏️
-            </button>
-
-            <button
-              class="btn-icon btn-print"
-              title="Print job report"
-              onclick="printExecution(${h.id})">
-              🖨
-            </button>
-          </div>
-        `;
-      }
-
-      const editedBadge = wasEditedAfterExecution(h)
-        ? `<span class="badge-edited" title="Edited after execution">✏️ Edited</span>`
-        : "";
-
-      tr.innerHTML = `
-        <td title="${formatDateTime(h.executed_at)}">
-          ${formatDateOnly(h.executed_at)}
-        </td>
-
-        <td>
-          <strong>${h.machine}</strong><br>
-          <small>SN: ${h.serial_number} | ${h.line}</small>
-        </td>
-
-        <td>
-          <div class="task-title">
-            <strong>${h.task}</strong> 
-          </div>
-          <small>
-            ${h.section || ""}
-            ${h.section && h.unit ? " / " : ""}
-            ${h.unit || ""}
-            ${editedBadge}
-          </small>
-        </td>
-
-        <td>${h.executed_by || "-"}</td>
-
-        <td>${actionHtml}</td>
-      `;
-
-      tbody.appendChild(tr);
     });
+
+  /* =====================
+     🔥 UPDATE LEGENDS
+  ===================== */
+
+  updateCentralHistoryLegendCounts(filtered);
+
+  /* =====================
+     RENDER ROWS
+  ===================== */
+
+  filtered.forEach(h => {
+    const tr = document.createElement("tr");
+
+    const execType = getExecutionType(h);
+    tr.classList.add(`history-${execType}`);
+
+    let actionHtml = `<span class="muted">—</span>`;
+
+    if (execType === "planned" || execType === "preventive") {
+      actionHtml = `
+        <div class="history-action-group">
+          <button
+            class="btn-icon btn-view"
+            title="View details"
+            onclick="viewHistoryEntry(${h.id})">
+            👁
+          </button>
+          
+          <button
+            class="btn-icon btn-restore"
+            title="Restore task"
+            onclick="undoExecution(${h.id})">
+            ↩
+          </button>
+
+          <button
+            class="btn-icon btn-print"
+            title="Print job report"
+            onclick="printExecution(${h.id})">
+            🖨
+          </button>
+        </div>
+      `;
+    }
+
+    else if (execType === "unplanned") {
+      actionHtml = `
+        <div class="history-action-group">
+          <button
+            class="btn-icon btn-view"
+            title="View breakdown details"
+            onclick="viewHistoryEntry(${h.id})">
+            👁
+          </button>
+          
+          <button
+            class="btn-icon btn-edit"
+            title="Edit breakdown details"
+            onclick="editBreakdown(${h.id})">
+            ✏️
+          </button>
+
+          <button
+            class="btn-icon btn-print"
+            title="Print job report"
+            onclick="printExecution(${h.id})">
+            🖨
+          </button>
+        </div>
+      `;
+    }
+
+    const editedBadge = wasEditedAfterExecution(h)
+      ? `<span class="badge-edited" title="Edited after execution">✏️ Edited</span>`
+      : "";
+
+    tr.innerHTML = `
+      <td title="${formatDateTime(h.executed_at)}">
+        ${formatDateOnly(h.executed_at)}
+      </td>
+
+      <td>
+        <strong>${h.machine}</strong><br>
+        <small>SN: ${h.serial_number} | ${h.line}</small>
+      </td>
+
+      <td>
+        <div class="task-title">
+          <strong>${h.task}</strong> 
+        </div>
+        <small>
+          ${h.section || ""}
+          ${h.section && h.unit ? " / " : ""}
+          ${h.unit || ""}
+          ${editedBadge}
+        </small>
+      </td>
+
+      <td>${h.executed_by || "-"}</td>
+
+      <td>${actionHtml}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
 
   applyRoleVisibility();
 }
