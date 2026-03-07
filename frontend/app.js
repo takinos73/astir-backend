@@ -304,6 +304,30 @@ function showDefaultDashboard() {
     renderAssetDashboard();
   }
 }
+// =====================
+// POPULATE HISTORY TECHNICIAN FILTER
+// =====================
+function populateHistoryTechnicianFilter() {
+
+  const select = document.getElementById("historyTechnicianSearch");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">👤 All technicians</option>`;
+
+  if (!Array.isArray(state.techniciansData)) return;
+
+  state.techniciansData
+    .sort((a, b) => a.name.localeCompare(b.name, "el"))
+    .forEach(t => {
+
+      const opt = document.createElement("option");
+      opt.value = t.name;
+      opt.textContent = t.name;
+
+      select.appendChild(opt);
+
+    });
+}
 
 
 function buildRow(task) {
@@ -415,7 +439,6 @@ function buildRow(task) {
 
   return tr;
 }
-
 
 /* =====================
    LOAD TASK HISTORY
@@ -4940,6 +4963,8 @@ document.addEventListener("keydown", (e) => {
   console.log("INIT START");
 
   await loadTechnicians();  // 🔥 ΠΡΩΤΑ reference data
+  populateTechnicianDropdown();        // modal DONE
+  populateHistoryTechnicianFilter();   // history filter
   await loadTasks();
   await loadHistory();
 
@@ -5202,8 +5227,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // 🔥 Ensure all global data is ready
   if (typeof loadAssets === "function") await loadAssets();
   if (typeof loadTasks === "function") await loadTasks();
-  if (typeof loadHistory === "function") await loadHistory(); 
-  // ή loadExecutions αν αυτό χρησιμοποιείς
+  if (typeof loadHistory === "function") await loadHistory();   
 
   // τώρα άνοιξε το tab
   const dashTab = document.querySelector('.main-tab[data-tab="assets"]');
