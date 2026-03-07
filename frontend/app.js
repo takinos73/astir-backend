@@ -588,7 +588,7 @@ function renderHistoryTable(data) {
      🔥 UPDATE LEGENDS
   ===================== */
 
-  updateCentralHistoryLegendCounts(filtered);
+  updateCentralHistoryLegendCounts(filtered,data);
 
   /* =====================
      RENDER ROWS
@@ -896,36 +896,56 @@ document.getElementById("historyResetDate")?.addEventListener("click", () => {
 });
 
 // =====================
-// CENTRAL HISTORY – LEGEND COUNTERS (CORRECT & SAFE)
+// CENTRAL HISTORY – LEGEND COUNTERS (FILTERED / TOTAL)
 // =====================
-function updateCentralHistoryLegendCounts(history) {
-   console.log("🔥 updateCentralHistoryLegendCounts CALLED", history?.length);
-  if (!Array.isArray(history)) return;
+function updateCentralHistoryLegendCounts(filtered, all = state.executionsData) {
 
-  let breakdown = 0;
-  let preventive = 0;
-  let planned = 0;
+  if (!Array.isArray(filtered) || !Array.isArray(all)) return;
 
-  history.forEach(e => {
-    // 🔴 Breakdown / Unplanned
+  let fb = 0, fp = 0, fm = 0;
+  let tb = 0, tp = 0, tm = 0;
+
+  // 🔹 TOTAL COUNTS
+  all.forEach(e => {
+
     if (e.is_planned === false) {
-      breakdown++;
+      tb++;
       return;
     }
 
-    // 🟢 Preventive
     if (
       e.is_planned === true &&
       e.frequency_hours != null &&
       Number(e.frequency_hours) > 0
     ) {
-      preventive++;
+      tp++;
       return;
     }
 
-    // 🟡 Planned manual
     if (e.is_planned === true) {
-      planned++;
+      tm++;
+    }
+  });
+
+  // 🔹 FILTERED COUNTS
+  filtered.forEach(e => {
+
+    if (e.is_planned === false) {
+      fb++;
+      return;
+    }
+
+    if (
+      e.is_planned === true &&
+      e.frequency_hours != null &&
+      Number(e.frequency_hours) > 0
+    ) {
+      fp++;
+      return;
+    }
+
+    if (e.is_planned === true) {
+      fm++;
     }
   });
 
@@ -933,16 +953,11 @@ function updateCentralHistoryLegendCounts(history) {
   const p = document.getElementById("centralHistoryPreventiveCount");
   const m = document.getElementById("centralHistoryPlannedCount");
 
-  if (b) b.textContent = breakdown;
-  if (p) p.textContent = preventive;
-  if (m) m.textContent = planned;
-
-  console.log("CENTRAL HISTORY COUNTS", {
-    breakdown,
-    preventive,
-    planned
-  });
+  if (b) b.textContent = `${fb} / ${tb}`;
+  if (p) p.textContent = `${fp} / ${tp}`;
+  if (m) m.textContent = `${fm} / ${tm}`;
 }
+
 // =====================
 // ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
 // =====================
