@@ -130,16 +130,16 @@ function getAssetTaskStats(assetId) {
 
   // 🔴 CRITICAL — true alarm only
   if (
-    a.overdue >= 5 ||
+    a.overdue >= 6 ||
     (a.lastBreakdownDays != null && a.lastBreakdownDays <= 2) ||
-    (a.overdue >= 3 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 5)
+    (a.overdue >= 3 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 3)
   ) {
     return { level: "critical", label: "CRITICAL", icon: "🔴" };
   }
 
   // 🟠 AT RISK — pressure building
   if (
-    (a.overdue >= 2 && a.overdue <= 4) ||
+    (a.overdue >= 2 && a.overdue <= 5) ||
     a.manualPlanned30d >= HIGH_LOAD ||
     a.dueSoon >= 4
   ) {
