@@ -676,8 +676,7 @@ ${generateMttrBarChart(mttrLineRows)}
       ` : ``}
           <thead>
             <tr>
-              <th class="col-date">Date</th>
-              <th class="col-line">Line</th>
+              <th class="col-date">Date</th>              
               <th class="col-machine">Machine</th>
               <th class="col-secunit">Section / Unit</th>
               <th class="col-task">Task</th>
@@ -689,24 +688,50 @@ ${generateMttrBarChart(mttrLineRows)}
 
   if (includeDetails) {
 
-      sorted.forEach(e => {
-        html += `
-          <tr>
-            <td class="col-date">${new Date(e.executed_at).toLocaleDateString("el-GR")}</td>
-            <td class="col-line">${e.line}</td>
-            <td class="col-machine">
-              ${e.machine}<br>
-              <span class="small">${e.serial_number || ""}</span>
-            </td>
-            <td class="col-secunit">
-              <strong>${e.section || "-"}</strong><br>
-              <span class="small">${e.unit || ""}</span>
-            </td>
-            <td class="col-task">${e.task}</td>
-            <td class="col-tech">${e.executed_by || "-"}</td>
-          </tr>
-        `;
-      });
+      let currentLine = null;
+
+  sorted.forEach(e => {
+
+    if (e.line !== currentLine) {
+
+      currentLine = e.line;
+
+      html += `
+        <tr>
+          <td colspan="5" style="
+            background:#f2f2f2;
+            font-weight:bold;
+            padding:8px;
+            border-top:3px solid #444;
+          ">
+            LINE ${currentLine || "—"}
+          </td>
+        </tr>
+      `;
+    }
+
+    html += `
+      <tr>
+        <td class="col-date">
+          ${new Date(e.executed_at).toLocaleDateString("el-GR")}
+        </td>
+
+        <td class="col-machine">
+          ${e.machine}<br>
+          <span class="small">${e.serial_number || ""}</span>
+        </td>
+
+        <td class="col-secunit">
+          <strong>${e.section || "-"}</strong><br>
+          <span class="small">${e.unit || ""}</span>
+        </td>
+
+        <td class="col-task">${e.task}</td>
+
+        <td class="col-tech">${e.executed_by || "-"}</td>
+      </tr>
+    `;
+  });
 
       html += `
             </tbody>

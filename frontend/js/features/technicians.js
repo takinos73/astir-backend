@@ -13,6 +13,7 @@ async function loadTechnicians() {
   renderTechniciansTable();
   refreshTechnicianDropdowns();
 }
+
 /**
  * Refreshes all technician-related dropdowns across the app.
  * Call this after adding/editing/deleting a technician to ensure
@@ -123,11 +124,17 @@ function closeTechnicianModal() {
 
 }
 
-
 // =====================
 // SAVE TECHNICIAN
 // =====================
 async function saveTechnician() {
+
+  const saveBtn = document.getElementById("saveTechnicianBtn");
+
+  if (saveBtn.disabled) return;
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
 
   const name = document.getElementById("tech-name").value.trim();
   const role = document.getElementById("tech-role").value;
@@ -135,6 +142,8 @@ async function saveTechnician() {
 
   if (!name) {
     alert("Name is required");
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
     return;
   }
 
@@ -149,37 +158,47 @@ async function saveTechnician() {
   try {
 
     const res = await fetch(url, {
-  method,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ name, role, active: status === "active" })
-});
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        role,
+        active: status === "active"
+      })
+    });
 
-if (!res.ok) {
-  const err = await res.json();
-  throw new Error(err.error || "Save failed");
-}
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Save failed");
+    }
 
-const savedTech = await res.json();
+    const savedTech = await res.json();
 
-closeTechnicianModal();
+    closeTechnicianModal();
 
-// ADD
-if (!editingId) {
-  state.techniciansData.push(savedTech);
-}
+    // ADD
+    if (!editingId) {
+      state.techniciansData.push(savedTech);
+    }
 
-// EDIT
-else {
-  const index = state.techniciansData.findIndex(t => t.id === editingId);
-  if (index !== -1) {
-    state.techniciansData[index] = savedTech;
-  }
-}
+    // EDIT
+    else {
+      const index = state.techniciansData.findIndex(t => t.id === editingId);
+      if (index !== -1) {
+        state.techniciansData[index] = savedTech;
+      }
+    }
 
-renderTechniciansTable();
-refreshTechnicianDropdowns();
+    renderTechniciansTable();
+    refreshTechnicianDropdowns();
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
 
   } catch (err) {
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
 
     console.error("SAVE TECHNICIAN ERROR:", err);
     alert(err.message);
@@ -187,7 +206,6 @@ refreshTechnicianDropdowns();
   }
 
 }
-
 // =====================
 // DELETE TECHNICIAN
 // =====================

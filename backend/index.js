@@ -157,7 +157,6 @@ app.get("/technicians", async (req, res) => {
   }
 });
 
-
 /* =====================
    CREATE TECHNICIAN
 ===================== */
@@ -169,8 +168,53 @@ app.post("/technicians", async (req, res) => {
     return res.status(400).json({ error: "Name is required" });
   }
 
+  const cleanName = name.trim();
+
   try {
 
+    /* =====================
+       CHECK EXISTING TECHNICIAN
+    ====================== */
+    const existing = await pool.query(
+      `
+      SELECT id, active
+      FROM technicians
+      WHERE LOWER(name) = LOWER($1)
+      `,
+      [cleanName]
+    );
+
+    if (existing.rowCount > 0) {
+
+      const tech = existing.rows[0];
+
+      // 🔹 If technician exists but inactive → reactivate
+      if (!tech.active) {
+
+        const reactivate = await pool.query(
+          `
+          UPDATE technicians
+          SET active = true
+          WHERE id = $1
+          RETURNING id, name, role, active
+          `,
+          [tech.id]
+        );
+
+        return res.json(reactivate.rows[0]);
+
+      }
+
+      // 🔹 If already active → reject duplicate
+      return res.status(409).json({
+        error: "Technician already exists"
+      });
+
+    }
+
+    /* =====================
+       INSERT NEW TECHNICIAN
+    ====================== */
     const result = await pool.query(
       `
       INSERT INTO technicians
@@ -180,7 +224,7 @@ app.post("/technicians", async (req, res) => {
       RETURNING id, name, role, active
       `,
       [
-        name.trim(),
+        cleanName,
         role || "Technician"
       ]
     );
@@ -195,7 +239,6 @@ app.post("/technicians", async (req, res) => {
   }
 
 });
-
 
 /* =====================
    UPDATE TECHNICIAN
