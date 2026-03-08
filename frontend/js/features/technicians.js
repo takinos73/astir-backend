@@ -123,18 +123,34 @@ async function saveTechnician() {
   try {
 
     const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, role, status })
-    });
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ name, role, active: status === "active" })
+});
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Save failed");
-    }
+if (!res.ok) {
+  const err = await res.json();
+  throw new Error(err.error || "Save failed");
+}
 
-    closeTechnicianModal();
-    await loadTechnicians();
+const savedTech = await res.json();
+
+closeTechnicianModal();
+
+// ADD
+if (!editingId) {
+  state.techniciansData.push(savedTech);
+}
+
+// EDIT
+else {
+  const index = state.techniciansData.findIndex(t => t.id === editingId);
+  if (index !== -1) {
+    state.techniciansData[index] = savedTech;
+  }
+}
+
+renderTechniciansTable();
 
   } catch (err) {
 
