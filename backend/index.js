@@ -135,23 +135,148 @@ app.post("/auth/update-credentials", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Update failed" });
   }
 });
-// =====================
-// GET TECHNICIANS
-// =====================
+/* =====================
+   GET TECHNICIANS
+===================== */
 app.get("/technicians", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, role, active
-       FROM technicians
-       WHERE active = true
-       ORDER BY name ASC`
+      `
+      SELECT id, name, role, active
+      FROM technicians
+      WHERE active = true
+      ORDER BY name ASC
+      `
     );
 
     res.json(result.rows);
+
   } catch (err) {
     console.error("GET TECHNICIANS ERROR:", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+
+/* =====================
+   CREATE TECHNICIAN
+===================== */
+app.post("/technicians", async (req, res) => {
+
+  const { name, role } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: "Name is required" });
+  }
+
+  try {
+
+    const result = await pool.query(
+      `
+      INSERT INTO technicians
+        (name, role, active)
+      VALUES
+        ($1,$2,true)
+      RETURNING id, name, role, active
+      `,
+      [
+        name.trim(),
+        role || "Technician"
+      ]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+
+    console.error("POST /technicians ERROR:", err);
+    res.status(500).json({ error: err.message });
+
+  }
+
+});
+
+
+/* =====================
+   UPDATE TECHNICIAN
+===================== */
+app.patch("/technicians/:id", async (req, res) => {
+
+  const { id } = req.params;
+  const { name, role, active } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: "Name is required" });
+  }
+
+  try {
+
+    const result = await pool.query(
+      `
+      UPDATE technicians
+      SET
+        name = $1,
+        role = $2,
+        active = $3
+      WHERE id = $4
+      RETURNING id, name, role, active
+      `,
+      [
+        name.trim(),
+        role || "Technician",
+        active !== false,
+        id
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Technician not found" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+
+    console.error("PATCH /technicians/:id ERROR:", err);
+    res.status(500).json({ error: err.message });
+
+  }
+
+});
+
+
+/* =====================
+   SOFT DELETE TECHNICIAN
+===================== */
+app.delete("/technicians/:id", async (req, res) => {
+
+  const { id } = req.params;
+
+  try {
+
+    const result = await pool.query(
+      `
+      UPDATE technicians
+      SET active = false
+      WHERE id = $1
+      RETURNING id
+      `,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Technician not found" });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+
+    console.error("DELETE /technicians ERROR:", err);
+    res.status(500).json({ error: err.message });
+
+  }
+
 });
 
 /* =====================

@@ -84,7 +84,6 @@ function editTechnician(id) {
   document.getElementById("tech-name").value = tech.name || "";
   document.getElementById("tech-role").value = tech.role || "technician";
   document.getElementById("tech-status").value = tech.status || "active";
-
   document.getElementById("technicianModalOverlay").style.display = "flex";
 }
 
