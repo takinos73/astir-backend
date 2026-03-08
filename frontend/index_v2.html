@@ -269,7 +269,7 @@
     </div>
   <!-- =====================
      HISTORY LEGEND (CENTRAL)
-===================== -->
+  ===================== -->
   <div class="history-legend">
 
     <div class="legend-item red">
@@ -290,7 +290,6 @@
       <span class="count" id="centralHistoryPlannedCount">0</span>
     </div>
   </div>
-
 
       <!-- =====================
         ACTIONS
@@ -667,7 +666,7 @@
 
   <!-- IMPORT PREVIEW MODAL -->
     
-<div id="importPreviewOverlay" class="modal-overlay" style="display:none;">
+  <div id="importPreviewOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box modal-wide import-modal">
 
     <h3>Excel Import Preview</h3>
@@ -750,7 +749,8 @@
 <section class="main-tabs">
   <button class="main-tab active" data-tab="dashboard">Dashboard</button>
   <button class="main-tab" data-tab="assets">Assets</button>
-  <button class="main-tab" data-tab="tasks">Tasks</button>  
+  <button class="main-tab" data-tab="tasks">Tasks</button>
+  <button class="main-tab" data-tab="technicians">👷 Technicians</button>  
   <button class="main-tab" data-tab="reports">Reports</button>
   <button class="main-tab" data-tab="library">Library</button>
   <button class="main-tab" data-tab="docs">Documentation</button>
@@ -1185,6 +1185,35 @@
   </div>
 </div>
 
+<!-- =====================
+     TECHNICIANS TAB
+===================== -->
+<div id="tab-technicians" class="tab-panel">
+
+  <div class="table-header">
+    <h2>Technicians</h2>
+
+    <button id="addTechnicianBtn" class="btn-table admin-only">
+      + Add Technician
+    </button>
+  </div>
+
+  <table id="techniciansTable" class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th style="width:120px;"></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- populated dynamically -->
+    </tbody>
+  </table>
+
+</div>
 
 <!-- ===================== -->
 <!-- TAB: PREVENTIVE LIBRARY -->
@@ -1851,9 +1880,9 @@
     </div>
   </div>
 
-    <!-- =====================
+  <!-- =====================
      EDIT ASSET MODAL
-===================== -->
+  ===================== -->
 <div id="editAssetOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box">
 
@@ -1889,7 +1918,55 @@
 
   </div>
 </div>
+<!-- =====================
+     TECHNICIAN MODAL
+===================== -->
+<div id="technicianModalOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
 
+    <h3 id="technicianModalTitle">Add Technician</h3>
+
+    <!-- NAME -->
+    <div class="field">
+      <label>Name</label>
+      <input
+        id="tech-name"
+        placeholder="Technician name"
+      />
+    </div>
+
+    <!-- ROLE -->
+    <div class="field">
+      <label>Role</label>
+      <select id="tech-role">
+        <option value="technician">Technician</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="planner">Planner</option>
+      </select>
+    </div>
+
+    <!-- STATUS -->
+    <div class="field">
+      <label>Status</label>
+      <select id="tech-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="modal-actions">
+      <button id="saveTechnicianBtn" class="btn-table">
+        ✔ Save
+      </button>
+
+      <button id="cancelTechnicianBtn" class="btn-cancel">
+        Cancel
+      </button>
+    </div>
+
+  </div>
+</div>
 
   <!-- CORE -->
   <script src="./js/core/state.js" defer></script>
@@ -1907,8 +1984,7 @@
   <script src="./js/features/preventiveLibrary.js" defer></script>
 
   <!-- APP (state, loaders, globals) -->
-  <script src="./app.js" defer></script>
-  
+  <script src="./app.js" defer></script>  
 
 </body>
 </html>
