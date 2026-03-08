@@ -4,7 +4,11 @@
 async function loadTechnicians() {
 
   const res = await fetch(`${API}/technicians`);
-  state.techniciansData = await res.json();
+  const data = await res.json();
+
+  console.log("TECHNICIANS RESPONSE:", data);
+
+  state.techniciansData = data;
 
   renderTechniciansTable();
 }
@@ -30,19 +34,8 @@ function renderTechniciansTable() {
       <td>${t.status || "Active"}</td>
 
       <td>
-
-        <button
-          class="btn-icon"
-          onclick="editTechnician(${t.id})">
-          ✏️
-        </button>
-
-        <button
-          class="btn-icon"
-          onclick="deleteTechnician(${t.id})">
-          🗑
-        </button>
-
+        <button class="btn-icon" onclick="editTechnician(${t.id})">✏️</button>
+        <button class="btn-icon" onclick="deleteTechnician(${t.id})">🗑</button>
       </td>
     `;
 
@@ -50,138 +43,139 @@ function renderTechniciansTable() {
 
   });
 
-    // =====================
-    // OPEN ADD MODAL
-    // =====================
-    function openAddTechnician() {
+}
 
-    state.currentEditingTechnician = null;
 
-    document.getElementById("technicianModalTitle").textContent =
-        "Add Technician";
+// =====================
+// OPEN ADD MODAL
+// =====================
+function openAddTechnician() {
 
-    document.getElementById("tech-name").value = "";
-    document.getElementById("tech-role").value = "technician";
-    document.getElementById("tech-status").value = "active";
+  state.currentEditingTechnician = null;
 
-    document.getElementById("technicianModalOverlay").style.display = "flex";
-    }
+  document.getElementById("technicianModalTitle").textContent =
+    "Add Technician";
 
-    // =====================
-    // OPEN EDIT MODAL
-    // =====================
-    function editTechnician(id) {
+  document.getElementById("tech-name").value = "";
+  document.getElementById("tech-role").value = "technician";
+  document.getElementById("tech-status").value = "active";
 
-    const tech = state.techniciansData.find(t => t.id === id);
+  document.getElementById("technicianModalOverlay").style.display = "flex";
+}
 
-    if (!tech) {
-        alert("Technician not found");
-        return;
-    }
 
-    state.currentEditingTechnician = id;
+// =====================
+// OPEN EDIT MODAL
+// =====================
+function editTechnician(id) {
 
-    document.getElementById("technicianModalTitle").textContent =
-        "Edit Technician";
+  const tech = state.techniciansData.find(t => t.id === id);
 
-    document.getElementById("tech-name").value = tech.name || "";
-    document.getElementById("tech-role").value = tech.role || "technician";
-    document.getElementById("tech-status").value = tech.status || "active";
+  if (!tech) {
+    alert("Technician not found");
+    return;
+  }
 
-    document.getElementById("technicianModalOverlay").style.display = "flex";
-    }
+  state.currentEditingTechnician = id;
 
-    // =====================
-    // CLOSE MODAL
-    // =====================
-    function closeTechnicianModal() {
+  document.getElementById("technicianModalTitle").textContent =
+    "Edit Technician";
 
-    document.getElementById("technicianModalOverlay").style.display = "none";
+  document.getElementById("tech-name").value = tech.name || "";
+  document.getElementById("tech-role").value = tech.role || "technician";
+  document.getElementById("tech-status").value = tech.status || "active";
 
-    }
+  document.getElementById("technicianModalOverlay").style.display = "flex";
+}
 
-    // =====================
-    // SAVE TECHNICIAN
-    // =====================
-    async function saveTechnician() {
 
-    const name = document.getElementById("tech-name").value.trim();
-    const role = document.getElementById("tech-role").value;
-    const status = document.getElementById("tech-status").value;
+// =====================
+// CLOSE MODAL
+// =====================
+function closeTechnicianModal() {
 
-    if (!name) {
-        alert("Name is required");
-        return;
-    }
-
-    const editingId = state.currentEditingTechnician;
-
-    const url = editingId
-        ? `${API}/technicians/${editingId}`
-        : `${API}/technicians`;
-
-    const method = editingId ? "PATCH" : "POST";
-
-    try {
-
-        const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            name,
-            role,
-            status
-        })
-        });
-
-        if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Save failed");
-        }
-
-        closeTechnicianModal();
-
-        await loadTechnicians();
-
-    } catch (err) {
-
-        console.error("SAVE TECHNICIAN ERROR:", err);
-        alert(err.message);
-
-    }
-
-    }
-
-    // =====================
-    // DELETE TECHNICIAN (SOFT)
-    // =====================
-    async function deleteTechnician(id) {
-
-    if (!confirm("Delete this technician?")) return;
-
-    try {
-
-        const res = await fetch(`${API}/technicians/${id}`, {
-        method: "DELETE"
-        });
-
-        if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Delete failed");
-        }
-
-        await loadTechnicians();
-
-    } catch (err) {
-
-        console.error("DELETE TECHNICIAN ERROR:", err);
-        alert(err.message);
-
-    }
-
-    }
+  document.getElementById("technicianModalOverlay").style.display = "none";
 
 }
+
+
+// =====================
+// SAVE TECHNICIAN
+// =====================
+async function saveTechnician() {
+
+  const name = document.getElementById("tech-name").value.trim();
+  const role = document.getElementById("tech-role").value;
+  const status = document.getElementById("tech-status").value;
+
+  if (!name) {
+    alert("Name is required");
+    return;
+  }
+
+  const editingId = state.currentEditingTechnician;
+
+  const url = editingId
+    ? `${API}/technicians/${editingId}`
+    : `${API}/technicians`;
+
+  const method = editingId ? "PATCH" : "POST";
+
+  try {
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, role, status })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Save failed");
+    }
+
+    closeTechnicianModal();
+    await loadTechnicians();
+
+  } catch (err) {
+
+    console.error("SAVE TECHNICIAN ERROR:", err);
+    alert(err.message);
+
+  }
+
+}
+
+
+// =====================
+// DELETE TECHNICIAN
+// =====================
+async function deleteTechnician(id) {
+
+  if (!confirm("Delete this technician?")) return;
+
+  try {
+
+    const res = await fetch(`${API}/technicians/${id}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Delete failed");
+    }
+
+    await loadTechnicians();
+
+  } catch (err) {
+
+    console.error("DELETE TECHNICIAN ERROR:", err);
+    alert(err.message);
+
+  }
+
+}
+
 
 // =====================
 // BUTTON EVENTS
@@ -198,6 +192,7 @@ document
 document
   .getElementById("saveTechnicianBtn")
   ?.addEventListener("click", saveTechnician);
-  document
+
+document
   .querySelector('[data-tab="technicians"]')
   ?.addEventListener("click", loadTechnicians);
