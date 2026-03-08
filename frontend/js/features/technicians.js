@@ -11,6 +11,32 @@ async function loadTechnicians() {
   state.techniciansData = data;
 
   renderTechniciansTable();
+  refreshTechnicianDropdowns();
+}
+/**
+ * Refreshes all technician-related dropdowns across the app.
+ * Call this after adding/editing/deleting a technician to ensure
+ * all dropdowns show the latest data.
+ */
+
+function refreshTechnicianDropdowns() {
+
+  if (typeof populateTechnicianDropdown === "function") {
+    populateTechnicianDropdown();
+  }
+
+  if (typeof populateBreakdownTechnicians === "function") {
+    populateBreakdownTechnicians();
+  }
+
+  if (typeof populateEditTechnicianDropdown === "function") {
+    populateEditTechnicianDropdown();
+  }
+
+  if (typeof populateHistoryTechnicianFilter === "function") {
+    populateHistoryTechnicianFilter();
+  }
+
 }
 
 
@@ -151,6 +177,7 @@ else {
 }
 
 renderTechniciansTable();
+refreshTechnicianDropdowns();
 
   } catch (err) {
 
@@ -160,7 +187,6 @@ renderTechniciansTable();
   }
 
 }
-
 
 // =====================
 // DELETE TECHNICIAN
@@ -180,7 +206,13 @@ async function deleteTechnician(id) {
       throw new Error(err.error || "Delete failed");
     }
 
-    await loadTechnicians();
+    // 🔹 remove from state
+    state.techniciansData =
+      state.techniciansData.filter(t => t.id !== id);
+
+    // 🔹 re-render table
+    renderTechniciansTable();
+    refreshTechnicianDropdowns();
 
   } catch (err) {
 
@@ -190,7 +222,6 @@ async function deleteTechnician(id) {
   }
 
 }
-
 
 // =====================
 // BUTTON EVENTS
