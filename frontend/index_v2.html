@@ -56,7 +56,6 @@
   </div>
 </div>
 
-
 <!-- =====================
      TASK VIEW MODAL (SINGLE – CLEAN)
 ===================== -->
@@ -770,6 +769,35 @@
     <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
   </div>
 </section>
+<!-- =====================
+     TECHNICIANS TAB
+===================== -->
+<div id="tab-technicians" class="tab-panel" style="display:none;">
+
+  <div class="table-header">
+    <h2>Technicians</h2>
+
+    <button id="addTechnicianBtn" class="btn-table admin-only">
+      + Add Technician
+    </button>
+  </div>
+
+  <table id="techniciansTable" class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th style="width:120px;"></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- populated dynamically -->
+    </tbody>
+  </table>
+
+</div>
 
 <!-- DASHBOARD TAB -->
   <div id="tab-dashboard" class="tab-panel active">
@@ -814,11 +842,11 @@
       </div>
   </div>
 
-<!-- =====================
-     ADD PREVENTIVE MODAL
-===================== -->
-<div id="addPreventiveOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box modal-wide preventive-modal">
+  <!-- =====================
+      ADD PREVENTIVE MODAL
+  ===================== -->
+  <div id="addPreventiveOverlay" class="modal-overlay" style="display:none;">
+    <div class="modal-box modal-wide preventive-modal">
 
     <!-- HEADER -->
     <div class="preventive-header">
@@ -1185,36 +1213,6 @@
   </div>
 </div>
 
-<!-- =====================
-     TECHNICIANS TAB
-===================== -->
-<div id="tab-technicians" class="tab-panel">
-
-  <div class="table-header">
-    <h2>Technicians</h2>
-
-    <button id="addTechnicianBtn" class="btn-table admin-only">
-      + Add Technician
-    </button>
-  </div>
-
-  <table id="techniciansTable" class="data-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Role</th>
-        <th>Status</th>
-        <th style="width:120px;"></th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <!-- populated dynamically -->
-    </tbody>
-  </table>
-
-</div>
-
 <!-- ===================== -->
 <!-- TAB: PREVENTIVE LIBRARY -->
 <!-- ===================== -->
@@ -1312,6 +1310,7 @@
     </div>
 
   </div>
+  
 </div>
     
     <!-- ===================== -->
@@ -1918,6 +1917,7 @@
 
   </div>
 </div>
+
 <!-- =====================
      TECHNICIAN MODAL
 ===================== -->
@@ -1977,7 +1977,7 @@
   <script src="./js/features/auth.js" defer></script>
   <script src="./js/features/analytics.js" defer></script>
   <script src="./js/features/printPreventiveLibrary.js" defer></script>
-  <script src="js/modules/technicians.js"></script>
+  <script src="js/features/technicians.js" defer></script>
   <script src="./js/features/importExcel.js" defer></script>
   <script src="./js/features/reports.js" defer></script>
   <script src="./js/features/printWorkOrder.js" defer></script>

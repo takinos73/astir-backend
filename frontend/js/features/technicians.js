@@ -198,3 +198,6 @@ document
 document
   .getElementById("saveTechnicianBtn")
   ?.addEventListener("click", saveTechnician);
+  document
+  .querySelector('[data-tab="technicians"]')
+  ?.addEventListener("click", loadTechnicians);

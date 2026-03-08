@@ -4886,7 +4886,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     console.log("TAB CLICKED:", tab.dataset.tab);
 
     // 2️⃣ Hide all panels
-    ["dashboard", "tasks", "assets", "library", "docs", "reports"].forEach(t => {
+    ["dashboard", "tasks", "assets", "technicians", "library", "docs", "reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
@@ -4899,6 +4899,9 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     // 4️⃣ Existing logic (unchanged)
     if (sel === "assets") {
       loadAssets();
+    }
+    if (sel === "technicians") {
+      loadTechnicians();
     }
 
     if (sel === "reports") {
