@@ -52,5 +52,9 @@ window.state = {
  assetHistoryTypeFilter : "all", // all | breakdown | preventive | planned
  lockSectionOnce : false,
  followUpSectionValue : null,
+
+ // TECHNICIANS
+ techniciansData: [],
+ currentEditingTechnician: null,
   
 };
