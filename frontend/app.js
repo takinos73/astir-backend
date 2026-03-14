@@ -2694,7 +2694,9 @@ function renderAssetHistoryTable(history) {
       <td>${formatDate(e.executed_at)}</td>
       <td>
         ${e.task}
-        ${e.unit ? `<br><span class="small">${e.unit}</span>` : ""}
+        ${(e.section || e.unit)
+          ? `<br><span class="small">${e.section || ""}${e.section && e.unit ? " / " : ""}${e.unit || ""}</span>`
+          : ""}
       </td>
       <td>${e.type || "-"}</td>
       <td>${e.executed_by || "-"}</td>
