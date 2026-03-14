@@ -2692,7 +2692,10 @@ function renderAssetHistoryTable(history) {
 
     tr.innerHTML = `
       <td>${formatDate(e.executed_at)}</td>
-      <td>${e.task}</td>
+      <td>
+        ${e.task}
+        ${e.unit ? `<br><span class="small">${e.unit}</span>` : ""}
+      </td>
       <td>${e.type || "-"}</td>
       <td>${e.executed_by || "-"}</td>
       <td>${e.notes || "-"}</td>
