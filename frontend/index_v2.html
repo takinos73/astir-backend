@@ -1749,47 +1749,61 @@
     </div>
 
       <!-- =====================
-          TAB: HISTORY
-      ===================== -->
-      <div class="asset-tab-panel" data-panel="history">
-        <div id="assetHistoryActiveFilter" class="history-active-filter"></div>
+        TAB: HISTORY
+===================== -->
+<div class="asset-tab-panel" data-panel="history">
 
-        <div class="table-card asset-history-table">
-          <table id="assetHistoryTable">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Task</th>
-                <th>Type</th>
-                <th>Executed At</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-          <div class="asset-history-legend">
-            <div class="legend-item clickable" data-type="all">
-              <strong id="histAllCount">0</strong>
-              <span>All</span>
-            </div>
+  <div class="history-toolbar">
 
-            <div class="legend-item clickable breakdown" data-type="unplanned">
-              <strong id="assetHistoryCountBreakdown">0</strong>
-              <span>Breakdowns</span>
-            </div>
+    <div id="assetHistoryActiveFilter" class="history-active-filter"></div>
 
-            <div class="legend-item clickable preventive" data-type="preventive">
-              <strong id="assetHistoryCountPreventive">0</strong>
-              <span>Preventive</span>
-            </div>
+    <button
+      id="printAssetHistoryBtn"
+      class="btn-secondary btn-sm">
+      🖨 Print History
+    </button>
 
-            <div class="legend-item clickable planned" data-type="planned">
-              <strong id="assetHistoryCountPlanned">0</strong>
-              <span>Planned</span>
-            </div>
-          </div>
-      </div>
+  </div>
+
+  <div class="table-card asset-history-table">
+    <table id="assetHistoryTable">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Task</th>
+          <th>Type</th>
+          <th>Executed At</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="asset-history-legend">
+    <div class="legend-item clickable" data-type="all">
+      <strong id="histAllCount">0</strong>
+      <span>All</span>
+    </div>
+
+    <div class="legend-item clickable breakdown" data-type="unplanned">
+      <strong id="assetHistoryCountBreakdown">0</strong>
+      <span>Breakdowns</span>
+    </div>
+
+    <div class="legend-item clickable preventive" data-type="preventive">
+      <strong id="assetHistoryCountPreventive">0</strong>
+      <span>Preventive</span>
+    </div>
+
+    <div class="legend-item clickable planned" data-type="planned">
+      <strong id="assetHistoryCountPlanned">0</strong>
+      <span>Planned</span>
+    </div>
+  </div>
+
+</div>
+
 
       <!-- ACTIONS -->
       <div class="asset-view-footer">

@@ -2648,6 +2648,10 @@ function bindAssetKpiFilters() {
       };
     });
 }
+document
+  .getElementById("printAssetHistoryBtn")
+  ?.addEventListener("click", printAssetHistory);
+
 // =====================
 // ASSET HISTORY ACTIVE FILTER (TASK CLICK & LEGEND SYNC)
 // =====================
@@ -2724,22 +2728,7 @@ function renderAssetHistoryTable(history) {
   /* =====================
      APPLY FILTERS
   ===================== */
-  let filtered = list;
-
-  // TYPE FILTER
-  if (state.assetHistoryTypeFilter !== "all") {
-    filtered = filtered.filter(e => {
-      const t = getExecutionType(e);
-      return t === state.assetHistoryTypeFilter;
-    });
-  }
-
-  // TASK FILTER (click on task)
-  if (state.assetHistoryTaskFilter) {
-    filtered = filtered.filter(
-      e => e.task === state.assetHistoryTaskFilter
-    );
-  }
+  const filtered = getFilteredAssetHistory(list);
 
   if (filtered.length === 0) {
     tbody.innerHTML = `
@@ -2795,7 +2784,7 @@ function renderAssetHistoryTable(history) {
       if (state.assetHistoryTaskFilter === e.task) {
         state.assetHistoryTaskFilter = null;
       } else {
-        state.assetHistoryTaskFilter = e.task;
+        state.assetHistoryTaskFilter = `${e.task}||${e.section || ""}||${e.unit || ""}`;
       }
 
       // 🔹 clear legend filter

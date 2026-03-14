@@ -1865,10 +1865,3 @@ if (printBtn) {
 } else {
   console.error("❌ printLibraryBtn NOT FOUND in DOM");
 }
-
-
-
-
-
-
-

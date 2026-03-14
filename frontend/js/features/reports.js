@@ -1,4 +1,213 @@
 /* =====================
+   GET FILTERED ASSET HISTORY
+===================== */
+
+function getFilteredAssetHistory(list) {
+
+  if (!Array.isArray(list)) return [];
+
+  let filtered = list;
+
+  /* TYPE FILTER */
+  if (state.assetHistoryTypeFilter !== "all") {
+
+    filtered = filtered.filter(e => {
+      const type = getExecutionType(e);
+      return type === state.assetHistoryTypeFilter;
+    });
+
+  }
+
+  /* TASK FILTER */
+  if (state.assetHistoryTaskFilter) {
+
+    filtered = filtered.filter(e => {
+
+      const key =
+        `${e.task}||${e.section || ""}||${e.unit || ""}`;
+
+      return key === state.assetHistoryTaskFilter;
+
+    });
+
+  }
+
+  return filtered;
+
+}
+//* =====================
+// PRINT ASSET HISTORY
+// ===================== */
+
+function printAssetHistory() {
+
+  const data = getFilteredAssetHistory(state.assetHistoryTasks);
+
+  if (!Array.isArray(data) || data.length === 0) {
+    alert("No history records to print");
+    return;
+  }
+
+  const asset = state.assetsData.find(
+    a => a.serial_number === state.currentAssetSerial
+  ) || {};
+
+  let html = `
+  <html>
+  <head>
+    <title>Asset History</title>
+
+    <style>
+
+      @page { size: A4; margin: 15mm; }
+
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        color: #111;
+      }
+
+      h2 { margin-bottom: 4px; }
+
+      .asset-meta {
+        font-size: 12px;
+        margin-bottom: 12px;
+        color: #444;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      th, td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      th {
+        background: #eee;
+        text-align: left;
+      }
+
+      .small {
+        font-size: 11px;
+        color: #666;
+      }
+
+      .status {
+        font-weight: bold;
+      }
+
+      .status-breakdown {
+        color: #b00020;
+      }
+
+      .status-preventive {
+        color: #1b5e20;
+      }
+
+      .status-planned {
+        color: #0d47a1;
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <h2>Asset History</h2>
+
+    <div class="asset-meta">
+      <strong>Line:</strong> ${asset.line || "-"}<br>
+      <strong>Asset:</strong> ${asset.model || "-"}<br>
+      <strong>S/N:</strong> ${asset.serial_number || "-"}<br>
+      
+      <strong>Printed:</strong> ${new Date().toLocaleDateString()}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Task</th>
+          <th>Type</th>
+          <th>Executed At</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+
+      <tbody>
+  `;
+
+  data.forEach(e => {
+
+    const execType = getExecutionType(e);
+
+    let statusClass = "";
+
+    if (execType === "unplanned") statusClass = "status-breakdown";
+    else if (execType === "preventive") statusClass = "status-preventive";
+    else statusClass = "status-planned";
+
+    html += `
+      <tr>
+
+        <td class="status ${statusClass}">
+          ${execType}
+        </td>
+
+        <td>
+          ${e.task}
+          ${(e.section || e.unit)
+            ? `<br><span class="small">${e.section || ""}${e.section && e.unit ? " / " : ""}${e.unit || ""}</span>`
+            : ""}
+        </td>
+
+        <td>${e.type || "-"}</td>
+
+        <td>${formatDate(e.executed_at)}</td>
+
+        <td>${e.notes || "-"}</td>
+
+      </tr>
+    `;
+
+  });
+
+  html += `
+      </tbody>
+    </table>
+
+  </body>
+  </html>
+  `;
+
+  const iframe = document.createElement("iframe");
+
+  iframe.style.position = "fixed";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => document.body.removeChild(iframe), 1000);
+}
+
+/* =====================
    STATUS REPORT – PDF (GROUPED BY LINE / ASSET)
 ===================== */
 function generateStatusReportPdf() {
@@ -2010,5 +2219,4 @@ function generateMttrBarChart(mttrLineRows) {
     </svg>
   `;
 }
-
 
