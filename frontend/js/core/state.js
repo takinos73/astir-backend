@@ -50,6 +50,7 @@ window.state = {
 // ASSET HISTORY FILTER STATE
 // =====================
  assetHistoryTypeFilter : "all", // all | breakdown | preventive | planned
+ assetHistoryTaskFilter: null,
  lockSectionOnce : false,
  followUpSectionValue : null,
 

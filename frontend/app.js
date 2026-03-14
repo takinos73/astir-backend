@@ -1779,18 +1779,25 @@ function bindAssetHistoryLegendClicks() {
     .querySelectorAll(".asset-history-legend .legend-item")
     .forEach(item => {
       item.addEventListener("click", () => {
+
         const type = item.dataset.type;
 
         console.log("🟡 HISTORY LEGEND CLICK:", type);
 
-        state.assetHistoryTypeFilter = type || "all";   // ✅ FIX
+        // set type filter
+        state.assetHistoryTypeFilter = type || "all";
+
+        // 🔹 clear task filter to avoid conflicts
+        state.assetHistoryTaskFilter = null;
 
         highlightActiveHistoryLegend();
 
-        renderAssetHistoryTable(state.assetHistoryTasks); // ✅ FIX
+        renderAssetHistoryTable(state.assetHistoryTasks);
+
       });
     });
 }
+
 
 /* =====================
    ASSET HISTORY LEGEND ACTIVE STATE (SCOPED)
@@ -1824,6 +1831,15 @@ function activateAssetTab(tabName) {
       panel.dataset.panel === tabName ? "block" : "none";
   });
 
+  // =====================
+  // ACTION BUTTON VISIBILITY
+  // =====================
+  const printBtn = document.getElementById("printAssetPreventiveBtn");
+
+  if (printBtn) {
+    printBtn.style.display = tabName === "active" ? "inline-flex" : "none";
+  }
+
   // --- DATA render (SAFE) ---
   if (tabName === "active") {
     renderAssetTasksTable(
@@ -1832,6 +1848,9 @@ function activateAssetTab(tabName) {
   }
 
   if (tabName === "history") {
+
+    state.assetHistoryTaskFilter = null;
+
     renderAssetHistoryTable(
       Array.isArray(state.assetHistoryTasks) ? state.assetHistoryTasks : []
     );
@@ -2629,11 +2648,56 @@ function bindAssetKpiFilters() {
       };
     });
 }
+// =====================
+// ASSET HISTORY ACTIVE FILTER (TASK CLICK & LEGEND SYNC)
+// =====================
+
+function renderAssetHistoryActiveFilter() {
+
+  const box = document.getElementById("assetHistoryActiveFilter");
+  if (!box) return;
+
+  // task filter
+  if (state.assetHistoryTaskFilter) {
+    box.innerHTML = `
+      <span>
+        Filter: ${state.assetHistoryTaskFilter}
+        <button id="clearHistoryFilter">✕</button>
+      </span>
+    `;
+  }
+
+  // type filter
+  else if (state.assetHistoryTypeFilter !== "all") {
+    box.innerHTML = `
+      <span>
+        Filter: ${state.assetHistoryTypeFilter}
+        <button id="clearHistoryFilter">✕</button>
+      </span>
+    `;
+  }
+
+  else {
+    box.innerHTML = "";
+    return;
+  }
+
+  document.getElementById("clearHistoryFilter").onclick = () => {
+
+    state.assetHistoryTaskFilter = null;
+    state.assetHistoryTypeFilter = "all";
+
+    highlightActiveHistoryLegend();
+
+    renderAssetHistoryTable(state.assetHistoryTasks);
+  };
+}
 
 // =====================
 // ASSET HISTORY TABLE (EXECUTIONS)
 // =====================
 function renderAssetHistoryTable(history) {
+  renderAssetHistoryActiveFilter();
   const tasksWrap = document.querySelector(".asset-tasks-table");
   const historyWrap = document.querySelector(".asset-history-table");
   const tbody = document.querySelector("#assetHistoryTable tbody");
@@ -2658,15 +2722,24 @@ function renderAssetHistoryTable(history) {
   }
 
   /* =====================
-     APPLY TYPE FILTER
+     APPLY FILTERS
   ===================== */
-  const filtered =
-    state.assetHistoryTypeFilter === "all"
-      ? list
-      : list.filter(e => {
-          const t = getExecutionType(e);
-          return t === state.assetHistoryTypeFilter;
-        });
+  let filtered = list;
+
+  // TYPE FILTER
+  if (state.assetHistoryTypeFilter !== "all") {
+    filtered = filtered.filter(e => {
+      const t = getExecutionType(e);
+      return t === state.assetHistoryTypeFilter;
+    });
+  }
+
+  // TASK FILTER (click on task)
+  if (state.assetHistoryTaskFilter) {
+    filtered = filtered.filter(
+      e => e.task === state.assetHistoryTaskFilter
+    );
+  }
 
   if (filtered.length === 0) {
     tbody.innerHTML = `
@@ -2678,9 +2751,10 @@ function renderAssetHistoryTable(history) {
   }
 
   /* =====================
-     RENDER ROWS (🔥 USE filtered)
+     RENDER ROWS
   ===================== */
   filtered.forEach(e => {
+
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
 
@@ -2692,20 +2766,48 @@ function renderAssetHistoryTable(history) {
 
     tr.innerHTML = `
       <td>${formatDate(e.executed_at)}</td>
-      <td>
+
+      <td class="task-filter">
         ${e.task}
         ${(e.section || e.unit)
-          ? `<br><span class="small">${e.section || ""}${e.section && e.unit ? " / " : ""}${e.unit || ""}</span>`
+          ? `<br><small>${e.section || ""}${e.section && e.unit ? " / " : ""}${e.unit || ""}</small>`
           : ""}
       </td>
+
       <td>${e.type || "-"}</td>
       <td>${e.executed_by || "-"}</td>
       <td>${e.notes || "-"}</td>
+
       <td>
         <button class="btn-secondary btn-sm">View</button>
       </td>
     `;
 
+    /* =====================
+       TASK CLICK → FILTER
+    ===================== */
+    const taskCell = tr.querySelector(".task-filter");
+
+    taskCell.onclick = ev => {
+      ev.stopPropagation();
+
+      // toggle task filter
+      if (state.assetHistoryTaskFilter === e.task) {
+        state.assetHistoryTaskFilter = null;
+      } else {
+        state.assetHistoryTaskFilter = e.task;
+      }
+
+      // 🔹 clear legend filter
+      state.assetHistoryTypeFilter = "all";
+      highlightActiveHistoryLegend();
+
+      renderAssetHistoryTable(state.assetHistoryTasks);
+    };
+
+    /* =====================
+       VIEW BUTTON
+    ===================== */
     tr.querySelector("button").onclick = ev => {
       ev.stopPropagation();
       viewHistoryEntry(e.id);
@@ -2714,6 +2816,7 @@ function renderAssetHistoryTable(history) {
     tbody.appendChild(tr);
   });
 }
+
 
 // =====================
 // CLOSE

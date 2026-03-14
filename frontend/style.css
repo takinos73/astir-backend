@@ -1038,6 +1038,26 @@ tbody tr:hover { background: #131520; }
 /* =========================
    HISTORY TABLE (FINAL)
 ========================= */
+.history-active-filter {
+  margin: 6px 0 10px;
+  font-size: 12px;
+}
+
+.history-active-filter span {
+  background: #2485e7;
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.history-active-filter button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+
 #historyTable { table-layout: fixed; }
 
 #historyTable th,
@@ -1054,6 +1074,11 @@ tbody tr:hover { background: #131520; }
   background: #131721;
   text-transform: uppercase;
 }
+#assetHistoryTable small {
+  font-size: .75em;
+  color: #a0a0a0;
+}
+
 
 /* DATE */
 #historyTable th:nth-child(1),
@@ -1072,6 +1097,7 @@ tbody tr:hover { background: #131520; }
 /* TASK */
 #historyTable th:nth-child(3),
 #historyTable td:nth-child(3) { text-align: left; }
+
 
 /* EXECUTED BY */
 #historyTable th:nth-child(4),
