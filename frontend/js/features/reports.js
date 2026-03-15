@@ -147,7 +147,11 @@ if (state.historyDateFrom) {
         color: #111;
       }
 
-      h2 { margin-bottom: 4px; }
+      h2{
+        margin-bottom:8px;
+        border-bottom:2px solid #333;
+        padding-bottom:4px;
+      }
 
       .asset-meta {
         font-size: 12px;
