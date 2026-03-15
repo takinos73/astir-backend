@@ -1847,14 +1847,25 @@ function activateAssetTab(tabName) {
     );
   }
 
-  if (tabName === "history") {
+if (tabName === "history") {
 
-    state.assetHistoryTaskFilter = null;
+  // reset filters when entering history tab
+  state.assetHistoryTaskFilter = null;
+  state.assetHistoryTypeFilter = "all";
+  state.historyDateFrom = null;
+  state.historyDateTo = null;
 
-    renderAssetHistoryTable(
-      Array.isArray(state.assetHistoryTasks) ? state.assetHistoryTasks : []
-    );
-  }
+  bindHistoryRangeFilters();
+
+  renderAssetHistoryTable(
+    Array.isArray(state.assetHistoryTasks)
+      ? state.assetHistoryTasks
+      : []
+  );
+
+  highlightActiveHistoryLegend();
+
+}
 }
 
 // =====================

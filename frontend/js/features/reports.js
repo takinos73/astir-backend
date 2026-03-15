@@ -8,6 +8,41 @@ function getFilteredAssetHistory(list) {
 
   let filtered = list;
 
+   /* DATE FILTER */
+
+  if (state.historyDateFrom) {
+
+    const from = state.historyDateFrom;
+
+    filtered = filtered.filter(e => {
+      console.log("EXEC:", e.executed_at);
+
+      const execDate = new Date(e.executed_at);
+
+      if (isNaN(execDate)) return false;
+
+      return execDate >= from;
+
+    });
+
+  }
+
+  if (state.historyDateTo) {
+
+    const to = state.historyDateTo;
+
+    filtered = filtered.filter(e => {
+
+      const execDate = new Date(e.executed_at);
+
+      if (isNaN(execDate)) return false;
+
+      return execDate <= to;
+
+    });
+
+  }
+  
   /* TYPE FILTER */
   if (state.assetHistoryTypeFilter !== "all") {
 
@@ -35,6 +70,41 @@ function getFilteredAssetHistory(list) {
   return filtered;
 
 }
+function bindHistoryRangeFilters(){
+
+  document.querySelectorAll(".history-range-btn")
+    .forEach(btn=>{
+
+      btn.addEventListener("click",()=>{
+
+        document
+          .querySelectorAll(".history-range-btn")
+          .forEach(b=>b.classList.remove("active"));
+
+        btn.classList.add("active");
+
+        const range = btn.dataset.range;
+
+        if(range==="all"){
+          state.historyDateFrom = null;
+        }
+        else{
+
+          const days = parseInt(range);
+
+          const d = new Date();
+          d.setDate(d.getDate() - days);
+
+          state.historyDateFrom = d;
+        }
+
+        renderAssetHistoryTable(state.assetHistoryTasks);
+
+      });
+
+    });
+
+}
 //* =====================
 // PRINT ASSET HISTORY
 // ===================== */
@@ -51,6 +121,16 @@ function printAssetHistory() {
   const asset = state.assetsData.find(
     a => a.serial_number === state.currentAssetSerial
   ) || {};
+  let periodLabel = "All history";
+
+if (state.historyDateFrom) {
+
+  const days = Math.round(
+    (new Date() - new Date(state.historyDateFrom)) / 86400000
+  );
+
+  periodLabel = `Last ${days} days`;
+}
 
   let html = `
   <html>
@@ -123,9 +203,9 @@ function printAssetHistory() {
 
     <div class="asset-meta">
       <strong>Line:</strong> ${asset.line || "-"}<br>
-      <strong>Asset:</strong> ${asset.model || "-"}<br>
-      <strong>S/N:</strong> ${asset.serial_number || "-"}<br>
-      
+      <strong>Asset:</strong> ${asset.model|| "-"}<br>
+      <strong>Serial:</strong> ${asset.serial_number || "-"}<br>      
+      <strong>Period:</strong> ${periodLabel}<br>
       <strong>Printed:</strong> ${new Date().toLocaleDateString()}
     </div>
 

@@ -1750,10 +1750,26 @@
 
       <!-- =====================
         TAB: HISTORY
-===================== -->
+      ===================== -->
 <div class="asset-tab-panel" data-panel="history">
 
-  <div class="history-toolbar">
+    <div class="history-toolbar">
+
+    <div class="history-range">
+
+      <button class="history-range-btn active" data-range="30">
+        Last 30 days
+      </button>
+
+      <button class="history-range-btn" data-range="90">
+        Last 90 days
+      </button>
+
+      <button class="history-range-btn" data-range="all">
+        All
+      </button>
+
+    </div>
 
     <div id="assetHistoryActiveFilter" class="history-active-filter"></div>
 
@@ -1803,7 +1819,6 @@
   </div>
 
 </div>
-
 
       <!-- ACTIONS -->
       <div class="asset-view-footer">
