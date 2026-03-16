@@ -2162,7 +2162,7 @@ tr.history-unplanned {
 }
 /* ⛔ ΜΗΝ κάνει scroll όλο το modal */
 #assetViewOverlay .modal-box {
-  max-height: 90vh;  
+  max-height: 95vh;  
   overflow: hidden;
 }
 
