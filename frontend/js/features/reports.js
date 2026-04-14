@@ -194,7 +194,7 @@ if (state.historyDateFrom) {
       }
 
       .status-planned {
-        color: #0d47a1;
+        color: #fef900;
       }
 
     </style>
