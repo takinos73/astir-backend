@@ -267,6 +267,28 @@ function getSectionsForAsset(assetId) {
 
   return Array.from(set).sort();
 }
+function getUnitsForAssetSection(assetId, section) {
+  if (!assetId || !section || !Array.isArray(state.tasksData)) return [];
+
+  const id = Number(assetId);
+  const sec = String(section).trim();
+  const set = new Set();
+
+  state.tasksData.forEach(t => {
+    if (
+      Number(t.asset_id) === id &&
+      String(t.section || "").trim() === sec &&
+      t.unit &&
+      String(t.unit).trim() !== ""
+    ) {
+      set.add(String(t.unit).trim());
+    }
+  });
+
+  return Array.from(set).sort((a, b) =>
+    a.localeCompare(b, "el", { sensitivity: "base" })
+  );
+}
 
 // =====================
 // TASK TYPE FILTER
@@ -1066,7 +1088,21 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
   const sectionSelect = document.getElementById("nt-section");
   const sectionInput  = document.getElementById("nt-section-input");
 
+  const unitSelect = document.getElementById("nt-unit");
+  const unitInput  = document.getElementById("nt-unit-input");
+
   if (!assetId || !sectionSelect || !sectionInput) return;
+
+  // reset unit κάθε φορά που αλλάζει asset
+  if (unitSelect) {
+    unitSelect.innerHTML = `<option value="">Select Unit</option>`;
+    unitSelect.style.display = "none";
+  }
+
+  if (unitInput) {
+    unitInput.value = "";
+    unitInput.style.display = "block";
+  }
 
   const sections = getSectionsForAsset(assetId);
 
@@ -1081,9 +1117,11 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
 
     sectionSelect.style.display = "block";
     sectionInput.style.display = "none";
+    sectionInput.value = "";
   } else {
     sectionSelect.style.display = "none";
     sectionInput.style.display = "block";
+    sectionInput.value = "";
   }
 
   /* =====================
@@ -1099,15 +1137,105 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
         sectionSelect.value = match.value;
         sectionSelect.disabled = true;
         sectionSelect.classList.add("locked");
+
+        // φορτώνει units για locked section
+        if (typeof populateUnitsForSection === "function") {
+          populateUnitsForSection(assetId, match.value);
+        }
       }
     } else {
       sectionInput.value = state.followUpSectionValue;
       sectionInput.disabled = true;
       sectionInput.classList.add("locked");
+
+      // φορτώνει units για custom/locked section
+      if (typeof populateUnitsForSection === "function") {
+        populateUnitsForSection(assetId, sectionInput.value);
+      }
     }
 
     state.lockSectionOnce = false;
     state.followUpSectionValue = null;
+  }
+});
+
+  /* ===================== POPULATE SECTIONS BY ASSET (ADD TASK)
+  POPULATE UNITS BY ASSET + SECTION (ADD TASK)
+  =====================*/
+
+function getUnitsForAssetSection(assetId, section) {
+  if (!assetId || !section || !Array.isArray(state.tasksData)) return [];
+
+  const id = Number(assetId);
+  const sec = String(section).trim();
+  const set = new Set();
+
+  state.tasksData.forEach(t => {
+    if (
+      Number(t.asset_id) === id &&
+      String(t.section || "").trim() === sec &&
+      t.unit &&
+      String(t.unit).trim() !== ""
+    ) {
+      set.add(String(t.unit).trim());
+    }
+  });
+
+  return Array.from(set).sort((a, b) =>
+    a.localeCompare(b, "el", { sensitivity: "base" })
+  );
+}
+
+  function populateUnitsForSection(assetId, section) {
+    const unitSelect = document.getElementById("nt-unit");
+    const unitInput = document.getElementById("nt-unit-input");
+
+    if (!unitSelect || !unitInput) return;
+
+    unitSelect.innerHTML = "";
+
+    const units = getUnitsForAssetSection(assetId, section);
+
+    if (units.length > 0) {
+      unitSelect.innerHTML =
+        `<option value="">Select unit</option>` +
+        units.map(u => `<option value="${u}">${u}</option>`).join("") +
+        `<option value="__new__">➕ New unit</option>`;
+
+      unitSelect.style.display = "block";
+      unitInput.style.display = "none";
+      unitInput.value = "";
+    } else {
+      unitSelect.style.display = "none";
+      unitInput.style.display = "block";
+      unitInput.value = "";
+    }
+  }
+  document.getElementById("nt-section")?.addEventListener("change", e => {
+  const assetId = document.getElementById("nt-asset")?.value;
+  const section = e.target.value;
+
+  populateUnitsForSection(assetId, section);
+});
+
+document.getElementById("nt-section-input")?.addEventListener("input", e => {
+  const assetId = document.getElementById("nt-asset")?.value;
+  const section = e.target.value;
+
+  populateUnitsForSection(assetId, section);
+});
+document.getElementById("nt-unit")?.addEventListener("change", e => {
+  const unitInput = document.getElementById("nt-unit-input");
+
+  if (!unitInput) return;
+
+  if (e.target.value === "__new__") {
+    unitInput.style.display = "block";
+    unitInput.value = "";
+    unitInput.focus();
+  } else {
+    unitInput.style.display = "none";
+    unitInput.value = "";
   }
 });
 
@@ -2943,7 +3071,18 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
         ? document.getElementById("nt-section").value || null
         : document.getElementById("nt-section-input")?.value || null,
 
-    unit: document.getElementById("nt-unit")?.value || null,
+    unit: (() => {
+        const unitSelect = document.getElementById("nt-unit");
+        const unitInput = document.getElementById("nt-unit-input");
+
+        if (unitSelect && unitSelect.style.display !== "none") {
+          if (unitSelect.value && unitSelect.value !== "__new__") {
+            return unitSelect.value;
+          }
+        }
+
+        return unitInput?.value?.trim() || null;
+    })(),
     task: taskDesc,
     type: document.getElementById("nt-type")?.value || null,
     notes: document.getElementById("nt-notes")?.value || null,
