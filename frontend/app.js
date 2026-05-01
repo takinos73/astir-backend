@@ -4260,34 +4260,65 @@ function renderAssetsCards() {
   });
 
   // 🟡 Set Idle
-  idleItem?.addEventListener("click", async e => {
-    e.stopPropagation();
-    console.warn("IDLE CALLED", a.id);
-    menu.style.display = "none";
+    idleItem?.addEventListener("click", async e => {
+      e.stopPropagation();
+      console.warn("IDLE CALLED", a.id);
+      menu.style.display = "none";
 
-    await fetch(`${API}/assets/${a.id}/idle`, { method: "POST" });
-    loadAssets();
-  });
+      const currentLineFilter =
+        document.getElementById("assetLineFilter")?.value || "all";
+
+      const res = await fetch(`${API}/assets/${a.id}/idle`, {
+        method: "POST"
+      });
+
+      if (!res.ok) {
+        alert("Set Idle failed");
+        return;
+      }
+
+      await loadAssets();
+
+      const lineFilter = document.getElementById("assetLineFilter");
+      if (lineFilter) {
+        lineFilter.value = currentLineFilter;
+      }
+
+      renderAssetsCards();
+    });
 
   // 🟢 Resume
-  resumeItem?.addEventListener("click", async e => {
-  e.stopPropagation();
-  menu.style.display = "none";
+    resumeItem?.addEventListener("click", async e => {
+      e.stopPropagation();
+      menu.style.display = "none";
 
-  const res = await fetch(`${API}/assets/${a.id}/resume`, {
-    method: "POST"
-  });
+      const currentLineFilter =
+        document.getElementById("assetLineFilter")?.value || "all";
 
-  if (!res.ok) {
-    alert("Resume failed");
-    return;
-  }
-  // 🔄 Refresh everything cleanly
-  refreshSystemState();
-});
-  wrap.appendChild(card);
-});
+      const res = await fetch(`${API}/assets/${a.id}/resume`, {
+        method: "POST"
+      });
 
+      if (!res.ok) {
+        alert("Resume failed");
+        return;
+      }
+
+      await loadAssets();
+
+      const lineFilter = document.getElementById("assetLineFilter");
+      if (lineFilter) {
+        lineFilter.value = currentLineFilter;
+      }
+
+      renderAssetsCards();
+
+      if (state.currentAssetSerial && typeof refreshAssetView === "function") {
+        await refreshAssetView();
+      }
+    });
+      wrap.appendChild(card);
+    });
 
   // Apply role visibility on newly rendered action areas
   if (typeof applyRoleVisibility === "function") {
