@@ -3183,6 +3183,9 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert(err.message);
   }
 });
+/* =====================
+   ASSET HISTORY LEGEND – COUNT UPDATE
+===================== */
 
  function updateAssetHistoryLegend(history) {
   if (!Array.isArray(history)) return;
@@ -3521,6 +3524,26 @@ state.lockSectionOnce = !!state.followUpSectionValue;
   // 🔹 Close Task View to save one click (UX win)
   const tv = document.getElementById("taskViewOverlay");
   if (tv) tv.style.display = "none";
+});
+
+document.getElementById("nt-type")?.addEventListener("input", () => {
+  state.taskTypeTouchedManually = true;
+});
+/* =====================
+   TASK DESCRIPTION → TYPE SUGGESTION
+===================== */
+
+document.getElementById("nt-task")?.addEventListener("input", e => {
+  const typeEl = document.getElementById("nt-type");
+  if (!typeEl) return;
+
+  if (state.taskTypeTouchedManually) return;
+
+  const suggestion = suggestTaskTypeFromText(e.target.value);
+
+  if (suggestion) {
+    typeEl.value = suggestion;
+  }
 });
 
 // =====================

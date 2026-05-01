@@ -7,6 +7,9 @@ window.state = {
   assetsData: [],
   executionsData: [],
   mttrData: [],
+  
+  // UI / FORM STATE
+  taskTypeTouchedManually: false,
 
   // TASK FILTERS
   taskDateFrom: null,

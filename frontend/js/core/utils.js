@@ -416,3 +416,39 @@ async function refreshSystemState() {
     renderHistoryTable();
   }
 }
+
+/* =====================
+   TASK TYPE SUGGESTION
+===================== */
+
+function suggestTaskTypeFromText(text) {
+  const q = String(text || "").toLowerCase();
+
+  if (!q.trim()) return "";
+
+  if (q.includes("ελεγχ") || q.includes("έλεγχ") || q.includes("check") || q.includes("inspection")) {
+    return "ΕΛΕΓΧΟΣ";
+  }
+
+  if (q.includes("επισκευ") || q.includes("repair") || q.includes("fix")) {
+    return "ΕΠΙΣΚΕΥΗ";
+  }
+
+  if (q.includes("λιπαν") || q.includes("γρασαρ") || q.includes("lubric")) {
+    return "ΛΙΠΑΝΣΗ";
+  }
+
+  if (q.includes("καθαρισ") || q.includes("clean")) {
+    return "ΚΑΘΑΡΙΣΜΟΣ";
+  }
+
+  if (q.includes("ρυθμισ") || q.includes("adjust")) {
+    return "ΡΥΘΜΙΣΗ";
+  }
+
+  if (q.includes("αντικαταστ") || q.includes("replace") || q.includes("replacement")) {
+    return "ΑΝΤΙΚΑΤΑΣΤΑΣΗ";
+  }
+
+  return "";
+}
