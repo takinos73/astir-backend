@@ -3224,6 +3224,66 @@ function resetAddTaskAssetContext() {
   lineSel.classList.remove("locked");
   assetSel.classList.remove("locked");
 }
+/* =====================
+   RESET ADD TASK FORM TO DEFAULT STATE
+===================== */
+
+function resetAddTaskForm() {
+  resetSectionLockState();
+
+  state.taskTypeTouchedManually = false;
+
+  document
+    .querySelectorAll("#addTaskModal input, #addTaskModal textarea, #addTaskModal select")
+    .forEach(el => {
+      el.value = "";
+      el.disabled = false;
+      el.classList.remove("locked");
+    });
+
+  const typeSelect = document.getElementById("taskPlannedType");
+  if (typeSelect) {
+    typeSelect.value = "planned";
+    applyAddTaskTypeUI(true);
+  }
+
+  const assetSel = document.getElementById("nt-asset");
+  if (assetSel) {
+    assetSel.innerHTML = `<option value="">Select Asset</option>`;
+    assetSel.disabled = true;
+  }
+
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput = document.getElementById("nt-section-input");
+
+  if (sectionSelect) {
+    sectionSelect.innerHTML = "";
+    sectionSelect.style.display = "none";
+  }
+
+  if (sectionInput) {
+    sectionInput.value = "";
+    sectionInput.style.display = "block";
+  }
+
+  const unitSelect = document.getElementById("nt-unit");
+  const unitInput = document.getElementById("nt-unit-input");
+
+  if (unitSelect) {
+    unitSelect.innerHTML = `<option value="">Select Unit</option>`;
+    unitSelect.style.display = "none";
+  }
+
+  if (unitInput) {
+    unitInput.value = "";
+    unitInput.style.display = "block";
+  }
+
+  const addOverlay = document.getElementById("addTaskOverlay");
+  if (addOverlay) {
+    addOverlay.style.zIndex = "";
+  }
+}
 
 
 // =====================
@@ -3627,7 +3687,7 @@ function resetSectionLockState() {
   ===================== */ 
     
   document.getElementById("cancelAddTask")?.addEventListener("click", () => {
-  resetSectionLockState();
+  resetAddTaskForm();
   document.getElementById("addTaskOverlay").style.display = "none";
 });
   /* =================================
