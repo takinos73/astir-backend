@@ -367,7 +367,7 @@ function generateStatusReportPdf() {
 
 /* Planned manual tasks */
 .status-planned_manual {
-  color: #f9a825;   /* amber */
+  color: #fe9c00;   /* amber */
   font-weight: bold;
 }
 
