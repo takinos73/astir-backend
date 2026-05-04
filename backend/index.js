@@ -1317,9 +1317,10 @@ app.get("/executions", async (req, res) => {
         e.id,
         e.executed_at,
         e.executed_by,
-        e.technician_id,   -- 🔥 ADD THIS
+        e.technician_id,
         e.updated_at,
-        e.duration_minutes AS duration_min,      -- 👈 ΝΕΟ (SERVICE TIME)
+        e.duration_minutes AS duration_min,
+        e.prev_due_date,
 
         t.task,
         t.section,
