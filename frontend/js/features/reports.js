@@ -1894,17 +1894,16 @@ function generateKpiReportPdf() {
     return due < today;
   });
 
-  // Preventive expected occurrences in period
-  // Counts recurring preventive tasks based on frequency_hours.
-  const preventiveExpectedCount = scopedTasks
-    .filter(t =>
-      t.status !== "Done" &&
-      isPreventiveRow(t) &&
-      !!t.due_date
-    )
-    .reduce((sum, t) => {
-      return sum + countPreventiveOccurrencesInRange(t);
-    }, 0);
+  const preventiveExpectedExecutions = allExec
+    .filter(e => {
+      if (lineSel !== "all" && String(e.line || "") !== lineSel) return false;
+      if (!isPreventiveRow(e)) return false;
+      if (!e.prev_due_date) return false;
+
+      return inRange(e.prev_due_date);
+    });
+
+const preventiveExpectedCount = preventiveExpectedExecutions.length;
 
   // Executions scoped + period
   const scopedExecPeriod = allExec
@@ -1920,7 +1919,9 @@ function generateKpiReportPdf() {
   }
 
   // Completed preventive in period (from executions)
-  const preventiveCompleted = scopedExecPeriod.filter(e => getExecType(e) === "preventive");
+  const preventiveCompleted = preventiveExpectedExecutions.filter(e =>
+  e.executed_at && inRange(e.executed_at)
+);
 
   // Mix (period)
   const breakdownExec = scopedExecPeriod.filter(e => getExecType(e) === "breakdown");
