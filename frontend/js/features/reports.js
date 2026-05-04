@@ -1918,8 +1918,15 @@ const preventiveExpectedCount = preventiveExpectedExecutions.length;
     return;
   }
 
-  // Completed preventive in period (from executions)
-  const preventiveCompleted = preventiveExpectedExecutions.filter(e =>
+  // Completed preventive executions in selected period
+  // This must match History preventive count for the same filters.
+  const preventiveCompletedPeriod = scopedExecPeriod.filter(e =>
+    getExecType(e) === "preventive"
+  );
+
+// Preventive completed against due schedule in selected period
+// Used only for compliance calculation.
+const preventiveCompletedForCompliance = preventiveExpectedExecutions.filter(e =>
   e.executed_at && inRange(e.executed_at)
 );
 
@@ -1958,11 +1965,25 @@ const preventiveExpectedCount = preventiveExpectedExecutions.length;
   const prevDueCount = preventiveExpectedCount;
   const prevCompletedCount = preventiveCompleted.length;
 
-  // Compliance should never display above 100%.
-  // Extra executions are good, but not >100 compliance.
-  const prevComplianceRaw = pct(prevCompletedCount, prevDueCount);
+  const prevDueCount = preventiveExpectedCount;
+
+  // This is the visible completed count.
+  // It should match History preventive executions in the selected period.
+  const prevCompletedCount = preventiveCompletedPeriod.length;
+
+  // This is only for compliance.
+  // It counts preventive executions whose scheduled due date belongs to the selected period.
+  const prevCompletedForComplianceCount = preventiveCompletedForCompliance.length;
+
+  const prevComplianceRaw = pct(prevCompletedForComplianceCount, prevDueCount);
   const prevCompliance = Math.min(100, prevComplianceRaw);
-  const preventiveExtraCount = Math.max(0, prevCompletedCount - prevDueCount);
+
+  // Preventive executions done in the period but scheduled outside the period
+  // e.g. late catch-up work from previous period.
+  const preventiveOutOfPeriodDueCount = Math.max(
+    0,
+    prevCompletedCount - prevCompletedForComplianceCount
+  );
 
   const execTotal = scopedExecPeriod.length;
   const breakdownCount = breakdownExec.length;
@@ -2204,14 +2225,29 @@ const maturityLevel =
       <div class="kpi-title">Preventive Compliance • ${complianceStatus}</div>
       <div class="kpi-value">${prevCompliance}%</div>
       <div class="kpi-sub">
-        <div class="row"><span class="label">Preventive expected</span><span class="value">${prevDueCount}</span></div>
-        <div class="row"><span class="label">Preventive completed</span><span class="value">${prevCompletedCount}</span></div>
-        ${preventiveExtraCount > 0 ? `
+        
         <div class="row">
-          <span class="label">Extra preventive executions</span>
-          <span class="value">${preventiveExtraCount}</span>
+          <span class="label">Preventive expected</span>
+          <span class="value">${prevDueCount}</span>
         </div>
-      ` : ""}
+
+        <div class="row">
+          <span class="label">Preventive completed</span>
+          <span class="value">${prevCompletedCount}</span>
+        </div>
+
+        <div class="row">
+          <span class="label">Completed for expected</span>
+          <span class="value">${prevCompletedForComplianceCount}</span>
+        </div>
+
+        ${preventiveOutOfPeriodDueCount > 0 ? `
+          <div class="row">
+            <span class="label">Completed from other due periods</span>
+            <span class="value">${preventiveOutOfPeriodDueCount}</span>
+          </div>
+        ` : ""}
+
       </div>
     </div>
 
