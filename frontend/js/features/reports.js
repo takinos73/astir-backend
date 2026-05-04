@@ -1965,11 +1965,7 @@ const preventiveCompletedForCompliance = preventiveExpectedExecutions.filter(e =
   const prevDueCount = preventiveExpectedCount;
   const prevCompletedCount = preventiveCompleted.length;
 
-  
-  // This is the visible completed count.
-  // It should match History preventive executions in the selected period.
-  const prevCompletedCount = preventiveCompletedPeriod.length;
-
+ 
   // This is only for compliance.
   // It counts preventive executions whose scheduled due date belongs to the selected period.
   const prevCompletedForComplianceCount = preventiveCompletedForCompliance.length;
