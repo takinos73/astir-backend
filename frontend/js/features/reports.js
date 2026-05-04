@@ -1855,12 +1855,8 @@ function generateKpiReportPdf() {
       due = addHours(due, -freqHours);
     }
 
-    // Αν το current due είναι μετά το rangeStart, γύρνα πίσω αρκετά
-    while (due > rangeStart) {
-      const prev = addHours(due, -freqHours);
-      if (prev < new Date("2000-01-01")) break;
-      due = prev;
-    }
+    // Do NOT go backwards before the task's known due_date.
+    // due_date is treated as the first known scheduled occurrence.
 
     let count = 0;
 
