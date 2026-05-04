@@ -1854,7 +1854,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
-    max-height: 64px;
+    max-height: 54px;
     resize: vertical;
     margin-top: 3px;
 }
@@ -2053,7 +2053,11 @@ tr.history-unplanned {
   max-width: 1200px;
   max-height: 95vh;     /* 👈όριο */
 }
-
+.modal-history h3 {
+  margin: 2px 2px;
+  padding: 0 4px;
+  font-size: 1.2em;
+}
 .modal-box input {
   width: 100%;
   padding: 8px;

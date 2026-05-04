@@ -1831,6 +1831,53 @@ function generateKpiReportPdf() {
 
   const isBreakdownExec = (row) => row && row.is_planned === false;
 
+  const addHours = (date, hours) =>
+  new Date(date.getTime() + Number(hours) * 60 * 60 * 1000);
+
+  const countPreventiveOccurrencesInRange = (task) => {
+    if (!isPreventiveRow(task) || !task.due_date) return 0;
+
+    // Αν δεν υπάρχει επιλεγμένη περίοδος, fallback σε 1 occurrence
+    // γιατί "ALL" δεν μπορεί να υπολογίσει σωστά infinite recurrence.
+    if (!fromDate && !toDate) return 1;
+
+    const freqHours = safeNum(task.frequency_hours);
+    if (freqHours <= 0) return 0;
+
+    const rangeStart = fromDate || new Date(task.due_date);
+    const rangeEnd = toDate || today;
+
+    let due = new Date(task.due_date);
+    due.setHours(0, 0, 0, 0);
+
+    // Γύρνα πίσω σε προηγούμενες επαναλήψεις μέχρι να φτάσεις στην αρχή του range
+    while (addHours(due, -freqHours) >= rangeStart) {
+      due = addHours(due, -freqHours);
+    }
+
+    // Αν το current due είναι μετά το rangeStart, γύρνα πίσω αρκετά
+    while (due > rangeStart) {
+      const prev = addHours(due, -freqHours);
+      if (prev < new Date("2000-01-01")) break;
+      due = prev;
+    }
+
+    let count = 0;
+
+    while (due <= rangeEnd) {
+      if (due >= rangeStart && due <= rangeEnd) {
+        count++;
+      }
+
+      due = addHours(due, freqHours);
+
+      // safety guard
+      if (count > 10000) break;
+    }
+
+    return count;
+  };
+
   const getExecType = (e) => {
     if (isBreakdownExec(e)) return "breakdown";
     if (isPreventiveRow(e)) return "preventive";
@@ -1851,13 +1898,17 @@ function generateKpiReportPdf() {
     return due < today;
   });
 
-  // Preventive Due in period (from tasks)
-  const preventiveDue = scopedTasks.filter(t =>
-    t.status !== "Done" &&
-    isPreventiveRow(t) &&
-    !!t.due_date &&
-    inRange(t.due_date)
-  );
+  // Preventive expected occurrences in period
+  // Counts recurring preventive tasks based on frequency_hours.
+  const preventiveExpectedCount = scopedTasks
+    .filter(t =>
+      t.status !== "Done" &&
+      isPreventiveRow(t) &&
+      !!t.due_date
+    )
+    .reduce((sum, t) => {
+      return sum + countPreventiveOccurrencesInRange(t);
+    }, 0);
 
   // Executions scoped + period
   const scopedExecPeriod = allExec
@@ -1907,9 +1958,14 @@ function generateKpiReportPdf() {
   const overdueCount = overdueTasks.length;
   const overdueRate = pct(overdueCount, activeTasksWithDue.length);
 
-  const prevDueCount = preventiveDue.length;
+  const prevDueCount = preventiveExpectedCount;
   const prevCompletedCount = preventiveCompleted.length;
-  const prevCompliance = pct(prevCompletedCount, prevDueCount);
+
+  // Compliance should never display above 100%.
+  // Extra executions are good, but not >100 compliance.
+  const prevComplianceRaw = pct(prevCompletedCount, prevDueCount);
+  const prevCompliance = Math.min(100, prevComplianceRaw);
+  const preventiveExtraCount = Math.max(0, prevCompletedCount - prevDueCount);
 
   const execTotal = scopedExecPeriod.length;
   const breakdownCount = breakdownExec.length;
@@ -1917,7 +1973,7 @@ function generateKpiReportPdf() {
   const prevPct = pct(prevCompletedCount, execTotal);
   const plannedPct = pct(plannedExec.length, execTotal);
   const breakdownPct = pct(breakdownCount, execTotal);
-  // =====================
+// =====================
 // MTTR per Asset (Top offenders)
 // =====================
 const mttrByAssetMap = new Map();
@@ -2151,8 +2207,14 @@ const maturityLevel =
       <div class="kpi-title">Preventive Compliance • ${complianceStatus}</div>
       <div class="kpi-value">${prevCompliance}%</div>
       <div class="kpi-sub">
-        <div class="row"><span class="label">Preventive due (period)</span><span class="value">${prevDueCount}</span></div>
+        <div class="row"><span class="label">Preventive expected</span><span class="value">${prevDueCount}</span></div>
         <div class="row"><span class="label">Preventive completed</span><span class="value">${prevCompletedCount}</span></div>
+        ${preventiveExtraCount > 0 ? `
+        <div class="row">
+          <span class="label">Extra preventive executions</span>
+          <span class="value">${preventiveExtraCount}</span>
+        </div>
+      ` : ""}
       </div>
     </div>
 
