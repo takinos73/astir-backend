@@ -1963,18 +1963,20 @@ const preventiveCompletedForCompliance = preventiveExpectedExecutions.filter(e =
   const overdueRate = pct(overdueCount, activeTasksWithDue.length);
 
   const prevDueCount = preventiveExpectedCount;
-  const prevCompletedCount = preventiveCompleted.length;
 
- 
-  // This is only for compliance.
-  // It counts preventive executions whose scheduled due date belongs to the selected period.
+  // Visible completed count.
+  // This matches History preventive executions in the selected period.
+  const prevCompletedCount = preventiveCompletedPeriod.length;
+
+  // Used only for compliance calculation.
+  // These are preventive executions whose prev_due_date belongs to the selected period.
   const prevCompletedForComplianceCount = preventiveCompletedForCompliance.length;
 
   const prevComplianceRaw = pct(prevCompletedForComplianceCount, prevDueCount);
   const prevCompliance = Math.min(100, prevComplianceRaw);
 
-  // Preventive executions done in the period but scheduled outside the period
-  // e.g. late catch-up work from previous period.
+  // Preventive executions done in this period,
+  // but scheduled/due in another period.
   const preventiveOutOfPeriodDueCount = Math.max(
     0,
     prevCompletedCount - prevCompletedForComplianceCount
