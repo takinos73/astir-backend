@@ -267,6 +267,10 @@ function getSectionsForAsset(assetId) {
 
   return Array.from(set).sort();
 }
+/* ===========================
+GET ASSET UNITS FOR SECTION (FOR FILTERING)
+=============================*/
+
 function getUnitsForAssetSection(assetId, section) {
   if (!assetId || !section || !Array.isArray(state.tasksData)) return [];
 
@@ -289,6 +293,160 @@ function getUnitsForAssetSection(assetId, section) {
     a.localeCompare(b, "el", { sensitivity: "base" })
   );
 }
+/* =====================
+   REUSE PREVIOUS TASK – HELPERS
+===================== */
+
+function getSelectedAddTaskAssetModel() {
+  const assetId = document.getElementById("nt-asset")?.value;
+  if (!assetId || !Array.isArray(state.assetsData)) return null;
+
+  const asset = state.assetsData.find(a =>
+    String(a.id) === String(assetId)
+  );
+
+  return asset?.model || null;
+}
+
+function getCurrentAddTaskSection() {
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput = document.getElementById("nt-section-input");
+
+  if (sectionSelect && sectionSelect.style.display !== "none") {
+    return sectionSelect.value?.trim() || "";
+  }
+
+  return sectionInput?.value?.trim() || "";
+}
+
+function getCurrentAddTaskUnit() {
+  const unitSelect = document.getElementById("nt-unit");
+  const unitInput = document.getElementById("nt-unit-input");
+
+  if (unitSelect && unitSelect.style.display !== "none") {
+    if (unitSelect.value && unitSelect.value !== "__new__") {
+      return unitSelect.value.trim();
+    }
+  }
+
+  return unitInput?.value?.trim() || "";
+}
+
+function getReusableTasksForContext() {
+  const machineModel = getSelectedAddTaskAssetModel();
+  const section = getCurrentAddTaskSection();
+  const unit = getCurrentAddTaskUnit();
+
+  if (!machineModel || !section || !unit) return [];
+  if (!Array.isArray(state.executionsData)) return [];
+
+  const map = new Map();
+
+  state.executionsData.forEach(e => {
+    const sameMachine =
+      String(e.machine || "").trim() === String(machineModel).trim();
+
+    const sameSection =
+      String(e.section || "").trim() === String(section).trim();
+
+    const sameUnit =
+      String(e.unit || "").trim() === String(unit).trim();
+
+    if (!sameMachine || !sameSection || !sameUnit) return;
+    if (!e.task || !String(e.task).trim()) return;
+
+    const key = [
+      e.task,
+      e.type || "",
+      e.section || "",
+      e.unit || ""
+    ].join("||");
+
+    if (!map.has(key)) {
+      map.set(key, {
+        task: e.task,
+        type: e.type || "",
+        notes: e.notes || "",
+        duration_min: e.duration_min || "",
+        last_used: e.executed_at || null
+      });
+      return;
+    }
+
+    const existing = map.get(key);
+
+    if (
+      e.executed_at &&
+      (!existing.last_used || new Date(e.executed_at) > new Date(existing.last_used))
+    ) {
+      existing.last_used = e.executed_at;
+      existing.notes = e.notes || existing.notes;
+      existing.duration_min = e.duration_min || existing.duration_min;
+    }
+  });
+
+  return Array.from(map.values())
+    .sort((a, b) => new Date(b.last_used || 0) - new Date(a.last_used || 0));
+}
+/* =====================
+    REFRESH REUSE TASK DROPDOWN BASED ON CURRENT CONTEXT
+===================== */
+
+function refreshReuseTaskDropdown() {
+  const block = document.getElementById("reuseTaskBlock");
+  const select = document.getElementById("nt-reuse-task");
+
+  if (!block || !select) return;
+
+  const reusable = getReusableTasksForContext();
+
+  select.innerHTML = `<option value="">Select previous task...</option>`;
+
+  if (reusable.length === 0) {
+    block.style.display = "none";
+    return;
+  }
+
+  reusable.forEach((r, index) => {
+    const opt = document.createElement("option");
+    opt.value = String(index);
+    opt.textContent = r.type
+      ? `${r.task} — ${r.type}`
+      : r.task;
+
+    opt.dataset.task = r.task || "";
+    opt.dataset.type = r.type || "";
+    opt.dataset.notes = r.notes || "";
+    opt.dataset.duration = r.duration_min || "";
+
+    select.appendChild(opt);
+  });
+
+  block.style.display = "block";
+}
+/* =====================
+    HANDLE REUSE TASK SELECTION
+===================== */
+
+document.getElementById("nt-reuse-task")?.addEventListener("change", e => {
+  const opt = e.target.selectedOptions?.[0];
+  if (!opt || !opt.value) return;
+
+  const taskEl = document.getElementById("nt-task");
+  const typeEl = document.getElementById("nt-type");
+  const notesEl = document.getElementById("nt-notes");
+  const durationEl = document.getElementById("nt-duration");
+
+  if (taskEl) taskEl.value = opt.dataset.task || "";
+  if (typeEl) typeEl.value = opt.dataset.type || "";
+  if (notesEl && opt.dataset.notes) notesEl.value = opt.dataset.notes;
+
+  if (durationEl && opt.dataset.duration) {
+    durationEl.value = opt.dataset.duration;
+  }
+
+  state.taskTypeTouchedManually = true;
+});
 
 // =====================
 // TASK TYPE FILTER
@@ -1091,9 +1249,18 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
   const unitSelect = document.getElementById("nt-unit");
   const unitInput  = document.getElementById("nt-unit-input");
 
+  const reuseBlock = document.getElementById("reuseTaskBlock");
+  const reuseSelect = document.getElementById("nt-reuse-task");
+
   if (!assetId || !sectionSelect || !sectionInput) return;
 
-  // reset unit κάθε φορά που αλλάζει asset
+  // 🔁 RESET REUSE TASK
+  if (reuseBlock) reuseBlock.style.display = "none";
+  if (reuseSelect) {
+    reuseSelect.innerHTML = `<option value="">Select previous task...</option>`;
+  }
+
+  // 🔁 RESET UNIT
   if (unitSelect) {
     unitSelect.innerHTML = `<option value="">Select Unit</option>`;
     unitSelect.style.display = "none";
@@ -1157,6 +1324,30 @@ document.getElementById("nt-asset")?.addEventListener("change", e => {
     state.lockSectionOnce = false;
     state.followUpSectionValue = null;
   }
+
+  // 🔁 REFRESH REUSE βάση νέου asset/section
+  if (typeof refreshReuseTaskDropdown === "function") {
+    refreshReuseTaskDropdown();
+  }
+});
+/* =====================
+   REUSE TASK – REFRESH TRIGGERS
+===================== */
+
+document.getElementById("nt-section")?.addEventListener("change", () => {
+  refreshReuseTaskDropdown();
+});
+
+document.getElementById("nt-section-input")?.addEventListener("input", () => {
+  refreshReuseTaskDropdown();
+});
+
+document.getElementById("nt-unit")?.addEventListener("change", () => {
+  refreshReuseTaskDropdown();
+});
+
+document.getElementById("nt-unit-input")?.addEventListener("input", () => {
+  refreshReuseTaskDropdown();
 });
 
   /* ===================== POPULATE SECTIONS BY ASSET (ADD TASK)
