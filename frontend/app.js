@@ -3716,21 +3716,19 @@ function resetSectionLockState() {
 
   function populateReportTechnicians() {
     const sel = document.getElementById("reportTechnician");
-    if (!sel) return;
+    if (!sel || !Array.isArray(state.techniciansData)) return;
 
     sel.innerHTML = `<option value="all">All Technicians</option>`;
 
-    if (!Array.isArray(state.techniciansData)) return;
-
-    state.techniciansData.forEach(t => {
-      const name = t.name || t.full_name || "Unknown";
-
-      sel.innerHTML += `
-        <option value="${t.id}">
-          ${name}
-        </option>
-      `;
-    });
+    state.techniciansData
+      .filter(t => t.active !== false)
+      .sort((a, b) => a.name.localeCompare(b.name, "el"))
+      .forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = String(t.id);
+        opt.textContent = t.name;
+        sel.appendChild(opt);
+      });
   }
 
   /* ===================================
@@ -5353,7 +5351,7 @@ document.addEventListener("keydown", (e) => {
 
   populateTechnicianDropdown();        // modal
   populateHistoryTechnicianFilter();   // history filter
-  populateReportTechnicianDropdown();  // ✅ report filter
+  populateReportTechnicians();  // ✅ report filter
 
   await loadTasks();
   await loadHistory();
