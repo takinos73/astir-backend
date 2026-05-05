@@ -1177,18 +1177,12 @@ document.getElementById("resetReportBtn")?.addEventListener("click", () => {
 
 /* =====================
    NON-PLANNED REPORT – DATA
-   (Breakdowns only)
 ===================== */
-
 function getFilteredNonPlannedExecutionsForReport() {
   const from = document.getElementById("dateFrom")?.value;
   const to = document.getElementById("dateTo")?.value;
   const line = document.getElementById("reportLine")?.value || "all";
-  const technician = document
-    .getElementById("reportTechnician")
-    ?.value
-    ?.trim()
-    .toLowerCase();
+  const technician = document.getElementById("reportTechnician")?.value || "all";
 
   const fromDate = from ? new Date(from) : null;
   if (fromDate) fromDate.setHours(0, 0, 0, 0);
@@ -1196,29 +1190,31 @@ function getFilteredNonPlannedExecutionsForReport() {
   const toDate = to ? new Date(to) : null;
   if (toDate) toDate.setHours(23, 59, 59, 999);
 
-  return state.executionsData.filter(e => {
-    // ❌ must have execution date
-    if (!e.executed_at) return false;
+  return (Array.isArray(state.executionsData) ? state.executionsData : [])
+    .filter(e => {
+      if (!e.executed_at) return false;
 
-    // ✅ NON-PLANNED ONLY (Breakdowns)
-    if (e.is_planned !== false) return false;
+      // only breakdown / non-planned
+      if (e.is_planned !== false) return false;
 
-    const execDate = new Date(e.executed_at);
+      const execDate = new Date(e.executed_at);
 
-    if (fromDate && execDate < fromDate) return false;
-    if (toDate && execDate > toDate) return false;
+      if (fromDate && execDate < fromDate) return false;
+      if (toDate && execDate > toDate) return false;
 
-    if (line !== "all" && e.line !== line) return false;
+      if (line !== "all" && String(e.line || "") !== String(line)) {
+        return false;
+      }
 
-    if (
-      technician &&
-      !e.executed_by?.toLowerCase().includes(technician)
-    ) {
-      return false;
-    }
+      if (
+        technician !== "all" &&
+        String(e.technician_id || "") !== String(technician)
+      ) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
 }
 /* =====================
    NON-PLANNED (BREAKDOWN) REPORT – PDF
