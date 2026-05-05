@@ -620,9 +620,18 @@ function generateExecutionMixPie(execPct) {
 function generateCompletedReportPdf() {
 
   const includeDetails =
-  document.getElementById("reportIncludeDetails")?.checked;
+    document.getElementById("reportIncludeDetails")?.checked;
 
-  const data = getFilteredExecutionsForReport();
+  const technicianFilter =
+    document.getElementById("reportTechnician")?.value || "all";
+
+  const allData = getFilteredExecutionsForReport();
+
+  const data = technicianFilter === "all"
+    ? allData
+    : allData.filter(e =>
+        String(e.technician_id || "") === String(technicianFilter)
+      );
 
   if (!Array.isArray(data) || data.length === 0) {
     alert("No completed tasks found for this report");
@@ -633,421 +642,158 @@ function generateCompletedReportPdf() {
   const to = document.getElementById("dateTo")?.value || "—";
   const lineFilter = document.getElementById("reportLine")?.value || "ALL";
 
-  // 🔽 SORT: LINE → ASSET → DATE → TECHNICIAN
+  const technicianLabel =
+    technicianFilter === "all"
+      ? "ALL TECHNICIANS"
+      : document.getElementById("reportTechnician")
+          ?.selectedOptions?.[0]?.textContent || "—";
+
+  // 🔽 SORT
   const sorted = [...data].sort((a, b) => {
-    // 1️⃣ LINE
     const la = (a.line || "").toString();
     const lb = (b.line || "").toString();
     if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
 
-    // 2️⃣ ASSET (Machine + SN)
     const aa = `${a.machine || ""} ${a.serial_number || ""}`;
     const ab = `${b.machine || ""} ${b.serial_number || ""}`;
     if (aa !== ab) return aa.localeCompare(ab, "el");
 
-    // 3️⃣ DATE
     const da = new Date(a.executed_at || 0);
     const db = new Date(b.executed_at || 0);
     if (da.getTime() !== db.getTime()) return da - db;
 
-    // 4️⃣ TECHNICIAN (tie-break)
     return (a.executed_by || "").localeCompare(b.executed_by || "");
   });
 
-  // 📊 TOTALS (on sorted dataset)
+  // 📊 TOTALS
   const totalsByTech = getExecutionTotalsByTechnician(sorted);
   const totalTasks = sorted.length;
   const totalTechs = Object.keys(totalsByTech).length;
-  const totalLines = new Set(
-    sorted.map(e => e.line).filter(Boolean)
-  ).size;
+  const totalLines = new Set(sorted.map(e => e.line).filter(Boolean)).size;
 
-// =====================
-// MTTR BY LINE (BREAKDOWNS)
-// =====================
-const mttrByLine = {};
-
-sorted.forEach(e => {
-  if (e.is_planned === false && e.duration_min != null) {
-    const line = e.line || "—";
-    if (!mttrByLine[line]) {
-      mttrByLine[line] = { total: 0, count: 0 };
-    }
-    mttrByLine[line].total += Number(e.duration_min);
-    mttrByLine[line].count += 1;
-  }
-});
-
-const mttrLineRows = Object.entries(mttrByLine)
-  .map(([line, v]) => ({
-    line,
-    avg: Math.round(v.total / v.count),
-    count: v.count
-  }))
-  .sort((a, b) => b.avg - a.avg);
-// =====================
-// EXECUTION MIX
-// =====================
-const execMix = {
-  preventive: 0,
-  planned: 0,
-  breakdown: 0
-};
-
-sorted.forEach(e => {
-  if (e.is_planned === false) {
-    execMix.breakdown++;
-  } else if (e.frequency_hours != null && Number(e.frequency_hours) > 0) {
-    execMix.preventive++;
-  } else {
-    execMix.planned++;
-  }
-});
-
-const execTotal = execMix.preventive + execMix.planned + execMix.breakdown;
-
-const execPct = {
-  preventive: execTotal ? Math.round(execMix.preventive * 100 / execTotal) : 0,
-  planned: execTotal ? Math.round(execMix.planned * 100 / execTotal) : 0,
-  breakdown: execTotal ? Math.round(execMix.breakdown * 100 / execTotal) : 0
-};
-// =====================
-// EXECUTIVE KPIs
-// =====================
-
-// 🔹 Breakdown Rate
-const breakdownRate = execPct.breakdown;
-
-// 🔹 Average MTTR (overall)
-const avgMttrAll = mttrLineRows.length
-  ? Math.round(
-      mttrLineRows.reduce((s, r) => s + r.avg, 0) /
-      mttrLineRows.length
-    )
-  : 0;
-
-// 🔹 Top Technician
-const sortedTech = Object.entries(totalsByTech)
-  .sort((a, b) => b[1] - a[1]);
-
-const topTech = sortedTech.length
-  ? sortedTech[0]
-  : ["—", 0];
-
-const topTechShare = totalTasks
-  ? Math.round((topTech[1] / totalTasks) * 100)
-  : 0;
-
-// 🔹 Total Downtime (Breakdowns)
-const totalBreakdownMinutes = sorted
-  .filter(e => e.is_planned === false && e.duration_min)
-  .reduce((s, e) => s + Number(e.duration_min), 0);
-
-const totalBreakdownHours = Math.round(totalBreakdownMinutes / 60);
-
-// 🔹 Maintenance Profile
-let maintenanceProfile = "Balanced";
-let maintenanceIcon = "🟠";
-
-if (breakdownRate < 15) {
-  maintenanceProfile = "Preventive-Driven";
-  maintenanceIcon = "🟢";
-} else if (breakdownRate > 30) {
-  maintenanceProfile = "Reactive / Breakdown-Heavy";
-  maintenanceIcon = "🔴";
-}
-
-// 🔹 Workload Concentration
-const workloadRisk =
-  topTechShare > 60
-    ? "🔴 High concentration risk"
-    : topTechShare > 40
-    ? "🟠 Moderate concentration"
-    : "🟢 Balanced distribution";
-
-  let html = `
-    <html>
-    <head>
-      <title>Completed Tasks Report</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
-
-        h2 { margin-bottom: 6px; }
-        h3 { margin: 14px 0 6px; }
-        .meta { font-size: 12px; margin-bottom: 14px; color: #555; }
-
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 6px 8px;
-          font-size: 12px;
-          vertical-align: top;
-        }
-        th { background: #eee; }
-
-        th.col-date, td.col-date { width: 10%; }
-        th.col-line, td.col-line { width: 7%; }
-        th.col-machine, td.col-machine { width: 14%; }
-        th.col-secunit, td.col-secunit { width: 20%; }
-        th.col-task, td.col-task { width: 29%; }
-        th.col-tech, td.col-tech { width: 20%; }
-
-        .small { font-size: 11px; color: #666; }
-
-        .report-summary {
-          margin-top: 26px;
-          padding-top: 10px;
-          border-top: 1px solid #e0e0e0;
-          font-size: 11px;
-          color: #555;
-        }
-
-        .report-summary strong {
-          color: #111;
-        }
-          .page-break {
-            page-break-before: always;
-          }
-
-      </style>
-    </head>
-    <body>
-
-      <h2>Completed Tasks Report</h2>
-
-      <div class="meta">
-        Period: ${from} → ${to}<br>
-        Line: ${lineFilter.toUpperCase()}
-      </div>
-      <h3>Executive Summary</h3>
-        <table>
-          <tbody>
-            <tr>
-              <td><strong>Total Completed Tasks</strong></td>
-              <td style="text-align:right;"><strong>${totalTasks}</strong></td>
-            </tr>
-            <tr>
-              <td>Technicians Involved</td>
-              <td style="text-align:right;">${totalTechs}</td>
-            </tr>
-            <tr>
-              <td>Lines Covered</td>
-              <td style="text-align:right;">${totalLines}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table>
-          <tbody>
-            <tr>
-              <td><strong>Breakdown Rate</strong></td>
-              <td style="text-align:right;"><strong>${breakdownRate}%</strong></td>
-            </tr>
-            <tr>
-              <td>Total Downtime (Breakdowns)</td>
-              <td style="text-align:right;">${totalBreakdownHours} h</td>
-            </tr>
-            <tr>
-              <td>Average MTTR</td>
-              <td style="text-align:right;">${formatDuration(avgMttrAll)}</td>
-            </tr>
-            <tr>
-              <td>Top Technician</td>
-              <td style="text-align:right;">
-                ${topTech[0]} (${topTech[1]} tasks – ${topTechShare}%)
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table>
-          <tbody>
-            <tr>
-              <td><strong>Maintenance Profile</strong></td>
-              <td style="text-align:right;">
-                ${maintenanceIcon} ${maintenanceProfile}
-              </td>
-            </tr>
-            <tr>
-              <td>Workload Distribution</td>
-              <td style="text-align:right;">${workloadRisk}</td>
-            </tr>
-          </tbody>
-        </table>
-
-
-      <h3>Summary by Technician</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Technician</th>
-            <th style="text-align:center;">Completed Tasks</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Object.entries(totalsByTech)
-            .sort((a, b) => b[1] - a[1])
-            .map(
-              ([tech, count]) => `
-                <tr>
-                  <td>${tech}</td>
-                  <td style="text-align:center;">${count}</td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
-      </table>
-<h3>Execution Mix</h3>
-<div style="display:flex; gap:40px; align-items:center;">
-  <div>
-    ${generateExecutionMixPie(execPct)}
-  </div>
-  <div>
-    <p><strong>Preventive:</strong> ${execPct.preventive}%</p>
-    <p><strong>Planned:</strong> ${execPct.planned}%</p>
-    <p><strong>Breakdown:</strong> ${execPct.breakdown}%</p>
-  </div>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th style="text-align:center;">Tasks</th>
-      <th style="text-align:right;">%</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Preventive</td>
-      <td style="text-align:center;">${execMix.preventive}</td>
-      <td style="text-align:right;">${execPct.preventive}%</td>
-    </tr>
-    <tr>
-      <td>Planned (Manual)</td>
-      <td style="text-align:center;">${execMix.planned}</td>
-      <td style="text-align:right;">${execPct.planned}%</td>
-    </tr>
-    <tr>
-      <td>Breakdown</td>
-      <td style="text-align:center;">${execMix.breakdown}</td>
-      <td style="text-align:right;"><strong>${execPct.breakdown}%</strong></td>
-    </tr>
-  </tbody>
-</table>
-
-      ${mttrLineRows.length ? `
-<h3>MTTR by Line (Breakdowns)</h3>
-${generateMttrBarChart(mttrLineRows)}
-
-<table>
-  <thead>
-    <tr>
-      <th>Line</th>
-      <th style="text-align:center;">Breakdowns</th>
-      <th style="text-align:right;">Avg MTTR</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${mttrLineRows.map(r => `
-      <tr>
-        <td>${r.line}</td>
-        <td style="text-align:center;">${r.count}</td>
-        <td style="text-align:right;"><strong>${formatDuration(r.avg)}</strong></td>
-      </tr>
-    `).join("")}
-  </tbody>
-</table>
-` : ""}
-
-      ${includeDetails ? `
-        <div class="page-break"></div>
-        <h3>Completed Tasks Details</h3>
-        <table>
-      ` : ``}
-          <thead>
-            <tr>
-              <th class="col-date">Date</th>              
-              <th class="col-machine">Machine</th>
-              <th class="col-secunit">Section / Unit</th>
-              <th class="col-task">Task</th>
-              <th class="col-tech">Technician</th>
-            </tr>
-          </thead>
-        <tbody>
-  `;
-
-  if (includeDetails) {
-
-      let currentLine = null;
+  // =====================
+  // MTTR BY LINE
+  // =====================
+  const mttrByLine = {};
 
   sorted.forEach(e => {
-
-    if (e.line !== currentLine) {
-
-      currentLine = e.line;
-
-      html += `
-        <tr>
-          <td colspan="5" style="
-            background:#f2f2f2;
-            font-weight:bold;
-            padding:8px;
-            border-top:3px solid #444;
-          ">
-            LINE ${currentLine || "—"}
-          </td>
-        </tr>
-      `;
+    if (e.is_planned === false && e.duration_min != null) {
+      const line = e.line || "—";
+      if (!mttrByLine[line]) {
+        mttrByLine[line] = { total: 0, count: 0 };
+      }
+      mttrByLine[line].total += Number(e.duration_min);
+      mttrByLine[line].count += 1;
     }
-
-    html += `
-      <tr>
-        <td class="col-date">
-          ${new Date(e.executed_at).toLocaleDateString("el-GR")}
-        </td>
-
-        <td class="col-machine">
-          ${e.machine}<br>
-          <span class="small">${e.serial_number || ""}</span>
-        </td>
-
-        <td class="col-secunit">
-          <strong>${e.section || "-"}</strong><br>
-          <span class="small">${e.unit || ""}</span>
-        </td>
-
-        <td class="col-task">${e.task}</td>
-
-        <td class="col-tech">${e.executed_by || "-"}</td>
-      </tr>
-    `;
   });
 
-      html += `
-            </tbody>
-          </table>
-      `;
-    }
+  const mttrLineRows = Object.entries(mttrByLine)
+    .map(([line, v]) => ({
+      line,
+      avg: Math.round(v.total / v.count),
+      count: v.count
+    }))
+    .sort((a, b) => b.avg - a.avg);
 
-    html += `
-          <div class="report-summary">
-            <strong>Total completed tasks:</strong> ${totalTasks}<br>
-            <strong>Technicians involved:</strong> ${totalTechs}<br>
-            <strong>Lines involved:</strong> ${totalLines}
-          </div>
+  // =====================
+  // EXECUTION MIX
+  // =====================
+  const execMix = { preventive: 0, planned: 0, breakdown: 0 };
 
-        </body>
-        </html>
-    `;
+  sorted.forEach(e => {
+    if (e.is_planned === false) execMix.breakdown++;
+    else if (e.frequency_hours != null && Number(e.frequency_hours) > 0) execMix.preventive++;
+    else execMix.planned++;
+  });
+
+  const execTotal = execMix.preventive + execMix.planned + execMix.breakdown;
+
+  const execPct = {
+    preventive: execTotal ? Math.round(execMix.preventive * 100 / execTotal) : 0,
+    planned: execTotal ? Math.round(execMix.planned * 100 / execTotal) : 0,
+    breakdown: execTotal ? Math.round(execMix.breakdown * 100 / execTotal) : 0
+  };
+
+  // =====================
+  // KPIs
+  // =====================
+  const breakdownRate = execPct.breakdown;
+
+  const avgMttrAll = mttrLineRows.length
+    ? Math.round(mttrLineRows.reduce((s, r) => s + r.avg, 0) / mttrLineRows.length)
+    : 0;
+
+  const sortedTech = Object.entries(totalsByTech).sort((a, b) => b[1] - a[1]);
+  const topTech = sortedTech.length ? sortedTech[0] : ["—", 0];
+
+  const topTechShare = totalTasks
+    ? Math.round((topTech[1] / totalTasks) * 100)
+    : 0;
+
+  const totalBreakdownMinutes = sorted
+    .filter(e => e.is_planned === false && e.duration_min)
+    .reduce((s, e) => s + Number(e.duration_min), 0);
+
+  const totalBreakdownHours = Math.round(totalBreakdownMinutes / 60);
+
+  let maintenanceProfile = "Balanced";
+  let maintenanceIcon = "🟠";
+
+  if (breakdownRate < 15) {
+    maintenanceProfile = "Preventive-Driven";
+    maintenanceIcon = "🟢";
+  } else if (breakdownRate > 30) {
+    maintenanceProfile = "Reactive / Breakdown-Heavy";
+    maintenanceIcon = "🔴";
+  }
+
+  const workloadRisk =
+    topTechShare > 60
+      ? "🔴 High concentration risk"
+      : topTechShare > 40
+      ? "🟠 Moderate concentration"
+      : "🟢 Balanced distribution";
+
+  let html = `
+<html>
+<head>
+<title>Completed Tasks Report</title>
+<style>
+@page { size: A4; margin: 15mm; }
+body { font-family: Arial; font-size: 12px; }
+table { width:100%; border-collapse: collapse; margin-bottom:10px; }
+th, td { border:1px solid #ddd; padding:6px; }
+th { background:#eee; }
+.meta { margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<h2>Completed Tasks Report</h2>
+
+<div class="meta">
+Period: ${from} → ${to}<br>
+Line: ${lineFilter.toUpperCase()}<br>
+Technician: ${technicianLabel}
+</div>
+
+<h3>Executive Summary</h3>
+
+<table>
+<tr><td><strong>Total Tasks</strong></td><td>${totalTasks}</td></tr>
+<tr><td>Technicians</td><td>${totalTechs}</td></tr>
+<tr><td>Lines</td><td>${totalLines}</td></tr>
+<tr><td>Breakdown Rate</td><td>${breakdownRate}%</td></tr>
+<tr><td>Total Downtime</td><td>${totalBreakdownHours} h</td></tr>
+<tr><td>Avg MTTR</td><td>${formatDuration(avgMttrAll)}</td></tr>
+<tr><td>Top Technician</td><td>${topTech[0]} (${topTech[1]})</td></tr>
+</table>
+`;
 
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.width = "0";
   iframe.style.height = "0";
-  iframe.style.border = "0";
   document.body.appendChild(iframe);
 
   const doc = iframe.contentWindow.document;

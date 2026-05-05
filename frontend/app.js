@@ -3710,6 +3710,29 @@ function resetSectionLockState() {
         sel.appendChild(opt);
       });
   }
+  /* ==================================
+    TECHNICIANS DROPDOWN (REPORT FILTER)
+  =================================== */
+
+  function populateReportTechnicians() {
+    const sel = document.getElementById("reportTechnician");
+    if (!sel) return;
+
+    sel.innerHTML = `<option value="all">All Technicians</option>`;
+
+    if (!Array.isArray(state.techniciansData)) return;
+
+    state.techniciansData.forEach(t => {
+      const name = t.name || t.full_name || "Unknown";
+
+      sel.innerHTML += `
+        <option value="${t.id}">
+          ${name}
+        </option>
+      `;
+    });
+  }
+
   /* ===================================
     TECHNICIANS DROPDOWN (BREAKDOWN TASK)
   ===================================== */
@@ -5327,8 +5350,11 @@ document.addEventListener("keydown", (e) => {
   console.log("INIT START");
 
   await loadTechnicians();  // 🔥 ΠΡΩΤΑ reference data
-  populateTechnicianDropdown();        // modal DONE
+
+  populateTechnicianDropdown();        // modal
   populateHistoryTechnicianFilter();   // history filter
+  populateReportTechnicianDropdown();  // ✅ report filter
+
   await loadTasks();
   await loadHistory();
 
