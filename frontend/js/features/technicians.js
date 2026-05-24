@@ -40,7 +40,6 @@ function refreshTechnicianDropdowns() {
 
 }
 
-
 // =====================
 // RENDER TABLE
 // =====================
@@ -57,11 +56,32 @@ function renderTechniciansTable() {
 
     tr.innerHTML = `
       <td>${t.name}</td>
+
       <td>${t.role || "-"}</td>
-      <td>${t.status || "Active"}</td>
+
+      <td>
+        ${
+          t.phone
+            ? `<a href="tel:${t.phone}">${t.phone}</a>`
+            : "-"
+        }
+      </td>
+
+      <td>
+        ${
+          t.email
+            ? `<a href="mailto:${t.email}">${t.email}</a>`
+            : "-"
+        }
+      </td>
+
+      <td>
+        ${t.active === false ? "Inactive" : "Active"}
+      </td>
 
       <td>
         <button class="btn-icon" onclick="editTechnician(${t.id})">✏️</button>
+
         <button class="btn-icon" onclick="deleteTechnician(${t.id})">🗑</button>
       </td>
     `;
@@ -71,7 +91,6 @@ function renderTechniciansTable() {
   });
 
 }
-
 
 // =====================
 // OPEN ADD MODAL
