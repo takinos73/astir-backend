@@ -4414,3 +4414,22 @@ tr.highlight-execution {
   border-radius: 5px;
   margin-left: 4px;
 }
+/* =====================
+   TECHNICIANS TABLE LINKS
+===================== */
+
+#techniciansTable a {
+  color: var(--accent-color, #4da3ff);
+  text-decoration: none;
+  font-size: 13px;
+  transition: opacity 0.2s ease;
+}
+
+#techniciansTable a:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+#techniciansTable a:visited {
+  color: var(--accent-color, #4da3ff);
+}
