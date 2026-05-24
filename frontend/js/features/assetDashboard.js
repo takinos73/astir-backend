@@ -101,7 +101,13 @@ function getTopWorstAssetsDashboard(limit = 6) {
         machine: t.machine_name,
         serial: t.serial_number,
         line,
+
         overdue: 0,
+
+        // 🆕 Overdue severity metrics
+        overdueDaysTotal: 0,
+        maxOverdueDays: 0,
+
         dueSoon: 0,
         breakdowns: 0,
         totalRepairMin: 0,
@@ -120,7 +126,14 @@ function getTopWorstAssetsDashboard(limit = 6) {
     const diffDays = Math.ceil((due - today) / 86400000);
 
     if (due < today) {
+      const overdueDays = Math.floor((today - due) / 86400000);
+
       assetsMap[assetKey].overdue++;
+      assetsMap[assetKey].overdueDaysTotal += overdueDays;
+      assetsMap[assetKey].maxOverdueDays = Math.max(
+        assetsMap[assetKey].maxOverdueDays,
+        overdueDays
+      );
     } else if (diffDays <= DUE_SOON_DAYS) {
       assetsMap[assetKey].dueSoon++;
     }
@@ -216,12 +229,50 @@ function getTopWorstAssetsDashboard(limit = 6) {
 
     // 🎯 RISK SCORE
     let score = 0;
-    score += a.overdue * 10;
-    score += a.dueSoon * 5;
-    if (avgMTTR && avgMTTR > MTTR_THRESHOLD) score += 10;
-    if (daysSinceLastBreakdown !== null && daysSinceLastBreakdown <= 7) score += 5;
 
-    // 🧩 Manual planned workload signal (LOW weight)
+    // =====================
+    // OVERDUE COUNT WEIGHT
+    // =====================
+    score += a.overdue * 6;
+
+    // =====================
+    // OVERDUE DAYS SEVERITY
+    // =====================
+    score += Math.floor(a.overdueDaysTotal * 0.35);
+
+    // Strong penalty for very old overdue task
+    score += a.maxOverdueDays * 2;
+
+    // Escalation tiers
+    if (a.maxOverdueDays >= 7) score += 10;
+    if (a.maxOverdueDays >= 14) score += 20;
+    if (a.maxOverdueDays >= 30) score += 40;
+
+    // =====================
+    // DUE SOON
+    // =====================
+    score += a.dueSoon * 4;
+
+    // =====================
+    // MTTR
+    // =====================
+    if (avgMTTR && avgMTTR > MTTR_THRESHOLD) {
+      score += 10;
+    }
+
+    // =====================
+    // RECENT BREAKDOWN
+    // =====================
+    if (
+      daysSinceLastBreakdown !== null &&
+      daysSinceLastBreakdown <= 7
+    ) {
+      score += 8;
+    }
+
+    // =====================
+    // MANUAL LOAD
+    // =====================
     if (a.manualPlanned30d >= 5) score += 4;
     if (a.manualPlanned30d >= 10) score += 8;
 
@@ -230,6 +281,8 @@ function getTopWorstAssetsDashboard(limit = 6) {
       serial: a.serial,
       line: a.line,
       overdue: a.overdue,
+      overdueDaysTotal: a.overdueDaysTotal,
+      maxOverdueDays: a.maxOverdueDays,
       dueSoon: a.dueSoon,
       avgMTTR,
       lastBreakdownDays: daysSinceLastBreakdown,
@@ -376,8 +429,14 @@ window.renderAssetDashboard = function () {
         <div class="asset-card-top">
           <div class="asset-line">LINE ${a.line}</div>
 
-          <div class="asset-risk-badge ${risk.level}">
-            ${risk.icon} ${risk.label}
+          <div class="asset-risk-box">
+              <div class="asset-risk-badge ${risk.level}">
+                ${risk.icon} ${risk.label}
+              </div>
+
+              <div class="asset-score">
+                Score ${a.score ?? 0}
+              </div>
           </div>
         </div>
 
