@@ -139,10 +139,18 @@ app.post("/auth/update-credentials", requireAdmin, async (req, res) => {
    GET TECHNICIANS
 ===================== */
 app.get("/technicians", async (req, res) => {
+
   try {
+
     const result = await pool.query(
       `
-      SELECT id, name, role, active
+      SELECT
+        id,
+        name,
+        role,
+        phone,
+        email,
+        active
       FROM technicians
       WHERE active = true
       ORDER BY name ASC
@@ -152,9 +160,12 @@ app.get("/technicians", async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
+
     console.error("GET TECHNICIANS ERROR:", err);
     res.status(500).json({ error: err.message });
+
   }
+
 });
 
 /* =====================
