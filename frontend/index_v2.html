@@ -1973,55 +1973,75 @@
   </div>
 </div>
 
-<!-- =====================
-     TECHNICIAN MODAL
-===================== -->
-<div id="technicianModalOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
+  <!-- =====================
+      TECHNICIAN MODAL
+    ===================== -->
+    <div id="technicianModalOverlay" class="modal-overlay" style="display:none;">
+      <div class="modal-box">
 
-    <h3 id="technicianModalTitle">Add Technician</h3>
+        <h3 id="technicianModalTitle">Add Technician</h3>
 
-    <!-- NAME -->
-    <div class="field">
-      <label>Name</label>
-      <input
-        id="tech-name"
-        placeholder="Technician name"
-      />
+        <!-- NAME -->
+        <div class="field">
+          <label>Name</label>
+          <input
+            id="tech-name"
+            placeholder="Technician name"
+          />
+        </div>
+
+        <!-- ROLE -->
+        <div class="field">
+          <label>Role</label>
+          <select id="tech-role">
+            <option value="Technician">Technician</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Planner">Planner</option>
+          </select>
+        </div>
+
+        <!-- PHONE -->
+        <div class="field">
+          <label>Phone</label>
+          <input
+            id="tech-phone"
+            type="tel"
+            placeholder="+30 69XXXXXXXX"
+          />
+        </div>
+
+        <!-- EMAIL -->
+        <div class="field">
+          <label>Email</label>
+          <input
+            id="tech-email"
+            type="email"
+            placeholder="name@company.com"
+          />
+        </div>
+
+        <!-- STATUS -->
+        <div class="field">
+          <label>Status</label>
+          <select id="tech-status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="modal-actions">
+          <button id="saveTechnicianBtn" class="btn-table">
+            ✔ Save
+          </button>
+
+          <button id="cancelTechnicianBtn" class="btn-cancel">
+            Cancel
+          </button>
+        </div>
+
+      </div>
     </div>
-
-    <!-- ROLE -->
-    <div class="field">
-      <label>Role</label>
-      <select id="tech-role">
-        <option value="Technician">Technician</option>
-        <option value="Supervisor">Supervisor</option>
-        <option value="Planner">Planner</option>
-      </select>
-    </div>
-
-    <!-- STATUS -->
-    <div class="field">
-      <label>Status</label>
-      <select id="tech-status">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-      </select>
-    </div>
-
-    <!-- ACTIONS -->
-    <div class="modal-actions">
-      <button id="saveTechnicianBtn" class="btn-table">
-        ✔ Save
-      </button>
-
-      <button id="cancelTechnicianBtn" class="btn-cancel">
-        Cancel
-      </button>
-    </div>
-
-  </div>
-</div>
 
   <!-- CORE -->
   <script src="./js/core/state.js" defer></script>

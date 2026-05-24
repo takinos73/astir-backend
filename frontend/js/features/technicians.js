@@ -82,11 +82,11 @@ function openAddTechnician() {
 
   document.getElementById("technicianModalTitle").textContent =
     "Add Technician";
-
   document.getElementById("tech-name").value = "";
   document.getElementById("tech-role").value = "technician";
   document.getElementById("tech-status").value = "active";
-
+  document.getElementById("tech-phone").value = "";
+  document.getElementById("tech-email").value = "";
   document.getElementById("technicianModalOverlay").style.display = "flex";
 }
 
@@ -111,6 +111,8 @@ function editTechnician(id) {
   document.getElementById("tech-name").value = tech.name || "";
   document.getElementById("tech-role").value = tech.role || "technician";
   document.getElementById("tech-status").value = tech.status || "active";
+  document.getElementById("tech-phone").value = tech.phone || "";
+  document.getElementById("tech-email").value = tech.email || "";
   document.getElementById("technicianModalOverlay").style.display = "flex";
 }
 
@@ -139,6 +141,8 @@ async function saveTechnician() {
   const name = document.getElementById("tech-name").value.trim();
   const role = document.getElementById("tech-role").value;
   const status = document.getElementById("tech-status").value;
+  const phone = document.getElementById("tech-phone").value.trim();
+  const email = document.getElementById("tech-email").value.trim();
 
   if (!name) {
     alert("Name is required");
@@ -163,6 +167,8 @@ async function saveTechnician() {
       body: JSON.stringify({
         name,
         role,
+        phone,
+        email,
         active: status === "active"
       })
     });

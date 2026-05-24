@@ -162,7 +162,7 @@ app.get("/technicians", async (req, res) => {
 ===================== */
 app.post("/technicians", async (req, res) => {
 
-  const { name, role } = req.body;
+  const { name, role, phone, email } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: "Name is required" });
@@ -194,11 +194,20 @@ app.post("/technicians", async (req, res) => {
         const reactivate = await pool.query(
           `
           UPDATE technicians
-          SET active = true
+          SET
+            active = true,
+            role = $2,
+            phone = $3,
+            email = $4
           WHERE id = $1
-          RETURNING id, name, role, active
+          RETURNING id, name, role, phone, email, active
           `,
-          [tech.id]
+          [
+            tech.id,
+            role || "Technician",
+            phone || null,
+            email || null
+          ]
         );
 
         return res.json(reactivate.rows[0]);
@@ -218,14 +227,16 @@ app.post("/technicians", async (req, res) => {
     const result = await pool.query(
       `
       INSERT INTO technicians
-        (name, role, active)
+        (name, role, phone, email, active)
       VALUES
-        ($1,$2,true)
-      RETURNING id, name, role, active
+        ($1,$2,$3,$4,true)
+      RETURNING id, name, role, phone, email, active
       `,
       [
         cleanName,
-        role || "Technician"
+        role || "Technician",
+        phone || null,
+        email || null
       ]
     );
 
@@ -246,7 +257,7 @@ app.post("/technicians", async (req, res) => {
 app.patch("/technicians/:id", async (req, res) => {
 
   const { id } = req.params;
-  const { name, role, active } = req.body;
+  const { name, role, phone, email, active } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: "Name is required" });
@@ -260,13 +271,17 @@ app.patch("/technicians/:id", async (req, res) => {
       SET
         name = $1,
         role = $2,
-        active = $3
-      WHERE id = $4
-      RETURNING id, name, role, active
+        phone = $3,
+        email = $4,
+        active = $5
+      WHERE id = $6
+      RETURNING id, name, role, phone, email, active
       `,
       [
         name.trim(),
         role || "Technician",
+        phone || null,
+        email || null,
         active !== false,
         id
       ]
@@ -286,7 +301,6 @@ app.patch("/technicians/:id", async (req, res) => {
   }
 
 });
-
 
 /* =====================
    SOFT DELETE TECHNICIAN
