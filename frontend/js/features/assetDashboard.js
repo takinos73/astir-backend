@@ -78,7 +78,7 @@ const dashboardFilters = {
 /* =====================
    TOP WORST ASSETS DASHBOARD
 ===================== */
-function getTopWorstAssetsDashboard(limit = 6) {
+function getTopWorstAssetsDashboard(limit = 9) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -409,7 +409,7 @@ window.renderAssetDashboard = function () {
 
   // Limit only when NO filters
   if (!hasActiveFilter) {
-    assets = assets.slice(0, 6);
+    assets = assets.slice(0, 9);
   }
 
   if (assets.length === 0) {
