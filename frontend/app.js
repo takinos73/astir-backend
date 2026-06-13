@@ -792,12 +792,46 @@ function renderHistoryTable(data) {
   ===================== */
 
   updateCentralHistoryLegendCounts(filtered,data);
+    
+  /* =====================
+      🔥 THEN SORT (newest first)
+      - by done date DESC
+      - then by asset (machine + serial)
+      - then by section
+    ===================== */
+
+  const sortedHistory = [...filtered].sort((a, b) => {
+
+  // 1️⃣ Done date DESC — newest first
+  const dateCompare =
+    new Date(b.executed_at || "1900-01-01") -
+    new Date(a.executed_at || "1900-01-01");
+
+  if (dateCompare !== 0) {
+    return dateCompare;
+  }
+
+  // 2️⃣ Same done date → group by asset
+  const assetA = `${a.machine || ""} ${a.serial_number || ""}`.toLowerCase();
+  const assetB = `${b.machine || ""} ${b.serial_number || ""}`.toLowerCase();
+
+  const assetCompare = assetA.localeCompare(assetB);
+  if (assetCompare !== 0) {
+    return assetCompare;
+  }
+
+  // 3️⃣ Same asset → group by section
+  const sectionA = (a.section || "").toLowerCase();
+  const sectionB = (b.section || "").toLowerCase();
+
+  return sectionA.localeCompare(sectionB);
+});
 
   /* =====================
      RENDER ROWS
   ===================== */
 
-  filtered.forEach(h => {
+  sortedHistory.forEach(h => {
     const tr = document.createElement("tr");
 
     const execType = getExecutionType(h);
@@ -2822,6 +2856,19 @@ function renderAssetTasksTable(tasks) {
     tbody.offsetHeight;
     return;
   }
+    const groupedTasks = [...tasks].sort((a, b) => {
+
+    const dueCompare =
+      new Date(a.due_date || "9999-12-31") -
+      new Date(b.due_date || "9999-12-31");
+
+    if (dueCompare !== 0) {
+      return dueCompare;
+    }
+
+    return (a.section || "")
+      .localeCompare(b.section || "");
+  });
 
   tasks.forEach(t => {
     const tr = document.createElement("tr");
@@ -2883,7 +2930,17 @@ function renderAssetTasksTable(tasks) {
         <span class="status-type">${typeLabel}</span>
         ${dueLabel ? `<span class="status-due ${dueState}">• ${dueLabel}</span>` : ""}
       </td>
-      <td>${t.unit || "-"}</td>
+      <td>
+        <div class="asset-task-unit">
+          ${t.unit || "-"}
+        </div>
+
+        ${
+          t.section
+            ? `<div class="asset-task-section">${t.section}</div>`
+            : ""
+        }
+      </td>
       <td>${t.task}</td>
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
@@ -3068,11 +3125,24 @@ function renderAssetHistoryTable(history) {
     `;
     return;
   }
+  const sortedHistory = [...filtered].sort((a, b) => {
+
+  const dateCompare =
+    new Date(b.executed_at || "1900-01-01") -
+    new Date(a.executed_at || "1900-01-01");
+
+  if (dateCompare !== 0) {
+    return dateCompare;
+  }
+
+  return (a.section || "")
+    .localeCompare(b.section || "");
+});
 
   /* =====================
      RENDER ROWS
   ===================== */
-  filtered.forEach(e => {
+  sortedHistory.forEach(e => {
 
     const tr = document.createElement("tr");
     tr.classList.add("clickable");

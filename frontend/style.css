@@ -2357,6 +2357,16 @@ tr.history-unplanned {
   margin-top: 2px;
   display: block;
 }
+.asset-task-unit {
+  font-weight: 500;
+}
+
+.asset-task-section {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.6;
+  line-height: 1.2;
+}
 
 /* =====================
    SCROLLABLE HISTORY TABLE
