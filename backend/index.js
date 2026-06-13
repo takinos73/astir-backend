@@ -265,7 +265,7 @@ app.post("/technicians", async (req, res) => {
 /* =====================
    UPDATE TECHNICIAN
 ===================== */
-app.patch("/technicians/:id", async (req, res) => {
+app.patch("/technicians/:id",requireAdmin, async (req, res) => {
 
   const { id } = req.params;
   const { name, role, phone, email, active } = req.body;
