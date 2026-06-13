@@ -4097,9 +4097,30 @@ function resetSectionLockState() {
     }
 
     const notesInput = getEl("doneNotesInput");
-    if (notesInput) {
-      notesInput.value = "";
-    }
+
+      if (notesInput) {
+
+        // If only ONE task selected → preload existing task notes
+        if (state.assetSelectedTaskIds.size === 1) {
+
+          const selectedId = [...state.assetSelectedTaskIds][0];
+
+          const task = state.tasksData.find(
+            t => String(t.id) === String(selectedId)
+          );
+
+          notesInput.value =
+            task?.notes ||
+            task?.note ||
+            "";
+
+        }
+
+        // Multiple tasks → keep blank note
+        else {
+          notesInput.value = "";
+        }
+      }
 
     getEl("modalOverlay").style.display = "flex";
   }
