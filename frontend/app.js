@@ -2941,7 +2941,14 @@ function renderAssetTasksTable(tasks) {
             : ""
         }
       </td>
-      <td>${t.task}</td>
+      <td>
+        ${t.task}
+        ${
+          t.notes
+            ? `<span class="task-note-indicator" title="Task contains notes">📝</span>`
+            : ""
+        }
+      </td>
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>

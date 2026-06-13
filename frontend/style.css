@@ -2383,6 +2383,12 @@ tr.history-unplanned {
   min-width: 160px;
 }
 
+.task-note-indicator {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-size: 12px;
+}
+
 /* =====================
    SCROLLABLE HISTORY TABLE
 ===================== */
