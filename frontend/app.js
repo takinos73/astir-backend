@@ -4166,7 +4166,19 @@ getEl("confirmDone")?.addEventListener("click", async () => {
     // 🟢 BULK DONE PATH
     // =====================
     if (state.bulkDoneMode === true) {
+      if (
+        state.assetSelectedTaskIds.size > 1 &&
+        notes
+      ) {
+        const ok = confirm(
+        `You entered a common note while completing ${state.assetSelectedTaskIds.size} tasks.\n\n` +
+        `This note will be applied to ALL selected tasks.\n\n` +
+        `If any selected task already has notes, they will be replaced.\n\n` +
+        `Continue?`
+      );
 
+        if (!ok) return;
+      }
       const res = await fetch(`${API}/tasks/bulk-done`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
