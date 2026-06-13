@@ -2177,8 +2177,13 @@ tr.history-unplanned {
 
 /* ✅ Asset View modal width ONLY */
 #assetViewOverlay .modal-box.asset-view {
-  max-width: 1100px;   /* adjust 1000–1300 αν θες */
+  max-width: 1120px;   /* adjust 1000–1300 αν θες */
   width: 120vw;
+}
+#assetViewTitle {
+  margin-top: 6px;
+  margin-bottom: 10px;
+  padding: 0 6px;
 }
 /* History / Execution modal (above Asset View) */
 #historyViewOverlay {
@@ -2303,7 +2308,7 @@ tr.history-unplanned {
 .asset-tabs {
   display: flex;
   gap: 8px;
-  margin: 12px 0;
+  margin: 10px 0;
   border-bottom: 1px solid #ddd;
 }
 
