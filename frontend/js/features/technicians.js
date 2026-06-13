@@ -80,15 +80,19 @@ function renderTechniciansTable() {
       </td>
 
       <td>
-        <button class="btn-icon" onclick="editTechnician(${t.id})">✏️</button>
+        <button class="btn-icon " onclick="editTechnician(${t.id})">✏️</button>
 
-        <button class="btn-icon" onclick="deleteTechnician(${t.id})">🗑</button>
+        <button class="btn-icon " onclick="deleteTechnician(${t.id})">🗑</button>
       </td>
     `;
 
     tbody.appendChild(tr);
 
   });
+  // Re-apply role visibility after dynamic table render
+    if (typeof applyRoleVisibility === "function") {
+      applyRoleVisibility();
+    }
 
 }
 

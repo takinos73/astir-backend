@@ -316,7 +316,7 @@ app.patch("/technicians/:id", async (req, res) => {
 /* =====================
    SOFT DELETE TECHNICIAN
 ===================== */
-app.delete("/technicians/:id", async (req, res) => {
+app.delete("/technicians/:id", requireAdmin, async (req, res) => {
 
   const { id } = req.params;
 
