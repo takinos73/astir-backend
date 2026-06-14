@@ -2945,7 +2945,12 @@ function renderAssetTasksTable(tasks) {
         ${t.task}
         ${
           t.notes
-            ? `<span class="task-note-indicator" title="Task contains notes">📝</span>`
+            ? `<span
+                class="task-note-indicator"
+                title="${t.notes}"
+              >
+                📝
+              </span>`
             : ""
         }
       </td>
