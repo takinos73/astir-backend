@@ -969,7 +969,7 @@ app.patch("/tasks/:id", async (req, res) => {
         due_date = $2,
         completed_by = $3,
         completed_at = $4,
-        notes = null,
+        notes = COALESCE($5, notes),
         updated_at = NOW()
       WHERE id = $1
       `,
@@ -978,6 +978,7 @@ app.patch("/tasks/:id", async (req, res) => {
         nextDue,
         completed_by || null,
         completedAt,
+        notes || null
       ]
     );
   }
@@ -1130,7 +1131,7 @@ app.post("/tasks/bulk-done", async (req, res) => {
             due_date = $2,
             completed_by = $3,
             completed_at = $4,
-            notes = null,
+            notes = COALESCE($5, notes),
             updated_at = NOW()
           WHERE id = $1
           `,
@@ -1139,6 +1140,7 @@ app.post("/tasks/bulk-done", async (req, res) => {
             nextDue,
             completed_by,
             completedAt,
+            notes || null
           ]
         );
     }
