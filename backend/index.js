@@ -523,22 +523,24 @@ app.post("/tasks", async (req, res) => {
             technician_id,
             executed_by,
             executed_at,
-            duration_minutes
+            duration_minutes,
+            notes
           )
         VALUES
-          ($1, $2, $3, $4, $5, $6)
+          ($1, $2, $3, $4, $5, $6, $7)
         `,
         [
           newTask.id,
           asset_id,
           technician_id || null,
-          technicianName,   // 🔥 backend controlled
+          technicianName,
           req.body.execution_date
             ? new Date(req.body.execution_date)
             : new Date(),
           Number.isFinite(Number(execution_duration_min))
             ? Number(execution_duration_min)
-            : null
+            : null,
+          notes || null
         ]
       );
     }

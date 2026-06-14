@@ -302,7 +302,14 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
 
     return `
       <tr>
-        <td>${r.section || "-"}</td>
+        <td>
+          ${r.section || "-"}
+          ${
+            r.unit
+              ? `<br><small style="opacity:.4">${r.unit}</small>`
+              : ""
+          }
+        </td>
         <td>${r.task}</td>
         <td class="${freq.className}">
           ${freq.label}

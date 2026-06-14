@@ -2395,7 +2395,7 @@ tr.history-unplanned {
 .asset-task-section {
   margin-top: 2px;
   font-size: 11px;
-  opacity: 0.6;
+  opacity: 0.5;
   line-height: 1.2;
 }
 #assetTasksTable th:nth-child(3),
