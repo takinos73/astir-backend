@@ -497,7 +497,7 @@ function generateLibraryFromTasks() {
       type: t.type || "Preventive",
       frequency_hours: Number(t.frequency_hours),
       duration_min: t.duration_min ?? null,
-      notes: "Generated from live tasks"
+      notes: "" // optional
     });
   });
 
