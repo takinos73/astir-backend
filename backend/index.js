@@ -1418,40 +1418,39 @@ app.patch("/executions/:id", async (req, res) => {
 
     const technicianName = techRes.rows[0].name;
 
-    // 3️⃣ Update task (description + notes)
-    await client.query(
-      `
-      UPDATE maintenance_tasks
-      SET
-        task = $1,
-        notes = $2,
-        updated_at = NOW()
-      WHERE id = $3
-      `,
-      [
-        task,
-        notes || null,
-        taskId
-      ]
-    );
+    // 3️⃣ Update task description only
+      await client.query(
+        `
+        UPDATE maintenance_tasks
+        SET
+          task = $1,
+          updated_at = NOW()
+        WHERE id = $2
+        `,
+        [
+          task,
+          taskId
+        ]
+      );
 
-    // 4️⃣ Update execution (FK + synced name)
-    await client.query(
-      `
-      UPDATE task_executions
-      SET
-        technician_id = $1,
-        executed_by = $2,
-        updated_at = NOW()
-      WHERE id = $3
-      `,
-      [
-        technician_id,
-        technicianName,
-        id
-      ]
-    );
-
+    // 4️⃣ Update execution (FK + synced name + notes)
+      await client.query(
+        `
+        UPDATE task_executions
+        SET
+          technician_id = $1,
+          executed_by = $2,
+          notes = $3,
+          updated_at = NOW()
+        WHERE id = $4
+        `,
+        [
+          technician_id,
+          technicianName,
+          notes || null,
+          id
+        ]
+      );
     await client.query("COMMIT");
     res.json({ success: true });
 
