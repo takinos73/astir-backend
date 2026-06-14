@@ -2364,7 +2364,7 @@ tr.history-unplanned {
 .asset-tasks-table {
   flex: 1;
   overflow-y: auto;
-  max-height: 400px;   /* 6–8 rows */
+  max-height: 420px;   /* 6–8 rows */
 }
 
 .asset-tab-panel.active .asset-tasks-table {
