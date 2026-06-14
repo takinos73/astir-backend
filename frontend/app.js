@@ -1571,23 +1571,33 @@ function viewTask(taskId) {
   </div>
 
 </div>
-
-<!-- COMPLETION INFO -->
-${
-  task.status === "Done"
-    ? `
-<div class="task-view-completed tech">
-  ✔ Completed<br>
-  <span>
-    Executed by <strong>${task.completed_by || "-"}</strong>
-  </span>
-  <span>
-    • ${task.completed_at ? formatDate(task.completed_at) : ""}
-  </span>
-</div>
-`
-    : ""
-}
+    <!-- NOTES -->
+  ${
+    task.notes
+      ? `
+  <div class="task-view-notes tech">
+    <label>Notes</label>
+    <div>${task.notes}</div>
+  </div>
+  `
+      : ""
+  }
+  <!-- COMPLETION INFO -->
+  ${
+    task.status === "Done"
+      ? `
+  <div class="task-view-completed tech">
+    ✔ Completed<br>
+    <span>
+      Executed by <strong>${task.completed_by || "-"}</strong>
+    </span>
+    <span>
+      • ${task.completed_at ? formatDate(task.completed_at) : ""}
+    </span>
+  </div>
+  `
+      : ""
+  }
 
 `;
   document.getElementById("taskViewOverlay").style.display = "flex";
