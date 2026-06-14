@@ -909,7 +909,15 @@ function renderHistoryTable(data) {
 
       <td>
         <div class="task-title">
-          <strong>${h.task}</strong> 
+          <strong>${h.task}</strong>
+          ${
+            h.notes
+              ? `<span
+                  class="task-note-indicator"
+                  title="${h.notes}"
+                >📝</span>`
+              : ""
+          }
         </div>
         <small>
           ${h.section || ""}
