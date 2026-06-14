@@ -933,22 +933,22 @@ app.patch("/tasks/:id", async (req, res) => {
           technician_id,
           prev_due_date,
           executed_at,
-          duration_minutes
+          duration_minutes,
+          notes
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
         `,
         [
           task.id,
           task.asset_id,
-          completed_by || null,
-          technician_id || null,   // ✅ NEW
-          task.due_date || null,
+          completed_by,
+          technician_id || null,
+          task.due_date,
           completedAt,
-
-          // ⏱ planned / preventive → estimated duration (REAL → INTEGER)
           Number.isFinite(Number(task.duration_min))
             ? Math.round(Number(task.duration_min))
-            : null
+            : null,
+          notes || task.notes || null
         ]
       );    
 
@@ -1096,22 +1096,22 @@ app.post("/tasks/bulk-done", async (req, res) => {
           technician_id,
           prev_due_date,
           executed_at,
-          duration_minutes
+          duration_minutes,
+          notes
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
         `,
         [
           task.id,
           task.asset_id,
           completed_by,
-          technician_id || null,   // ✅ NEW
+          technician_id || null,
           task.due_date,
           completedAt,
-
-          // ⏱️ Planned / Preventive → estimated duration (REAL → INTEGER)
           Number.isFinite(Number(task.duration_min))
             ? Math.round(Number(task.duration_min))
-            : null
+            : null,
+          notes || task.notes || null
         ]
       );
       // 3️⃣b PREVENTIVE → ROTATE
@@ -1349,7 +1349,7 @@ app.get("/executions", async (req, res) => {
         t.section,
         t.unit,
         t.type,
-        t.notes, 
+        e.notes as notes, 
         t.is_planned,
         t.frequency_hours,   
         
