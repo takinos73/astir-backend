@@ -245,7 +245,10 @@ async function deleteTechnician(id) {
   try {
 
     const res = await fetch(`${API}/technicians/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        "x-cmms-role": localStorage.getItem("cmmsRole")
+      }
     });
 
     if (!res.ok) {
