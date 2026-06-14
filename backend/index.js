@@ -978,7 +978,6 @@ app.patch("/tasks/:id", async (req, res) => {
         nextDue,
         completed_by || null,
         completedAt,
-        notes || null
       ]
     );
   }
@@ -1140,7 +1139,6 @@ app.post("/tasks/bulk-done", async (req, res) => {
             nextDue,
             completed_by,
             completedAt,
-            notes || null
           ]
         );
     }
