@@ -186,7 +186,10 @@ async function saveTechnician() {
 
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-cmms-role": localStorage.getItem("cmmsRole")
+      },
       body: JSON.stringify({
         name,
         role,
