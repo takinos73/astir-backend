@@ -1341,6 +1341,7 @@ app.get("/executions", async (req, res) => {
         e.executed_at,
         e.executed_by,
         e.technician_id,
+        e.notes as notes,
         e.updated_at,
         e.duration_minutes AS duration_min,
         e.prev_due_date,
@@ -1348,8 +1349,7 @@ app.get("/executions", async (req, res) => {
         t.task,
         t.section,
         t.unit,
-        t.type,
-        e.notes as notes, 
+        t.type, 
         t.is_planned,
         t.frequency_hours,   
         
