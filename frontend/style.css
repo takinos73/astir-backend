@@ -1471,7 +1471,7 @@ tbody tr:hover { background: #131520; }
 
 .assets-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .assets-header .docs-subtitle {
@@ -3485,9 +3485,9 @@ tr.history-unplanned {
 }
 
 .dashboard-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #ddd;
+  color: #fdfdfd;
 }
 
 .dashboard-count {
