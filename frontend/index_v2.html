@@ -16,23 +16,24 @@
   <div class="modal-box modal-small">
 
     <h3>🔐 CMMS Login</h3>
+
     <p class="modal-subtitle">
-      Enter access code to continue
+      Select your name and enter the access code
     </p>
 
     <div class="login-form">
 
       <div class="field">
-        <label>Role</label>
-        <select id="loginRole">
-          <option value="technician">Technician</option>
-          <option value="planner">Planner</option>
-          <option value="admin">Admin</option>
+        <label>Technician</label>
+
+        <select id="loginTechnician">
+          <option value="">Select technician</option>
         </select>
       </div>
 
       <div class="field">
         <label>Password</label>
+
         <input
           id="loginPassword"
           type="password"
@@ -347,6 +348,108 @@
 
   </div>
 </div>
+<!-- =====================
+     TECHNICIAN ACTIVITY MODAL
+===================== -->
+<div id="technicianActivityOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box modal-history">
+
+    <h3 id="technicianActivityTitle">
+      📋 Technician Activity
+    </h3>
+
+    <!-- =====================
+         ACTIVITY FILTERS
+    ===================== -->
+    <div class="history-filters">
+
+      <!-- LEFT GROUP -->
+      <div class="history-filter-group">
+
+        <select id="activityDateFilter">
+          <option value="7">📅 Last 7 days</option>
+          <option value="30">📅 Last 30 days</option>
+          <option value="90">📅 Last 90 days</option>
+          <option value="all">📅 All</option>
+        </select>
+
+        <select id="activityActionFilter">
+          <option value="all">📂 All actions</option>
+          <option value="wo_created">Created WO</option>
+          <option value="wo_completed">Completed WO</option>
+          <option value="preventive_bulk_completed">
+            Bulk Done Preventive
+          </option>
+        </select>
+
+      </div>
+
+      <!-- MIDDLE GROUP -->
+      <div class="history-filter-group">
+
+        <select id="activityTechnicianFilter">
+          <option value="">👤 All technicians</option>
+        </select>
+
+        <input
+          type="text"
+          id="activitySearch"
+          placeholder="🔍 Asset / WO / Task"
+        />
+
+      </div>
+
+      <!-- RIGHT GROUP -->
+      <div class="history-filter-group history-date-filter">
+
+        <input
+          type="text"
+          id="activityDateRange"
+          placeholder="📅 Select period"
+        />
+
+      </div>
+
+    </div>
+
+    <!-- =====================
+         ACTIVITY TABLE
+    ===================== -->
+    <div class="table-card" style="max-height:69vh; overflow:auto;">
+      <table id="technicianActivityTable">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Technician</th>
+            <th>Action</th>
+            <th>Type</th>
+            <th>Asset</th>
+            <th>Reference</th>
+            <th style="width:90px;">Details</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- Rows rendered dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- =====================
+         ACTIONS
+    ===================== -->
+    <div class="modal-actions">
+      <button
+        class="btn-secondary"
+        id="closeTechnicianActivityBtn"
+      >
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>
+
 <!-- =====================
      KPI / ANALYTICS MODAL
 ===================== -->

@@ -300,32 +300,38 @@ async function deleteTechnician(id) {
 // =====================
 
 function openAllTechnicianActivity() {
-  console.log("Open all technician activity");
 
-  alert(
-    "Activity Log: θα προστεθεί στο επόμενο βήμα."
-  );
+  document.getElementById("technicianActivityTitle").textContent =
+    "📋 Technician Activity";
+
+  document.getElementById("technicianActivityOverlay").style.display =
+    "flex";
+
 }
 
 function openTechnicianActivity(technicianId) {
-  const technician = state.techniciansData.find(
-    t => t.id === technicianId
-  );
+
+  const technician =
+    state.techniciansData.find(t => t.id === technicianId);
 
   if (!technician) {
     alert("Technician not found");
     return;
   }
 
-  console.log(
-    "Open activity for technician:",
-    technician
-  );
+  document.getElementById("technicianActivityTitle").textContent =
+    `📋 Activity - ${technician.name}`;
 
-  alert(
-    `Activity for: ${technician.name}\n\n` +
-    "Η προβολή δραστηριότητας θα προστεθεί στο επόμενο βήμα."
-  );
+  document.getElementById("technicianActivityOverlay").style.display =
+    "flex";
+
+}
+
+function closeTechnicianActivity() {
+
+  document.getElementById("technicianActivityOverlay").style.display =
+    "none";
+    
 }
 
 // =====================
@@ -351,3 +357,6 @@ document
 document
   .querySelector('[data-tab="technicians"]')
   ?.addEventListener("click", loadTechnicians);
+document
+  .getElementById("closeTechnicianActivityBtn")
+  ?.addEventListener("click", closeTechnicianActivity);

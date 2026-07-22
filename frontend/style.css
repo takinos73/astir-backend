@@ -4492,3 +4492,8 @@ tr.highlight-execution {
 #techniciansTable a:visited {
   color: var(--accent-color, #4da3ff);
 }
+.technicians-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
