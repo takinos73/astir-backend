@@ -61,12 +61,35 @@ function applyRoleUI(role) {
     element.style.display = role === "admin" ? "" : "none";
   });
 
-  const badge = document.getElementById("loggedRoleBadge");
-  const text = document.getElementById("loggedRoleText");
+  const userInfo =
+  document.getElementById("loggedUserInfo");
 
-  if (badge && text) {
-    text.textContent = role;
-    badge.style.display = "inline-block";
+  const nameText =
+    document.getElementById("loggedTechnicianName");
+
+  const roleBadge =
+    document.getElementById("loggedRoleBadge");
+
+  const roleText =
+    document.getElementById("loggedRoleText");
+
+  const technicianName =
+    localStorage.getItem(TECHNICIAN_NAME_STORAGE_KEY) || "-";
+
+  if (nameText) {
+    nameText.textContent = technicianName;
+  }
+
+  if (roleText) {
+    roleText.textContent = role;
+  }
+
+  if (userInfo) {
+    userInfo.style.display = "flex";
+  }
+
+  if (roleBadge) {
+    roleBadge.style.display = "inline-block";
   }
 
   const logoutBtn = document.getElementById("logoutBtn");
@@ -261,6 +284,9 @@ function handleLogout() {
 
   delete document.body.dataset.role;
 
+  const userInfo =
+    document.getElementById("loggedUserInfo");
+
   const badge =
     document.getElementById("loggedRoleBadge");
 
@@ -279,8 +305,26 @@ function handleLogout() {
   const passwordToggle =
     document.getElementById("toggleLoginPassword");
 
+  const technicianName =
+    document.getElementById("loggedTechnicianName");
+
+  const roleText =
+    document.getElementById("loggedRoleText");
+
+  if (userInfo) {
+    userInfo.style.display = "none";
+  }
+
   if (badge) {
     badge.style.display = "none";
+  }
+
+  if (technicianName) {
+    technicianName.textContent = "-";
+  }
+
+  if (roleText) {
+    roleText.textContent = "-";
   }
 
   if (logoutBtn) {

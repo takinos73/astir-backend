@@ -864,11 +864,19 @@
       DEV LOGIN (ROLE SWITCH)
         ===================== -->
 
-      <div id="devLogin" style="display:flex; gap:8px; align-items:center;">
-        <span style="opacity:0.7;">👤 Role:</span>
-        <span id="loggedRoleBadge" class="role-badge" style="display:none;">
-          Logged as: <strong id="loggedRoleText"></strong>
-        </span>        
+      <div id="loggedUserInfo" class="logged-user-info">
+        <span class="logged-user-label">Logged in:</span>
+
+        <strong id="loggedTechnicianName">
+          -
+        </strong>
+
+        <span class="logged-user-separator">•</span>
+
+        <span id="loggedRoleBadge">
+          Role:
+          <strong id="loggedRoleText">-</strong>
+        </span>
       </div>
 
       <button
