@@ -120,23 +120,35 @@ document.getElementById("loginBtn")?.addEventListener("click", () => {
 
   if (error) error.style.display = "none";
 
-  localStorage.setItem(
-    TECHNICIAN_ID_STORAGE_KEY,
-    technicianId
-  );
-
-  localStorage.setItem(
-    TECHNICIAN_NAME_STORAGE_KEY,
-    technicianName
-  );
-
-  localStorage.setItem(
-    ROLE_STORAGE_KEY,
-    role
-  );
+  localStorage.setItem("cmmsTechnicianId", technicianId);
+  localStorage.setItem("cmmsTechnicianName", technicianName);
+  localStorage.setItem("cmmsRole", role);
 
   applyRoleUI(role);
 });
+
+/* =====================
+   TOGGLE PASSWORD
+===================== */
+document
+  .getElementById("toggleLoginPassword")
+  ?.addEventListener("click", () => {
+    const input =
+      document.getElementById("loginPassword");
+
+    const button =
+      document.getElementById("toggleLoginPassword");
+
+    if (!input || !button) return;
+
+    const isHidden = input.type === "password";
+
+    input.type = isHidden ? "text" : "password";
+    button.textContent = isHidden ? "🙈" : "👁";
+    button.title = isHidden
+      ? "Hide password"
+      : "Show password";
+  });
 
 /* =====================
    INIT LOGIN ON LOAD
