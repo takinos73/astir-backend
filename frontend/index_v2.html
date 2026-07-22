@@ -800,9 +800,15 @@
   <div class="table-header">
     <h2>Technicians</h2>
 
-    <button id="addTechnicianBtn" class="btn-table admin-only">
-      + Add Technician
-    </button>
+    <div class="technicians-header-actions admin-only">
+      <button id="addTechnicianBtn" class="btn-table">
+        + Add Technician
+      </button>
+
+      <button id="technicianActivityLogBtn" class="btn-table">
+        📋 Activity Log
+      </button>
+    </div>
   </div>
 
   <table id="techniciansTable" class="data-table">
@@ -813,7 +819,7 @@
         <th>Phone</th>
         <th>Email</th>
         <th>Status</th>
-        <th style="width:120px;"></th>
+        <th style="width:170px;"></th>
       </tr>
     </thead>
 

@@ -80,9 +80,29 @@ function renderTechniciansTable() {
       </td>
 
       <td>
-        <button class="btn-icon " onclick="editTechnician(${t.id})">✏️</button>
+        <button
+          class="btn-icon admin-only"
+          onclick="editTechnician(${t.id})"
+          title="Edit technician"
+        >
+          ✏️
+        </button>
 
-        <button class="btn-icon " onclick="deleteTechnician(${t.id})">🗑</button>
+        <button
+          class="btn-icon admin-only"
+          onclick="deleteTechnician(${t.id})"
+          title="Delete technician"
+        >
+          🗑
+        </button>
+
+        <button
+          class="btn-icon admin-only"
+          onclick="openTechnicianActivity(${t.id})"
+          title="View technician activity"
+        >
+          📋
+        </button>
       </td>
     `;
 
@@ -275,6 +295,38 @@ async function deleteTechnician(id) {
   }
 
 }
+// =====================
+// ACTIVITY LOG – TEMPORARY UI HANDLERS
+// =====================
+
+function openAllTechnicianActivity() {
+  console.log("Open all technician activity");
+
+  alert(
+    "Activity Log: θα προστεθεί στο επόμενο βήμα."
+  );
+}
+
+function openTechnicianActivity(technicianId) {
+  const technician = state.techniciansData.find(
+    t => t.id === technicianId
+  );
+
+  if (!technician) {
+    alert("Technician not found");
+    return;
+  }
+
+  console.log(
+    "Open activity for technician:",
+    technician
+  );
+
+  alert(
+    `Activity for: ${technician.name}\n\n` +
+    "Η προβολή δραστηριότητας θα προστεθεί στο επόμενο βήμα."
+  );
+}
 
 // =====================
 // BUTTON EVENTS
@@ -283,6 +335,10 @@ async function deleteTechnician(id) {
 document
   .getElementById("addTechnicianBtn")
   ?.addEventListener("click", openAddTechnician);
+
+document
+  .getElementById("technicianActivityLogBtn")
+  ?.addEventListener("click", openAllTechnicianActivity);
 
 document
   .getElementById("cancelTechnicianBtn")
