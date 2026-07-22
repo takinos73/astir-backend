@@ -981,7 +981,7 @@ function viewHistoryEntry(executionId) {
 
       <div class="history-view-section">
         <strong>Date</strong>
-        <div>${formatDateTime(h.executed_at)}</div>
+        <div>${formatDateOnly(h.executed_at)}</div>
       </div>
 
       <div class="history-view-section">
