@@ -4517,3 +4517,27 @@ tr.highlight-execution {
   font-size: 18px;
   padding: 4px;
 }
+.logged-user-info {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.logged-user-label {
+  opacity: 0.75;
+}
+
+.logged-user-separator {
+  opacity: 0.45;
+}
+
+#loggedTechnicianName {
+  color: #ffffff;
+}
+
+#loggedRoleBadge {
+  padding: 5px 10px;
+  border-radius: 14px;
+  background: rgba(80, 110, 180, 0.18);
+}
