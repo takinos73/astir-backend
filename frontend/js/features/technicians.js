@@ -44,14 +44,14 @@ function refreshTechnicianDropdowns() {
 // RENDER TABLE
 // =====================
 function renderTechniciansTable() {
+  const tbody =
+    document.querySelector("#techniciansTable tbody");
 
-  const tbody = document.querySelector("#techniciansTable tbody");
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
   state.techniciansData.forEach(t => {
-
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
@@ -76,7 +76,19 @@ function renderTechniciansTable() {
       </td>
 
       <td>
-        ${t.active === false ? "Inactive" : "Active"}
+        ${
+          t.is_user === true
+            ? "✅ Yes"
+            : "❌ No"
+        }
+      </td>
+
+      <td>
+        ${
+          t.active === false
+            ? "Inactive"
+            : "Active"
+        }
       </td>
 
       <td>
@@ -107,30 +119,40 @@ function renderTechniciansTable() {
     `;
 
     tbody.appendChild(tr);
-
   });
-  // Re-apply role visibility after dynamic table render
-    if (typeof applyRoleVisibility === "function") {
-      applyRoleVisibility();
-    }
 
+  // Re-apply role visibility after dynamic table render
+  if (typeof applyRoleVisibility === "function") {
+    applyRoleVisibility();
+  }
 }
 
 // =====================
 // OPEN ADD MODAL
 // =====================
 function openAddTechnician() {
-
   state.currentEditingTechnician = null;
 
   document.getElementById("technicianModalTitle").textContent =
     "Add Technician";
+
   document.getElementById("tech-name").value = "";
-  document.getElementById("tech-role").value = "technician";
-  document.getElementById("tech-status").value = "active";
+
+  document.getElementById("tech-role").value =
+    "Technician";
+
+  document.getElementById("tech-is-user").value =
+    "false";
+
+  document.getElementById("tech-status").value =
+    "active";
+
   document.getElementById("tech-phone").value = "";
   document.getElementById("tech-email").value = "";
-  document.getElementById("technicianModalOverlay").style.display = "flex";
+
+  document.getElementById(
+    "technicianModalOverlay"
+  ).style.display = "flex";
 }
 
 
@@ -138,7 +160,6 @@ function openAddTechnician() {
 // OPEN EDIT MODAL
 // =====================
 function editTechnician(id) {
-
   const tech = state.techniciansData.find(t => t.id === id);
 
   if (!tech) {
@@ -151,12 +172,27 @@ function editTechnician(id) {
   document.getElementById("technicianModalTitle").textContent =
     "Edit Technician";
 
-  document.getElementById("tech-name").value = tech.name || "";
-  document.getElementById("tech-role").value = tech.role || "technician";
-  document.getElementById("tech-status").value = tech.status || "active";
-  document.getElementById("tech-phone").value = tech.phone || "";
-  document.getElementById("tech-email").value = tech.email || "";
-  document.getElementById("technicianModalOverlay").style.display = "flex";
+  document.getElementById("tech-name").value =
+    tech.name || "";
+
+  document.getElementById("tech-role").value =
+    tech.role || "Technician";
+
+  document.getElementById("tech-is-user").value =
+    tech.is_user === true ? "true" : "false";
+
+  document.getElementById("tech-status").value =
+    tech.active === false ? "inactive" : "active";
+
+  document.getElementById("tech-phone").value =
+    tech.phone || "";
+
+  document.getElementById("tech-email").value =
+    tech.email || "";
+
+  document.getElementById(
+    "technicianModalOverlay"
+  ).style.display = "flex";
 }
 
 
@@ -164,67 +200,90 @@ function editTechnician(id) {
 // CLOSE MODAL
 // =====================
 function closeTechnicianModal() {
-
-  document.getElementById("technicianModalOverlay").style.display = "none";
-
+  document.getElementById(
+    "technicianModalOverlay"
+  ).style.display = "none";
 }
 
 // =====================
 // SAVE TECHNICIAN
 // =====================
 async function saveTechnician() {
-
-  const saveBtn = document.getElementById("saveTechnicianBtn");
+  const saveBtn =
+    document.getElementById("saveTechnicianBtn");
 
   if (saveBtn.disabled) return;
 
   saveBtn.disabled = true;
   saveBtn.textContent = "Saving...";
 
-  const name = document.getElementById("tech-name").value.trim();
-  const role = document.getElementById("tech-role").value;
-  const status = document.getElementById("tech-status").value;
-  const phone = document.getElementById("tech-phone").value.trim();
-  const email = document.getElementById("tech-email").value.trim();
+  const name =
+    document.getElementById("tech-name").value.trim();
+
+  const role =
+    document.getElementById("tech-role").value;
+
+  const status =
+    document.getElementById("tech-status").value;
+
+  const phone =
+    document.getElementById("tech-phone").value.trim();
+
+  const email =
+    document.getElementById("tech-email").value.trim();
+
+  const isUser =
+    document.getElementById("tech-is-user").value === "true";
 
   if (!name) {
     alert("Name is required");
+
     saveBtn.disabled = false;
     saveBtn.textContent = "Save";
+
     return;
   }
 
-  const editingId = state.currentEditingTechnician;
+  const editingId =
+    state.currentEditingTechnician;
 
   const url = editingId
     ? `${API}/technicians/${editingId}`
     : `${API}/technicians`;
 
-  const method = editingId ? "PATCH" : "POST";
+  const method =
+    editingId ? "PATCH" : "POST";
 
   try {
-
     const res = await fetch(url, {
       method,
+
       headers: {
         "Content-Type": "application/json",
-        "x-cmms-role": localStorage.getItem("cmmsRole")
+        "x-cmms-role":
+          localStorage.getItem("cmmsRole")
       },
+
       body: JSON.stringify({
         name,
         role,
         phone,
         email,
-        active: status === "active"
+        active: status === "active",
+        is_user: isUser
       })
     });
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || "Save failed");
+
+      throw new Error(
+        err.error || "Save failed"
+      );
     }
 
-    const savedTech = await res.json();
+    const savedTech =
+      await res.json();
 
     closeTechnicianModal();
 
@@ -235,28 +294,33 @@ async function saveTechnician() {
 
     // EDIT
     else {
-      const index = state.techniciansData.findIndex(t => t.id === editingId);
+      const index =
+        state.techniciansData.findIndex(
+          technician =>
+            technician.id === editingId
+        );
+
       if (index !== -1) {
-        state.techniciansData[index] = savedTech;
+        state.techniciansData[index] =
+          savedTech;
       }
     }
 
     renderTechniciansTable();
     refreshTechnicianDropdowns();
 
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Save";
-
   } catch (err) {
+    console.error(
+      "SAVE TECHNICIAN ERROR:",
+      err
+    );
 
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Save";
-
-    console.error("SAVE TECHNICIAN ERROR:", err);
     alert(err.message);
 
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
   }
-
 }
 // =====================
 // DELETE TECHNICIAN

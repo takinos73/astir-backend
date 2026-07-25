@@ -3,8 +3,8 @@
 ===================== */
 
 const ROLE_PASSWORDS = {
-  technician: "tech123",
-  planner: "plan123",
+  technician: "tech001",
+  planner: "plan001",
   admin: "admin1267"
 };
 
@@ -131,7 +131,11 @@ async function loadLoginTechnicians() {
     `;
 
     technicians
-      .filter(technician => technician.active !== false)
+      .filter(
+          technician =>
+          technician.active !== false &&
+          technician.is_user === true
+      )
       .sort((a, b) =>
         String(a.name || "").localeCompare(
           String(b.name || ""),

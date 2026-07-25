@@ -941,6 +941,7 @@
         <th>Role</th>
         <th>Phone</th>
         <th>Email</th>
+        <th>CMMS User</th>
         <th>Status</th>
         <th style="width:170px;"></th>
       </tr>
@@ -2128,6 +2129,16 @@
             <option value="Technician">Technician</option>
             <option value="Supervisor">Supervisor</option>
             <option value="Admin">Admin</option>
+          </select>
+        </div>
+
+        <!-- CMMS USER -->
+        <div class="field">
+          <label>CMMS Access</label>
+
+          <select id="tech-is-user">
+            <option value="false">No — Technician only</option>
+            <option value="true">Yes — CMMS user</option>
           </select>
         </div>
 
