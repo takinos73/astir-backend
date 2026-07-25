@@ -11,7 +11,8 @@ async function loadTechnicians() {
   state.techniciansData = data;
 
   renderTechniciansTable();
-  refreshTechnicianDropdowns();
+  refreshTechnicianDropdowns(); 
+  await loadLoginTechnicians(); 
 }
 
 /**
@@ -308,6 +309,7 @@ async function saveTechnician() {
 
     renderTechniciansTable();
     refreshTechnicianDropdowns();
+    await loadLoginTechnicians();
 
   } catch (err) {
     console.error(
@@ -350,7 +352,7 @@ async function deleteTechnician(id) {
     // 🔹 re-render table
     renderTechniciansTable();
     refreshTechnicianDropdowns();
-
+    await loadLoginTechnicians();
   } catch (err) {
 
     console.error("DELETE TECHNICIAN ERROR:", err);
