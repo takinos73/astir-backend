@@ -844,7 +844,7 @@ function generateCompletedReportPdf() {
 
 <div class="meta">
   Period: ${from} → ${to}<br>
-  Line: ${lineFilter.toUpperCase()}<br>
+  Line: ${lineFilterLabel}<br>
   Technician: ${technicianLabel}
 </div>
 
