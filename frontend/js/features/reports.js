@@ -389,7 +389,7 @@ function generateStatusReportPdf() {
     <div class="meta">
       Date: ${new Date().toLocaleDateString("el-GR")}<br>
       Period: ${from} → ${to}<br>
-      Line: ${lineFilter.toUpperCase()}<br>
+      Line: ${lineFilterLabel}<br>
       Status: ${status.toUpperCase()}<br>
       <strong>Tasks: ${tasks.length}</strong>
       ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
@@ -577,6 +577,7 @@ function generateStatusReportPdf() {
     document.body.removeChild(iframe);
   }, 1000);
 }
+
 function generateExecutionMixPie(execPct) {
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
@@ -630,7 +631,12 @@ function generateCompletedReportPdf() {
 
   const from = document.getElementById("dateFrom")?.value || "—";
   const to = document.getElementById("dateTo")?.value || "—";
-  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
+  const selectedLines = getSelectedReportLines();
+
+  const lineFilterLabel =
+    selectedLines.includes("all")
+      ? "ALL"
+      : selectedLines.join(", ");
 
   const technicianSelect = document.getElementById("reportTechnician");
   const technicianFilter = technicianSelect?.value || "all";

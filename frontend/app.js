@@ -5655,30 +5655,158 @@ async function loadReports() {
 }
 
 /* =====================
-   REPORT LINES (C)
+   REPORT LINES - MULTI SELECT
 ===================== */
 function populateReportLines() {
 
-  console.log("REPORT LINES assetsData =", state.assetsData);
+  console.log(
+    "REPORT LINES assetsData =",
+    state.assetsData
+  );
 
-  const sel = document.getElementById("reportLine");
-  if (!sel) return;
+  const container =
+    document.getElementById("reportLineOptions");
 
-  sel.innerHTML = `<option value="all">ALL</option>`;
+  const allCheckbox =
+    document.getElementById("reportLineAll");
+
+  if (!container || !allCheckbox) return;
+
+  container.innerHTML = "";
 
   if (!Array.isArray(state.assetsData)) return;
 
   const lines = [...new Set(
-    state.assetsData.map(a => a.line).filter(Boolean)
-  )];
+    state.assetsData
+      .map(a => a.line)
+      .filter(Boolean)
+  )]
+  .sort((a, b) =>
+    String(a).localeCompare(
+      String(b),
+      "el",
+      { numeric: true }
+    )
+  );
 
-  lines.sort().forEach(line => {
-    const opt = document.createElement("option");
-    opt.value = line;
-    opt.textContent = line;
-    sel.appendChild(opt);
+  lines.forEach(line => {
+
+    const label =
+      document.createElement("label");
+
+    label.className =
+      "multi-select-option";
+
+    label.innerHTML = `
+      <input
+        type="checkbox"
+        class="report-line-option"
+        value="${line}"
+      />
+      ${line}
+    `;
+
+    container.appendChild(label);
   });
+
+  allCheckbox.checked = true;
+
+  updateReportLineButton();
 }
+function getSelectedReportLines() {
+
+  const all =
+    document.getElementById("reportLineAll");
+
+  if (all?.checked) {
+    return ["all"];
+  }
+
+  return Array.from(
+    document.querySelectorAll(
+      ".report-line-option:checked"
+    )
+  ).map(cb => cb.value);
+}
+function updateReportLineButton() {
+
+  const btn =
+    document.getElementById("reportLineBtn");
+
+  if (!btn) return;
+
+  const selected =
+    getSelectedReportLines();
+
+  if (
+    selected.includes("all") ||
+    selected.length === 0
+  ) {
+    btn.textContent = "ALL";
+    return;
+  }
+
+  btn.textContent =
+    selected.length <= 3
+      ? selected.join(", ")
+      : `${selected.length} Lines`;
+}
+document
+  .getElementById("reportLineBtn")
+  ?.addEventListener("click", () => {
+
+    const menu =
+      document.getElementById("reportLineMenu");
+
+    if (!menu) return;
+
+    menu.style.display =
+      menu.style.display === "block"
+        ? "none"
+        : "block";
+  });
+
+document
+  .getElementById("reportLineAll")
+  ?.addEventListener("change", e => {
+
+    const checked =
+      e.target.checked;
+
+    document
+      .querySelectorAll(".report-line-option")
+      .forEach(cb => {
+        cb.checked = false;
+        cb.disabled = checked;
+      });
+
+    updateReportLineButton();
+  });
+
+document.addEventListener(
+  "change",
+  e => {
+
+    if (
+      !e.target.classList.contains(
+        "report-line-option"
+      )
+    ) {
+      return;
+    }
+
+    const all =
+      document.getElementById(
+        "reportLineAll"
+      );
+
+    if (all) {
+      all.checked = false;
+    }
+
+    updateReportLineButton();
+  }
+);
 
 /* =====================
    REPORTS PREVIEW (B)
@@ -5756,60 +5884,112 @@ document.getElementById("reportsTabBtn")?.addEventListener("click", () => {
    STATUS REPORT – DATA
 ===================== */
 function getFilteredTasksForStatusReport() {
-  const from = document.getElementById("dateFrom")?.value;
-  const to = document.getElementById("dateTo")?.value;
-  const line = document.getElementById("reportLine")?.value || "all";
-  const status = document.getElementById("reportStatus")?.value || "all";
 
-  const fromDate = from ? new Date(from) : null;
-  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+  const from =
+    document.getElementById("dateFrom")?.value;
 
-  const toDate = to ? new Date(to) : null;
-  if (toDate) toDate.setHours(23, 59, 59, 999);
+  const to =
+    document.getElementById("dateTo")?.value;
+
+  const selectedLines =
+    getSelectedReportLines();
+
+  const status =
+    document.getElementById("reportStatus")?.value || "all";
+
+  const fromDate =
+    from ? new Date(from) : null;
+
+  if (fromDate) {
+    fromDate.setHours(0, 0, 0, 0);
+  }
+
+  const toDate =
+    to ? new Date(to) : null;
+
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return state.tasksData
 
-    // LINE FILTER
+    // =====================
+    // LINE FILTER - MULTI
+    // =====================
     .filter(t => {
-      if (line === "all") return true;
-      return t.line_code === line || t.line === line;
+
+      if (selectedLines.includes("all")) {
+        return true;
+      }
+
+      const taskLine =
+        String(t.line_code || t.line || "");
+
+      return selectedLines.includes(taskLine);
     })
 
-    // DATE FILTER (due_date)
+    // =====================
+    // DATE FILTER
+    // =====================
     .filter(t => {
-      if (!t.due_date) return false;
-      const due = new Date(t.due_date);
-      if (fromDate && due < fromDate) return false;
-      if (toDate && due > toDate) return false;
+
+      if (!t.due_date) {
+        return false;
+      }
+
+      const due =
+        new Date(t.due_date);
+
+      if (fromDate && due < fromDate) {
+        return false;
+      }
+
+      if (toDate && due > toDate) {
+        return false;
+      }
+
       return true;
     })
 
+    // =====================
     // STATUS FILTER
+    // =====================
     .filter(t => {
-      if (status === "all") return true;
 
-      // Planned (ALL: preventive + manual, not overdue)
-      if (status === "planned") {
-        return isPreventive(t) && new Date(t.due_date) >= today;
+      if (status === "all") {
+        return true;
       }
 
-      // Planned (Manual ONLY)
+      // Preventive
+      if (status === "planned") {
+        return (
+          isPreventive(t) &&
+          new Date(t.due_date) >= today
+        );
+      }
+
+      // Planned Manual
       if (status === "planned_manual") {
-        return isPlannedManual(t) && new Date(t.due_date) >= today;
+        return (
+          isPlannedManual(t) &&
+          new Date(t.due_date) >= today
+        );
       }
 
       // Overdue
       if (status === "overdue") {
-        return t.status !== "Done" && new Date(t.due_date) < today;
+        return (
+          t.status !== "Done" &&
+          new Date(t.due_date) < today
+        );
       }
 
       return true;
     });
 }
-
 
 /* =====================
    LINE TABS

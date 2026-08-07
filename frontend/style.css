@@ -1714,6 +1714,49 @@ td:last-child {
 .reports-grid .field select {
   width: 100%;
 }
+.multi-select {
+  position: relative;
+}
+
+.multi-select-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.multi-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 1000;
+
+  min-width: 180px;
+  max-height: 260px;
+  overflow-y: auto;
+
+  background: #fff;
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+
+  padding: 8px;
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 7px 8px;
+  cursor: pointer;
+}
+
+.multi-select-option:hover {
+  background: #f4f6f8;
+}
+
 /* =====================
    PRIMARY ACTION – PDF
 ===================== */

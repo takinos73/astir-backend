@@ -1727,17 +1727,39 @@
       
       <!-- Line -->
       <div class="field field-right">
-        <label for="reportLine">Line</label>
-        <select id="reportLine">
-          <option value="all">ALL</option>
-          <option value="L1">L1</option>
-          <option value="L2">L2</option>
-          <option value="L3">L3</option>
-          <option value="L4">L4</option>
-          <option value="L5">L5</option>
-          <option value="L6">L6</option>
-          <option value="L7">L7</option>
-        </select>
+        <label>Line</label>
+
+        <div class="multi-select" id="reportLineMulti">
+
+          <button
+            type="button"
+            id="reportLineBtn"
+            class="multi-select-btn"
+          >
+            ALL
+          </button>
+
+          <div
+            id="reportLineMenu"
+            class="multi-select-menu"
+            style="display:none;"
+          >
+            <label class="multi-select-option">
+              <input
+                type="checkbox"
+                value="all"
+                id="reportLineAll"
+                checked
+              />
+              ALL
+            </label>
+
+            <div id="reportLineOptions">
+              <!-- populated dynamically -->
+            </div>
+          </div>
+
+        </div>
       </div>
       <!-- Status -->
       <div class="field field-right">
