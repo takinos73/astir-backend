@@ -314,7 +314,7 @@ select,
   background: var(--ok);
   color: #032012;
   padding: 5px 10px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   font-size: 12px;
