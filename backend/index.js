@@ -1960,6 +1960,7 @@ app.get("/asset-models", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 /* IDLE ASSET */
 app.post("/assets/:id/idle", async (req, res) => {
   try {
@@ -1976,6 +1977,57 @@ app.post("/assets/:id/idle", async (req, res) => {
   } catch (err) {
     console.error("SET IDLE ERROR:", err.message);
     res.status(500).json({ error: "Idle failed" });
+  }
+});
+
+/*RESUME ASSET FROM IDLE*/
+app.post("/assets/:id/resume", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    await client.query("BEGIN");
+
+    const assetRes = await client.query(
+      `SELECT idle_since FROM assets WHERE id = $1`,
+      [id]
+    );
+
+    const idleSince = assetRes.rows[0]?.idle_since;
+    if (!idleSince) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Asset not idle" });
+    }
+
+    const idleMs = Date.now() - new Date(idleSince).getTime();
+
+    // 🔁 SHIFT ONLY OPEN TASKS
+    await client.query(`
+      UPDATE maintenance_tasks
+      SET due_date = due_date + ($1 || ' milliseconds')::interval
+      WHERE asset_id = $2
+        AND status != 'Done'
+        AND due_date IS NOT NULL
+    `, [idleMs, id]);
+
+    // 🔄 Reactivate
+    await client.query(`
+      UPDATE assets
+      SET idle_since = NULL
+      WHERE id = $1
+    `, [id]);
+
+    await client.query("COMMIT");
+
+    res.json({ success: true });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("RESUME ERROR:", err.message);
+    res.status(500).json({ error: "Resume failed" });
+  } finally {
+    client.release();
   }
 });
 /* =====================
@@ -2030,56 +2082,100 @@ app.post("/assets/idle-all", async (req, res) => {
   }
 });
 
-/*RESUME ASSET FROM IDLE*/
-app.post("/assets/:id/resume", async (req, res) => {
+/* =====================
+   RESUME FILTERED ASSETS
+===================== */
+app.post("/assets/resume-all", async (req, res) => {
+
   const client = await pool.connect();
 
   try {
-    const { id } = req.params;
+
+    const { asset_ids } = req.body;
+
+    if (
+      !Array.isArray(asset_ids) ||
+      asset_ids.length === 0
+    ) {
+      return res.status(400).json({
+        error: "No assets selected"
+      });
+    }
 
     await client.query("BEGIN");
 
-    const assetRes = await client.query(
-      `SELECT idle_since FROM assets WHERE id = $1`,
-      [id]
+    // Get ONLY requested assets that are currently idle
+    const assetsRes = await client.query(
+      `
+      SELECT id, idle_since
+      FROM assets
+      WHERE id = ANY($1::int[])
+        AND idle_since IS NOT NULL
+      `,
+      [asset_ids]
     );
 
-    const idleSince = assetRes.rows[0]?.idle_since;
-    if (!idleSince) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Asset not idle" });
+    const idleAssets = assetsRes.rows;
+
+    // Resume each asset using its OWN idle duration
+    for (const asset of idleAssets) {
+
+      const idleMs =
+        Date.now() -
+        new Date(asset.idle_since).getTime();
+
+      // Shift ONLY open tasks for this asset
+      await client.query(
+        `
+        UPDATE maintenance_tasks
+        SET due_date =
+          due_date + ($1 || ' milliseconds')::interval
+        WHERE asset_id = $2
+          AND status != 'Done'
+          AND due_date IS NOT NULL
+        `,
+        [idleMs, asset.id]
+      );
+
+      // Reactivate asset
+      await client.query(
+        `
+        UPDATE assets
+        SET idle_since = NULL
+        WHERE id = $1
+        `,
+        [asset.id]
+      );
     }
-
-    const idleMs = Date.now() - new Date(idleSince).getTime();
-
-    // 🔁 SHIFT ONLY OPEN TASKS
-    await client.query(`
-      UPDATE maintenance_tasks
-      SET due_date = due_date + ($1 || ' milliseconds')::interval
-      WHERE asset_id = $2
-        AND status != 'Done'
-        AND due_date IS NOT NULL
-    `, [idleMs, id]);
-
-    // 🔄 Reactivate
-    await client.query(`
-      UPDATE assets
-      SET idle_since = NULL
-      WHERE id = $1
-    `, [id]);
 
     await client.query("COMMIT");
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      updated: idleAssets.length
+    });
 
   } catch (err) {
+
     await client.query("ROLLBACK");
-    console.error("RESUME ERROR:", err.message);
-    res.status(500).json({ error: "Resume failed" });
+
+    console.error(
+      "RESUME FILTERED ASSETS ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
   } finally {
+
     client.release();
+
   }
 });
+
+
 
 
 /* =====================================================
