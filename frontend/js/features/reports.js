@@ -2245,128 +2245,177 @@ const maturityLevel =
 <head>
   <title>Maintenance KPI Report</title>
   <style>
-    @page { size: A4; margin: 15mm; }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
 
-    body {
-      font-family: Arial, sans-serif;
-      color: #111;
-      margin: 0;
-      padding: 0;
-      font-size: 12px;
-    }
+  body {
+    font-family: Arial, sans-serif;
+    color: #1b2430;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    background: #ffffff;
+  }
 
-    h1 {
-      font-size: 18px;
-      margin: 0 0 6px;
-      letter-spacing: .2px;
-    }
+  h1 {
+    font-size: 24px;
+    margin: 0 0 8px;
+    letter-spacing: .3px;
+    color: #172033;
+  }
 
-    .meta {
-      color: #555;
-      font-size: 11px;
-      line-height: 1.5;
-      margin-bottom: 12px;
-    }
+  .meta {
+    background: #1f2937;
+    color: #f3f4f6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+  .meta strong {
+    color: #ffffff;
+  }
 
-    .card {
-      border: 1px solid #d6d6d6;
-      border-radius: 10px;
-      padding: 10px 12px;
-    }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
 
-    .kpi-title {
-      font-size: 11px;
-      color: #555;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
+  .card {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 11px 12px;
+    background: #f8fafc;
+    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    break-inside: avoid;
+  }
 
-    .kpi-value {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 0;
-      line-height: 1.1;
-    }
+  .kpi-title {
+    font-size: 10px;
+    color: #475569;
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 700;
+  }
 
-    .kpi-sub {
-      margin-top: 6px;
-      color: #444;
-      font-size: 11px;
-      line-height: 1.4;
-    }
+  .kpi-value {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.1;
+    color: #18243f;
+  }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 4px;
-    }
+  .kpi-sub {
+    margin-top: 8px;
+    color: #475569;
+    font-size: 11px;
+    line-height: 1.45;
+  }
 
-    .label { color: #666; }
-    .value { font-weight: 700; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 5px;
+  }
 
-    .mix {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+  .label {
+    color: #64748b;
+  }
 
-    .divider {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid #cfcfcf;
-    }
+  .value {
+    font-weight: 700;
+    color: #1e293b;
+  }
 
-    .insights {
-      border: 1px solid #e2e2e2;
-      border-radius: 10px;
-      padding: 10px 12px;
-      color: #333;
-      margin-bottom: 10px;
-    }
+  .divider {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #d8dee8;
+  }
 
-    .insights h3 {
-      margin: 0 0 6px;
-      font-size: 12px;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
+  .insights {
+    border: 1px solid #cbd5e1;
+    border-left: 5px solid #d6a928;
+    border-radius: 10px;
+    padding: 11px 13px;
+    background: #fffdf5;
+    color: #334155;
+    margin-bottom: 12px;
+  }
 
-    .insights ul {
-      margin: 0;
-      padding-left: 16px;
-    }
+  .insights h3 {
+    margin: 0 0 7px;
+    font-size: 11px;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
 
-    .footer {
-      margin-top: 10px;
-      color: #777;
-      font-size: 10px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      border-top: 1px solid #d9d9d9;
-      padding-top: 8px;
-    }
+  .insights ul {
+    margin: 0;
+    padding-left: 17px;
+  }
 
-    .end-divider {
-      margin-top: 8px;
-      text-align: center;
-      color: #8a8a8a;
-      font-size: 10px;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
-  </style>
+  .insights li {
+    margin-bottom: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 11px;
+  }
+
+  th {
+    background: #1f2937;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  th,
+  td {
+    border: 1px solid #d6dce5;
+    padding: 7px 8px;
+  }
+
+  td {
+    background: #ffffff;
+  }
+
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .footer {
+    margin-top: 12px;
+    color: #64748b;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 8px;
+  }
+
+  .end-divider {
+    margin-top: 10px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+</style>
 </head>
 <body>
 
