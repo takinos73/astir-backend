@@ -1470,7 +1470,7 @@ function generateNonPlannedReportPdf() {
 
       <div class="meta">
         Period: ${from} → ${to}<br>
-        Line: ${lineFilter}<br>
+        Line: ${lineFilterLabel}<br>
         Technician: ${technician}<br>
         Generated: ${new Date().toLocaleDateString("en-GB")}
       </div>
