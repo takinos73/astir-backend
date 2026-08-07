@@ -292,9 +292,11 @@ if (state.historyDateFrom) {
 }
 
 /* =====================
-   STATUS REPORT – PDF (GROUPED BY LINE / ASSET)
+   STATUS REPORT – PDF
+   (GROUPED BY LINE / ASSET)
 ===================== */
 function generateStatusReportPdf() {
+
   const tasks = getFilteredTasksForStatusReport();
 
   if (tasks.length === 0) {
@@ -302,9 +304,14 @@ function generateStatusReportPdf() {
     return;
   }
 
-  const from = document.getElementById("dateFrom")?.value || "—";
-  const to = document.getElementById("dateTo")?.value || "—";
-    const selectedLines = getSelectedReportLines();
+  const from =
+    document.getElementById("dateFrom")?.value || "—";
+
+  const to =
+    document.getElementById("dateTo")?.value || "—";
+
+  const selectedLines =
+    getSelectedReportLines();
 
   const lineFilterLabel =
     selectedLines.includes("all")
@@ -313,20 +320,38 @@ function generateStatusReportPdf() {
 
   const status =
     document.getElementById("reportStatus")?.value || "ALL";
-  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
-  const status = document.getElementById("reportStatus")?.value || "ALL";
 
   // 🔽 SORT: LINE → ASSET → DUE DATE
   const sorted = [...tasks].sort((a, b) => {
-    const la = (a.line_code || a.line || "");
-    const lb = (b.line_code || b.line || "");
-    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
 
-    const aa = `${a.machine_name} ${a.serial_number || ""}`;
-    const ab = `${b.machine_name} ${b.serial_number || ""}`;
-    if (aa !== ab) return aa.localeCompare(ab, "el");
+    const la =
+      a.line_code || a.line || "";
 
-    return new Date(a.due_date || 0) - new Date(b.due_date || 0);
+    const lb =
+      b.line_code || b.line || "";
+
+    if (la !== lb) {
+      return la.localeCompare(
+        lb,
+        "el",
+        { numeric: true }
+      );
+    }
+
+    const aa =
+      `${a.machine_name} ${a.serial_number || ""}`;
+
+    const ab =
+      `${b.machine_name} ${b.serial_number || ""}`;
+
+    if (aa !== ab) {
+      return aa.localeCompare(ab, "el");
+    }
+
+    return (
+      new Date(a.due_date || 0) -
+      new Date(b.due_date || 0)
+    );
   });
 
   // ⏱ GRAND TOTAL
