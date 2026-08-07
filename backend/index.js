@@ -1978,6 +1978,33 @@ app.post("/assets/:id/idle", async (req, res) => {
     res.status(500).json({ error: "Idle failed" });
   }
 });
+/* =====================
+   SET ALL ASSETS IDLE
+===================== */
+app.post("/assets/idle-all", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE assets
+      SET idle_since = NOW()
+      WHERE idle_since IS NULL
+      RETURNING id, model, serial_number, line, idle_since
+    `);
+
+    res.json({
+      success: true,
+      updated: result.rowCount,
+      assets: result.rows
+    });
+
+  } catch (err) {
+    console.error("SET ALL IDLE ERROR:", err.message);
+
+    res.status(500).json({
+      error: "Set all idle failed"
+    });
+  }
+});
+
 /*RESUME ASSET FROM IDLE*/
 app.post("/assets/:id/resume", async (req, res) => {
   const client = await pool.connect();

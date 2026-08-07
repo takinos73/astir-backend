@@ -4554,7 +4554,7 @@ function renderAssetsCards() {
     });
   }
 
-  // ---- Menu & actions ----
+  // ---- Assets Index Menu & actions ----
   const moreBtn = card.querySelector(".asset-card-more");
   const menu = card.querySelector(".asset-card-menu");
   const addTaskItem = card.querySelector(".asset-card-menu-item.add-task");

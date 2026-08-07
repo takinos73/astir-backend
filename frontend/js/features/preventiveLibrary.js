@@ -96,10 +96,15 @@ function populateLibraryModels() {
   }
 
   const models = [...new Set(
-    state.assetsData
-      .map(a => a.model)
-      .filter(Boolean)
-  )];
+  state.assetsData
+    .map(a => a.model)
+    .filter(Boolean)
+)]
+.sort((a, b) =>
+  a.localeCompare(b, "el", {
+    sensitivity: "base"
+  })
+);
 
   models.forEach(model => {
     const opt = document.createElement("option");
