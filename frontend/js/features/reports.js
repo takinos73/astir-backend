@@ -1561,30 +1561,44 @@ function generateNonPlannedReportPdf() {
 ===================== */
 
 function getFilteredOverdueTasksForReport() {
-  const line = document.getElementById("reportLine")?.value || "all";
+
+  const selectedLines =
+    getSelectedReportLines();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return state.tasksData.filter(t => {
-    // ❌ must have due date
+
+    // must have due date
     if (!t.due_date) return false;
 
-    // ❌ already completed
+    // already completed
     if (t.status === "Done") return false;
 
     const due = new Date(t.due_date);
     due.setHours(0, 0, 0, 0);
 
-    // ✅ overdue only
+    // overdue only
     if (due >= today) return false;
 
-    // line filter
-    if (line !== "all" && t.line_code !== line) return false;
+    // =====================
+    // LINE FILTER - MULTI
+    // =====================
+    if (!selectedLines.includes("all")) {
+
+      const taskLine =
+        String(t.line_code || t.line || "");
+
+      if (!selectedLines.includes(taskLine)) {
+        return false;
+      }
+    }
 
     return true;
   });
 }
+
 /* =====================
    OVERDUE TASKS REPORT – PDF (GROUPED BY LINE / ASSET)
 ===================== */
@@ -1597,7 +1611,13 @@ function generateOverdueReportPdf() {
     return;
   }
 
-  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
+  const selectedLines =
+    getSelectedReportLines();
+
+  const lineFilterLabel =
+    selectedLines.includes("all")
+      ? "ALL"
+      : selectedLines.join(", ");
 
   // 🔽 SORT: LINE → ASSET → DUE DATE
   const sorted = [...rows].sort((a, b) => {
@@ -1718,7 +1738,7 @@ function generateOverdueReportPdf() {
     <h2>Overdue Maintenance Tasks</h2>
 
     <div class="meta">
-      Line filter: ${lineFilter}<br>
+      Line filter: ${lineFilterLabel}<br>
       Generated: ${new Date().toLocaleDateString("en-GB")}
     </div>
 `;
