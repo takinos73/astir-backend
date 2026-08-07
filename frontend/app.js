@@ -4631,14 +4631,11 @@ function renderAssetsCards() {
 
       renderAssetsCards();
     });
-    
-    document
-  .getElementById("setAllAssetsIdleBtn")
-  ?.addEventListener("click", setAllAssetsIdle);
+
 
     // =====================
-// SET VISIBLE ASSETS IDLE
-// =====================
+    // SET VISIBLE ASSETS IDLE
+    // =====================
 async function setAllAssetsIdle() {
 
   const assets = Array.isArray(state.assetsData)
@@ -4791,7 +4788,6 @@ async function setAllAssetsIdle() {
     applyRolePermissions();
   }
 }
-
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
@@ -4952,6 +4948,10 @@ if (Array.isArray(state.executionsData)) {
     }
   });
 }
+  document
+  .getElementById("setAllAssetsIdleBtn")
+  ?.addEventListener("click", setAllAssetsIdle);
+
   // =====================
   // LAST ACTIVITY → OPEN HISTORY ENTRY
   // =====================
