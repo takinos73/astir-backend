@@ -5028,6 +5028,134 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+const resumeAllBtn =
+  document.getElementById("resumeAllAssetsBtn");
+
+if (resumeAllBtn) {
+  resumeAllBtn.onclick = resumeAllAssets;
+}
+
+// =====================
+// RESUME VISIBLE ASSETS
+// =====================
+async function resumeAllAssets() {
+
+  const assets = Array.isArray(state.assetsData)
+    ? state.assetsData
+    : [];
+
+  const selectedLine =
+    document.getElementById("assetLineFilter")?.value || "all";
+
+  // Assets που βλέπει ο χρήστης
+  const visibleAssets = assets.filter(asset =>
+    selectedLine === "all" ||
+    String(asset.line || "") === String(selectedLine)
+  );
+
+  // Μόνο όσα είναι πραγματικά IDLE
+  const assetsToResume = visibleAssets.filter(
+    asset => !!asset.idle_since
+  );
+
+  if (assetsToResume.length === 0) {
+    alert(
+      selectedLine === "all"
+        ? "No idle assets to resume."
+        : `No idle assets in Line ${selectedLine}.`
+    );
+
+    return;
+  }
+
+  const scopeLabel =
+    selectedLine === "all"
+      ? "ALL visible idle assets"
+      : `idle assets in Line ${selectedLine}`;
+
+  const ok = confirm(
+    `Resume ${scopeLabel}?\n\n` +
+    `${assetsToResume.length} asset(s) will be resumed.\n\n` +
+    `Open task due dates will be shifted by each asset's idle time.`
+  );
+
+  if (!ok) return;
+
+  const button =
+    document.getElementById("resumeAllAssetsBtn");
+
+  try {
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "⏳ Resuming...";
+    }
+
+    const res = await fetch(
+      `${API}/assets/resume-all`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          asset_ids: assetsToResume.map(asset => asset.id)
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || "Resume assets failed"
+      );
+    }
+
+    const result = await res.json();
+
+    await loadAssets();
+
+    // Κρατάμε το υπάρχον line filter
+    const lineFilter =
+      document.getElementById("assetLineFilter");
+
+    if (lineFilter) {
+      lineFilter.value = selectedLine;
+    }
+
+    renderAssetsCards();
+
+    if (
+      state.currentAssetSerial &&
+      typeof refreshAssetView === "function"
+    ) {
+      await refreshAssetView();
+    }
+
+    alert(
+      `${result.updated || 0} asset(s) resumed successfully.`
+    );
+
+  } catch (err) {
+
+    console.error(
+      "RESUME FILTERED ASSETS ERROR:",
+      err
+    );
+
+    alert(err.message);
+
+  } finally {
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "▶ Resume All";
+    }
+
+  }
+}
+
 /* =====================
    LOAD MACHINE MODELS (FOR ADD ASSET)
    Backend returns: ["PMC250","PMC300",...]
