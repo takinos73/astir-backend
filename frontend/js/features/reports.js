@@ -1258,43 +1258,83 @@ document.getElementById("resetReportBtn")?.addEventListener("click", () => {
    NON-PLANNED REPORT – DATA
 ===================== */
 function getFilteredNonPlannedExecutionsForReport() {
-  const from = document.getElementById("dateFrom")?.value;
-  const to = document.getElementById("dateTo")?.value;
-  const line = document.getElementById("reportLine")?.value || "all";
-  const technician = document.getElementById("reportTechnician")?.value || "all";
 
-  const fromDate = from ? new Date(from) : null;
-  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+  const from =
+    document.getElementById("dateFrom")?.value;
 
-  const toDate = to ? new Date(to) : null;
-  if (toDate) toDate.setHours(23, 59, 59, 999);
+  const to =
+    document.getElementById("dateTo")?.value;
 
-  return (Array.isArray(state.executionsData) ? state.executionsData : [])
-    .filter(e => {
-      if (!e.executed_at) return false;
+  const selectedLines =
+    getSelectedReportLines();
 
-      // only breakdown / non-planned
-      if (e.is_planned !== false) return false;
+  const technician =
+    document.getElementById("reportTechnician")?.value || "all";
 
-      const execDate = new Date(e.executed_at);
+  const fromDate =
+    from ? new Date(from) : null;
 
-      if (fromDate && execDate < fromDate) return false;
-      if (toDate && execDate > toDate) return false;
+  if (fromDate) {
+    fromDate.setHours(0, 0, 0, 0);
+  }
 
-      if (line !== "all" && String(e.line || "") !== String(line)) {
+  const toDate =
+    to ? new Date(to) : null;
+
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
+
+  return (
+    Array.isArray(state.executionsData)
+      ? state.executionsData
+      : []
+  ).filter(e => {
+
+    if (!e.executed_at) {
+      return false;
+    }
+
+    // only breakdown / non-planned
+    if (e.is_planned !== false) {
+      return false;
+    }
+
+    const execDate =
+      new Date(e.executed_at);
+
+    // DATE FILTER
+    if (fromDate && execDate < fromDate) {
+      return false;
+    }
+
+    if (toDate && execDate > toDate) {
+      return false;
+    }
+
+    // LINE FILTER - MULTI
+    if (!selectedLines.includes("all")) {
+
+      const executionLine =
+        String(e.line || "");
+
+      if (!selectedLines.includes(executionLine)) {
         return false;
       }
+    }
 
-      if (
-        technician !== "all" &&
-        String(e.technician_id || "") !== String(technician)
-      ) {
-        return false;
-      }
+    // TECHNICIAN FILTER
+    if (
+      technician !== "all" &&
+      String(e.technician_id || "") !== String(technician)
+    ) {
+      return false;
+    }
 
-      return true;
-    });
+    return true;
+  });
 }
+
 /* =====================
    NON-PLANNED (BREAKDOWN) REPORT – PDF
 ===================== */
@@ -1309,7 +1349,12 @@ function generateNonPlannedReportPdf() {
 
   const from = document.getElementById("dateFrom")?.value || "—";
   const to = document.getElementById("dateTo")?.value || "—";
-  const lineFilter = document.getElementById("reportLine")?.value || "ALL";
+  const selectedLines = getSelectedReportLines();
+
+  const lineFilterLabel =
+    selectedLines.includes("all")
+      ? "ALL"
+      : selectedLines.join(", ");
   const technician =
     document.getElementById("reportTechnician")?.value || "ALL";
 
