@@ -1917,7 +1917,9 @@ function generateKpiReportPdf() {
   // --------- INPUTS ----------
   const fromVal = document.getElementById("dateFrom")?.value || "";
   const toVal = document.getElementById("dateTo")?.value || "";
-  const lineSel = (document.getElementById("reportLine")?.value || "all").toString();
+  const selectedLines = getSelectedReportLines();
+  const isAllLines =
+    selectedLines.includes("all");
 
   const fromDate = fromVal ? new Date(fromVal) : null;
   const toDate = toVal ? new Date(toVal) : null;
@@ -1941,11 +1943,17 @@ function generateKpiReportPdf() {
   };
 
   const sameLine = (row) => {
-    if (!row) return false;
-    if (lineSel === "all") return true;
-    const l = (row.line_code || row.line || "").toString();
-    return l === lineSel;
-  };
+  if (!row) return false;
+
+  if (isAllLines) {
+    return true;
+  }
+
+  const line =
+    String(row.line_code || row.line || "");
+
+  return selectedLines.includes(line);
+};
 
   const isPreventiveRow = (row) =>
     row && row.frequency_hours != null && safeNum(row.frequency_hours) > 0;
@@ -2017,9 +2025,18 @@ function generateKpiReportPdf() {
 
   const preventiveExpectedExecutions = allExec
     .filter(e => {
-      if (lineSel !== "all" && String(e.line || "") !== lineSel) return false;
-      if (!isPreventiveRow(e)) return false;
-      if (!e.prev_due_date) return false;
+
+      if (!sameLine(e)) {
+        return false;
+      }
+
+      if (!isPreventiveRow(e)) {
+        return false;
+      }
+
+      if (!e.prev_due_date) {
+        return false;
+      }
 
       return inRange(e.prev_due_date);
     });
@@ -2028,11 +2045,8 @@ const preventiveExpectedCount = preventiveExpectedExecutions.length;
 
   // Executions scoped + period
   const scopedExecPeriod = allExec
-    .filter(e => {
-      if (lineSel === "all") return true;
-      return (e.line || "").toString() === lineSel;
-    })
-    .filter(e => inRange(e.executed_at));
+  .filter(e => sameLine(e))
+  .filter(e => inRange(e.executed_at));
 
   if (scopedExecPeriod.length === 0 && activeTasksWithDue.length === 0) {
     alert("No KPI data found for selected criteria");
@@ -2059,25 +2073,44 @@ const preventiveCompletedForCompliance = preventiveExpectedExecutions.filter(e =
   const totalServiceMin = scopedExecPeriod.reduce((sum, e) => sum + safeNum(e.duration_min), 0);
   const avgServiceMin = scopedExecPeriod.length ? Math.round(totalServiceMin / scopedExecPeriod.length) : 0;
 
-  // Top line impact (ONLY meaningful when scope=ALL)
-  let topLine = "—";
-  let topLineMin = 0;
-  if (lineSel === "all") {
-    const map = new Map(); // line -> minutes
-    scopedExecPeriod.forEach(e => {
-      const l = (e.line || "—").toString();
-      map.set(l, (map.get(l) || 0) + safeNum(e.duration_min));
-    });
-    for (const [l, m] of map.entries()) {
-      if (m > topLineMin) {
-        topLineMin = m;
-        topLine = l;
-      }
+  // =====================
+// TOP LINE IMPACT
+// =====================
+let topLine = "—";
+let topLineMin = 0;
+
+if (isAllLines || selectedLines.length > 1) {
+
+  const map = new Map();
+
+  scopedExecPeriod.forEach(e => {
+
+    const line =
+      String(e.line || "—");
+
+    map.set(
+      line,
+      (map.get(line) || 0) +
+      safeNum(e.duration_min)
+    );
+  });
+
+  for (const [line, minutes] of map.entries()) {
+
+    if (minutes > topLineMin) {
+      topLineMin = minutes;
+      topLine = line;
     }
-  } else {
-    topLine = lineSel.toUpperCase();
-    topLineMin = totalServiceMin;
   }
+
+} else if (selectedLines.length === 1) {
+
+  topLine =
+    selectedLines[0].toUpperCase();
+
+  topLineMin =
+    totalServiceMin;
+}
 
   // KPIs
   const overdueCount = overdueTasks.length;
@@ -2151,16 +2184,31 @@ const mttrTopAssets = [...mttrByAssetMap.values()]
     insights.push(`Breakdown ratio is high (${breakdownPct}%) — consider RCA / preventive reinforcement.`);
   }
   // top-line share insight (only for ALL)
-  if (lineSel === "all" && totalServiceMin > 0 && topLineMin > 0) {
-    const share = pct(topLineMin, totalServiceMin);
-    if (share >= 35) insights.push(`Line ${topLine} accounts for ${share}% of service time.`);
+  if (
+  (isAllLines || selectedLines.length > 1) &&
+  totalServiceMin > 0 &&
+  topLineMin > 0
+) {
+  const share =
+    pct(topLineMin, totalServiceMin);
+
+  if (share >= 35) {
+    insights.push(
+      `Line ${topLine} accounts for ${share}% of service time.`
+    );
   }
+}
   const finalInsights = insights.slice(0, 3);
 
   const periodLabel =
     fromVal || toVal ? `${fromVal || "—"} → ${toVal || "—"}` : "ALL";
 
-  const scopeLabel = lineSel === "all" ? "ALL LINES" : `LINE ${lineSel.toUpperCase()}`;
+  const scopeLabel =
+    isAllLines
+      ? "ALL LINES"
+      : selectedLines.length === 1
+        ? `LINE ${selectedLines[0].toUpperCase()}`
+        : `LINES ${selectedLines.join(", ")}`;
   // 🔹 KPI Status Flags
 const overdueStatus =
   overdueRate >= 15 ? "🔴 Critical"
