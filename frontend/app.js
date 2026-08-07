@@ -4632,120 +4632,6 @@ function renderAssetsCards() {
       renderAssetsCards();
     });
 
-
-    // =====================
-    // SET VISIBLE ASSETS IDLE
-    // =====================
-async function setAllAssetsIdle() {
-
-  const assets = Array.isArray(state.assetsData)
-    ? state.assetsData
-    : [];
-
-  const selectedLine =
-    document.getElementById("assetLineFilter")?.value || "all";
-
-  // Assets που βλέπει αυτή τη στιγμή ο χρήστης
-  const visibleAssets = assets.filter(asset =>
-    selectedLine === "all" ||
-    String(asset.line || "") === String(selectedLine)
-  );
-
-  // Από αυτά, μόνο όσα δεν είναι ήδη idle
-  const assetsToIdle = visibleAssets.filter(
-    asset => !asset.idle_since
-  );
-
-  if (assetsToIdle.length === 0) {
-    alert(
-      selectedLine === "all"
-        ? "All assets are already idle."
-        : `All visible assets in Line ${selectedLine} are already idle.`
-    );
-    return;
-  }
-
-  const scopeLabel =
-    selectedLine === "all"
-      ? "ALL visible assets"
-      : `assets in Line ${selectedLine}`;
-
-  const ok = confirm(
-    `Set ${scopeLabel} to IDLE?\n\n` +
-    `${assetsToIdle.length} asset(s) will be set to idle.\n\n` +
-    `Assets already idle will not be changed.`
-  );
-
-  if (!ok) return;
-
-  const button =
-    document.getElementById("setAllAssetsIdleBtn");
-
-  try {
-
-    if (button) {
-      button.disabled = true;
-      button.textContent = "⏳ Setting Idle...";
-    }
-
-    const res = await fetch(
-      `${API}/assets/idle-all`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          asset_ids: assetsToIdle.map(asset => asset.id)
-        })
-      }
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-
-      throw new Error(
-        err.error || "Set assets idle failed"
-      );
-    }
-
-    const result = await res.json();
-
-    await loadAssets();
-
-    // Κρατάμε το υπάρχον Line filter
-    const lineFilter =
-      document.getElementById("assetLineFilter");
-
-    if (lineFilter) {
-      lineFilter.value = selectedLine;
-    }
-
-    renderAssetsCards();
-
-    alert(
-      `${result.updated || 0} asset(s) set to idle successfully.`
-    );
-
-  } catch (err) {
-
-    console.error(
-      "SET FILTERED ASSETS IDLE ERROR:",
-      err
-    );
-
-    alert(err.message);
-
-  } finally {
-
-    if (button) {
-      button.disabled = false;
-      button.textContent = "⏸ Set All Idle";
-    }
-
-  }
-}
-
   // 🟢 Resume
     resumeItem?.addEventListener("click", async e => {
       e.stopPropagation();
@@ -4788,6 +4674,7 @@ async function setAllAssetsIdle() {
     applyRolePermissions();
   }
 }
+
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
@@ -4990,10 +4877,6 @@ document.addEventListener("click", e => {
   openAssetViewBySerial(serial);
 });
 
-  document
-  .getElementById("setAllAssetsIdleBtn")
-  ?.addEventListener("click", setAllAssetsIdle);
-
 /* =====================
    LOAD LINES (FOR ADD ASSET)
 ===================== */
@@ -5024,6 +4907,126 @@ async function loadLinesForAsset() {
     console.error("LOAD LINES ERROR:", err);
   }
 }
+
+// =====================
+// SET VISIBLE ASSETS IDLE
+// =====================
+async function setAllAssetsIdle() {
+
+  const assets = Array.isArray(state.assetsData)
+    ? state.assetsData
+    : [];
+
+  const selectedLine =
+    document.getElementById("assetLineFilter")?.value || "all";
+
+  // Assets που βλέπει αυτή τη στιγμή ο χρήστης
+  const visibleAssets = assets.filter(asset =>
+    selectedLine === "all" ||
+    String(asset.line || "") === String(selectedLine)
+  );
+
+  // Από αυτά, μόνο όσα δεν είναι ήδη idle
+  const assetsToIdle = visibleAssets.filter(
+    asset => !asset.idle_since
+  );
+
+  if (assetsToIdle.length === 0) {
+    alert(
+      selectedLine === "all"
+        ? "All assets are already idle."
+        : `All visible assets in Line ${selectedLine} are already idle.`
+    );
+    return;
+  }
+
+  const scopeLabel =
+    selectedLine === "all"
+      ? "ALL visible assets"
+      : `assets in Line ${selectedLine}`;
+
+  const ok = confirm(
+    `Set ${scopeLabel} to IDLE?\n\n` +
+    `${assetsToIdle.length} asset(s) will be set to idle.\n\n` +
+    `Assets already idle will not be changed.`
+  );
+
+  if (!ok) return;
+
+  const button =
+    document.getElementById("setAllAssetsIdleBtn");
+
+  try {
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "⏳ Setting Idle...";
+    }
+
+    const res = await fetch(
+      `${API}/assets/idle-all`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          asset_ids: assetsToIdle.map(asset => asset.id)
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.error || "Set assets idle failed"
+      );
+    }
+
+    const result = await res.json();
+
+    await loadAssets();
+
+    // Κρατάμε το υπάρχον Line filter
+    const lineFilter =
+      document.getElementById("assetLineFilter");
+
+    if (lineFilter) {
+      lineFilter.value = selectedLine;
+    }
+
+    renderAssetsCards();
+
+    alert(
+      `${result.updated || 0} asset(s) set to idle successfully.`
+    );
+
+  } catch (err) {
+
+    console.error(
+      "SET FILTERED ASSETS IDLE ERROR:",
+      err
+    );
+
+    alert(err.message);
+
+  } finally {
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "⏸ Set All Idle";
+    }
+
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("setAllAssetsIdleBtn");
+
+  if (btn) {
+    btn.onclick = setAllAssetsIdle;
+  }
+});
 
 /* =====================
    LOAD MACHINE MODELS (FOR ADD ASSET)
