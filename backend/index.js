@@ -1979,16 +1979,33 @@ app.post("/assets/:id/idle", async (req, res) => {
   }
 });
 /* =====================
-   SET ALL ASSETS IDLE
+   SET FILTERED ASSETS IDLE
 ===================== */
 app.post("/assets/idle-all", async (req, res) => {
   try {
-    const result = await pool.query(`
+    const { asset_ids } = req.body;
+
+    if (!Array.isArray(asset_ids) || asset_ids.length === 0) {
+      return res.status(400).json({
+        error: "No assets selected"
+      });
+    }
+
+    const result = await pool.query(
+      `
       UPDATE assets
       SET idle_since = NOW()
-      WHERE idle_since IS NULL
-      RETURNING id, model, serial_number, line, idle_since
-    `);
+      WHERE id = ANY($1::int[])
+        AND idle_since IS NULL
+      RETURNING
+        id,
+        model,
+        serial_number,
+        line,
+        idle_since
+      `,
+      [asset_ids]
+    );
 
     res.json({
       success: true,
@@ -1997,10 +2014,13 @@ app.post("/assets/idle-all", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("SET ALL IDLE ERROR:", err.message);
+    console.error(
+      "SET FILTERED ASSETS IDLE ERROR:",
+      err.message
+    );
 
     res.status(500).json({
-      error: "Set all idle failed"
+      error: "Set assets idle failed"
     });
   }
 });
