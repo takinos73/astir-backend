@@ -4948,10 +4948,6 @@ if (Array.isArray(state.executionsData)) {
     }
   });
 }
-  document
-  .getElementById("setAllAssetsIdleBtn")
-  ?.addEventListener("click", setAllAssetsIdle);
-
   // =====================
   // LAST ACTIVITY → OPEN HISTORY ENTRY
   // =====================
@@ -4993,6 +4989,10 @@ document.addEventListener("click", e => {
   console.log("🟢 OPEN ASSET VIEW FROM ASSET INDEX", serial);
   openAssetViewBySerial(serial);
 });
+
+  document
+  .getElementById("setAllAssetsIdleBtn")
+  ?.addEventListener("click", setAllAssetsIdle);
 
 /* =====================
    LOAD LINES (FOR ADD ASSET)
