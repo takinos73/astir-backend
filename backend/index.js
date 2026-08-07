@@ -1983,9 +1983,13 @@ app.post("/assets/:id/idle", async (req, res) => {
 ===================== */
 app.post("/assets/idle-all", async (req, res) => {
   try {
+
     const { asset_ids } = req.body;
 
-    if (!Array.isArray(asset_ids) || asset_ids.length === 0) {
+    if (
+      !Array.isArray(asset_ids) ||
+      asset_ids.length === 0
+    ) {
       return res.status(400).json({
         error: "No assets selected"
       });
@@ -2001,7 +2005,6 @@ app.post("/assets/idle-all", async (req, res) => {
         id,
         model,
         serial_number,
-        line,
         idle_since
       `,
       [asset_ids]
@@ -2014,14 +2017,16 @@ app.post("/assets/idle-all", async (req, res) => {
     });
 
   } catch (err) {
+
     console.error(
       "SET FILTERED ASSETS IDLE ERROR:",
-      err.message
+      err
     );
 
     res.status(500).json({
-      error: "Set assets idle failed"
+      error: err.message
     });
+
   }
 });
 
