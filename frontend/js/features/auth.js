@@ -57,12 +57,21 @@ function applyRoleUI(role) {
 
   document.body.dataset.role = role;
 
+  // Admin only
   document.querySelectorAll(".admin-only").forEach(element => {
     element.style.display = role === "admin" ? "" : "none";
   });
 
+  // Planner + Admin
+  document.querySelectorAll(".planner-admin-only").forEach(element => {
+    element.style.display =
+      role === "planner" || role === "admin"
+        ? ""
+        : "none";
+  });
+
   const userInfo =
-  document.getElementById("loggedUserInfo");
+    document.getElementById("loggedUserInfo");
 
   const nameText =
     document.getElementById("loggedTechnicianName");
@@ -92,7 +101,8 @@ function applyRoleUI(role) {
     roleBadge.style.display = "inline-block";
   }
 
-  const logoutBtn = document.getElementById("logoutBtn");
+  const logoutBtn =
+    document.getElementById("logoutBtn");
 
   if (logoutBtn) {
     logoutBtn.style.display = "inline-block";
