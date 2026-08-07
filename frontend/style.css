@@ -3912,6 +3912,38 @@ tr.history-unplanned {
   border-radius: 6px;
   margin-left: 1px;
 }
+/* =========================
+   ASSET IDLE / RESUME ACTIONS
+========================= */
+
+.btn-idle-all {
+  background: #d6a928;
+  color: #111;
+  border: 1px solid #e5bb43;
+}
+
+.btn-idle-all:hover {
+  background: #e2b632;
+  border-color: #f0c84f;
+}
+
+.btn-resume-all {
+  background: #4fd18b;
+  color: #102018;
+  border: 1px solid #63dda0;
+}
+
+.btn-resume-all:hover {
+  background: #60dc99;
+  border-color: #78e5ac;
+}
+
+/* Disabled while request is running */
+.btn-idle-all:disabled,
+.btn-resume-all:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* =====================
    META
