@@ -304,6 +304,15 @@ function generateStatusReportPdf() {
 
   const from = document.getElementById("dateFrom")?.value || "—";
   const to = document.getElementById("dateTo")?.value || "—";
+    const selectedLines = getSelectedReportLines();
+
+  const lineFilterLabel =
+    selectedLines.includes("all")
+      ? "ALL"
+      : selectedLines.join(", ");
+
+  const status =
+    document.getElementById("reportStatus")?.value || "ALL";
   const lineFilter = document.getElementById("reportLine")?.value || "ALL";
   const status = document.getElementById("reportStatus")?.value || "ALL";
 
