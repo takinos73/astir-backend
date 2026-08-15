@@ -4987,7 +4987,8 @@ async function setAllAssetsIdle() {
     const result = await res.json();
 
     await loadAssets();
-
+    await loadTasks();
+    
     // Κρατάμε το υπάρχον Line filter
     const lineFilter =
       document.getElementById("assetLineFilter");
