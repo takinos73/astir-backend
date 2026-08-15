@@ -5115,6 +5115,7 @@ async function resumeAllAssets() {
     const result = await res.json();
 
     await loadAssets();
+    await loadTasks();
 
     // Κρατάμε το υπάρχον line filter
     const lineFilter =
