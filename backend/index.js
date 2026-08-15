@@ -435,14 +435,14 @@ app.get("/lines", async (req, res) => {
      due_date, status, completed_by, completed_at,
      updated_at, is_planned, notes, deleted_at
 ===================================================== */
-
 // GET active tasks (Planned + Overdue), sorted by due date
+
 app.get("/tasks", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         mt.id,
-        mt.asset_id,              -- ✅ needed for UI logic
+        mt.asset_id,
         mt.task,
         mt.status,
         mt.due_date,
@@ -452,12 +452,13 @@ app.get("/tasks", async (req, res) => {
         mt.unit,
         mt.type,
         mt.frequency_hours,
-        mt.duration_min,          -- ✅ duration now available
-        mt.is_planned,            -- ✅ classification helper
-        mt.notes,                 -- ✅ notes included
+        mt.duration_min,
+        mt.is_planned,
+        mt.notes,
 
         a.model AS machine_name,
         a.serial_number,
+        a.idle_since AS asset_idle_since,
         l.code AS line_code
 
       FROM maintenance_tasks mt
@@ -466,12 +467,13 @@ app.get("/tasks", async (req, res) => {
 
       WHERE mt.status IN ('Planned', 'Overdue')
         AND mt.deleted_at IS NULL
-        AND a.active = true       -- ✅ FIX: hide tasks of inactive assets
+        AND a.active = true
 
       ORDER BY mt.due_date ASC
     `);
 
     res.json(result.rows);
+
   } catch (err) {
     console.error("GET /tasks ERROR:", err.message);
     res.status(500).json({ error: err.message });
