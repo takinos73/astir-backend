@@ -4055,12 +4055,23 @@ tr.history-unplanned {
   font-size: 0.8rem;
 }
 .asset-status.idle {
+  display: inline-block;
+  width: fit-content;
+
   background: #f6c343;
-  color: #000000;
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 6px;
-  margin-left: 1px;
+  color: #000;
+
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+
+  padding: 3px 5px;
+  margin-left: 3px;
+
+  border-radius: 5px;
+
+  white-space: nowrap;
+  vertical-align: middle;
 }
 /* =========================
    ASSET IDLE / RESUME ACTIONS
