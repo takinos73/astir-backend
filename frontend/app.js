@@ -4568,13 +4568,6 @@ function renderAssetsCards() {
     menu.style.display = menu.style.display === "block" ? "none" : "block";
   });
 
-  document.addEventListener("click", (e) => {
-    if (!card.contains(e.target)) {
-      menu.style.display = "none";
-    }
-  });
-
-
   // Add Task
   addTaskItem?.addEventListener("click", e => {
     e.stopPropagation();
@@ -4623,6 +4616,7 @@ function renderAssetsCards() {
       }
 
       await loadAssets();
+      await loadTasks();
 
       const lineFilter = document.getElementById("assetLineFilter");
       if (lineFilter) {
@@ -4650,6 +4644,7 @@ function renderAssetsCards() {
       }
 
       await loadAssets();
+      await loadTasks();
 
       const lineFilter = document.getElementById("assetLineFilter");
       if (lineFilter) {
@@ -4674,7 +4669,27 @@ function renderAssetsCards() {
     applyRolePermissions();
   }
 }
+/* =====================
+   CLOSE ASSET MENUS
+   ON OUTSIDE CLICK
+===================== */
+document.addEventListener("click", e => {
 
+  document
+    .querySelectorAll(".asset-card-menu")
+    .forEach(menu => {
+
+      const card = menu.closest(".asset-card");
+
+      if (
+        card &&
+        !card.contains(e.target)
+      ) {
+        menu.style.display = "none";
+      }
+
+    });
+});
 
 /*==========================================
  LEGACY: Assets table view (kept as fallback)
@@ -4988,7 +5003,7 @@ async function setAllAssetsIdle() {
 
     await loadAssets();
     await loadTasks();
-    
+
     // Κρατάμε το υπάρχον Line filter
     const lineFilter =
       document.getElementById("assetLineFilter");
