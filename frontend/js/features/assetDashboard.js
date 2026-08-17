@@ -535,6 +535,12 @@ function openDailyBrief() {
       );
   }
 
+  // Build current Upcoming Maintenance data
+  buildDailyBriefUpcoming();
+  buildDailyBriefCritical();
+  buildDailyBriefReliability();
+  buildDailyBriefPulse();
+
   if (overlay) {
     overlay.style.display = "flex";
   }
@@ -550,7 +556,1089 @@ function closeDailyBrief() {
     overlay.style.display = "none";
   }
 }
+/* =====================================================
+   DAILY BRIEF
+   UPCOMING MAINTENANCE
+===================================================== */
 
+function buildDailyBriefUpcoming() {
+
+  const content =
+    document.getElementById("dailyBriefUpcomingContent");
+
+  const countEl =
+    document.getElementById("dailyBriefUpcomingCount");
+
+  if (!content || !countEl) return;
+
+  const tasks =
+    Array.isArray(state.tasksData)
+      ? state.tasksData
+      : [];
+
+  const assets =
+    Array.isArray(state.assetsData)
+      ? state.assetsData
+      : [];
+
+  // =====================
+  // DATE RANGE
+  // Today → next 7 days
+  // =====================
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const until = new Date(today);
+  until.setDate(until.getDate() + 7);
+  until.setHours(23, 59, 59, 999);
+
+
+  // =====================
+  // IDLE ASSETS
+  // =====================
+
+  const idleAssetIds = new Set(
+    assets
+      .filter(a => a.idle_since)
+      .map(a => String(a.id))
+  );
+
+
+  // =====================
+  // UPCOMING TASKS
+  // =====================
+
+  const upcoming = tasks.filter(t => {
+
+    if (!t.due_date) return false;
+
+    // Completed tasks excluded
+    if (t.status === "Done") return false;
+
+    // Idle assets excluded
+    if (
+      idleAssetIds.has(
+        String(t.asset_id)
+      )
+    ) {
+      return false;
+    }
+
+    const due = new Date(t.due_date);
+
+    if (Number.isNaN(due.getTime())) {
+      return false;
+    }
+
+    return due >= today && due <= until;
+  });
+
+
+  // =====================
+  // COUNT
+  // =====================
+
+  countEl.textContent = upcoming.length;
+
+
+  // =====================
+  // NOTHING UPCOMING
+  // =====================
+
+  if (upcoming.length === 0) {
+
+    content.innerHTML = `
+      <span class="daily-brief-good">
+        ✓ No maintenance tasks due in the next 7 days.
+      </span>
+    `;
+
+    return;
+  }
+
+
+  // =====================
+  // UNIQUE ASSETS
+  // =====================
+
+  const affectedAssets =
+    new Set(
+      upcoming.map(t =>
+        String(t.asset_id)
+      )
+    ).size;
+
+
+  // =====================
+  // TOTAL WORKLOAD
+  // =====================
+
+  const totalMinutes =
+    upcoming.reduce((sum, t) => {
+
+      const duration =
+        Number(t.duration_min) || 0;
+
+      return sum + duration;
+
+    }, 0);
+
+
+  // =====================
+  // WORKLOAD BY LINE
+  // =====================
+
+  const workloadByLine = {};
+
+  upcoming.forEach(t => {
+
+    const line =
+      t.line_code ||
+      t.line ||
+      "—";
+
+    if (!workloadByLine[line]) {
+      workloadByLine[line] = 0;
+    }
+
+    workloadByLine[line] +=
+      Number(t.duration_min) || 0;
+  });
+
+
+  // =====================
+  // HIGHEST WORKLOAD LINE
+  // =====================
+
+  const lineEntries =
+    Object.entries(workloadByLine);
+
+  let highestLine = null;
+  let highestMinutes = 0;
+
+  lineEntries.forEach(([line, minutes]) => {
+
+    if (minutes > highestMinutes) {
+      highestLine = line;
+      highestMinutes = minutes;
+    }
+
+  });
+
+
+  // =====================
+  // FORMAT DURATION
+  // =====================
+
+  const formatBriefDuration = minutes => {
+
+    const total =
+      Math.round(Number(minutes) || 0);
+
+    if (total <= 0) return "—";
+
+    const hours =
+      Math.floor(total / 60);
+
+    const mins =
+      total % 60;
+
+    if (hours && mins) {
+      return `${hours}h ${mins}m`;
+    }
+
+    if (hours) {
+      return `${hours}h`;
+    }
+
+    return `${mins}m`;
+  };
+
+
+  // =====================
+  // BUILD CONTENT
+  // =====================
+
+  let html = `
+    <div class="daily-brief-main-message">
+
+      <strong>${upcoming.length}</strong>
+      maintenance task${upcoming.length !== 1 ? "s" : ""}
+      due in the next 7 days
+
+      across
+
+      <strong>${affectedAssets}</strong>
+      asset${affectedAssets !== 1 ? "s" : ""}.
+
+    </div>
+
+    <div class="daily-brief-metrics">
+
+      <span>
+        ⏱ Estimated workload:
+        <strong>${formatBriefDuration(totalMinutes)}</strong>
+      </span>
+  `;
+
+
+  if (highestLine && highestMinutes > 0) {
+
+    html += `
+      <span>
+        Highest workload:
+        <strong>
+          ${highestLine}
+          ·
+          ${formatBriefDuration(highestMinutes)}
+        </strong>
+      </span>
+    `;
+  }
+
+
+  html += `
+    </div>
+  `;
+
+  content.innerHTML = html;
+}
+/* =====================================================
+   DAILY BRIEF
+   CRITICAL ATTENTION
+===================================================== */
+
+function buildDailyBriefCritical() {
+
+  const content =
+    document.getElementById("dailyBriefCriticalContent");
+
+  const countEl =
+    document.getElementById("dailyBriefCriticalCount");
+
+  if (!content || !countEl) return;
+
+  const tasks =
+    Array.isArray(state.tasksData)
+      ? state.tasksData
+      : [];
+
+  const assets =
+    Array.isArray(state.assetsData)
+      ? state.assetsData
+      : [];
+
+
+  // =====================
+  // TODAY
+  // =====================
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+
+  // =====================
+  // IDLE ASSETS
+  // =====================
+
+  const idleAssetIds = new Set(
+    assets
+      .filter(a => a.idle_since)
+      .map(a => String(a.id))
+  );
+
+
+  // =====================
+  // CRITICAL RULE
+  // Overdue >= 7 days
+  // =====================
+
+  const criticalTasks = tasks
+    .map(t => {
+
+      if (!t.due_date) return null;
+
+      if (t.status === "Done") return null;
+
+      // Ignore idle assets
+      if (
+        idleAssetIds.has(
+          String(t.asset_id)
+        )
+      ) {
+        return null;
+      }
+
+      const due = new Date(t.due_date);
+
+      if (Number.isNaN(due.getTime())) {
+        return null;
+      }
+
+      due.setHours(0, 0, 0, 0);
+
+      // Not overdue
+      if (due >= today) {
+        return null;
+      }
+
+      const overdueDays =
+        Math.floor(
+          (today - due) /
+          (24 * 60 * 60 * 1000)
+        );
+
+      // Critical threshold
+      if (overdueDays < 7) {
+        return null;
+      }
+
+      return {
+        ...t,
+        overdueDays
+      };
+
+    })
+    .filter(Boolean);
+
+
+  // =====================
+  // COUNT
+  // =====================
+
+  countEl.textContent =
+    criticalTasks.length;
+
+
+  // =====================
+  // NO CRITICAL ITEMS
+  // =====================
+
+  if (criticalTasks.length === 0) {
+
+    content.innerHTML = `
+      <span class="daily-brief-good">
+        ✓ No critical overdue maintenance items.
+      </span>
+    `;
+
+    return;
+  }
+
+
+  // =====================
+  // SORT
+  // Worst overdue first
+  // =====================
+
+  criticalTasks.sort(
+    (a, b) =>
+      b.overdueDays - a.overdueDays
+  );
+
+
+  // =====================
+  // AFFECTED ASSETS
+  // =====================
+
+  const affectedAssets =
+    new Set(
+      criticalTasks.map(t =>
+        String(t.asset_id)
+      )
+    ).size;
+
+
+  // =====================
+  // AFFECTED LINES
+  // =====================
+
+  const affectedLines =
+    new Set(
+      criticalTasks
+        .map(t =>
+          t.line_code ||
+          t.line ||
+          null
+        )
+        .filter(Boolean)
+    ).size;
+
+
+  // =====================
+  // OLDEST OVERDUE
+  // =====================
+
+  const worstTask =
+    criticalTasks[0];
+
+
+  // =====================
+  // TOP ITEMS
+  // Maximum 3
+  // =====================
+
+  const topItems =
+    criticalTasks.slice(0, 3);
+
+
+  let itemsHtml = "";
+
+  topItems.forEach(t => {
+
+    const line =
+      t.line_code ||
+      t.line ||
+      "—";
+
+    const machine =
+      t.machine_name ||
+      t.machine ||
+      "Asset";
+
+    itemsHtml += `
+      <div class="daily-brief-critical-item">
+
+        <span class="daily-brief-critical-days">
+          ${t.overdueDays}d
+        </span>
+
+        <div>
+          <strong>
+            ${line} · ${machine}
+          </strong>
+
+          <div class="daily-brief-item-text">
+            ${t.task || "Maintenance task"}
+          </div>
+        </div>
+
+      </div>
+    `;
+  });
+
+
+  // =====================
+  // BUILD CONTENT
+  // =====================
+
+  content.innerHTML = `
+
+    <div class="daily-brief-main-message">
+
+      <strong>${criticalTasks.length}</strong>
+      critical overdue
+      maintenance task${criticalTasks.length !== 1 ? "s" : ""}
+
+      across
+
+      <strong>${affectedAssets}</strong>
+      asset${affectedAssets !== 1 ? "s" : ""}
+
+      ${
+        affectedLines
+          ? `on <strong>${affectedLines}</strong> line${affectedLines !== 1 ? "s" : ""}.`
+          : "."
+      }
+
+    </div>
+
+
+    <div class="daily-brief-critical-list">
+      ${itemsHtml}
+    </div>
+
+
+    ${
+      criticalTasks.length > 3
+        ? `
+          <div class="daily-brief-more">
+            + ${criticalTasks.length - 3}
+            more critical item${criticalTasks.length - 3 !== 1 ? "s" : ""}
+          </div>
+        `
+        : ""
+    }
+
+
+    <div class="daily-brief-critical-summary">
+      Oldest overdue:
+      <strong>
+        ${worstTask.overdueDays} days
+      </strong>
+    </div>
+
+  `;
+}
+/* =====================================================
+   DAILY BRIEF
+   RELIABILITY WATCH
+===================================================== */
+
+function buildDailyBriefReliability() {
+
+  const content =
+    document.getElementById("dailyBriefReliabilityContent");
+
+  const countEl =
+    document.getElementById("dailyBriefReliabilityCount");
+
+  if (!content || !countEl) return;
+
+  const executions =
+    Array.isArray(state.executionsData)
+      ? state.executionsData
+      : [];
+
+
+  // =====================
+  // LAST 30 DAYS
+  // =====================
+
+  const now = new Date();
+
+  const fromDate = new Date(now);
+  fromDate.setDate(fromDate.getDate() - 30);
+  fromDate.setHours(0, 0, 0, 0);
+
+
+  // =====================
+  // BREAKDOWNS ONLY
+  // =====================
+
+  const breakdowns = executions.filter(e => {
+
+    if (!e.executed_at) return false;
+
+    // Non-planned only
+    if (e.is_planned !== false) {
+      return false;
+    }
+
+    const executedAt =
+      new Date(e.executed_at);
+
+    if (Number.isNaN(executedAt.getTime())) {
+      return false;
+    }
+
+    return executedAt >= fromDate &&
+           executedAt <= now;
+  });
+
+
+  // =====================
+  // GROUP BY ASSET
+  // =====================
+
+  const assetStats = {};
+
+  breakdowns.forEach(e => {
+
+    const machine =
+      e.machine ||
+      e.machine_name ||
+      "Asset";
+
+    const serial =
+      e.serial_number ||
+      "";
+
+    const line =
+      e.line ||
+      e.line_code ||
+      "—";
+
+    /*
+      Serial is normally unique.
+      Machine is included as fallback.
+    */
+    const key =
+      `${machine}||${serial}`;
+
+    if (!assetStats[key]) {
+
+      assetStats[key] = {
+        machine,
+        serial,
+        line,
+        breakdowns: 0,
+        totalMinutes: 0,
+        lastBreakdown: null
+      };
+
+    }
+
+
+    const stat =
+      assetStats[key];
+
+    stat.breakdowns++;
+
+    stat.totalMinutes +=
+      Number(e.duration_min) || 0;
+
+
+    const executedAt =
+      new Date(e.executed_at);
+
+    if (
+      !stat.lastBreakdown ||
+      executedAt > stat.lastBreakdown
+    ) {
+      stat.lastBreakdown =
+        executedAt;
+    }
+
+  });
+
+
+  // =====================
+  // RELIABILITY WATCH
+  // >= 2 breakdowns / 30d
+  // =====================
+
+  const watchAssets =
+    Object.values(assetStats)
+      .filter(stat =>
+        stat.breakdowns >= 2
+      )
+      .sort((a, b) => {
+
+        // More breakdowns first
+        if (
+          b.breakdowns !==
+          a.breakdowns
+        ) {
+          return (
+            b.breakdowns -
+            a.breakdowns
+          );
+        }
+
+        // Then highest service time
+        return (
+          b.totalMinutes -
+          a.totalMinutes
+        );
+      });
+
+
+  // Count = affected assets
+  countEl.textContent =
+    watchAssets.length;
+
+
+  // =====================
+  // NO RELIABILITY ALERT
+  // =====================
+
+  if (watchAssets.length === 0) {
+
+    content.innerHTML = `
+      <span class="daily-brief-good">
+        ✓ No repeated breakdown pattern detected
+        in the last 30 days.
+      </span>
+    `;
+
+    return;
+  }
+
+
+  // =====================
+  // TOTAL BREAKDOWNS
+  // for watched assets
+  // =====================
+
+  const watchedBreakdowns =
+    watchAssets.reduce(
+      (sum, stat) =>
+        sum + stat.breakdowns,
+      0
+    );
+
+
+  // =====================
+  // FORMAT DURATION
+  // =====================
+
+  const formatReliabilityDuration =
+    minutes => {
+
+      const total =
+        Math.round(
+          Number(minutes) || 0
+        );
+
+      if (total <= 0) {
+        return "—";
+      }
+
+      const hours =
+        Math.floor(total / 60);
+
+      const mins =
+        total % 60;
+
+      if (hours && mins) {
+        return `${hours}h ${mins}m`;
+      }
+
+      if (hours) {
+        return `${hours}h`;
+      }
+
+      return `${mins}m`;
+    };
+
+
+  // =====================
+  // TOP 3 ASSETS
+  // =====================
+
+  const topAssets =
+    watchAssets.slice(0, 3);
+
+  let itemsHtml = "";
+
+
+  topAssets.forEach(stat => {
+
+    itemsHtml += `
+      <div class="daily-brief-reliability-item">
+
+        <span class="daily-brief-breakdown-count">
+          ${stat.breakdowns}×
+        </span>
+
+        <div class="daily-brief-reliability-info">
+
+          <strong>
+            ${stat.line} · ${stat.machine}
+          </strong>
+
+          ${
+            stat.serial
+              ? `
+                <span class="daily-brief-reliability-sn">
+                  SN: ${stat.serial}
+                </span>
+              `
+              : ""
+          }
+
+          <div class="daily-brief-item-text">
+
+            ${
+              stat.totalMinutes > 0
+                ? `
+                  Service time:
+                  ${formatReliabilityDuration(
+                    stat.totalMinutes
+                  )}
+                `
+                : "Repeated breakdown activity"
+            }
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  });
+
+
+  // =====================
+  // BUILD CONTENT
+  // =====================
+
+  content.innerHTML = `
+
+    <div class="daily-brief-main-message">
+
+      <strong>${watchAssets.length}</strong>
+      asset${watchAssets.length !== 1 ? "s" : ""}
+      showing repeated breakdown activity
+
+      in the last 30 days
+
+      (<strong>${watchedBreakdowns}</strong>
+      breakdown${watchedBreakdowns !== 1 ? "s" : ""}).
+
+    </div>
+
+
+    <div class="daily-brief-reliability-list">
+      ${itemsHtml}
+    </div>
+
+
+    ${
+      watchAssets.length > 3
+        ? `
+          <div class="daily-brief-more">
+            + ${watchAssets.length - 3}
+            more asset${watchAssets.length - 3 !== 1 ? "s" : ""}
+            requiring attention
+          </div>
+        `
+        : ""
+    }
+
+  `;
+}
+/* =====================================================
+   DAILY BRIEF
+   MAINTENANCE PULSE
+===================================================== */
+
+function buildDailyBriefPulse() {
+
+  const content =
+    document.getElementById("dailyBriefPulseContent");
+
+  if (!content) return;
+
+  const tasks =
+    Array.isArray(state.tasksData)
+      ? state.tasksData
+      : [];
+
+  const executions =
+    Array.isArray(state.executionsData)
+      ? state.executionsData
+      : [];
+
+  const assets =
+    Array.isArray(state.assetsData)
+      ? state.assetsData
+      : [];
+
+
+  // =====================
+  // DATE REFERENCES
+  // =====================
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const next7 = new Date(today);
+  next7.setDate(next7.getDate() + 7);
+  next7.setHours(23, 59, 59, 999);
+
+  const last30 = new Date(today);
+  last30.setDate(last30.getDate() - 30);
+
+
+  // =====================
+  // IDLE ASSETS
+  // =====================
+
+  const idleAssetIds = new Set(
+    assets
+      .filter(a => a.idle_since)
+      .map(a => String(a.id))
+  );
+
+
+  // =====================
+  // OPEN OVERDUE
+  // Exclude idle assets
+  // =====================
+
+  const overdueCount = tasks.filter(t => {
+
+    if (!t.due_date) return false;
+    if (t.status === "Done") return false;
+
+    if (
+      idleAssetIds.has(
+        String(t.asset_id)
+      )
+    ) {
+      return false;
+    }
+
+    const due =
+      new Date(t.due_date);
+
+    if (Number.isNaN(due.getTime())) {
+      return false;
+    }
+
+    due.setHours(0, 0, 0, 0);
+
+    return due < today;
+
+  }).length;
+
+
+  // =====================
+  // UPCOMING 7D WORKLOAD
+  // Exclude idle assets
+  // =====================
+
+  const upcoming7 = tasks.filter(t => {
+
+    if (!t.due_date) return false;
+    if (t.status === "Done") return false;
+
+    if (
+      idleAssetIds.has(
+        String(t.asset_id)
+      )
+    ) {
+      return false;
+    }
+
+    const due =
+      new Date(t.due_date);
+
+    if (Number.isNaN(due.getTime())) {
+      return false;
+    }
+
+    return due >= today && due <= next7;
+
+  });
+
+
+  const workloadMinutes =
+    upcoming7.reduce(
+      (sum, t) =>
+        sum + (Number(t.duration_min) || 0),
+      0
+    );
+
+
+  // =====================
+  // EXECUTIONS LAST 30D
+  // =====================
+
+  const executions30 = executions.filter(e => {
+
+    if (!e.executed_at) return false;
+
+    const executedAt =
+      new Date(e.executed_at);
+
+    if (Number.isNaN(executedAt.getTime())) {
+      return false;
+    }
+
+    return executedAt >= last30;
+  });
+
+
+  // =====================
+  // BREAKDOWNS LAST 30D
+  // =====================
+
+  const breakdowns30 =
+    executions30.filter(
+      e => e.is_planned === false
+    ).length;
+
+
+  // =====================
+  // PREVENTIVE SHARE
+  // =====================
+
+  const preventive30 =
+    executions30.filter(e =>
+      e.is_planned !== false &&
+      e.frequency_hours != null &&
+      Number(e.frequency_hours) > 0
+    ).length;
+
+
+  const preventiveShare =
+    executions30.length > 0
+      ? Math.round(
+          preventive30 /
+          executions30.length *
+          100
+        )
+      : 0;
+
+
+  // =====================
+  // FORMAT WORKLOAD
+  // =====================
+
+  const formatPulseDuration =
+    minutes => {
+
+      const total =
+        Math.round(
+          Number(minutes) || 0
+        );
+
+      if (total <= 0) return "—";
+
+      const hours =
+        Math.floor(total / 60);
+
+      const mins =
+        total % 60;
+
+      if (hours && mins) {
+        return `${hours}h ${mins}m`;
+      }
+
+      if (hours) {
+        return `${hours}h`;
+      }
+
+      return `${mins}m`;
+    };
+
+
+  // =====================
+  // BUILD CONTENT
+  // =====================
+
+  content.innerHTML = `
+
+    <div class="daily-brief-pulse-grid">
+
+      <div class="daily-brief-pulse-item">
+        <span class="daily-brief-pulse-label">
+          Open overdue
+        </span>
+        <strong>${overdueCount}</strong>
+      </div>
+
+      <div class="daily-brief-pulse-item">
+        <span class="daily-brief-pulse-label">
+          Workload next 7d
+        </span>
+        <strong>
+          ${formatPulseDuration(workloadMinutes)}
+        </strong>
+      </div>
+
+      <div class="daily-brief-pulse-item">
+        <span class="daily-brief-pulse-label">
+          Breakdowns 30d
+        </span>
+        <strong>${breakdowns30}</strong>
+      </div>
+
+      <div class="daily-brief-pulse-item">
+        <span class="daily-brief-pulse-label">
+          Preventive share 30d
+        </span>
+        <strong>${preventiveShare}%</strong>
+      </div>
+
+    </div>
+
+  `;
+}
 
 /* =====================
    EVENTS

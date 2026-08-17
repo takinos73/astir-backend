@@ -497,37 +497,161 @@
 
     </div>
 
-    <!-- CONTENT -->
-    <div id="dailyBriefContent">
+    <div id="dailyBriefContent" class="daily-brief-content">
 
-      <div class="daily-brief-placeholder">
-        <div class="daily-brief-placeholder-title">
-          Maintenance overview
-        </div>
+        <!-- =====================
+            SAFETY & QUALITY
+        ====================== -->
+        <section
+          id="dailyBriefSafetyQuality"
+          class="daily-brief-section daily-brief-safety"
+        >
+          <div class="daily-brief-section-header">
+            <div class="daily-brief-section-title">
+              🛡 Safety & Quality Alert
+            </div>
 
-        <div class="daily-brief-placeholder-text">
-          Critical items, upcoming maintenance,
-          reliability alerts and key indicators
-          will appear here.
-        </div>
+            <span
+              id="dailyBriefSafetyCount"
+              class="daily-brief-count"
+            >
+              —
+            </span>
+          </div>
+
+          <div
+            id="dailyBriefSafetyContent"
+            class="daily-brief-section-body"
+          >
+            Checking Safety & Quality status...
+          </div>
+        </section>
+
+
+        <!-- =====================
+            CRITICAL ATTENTION
+        ====================== -->
+        <section
+          id="dailyBriefCritical"
+          class="daily-brief-section daily-brief-critical"
+        >
+          <div class="daily-brief-section-header">
+            <div class="daily-brief-section-title">
+              🔴 Critical Attention
+            </div>
+
+            <span
+              id="dailyBriefCriticalCount"
+              class="daily-brief-count"
+            >
+              —
+            </span>
+          </div>
+
+          <div
+            id="dailyBriefCriticalContent"
+            class="daily-brief-section-body"
+          >
+            Checking critical maintenance items...
+          </div>
+        </section>
+
+
+        <!-- =====================
+            UPCOMING MAINTENANCE
+        ====================== -->
+        <section
+          id="dailyBriefUpcoming"
+          class="daily-brief-section daily-brief-upcoming"
+        >
+          <div class="daily-brief-section-header">
+            <div class="daily-brief-section-title">
+              🟠 Upcoming Maintenance
+            </div>
+
+            <span
+              id="dailyBriefUpcomingCount"
+              class="daily-brief-count"
+            >
+              —
+            </span>
+          </div>
+
+          <div
+            id="dailyBriefUpcomingContent"
+            class="daily-brief-section-body"
+          >
+            Checking upcoming preventive work...
+          </div>
+        </section>
+
+
+        <!-- =====================
+            RELIABILITY WATCH
+        ====================== -->
+        <section
+          id="dailyBriefReliability"
+          class="daily-brief-section daily-brief-reliability"
+        >
+          <div class="daily-brief-section-header">
+            <div class="daily-brief-section-title">
+              ⚡ Reliability Watch
+            </div>
+
+            <span
+              id="dailyBriefReliabilityCount"
+              class="daily-brief-count"
+            >
+              —
+            </span>
+          </div>
+
+          <div
+            id="dailyBriefReliabilityContent"
+            class="daily-brief-section-body"
+          >
+            Checking recent breakdown activity...
+          </div>
+        </section>
+
+
+        <!-- =====================
+            MAINTENANCE PULSE
+        ====================== -->
+        <section
+          id="dailyBriefPulse"
+          class="daily-brief-section daily-brief-pulse"
+        >
+          <div class="daily-brief-section-header">
+            <div class="daily-brief-section-title">
+              📊 Maintenance Pulse
+            </div>
+          </div>
+
+          <div
+            id="dailyBriefPulseContent"
+            class="daily-brief-section-body"
+          >
+            Calculating maintenance indicators...
+          </div>
+        </section>
+
       </div>
 
+        <!-- ACTIONS -->
+        <div class="modal-actions daily-brief-actions">
+
+          <button
+            id="dailyBriefOkBtn"
+            class="btn-primary"
+            type="button"
+          >
+            OK, Got it
+          </button>
+
+        </div>
+
     </div>
-
-    <!-- ACTIONS -->
-    <div class="modal-actions daily-brief-actions">
-
-      <button
-        id="dailyBriefOkBtn"
-        class="btn-primary"
-        type="button"
-      >
-        OK, Got it
-      </button>
-
-    </div>
-
-  </div>
 </div>
 
 <!-- =====================

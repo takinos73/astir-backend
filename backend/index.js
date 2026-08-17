@@ -455,6 +455,7 @@ app.get("/tasks", async (req, res) => {
         mt.duration_min,
         mt.is_planned,
         mt.notes,
+        mt.impact,
 
         a.model AS machine_name,
         a.serial_number,

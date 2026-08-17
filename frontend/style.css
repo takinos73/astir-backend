@@ -3856,6 +3856,316 @@ tr.history-unplanned {
 .daily-brief-actions {
   margin-top: 18px;
 }
+/* =========================
+   DAILY BRIEF CONTENT
+========================= */
+
+.daily-brief-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+/* =========================
+   BRIEF SECTION
+========================= */
+
+.daily-brief-section {
+  position: relative;
+
+  padding: 13px 15px;
+
+  background: #12161c;
+
+  border: 1px solid #303744;
+  border-left: 4px solid #4b5563;
+
+  border-radius: 9px;
+}
+
+
+/* Header */
+.daily-brief-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.daily-brief-section-title {
+  color: #f3f4f6;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* Counter */
+.daily-brief-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 24px;
+  height: 20px;
+
+  padding: 0 6px;
+
+  background: #242a34;
+  color: #cbd5e1;
+
+  border: 1px solid #394250;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+/* Body */
+.daily-brief-section-body {
+  color: #9ca6b5;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================
+   SECTION ACCENTS
+========================= */
+
+/* Safety / Quality */
+.daily-brief-safety {
+  border-left-color: #ef5350;
+}
+
+/* Critical */
+.daily-brief-critical {
+  border-left-color: #d32f2f;
+}
+
+/* Upcoming */
+.daily-brief-upcoming {
+  border-left-color: #f6c343;
+}
+
+/* Reliability */
+.daily-brief-reliability {
+  border-left-color: #ff9800;
+}
+
+/* KPI / Pulse */
+.daily-brief-pulse {
+  border-left-color: #42a5f5;
+}
+/* =========================
+   DAILY BRIEF - LIVE DATA
+========================= */
+
+.daily-brief-main-message {
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.daily-brief-main-message strong {
+  color: #f3f4f6;
+}
+
+.daily-brief-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+
+  margin-top: 8px;
+
+  color: #8f99a8;
+  font-size: 11px;
+}
+
+.daily-brief-metrics strong {
+  color: #f6c343;
+  font-weight: 700;
+}
+
+.daily-brief-good {
+  color: #65c88a;
+  font-weight: 600;
+}
+/* =========================
+   DAILY BRIEF
+   CRITICAL ATTENTION
+========================= */
+
+.daily-brief-critical-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  margin-top: 10px;
+}
+
+.daily-brief-critical-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 7px 9px;
+
+  background: rgba(211, 47, 47, 0.07);
+
+  border: 1px solid rgba(211, 47, 47, 0.16);
+  border-radius: 6px;
+}
+
+.daily-brief-critical-days {
+  min-width: 34px;
+
+  padding: 3px 5px;
+
+  background: rgba(239, 83, 80, 0.14);
+  color: #ef7774;
+
+  border-radius: 5px;
+
+  text-align: center;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.daily-brief-critical-item strong {
+  color: #e5e7eb;
+  font-size: 11px;
+}
+
+.daily-brief-item-text {
+  margin-top: 2px;
+
+  color: #8f99a8;
+  font-size: 10px;
+}
+
+.daily-brief-more {
+  margin-top: 6px;
+
+  color: #8f99a8;
+  font-size: 10px;
+  text-align: right;
+}
+
+.daily-brief-critical-summary {
+  margin-top: 8px;
+
+  color: #8f99a8;
+  font-size: 10px;
+}
+
+.daily-brief-critical-summary strong {
+  color: #ef7774;
+}
+/* =========================
+   DAILY BRIEF
+   RELIABILITY WATCH
+========================= */
+
+.daily-brief-reliability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  margin-top: 10px;
+}
+
+.daily-brief-reliability-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 7px 9px;
+
+  background: rgba(255, 152, 0, 0.06);
+
+  border: 1px solid rgba(255, 152, 0, 0.15);
+  border-radius: 6px;
+}
+
+.daily-brief-breakdown-count {
+  min-width: 34px;
+
+  padding: 3px 5px;
+
+  background: rgba(255, 152, 0, 0.13);
+  color: #ffb74d;
+
+  border-radius: 5px;
+
+  text-align: center;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.daily-brief-reliability-info {
+  min-width: 0;
+}
+
+.daily-brief-reliability-info strong {
+  color: #e5e7eb;
+  font-size: 11px;
+}
+
+.daily-brief-reliability-sn {
+  margin-left: 6px;
+
+  color: #707b8b;
+  font-size: 9px;
+}
+/* =========================
+   DAILY BRIEF
+   MAINTENANCE PULSE
+========================= */
+
+.daily-brief-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.daily-brief-pulse-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  padding: 9px 10px;
+
+  background: #171c24;
+
+  border: 1px solid #303846;
+  border-radius: 7px;
+}
+
+.daily-brief-pulse-label {
+  color: #7f8a99;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.daily-brief-pulse-item strong {
+  color: #dbe7f5;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .daily-brief-pulse-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
 /* =====================
    PREVENTIVE LIBRARY TABLE
