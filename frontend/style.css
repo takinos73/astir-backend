@@ -4166,6 +4166,84 @@ tr.history-unplanned {
     grid-template-columns: 1fr 1fr;
   }
 }
+/* =========================
+   DAILY BRIEF
+   SAFETY & QUALITY
+========================= */
+
+.daily-brief-safety-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.daily-brief-safety-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 7px 9px;
+
+  background: rgba(239, 83, 80, 0.06);
+
+  border: 1px solid rgba(239, 83, 80, 0.14);
+  border-radius: 6px;
+}
+
+.daily-brief-safety-item strong {
+  color: #e5e7eb;
+  font-size: 11px;
+}
+
+.daily-brief-impact-safety,
+.daily-brief-impact-quality,
+.daily-brief-impact-both {
+  min-width: 52px;
+  padding: 3px 6px;
+
+  border-radius: 5px;
+
+  text-align: center;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.daily-brief-impact-safety {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef7774;
+}
+
+.daily-brief-impact-quality {
+  background: rgba(66, 165, 245, 0.14);
+  color: #70b7ef;
+}
+
+.daily-brief-impact-both {
+  background: rgba(171, 71, 188, 0.15);
+  color: #cf83db;
+}
+.daily-brief-impact-overdue,
+.daily-brief-impact-due {
+  padding: 3px 6px;
+  border-radius: 5px;
+
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.daily-brief-impact-overdue {
+  background: rgba(239, 83, 80, 0.18);
+  color: #ef7774;
+}
+
+.daily-brief-impact-due {
+  background: rgba(246, 195, 67, 0.15);
+  color: #f6c343;
+}
 
 /* =====================
    PREVENTIVE LIBRARY TABLE

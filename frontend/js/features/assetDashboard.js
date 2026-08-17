@@ -535,11 +535,13 @@ function openDailyBrief() {
       );
   }
 
-  // Build current Upcoming Maintenance data
-  buildDailyBriefUpcoming();
-  buildDailyBriefCritical();
-  buildDailyBriefReliability();
-  buildDailyBriefPulse();
+  // Build current Daily Brief data
+
+    buildDailyBriefSafetyQuality();
+    buildDailyBriefCritical();
+    buildDailyBriefUpcoming();
+    buildDailyBriefReliability();
+    buildDailyBriefPulse();
 
   if (overlay) {
     overlay.style.display = "flex";
@@ -1636,6 +1638,415 @@ function buildDailyBriefPulse() {
       </div>
 
     </div>
+
+  `;
+}
+
+/* =====================================================
+   DAILY BRIEF
+   SAFETY & QUALITY ALERT
+   - Overdue Safety / Quality tasks
+   - Due within next 7 days
+   - IDLE assets are NOT excluded
+===================================================== */
+
+function buildDailyBriefSafetyQuality() {
+
+  const content =
+    document.getElementById("dailyBriefSafetyContent");
+
+  const countEl =
+    document.getElementById("dailyBriefSafetyCount");
+
+  if (!content || !countEl) return;
+
+
+  const tasks =
+    Array.isArray(state.tasksData)
+      ? state.tasksData
+      : [];
+
+
+  // =====================
+  // DATE RANGE
+  // Today → next 7 days
+  // =====================
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueSoonLimit = new Date(today);
+  dueSoonLimit.setDate(
+    dueSoonLimit.getDate() + 7
+  );
+  dueSoonLimit.setHours(23, 59, 59, 999);
+
+
+  // =====================
+  // SAFETY / QUALITY
+  // ACTIONABLE TASKS ONLY
+  // =====================
+
+  const alertTasks = tasks
+    .filter(t => {
+
+      const impact =
+        String(t.impact || "normal")
+          .toLowerCase();
+
+      // Safety / Quality classification only
+      if (
+        ![
+          "safety",
+          "quality",
+          "safety_quality"
+        ].includes(impact)
+      ) {
+        return false;
+      }
+
+
+      // Must have due date
+      if (!t.due_date) {
+        return false;
+      }
+
+
+      const due =
+        new Date(t.due_date);
+
+      if (Number.isNaN(due.getTime())) {
+        return false;
+      }
+
+      due.setHours(0, 0, 0, 0);
+
+
+      // Only:
+      // 1. overdue
+      // 2. due today
+      // 3. due within next 7 days
+
+      return (
+        due < today ||
+        (
+          due >= today &&
+          due <= dueSoonLimit
+        )
+      );
+
+    })
+
+
+    // =====================
+    // ADD TIMING INFO
+    // =====================
+
+    .map(t => {
+
+      const due =
+        new Date(t.due_date);
+
+      due.setHours(0, 0, 0, 0);
+
+
+      const diffDays =
+        Math.round(
+          (due - today) /
+          (24 * 60 * 60 * 1000)
+        );
+
+
+      return {
+        ...t,
+
+        dueState:
+          diffDays < 0
+            ? "overdue"
+            : "due_soon",
+
+        dueDays:
+          Math.abs(diffDays),
+
+        dueDiff:
+          diffDays
+      };
+
+    })
+
+
+    // =====================
+    // SORT
+    // Oldest overdue first
+    // then nearest upcoming
+    // =====================
+
+    .sort((a, b) =>
+      new Date(a.due_date) -
+      new Date(b.due_date)
+    );
+
+
+  // =====================
+  // COUNT
+  // =====================
+
+  countEl.textContent =
+    alertTasks.length;
+
+
+  // =====================
+  // NO ALERTS
+  // =====================
+
+  if (alertTasks.length === 0) {
+
+    content.innerHTML = `
+      <span class="daily-brief-good">
+        ✓ No Safety or Quality maintenance alerts
+        requiring attention.
+      </span>
+    `;
+
+    return;
+  }
+
+
+  // =====================
+  // COUNTS
+  // =====================
+
+  const overdueCount =
+    alertTasks.filter(t =>
+      t.dueState === "overdue"
+    ).length;
+
+
+  const dueSoonCount =
+    alertTasks.filter(t =>
+      t.dueState === "due_soon"
+    ).length;
+
+
+  const safetyCount =
+    alertTasks.filter(t => {
+
+      const impact =
+        String(t.impact || "")
+          .toLowerCase();
+
+      return (
+        impact === "safety" ||
+        impact === "safety_quality"
+      );
+
+    }).length;
+
+
+  const qualityCount =
+    alertTasks.filter(t => {
+
+      const impact =
+        String(t.impact || "")
+          .toLowerCase();
+
+      return (
+        impact === "quality" ||
+        impact === "safety_quality"
+      );
+
+    }).length;
+
+
+  // =====================
+  // TOP 3 ITEMS
+  // =====================
+
+  const topItems =
+    alertTasks.slice(0, 3);
+
+  let itemsHtml = "";
+
+
+  topItems.forEach(t => {
+
+    const impact =
+      String(t.impact || "normal")
+        .toLowerCase();
+
+
+    // =====================
+    // IMPACT BADGE
+    // =====================
+
+    let badgeClass =
+      "daily-brief-impact-quality";
+
+    let badgeLabel =
+      "QUALITY";
+
+
+    if (impact === "safety") {
+
+      badgeClass =
+        "daily-brief-impact-safety";
+
+      badgeLabel =
+        "SAFETY";
+    }
+
+
+    if (impact === "safety_quality") {
+
+      badgeClass =
+        "daily-brief-impact-both";
+
+      badgeLabel =
+        "S + Q";
+    }
+
+
+    // =====================
+    // TIMING BADGE
+    // =====================
+
+    let timingLabel = "";
+    let timingClass = "";
+
+
+    if (t.dueState === "overdue") {
+
+      timingLabel =
+        `OVERDUE ${t.dueDays}d`;
+
+      timingClass =
+        "daily-brief-impact-overdue";
+
+    } else {
+
+      if (t.dueDiff === 0) {
+
+        timingLabel =
+          "DUE TODAY";
+
+      } else {
+
+        timingLabel =
+          `DUE ${t.dueDays}d`;
+      }
+
+      timingClass =
+        "daily-brief-impact-due";
+    }
+
+
+    // =====================
+    // ASSET INFO
+    // =====================
+
+    const line =
+      t.line_code ||
+      t.line ||
+      "—";
+
+    const machine =
+      t.machine_name ||
+      t.machine ||
+      "Asset";
+
+
+    // =====================
+    // ITEM HTML
+    // =====================
+
+    itemsHtml += `
+
+      <div class="daily-brief-safety-item">
+
+        <span class="${badgeClass}">
+          ${badgeLabel}
+        </span>
+
+        <span class="${timingClass}">
+          ${timingLabel}
+        </span>
+
+        <div>
+
+          <strong>
+            ${line} · ${machine}
+          </strong>
+
+          <div class="daily-brief-item-text">
+            ${t.task || "Maintenance task"}
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+  });
+
+
+  // =====================
+  // BUILD CONTENT
+  // =====================
+
+  content.innerHTML = `
+
+    <div class="daily-brief-main-message">
+
+      <strong>${alertTasks.length}</strong>
+      Safety / Quality maintenance
+      item${alertTasks.length !== 1 ? "s" : ""}
+      requiring attention.
+
+    </div>
+
+
+    <div class="daily-brief-metrics">
+
+      <span>
+        Overdue:
+        <strong>${overdueCount}</strong>
+      </span>
+
+      <span>
+        Due next 7d:
+        <strong>${dueSoonCount}</strong>
+      </span>
+
+      <span>
+        Safety:
+        <strong>${safetyCount}</strong>
+      </span>
+
+      <span>
+        Quality:
+        <strong>${qualityCount}</strong>
+      </span>
+
+    </div>
+
+
+    <div class="daily-brief-safety-list">
+      ${itemsHtml}
+    </div>
+
+
+    ${
+      alertTasks.length > 3
+        ? `
+          <div class="daily-brief-more">
+            + ${alertTasks.length - 3}
+            more Safety / Quality
+            item${alertTasks.length - 3 !== 1 ? "s" : ""}
+            requiring attention
+          </div>
+        `
+        : ""
+    }
 
   `;
 }

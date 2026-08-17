@@ -190,6 +190,14 @@ document.getElementById("addPreventiveBtn")?.addEventListener("click", e => {
     .querySelectorAll("input, textarea, select")
     .forEach(el => (el.value = ""));
 
+  // Default impact
+  const impactSelect =
+    document.getElementById("pm-impact");
+
+  if (impactSelect) {
+    impactSelect.value = "normal";
+  }
+
   // Optional: mark context (useful later)
   overlay.dataset.mode = "preventive";
 
@@ -490,7 +498,8 @@ function generateLibraryFromTasks() {
       p.task === t.task &&
       Number(p.frequency_hours) === Number(t.frequency_hours) &&
       Number(p.duration_min || 0) === Number(t.duration_min || 0) &&
-      (p.type || "") === (t.type || "")
+      (p.type || "") === (t.type || "") &&
+      (p.impact || "normal") === (t.impact || "normal")
     );
 
     if (exists) return;
@@ -502,7 +511,8 @@ function generateLibraryFromTasks() {
       type: t.type || "Preventive",
       frequency_hours: Number(t.frequency_hours),
       duration_min: t.duration_min ?? null,
-      notes: "" // optional
+      impact: t.impact || "normal",
+      notes: t.notes || ""
     });
   });
 
@@ -827,6 +837,7 @@ document
             unit: unitValue,
             type: getVal("pm-type") || null,
             duration_min: Number(getVal("pm-duration")) || null,
+            impact: getVal("pm-impact") || "normal",
             notes: getVal("pm-notes") || null
           });
 
@@ -864,6 +875,7 @@ document
       unit: getContextValue("pm-unit", "pm-unit-custom"),
       task: taskText,
       type: getVal("pm-type") || null,
+      impact: getVal("pm-impact") || "normal",
       notes: getVal("pm-notes") || null,
 
       is_planned: true,
@@ -1521,6 +1533,7 @@ async function applyPreventiveRule(rule) {
     unit: rule.unit || null,
     duration_min: rule.duration_min || null,
     type: rule.type || null,
+    impact: rule.impact || "normal",
     notes: rule.notes || null
   };
 

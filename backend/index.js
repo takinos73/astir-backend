@@ -632,9 +632,11 @@ app.post("/tasks", async (req, res) => {
    CREATE PREVENTIVE (MANUAL)
 ===================== */
 app.post("/preventives", async (req, res) => {
+
   const client = await pool.connect();
 
   try {
+
     const {
       asset_id,
       section,
@@ -644,29 +646,67 @@ app.post("/preventives", async (req, res) => {
       duration_min,
       frequency_hours,
       due_date,
+      impact,
       notes
     } = req.body;
 
+
     // =====================
-    // VALIDATION (HARD)
+    // VALIDATION
     // =====================
+
     if (!asset_id) {
-      return res.status(400).json({ error: "asset_id is required" });
+      return res.status(400).json({
+        error: "asset_id is required"
+      });
     }
 
     if (!task || !task.trim()) {
-      return res.status(400).json({ error: "task is required" });
+      return res.status(400).json({
+        error: "task is required"
+      });
     }
 
-    if (!frequency_hours || Number(frequency_hours) <= 0) {
-      return res.status(400).json({ error: "frequency_hours must be > 0" });
+    if (
+      !frequency_hours ||
+      Number(frequency_hours) <= 0
+    ) {
+      return res.status(400).json({
+        error: "frequency_hours must be > 0"
+      });
     }
 
     if (!due_date) {
-      return res.status(400).json({ error: "due_date is required" });
+      return res.status(400).json({
+        error: "due_date is required"
+      });
     }
 
+
+    // =====================
+    // IMPACT
+    // =====================
+
+    const cleanImpact =
+      String(impact || "normal")
+        .toLowerCase();
+
+    const validImpacts = [
+      "normal",
+      "safety",
+      "quality",
+      "safety_quality"
+    ];
+
+    if (!validImpacts.includes(cleanImpact)) {
+      return res.status(400).json({
+        error: "Invalid preventive impact"
+      });
+    }
+
+
     await client.query("BEGIN");
+
 
     const result = await client.query(
       `
@@ -681,13 +721,27 @@ app.post("/preventives", async (req, res) => {
         due_date,
         status,
         is_planned,
+        impact,
         notes
       )
       VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,'Planned',true,$9
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        'Planned',
+        true,
+        $9,
+        $10
       )
+
       ON CONFLICT ON CONSTRAINT unique_preventive_task
       DO NOTHING
+
       RETURNING *
       `,
       [
@@ -699,11 +753,14 @@ app.post("/preventives", async (req, res) => {
         duration_min || null,
         frequency_hours,
         due_date,
+        cleanImpact,
         notes || null
       ]
     );
 
+
     await client.query("COMMIT");
+
 
     if (result.rowCount === 0) {
       return res.status(409).json({
@@ -711,17 +768,30 @@ app.post("/preventives", async (req, res) => {
       });
     }
 
+
     res.json({
       message: "Preventive created successfully",
       preventive: result.rows[0]
     });
 
+
   } catch (err) {
+
     await client.query("ROLLBACK");
-    console.error("CREATE PREVENTIVE ERROR:", err);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "CREATE PREVENTIVE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
   } finally {
+
     client.release();
+
   }
 });
 
@@ -732,118 +802,196 @@ app.post("/preventives", async (req, res) => {
 ===================== */
 
 app.patch("/preventives/apply-rule", async (req, res) => {
+
   const {
-  model,
-  section,
-  unit,          // ✅ ΑΥΤΟ ΛΕΙΠΕ
-  task,
-  frequency_hours,
-  duration_min,
-  type,
-  notes
-} = req.body;
-
-
-  if (!model || !section || !task || !frequency_hours) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  const client = await pool.connect();
-
-  try {
-    // UPDATE
-await client.query(
-  `
-  UPDATE maintenance_tasks t
-  SET
-    frequency_hours = $1::integer,
-    duration_min = $2,
-    type = $3,
-    notes = $4,
-    due_date = NOW() + ($1::integer * INTERVAL '1 hour')
-  FROM assets a
-  WHERE
-    t.asset_id = a.id
-    AND a.model = $5
-    AND t.is_planned = true
-    AND t.status = 'Planned'
-    AND t.section = $6
-    AND t.task = $7
-  `,
-  [
+    model,
+    section,
+    unit,
+    task,
     frequency_hours,
     duration_min,
     type,
-    notes || null,
-    model,
-    section,
-    task
-  ]
-);
+    impact,
+    notes
+  } = req.body;
 
-// INSERT
-await client.query(
-  `
-  INSERT INTO maintenance_tasks (
-  asset_id,
-  section,
-  unit,
-  task,
-  type,
-  frequency_hours,
-  duration_min,
-  due_date,
-  status,
-  is_planned,
-  notes
-)
-SELECT
-  a.id,
-  $2,           -- section
-  $8,           -- unit ✅
-  $3,           -- task
-  $4,           -- type
-  $1::integer,  -- frequency_hours
-  $5,           -- duration_min
-  NOW() + ($1::integer * INTERVAL '1 hour'),
-  'Planned',
-  true,
-  $6
-FROM assets a
-WHERE a.model = $7
-  AND NOT EXISTS (
-    SELECT 1
-    FROM maintenance_tasks t
-    WHERE
-      t.asset_id = a.id
-      AND t.is_planned = true
-      AND t.status = 'Planned'
-      AND t.section = $2
-      AND t.task = $3
-    )
-  `,
-[
-  frequency_hours, // $1
-  section,         // $2
-  task,            // $3
-  type,            // $4
-  duration_min,    // $5
-  notes,           // $6
-  model,           // $7
-  unit             // $8  ✅ ΝΕΟ
-]
-);
+
+  if (
+    !model ||
+    !section ||
+    !task ||
+    !frequency_hours
+  ) {
+    return res.status(400).json({
+      error: "Missing required fields"
+    });
+  }
+
+
+  // =====================
+  // IMPACT
+  // =====================
+
+  const cleanImpact =
+    String(impact || "normal")
+      .toLowerCase();
+
+  const validImpacts = [
+    "normal",
+    "safety",
+    "quality",
+    "safety_quality"
+  ];
+
+  if (!validImpacts.includes(cleanImpact)) {
+    return res.status(400).json({
+      error: "Invalid preventive impact"
+    });
+  }
+
+
+  const client = await pool.connect();
+
+
+  try {
+
+    // Real transaction
+    await client.query("BEGIN");
+
+
+    // =====================
+    // UPDATE EXISTING
+    // =====================
+
+    await client.query(
+      `
+      UPDATE maintenance_tasks t
+
+      SET
+        frequency_hours = $1::integer,
+        duration_min = $2,
+        type = $3,
+        notes = $4,
+        impact = $5,
+
+        due_date =
+          NOW() +
+          ($1::integer * INTERVAL '1 hour')
+
+      FROM assets a
+
+      WHERE
+        t.asset_id = a.id
+        AND a.model = $6
+        AND t.is_planned = true
+        AND t.status = 'Planned'
+        AND t.section = $7
+        AND t.task = $8
+      `,
+      [
+        frequency_hours, // $1
+        duration_min,    // $2
+        type,            // $3
+        notes || null,   // $4
+        cleanImpact,     // $5
+        model,           // $6
+        section,         // $7
+        task             // $8
+      ]
+    );
+
+
+    // =====================
+    // INSERT MISSING
+    // =====================
+
+    await client.query(
+      `
+      INSERT INTO maintenance_tasks (
+        asset_id,
+        section,
+        unit,
+        task,
+        type,
+        frequency_hours,
+        duration_min,
+        due_date,
+        status,
+        is_planned,
+        impact,
+        notes
+      )
+
+      SELECT
+        a.id,
+        $2,
+        $8,
+        $3,
+        $4,
+        $1::integer,
+        $5,
+        NOW() + ($1::integer * INTERVAL '1 hour'),
+        'Planned',
+        true,
+        $9,
+        $6
+
+      FROM assets a
+
+      WHERE
+        a.model = $7
+
+        AND NOT EXISTS (
+          SELECT 1
+          FROM maintenance_tasks t
+
+          WHERE
+            t.asset_id = a.id
+            AND t.is_planned = true
+            AND t.status = 'Planned'
+            AND t.section = $2
+            AND t.task = $3
+        )
+      `,
+      [
+        frequency_hours, // $1
+        section,         // $2
+        task,            // $3
+        type,            // $4
+        duration_min,    // $5
+        notes || null,   // $6
+        model,           // $7
+        unit,            // $8
+        cleanImpact      // $9
+      ]
+    );
+
 
     await client.query("COMMIT");
 
-    res.json({ message: "Preventive rule applied successfully" });
+
+    res.json({
+      message: "Preventive rule applied successfully"
+    });
+
 
   } catch (err) {
+
     await client.query("ROLLBACK");
-    console.error("APPLY PREVENTIVE ERROR:", err);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "APPLY PREVENTIVE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
   } finally {
+
     client.release();
+
   }
 });
 

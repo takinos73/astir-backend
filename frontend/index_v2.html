@@ -1149,7 +1149,7 @@
 <!-- =====================
      DASHBOARD TAB
 ===================== -->
-<div id="tab-dashboard" class="tab-panel active">
+  <div id="tab-dashboard" class="tab-panel active">
 
         <!-- DASHBOARD HEADER -->
         <div class="dashboard-header">
@@ -1318,6 +1318,16 @@
             id="pm-type"
             placeholder="Inspection / Lubrication / Adjustment"
           />
+        </div>
+
+        <div class="field">
+          <label>Impact</label>
+          <select id="pm-impact">
+            <option value="normal" selected>Normal</option>
+            <option value="safety">Safety</option>
+            <option value="quality">Quality</option>
+            <option value="safety_quality">Safety &amp; Quality</option>
+          </select>
         </div>
 
         <div class="field">
