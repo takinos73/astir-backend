@@ -921,13 +921,13 @@ function renderHistoryTable(data) {
       </td>
 
       <td>
-        <strong>${h.machine}</strong><br>
-        <small>SN: ${h.serial_number} | ${h.line}</small>
+        <strong>${highlightHistoryText(h.machine)}</strong><br>
+        <small>SN: ${highlightHistoryText(h.serial_number)} | ${highlightHistoryText(h.line)}</small>
       </td>
 
       <td>
         <div class="task-title">
-          <strong>${h.task}</strong>
+          <strong>${highlightHistoryText(h.task)}</strong>
           ${
             h.notes
               ? `<span
@@ -938,14 +938,14 @@ function renderHistoryTable(data) {
           }
         </div>
         <small>
-          ${h.section || ""}
+          ${highlightHistoryText(h.section || "")}
           ${h.section && h.unit ? " / " : ""}
-          ${h.unit || ""}
+          ${highlightHistoryText(h.unit || "")}
           ${editedBadge}
         </small>
       </td>
 
-      <td>${h.executed_by || "-"}</td>
+      <td>${highlightHistoryText(h.executed_by || "-")}</td>
 
       <td>${actionHtml}</td>
     `;
@@ -954,6 +954,31 @@ function renderHistoryTable(data) {
   });
 
   applyRoleVisibility();
+}
+/* =====================
+   HISTORY SEARCH HIGHLIGHT
+===================== */
+function highlightHistoryText(value) {
+
+  const text = String(value ?? "");
+  const query = String(state.historyMachineQuery || "").trim();
+
+  if (!query) {
+    return text;
+  }
+
+  // Escape special RegExp characters
+  const escapedQuery = query.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+  const regex = new RegExp(`(${escapedQuery})`, "gi");
+
+  return text.replace(
+    regex,
+    `<mark class="history-search-highlight">$1</mark>`
+  );
 }
 
 // ====================================================
