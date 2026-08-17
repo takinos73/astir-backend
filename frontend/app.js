@@ -541,37 +541,59 @@ function buildRow(task) {
 
   tr.innerHTML = `
     <!-- MACHINE / ASSET -->
-<td class="machine-cell">
-  <div
-    class="machine-name clickable"
-    onclick="openAssetViewBySerial('${task.serial_number}')"
-    title="Open asset view"
-  >
-    ${highlight(task.machine_name || "", q)}
-    ${isIdle ? `<span class="task-idle-badge">Idle</span>` : ""}     
-  </div>
+    <td class="machine-cell">
+      <div
+        class="machine-name clickable"
+        onclick="openAssetViewBySerial('${task.serial_number}')"
+        title="Open asset view"
+      >
+        ${highlight(task.machine_name || "", q)}
+        ${isIdle ? `<span class="task-idle-badge">Idle</span>` : ""}     
+      </div>
 
-  ${
-    task.serial_number
-      ? `
-        <div
-          class="machine-sn clickable"
-          onclick="openAssetViewBySerial('${task.serial_number}')"
-          title="Open asset view"
-        >
-          <small>${highlight(task.serial_number, q)}</small>
-        </div>
-      `
-      : ""
-  }
-</td>
+      ${
+        task.serial_number
+          ? `
+            <div
+              class="machine-sn clickable"
+              onclick="openAssetViewBySerial('${task.serial_number}')"
+              title="Open asset view"
+            >
+              <small>${highlight(task.serial_number, q)}</small>
+            </div>
+          `
+          : ""
+      }
+    </td>
     <!-- SECTION -->
     <td>${task.section ? highlight(task.section, q) : "-"}</td>
     <!-- UNIT -->
     <td>${task.unit ? highlight(task.unit, q) : "-"}</td>
 
     <!-- TASK -->
-    <td>${highlight(task.task || "", q)}</td>
+    <td>
+      <div>
+        ${highlight(task.task || "", q)}
+      </div>
+
+      ${
+        task.impact && task.impact !== "normal"
+          ? `
+            <div class="task-impact-wrap">
+              <span class="task-impact-badge task-impact-${task.impact}">
+                ${
+                  task.impact === "safety"
+                    ? "SAFETY"
+                    : task.impact === "quality"
+                    ? "QUALITY"
+                    : "S + Q"
+                }
+              </span>
+            </div>
+          `
+          : ""
+      }
+    </td>
 
     <!-- TYPE -->
     <td>${task.type ? highlight(task.type, q) : "-"}</td>
@@ -926,24 +948,44 @@ function renderHistoryTable(data) {
       </td>
 
       <td>
-        <div class="task-title">
-          <strong>${highlightHistoryText(h.task)}</strong>
+          <div class="task-title">
+            <strong>${h.task}</strong>
+
+            ${
+              h.notes
+                ? `<span
+                    class="task-note-indicator"
+                    title="${h.notes}"
+                  >📝</span>`
+                : ""
+            }
+          </div>
+
+          <small>
+            ${h.section || ""}
+            ${h.section && h.unit ? " / " : ""}
+            ${h.unit || ""}
+            ${editedBadge}
+          </small>
+
           ${
-            h.notes
-              ? `<span
-                  class="task-note-indicator"
-                  title="${h.notes}"
-                >📝</span>`
+            h.impact && h.impact !== "normal"
+              ? `
+                <div class="task-impact-wrap">
+                  <span class="task-impact-badge task-impact-${h.impact}">
+                    ${
+                      h.impact === "safety"
+                        ? "SAFETY"
+                        : h.impact === "quality"
+                        ? "QUALITY"
+                        : "S + Q"
+                    }
+                  </span>
+                </div>
+              `
               : ""
           }
-        </div>
-        <small>
-          ${highlightHistoryText(h.section || "")}
-          ${h.section && h.unit ? " / " : ""}
-          ${highlightHistoryText(h.unit || "")}
-          ${editedBadge}
-        </small>
-      </td>
+        </td>
 
       <td>${highlightHistoryText(h.executed_by || "-")}</td>
 
@@ -1540,38 +1582,60 @@ function viewTask(taskId) {
      TECHNICAL TASK VIEW
 ===================== -->
 
-<!-- ASSET CONTEXT -->
-<div class="task-view-asset tech">
-  <div class="asset-main">
-    🏭 ${task.machine_name}
+  <!-- ASSET CONTEXT -->
+  <div class="task-view-asset tech">
+    <div class="asset-main">
+      🏭 ${task.machine_name}
+    </div>
+    <div class="asset-sub">
+      ${task.serial_number ? `SN: ${task.serial_number}` : ""}
+      • Line ${task.line_code}
+    </div>
   </div>
-  <div class="asset-sub">
-    ${task.serial_number ? `SN: ${task.serial_number}` : ""}
-    • Line ${task.line_code}
+
+  <!-- WORK ORDER TITLE -->
+  <div class="task-view-title tech">
+    ${task.task}
   </div>
-</div>
 
-<!-- WORK ORDER TITLE -->
-<div class="task-view-title tech">
-  ${task.task}
-</div>
+  <!-- STATUS / TYPE / IMPACT -->
+  <div class="task-view-meta tech">
 
-<!-- STATUS / TYPE -->
-<div class="task-view-meta tech">
-  <span class="badge badge-type">
-    ${task.type || "Maintenance Task"}
-  </span>
-  <span class="badge badge-status">
-    ${task.status}
-  </span>
-  ${
-    task.due_date
-      ? `<span class="badge badge-date">
-           Due: ${formatDate(task.due_date)}
-         </span>`
-      : ``
-  }
-</div>
+    <span class="badge badge-type">
+      ${task.type || "Maintenance Task"}
+    </span>
+
+    <span class="badge badge-status">
+      ${task.status}
+    </span>
+
+    ${
+      task.impact && task.impact !== "normal"
+        ? `
+          <span class="badge badge-impact badge-impact-${task.impact}">
+            ${
+              task.impact === "safety"
+                ? "SAFETY"
+                : task.impact === "quality"
+                ? "QUALITY"
+                : "S + Q"
+            }
+          </span>
+        `
+        : ""
+    }
+
+    ${
+      task.due_date
+        ? `
+          <span class="badge badge-date">
+            Due: ${formatDate(task.due_date)}
+          </span>
+        `
+        : ""
+    }
+
+  </div>
 
 <!-- TECHNICAL DETAILS -->
 <div class="task-view-details tech">

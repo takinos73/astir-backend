@@ -546,6 +546,33 @@ tbody tr:hover { background: #131520; }
   transform: none;
   box-shadow: none;
 }
+/* =========================
+   TASK VIEW - IMPACT BADGES
+========================= */
+
+.badge-impact {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.badge-impact-safety {
+  background: rgba(239, 83, 80, 0.16);
+  color: #ef7774;
+  border: 1px solid rgba(239, 83, 80, 0.28);
+}
+
+.badge-impact-quality {
+  background: rgba(66, 165, 245, 0.14);
+  color: #70b7ef;
+  border: 1px solid rgba(66, 165, 245, 0.25);
+}
+
+.badge-impact-safety_quality {
+  background: rgba(171, 71, 188, 0.15);
+  color: #cf83db;
+  border: 1px solid rgba(171, 71, 188, 0.27);
+}
 
 
 /* =====================
@@ -2188,6 +2215,45 @@ tr.history-planned {
 
 tr.history-unplanned {
   border-left: 4px solid #f44336; /* κόκκινο */
+}
+/* =========================
+   TASK TABLE - IMPACT BADGE
+========================= */
+
+.task-impact-wrap {
+  margin-top: 4px;
+}
+
+.task-impact-badge {
+  display: inline-block;
+  padding: 2px 5px;
+
+  border-radius: 5px;
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.task-impact-safety {
+  background: rgba(239, 83, 80, 0.14);
+  color: #ef7774;
+  border: 1px solid rgba(239, 83, 80, 0.24);
+}
+
+.task-impact-quality {
+  background: rgba(66, 165, 245, 0.13);
+  color: #70b7ef;
+  border: 1px solid rgba(66, 165, 245, 0.22);
+}
+
+.task-impact-safety_quality {
+  background: rgba(171, 71, 188, 0.14);
+  color: #cf83db;
+  border: 1px solid rgba(171, 71, 188, 0.24);
 }
 /* =====================
    MODALS (GLOBAL)
