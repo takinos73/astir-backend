@@ -519,43 +519,44 @@ app.post("/tasks", async (req, res) => {
     ===================== */
 
     const taskRes = await client.query(
-      `
-      INSERT INTO maintenance_tasks
-        (
-          asset_id,
-          section,
-          unit,
-          task,
-          type,
-          impact,
-          due_date,
-          status,
-          is_planned,
-          duration_min,
-          notes
-        )
-      VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      RETURNING *
-      `,
-      [
+    `
+    INSERT INTO maintenance_tasks
+      (
         asset_id,
-        section || null,
-        unit || null,
+        section,
+        unit,
         task,
-        type || null,
-        due_date ? new Date(due_date) : null,
-        status || "Planned",
-        is_planned === true,
+        type,
+        impact,
+        due_date,
+        status,
+        is_planned,
+        duration_min,
+        notes
+      )
+    VALUES
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    RETURNING *
+    `,
+    [
+      asset_id,                                      // $1
+      section || null,                              // $2
+      unit || null,                                 // $3
+      task,                                         // $4
+      type || null,                                 // $5
+      impact || "normal",                           // $6
+      due_date ? new Date(due_date) : null,         // $7
+      status || "Planned",                          // $8
+      is_planned === true,                          // $9
 
-        // 🔑 ΜΟΝΟ PLANNED → estimated duration
-        is_planned === true && Number.isFinite(Number(duration_min))
-          ? Number(duration_min)
-          : null,
+      // 🔑 ΜΟΝΟ PLANNED → estimated duration
+      is_planned === true && Number.isFinite(Number(duration_min))
+        ? Number(duration_min)
+        : null,                                     // $10
 
-        notes || null
-      ]
-    );
+      notes || null                                 // $11
+    ]
+  );
 
     const newTask = taskRes.rows[0];
 
