@@ -1803,9 +1803,11 @@ app.get("/kpis/overdue/top-assets", async (req, res) => {
 ===================== */
 app.put("/tasks/:id", async (req, res) => {
   const { id } = req.params;
+
   const {
     task,
     type,
+    impact,
     section,
     unit,
     due_date,
@@ -1819,23 +1821,25 @@ app.put("/tasks/:id", async (req, res) => {
       SET
         task = COALESCE($2, task),
         type = COALESCE($3, type),
-        section = COALESCE($4, section),
-        unit = COALESCE($5, unit),
-        due_date = COALESCE($6, due_date),
-        notes = COALESCE($7, notes),
+        impact = COALESCE($4, impact),
+        section = COALESCE($5, section),
+        unit = COALESCE($6, unit),
+        due_date = COALESCE($7, due_date),
+        notes = COALESCE($8, notes),
         updated_at = NOW()
       WHERE id = $1
         AND status = 'Planned'
       RETURNING *
       `,
       [
-        id,
-        task || null,
-        type || null,
-        section || null,
-        unit || null,
-        due_date ? new Date(due_date) : null,
-        notes || null
+        id,                                      // $1
+        task || null,                            // $2
+        type || null,                            // $3
+        impact || "normal",                      // $4
+        section || null,                         // $5
+        unit || null,                            // $6
+        due_date ? new Date(due_date) : null,    // $7
+        notes || null                            // $8
       ]
     );
 
@@ -1852,7 +1856,6 @@ app.put("/tasks/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 /* =====================================================
    ASSETS

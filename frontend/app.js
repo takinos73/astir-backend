@@ -1708,6 +1708,11 @@ function enableTaskEdit() {
   const typeEl = document.getElementById("edit-task-type");
   if (typeEl) typeEl.value = t.type || "";
 
+  const impactEl = document.getElementById("edit-task-impact");
+  if (impactEl) {
+    impactEl.value = t.impact || "normal";
+  }
+
   const secEl = document.getElementById("edit-task-section");
   if (secEl) secEl.value = t.section || "";
 
@@ -3620,7 +3625,6 @@ function resetAddTaskForm() {
   }
 }
 
-
 // =====================
 // SAVE TASK EDIT (PUT – METADATA ONLY)
 // =====================
@@ -3636,6 +3640,11 @@ async function saveTaskEdit() {
   const payload = {
     task: document.getElementById("edit-task-desc")?.value?.trim(),
     type: document.getElementById("edit-task-type")?.value || null,
+
+    // 🔹 Impact classification
+    impact:
+      document.getElementById("edit-task-impact")?.value || "normal",
+
     section: document.getElementById("edit-task-section")?.value || null,
     unit: document.getElementById("edit-task-unit")?.value || null,
     due_date: document.getElementById("edit-task-due")?.value || null,
@@ -3649,11 +3658,16 @@ async function saveTaskEdit() {
   }
 
   try {
-    const res = await fetch(`${API}/tasks/${state.currentViewedTask.id}`, {
-      method: "PUT", // 👈 ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch(
+      `${API}/tasks/${state.currentViewedTask.id}`,
+      {
+        method: "PUT", // 👈 KEEP — existing backend flow
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
 
     if (!res.ok) {
       const err = await res.json();
@@ -3667,7 +3681,7 @@ async function saveTaskEdit() {
     closeTaskView();
 
     // Refresh tasks list
-    loadTasks();
+    await loadTasks();
 
   } catch (err) {
     console.error("SAVE TASK EDIT ERROR:", err);
