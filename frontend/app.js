@@ -1081,7 +1081,26 @@ function viewHistoryEntry(executionId) {
 
       <div class="history-view-section">
         <strong>Task</strong>
+
         <div>${h.task}</div>
+
+        ${
+          h.impact && h.impact !== "normal"
+            ? `
+              <div class="task-impact-wrap">
+                <span class="task-impact-badge task-impact-${h.impact}">
+                  ${
+                    h.impact === "safety"
+                      ? "SAFETY"
+                      : h.impact === "quality"
+                      ? "QUALITY"
+                      : "S + Q"
+                  }
+                </span>
+              </div>
+            `
+            : ""
+        }
       </div>
 
       <div class="history-view-section full-width">
@@ -3072,15 +3091,36 @@ function renderAssetTasksTable(tasks) {
         }
       </td>
       <td>
-        ${t.task}
+        <div>
+          ${t.task}
+
+          ${
+            t.notes
+              ? `<span
+                  class="task-note-indicator"
+                  title="${t.notes}"
+                >
+                  📝
+                </span>`
+              : ""
+          }
+        </div>
+
         ${
-          t.notes
-            ? `<span
-                class="task-note-indicator"
-                title="${t.notes}"
-              >
-                📝
-              </span>`
+          t.impact && t.impact !== "normal"
+            ? `
+              <div class="task-impact-wrap">
+                <span class="task-impact-badge task-impact-${t.impact}">
+                  ${
+                    t.impact === "safety"
+                      ? "SAFETY"
+                      : t.impact === "quality"
+                      ? "QUALITY"
+                      : "S + Q"
+                  }
+                </span>
+              </div>
+            `
             : ""
         }
       </td>
@@ -3299,10 +3339,39 @@ function renderAssetHistoryTable(history) {
       <td>${formatDate(e.executed_at)}</td>
 
       <td class="task-filter">
-        ${e.task}
-        ${(e.section || e.unit)
-          ? `<br><small>${e.section || ""}${e.section && e.unit ? " / " : ""}${e.unit || ""}</small>`
-          : ""}
+        <div>
+          ${e.task}
+        </div>
+
+        ${
+          (e.section || e.unit)
+            ? `
+              <small>
+                ${e.section || ""}
+                ${e.section && e.unit ? " / " : ""}
+                ${e.unit || ""}
+              </small>
+            `
+            : ""
+        }
+
+        ${
+          e.impact && e.impact !== "normal"
+            ? `
+              <div class="task-impact-wrap">
+                <span class="task-impact-badge task-impact-${e.impact}">
+                  ${
+                    e.impact === "safety"
+                      ? "SAFETY"
+                      : e.impact === "quality"
+                      ? "QUALITY"
+                      : "S + Q"
+                  }
+                </span>
+              </div>
+            `
+            : ""
+        }
       </td>
 
       <td>${e.type || "-"}</td>
