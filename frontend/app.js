@@ -548,7 +548,7 @@ function buildRow(task) {
     title="Open asset view"
   >
     ${highlight(task.machine_name || "", q)}
-    ${isIdle ? `<span class="task-idle-badge">IDLE</span>` : ""}     
+    ${isIdle ? `<span class="task-idle-badge">Idle</span>` : ""}     
   </div>
 
   ${
@@ -770,8 +770,26 @@ function renderHistoryTable(data) {
 
     .filter(h => {
       if (!state.historyMachineQuery) return true;
-      const txt = `${h.machine} ${h.serial_number || ""}`.toLowerCase();
-      return txt.includes(state.historyMachineQuery);
+
+      const searchText = `
+        ${h.machine || ""}
+        ${h.serial_number || ""}
+        ${h.line || ""}
+        ${h.task || ""}
+        ${h.section || ""}
+        ${h.unit || ""}
+        ${h.executed_by || ""}
+        ${h.notes || ""}
+      `
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return searchText.includes(
+        String(state.historyMachineQuery)
+          .toLowerCase()
+          .trim()
+      );
     })
 
     .filter(h => {
@@ -4494,7 +4512,7 @@ function renderAssetsCards() {
       <div class="asset-card-title">
         ${a.model || "-"}
         ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
-        ${isIdle ? `<span class="asset-status idle">IDLE</span>` : ""}
+        ${isIdle ? `<span class="asset-status idle">Idle</span>` : ""}
       </div>
 
       <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
