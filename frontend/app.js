@@ -3419,6 +3419,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     })(),
     task: taskDesc,
     type: document.getElementById("nt-type")?.value || null,
+    impact: document.getElementById("nt-impact")?.value || "normal",
     notes: document.getElementById("nt-notes")?.value || null,
 
     is_planned: isPlanned,
@@ -3696,6 +3697,13 @@ document.getElementById("addTaskBtn")?.addEventListener("click", async e => {
     typeSelect.value = "planned";
     applyAddTaskTypeUI(true); // ✅ FORCE correct UI state
   }
+  
+  const impactSelect =
+    document.getElementById("nt-impact");
+
+  if (impactSelect) {
+    impactSelect.value = "normal";
+  }
 
   // 🔹 Populate Line dropdown
   populateAddTaskLines();
@@ -3741,6 +3749,12 @@ async function openAddTaskForAsset(machine, serial, line) {
   if (typeSelect) {
     typeSelect.value = "planned";
     typeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  const impactSelect =
+    document.getElementById("nt-impact");
+
+  if (impactSelect) {
+    impactSelect.value = "normal";
   }
 
   // 🔹 Context labels
@@ -3857,11 +3871,18 @@ document.addEventListener("click", async (e) => {
   ).forEach(el => el.value = "");
 
   // 🔹 Default task type = Planned (SYNC UI)
-const typeSelect = document.getElementById("taskPlannedType");
-if (typeSelect) {
-  typeSelect.value = "planned";
-  applyAddTaskTypeUI(true); // 🔥 CRITICAL
-}  
+  const typeSelect = document.getElementById("taskPlannedType");
+  if (typeSelect) {
+    typeSelect.value = "planned";
+    applyAddTaskTypeUI(true); // 🔥 CRITICAL
+  }  
+  // 🔹 Inherit Impact from original task
+  const impactSelect = document.getElementById("nt-impact");
+
+  if (impactSelect) {
+    impactSelect.value =
+      t.impact || "normal";
+  }
   // 🔹 Modal title
   const title = document.getElementById("addTaskTitle");
   if (title) title.textContent = "New Follow-up Task";

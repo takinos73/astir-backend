@@ -847,9 +847,10 @@
     </div>
 
     <!-- =====================
-        TASK TYPE
+        TASK TYPE / IMPACT
     ===================== -->
     <div class="addtask-block addtask-grid">
+
       <div class="field">
         <label>Task Type</label>
         <input
@@ -857,6 +858,21 @@
           placeholder="Inspection / Repair / Adjustment"
         />
       </div>
+
+      <div class="field">
+        <label>Impact</label>
+        <select id="nt-impact">
+          <option value="normal" selected>Normal</option>
+          <option value="safety">Safety</option>
+          <option value="quality">Quality</option>
+          <option value="safety_quality">Safety &amp; Quality</option>
+        </select>
+
+        <small class="field-hint">
+          Classification for Safety / Quality attention
+        </small>
+      </div>
+
     </div>
 
     <!-- =====================
