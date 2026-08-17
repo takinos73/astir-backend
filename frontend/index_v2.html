@@ -463,6 +463,74 @@
 </div>
 
 <!-- =====================
+     DAILY MAINTENANCE BRIEF MODAL
+===================== -->
+<div
+  id="dailyBriefOverlay"
+  class="modal-overlay"
+  style="display:none;"
+>
+  <div class="modal-box daily-brief-modal">
+
+    <!-- HEADER -->
+    <div class="daily-brief-header">
+
+      <div>
+        <h3>☀ Daily Maintenance Brief</h3>
+
+        <div
+          id="dailyBriefDate"
+          class="daily-brief-date"
+        >
+          —
+        </div>
+      </div>
+
+      <button
+        id="closeDailyBriefX"
+        class="daily-brief-close"
+        type="button"
+        title="Close"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <!-- CONTENT -->
+    <div id="dailyBriefContent">
+
+      <div class="daily-brief-placeholder">
+        <div class="daily-brief-placeholder-title">
+          Maintenance overview
+        </div>
+
+        <div class="daily-brief-placeholder-text">
+          Critical items, upcoming maintenance,
+          reliability alerts and key indicators
+          will appear here.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="modal-actions daily-brief-actions">
+
+      <button
+        id="dailyBriefOkBtn"
+        class="btn-primary"
+        type="button"
+      >
+        OK, Got it
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- =====================
      KPI / ANALYTICS MODAL
 ===================== -->
 <div id="analyticsOverlay" class="modal-overlay" style="display:none;">
@@ -954,17 +1022,36 @@
 
 </div>
 
-<!-- DASHBOARD TAB -->
-  <div id="tab-dashboard" class="tab-panel active">
-      <div class="dashboard-header">
-          <div class="dashboard-title">
-            Asset Overview
-            <span id="dashboardRiskCount" class="dashboard-count"></span>
+<!-- =====================
+     DASHBOARD TAB
+===================== -->
+<div id="tab-dashboard" class="tab-panel active">
+
+        <!-- DASHBOARD HEADER -->
+        <div class="dashboard-header">
+
+          <div class="dashboard-header-info">
+            <div class="dashboard-title">
+              Asset Overview
+              <span id="dashboardRiskCount" class="dashboard-count"></span>
+            </div>
+
+            <div class="dashboard-subtitle">
+              Assets with overdue tasks, upcoming work or recent breakdowns
+            </div>
           </div>
-          <div class="dashboard-subtitle">
-          Assets with overdue tasks, upcoming work or recent breakdowns
-          </div>
-      </div>
+
+          <!-- DAILY BRIEF -->
+          <button
+            id="openDailyBriefBtn"
+            class="btn-daily-brief"
+            type="button"
+            title="Open Daily Maintenance Brief"
+          >
+            ☀ Daily Brief
+          </button>
+
+        </div>
       <div class="dashboard-filters">
         <div class="filter-group risk">
           <button class="filter-btn active" data-risk="all">All</button>

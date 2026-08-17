@@ -504,3 +504,66 @@ window.renderAssetDashboard = function () {
     container.classList.remove("compact");
   }
 };
+
+/* =====================================================
+   DAILY MAINTENANCE BRIEF
+===================================================== */
+
+
+/* =====================
+   OPEN / CLOSE
+===================== */
+
+function openDailyBrief() {
+
+  const overlay =
+    document.getElementById("dailyBriefOverlay");
+
+  const dateEl =
+    document.getElementById("dailyBriefDate");
+
+  if (dateEl) {
+    dateEl.textContent =
+      new Date().toLocaleDateString(
+        "el-GR",
+        {
+          weekday: "long",
+          day: "2-digit",
+          month: "long",
+          year: "numeric"
+        }
+      );
+  }
+
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
+}
+
+
+function closeDailyBrief() {
+
+  const overlay =
+    document.getElementById("dailyBriefOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+}
+
+
+/* =====================
+   EVENTS
+===================== */
+
+document
+  .getElementById("openDailyBriefBtn")
+  ?.addEventListener("click", openDailyBrief);
+
+document
+  .getElementById("dailyBriefOkBtn")
+  ?.addEventListener("click", closeDailyBrief);
+
+document
+  .getElementById("closeDailyBriefX")
+  ?.addEventListener("click", closeDailyBrief);
