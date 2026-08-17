@@ -1147,6 +1147,7 @@ function openEditPreventiveModal(preventive) {
 
   setVal("ep-task", preventive.task);
   setVal("ep-type", preventive.type);
+  setVal("ep-impact", preventive.impact || "normal");
   setVal("ep-unit", preventive.unit);
   setVal("ep-frequency", preventive.frequency_hours);
   setVal("ep-duration", preventive.duration_min);
@@ -1239,14 +1240,25 @@ async function saveEditPreventive() {
   // 🔒 Update rule IN MEMORY only (no backend save here)
   window.currentEditPreventive = {
     ...window.currentEditPreventive,
+
     task: getVal("ep-task"),
     type: getVal("ep-type") || null,
+
+    // Impact classification
+    impact: getVal("ep-impact") || "normal",
+
     unit: getVal("ep-unit") || null,
-    frequency_hours: Number(getVal("ep-frequency")),
-    duration_min: getVal("ep-duration")
-      ? Number(getVal("ep-duration"))
-      : null,
-    notes: getVal("ep-notes") || null
+
+    frequency_hours:
+      Number(getVal("ep-frequency")),
+
+    duration_min:
+      getVal("ep-duration")
+        ? Number(getVal("ep-duration"))
+        : null,
+
+    notes:
+      getVal("ep-notes") || null
   };
 }
 
