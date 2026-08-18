@@ -710,13 +710,22 @@ window.renderAssetDashboard = function () {
   });
 
   // =====================
-  // SORT BY RISK
+  // SORT BY RISK + SCORE
   // =====================
-  assets.sort(
-    (a, b) =>
+  assets.sort((a, b) => {
+
+    const riskDiff =
       (RISK_PRIORITY[a._risk.level] ?? 99) -
-      (RISK_PRIORITY[b._risk.level] ?? 99)
-  );
+      (RISK_PRIORITY[b._risk.level] ?? 99);
+
+    // 1️⃣ Risk level first
+    if (riskDiff !== 0) {
+      return riskDiff;
+    }
+
+    // 2️⃣ Within same risk level → highest score first
+    return (Number(b.score) || 0) - (Number(a.score) || 0);
+  });
 
   // Limit only when NO filters
   if (!hasActiveFilter) {
@@ -766,6 +775,59 @@ window.renderAssetDashboard = function () {
           <div class="metric soon">
             🟠 Due soon: ${a.dueSoon}
           </div>
+          ${
+            (Number(a.safetyOverdue) > 0 ||
+            Number(a.safetyDueSoon) > 0)
+              ? `
+                <div class="metric impact safety">
+                  🛡 Safety:
+                  ${
+                    Number(a.safetyOverdue) > 0
+                      ? `<strong>${a.safetyOverdue} overdue</strong>`
+                      : ""
+                  }
+                  ${
+                    Number(a.safetyOverdue) > 0 &&
+                    Number(a.safetyDueSoon) > 0
+                      ? ` • `
+                      : ""
+                  }
+                  ${
+                    Number(a.safetyDueSoon) > 0
+                      ? `${a.safetyDueSoon} due soon`
+                      : ""
+                  }
+                </div>
+              `
+              : ""
+          }
+
+          ${
+            (Number(a.qualityOverdue) > 0 ||
+            Number(a.qualityDueSoon) > 0)
+              ? `
+                <div class="metric impact quality">
+                  ◆ Quality:
+                  ${
+                    Number(a.qualityOverdue) > 0
+                      ? `<strong>${a.qualityOverdue} overdue</strong>`
+                      : ""
+                  }
+                  ${
+                    Number(a.qualityOverdue) > 0 &&
+                    Number(a.qualityDueSoon) > 0
+                      ? ` • `
+                      : ""
+                  }
+                  ${
+                    Number(a.qualityDueSoon) > 0
+                      ? `${a.qualityDueSoon} due soon`
+                      : ""
+                  }
+                </div>
+              `
+              : ""
+          }
 
           <div class="metric mttr">
             ⏱ MTTR: ${a.avgMTTR ?? "—"} min
