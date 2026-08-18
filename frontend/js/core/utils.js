@@ -121,42 +121,115 @@ function getAssetTaskStats(assetId) {
 }
 
 /* =====================
-     RISK LEVEL FUNCTION
-  ===================== */
-  
- function getAssetRiskLevel(a) {
-  const HIGH_LOAD = 8;   // hours / next 30d
+   RISK LEVEL FUNCTION
+   SINGLE SOURCE OF TRUTH
+===================== */
+
+function getAssetRiskLevel(a) {
+
+  const HIGH_LOAD = 8;   // workload threshold
   const MED_LOAD = 1;
 
-  // 🔴 CRITICAL — true alarm only
+  // Safe numeric values
+  const overdue = Number(a.overdue || 0);
+  const dueSoon = Number(a.dueSoon || 0);
+  const manualLoad = Number(a.manualPlanned30d || 0);
+
+  const safetyOverdue = Number(a.safetyOverdue || 0);
+  const safetyDueSoon = Number(a.safetyDueSoon || 0);
+
+  const qualityOverdue = Number(a.qualityOverdue || 0);
+  const qualityDueSoon = Number(a.qualityDueSoon || 0);
+
+
+  /* =====================
+     🔴 CRITICAL
+     Safety overdue always escalates
+  ===================== */
+
   if (
-    a.overdue >= 6 ||
-    (a.lastBreakdownDays != null && a.lastBreakdownDays <= 2) ||
-    (a.overdue >= 3 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 3)
+    safetyOverdue > 0 ||
+
+    overdue >= 6 ||
+
+    (
+      a.lastBreakdownDays != null &&
+      Number(a.lastBreakdownDays) <= 2
+    ) ||
+
+    (
+      overdue >= 3 &&
+      a.lastBreakdownDays != null &&
+      Number(a.lastBreakdownDays) <= 3
+    )
   ) {
-    return { level: "critical", label: "CRITICAL", icon: "🔴" };
+    return {
+      level: "critical",
+      label: "CRITICAL",
+      icon: "🔴"
+    };
   }
 
-  // 🟠 AT RISK — pressure building
+
+  /* =====================
+     🟠 AT RISK
+     Safety due soon
+     Quality overdue
+  ===================== */
+
   if (
-    (a.overdue >= 2 && a.overdue <= 5) ||
-    a.manualPlanned30d >= HIGH_LOAD ||
-    a.dueSoon >= 4
+    safetyDueSoon > 0 ||
+
+    qualityOverdue > 0 ||
+
+    (overdue >= 2 && overdue <= 5) ||
+
+    manualLoad >= HIGH_LOAD ||
+
+    dueSoon >= 4
   ) {
-    return { level: "risk", label: "AT RISK", icon: "🟠" };
+    return {
+      level: "risk",
+      label: "AT RISK",
+      icon: "🟠"
+    };
   }
 
-  // 🟡 WATCH — light signal
+
+  /* =====================
+     🟡 WATCH
+     Quality due soon
+  ===================== */
+
   if (
-    a.overdue === 1 ||
-    (a.dueSoon >= 1 && a.dueSoon <= 3) ||
-    (a.manualPlanned30d >= MED_LOAD && a.manualPlanned30d < HIGH_LOAD)
+    qualityDueSoon > 0 ||
+
+    overdue === 1 ||
+
+    (dueSoon >= 1 && dueSoon <= 3) ||
+
+    (
+      manualLoad >= MED_LOAD &&
+      manualLoad < HIGH_LOAD
+    )
   ) {
-    return { level: "watch", label: "WATCH", icon: "🟡" };
+    return {
+      level: "watch",
+      label: "WATCH",
+      icon: "🟡"
+    };
   }
 
-  // 🟢 STABLE
-  return { level: "stable", label: "STABLE", icon: "🟢" };
+
+  /* =====================
+     🟢 STABLE
+  ===================== */
+
+  return {
+    level: "stable",
+    label: "STABLE",
+    icon: "🟢"
+  };
 }
 /* =====================
    RISK PRIORITY
