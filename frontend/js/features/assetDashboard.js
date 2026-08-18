@@ -78,229 +78,540 @@ const dashboardFilters = {
 /* =====================
    TOP WORST ASSETS DASHBOARD
 ===================== */
+
 function getTopWorstAssetsDashboard(limit = 9) {
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const DUE_SOON_DAYS = 7;
-  const MTTR_THRESHOLD = 60; // minutes (tunable)
+  const MTTR_THRESHOLD = 60; // minutes
 
   const assetsMap = {};
+
 
   /* =====================
      1️⃣ AGGREGATE TASKS
   ===================== */
+
   state.tasksData.forEach(t => {
+
     if (!t.machine_name || !t.serial_number) return;
 
     const assetKey = getAssetKey(t);
     const line = t.line_code || t.line || "—";
 
+
     if (!assetsMap[assetKey]) {
+
       assetsMap[assetKey] = {
+
         machine: t.machine_name,
         serial: t.serial_number,
         line,
 
         overdue: 0,
 
-        // 🆕 Overdue severity metrics
+        // Overdue severity
         overdueDaysTotal: 0,
         maxOverdueDays: 0,
 
         dueSoon: 0,
+
+        // 🛡 IMPACT ATTENTION
+        safetyOverdue: 0,
+        safetyDueSoon: 0,
+        qualityOverdue: 0,
+        qualityDueSoon: 0,
+
+        // Reliability
         breakdowns: 0,
         totalRepairMin: 0,
         lastBreakdownDate: null,
 
-        // 🆕 Manual planned workload (last 30 days)
+        // Manual planned workload
         manualPlanned30d: 0
       };
     }
 
-    if (!t.due_date || t.status === "Done") return;
+
+    // Ignore completed / invalid due date
+    if (!t.due_date || t.status === "Done") {
+      return;
+    }
+
 
     const due = new Date(t.due_date);
     due.setHours(0, 0, 0, 0);
 
-    const diffDays = Math.ceil((due - today) / 86400000);
+    const diffDays =
+      Math.ceil(
+        (due - today) / 86400000
+      );
+
+
+    /* =====================
+       IMPACT CLASSIFICATION
+    ===================== */
+
+    const impact =
+      String(t.impact || "normal")
+        .toLowerCase();
+
+    const hasSafety =
+      impact === "safety" ||
+      impact === "safety_quality";
+
+    const hasQuality =
+      impact === "quality" ||
+      impact === "safety_quality";
+
+
+    /* =====================
+       OVERDUE
+    ===================== */
 
     if (due < today) {
-      const overdueDays = Math.floor((today - due) / 86400000);
+
+      const overdueDays =
+        Math.floor(
+          (today - due) / 86400000
+        );
 
       assetsMap[assetKey].overdue++;
-      assetsMap[assetKey].overdueDaysTotal += overdueDays;
-      assetsMap[assetKey].maxOverdueDays = Math.max(
-        assetsMap[assetKey].maxOverdueDays,
-        overdueDays
-      );
-    } else if (diffDays <= DUE_SOON_DAYS) {
-      assetsMap[assetKey].dueSoon++;
+
+      assetsMap[assetKey].overdueDaysTotal +=
+        overdueDays;
+
+      assetsMap[assetKey].maxOverdueDays =
+        Math.max(
+          assetsMap[assetKey].maxOverdueDays,
+          overdueDays
+        );
+
+
+      // 🛡 Safety / Quality overdue
+      if (hasSafety) {
+        assetsMap[assetKey].safetyOverdue++;
+      }
+
+      if (hasQuality) {
+        assetsMap[assetKey].qualityOverdue++;
+      }
+
     }
 
-    // 🧩 Planned Manual load (±30 days window)
+
+    /* =====================
+       DUE SOON
+    ===================== */
+
+    else if (diffDays <= DUE_SOON_DAYS) {
+
+      assetsMap[assetKey].dueSoon++;
+
+
+      // 🛡 Safety / Quality due soon
+      if (hasSafety) {
+        assetsMap[assetKey].safetyDueSoon++;
+      }
+
+      if (hasQuality) {
+        assetsMap[assetKey].qualityDueSoon++;
+      }
+    }
+
+
+    /* =====================
+       PLANNED MANUAL LOAD
+       ±30 day window
+    ===================== */
+
     if (
       typeof isPlannedManual === "function" &&
       isPlannedManual(t)
     ) {
-      const diffFromToday = Math.floor((today - due) / 86400000);
-      if (diffFromToday >= -30 && diffFromToday <= 30) {
+
+      const diffFromToday =
+        Math.floor(
+          (today - due) / 86400000
+        );
+
+      if (
+        diffFromToday >= -30 &&
+        diffFromToday <= 30
+      ) {
         assetsMap[assetKey].manualPlanned30d++;
       }
     }
+
   });
 
 
   /* =====================
-     2️⃣ AGGREGATE EXECUTIONS (BREAKDOWNS)
+     2️⃣ AGGREGATE EXECUTIONS
+     BREAKDOWNS ONLY
   ===================== */
+
   state.executionsData.forEach(e => {
+
     if (!e.serial_number) return;
-    if (e.is_planned !== false) return; // breakdowns only
+
+    // Breakdown only
+    if (e.is_planned !== false) return;
 
     const assetKey = getAssetKey(e);
+
     if (!assetsMap[assetKey]) return;
+
 
     assetsMap[assetKey].breakdowns++;
 
-    const dur = Number(e.duration_min);
+
+    const dur =
+      Number(e.duration_min);
+
     if (!Number.isNaN(dur)) {
       assetsMap[assetKey].totalRepairMin += dur;
     }
 
+
     if (e.executed_at) {
-      const execDate = new Date(e.executed_at);
+
+      const execDate =
+        new Date(e.executed_at);
+
       if (
         !assetsMap[assetKey].lastBreakdownDate ||
-        execDate > assetsMap[assetKey].lastBreakdownDate
+        execDate >
+          assetsMap[assetKey].lastBreakdownDate
       ) {
-        assetsMap[assetKey].lastBreakdownDate = execDate;
+        assetsMap[assetKey].lastBreakdownDate =
+          execDate;
       }
     }
+
   });
+
+
   /* =====================
      RISK LEVEL FUNCTION
   ===================== */
-  
+
   function getAssetRiskLevel(a) {
-  // thresholds (tweakable)
-  const HIGH_LOAD = 6; // hours in next 30d
 
-  if (
-    a.overdue >= 3 ||
-    (a.lastBreakdownDays != null && a.lastBreakdownDays <= 3) ||
-    (a.overdue >= 1 && a.lastBreakdownDays != null && a.lastBreakdownDays <= 7)
-  ) {
-    return { level: "critical", label: "CRITICAL", icon: "🔴" };
+    const HIGH_LOAD = 6;
+
+
+    // 🔴 CRITICAL
+    // Safety overdue = immediate critical attention
+    if (
+      a.safetyOverdue > 0 ||
+
+      a.overdue >= 3 ||
+
+      (
+        a.lastBreakdownDays != null &&
+        a.lastBreakdownDays <= 3
+      ) ||
+
+      (
+        a.overdue >= 1 &&
+        a.lastBreakdownDays != null &&
+        a.lastBreakdownDays <= 7
+      )
+    ) {
+      return {
+        level: "critical",
+        label: "CRITICAL",
+        icon: "🔴"
+      };
+    }
+
+
+    // 🟠 AT RISK
+    // Safety due soon OR Quality overdue
+    if (
+      a.safetyDueSoon > 0 ||
+
+      a.qualityOverdue > 0 ||
+
+      a.overdue === 1 ||
+
+      a.dueSoon >= 3 ||
+
+      a.manualPlanned30d >= HIGH_LOAD
+    ) {
+      return {
+        level: "risk",
+        label: "AT RISK",
+        icon: "🟠"
+      };
+    }
+
+
+    // 🟡 WATCH
+    // Quality due soon
+    if (
+      a.qualityDueSoon > 0 ||
+
+      a.dueSoon > 0 ||
+
+      a.manualPlanned30d > 0
+    ) {
+      return {
+        level: "watch",
+        label: "WATCH",
+        icon: "🟡"
+      };
+    }
+
+
+    // 🟢 STABLE
+    return {
+      level: "stable",
+      label: "STABLE",
+      icon: "🟢"
+    };
   }
-
-  if (
-    a.overdue === 1 ||
-    a.dueSoon >= 3 ||
-    a.manualPlanned30d >= HIGH_LOAD
-  ) {
-    return { level: "risk", label: "AT RISK", icon: "🟠" };
-  }
-
-  if (
-    a.dueSoon > 0 ||
-    a.manualPlanned30d > 0
-  ) {
-    return { level: "watch", label: "WATCH", icon: "🟡" };
-  }
-
-  return { level: "stable", label: "STABLE", icon: "🟢" };
-}
-
 
 
   /* =====================
-     3️⃣ COMPUTE METRICS + SCORE
+     3️⃣ COMPUTE METRICS
+     + SCORE
   ===================== */
-  const scoredAssets = Object.values(assetsMap).map(a => {
-    const avgMTTR =
-      a.breakdowns > 0
-        ? Math.round(a.totalRepairMin / a.breakdowns)
-        : null;
 
-    const daysSinceLastBreakdown = a.lastBreakdownDate
-      ? Math.floor((today - a.lastBreakdownDate) / 86400000)
-      : null;
+  const scoredAssets =
+    Object.values(assetsMap).map(a => {
 
-    // 🎯 RISK SCORE
-    let score = 0;
 
-    // =====================
-    // OVERDUE COUNT WEIGHT
-    // =====================
-    score += a.overdue * 6;
+      /* =====================
+         MTTR
+      ===================== */
 
-    // =====================
-    // OVERDUE DAYS SEVERITY
-    // =====================
-    score += Math.floor(a.overdueDaysTotal * 0.35);
+      const avgMTTR =
+        a.breakdowns > 0
+          ? Math.round(
+              a.totalRepairMin /
+              a.breakdowns
+            )
+          : null;
 
-    // Strong penalty for very old overdue task
-    score += a.maxOverdueDays * 2;
 
-    // Escalation tiers
-    if (a.maxOverdueDays >= 7) score += 10;
-    if (a.maxOverdueDays >= 14) score += 20;
-    if (a.maxOverdueDays >= 30) score += 40;
+      /* =====================
+         LAST BREAKDOWN
+      ===================== */
 
-    // =====================
-    // DUE SOON
-    // =====================
-    score += a.dueSoon * 4;
+      const daysSinceLastBreakdown =
+        a.lastBreakdownDate
+          ? Math.floor(
+              (today -
+                a.lastBreakdownDate) /
+              86400000
+            )
+          : null;
 
-    // =====================
-    // MTTR
-    // =====================
-    if (avgMTTR && avgMTTR > MTTR_THRESHOLD) {
-      score += 10;
-    }
 
-    // =====================
-    // RECENT BREAKDOWN
-    // =====================
-    if (
-      daysSinceLastBreakdown !== null &&
-      daysSinceLastBreakdown <= 7
-    ) {
-      score += 8;
-    }
+      // expose temporarily for risk logic
+      a.lastBreakdownDays =
+        daysSinceLastBreakdown;
 
-    // =====================
-    // MANUAL LOAD
-    // =====================
-    if (a.manualPlanned30d >= 5) score += 4;
-    if (a.manualPlanned30d >= 10) score += 8;
 
-    return {
-      machine: a.machine,
-      serial: a.serial,
-      line: a.line,
-      overdue: a.overdue,
-      overdueDaysTotal: a.overdueDaysTotal,
-      maxOverdueDays: a.maxOverdueDays,
-      dueSoon: a.dueSoon,
-      avgMTTR,
-      lastBreakdownDays: daysSinceLastBreakdown,
+      /* =====================
+         RISK SCORE
+      ===================== */
 
-      // 🆕 expose manual workload
-      manualPlanned30d: a.manualPlanned30d,
+      let score = 0;
 
-      score
-    };
-  });
+
+      /* =====================
+         🛡 SAFETY / QUALITY
+         IMPACT SCORE
+      ===================== */
+
+      const impactScore =
+        (a.safetyOverdue * 50) +
+        (a.safetyDueSoon * 25) +
+        (a.qualityOverdue * 30) +
+        (a.qualityDueSoon * 15);
+
+      score += impactScore;
+
+
+      /* =====================
+         OVERDUE COUNT
+      ===================== */
+
+      score +=
+        a.overdue * 6;
+
+
+      /* =====================
+         OVERDUE DAYS SEVERITY
+      ===================== */
+
+      score +=
+        Math.floor(
+          a.overdueDaysTotal * 0.35
+        );
+
+
+      // Strong penalty for oldest task
+      score +=
+        a.maxOverdueDays * 2;
+
+
+      // Escalation tiers
+      if (a.maxOverdueDays >= 7) {
+        score += 10;
+      }
+
+      if (a.maxOverdueDays >= 14) {
+        score += 20;
+      }
+
+      if (a.maxOverdueDays >= 30) {
+        score += 40;
+      }
+
+
+      /* =====================
+         DUE SOON
+      ===================== */
+
+      score +=
+        a.dueSoon * 4;
+
+
+      /* =====================
+         MTTR
+      ===================== */
+
+      if (
+        avgMTTR &&
+        avgMTTR > MTTR_THRESHOLD
+      ) {
+        score += 10;
+      }
+
+
+      /* =====================
+         RECENT BREAKDOWN
+      ===================== */
+
+      if (
+        daysSinceLastBreakdown !== null &&
+        daysSinceLastBreakdown <= 7
+      ) {
+        score += 8;
+      }
+
+
+      /* =====================
+         MANUAL LOAD
+      ===================== */
+
+      if (
+        a.manualPlanned30d >= 5
+      ) {
+        score += 4;
+      }
+
+      if (
+        a.manualPlanned30d >= 10
+      ) {
+        score += 8;
+      }
+
+
+      /* =====================
+         RISK LEVEL
+      ===================== */
+
+      const risk =
+        getAssetRiskLevel(a);
+
+
+      /* =====================
+         RETURN DASHBOARD OBJECT
+      ===================== */
+
+      return {
+
+        machine: a.machine,
+        serial: a.serial,
+        line: a.line,
+
+        overdue: a.overdue,
+
+        overdueDaysTotal:
+          a.overdueDaysTotal,
+
+        maxOverdueDays:
+          a.maxOverdueDays,
+
+        dueSoon:
+          a.dueSoon,
+
+
+        // 🛡 Impact metrics
+        safetyOverdue:
+          a.safetyOverdue,
+
+        safetyDueSoon:
+          a.safetyDueSoon,
+
+        qualityOverdue:
+          a.qualityOverdue,
+
+        qualityDueSoon:
+          a.qualityDueSoon,
+
+        impactScore,
+
+
+        avgMTTR,
+
+        lastBreakdownDays:
+          daysSinceLastBreakdown,
+
+
+        manualPlanned30d:
+          a.manualPlanned30d,
+
+
+        // Risk
+        riskLevel: risk.level,
+        riskLabel: risk.label,
+        riskIcon: risk.icon,
+
+
+        // Final numeric priority
+        score
+      };
+
+    });
+
 
   /* =====================
      4️⃣ SORT & PICK TOP N
   ===================== */
+
   return scoredAssets
-    .filter(a => a.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+
+    .filter(a =>
+      a.score > 0
+    )
+
+    .sort(
+      (a, b) =>
+        b.score - a.score
+    )
+
+    .slice(
+      0,
+      limit
+    );
 }
 
 // =====================

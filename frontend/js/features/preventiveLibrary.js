@@ -323,7 +323,29 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
               : ""
           }
         </td>
-        <td>${r.task}</td>
+        <td>
+          <div>
+            ${r.task}
+          </div>
+
+          ${
+            r.impact && r.impact !== "normal"
+              ? `
+                <div class="task-impact-wrap">
+                  <span class="task-impact-badge task-impact-${r.impact}">
+                    ${
+                      r.impact === "safety"
+                        ? "SAFETY"
+                        : r.impact === "quality"
+                        ? "QUALITY"
+                        : "S + Q"
+                    }
+                  </span>
+                </div>
+              `
+              : ""
+          }
+        </td>
         <td class="${freq.className}">
           ${freq.label}
         </td>
@@ -471,19 +493,33 @@ document.addEventListener("DOMContentLoaded", () => {
    GENERATE LIBRARY FROM LIVE TASKS
 ===================== */
 function generateLibraryFromTasks() {
-  if (!Array.isArray(state.tasksData) || state.tasksData.length === 0) {
+
+  if (
+    !Array.isArray(state.tasksData) ||
+    state.tasksData.length === 0
+  ) {
     alert("No tasks available to generate library");
     return;
   }
 
+  // 🔒 Preserve current selected model
+  const modelSelect =
+    document.getElementById("libraryModelSelect");
+
+  const currentModel =
+    modelSelect?.value || "";
+
   const map = {};
 
   state.tasksData.forEach(t => {
+
     if (
       t.is_planned !== true ||
       !t.frequency_hours ||
       !t.machine_name
-    ) return;
+    ) {
+      return;
+    }
 
     const model = t.machine_name;
 
@@ -491,7 +527,7 @@ function generateLibraryFromTasks() {
       map[model] = [];
     }
 
-    // avoid duplicates (same section + task + frequency)
+    // avoid duplicates
     const exists = map[model].some(p =>
       p.section === t.section &&
       (p.unit || "") === (t.unit || "") &&
@@ -516,15 +552,31 @@ function generateLibraryFromTasks() {
     });
   });
 
-  // 🔄 Convert map → libraryData format
-  libraryData = Object.entries(map).map(([model, plans]) => ({
-    model,
-    plans
-  }));
+  // Convert map → libraryData format
+  libraryData =
+    Object.entries(map).map(([model, plans]) => ({
+      model,
+      plans
+    }));
 
   saveLibrary();
+
+  // Rebuild models dropdown
   populateLibraryModels();
-  renderLibraryTable(); 
+
+  // 🔄 Restore previous model selection
+  if (
+    modelSelect &&
+    currentModel &&
+    [...modelSelect.options].some(
+      opt => opt.value === currentModel
+    )
+  ) {
+    modelSelect.value = currentModel;
+  }
+
+  // Re-render same library immediately
+  renderLibraryTable();
 }
 
 function renderLibrarySummary(plans) {

@@ -28,6 +28,7 @@ function buildAssetPreventivePlanReport(assetId) {
       task: r.task,
       section: r.section,
       unit: r.unit,
+      impact: r.impact || "normal",
       frequency_hours: r.frequency_hours,
       duration_min: r.duration_min,
       executionsPerYear: Math.round(executionsPerYear),
@@ -132,7 +133,27 @@ container.innerHTML += `
             ${grouped[freq]
               .map(r => `
                 <tr>
-                  <td>${r.task}</td>
+                  <td>
+                    <div>${r.task}</div>
+
+                    ${
+                      r.impact && r.impact !== "normal"
+                        ? `
+                          <div class="print-impact-wrap">
+                            <span class="print-impact print-impact-${r.impact}">
+                              ${
+                                r.impact === "safety"
+                                  ? "SAFETY"
+                                  : r.impact === "quality"
+                                  ? "QUALITY"
+                                  : "S + Q"
+                              }
+                            </span>
+                          </div>
+                        `
+                        : ""
+                    }
+                  </td>
                   <td>
                     ${r.section || "-"}
                     ${r.unit ? `<br><small>${r.unit}</small>` : ""}
@@ -275,6 +296,42 @@ function printHtmlInIsolatedFrame(html) {
           .freq-group td {
             background: #e9e9e9;
             font-weight: bold;
+          }
+            .print-impact-wrap {
+            margin-top: 4px;
+          }
+
+          .print-impact {
+            display: inline-block;
+            padding: 2px 5px;
+
+            border-radius: 4px;
+
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+
+            border: 1px solid #aaa;
+            background: #f6f6f6;
+            color: #333;
+          }
+
+          .print-impact-safety {
+            border-color: #c62828;
+            color: #a61b1b;
+            background: #fff3f3;
+          }
+
+          .print-impact-quality {
+            border-color: #1976d2;
+            color: #155fa0;
+            background: #f1f7fd;
+          }
+
+          .print-impact-safety_quality {
+            border-color: #7b1fa2;
+            color: #6a1b8a;
+            background: #faf3fc;
           }
         </style>
       </head>
