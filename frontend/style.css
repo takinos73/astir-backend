@@ -5278,11 +5278,16 @@ tr.highlight-execution {
   color: #555;
 }
 .metric.impact {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
 }
 
 .metric.impact strong {
-  display: inline;
+  display: inline !important;
+  margin: 0;
 }
 
 /* META LINE */

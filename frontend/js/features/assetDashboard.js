@@ -823,19 +823,31 @@ function openDailyBrief() {
       );
   }
 
-  // Build current Daily Brief data
+  // =====================
+  // BUILD CURRENT BRIEF DATA
+  // =====================
 
-    buildDailyBriefSafetyQuality();
-    buildDailyBriefCritical();
-    buildDailyBriefUpcoming();
-    buildDailyBriefReliability();
-    buildDailyBriefPulse();
+  buildDailyBriefSafetyQuality();
+  buildDailyBriefCritical();
+  buildDailyBriefUpcoming();
+  buildDailyBriefReliability();
+  buildDailyBriefPulse();
+
+  // =====================
+  // COLLAPSIBLE SECTIONS
+  // =====================
+
+  resetDailyBriefSections();
+  initDailyBriefCollapsibleSections();
+
+  // =====================
+  // SHOW MODAL
+  // =====================
 
   if (overlay) {
     overlay.style.display = "flex";
   }
 }
-
 
 function closeDailyBrief() {
 
@@ -2337,6 +2349,76 @@ function buildDailyBriefSafetyQuality() {
     }
 
   `;
+}
+/* =====================================================
+   DAILY BRIEF – COLLAPSIBLE SECTIONS
+===================================================== */
+
+function initDailyBriefCollapsibleSections() {
+
+  const sections = document.querySelectorAll(
+    "#dailyBriefContent .daily-brief-section"
+  );
+
+  sections.forEach(section => {
+
+    const header = section.querySelector(
+      ".daily-brief-section-header"
+    );
+
+    const body = section.querySelector(
+      ".daily-brief-section-body"
+    );
+
+    const icon = section.querySelector(
+      ".daily-brief-collapse-icon"
+    );
+
+    if (!header || !body) return;
+
+    // Prevent duplicate event listeners
+    if (header.dataset.collapseReady === "true") {
+      return;
+    }
+
+    header.dataset.collapseReady = "true";
+
+    header.addEventListener("click", () => {
+
+      const isCollapsed =
+        section.classList.toggle("collapsed");
+
+      if (icon) {
+        icon.textContent = isCollapsed ? "›" : "⌄";
+      }
+
+    });
+  });
+}
+
+
+/* =====================================================
+   DAILY BRIEF – RESET SECTIONS
+   All sections open when Daily Brief opens
+===================================================== */
+
+function resetDailyBriefSections() {
+
+  document.querySelectorAll(
+    "#dailyBriefContent .daily-brief-section"
+  ).forEach(section => {
+
+    section.classList.remove("collapsed");
+
+    const icon = section.querySelector(
+      ".daily-brief-collapse-icon"
+    );
+
+    if (icon) {
+      icon.textContent = "⌄";
+    }
+
+  });
 }
 
 /* =====================
