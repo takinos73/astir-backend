@@ -5277,6 +5277,13 @@ tr.highlight-execution {
   letter-spacing: 0.6px;
   color: #555;
 }
+.metric.impact {
+  white-space: nowrap;
+}
+
+.metric.impact strong {
+  display: inline;
+}
 
 /* META LINE */
 .print-meta {

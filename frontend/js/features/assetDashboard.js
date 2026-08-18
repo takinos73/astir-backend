@@ -700,21 +700,17 @@ window.renderAssetDashboard = function () {
               ? `
                 <div class="metric impact safety">
                   🛡 Safety:
-                  ${
-                    Number(a.safetyOverdue) > 0
-                      ? `<strong>${a.safetyOverdue} overdue</strong>`
-                      : ""
+                  ${Number(a.safetyOverdue) > 0
+                    ? `<strong>${a.safetyOverdue} overdue</strong>`
+                    : ""
                   }
-                  ${
-                    Number(a.safetyOverdue) > 0 &&
-                    Number(a.safetyDueSoon) > 0
-                      ? ` • `
-                      : ""
+                  ${Number(a.safetyOverdue) > 0 && Number(a.safetyDueSoon) > 0
+                    ? ` • `
+                    : ""
                   }
-                  ${
-                    Number(a.safetyDueSoon) > 0
-                      ? `${a.safetyDueSoon} due soon`
-                      : ""
+                  ${Number(a.safetyDueSoon) > 0
+                    ? `<strong>${a.safetyDueSoon} due soon</strong>`
+                    : ""
                   }
                 </div>
               `
