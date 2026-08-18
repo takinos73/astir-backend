@@ -832,6 +832,7 @@ function openDailyBrief() {
   buildDailyBriefUpcoming();
   buildDailyBriefReliability();
   buildDailyBriefPulse();
+  buildDailyBriefFocus();
 
   // =====================
   // COLLAPSIBLE SECTIONS
@@ -2419,6 +2420,280 @@ function resetDailyBriefSections() {
     }
 
   });
+}
+/* =====================================================
+   DAILY BRIEF
+   TODAY'S FOCUS
+===================================================== */
+
+function buildDailyBriefFocus() {
+
+  const content =
+    document.getElementById("dailyBriefFocusContent");
+
+  const countEl =
+    document.getElementById("dailyBriefFocusCount");
+
+  if (!content || !countEl) return;
+
+
+  // =====================
+  // GET DASHBOARD PRIORITIES
+  // =====================
+
+  const assets =
+    typeof getTopWorstAssetsDashboard === "function"
+      ? getTopWorstAssetsDashboard(20)
+      : [];
+
+
+  if (!Array.isArray(assets) || assets.length === 0) {
+
+    countEl.textContent = "0";
+
+    content.innerHTML = `
+      <span class="daily-brief-good">
+        ✓ No priority maintenance items require attention today.
+      </span>
+    `;
+
+    return;
+  }
+
+
+  // =====================
+  // ENRICH WITH RISK
+  // =====================
+
+  const enriched = assets.map(a => {
+
+    const risk =
+      typeof getAssetRiskLevel === "function"
+        ? getAssetRiskLevel(a)
+        : {
+            level: "watch",
+            label: "WATCH",
+            icon: "🟡"
+          };
+
+    return {
+      ...a,
+      _risk: risk
+    };
+  });
+
+
+  // =====================
+  // PRIORITY SORT
+  // Risk first → Score second
+  // =====================
+
+  const priorityMap = {
+    critical: 1,
+    risk: 2,
+    watch: 3,
+    stable: 4
+  };
+
+
+  enriched.sort((a, b) => {
+
+    const riskDiff =
+      (priorityMap[a._risk.level] ?? 99) -
+      (priorityMap[b._risk.level] ?? 99);
+
+    if (riskDiff !== 0) {
+      return riskDiff;
+    }
+
+    return (
+      Number(b.score || 0) -
+      Number(a.score || 0)
+    );
+  });
+
+
+  // =====================
+  // TOP 3 ONLY
+  // =====================
+
+  const focusItems =
+    enriched.slice(0, 3);
+
+  countEl.textContent =
+    focusItems.length;
+
+
+  // =====================
+  // BUILD FOCUS ITEMS
+  // =====================
+
+  let itemsHtml = "";
+
+
+  focusItems.forEach((a, index) => {
+
+    const reasons = [];
+
+
+    // =====================
+    // SAFETY
+    // =====================
+
+    if (Number(a.safetyOverdue) > 0) {
+
+      reasons.push(
+        `🛡 ${a.safetyOverdue} Safety overdue`
+      );
+
+    } else if (Number(a.safetyDueSoon) > 0) {
+
+      reasons.push(
+        `🛡 ${a.safetyDueSoon} Safety due soon`
+      );
+    }
+
+
+    // =====================
+    // QUALITY
+    // =====================
+
+    if (Number(a.qualityOverdue) > 0) {
+
+      reasons.push(
+        `◆ ${a.qualityOverdue} Quality overdue`
+      );
+
+    } else if (Number(a.qualityDueSoon) > 0) {
+
+      reasons.push(
+        `◆ ${a.qualityDueSoon} Quality due soon`
+      );
+    }
+
+
+    // =====================
+    // GENERAL OVERDUE
+    // =====================
+
+    if (Number(a.overdue) > 0) {
+
+      reasons.push(
+        `🔴 ${a.overdue} overdue`
+      );
+    }
+
+
+    // =====================
+    // DUE SOON
+    // =====================
+
+    if (
+      Number(a.dueSoon) > 0 &&
+      reasons.length < 3
+    ) {
+
+      reasons.push(
+        `🟠 ${a.dueSoon} due soon`
+      );
+    }
+
+
+    // =====================
+    // RECENT BREAKDOWN
+    // =====================
+
+    if (
+      a.lastBreakdownDays != null &&
+      Number(a.lastBreakdownDays) <= 7 &&
+      reasons.length < 3
+    ) {
+
+      reasons.push(
+        `⚡ Breakdown ${a.lastBreakdownDays}d ago`
+      );
+    }
+
+
+    // =====================
+    // FALLBACK
+    // =====================
+
+    if (reasons.length === 0) {
+
+      reasons.push(
+        `Priority score ${a.score || 0}`
+      );
+    }
+
+
+    const reasonsHtml =
+      reasons
+        .slice(0, 3)
+        .map(reason =>
+          `<span class="daily-brief-focus-reason">${reason}</span>`
+        )
+        .join("");
+
+
+    // =====================
+    // ITEM
+    // =====================
+
+    itemsHtml += `
+
+      <div class="daily-brief-focus-item">
+
+        <div class="daily-brief-focus-rank">
+          ${index + 1}
+        </div>
+
+        <div class="daily-brief-focus-main">
+
+          <div class="daily-brief-focus-top">
+
+            <strong>
+              ${a.line} · ${a.machine}
+            </strong>
+
+            <span class="daily-brief-focus-risk ${a._risk.level}">
+              ${a._risk.icon} ${a._risk.label}
+            </span>
+
+          </div>
+
+          <div class="daily-brief-focus-sub">
+            SN ${a.serial || "—"}
+            • Score ${a.score || 0}
+          </div>
+
+          <div class="daily-brief-focus-reasons">
+            ${reasonsHtml}
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+  });
+
+
+  // =====================
+  // FINAL CONTENT
+  // =====================
+
+  content.innerHTML = `
+
+    <div class="daily-brief-main-message">
+      Highest maintenance priorities for today's meeting.
+    </div>
+
+    <div class="daily-brief-focus-list">
+      ${itemsHtml}
+    </div>
+
+  `;
 }
 
 /* =====================

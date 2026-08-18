@@ -3994,12 +3994,68 @@ tr.history-unplanned {
 }
 
 
-/* Body */
-.daily-brief-section-body {
-  color: #9ca6b5;
+/* =========================
+   DAILY BRIEF COLLAPSE FIX
+========================= */
 
-  font-size: 12px;
-  line-height: 1.5;
+.daily-brief-section .daily-brief-section-body {
+  display: block;
+}
+
+.daily-brief-section.collapsed .daily-brief-section-body {
+  display: none !important;
+}
+
+.daily-brief-section.collapsed {
+  padding-bottom: 0;
+}
+
+.daily-brief-section.collapsed .daily-brief-section-header {
+  margin-bottom: 0;
+}
+/* =========================
+   DAILY BRIEF ACTIONS
+========================= */
+
+.daily-brief-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  padding-top: 14px;
+  margin-top: 6px;
+}
+
+#dailyBriefOkBtn {
+  min-width: 120px;
+  height: 38px;
+
+  padding: 0 18px;
+
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  border-radius: 8px;
+
+  background: rgba(59, 130, 246, 0.14);
+  color: #eaf2ff;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+#dailyBriefOkBtn:hover {
+  background: rgba(59, 130, 246, 0.24);
+  border-color: rgba(96, 165, 250, 0.70);
+}
+
+#dailyBriefOkBtn:active {
+  transform: translateY(1px);
 }
 
 
@@ -4311,6 +4367,109 @@ tr.history-unplanned {
 
 .daily-brief-impact-due {
   background: rgba(246, 195, 67, 0.15);
+  color: #f6c343;
+}
+/* =========================
+   DAILY BRIEF - TODAY'S FOCUS
+========================= */
+
+.daily-brief-focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.daily-brief-focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  padding: 9px 10px;
+
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+}
+
+.daily-brief-focus-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.07);
+
+  color: #d7dde6;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.daily-brief-focus-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.daily-brief-focus-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 11px;
+}
+
+.daily-brief-focus-sub {
+  margin-top: 2px;
+
+  color: #7f8a99;
+  font-size: 9px;
+}
+
+.daily-brief-focus-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  margin-top: 6px;
+}
+
+.daily-brief-focus-reason {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 2px 6px;
+
+  border-radius: 5px;
+
+  background: rgba(255,255,255,0.045);
+
+  color: #aeb8c6;
+
+  font-size: 9px;
+}
+
+.daily-brief-focus-risk {
+  white-space: nowrap;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.daily-brief-focus-risk.critical {
+  color: #ef7774;
+}
+
+.daily-brief-focus-risk.risk {
+  color: #f2a65a;
+}
+
+.daily-brief-focus-risk.watch {
   color: #f6c343;
 }
 
