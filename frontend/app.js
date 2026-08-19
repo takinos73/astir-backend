@@ -2983,7 +2983,7 @@ function renderAssetTasksTable(tasks) {
       .localeCompare(b.section || "");
   });
 
-  tasks.forEach(t => {
+  groupedTasks.forEach(t => {
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
 
@@ -3070,23 +3070,8 @@ function renderAssetTasksTable(tasks) {
           }
         </div>
 
-        ${
-          t.impact && t.impact !== "normal"
-            ? `
-              <div class="task-impact-wrap">
-                <span class="task-impact-badge task-impact-${t.impact}">
-                  ${
-                    t.impact === "safety"
-                      ? "SAFETY"
-                      : t.impact === "quality"
-                      ? "QUALITY"
-                      : "S + Q"
-                  }
-                </span>
-              </div>
-            `
-            : ""
-        }
+        ${renderImpactBadge(t.impact)}
+
       </td>
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
