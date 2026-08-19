@@ -525,3 +525,133 @@ function suggestTaskTypeFromText(text) {
 
   return "";
 }
+/* =====================================================
+   IMPACT CLASSIFICATION HELPERS
+   -----------------------------------------------------
+   Shared helpers for maintenance task impact logic.
+
+   Supported values:
+   - normal
+   - safety
+   - quality
+   - safety_quality
+
+   These helpers are intentionally UI-agnostic so they
+   can be reused by:
+   - Tasks
+   - History
+   - Preventive Library
+   - Dashboard
+   - Daily Brief
+===================================================== */
+
+
+/* =====================
+   NORMALIZE IMPACT
+===================== */
+
+function normalizeImpact(value) {
+  const impact =
+    String(value || "normal")
+      .trim()
+      .toLowerCase();
+
+  const validImpacts = [
+    "normal",
+    "safety",
+    "quality",
+    "safety_quality"
+  ];
+
+  return validImpacts.includes(impact)
+    ? impact
+    : "normal";
+}
+
+
+/* =====================
+   SAFETY IMPACT CHECK
+===================== */
+
+function hasSafetyImpact(item) {
+  const impact =
+    normalizeImpact(item?.impact);
+
+  return (
+    impact === "safety" ||
+    impact === "safety_quality"
+  );
+}
+
+
+/* =====================
+   QUALITY IMPACT CHECK
+===================== */
+
+function hasQualityImpact(item) {
+  const impact =
+    normalizeImpact(item?.impact);
+
+  return (
+    impact === "quality" ||
+    impact === "safety_quality"
+  );
+}
+
+
+/* =====================
+   IMPACT LABEL
+===================== */
+
+function getImpactLabel(value) {
+  const impact =
+    normalizeImpact(value);
+
+  if (impact === "safety") {
+    return "SAFETY";
+  }
+
+  if (impact === "quality") {
+    return "QUALITY";
+  }
+
+  if (impact === "safety_quality") {
+    return "S + Q";
+  }
+
+  return "";
+}
+
+
+/* =====================
+   IMPACT BADGE CLASS
+===================== */
+
+function getImpactBadgeClass(value) {
+  const impact =
+    normalizeImpact(value);
+
+  if (impact === "safety") {
+    return "task-impact-safety";
+  }
+
+  if (impact === "quality") {
+    return "task-impact-quality";
+  }
+
+  if (impact === "safety_quality") {
+    return "task-impact-safety_quality";
+  }
+
+  return "";
+}
+
+
+/* =====================
+   HAS SPECIAL IMPACT
+   Normal = false
+===================== */
+
+function hasSpecialImpact(item) {
+  return normalizeImpact(item?.impact) !== "normal";
+}

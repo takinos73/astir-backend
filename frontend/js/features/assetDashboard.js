@@ -151,21 +151,12 @@ function getTopWorstAssetsDashboard(limit = 9) {
 
 
     /* =====================
-       IMPACT CLASSIFICATION
+      IMPACT CLASSIFICATION
+      Shared helpers → utils.js
     ===================== */
 
-    const impact =
-      String(t.impact || "normal")
-        .toLowerCase();
-
-    const hasSafety =
-      impact === "safety" ||
-      impact === "safety_quality";
-
-    const hasQuality =
-      impact === "quality" ||
-      impact === "safety_quality";
-
+    const hasSafety = hasSafetyImpact(t);
+    const hasQuality = hasQualityImpact(t);
 
     /* =====================
        OVERDUE
