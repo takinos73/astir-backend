@@ -707,3 +707,75 @@ async function completeBulkTasks({
 
   return true;
 }
+// =====================
+// ACTIVATE ASSET TAB (STABLE VERSION)
+// =====================
+
+function activateAssetTab(tabName) {
+  if (!tabName) return;
+
+  // --- UI state ---
+  document.querySelectorAll(".asset-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.tab === tabName);
+  });
+
+  document.querySelectorAll(".asset-tab-panel").forEach(panel => {
+    panel.style.display =
+      panel.dataset.panel === tabName ? "block" : "none";
+  });
+
+  // =====================
+  // ACTION BUTTON VISIBILITY
+  // =====================
+  const printBtn = document.getElementById("printAssetPreventiveBtn");
+
+  if (printBtn) {
+    printBtn.style.display = tabName === "active" ? "inline-flex" : "none";
+  }
+
+  // --- DATA render (SAFE) ---
+  if (tabName === "active") {
+    renderAssetTasksTable(
+      Array.isArray(state.assetActiveTasks) ? state.assetActiveTasks : []
+    );
+  }
+
+if (tabName === "history") {
+
+  // reset filters when entering history tab
+  state.assetHistoryTaskFilter = null;
+  state.assetHistoryTypeFilter = "all";
+  state.historyDateFrom = null;
+  state.historyDateTo = null;
+
+  bindHistoryRangeFilters();
+
+  renderAssetHistoryTable(
+    Array.isArray(state.assetHistoryTasks)
+      ? state.assetHistoryTasks
+      : []
+  );
+
+  highlightActiveHistoryLegend();
+
+}
+}
+
+// =====================
+// TAB CLICK HANDLER (SCOPED)
+// =====================
+function bindAssetTabs() {
+  const container = document.getElementById("assetViewOverlay");
+  if (!container) return;
+
+  container.addEventListener("click", e => {
+    const tab = e.target.closest(".asset-tab");
+    if (!tab) return;
+
+    const tabName = tab.dataset.tab;
+    if (!tabName) return;
+
+    activateAssetTab(tabName);
+  });
+}
+
