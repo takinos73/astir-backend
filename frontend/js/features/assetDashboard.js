@@ -599,7 +599,6 @@ function getTopWorstAssetsDashboard(
     0
   );
 
-
   // 1. Aggregate active tasks
 
   const assetsMap =
@@ -612,7 +611,6 @@ function getTopWorstAssetsDashboard(
     assetsMap
   );
 
-
   // 3. Calculate metrics + score
 
   const scoredAssets =
@@ -624,21 +622,28 @@ function getTopWorstAssetsDashboard(
         )
       );
 
+  // 4. Sort by risk + score          
 
-  // 4. Select highest numeric scores
+    return scoredAssets
+      .filter(asset =>
+        asset.score > 0
+      )
+      .sort((a, b) => {
 
-  return scoredAssets
-    .filter(asset =>
-      asset.score > 0
-    )
-    .sort(
-      (a, b) =>
-        b.score - a.score
-    )
-    .slice(
-      0,
-      limit
-    );
+        // 1️⃣ Risk level priority
+        const riskCompare =
+          (RISK_PRIORITY[a.riskLevel] ?? 99) -
+          (RISK_PRIORITY[b.riskLevel] ?? 99);
+
+        if (riskCompare !== 0) {
+          return riskCompare;
+        }
+
+        // 2️⃣ Within same risk level:
+        // highest score first
+        return b.score - a.score;
+      })
+      .slice(0, limit);
 }
 
 // =====================
