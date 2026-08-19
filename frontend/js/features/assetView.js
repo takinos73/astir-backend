@@ -764,18 +764,131 @@ if (tabName === "history") {
 // =====================
 // TAB CLICK HANDLER (SCOPED)
 // =====================
+// =====================
+// TAB CLICK HANDLER
+// Bind only once
+// =====================
 function bindAssetTabs() {
-  const container = document.getElementById("assetViewOverlay");
+
+  const container =
+    document.getElementById("assetViewOverlay");
+
   if (!container) return;
 
+  // Prevent duplicate event listeners
+  if (container.dataset.tabsBound === "true") {
+    return;
+  }
+
   container.addEventListener("click", e => {
-    const tab = e.target.closest(".asset-tab");
+
+    const tab =
+      e.target.closest(".asset-tab");
+
     if (!tab) return;
 
-    const tabName = tab.dataset.tab;
+    const tabName =
+      tab.dataset.tab;
+
     if (!tabName) return;
 
     activateAssetTab(tabName);
   });
+
+  container.dataset.tabsBound = "true";
+}
+// =====================
+// HEADER
+// =====================
+function renderAssetViewHeader(src) {
+  document.getElementById("assetViewTitle").innerHTML = `
+    ${src.machine_name}
+    <small class="asset-sn">SN: ${src.serial_number}</small>
+  `;
+
+  document.getElementById("assetViewLine").textContent =
+    src.line_code || "-";
+
+  document.getElementById("assetViewStatus").textContent = "Active";
+}
+
+// =====================
+// KPI COUNTS
+// =====================
+
+function renderAssetKpis(tasks, history) {
+  if (!Array.isArray(tasks)) tasks = [];
+  if (!Array.isArray(history)) history = [];
+
+  // μόνο ενεργά (όχι Done)
+  const activeTasks = tasks.filter(t => t.status !== "Done");
+
+  const preventiveCount = activeTasks.filter(t => isPreventive(t)).length;
+
+  const plannedManualCount = activeTasks.filter(t =>
+    isPlannedManual(t)
+  ).length;
+
+  const overdueCount = activeTasks.filter(
+    t => getDueState(t) === "overdue"
+  ).length;
+
+  const historyCount = history.length;
+
+  // 🟨 Planned KPI → colored breakdown
+  const plannedLabel = `
+  <div class="asset-kpi-line">
+    <span class="asset-status preventive">${preventiveCount} prev</span>
+    <span class="sep">,</span>
+    <span class="asset-status planned">${plannedManualCount} planned (manual)</span>
+  </div>
+`;
+
+  document.getElementById("assetPlannedCount").innerHTML = plannedLabel;
+  document.getElementById("assetOverdueCount").textContent = overdueCount;
+  document.getElementById("assetHistoryCount").textContent = historyCount;
+}
+// =====================
+// RENDER ASSET MTTR KPI
+// =====================
+
+function renderAssetMttrKpis(serial) {
+  const mttrEl = document.getElementById("assetMttrValue");
+  if (!mttrEl) return;
+
+  const mttr = getAssetMttrBySerial(serial);
+  const last = getLastBreakdownInfo(serial);
+
+  let mttrLabel = "—";
+  let breakdownLabel = "";
+  let lastLabel = "";
+
+  // MTTR value
+  if (
+    mttr &&
+    Number.isFinite(Number(mttr.mttrMinutes)) &&
+    mttr.mttrMinutes > 0
+  ) {
+    mttrLabel = `${Math.round(mttr.mttrMinutes)}m`;
+
+    if (Number.isFinite(Number(mttr.breakdownCount)) && mttr.breakdownCount > 0) {
+      breakdownLabel = ` • ${mttr.breakdownCount} breakdowns`;
+    }
+  }
+
+  // Last breakdown info
+  if (last && last.executed_at && typeof formatRelativeDate === "function") {
+    lastLabel = `
+      <div class="kpi-sub">
+        Last breakdown: ${formatRelativeDate(last.executed_at)}
+      </div>
+    `;
+  }
+
+  mttrEl.innerHTML = `
+    ${mttrLabel}
+    ${breakdownLabel}
+    ${lastLabel}
+  `;
 }
 
