@@ -1,3 +1,115 @@
+
+async function openAssetViewBySerial(serial) {
+  try {
+    console.group("ASSET VIEW DEBUG");
+
+    // reset state
+    state.assetAllTasks = [];
+    state.assetActiveTasks = [];
+    state.assetHistoryTasks = [];
+    state.currentAssetSerial = serial;
+    state.assetHistoryTypeFilter = "all";   // 🔥 IMPORTANT
+
+    if (!serial) {
+      alert("Missing serial number");
+      console.groupEnd();
+      return;
+    }
+
+    serial = String(serial).trim();
+
+    const overlay = document.getElementById("assetViewOverlay");
+    if (!overlay) {
+      alert("Asset modal not found");
+      console.groupEnd();
+      return;
+    }
+
+    if (!Array.isArray(state.tasksData)) {
+      alert("tasksData not ready");
+      console.groupEnd();
+      return;
+    }
+
+    // =====================
+    // BUILD DATASETS FROM STATE
+    // =====================
+    state.assetAllTasks = state.tasksData.filter(
+      t => String(t.serial_number || "").trim() === serial
+    );
+
+    state.assetActiveTasks = state.assetAllTasks.filter(
+      t => t.status === "Planned" || t.status === "Overdue"
+    );
+
+    state.assetHistoryTasks = (Array.isArray(state.executionsData)
+      ? state.executionsData
+      : []
+    ).filter(
+      e => String(e.serial_number || "").trim() === serial
+    );
+
+    // 🔢 History legend counts
+    updateAssetHistoryLegendCounts(state.assetHistoryTasks);
+
+    if (
+      state.assetAllTasks.length === 0 &&
+      state.assetHistoryTasks.length === 0
+    ) {
+      alert("No records found for this asset");
+      console.groupEnd();
+      return;
+    }
+
+    // =====================
+    // HEADER + KPIs
+    // =====================
+    const ref =
+      state.assetAllTasks[0] || state.assetHistoryTasks[0];
+
+    renderAssetViewHeader({
+      machine_name: ref.machine_name || ref.machine || "-",
+      serial_number: serial,
+      line_code: ref.line_code || ref.line || "-"
+    });
+
+    renderAssetKpis(
+      state.assetAllTasks,
+      state.assetHistoryTasks
+    );
+
+    renderAssetMttrKpis(state.currentAssetSerial);
+
+    // 🖨 PRINT PREVENTIVE PLAN BUTTON
+    const printBtn = document.getElementById("printAssetPreventiveBtn");
+    if (printBtn) {
+      const hasPreventive = state.assetAllTasks.some(
+        t =>
+          t.is_planned === true &&
+          Number(t.frequency_hours) > 0 &&
+          t.deleted_at == null
+      );
+
+      printBtn.style.display = hasPreventive ? "inline-flex" : "none";
+    }
+
+    bindAssetTabs();
+
+    overlay.style.display = "flex";
+    overlay.style.pointerEvents = "auto";
+
+    activateAssetTab("active");
+
+    renderAssetMtbf(state.currentAssetSerial);
+
+    console.log("✅ Asset view opened");
+    console.groupEnd();
+
+  } catch (err) {
+    console.error("💥 openAssetViewBySerial crashed:", err);
+    alert("Asset view error (see console).");
+  }
+}
 // =====================
 // ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
 // =====================
