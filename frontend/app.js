@@ -576,23 +576,7 @@ function buildRow(task) {
         ${highlight(task.task || "", q)}
       </div>
 
-      ${
-        task.impact && task.impact !== "normal"
-          ? `
-            <div class="task-impact-wrap">
-              <span class="task-impact-badge task-impact-${task.impact}">
-                ${
-                  task.impact === "safety"
-                    ? "SAFETY"
-                    : task.impact === "quality"
-                    ? "QUALITY"
-                    : "S + Q"
-                }
-              </span>
-            </div>
-          `
-          : ""
-      }
+      ${renderImpactBadge(task.impact)}
     </td>
 
     <!-- TYPE -->
@@ -1628,21 +1612,7 @@ function viewTask(taskId) {
       ${task.status}
     </span>
 
-    ${
-      task.impact && task.impact !== "normal"
-        ? `
-          <span class="badge badge-impact badge-impact-${task.impact}">
-            ${
-              task.impact === "safety"
-                ? "SAFETY"
-                : task.impact === "quality"
-                ? "QUALITY"
-                : "S + Q"
-            }
-          </span>
-        `
-        : ""
-    }
+    ${renderImpactBadge(task.impact)}
 
     ${
       task.due_date
@@ -1672,13 +1642,7 @@ function viewTask(taskId) {
   <div>
     <label>Maintenance Type</label>
     <div>
-      ${
-        isPreventive(task)
-          ? "Preventive (Scheduled)"
-          : isPlannedManual(task)
-          ? "Planned (Manual)"
-          : "Unplanned / Breakdown"
-      }
+      ${getMaintenanceTypeLabel(task)}
     </div>
   </div>
 

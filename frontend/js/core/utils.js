@@ -692,3 +692,56 @@ function formatDurationMinutes(minutes) {
 
   return `${mins}m`;
 }
+/* =====================================================
+   MAINTENANCE TYPE LABEL
+   -----------------------------------------------------
+   Returns a consistent human-readable classification
+   for task / work order type across the CMMS.
+===================================================== */
+
+function getMaintenanceTypeLabel(task) {
+
+  if (isPreventive(task)) {
+    return "Preventive (Scheduled)";
+  }
+
+  if (isPlannedManual(task)) {
+    return "Planned (Manual)";
+  }
+
+  return "Unplanned / Breakdown";
+}
+
+
+/* =====================================================
+   IMPACT BADGE RENDERER
+   -----------------------------------------------------
+   Returns reusable HTML for Safety / Quality impact.
+
+   Normal impact intentionally returns no badge.
+
+   Uses:
+   - normalizeImpact()
+   - getImpactLabel()
+   - getImpactBadgeClass()
+===================================================== */
+
+function renderImpactBadge(impact) {
+
+  const normalized =
+    normalizeImpact(impact);
+
+  if (normalized === "normal") {
+    return "";
+  }
+
+  return `
+    <div class="task-impact-wrap">
+      <span
+        class="task-impact-badge ${getImpactBadgeClass(normalized)}"
+      >
+        ${getImpactLabel(normalized)}
+      </span>
+    </div>
+  `;
+}
