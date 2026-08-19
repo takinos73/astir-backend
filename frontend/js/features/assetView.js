@@ -152,3 +152,157 @@ function renderAssetTasksTable(tasks) {
   tasksWrap.offsetHeight;
   tbody.offsetHeight;
 }
+// =====================
+// ASSET HISTORY TABLE (EXECUTIONS)
+// =====================
+function renderAssetHistoryTable(history) {
+  renderAssetHistoryActiveFilter();
+  const tasksWrap = document.querySelector(".asset-tasks-table");
+  const historyWrap = document.querySelector(".asset-history-table");
+  const tbody = document.querySelector("#assetHistoryTable tbody");
+
+  if (!historyWrap || !tbody) return;
+
+  // toggle views
+  if (tasksWrap) tasksWrap.style.display = "none";
+  historyWrap.style.display = "block";
+
+  tbody.innerHTML = "";
+
+  const list = Array.isArray(history) ? history : [];
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">No history records</td>
+      </tr>
+    `;
+    return;
+  }
+
+  /* =====================
+     APPLY FILTERS
+  ===================== */
+  const filtered = getFilteredAssetHistory(list);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">No matching history records</td>
+      </tr>
+    `;
+    return;
+  }
+  const sortedHistory = [...filtered].sort((a, b) => {
+
+  const dateCompare =
+    new Date(b.executed_at || "1900-01-01") -
+    new Date(a.executed_at || "1900-01-01");
+
+  if (dateCompare !== 0) {
+    return dateCompare;
+  }
+
+  return (a.section || "")
+    .localeCompare(b.section || "");
+});
+
+  /* =====================
+     RENDER ROWS
+  ===================== */
+  sortedHistory.forEach(e => {
+
+    const tr = document.createElement("tr");
+    tr.classList.add("clickable");
+
+    const execType = getExecutionType(e);
+
+    if (execType === "unplanned") tr.classList.add("history-unplanned");
+    else if (execType === "preventive") tr.classList.add("history-preventive");
+    else tr.classList.add("history-planned");
+
+    tr.innerHTML = `
+      <td>${formatDate(e.executed_at)}</td>
+
+      <td class="task-filter">
+        <div>
+          ${e.task}
+        </div>
+
+        ${
+          (e.section || e.unit)
+            ? `
+              <small>
+                ${e.section || ""}
+                ${e.section && e.unit ? " / " : ""}
+                ${e.unit || ""}
+              </small>
+            `
+            : ""
+        }
+
+        ${renderImpactBadge(e.impact)}
+      </td>
+
+      <td>${e.type || "-"}</td>
+      <td>${e.executed_by || "-"}</td>
+      <td>${e.notes || "-"}</td>
+
+      <td>
+        <button class="btn-secondary btn-sm">View</button>
+      </td>
+    `;
+
+    /* =====================
+       TASK CLICK → FILTER
+    ===================== */
+    const taskCell = tr.querySelector(".task-filter");
+
+    taskCell.onclick = ev => {
+      ev.stopPropagation();
+
+      // toggle task filter
+      if (state.assetHistoryTaskFilter === e.task) {
+        state.assetHistoryTaskFilter = null;
+      } else {
+        state.assetHistoryTaskFilter = `${e.task}||${e.section || ""}||${e.unit || ""}`;
+      }
+
+      // 🔹 clear legend filter
+      state.assetHistoryTypeFilter = "all";
+      highlightActiveHistoryLegend();
+
+      renderAssetHistoryTable(state.assetHistoryTasks);
+    };
+
+    /* =====================
+       VIEW BUTTON
+    ===================== */
+    tr.querySelector("button").onclick = ev => {
+      ev.stopPropagation();
+      viewHistoryEntry(e.id);
+    };
+
+    tbody.appendChild(tr);
+  });
+}
+// =====================
+// CLOSE
+// =====================
+function closeAssetView() {
+  const overlay = document.getElementById("assetViewOverlay");
+  if (overlay) overlay.style.display = "none";
+
+  // ✅ reset state (asset view scope)
+  state.assetAllTasks = [];
+  state.assetActiveTasks = [];
+  state.assetHistoryTasks = [];
+  state.currentAssetSerial = null;
+
+  // ✅ reset selection / filter (safe)
+  state.assetSelectedTaskIds?.clear?.();
+  state.assetHistoryTypeFilter = "all";
+
+  const tbody = document.querySelector("#assetTasksTable tbody");
+  if (tbody) tbody.innerHTML = "";
+}
