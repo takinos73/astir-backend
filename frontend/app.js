@@ -2644,48 +2644,6 @@ function renderAssetMtbf(serial) {
       : `Last breakdown: ${formatDate(lastDate)}`;
 }
 
-
-// =====================
-// KPI → TABLE FILTER
-// =====================
-function bindAssetKpiFilters() {
-  document
-    .querySelectorAll(".asset-kpis .kpi-card.clickable")
-    .forEach(card => {
-      card.onclick = () => {
-        const filter = card.dataset.filter;
-
-        const tasksWrap =
-          document.querySelector(".asset-tasks-table");
-        const historyWrap =
-          document.querySelector(".asset-history-table");
-
-        if (filter === "history") {
-          // 🔄 Show history
-          tasksWrap.style.display = "none";
-          historyWrap.style.display = "block";
-          renderAssetHistoryTable(assetScopedHistory);
-          return;
-        }
-
-        // 🔄 Show active tasks
-        historyWrap.style.display = "none";
-        tasksWrap.style.display = "block";
-
-        if (filter === "planned") {
-          renderAssetTasksTable(
-            state.assetScopedTasks.filter(t => t.status === "Planned")
-          );
-        } else if (filter === "overdue") {
-          renderAssetTasksTable(
-            state.assetScopedTasks.filter(t => t.status === "Overdue")
-          );
-        } else {
-          renderAssetTasksTable(state.assetScopedTasks);
-        }
-      };
-    });
-}
 document
   .getElementById("printAssetHistoryBtn")
   ?.addEventListener("click", printAssetHistory);
