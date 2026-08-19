@@ -1197,20 +1197,10 @@ function buildDailyBriefSafetyQuality() {
   const alertTasks = tasks
     .filter(t => {
 
-      const impact =
-        String(t.impact || "normal")
-          .toLowerCase();
-
       // Safety / Quality classification only
-      if (
-        ![
-          "safety",
-          "quality",
-          "safety_quality"
-        ].includes(impact)
-      ) {
-        return false;
-      }
+      if (!hasSpecialImpact(t)) {
+       return false;
+    }
 
 
       // Must have due date
@@ -1334,36 +1324,15 @@ function buildDailyBriefSafetyQuality() {
       t.dueState === "due_soon"
     ).length;
 
-
   const safetyCount =
-    alertTasks.filter(t => {
+    alertTasks.filter(t =>
+        hasSafetyImpact(t)
+    ).length;
 
-      const impact =
-        String(t.impact || "")
-          .toLowerCase();
-
-      return (
-        impact === "safety" ||
-        impact === "safety_quality"
-      );
-
-    }).length;
-
-
-  const qualityCount =
-    alertTasks.filter(t => {
-
-      const impact =
-        String(t.impact || "")
-          .toLowerCase();
-
-      return (
-        impact === "quality" ||
-        impact === "safety_quality"
-      );
-
-    }).length;
-
+    const qualityCount =
+    alertTasks.filter(t =>
+        hasQualityImpact(t)
+    ).length;
 
   // =====================
   // TOP 3 ITEMS
@@ -1377,41 +1346,23 @@ function buildDailyBriefSafetyQuality() {
 
   topItems.forEach(t => {
 
-    const impact =
-      String(t.impact || "normal")
-        .toLowerCase();
+    const impact = normalizeImpact(t.impact);
 
-
-    // =====================
-    // IMPACT BADGE
-    // =====================
+    const badgeLabel =
+    getImpactLabel(impact);
 
     let badgeClass =
-      "daily-brief-impact-quality";
-
-    let badgeLabel =
-      "QUALITY";
-
+    "daily-brief-impact-quality";
 
     if (impact === "safety") {
-
-      badgeClass =
+    badgeClass =
         "daily-brief-impact-safety";
-
-      badgeLabel =
-        "SAFETY";
     }
-
 
     if (impact === "safety_quality") {
-
-      badgeClass =
+    badgeClass =
         "daily-brief-impact-both";
-
-      badgeLabel =
-        "S + Q";
     }
-
 
     // =====================
     // TIMING BADGE
