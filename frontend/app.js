@@ -2204,66 +2204,6 @@ function getAssetHistoryType(e) {
   return "planned";
 }
 
-
-/* =====================
-    ASSET HISTORY LEGEND COUNTERS (SAFE)
-===================== */
-
-function updateAssetHistoryLegendCounts(history) {
-  const allEl = document.getElementById("histAllCount");
-  const bEl = document.getElementById("assetHistoryCountBreakdown");
-  const pEl = document.getElementById("assetHistoryCountPreventive");
-  const mEl = document.getElementById("assetHistoryCountPlanned");
-
-  if (!allEl || !bEl || !pEl || !mEl) return;
-
-  const list = Array.isArray(history) ? history : [];
-
-  let unplanned = 0;
-  let preventive = 0;
-  let planned = 0;
-
-  list.forEach(e => {
-    const t = getExecutionType(e);
-    if (t === "unplanned") unplanned++;
-    else if (t === "preventive") preventive++;
-    else if (t === "planned") planned++;
-  });
-
-  allEl.textContent = list.length;
-  bEl.textContent = unplanned;     // 🔴 Breakdowns = unplanned
-  pEl.textContent = preventive;    // 🟢 Preventive
-  mEl.textContent = planned;       // 🟡 Planned (manual)
-}
-
-/* =====================
-   ASSET HISTORY LEGEND FILTER (SCOPED)
-===================== */
-
-function bindAssetHistoryLegendClicks() {
-  document
-    .querySelectorAll(".asset-history-legend .legend-item")
-    .forEach(item => {
-      item.addEventListener("click", () => {
-
-        const type = item.dataset.type;
-
-        console.log("🟡 HISTORY LEGEND CLICK:", type);
-
-        // set type filter
-        state.assetHistoryTypeFilter = type || "all";
-
-        // 🔹 clear task filter to avoid conflicts
-        state.assetHistoryTaskFilter = null;
-
-        highlightActiveHistoryLegend();
-
-        renderAssetHistoryTable(state.assetHistoryTasks);
-
-      });
-    });
-}
-
 // =====================
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
@@ -2579,44 +2519,6 @@ document.getElementById("taskPlannedType")
   ?.addEventListener("change", e => {
     applyAddTaskTypeUI(e.target.value === "planned");
   });
-
-// =====================
-// REFRESH ASSET VIEW DATA (FROM STATE)
-// =====================
-async function refreshAssetView() {
-  if (!state.currentAssetSerial) return;
-
-  // 🔄 1️⃣ reload GLOBAL data (θα γεμίσουν state.tasksData / state.executionsData)
-  await loadTasks();
-  await loadHistory();
-
-  const serial = String(state.currentAssetSerial).trim();
-
-  // 🔄 2️⃣ rebuild asset view data
-  state.assetAllTasks = state.tasksData.filter(
-    t => String(t.serial_number || "").trim() === serial
-  );
-
-  state.assetActiveTasks = state.assetAllTasks.filter(
-    t => t.status === "Planned" || t.status === "Overdue"
-  );
-
-  state.assetHistoryTasks = state.executionsData.filter(
-    e => String(e.serial_number || "").trim() === serial
-  );
-
-  // reset history legend filter to "all" on refresh
-  state.assetHistoryTypeFilter = "all"; // ⚠ αν υπάρχει στο state, αλλιώς πρόσθεσέ το
-  updateAssetHistoryLegendCounts(state.assetHistoryTasks);
-  bindAssetHistoryLegendClicks();
-  highlightActiveHistoryLegend();
-
-  // 🔄 3️⃣ re-render active tab
-  const activeTab =
-    document.querySelector(".asset-tab.active")?.dataset.tab || "active";
-
-  activateAssetTab(activeTab);
-}
 
 // =====================
 // RENDER ASSET MTBF + LAST BREAKDOWN
