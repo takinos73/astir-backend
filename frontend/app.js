@@ -3849,156 +3849,419 @@ getEl("cancelDone")?.addEventListener("click", () => {
   state.pendingTaskId = null;
 });
 
+/* =====================================================
+   TASK COMPLETION
+   SINGLE + BULK
+   -----------------------------------------------------
+   Shared completion flow.
+
+   Bulk-specific execution is isolated from the
+   single-task execution, while the final modal cleanup
+   and refresh remain common.
+===================================================== */
+
+
 /* =====================
-   CONFIRM TASK DONE (SINGLE + BULK)
+   COMPLETE BULK TASKS
 ===================== */
-getEl("confirmDone")?.addEventListener("click", async () => {
 
-  // 🔑 NEW: technician dropdown
-  const technicianSelect = getEl("technicianSelect");
-  const technicianId = technicianSelect?.value;
+async function completeBulkTasks({
+  technicianId,
+  technicianName,
+  completedAt,
+  notes
+}) {
 
-  if (!technicianId) {
-    return alert("Επέλεξε τεχνικό");
+  /* =====================
+     COMMON NOTE WARNING
+  ===================== */
+
+  if (
+    state.assetSelectedTaskIds.size > 1 &&
+    notes
+  ) {
+
+    const ok = confirm(
+      `You entered a common note while completing ${state.assetSelectedTaskIds.size} tasks.\n\n` +
+      `This note will be applied to ALL selected tasks.\n\n` +
+      `If any selected task already has notes, they will be replaced.\n\n` +
+      `Continue?`
+    );
+
+    // User cancelled → keep modal open
+    if (!ok) {
+      return false;
+    }
   }
 
-  // 👇 Keep name for backward compatibility
-  const technicianName =
-    technicianSelect.options[technicianSelect.selectedIndex]?.textContent || null;
 
-  const notes =
-    getEl("doneNotesInput")?.value.trim() || null;
+  /* =====================
+     API REQUEST
+  ===================== */
 
-  const dateValue = getEl("completedDateInput")?.value;
-  const completedAt = dateValue
-    ? new Date(dateValue + "T12:00:00").toISOString()
-    : new Date().toISOString();
+  const res = await fetch(
+    `${API}/tasks/bulk-done`,
+    {
+      method: "POST",
 
-  try {
+      headers: {
+        "Content-Type": "application/json"
+      },
 
-    // =====================
-    // 🟢 BULK DONE PATH
-    // =====================
-    if (state.bulkDoneMode === true) {
-      if (
-        state.assetSelectedTaskIds.size > 1 &&
+      body: JSON.stringify({
+        taskIds: [
+          ...state.assetSelectedTaskIds
+        ],
+
+        technician_id:
+          Number(technicianId),
+
+        // Keep legacy field
+        completed_by:
+          technicianName,
+
+        completed_at:
+          completedAt,
+
         notes
-      ) {
-        const ok = confirm(
-        `You entered a common note while completing ${state.assetSelectedTaskIds.size} tasks.\n\n` +
-        `This note will be applied to ALL selected tasks.\n\n` +
-        `If any selected task already has notes, they will be replaced.\n\n` +
-        `Continue?`
-      );
-
-        if (!ok) return;
-      }
-      const res = await fetch(`${API}/tasks/bulk-done`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskIds: [...state.assetSelectedTaskIds],
-          technician_id: Number(technicianId),   // ✅ NEW
-          completed_by: technicianName,          // ✅ keep legacy
-          completed_at: completedAt,
-          notes
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Bulk complete failed");
-      }
-
-      const completedCount = state.assetSelectedTaskIds.size;
-
-      // =====================
-      // 🧹 RESET BULK STATE + UI
-      // =====================
-      state.bulkDoneMode = false;
-      state.assetSelectedTaskIds.clear();
-
-      document
-        .querySelectorAll(".asset-task-checkbox")
-        .forEach(cb => (cb.checked = false));
-
-      const bar = getEl("assetBulkActionsBar");
-      if (bar) bar.style.display = "none";
-
-      // 🔄 REFRESH GLOBAL DATA
-      await loadTasks();
-      await loadHistory();
-
-      if (typeof renderAssetsCards === "function") {
-        renderAssetsCards();
-      }
-
-      if (state.currentAssetSerial) {
-        await openAssetViewBySerial(state.currentAssetSerial);
-        activateAssetTab("active");
-      }
-
-      alert(`✔ ${completedCount} εργασίες ολοκληρώθηκαν`);
+      })
     }
+  );
 
-    // =====================
-    // 🔵 SINGLE DONE PATH
-    // =====================
-    else {
 
-      const res = await fetch(`${API}/tasks/${state.pendingTaskId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          technician_id: Number(technicianId),   // ✅ NEW
-          completed_by: technicianName,          // ✅ keep legacy
-          completed_at: completedAt,
-          notes
-        })
-      });
+  if (!res.ok) {
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to complete task");
-      }
+    const err =
+      await res.json();
 
-      state.pendingTaskId = null;
-    }
-
-    // =====================
-    // 🧹 COMMON CLEANUP
-    // =====================
-    getEl("modalOverlay").style.display = "none";
-
-    if (technicianSelect) {
-      technicianSelect.value = "";
-    }
-
-    if (getEl("completedDateInput")) {
-      getEl("completedDateInput").value = "";
-    }
-
-    if (getEl("doneNotesInput")) {
-      getEl("doneNotesInput").value = "";
-    }
-
-    // 🔄 COMMON REFRESH
-    loadTasks();
-    loadHistory();
-
-    if (typeof renderAssetsCards === "function") {
-      renderAssetsCards();
-    }
-
-    if (typeof refreshAssetView === "function") {
-      refreshAssetView();
-    }
-
-  } catch (err) {
-    alert(err.message);
-    console.error("CONFIRM DONE ERROR:", err);
+    throw new Error(
+      err.error ||
+      "Bulk complete failed"
+    );
   }
-});
+
+
+  const completedCount =
+    state.assetSelectedTaskIds.size;
+
+
+  /* =====================
+     RESET BULK STATE + UI
+  ===================== */
+
+  state.bulkDoneMode = false;
+
+  state.assetSelectedTaskIds.clear();
+
+
+  document
+    .querySelectorAll(
+      ".asset-task-checkbox"
+    )
+    .forEach(cb => {
+      cb.checked = false;
+    });
+
+
+  const bar =
+    getEl("assetBulkActionsBar");
+
+  if (bar) {
+    bar.style.display = "none";
+  }
+
+
+  /* =====================
+     REFRESH GLOBAL DATA
+     Preserved from existing flow
+  ===================== */
+
+  await loadTasks();
+  await loadHistory();
+
+
+  if (
+    typeof renderAssetsCards === "function"
+  ) {
+    renderAssetsCards();
+  }
+
+
+  if (state.currentAssetSerial) {
+
+    await openAssetViewBySerial(
+      state.currentAssetSerial
+    );
+
+    activateAssetTab("active");
+  }
+
+
+  alert(
+    `✔ ${completedCount} εργασίες ολοκληρώθηκαν`
+  );
+
+
+  return true;
+}
+
+
+/* =====================
+   COMPLETE SINGLE TASK
+===================== */
+
+async function completeSingleTask({
+  technicianId,
+  technicianName,
+  completedAt,
+  notes
+}) {
+
+  const res = await fetch(
+    `${API}/tasks/${state.pendingTaskId}`,
+    {
+      method: "PATCH",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        technician_id:
+          Number(technicianId),
+
+        // Keep legacy field
+        completed_by:
+          technicianName,
+
+        completed_at:
+          completedAt,
+
+        notes
+      })
+    }
+  );
+
+
+  if (!res.ok) {
+
+    const err =
+      await res.json();
+
+    throw new Error(
+      err.error ||
+      "Failed to complete task"
+    );
+  }
+
+
+  state.pendingTaskId = null;
+
+  return true;
+}
+
+
+/* =====================
+   RESET DONE MODAL
+===================== */
+
+function resetDoneModal(
+  technicianSelect
+) {
+
+  const overlay =
+    getEl("modalOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+
+  if (technicianSelect) {
+    technicianSelect.value = "";
+  }
+
+
+  const dateInput =
+    getEl("completedDateInput");
+
+  if (dateInput) {
+    dateInput.value = "";
+  }
+
+
+  const notesInput =
+    getEl("doneNotesInput");
+
+  if (notesInput) {
+    notesInput.value = "";
+  }
+}
+
+
+/* =====================
+   REFRESH AFTER COMPLETION
+===================== */
+
+function refreshAfterTaskCompletion() {
+
+  // Preserved exactly as current common flow
+  loadTasks();
+  loadHistory();
+
+
+  if (
+    typeof renderAssetsCards === "function"
+  ) {
+    renderAssetsCards();
+  }
+
+
+  if (
+    typeof refreshAssetView === "function"
+  ) {
+    refreshAssetView();
+  }
+}
+
+
+/* =====================
+   CONFIRM TASK DONE
+   SINGLE + BULK ORCHESTRATOR
+===================== */
+
+getEl("confirmDone")
+  ?.addEventListener(
+    "click",
+    async () => {
+
+      /* =====================
+         TECHNICIAN
+      ===================== */
+
+      const technicianSelect =
+        getEl("technicianSelect");
+
+      const technicianId =
+        technicianSelect?.value;
+
+
+      if (!technicianId) {
+        return alert(
+          "Επέλεξε τεχνικό"
+        );
+      }
+
+
+      // Keep name for backward compatibility
+      const technicianName =
+        technicianSelect
+          .options[
+            technicianSelect.selectedIndex
+          ]
+          ?.textContent ||
+        null;
+
+
+      /* =====================
+         NOTES
+      ===================== */
+
+      const notes =
+        getEl("doneNotesInput")
+          ?.value
+          .trim() ||
+        null;
+
+
+      /* =====================
+         COMPLETION DATE
+      ===================== */
+
+      const dateValue =
+        getEl("completedDateInput")
+          ?.value;
+
+
+      const completedAt =
+        dateValue
+          ? new Date(
+              dateValue +
+              "T12:00:00"
+            ).toISOString()
+          : new Date()
+              .toISOString();
+
+
+      try {
+
+        /* =====================
+           BULK DONE
+        ===================== */
+
+        if (
+          state.bulkDoneMode === true
+        ) {
+
+          const completed =
+            await completeBulkTasks({
+              technicianId,
+              technicianName,
+              completedAt,
+              notes
+            });
+
+
+          // User cancelled common-note warning
+          if (!completed) {
+            return;
+          }
+        }
+
+
+        /* =====================
+           SINGLE DONE
+        ===================== */
+
+        else {
+
+          await completeSingleTask({
+            technicianId,
+            technicianName,
+            completedAt,
+            notes
+          });
+        }
+
+
+        /* =====================
+           COMMON CLEANUP
+        ===================== */
+
+        resetDoneModal(
+          technicianSelect
+        );
+
+
+        /* =====================
+           COMMON REFRESH
+        ===================== */
+
+        refreshAfterTaskCompletion();
+
+      }
+
+      catch (err) {
+
+        alert(err.message);
+
+        console.error(
+          "CONFIRM DONE ERROR:",
+          err
+        );
+      }
+    }
+  );
 
 /* ===========================
    LOAD TASK DONE from HISTORY
