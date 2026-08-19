@@ -366,3 +366,46 @@ function closeAssetView() {
   const tbody = document.querySelector("#assetTasksTable tbody");
   if (tbody) tbody.innerHTML = "";
 }
+// =====================
+// ASSET BULK ACTION BAR – UI ONLY (STEP 2)
+// =====================
+function updateAssetBulkActionsBar() {
+  const bar = document.getElementById("assetBulkActionsBar");
+  const countEl = document.getElementById("assetBulkSelectedCount");
+
+  if (!bar || !countEl) return;
+
+  const count = state.assetSelectedTaskIds.size;
+
+  if (count > 0) {
+    countEl.textContent = count;
+    bar.style.display = "flex";
+  } else {
+    bar.style.display = "none";
+  }
+}
+
+function clearAssetBulkSelection() {
+  state.assetSelectedTaskIds.clear();
+
+  document
+    .querySelectorAll("#assetTasksTable tbody input[type='checkbox']")
+    .forEach(cb => (cb.checked = false));
+
+  updateAssetBulkActionsBar();
+}
+
+// =====================
+// ASSET BULK ACTIONS – EVENT HANDLERS (STEP 2)
+// =====================
+document.addEventListener("click", e => {
+  if (e.target.id === "assetBulkClearBtn") {
+    clearAssetBulkSelection();
+  }
+
+  if (e.target.id === "assetBulkDoneBtn") {
+    if (state.assetSelectedTaskIds.size === 0) return;
+    state.bulkDoneMode = true;
+    openBulkDoneModal();
+  }
+});
