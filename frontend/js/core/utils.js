@@ -655,3 +655,40 @@ function getImpactBadgeClass(value) {
 function hasSpecialImpact(item) {
   return normalizeImpact(item?.impact) !== "normal";
 }
+/* =====================================================
+   DURATION FORMATTER
+   -----------------------------------------------------
+   Converts minutes into a compact human-readable label.
+
+   Examples:
+   45  → "45m"
+   60  → "1h"
+   90  → "1h 30m"
+   0   → "—"
+===================================================== */
+
+function formatDurationMinutes(minutes) {
+
+  const total =
+    Math.round(Number(minutes) || 0);
+
+  if (total <= 0) {
+    return "—";
+  }
+
+  const hours =
+    Math.floor(total / 60);
+
+  const mins =
+    total % 60;
+
+  if (hours && mins) {
+    return `${hours}h ${mins}m`;
+  }
+
+  if (hours) {
+    return `${hours}h`;
+  }
+
+  return `${mins}m`;
+}

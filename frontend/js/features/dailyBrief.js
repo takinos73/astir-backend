@@ -235,36 +235,7 @@ function buildDailyBriefUpcoming() {
 
   });
 
-
-  // =====================
-  // FORMAT DURATION
-  // =====================
-
-  const formatBriefDuration = minutes => {
-
-    const total =
-      Math.round(Number(minutes) || 0);
-
-    if (total <= 0) return "—";
-
-    const hours =
-      Math.floor(total / 60);
-
-    const mins =
-      total % 60;
-
-    if (hours && mins) {
-      return `${hours}h ${mins}m`;
-    }
-
-    if (hours) {
-      return `${hours}h`;
-    }
-
-    return `${mins}m`;
-  };
-
-
+ 
   // =====================
   // BUILD CONTENT
   // =====================
@@ -287,7 +258,7 @@ function buildDailyBriefUpcoming() {
 
       <span>
         ⏱ Estimated workload:
-        <strong>${formatBriefDuration(totalMinutes)}</strong>
+        <strong>${formatDurationMinutes(totalMinutes)}</strong>
       </span>
   `;
 
@@ -300,7 +271,7 @@ function buildDailyBriefUpcoming() {
         <strong>
           ${highestLine}
           ·
-          ${formatBriefDuration(highestMinutes)}
+          ${formatDurationMinutes(highestMinutes)}
         </strong>
       </span>
     `;
@@ -768,41 +739,7 @@ function buildDailyBriefReliability() {
       0
     );
 
-
-  // =====================
-  // FORMAT DURATION
-  // =====================
-
-  const formatReliabilityDuration =
-    minutes => {
-
-      const total =
-        Math.round(
-          Number(minutes) || 0
-        );
-
-      if (total <= 0) {
-        return "—";
-      }
-
-      const hours =
-        Math.floor(total / 60);
-
-      const mins =
-        total % 60;
-
-      if (hours && mins) {
-        return `${hours}h ${mins}m`;
-      }
-
-      if (hours) {
-        return `${hours}h`;
-      }
-
-      return `${mins}m`;
-    };
-
-
+ 
   // =====================
   // TOP 3 ASSETS
   // =====================
@@ -844,8 +781,7 @@ function buildDailyBriefReliability() {
               stat.totalMinutes > 0
                 ? `
                   Service time:
-                  ${formatReliabilityDuration(
-                    stat.totalMinutes
+                  ${formatDurationMinutes(stat.totalMinutes
                   )}
                 `
                 : "Repeated breakdown activity"
@@ -1075,38 +1011,6 @@ function buildDailyBriefPulse() {
 
 
   // =====================
-  // FORMAT WORKLOAD
-  // =====================
-
-  const formatPulseDuration =
-    minutes => {
-
-      const total =
-        Math.round(
-          Number(minutes) || 0
-        );
-
-      if (total <= 0) return "—";
-
-      const hours =
-        Math.floor(total / 60);
-
-      const mins =
-        total % 60;
-
-      if (hours && mins) {
-        return `${hours}h ${mins}m`;
-      }
-
-      if (hours) {
-        return `${hours}h`;
-      }
-
-      return `${mins}m`;
-    };
-
-
-  // =====================
   // BUILD CONTENT
   // =====================
 
@@ -1126,7 +1030,7 @@ function buildDailyBriefPulse() {
           Workload next 7d
         </span>
         <strong>
-          ${formatPulseDuration(workloadMinutes)}
+          ${formatDurationMinutes(workloadMinutes)}
         </strong>
       </div>
 
