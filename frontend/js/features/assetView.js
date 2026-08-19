@@ -286,6 +286,66 @@ function renderAssetHistoryTable(history) {
     tbody.appendChild(tr);
   });
 }
+
+// =====================
+// ASSET HISTORY ACTIVE FILTER (TASK CLICK & LEGEND SYNC)
+// =====================
+
+function renderAssetHistoryActiveFilter() {
+
+  const box = document.getElementById("assetHistoryActiveFilter");
+  if (!box) return;
+
+  // task filter
+  if (state.assetHistoryTaskFilter) {
+    box.innerHTML = `
+      <span>
+        Filter: ${state.assetHistoryTaskFilter}
+        <button id="clearHistoryFilter">✕</button>
+      </span>
+    `;
+  }
+
+  // type filter
+  else if (state.assetHistoryTypeFilter !== "all") {
+    box.innerHTML = `
+      <span>
+        Filter: ${state.assetHistoryTypeFilter}
+        <button id="clearHistoryFilter">✕</button>
+      </span>
+    `;
+  }
+
+  else {
+    box.innerHTML = "";
+    return;
+  }
+
+  document.getElementById("clearHistoryFilter").onclick = () => {
+
+    state.assetHistoryTaskFilter = null;
+    state.assetHistoryTypeFilter = "all";
+
+    highlightActiveHistoryLegend();
+
+    renderAssetHistoryTable(state.assetHistoryTasks);
+  };
+}
+
+/* =====================
+   ASSET HISTORY LEGEND ACTIVE STATE (SCOPED)
+===================== */
+
+function highlightActiveHistoryLegend() {
+  document
+    .querySelectorAll(".asset-history-legend .legend-item")
+    .forEach(el => {
+      el.classList.toggle(
+        "active",
+        el.dataset.type === state.assetHistoryTypeFilter // ✅ FIX
+      );
+    });
+}
 // =====================
 // CLOSE
 // =====================
