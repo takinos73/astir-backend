@@ -29,14 +29,6 @@ async function loadAssets() {
 ===================== */
 
 function renderAssetsCards() {
-
-    console.log("RENDER ASSET CARDS:", {
-  windowRole: window.currentUserRole,
-  assetsCount: Array.isArray(state.assetsData)
-    ? state.assetsData.length
-    : 0
-});
-
   
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");

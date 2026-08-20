@@ -35,47 +35,6 @@ function canEditTask(task) {
 }
 
 /* =====================
-   CURRENT USER (DEV)
-===================== */
-const CURRENT_USER = {
-  name: "Dev User",
-  role: "planner" // technician | planner | admin
-};
-
-async function loginAsRole() {
-  console.log("LOGIN CLICKED");
-
-  const role =
-    document.getElementById("roleSelect").value;
-
-  CURRENT_USER.role = role;
-  window.currentUserRole = role;
-
-  console.log("LOGIN ROLE SET:", {
-  selectedRole: role,
-  windowRole: window.currentUserRole,
-  currentUserRole: CURRENT_USER.role
-});
-
-  localStorage.setItem("cmmsRole", role);
-
-  // Global UI permissions
-  applyRoleVisibility();
-
-  // Re-load + rebuild Assets for the new role
-  if (typeof loadAssets === "function") {
-    await loadAssets();
-  }
-  console.log("LOGIN COMPLETE:", {
-  windowRole: window.currentUserRole,
-  assetsLoaded: Array.isArray(state.assetsData),
-  assetsCount: state.assetsData?.length || 0
-});
-
-  alert(`Logged in as ${role}`);
-}
-
-/* =====================
    Date Filters
 ===================== */
 
