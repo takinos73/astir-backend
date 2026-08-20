@@ -1150,3 +1150,17 @@ document.addEventListener("click", e => {
   renderAssetHistoryTable(state.assetHistoryTasks);
 });
 
+// =====================
+// PRINT ASSET PREVENTIVE BUTTON (SAFE)
+// =====================
+document
+  .getElementById("printAssetPreventiveBtn")
+  ?.addEventListener("click", () => {
+    if (!state.currentAssetSerial) {
+      alert("No asset selected");
+      return;
+    }
+
+    printAssetPreventivePlan(state.currentAssetSerial);
+  });
+
