@@ -35,39 +35,6 @@ function canEditTask(task) {
 }
 
 /* =====================
-   Date Filters
-===================== */
-
-function applyDateFilter(tasks) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-
-  return tasks.filter(t => {
-    if (!t.due_date) return false;
-
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-
-    switch (state.activeDateFilter) {
-      case "today":
-        return due.getTime() === today.getTime();
-
-      case "week":
-        return due >= today && due <= weekEnd;
-
-      case "overdue":
-        return due < today;
-
-      default: // "all"
-        return true;
-    }
-  });
-}
-
-/* =====================
    TASK TABLE – STATUS PILL (FIXED)
 ===================== */
 
@@ -976,20 +943,6 @@ function viewHistoryEntry(executionId) {
   document.getElementById("historyViewOverlay").style.display = "flex";
 }
 
-function openHistoryViewByExecutionId(executionId) {
-  const overlay = document.getElementById("historyViewOverlay");
-  if (!overlay) {
-    console.warn("HistoryView overlay not found");
-    return;
-  }
-
-  // άνοιξε modal
-  overlay.style.display = "flex";
-
-  // γέμισε περιεχόμενο
-  viewHistoryEntry(executionId);
-}
-
 // Close history view
 function closeHistoryView() {
   document.getElementById("historyViewOverlay").style.display = "none";
@@ -1649,6 +1602,7 @@ function cancelTaskEdit() {
 // =====================
 // CONFIRM + SOFT DELETE TASK
 // =====================
+
 async function confirmDeleteTask() {
   if (!state.currentViewedTask) return;
 
@@ -1672,14 +1626,16 @@ async function confirmDeleteTask() {
     state.currentViewedTask = null;
 
     closeTaskView();
-    loadTasks();
 
-    // If Asset View is open, rebuild its data too
     if (
       state.currentAssetSerial &&
       typeof refreshAssetView === "function"
     ) {
+      // Asset View open → refreshAssetView handles task/history reload
       await refreshAssetView();
+    } else {
+      // Normal Tasks view → only tasks need refresh
+      await loadTasks();
     }
 
   } catch (err) {
@@ -1698,22 +1654,28 @@ function closeTaskView() {
 
 function openHistory() {
   loadHistory(); // always refresh
+
   const overlay = getEl("historyOverlay");
+  if (!overlay) return;
+
   overlay.style.display = "flex";
-  overlay.style.pointerEvents = "auto"; // 👈 ΚΡΙΣΙΜΟ
+  overlay.style.pointerEvents = "auto";
 }
 
 function closeHistory() {
-  getEl("historyOverlay").style.display = "none";
+  const overlay = getEl("historyOverlay");
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+  overlay.style.pointerEvents = "none";
 }
 
-getEl("openHistoryBtn")?.addEventListener("click", openHistory);
+getEl("openHistoryBtn")
+  ?.addEventListener("click", openHistory);
+
 getEl("closeHistoryBtn")
-  ?.addEventListener("click", () => {
-    const overlay = getEl("historyOverlay");
-    overlay.style.display = "none";
-    overlay.style.pointerEvents = "none"; // 👈 ΚΡΙΣΙΜΟ
-  });
+  ?.addEventListener("click", closeHistory);
+
 // =====================
 // OPEN EDIT BREAKDOWN
 // =====================
@@ -1986,58 +1948,6 @@ function getFilteredTasksForPrint() {
 
       return true;
     });
-}
-
-
-function populateAssetFilter() {
-  const sel = getEl("machineFilter");
-  if (!sel) return;
-
-  sel.innerHTML = `<option value="all">All Machines</option>`;
-
-  const map = new Map();
-
-  state.tasksData.forEach(t => {
-    if (!t.machine_name || !t.serial_number) return;
-
-    const key = `${t.machine_name}||${t.serial_number}`;
-    if (map.has(key)) return;
-
-    map.set(key, {
-      value: key,
-      line: t.line_code || t.line || "",
-      machine: t.machine_name,
-      serial: t.serial_number
-    });
-  });
-
-  const sortedAssets = Array.from(map.values()).sort((a, b) => {
-    const la = `${a.line} ${a.machine} ${a.serial}`;
-    const lb = `${b.line} ${b.machine} ${b.serial}`;
-    return la.localeCompare(lb, "el", { sensitivity: "base" });
-  });
-
-  sortedAssets.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a.value;
-    opt.textContent = `${a.line} | ${a.machine} — SN: ${a.serial}`;
-    sel.appendChild(opt);
-  });
-}
-
-function getAssetHistoryType(e) {
-  // 🔴 Breakdown: δεν είχε frequency ΠΟΤΕ
-  if (e.frequency_hours == null && e.prev_due_date == null) {
-    return "breakdown";
-  }
-
-  // 🟢 Preventive: είχε frequency
-  if (e.frequency_hours != null) {
-    return "preventive";
-  }
-
-  // 🟡 Planned manual: planned αλλά χωρίς frequency
-  return "planned";
 }
 
 // =====================
@@ -3491,11 +3401,6 @@ async function loadCompletedKpi() {
   }
 }
 
-async function undoTask(id) {
-  await fetch(`${API}/tasks/${id}/undo`, { method: "PATCH" });
-  loadTasks();
-}
-
 /* =====================
    UNDO TASK EXECUTION
 ===================== */
@@ -3518,21 +3423,6 @@ async function undoExecution(executionId) {
 
 // 👇 ΑΠΑΡΑΙΤΗΤΟ (λόγω type="module")
 window.undoExecution = undoExecution;
-
-/* =====================
-   LOAD EXECUTIONS (HISTORY CACHE)
-===================== */
-async function loadExecutions() {
-  try {
-    const res = await fetch(`${API}/executions`);
-    state.executionsData = await res.json();
-    console.log("EXECUTIONS LOADED:", executionsData.length);
-  } catch (err) {
-    console.error("Failed to load executions", err);
-  }
-}
-
-
 
 /* =====================
    SAVE ASSET (WITH OTHER LINE / MACHINE)
@@ -3614,20 +3504,6 @@ getEl("saveAssetBtn")?.addEventListener("click", async () => {
     alert("Failed to save asset");
   }
 });
-
-/* =====================
-   LOAD MTTR DATA
-===================== */
-
-async function loadMttrData() {
-  try {
-    const res = await fetch(`${API}/kpis/mttr`);
-    state.mttrData = await res.json();
-  } catch (err) {
-    console.error("Failed to load MTTR data", err);
-    state.mttrData = [];
-  }
-}
 
 /* =====================
    LOAD REPORTS TAB
