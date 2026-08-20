@@ -107,6 +107,10 @@ function applyRoleUI(role) {
   if (logoutBtn) {
     logoutBtn.style.display = "inline-block";
   }
+  // Refresh asset cards for the new role
+  if (typeof renderAssetsCards === "function") {
+    renderAssetsCards();
+  }
 
   hideLogin();
 }
