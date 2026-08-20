@@ -42,38 +42,27 @@ const CURRENT_USER = {
   role: "planner" // technician | planner | admin
 };
 
-function loginAsRole() {
+async function loginAsRole() {
   console.log("LOGIN CLICKED");
 
-  const role = document.getElementById("roleSelect").value;
+  const role =
+    document.getElementById("roleSelect").value;
 
   CURRENT_USER.role = role;
   window.currentUserRole = role;
 
-  // optional persist
   localStorage.setItem("cmmsRole", role);
 
-  // 🔒 Apply restrictions
+  // Global UI permissions
   applyRoleVisibility();
-  applyRolePermissions();   // ✅ ΠΡΟΣΘΗΚΗ
+
+  // Re-load + rebuild Assets for the new role
+  if (typeof loadAssets === "function") {
+    await loadAssets();
+  }
 
   alert(`Logged in as ${role}`);
 }
-
-
-function applyRolePermissions() {
-  const role = window.currentUserRole;
-
-  if (role !== "admin") {
-    document.querySelectorAll(".asset-card-menu .edit")
-      .forEach(btn => btn.remove());
-
-    document.querySelectorAll(".asset-card-menu .archive")
-      .forEach(btn => btn.remove());
-  }
-}
-
-
 
 /* =====================
    Date Filters
@@ -438,23 +427,7 @@ console.log("filterByTaskType():", state.activeTaskTypeFilter, "sample:", tasks?
   // implicit ALL
   return tasks;
 }
-/* =====================
-    ASSET DASHBOARD – DATA
-===================== */
-function showDefaultDashboard() {
-  // tabs
-  document.querySelectorAll(".main-tab").forEach(b => b.classList.remove("active"));
-  document.querySelector('[data-tab="assets"]').classList.add("active");
 
-  // panels
-  document.querySelectorAll('[id^="tab-"]').forEach(t => (t.style.display = "none"));
-  document.getElementById("tab-assets").style.display = "block";
-
-  // render dashboard
-  if (typeof renderAssetDashboard === "function") {
-    renderAssetDashboard();
-  }
-}
 // =====================
 // POPULATE HISTORY TECHNICIAN FILTER
 // =====================
@@ -1731,6 +1704,14 @@ async function confirmDeleteTask() {
     closeTaskView();
     loadTasks();
 
+    // If Asset View is open, rebuild its data too
+    if (
+      state.currentAssetSerial &&
+      typeof refreshAssetView === "function"
+    ) {
+      await refreshAssetView();
+    }
+
   } catch (err) {
     console.error("DELETE TASK ERROR:", err);
     alert(err.message);
@@ -2613,32 +2594,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
     alert(err.message);
   }
 });
-/* =====================
-   ASSET HISTORY LEGEND – COUNT UPDATE
-===================== */
-
- function updateAssetHistoryLegend(history) {
-  if (!Array.isArray(history)) return;
-
-  let breakdown = 0;
-  let preventive = 0;
-  let planned = 0;
-
-  history.forEach(e => {
-    if (e.is_planned === false) {
-      breakdown++;
-    } else if (e.frequency_hours && Number(e.frequency_hours) > 0) {
-      preventive++;
-    } else {
-      planned++;
-    }
-  });
-
-    getEl("histBreakdownCount").textContent = breakdown;
-    getEl("histPreventiveCount").textContent = preventive;
-    getEl("histPlannedCount").textContent = planned;
-    getEl("histAllCount").textContent = history.length;
-  }
 
 function resetAddTaskAssetContext() {
   const lineSel = document.getElementById("nt-line");
@@ -2913,42 +2868,6 @@ async function openAddTaskForAsset(machine, serial, line) {
   // ✨ UX polish
   document.getElementById("nt-task")?.focus();
 }
-
-// =====================
-// ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
-// =====================
-
-document.getElementById("assetAddTaskBtn")
-  ?.addEventListener("click", () => {
-
-    if (!state.currentAssetSerial) {
-      alert("Asset context missing");
-      return;
-    }
-
-    const ref =
-      assetAllTasks[0] ||
-      state.assetsData.find(a =>
-        String(a.serial_number).trim() === String(state.currentAssetSerial).trim()
-      );
-
-    if (!ref) {
-      alert("Asset data not found");
-      return;
-    }
-
-    // Bring Add Task modal above Asset View
-    const addOverlay = document.getElementById("addTaskOverlay");
-    if (addOverlay) {
-      addOverlay.style.zIndex = "1200"; // higher than assetViewOverlay
-    }
-
-    openAddTaskForAsset(
-      ref.machine_name || ref.model,
-      state.currentAssetSerial,
-      ref.line_code || ref.line
-    );
-  });
 
 // =====================
 // FOLLOW-UP TASK (PREFILL FROM VIEW) — FINAL

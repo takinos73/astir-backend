@@ -1163,4 +1163,40 @@ document
 
     printAssetPreventivePlan(state.currentAssetSerial);
   });
+  
+  // =====================
+// ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
+// =====================
+
+document.getElementById("assetAddTaskBtn")
+  ?.addEventListener("click", () => {
+
+    if (!state.currentAssetSerial) {
+      alert("Asset context missing");
+      return;
+    }
+
+    const ref =
+      state.assetAllTasks[0] ||
+      state.assetsData.find(a =>
+        String(a.serial_number).trim() === String(state.currentAssetSerial).trim()
+      );
+
+    if (!ref) {
+      alert("Asset data not found");
+      return;
+    }
+
+    // Bring Add Task modal above Asset View
+    const addOverlay = document.getElementById("addTaskOverlay");
+    if (addOverlay) {
+      addOverlay.style.zIndex = "1200"; // higher than assetViewOverlay
+    }
+
+    openAddTaskForAsset(
+      ref.machine_name || ref.model,
+      state.currentAssetSerial,
+      ref.line_code || ref.line
+    );
+  });
 

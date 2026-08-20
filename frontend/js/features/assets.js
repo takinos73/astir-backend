@@ -809,6 +809,7 @@ async function loadLinesForAsset() {
    LOAD MACHINE MODELS (FOR ADD ASSET)
    Backend returns: ["PMC250","PMC300",...]
 ===================== */
+
 async function loadMachineModelsForAsset() {
   const select = document.getElementById("assetMachine");
   if (!select) return;
@@ -860,3 +861,20 @@ document.addEventListener("click", e => {
 
     });
 });
+
+/* =====================
+   LOAD MACHINE MODELS (FOR ADD ASSET)
+   Backend returns: ["PMC250","PMC300",...]
+===================== */
+
+function applyRolePermissions() {
+  const role = window.currentUserRole;
+
+  if (role !== "admin") {
+    document.querySelectorAll(".asset-card-menu .edit")
+      .forEach(btn => btn.remove());
+
+    document.querySelectorAll(".asset-card-menu .archive")
+      .forEach(btn => btn.remove());
+  }
+}
