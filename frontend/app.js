@@ -669,49 +669,6 @@ function wasEditedAfterExecution(h) {
   if (!h.updated_at || !h.executed_at) return false;
   return new Date(h.updated_at) > new Date(h.executed_at);
 }
-/* =====================
-   HISTORY DATE AUTO MODE
-===================== */
-
-const historyDateFromEl = document.getElementById("historyDateFrom");
-const historyDateToEl = document.getElementById("historyDateTo");
-const historyRollingEl = document.getElementById("historyDateFilter");
-
-// 🟢 Custom range auto apply
-function applyCustomHistoryRange() {
-
-  const fromVal = historyDateFromEl?.value;
-  const toVal = historyDateToEl?.value;
-
-  state.historyDateFrom = fromVal ? new Date(fromVal) : null;
-  state.historyDateTo = toVal ? new Date(toVal) : null;
-
-  if (state.historyDateTo) {
-    state.historyDateTo.setHours(23, 59, 59, 999);
-  }
-
-  renderHistoryTable(state.executionsData);
-}
-
-
-historyDateFromEl?.addEventListener("change", applyCustomHistoryRange);
-historyDateToEl?.addEventListener("change", applyCustomHistoryRange);
-
-
-// 🟡 Rolling filter auto apply
-historyRollingEl?.addEventListener("change", (e) => {
-
-  state.historyDateRange = e.target.value;
-
-  // reset custom
-  state.historyDateFrom = null;
-  state.historyDateTo = null;
-
-  if (historyDateFromEl) historyDateFromEl.value = "";
-  if (historyDateToEl) historyDateToEl.value = "";
-
-  renderHistoryTable(state.executionsData);
-});
 
   /* ==================================
       RENDER HISTORY TABLE WITH FILTERS
@@ -1144,13 +1101,34 @@ function readCustomDatesFromInputs() {
 }
 
 function clearCustomDatesInputsAndState() {
+
   state.historyDateFrom = null;
   state.historyDateTo = null;
 
-  const fromEl = document.getElementById("historyDateFrom");
-  const toEl = document.getElementById("historyDateTo");
-  if (fromEl) fromEl.value = "";
-  if (toEl) toEl.value = "";
+  const fromEl =
+    document.getElementById("historyDateFrom");
+
+  const toEl =
+    document.getElementById("historyDateTo");
+
+  if (fromEl) {
+    fromEl.value = "";
+  }
+
+  if (toEl) {
+    toEl.value = "";
+  }
+
+  // Clear Flatpickr range picker UI
+  const rangeEl =
+    document.getElementById("historyDateRange");
+
+  if (
+    rangeEl &&
+    rangeEl._flatpickr
+  ) {
+    rangeEl._flatpickr.clear();
+  }
 }
 
 function applyHistoryFiltersAndRender() {
@@ -1463,33 +1441,6 @@ document.getElementById("nt-unit")?.addEventListener("change", () => {
 document.getElementById("nt-unit-input")?.addEventListener("input", () => {
   refreshReuseTaskDropdown();
 });
-
-  /* ===================== POPULATE SECTIONS BY ASSET (ADD TASK)
-  POPULATE UNITS BY ASSET + SECTION (ADD TASK)
-  =====================*/
-
-function getUnitsForAssetSection(assetId, section) {
-  if (!assetId || !section || !Array.isArray(state.tasksData)) return [];
-
-  const id = Number(assetId);
-  const sec = String(section).trim();
-  const set = new Set();
-
-  state.tasksData.forEach(t => {
-    if (
-      Number(t.asset_id) === id &&
-      String(t.section || "").trim() === sec &&
-      t.unit &&
-      String(t.unit).trim() !== ""
-    ) {
-      set.add(String(t.unit).trim());
-    }
-  });
-
-  return Array.from(set).sort((a, b) =>
-    a.localeCompare(b, "el", { sensitivity: "base" })
-  );
-}
 
   function populateUnitsForSection(assetId, section) {
     const unitSelect = document.getElementById("nt-unit");
@@ -2148,27 +2099,6 @@ function populateAssetFilter() {
     const opt = document.createElement("option");
     opt.value = a.value;
     opt.textContent = `${a.line} | ${a.machine} — SN: ${a.serial}`;
-    sel.appendChild(opt);
-  });
-}
-
-/* =====================
-   ASSET LINE FILTER (Assets Tab)
-===================== */
-function populateAssetLineFilter() {
-  const sel = document.getElementById("assetLineFilter");
-  if (!sel) return;
-
-  sel.innerHTML = `<option value="all">All</option>`;
-
-  const lines = [...new Set(
-    state.assetsData.map(a => a.line).filter(Boolean)
-  )];
-
-  lines.sort().forEach(line => {
-    const opt = document.createElement("option");
-    opt.value = line;       // π.χ. "L1"
-    opt.textContent = line;
     sel.appendChild(opt);
   });
 }
