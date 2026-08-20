@@ -1,3 +1,68 @@
+/* =====================================================
+   BUILD ASSET VIEW DATA
+   -----------------------------------------------------
+   Rebuilds the asset-scoped datasets used by Asset View.
+
+   Updates:
+   - state.assetAllTasks
+   - state.assetActiveTasks
+   - state.assetHistoryTasks
+
+   Source:
+   - state.tasksData
+   - state.executionsData
+===================================================== */
+
+function buildAssetViewData(serial) {
+
+  if (!serial) {
+    return;
+  }
+
+  const serialKey =
+    String(serial).trim();
+
+  const tasks =
+    Array.isArray(state.tasksData)
+      ? state.tasksData
+      : [];
+
+  const executions =
+    Array.isArray(state.executionsData)
+      ? state.executionsData
+      : [];
+
+
+  // =====================
+  // ALL TASKS FOR ASSET
+  // =====================
+
+  state.assetAllTasks =
+    tasks.filter(t =>
+      String(t.serial_number || "").trim() === serialKey
+    );
+
+
+  // =====================
+  // ACTIVE TASKS
+  // =====================
+
+  state.assetActiveTasks =
+    state.assetAllTasks.filter(t =>
+      t.status === "Planned" ||
+      t.status === "Overdue"
+    );
+
+
+  // =====================
+  // EXECUTION HISTORY
+  // =====================
+
+  state.assetHistoryTasks =
+    executions.filter(e =>
+      String(e.serial_number || "").trim() === serialKey
+    );
+}
 
 async function openAssetViewBySerial(serial) {
   try {
@@ -34,20 +99,7 @@ async function openAssetViewBySerial(serial) {
     // =====================
     // BUILD DATASETS FROM STATE
     // =====================
-    state.assetAllTasks = state.tasksData.filter(
-      t => String(t.serial_number || "").trim() === serial
-    );
-
-    state.assetActiveTasks = state.assetAllTasks.filter(
-      t => t.status === "Planned" || t.status === "Overdue"
-    );
-
-    state.assetHistoryTasks = (Array.isArray(state.executionsData)
-      ? state.executionsData
-      : []
-    ).filter(
-      e => String(e.serial_number || "").trim() === serial
-    );
+    buildAssetViewData(serial);
 
     // 🔢 History legend counts
     updateAssetHistoryLegendCounts(state.assetHistoryTasks);
@@ -461,6 +513,7 @@ function highlightActiveHistoryLegend() {
       );
     });
 }
+
 // =====================
 // CLOSE
 // =====================
@@ -482,6 +535,7 @@ function closeAssetView() {
   const tbody = document.querySelector("#assetTasksTable tbody");
   if (tbody) tbody.innerHTML = "";
 }
+
 // =====================
 // ASSET BULK ACTION BAR – UI ONLY (STEP 2)
 // =====================
@@ -829,6 +883,42 @@ function renderAssetViewHeader(src) {
   document.getElementById("assetViewStatus").textContent = "Active";
 }
 
+/* =====================================================
+   GET ASSET BREAKDOWNS
+   -----------------------------------------------------
+   Returns all unplanned executions for a specific asset.
+
+   Purpose:
+   - Single source of truth for asset breakdown history
+   - Reused by MTTR
+   - Reused by Last Breakdown
+   - Reused by MTBF
+
+   Source:
+   state.executionsData
+
+   Breakdown definition:
+   is_planned === false
+===================================================== */
+
+function getAssetBreakdowns(serial) {
+
+  if (
+    !serial ||
+    !Array.isArray(state.executionsData)
+  ) {
+    return [];
+  }
+
+  const serialKey =
+    String(serial).trim();
+
+  return state.executionsData.filter(e =>
+    String(e.serial_number || "").trim() === serialKey &&
+    e.is_planned === false
+  );
+}
+
 // =====================
 // KPI COUNTS
 // =====================
@@ -868,39 +958,41 @@ function renderAssetKpis(tasks, history) {
 
 // =====================
 // MTTR PER ASSET (minutes)
+// Uses shared breakdown helper
 // =====================
+
 function getAssetMttrBySerial(serial) {
-  if (!serial || !Array.isArray(state.executionsData)) {
-    return null;
-  }
 
-  const serialKey = String(serial).trim();
+  // Get all breakdowns for this asset
+  const breakdowns = getAssetBreakdowns(serial);
 
-  // 🔥 ΜΟΝΟ breakdown executions
-  const breakdowns = state.executionsData.filter(e =>
-    String(e.serial_number || "").trim() === serialKey &&
-    e.is_planned === false &&
+  // MTTR requires a valid repair duration
+  const breakdownsWithDuration = breakdowns.filter(e =>
     Number.isFinite(Number(e.duration_min)) &&
     Number(e.duration_min) > 0
   );
 
-  if (breakdowns.length === 0) {
+  if (breakdownsWithDuration.length === 0) {
     return null;
   }
 
-  let totalMin = 0;
-
-  breakdowns.forEach(e => {
-    totalMin += Number(e.duration_min);
-  });
+  const totalMin = breakdownsWithDuration.reduce(
+    (sum, e) => sum + Number(e.duration_min),
+    0
+  );
 
   return {
-    mttrMinutes: Math.round(totalMin / breakdowns.length),
-    breakdownCount: breakdowns.length
+    mttrMinutes:
+      Math.round(totalMin / breakdownsWithDuration.length),
+
+    breakdownCount:
+      breakdownsWithDuration.length
   };
 }
+
 // =====================
 // RENDER ASSET MTBF + LAST BREAKDOWN
+// Uses shared breakdown helper
 // =====================
 function renderAssetMtbf(serial) {
   const mtbfEl = document.getElementById("assetMtbfValue");
@@ -908,9 +1000,7 @@ function renderAssetMtbf(serial) {
 
   if (!mtbfEl || !lastEl) return;
 
-  const breakdowns = Array.isArray(state.assetHistoryTasks)
-    ? state.assetHistoryTasks.filter(e => e.is_planned === false)
-    : [];
+  const breakdowns = getAssetBreakdowns(serial);
 
   const mtbfMin = calculateMtbfMinutes(breakdowns);
 
@@ -927,20 +1017,25 @@ function renderAssetMtbf(serial) {
 
 /* =====================
    GET LAST BREAKDOWN INFO BY SERIAL
+   Uses shared breakdown helper
 ===================== */
 
 function getLastBreakdownInfo(serial) {
-  const list = (Array.isArray(state.executionsData) ? state.executionsData : [])
-    .filter(e =>
-      String(e.serial_number || "").trim() === String(serial).trim() &&
-      e.is_planned === false
-    )
-    .sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
 
-  if (!list.length) return null;
+  const breakdowns = getAssetBreakdowns(serial);
+
+  if (breakdowns.length === 0) {
+    return null;
+  }
+
+  const latest = [...breakdowns].sort(
+    (a, b) =>
+      new Date(b.executed_at) -
+      new Date(a.executed_at)
+  )[0];
 
   return {
-    executed_at: list[0].executed_at
+    executed_at: latest.executed_at
   };
 }
 
@@ -1031,18 +1126,7 @@ async function refreshAssetView() {
 
   const serial = String(state.currentAssetSerial).trim();
 
-  // 🔄 2️⃣ rebuild asset view data
-  state.assetAllTasks = state.tasksData.filter(
-    t => String(t.serial_number || "").trim() === serial
-  );
-
-  state.assetActiveTasks = state.assetAllTasks.filter(
-    t => t.status === "Planned" || t.status === "Overdue"
-  );
-
-  state.assetHistoryTasks = state.executionsData.filter(
-    e => String(e.serial_number || "").trim() === serial
-  );
+  buildAssetViewData(serial);
 
   // reset history legend filter to "all" on refresh
   state.assetHistoryTypeFilter = "all"; // ⚠ αν υπάρχει στο state, αλλιώς πρόσθεσέ το
@@ -1055,6 +1139,7 @@ async function refreshAssetView() {
 
   activateAssetTab(activeTab);
 }
+
 // =====================
 // ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
 // =====================
