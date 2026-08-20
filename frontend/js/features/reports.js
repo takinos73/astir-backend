@@ -70,6 +70,97 @@ function getFilteredAssetHistory(list) {
   return filtered;
 
 }
+/* =====================================================
+   FILTER REPORT EXECUTIONS
+   -----------------------------------------------------
+   Shared execution filtering for report datasets.
+
+   Filters:
+   - Date range
+   - Line(s)
+   - Technician
+   - Optional unplanned-only mode
+===================================================== */
+
+function getFilteredReportExecutions({
+  unplannedOnly = false
+} = {}) {
+
+  const from =
+    document.getElementById("dateFrom")?.value;
+
+  const to =
+    document.getElementById("dateTo")?.value;
+
+  const selectedLines =
+    getSelectedReportLines();
+
+  const technician =
+    document.getElementById("reportTechnician")?.value || "all";
+
+  const fromDate =
+    from ? new Date(from) : null;
+
+  if (fromDate) {
+    fromDate.setHours(0, 0, 0, 0);
+  }
+
+  const toDate =
+    to ? new Date(to) : null;
+
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
+
+  const executions =
+    Array.isArray(state.executionsData)
+      ? state.executionsData
+      : [];
+
+  return executions.filter(e => {
+
+    if (!e.executed_at) {
+      return false;
+    }
+
+    if (
+      unplannedOnly &&
+      e.is_planned !== false
+    ) {
+      return false;
+    }
+
+    const execDate =
+      new Date(e.executed_at);
+
+    if (fromDate && execDate < fromDate) {
+      return false;
+    }
+
+    if (toDate && execDate > toDate) {
+      return false;
+    }
+
+    if (!selectedLines.includes("all")) {
+
+      const executionLine =
+        String(e.line || "");
+
+      if (!selectedLines.includes(executionLine)) {
+        return false;
+      }
+    }
+
+    if (
+      technician !== "all" &&
+      String(e.technician_id || "") !== String(technician)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
 
 /* =====================================================
    PRINT REPORT HTML
@@ -1119,78 +1210,7 @@ ${generateMttrBarChart(mttrLineRows)}
 ===================== */
 
 function getFilteredExecutionsForReport() {
-
-  const from =
-    document.getElementById("dateFrom")?.value;
-
-  const to =
-    document.getElementById("dateTo")?.value;
-
-  const selectedLines =
-    getSelectedReportLines();
-
-  const technician =
-    document.getElementById("reportTechnician")?.value || "all";
-
-  const fromDate =
-    from ? new Date(from) : null;
-
-  if (fromDate) {
-    fromDate.setHours(0, 0, 0, 0);
-  }
-
-  const toDate =
-    to ? new Date(to) : null;
-
-  if (toDate) {
-    toDate.setHours(23, 59, 59, 999);
-  }
-
-  return state.executionsData.filter(e => {
-
-    if (!e.executed_at) {
-      return false;
-    }
-
-    const execDate =
-      new Date(e.executed_at);
-
-    // =====================
-    // DATE FILTER
-    // =====================
-    if (fromDate && execDate < fromDate) {
-      return false;
-    }
-
-    if (toDate && execDate > toDate) {
-      return false;
-    }
-
-    // =====================
-    // LINE FILTER - MULTI
-    // =====================
-    if (!selectedLines.includes("all")) {
-
-      const executionLine =
-        String(e.line || "");
-
-      if (!selectedLines.includes(executionLine)) {
-        return false;
-      }
-    }
-
-    // =====================
-    // TECHNICIAN FILTER
-    // =====================
-    if (
-      technician !== "all" &&
-      String(e.technician_id || "") !== String(technician)
-    ) {
-      return false;
-    }
-
-    return true;
-  });
+  return getFilteredReportExecutions();
 }
 /* =====================
    COMPLETED REPORT – TOTALS BY TECHNICIAN
@@ -1288,80 +1308,8 @@ document.getElementById("resetReportBtn")?.addEventListener("click", () => {
    NON-PLANNED REPORT – DATA
 ===================== */
 function getFilteredNonPlannedExecutionsForReport() {
-
-  const from =
-    document.getElementById("dateFrom")?.value;
-
-  const to =
-    document.getElementById("dateTo")?.value;
-
-  const selectedLines =
-    getSelectedReportLines();
-
-  const technician =
-    document.getElementById("reportTechnician")?.value || "all";
-
-  const fromDate =
-    from ? new Date(from) : null;
-
-  if (fromDate) {
-    fromDate.setHours(0, 0, 0, 0);
-  }
-
-  const toDate =
-    to ? new Date(to) : null;
-
-  if (toDate) {
-    toDate.setHours(23, 59, 59, 999);
-  }
-
-  return (
-    Array.isArray(state.executionsData)
-      ? state.executionsData
-      : []
-  ).filter(e => {
-
-    if (!e.executed_at) {
-      return false;
-    }
-
-    // only breakdown / non-planned
-    if (e.is_planned !== false) {
-      return false;
-    }
-
-    const execDate =
-      new Date(e.executed_at);
-
-    // DATE FILTER
-    if (fromDate && execDate < fromDate) {
-      return false;
-    }
-
-    if (toDate && execDate > toDate) {
-      return false;
-    }
-
-    // LINE FILTER - MULTI
-    if (!selectedLines.includes("all")) {
-
-      const executionLine =
-        String(e.line || "");
-
-      if (!selectedLines.includes(executionLine)) {
-        return false;
-      }
-    }
-
-    // TECHNICIAN FILTER
-    if (
-      technician !== "all" &&
-      String(e.technician_id || "") !== String(technician)
-    ) {
-      return false;
-    }
-
-    return true;
+  return getFilteredReportExecutions({
+    unplannedOnly: true
   });
 }
 
@@ -2556,4 +2504,3 @@ function generateMttrBarChart(mttrLineRows) {
     </svg>
   `;
 }
-
