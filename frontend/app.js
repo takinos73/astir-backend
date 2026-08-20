@@ -4258,44 +4258,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-  /* =====================
-      SAVE EDIT ASSET (PATCH)
-  ===================== */
-
-getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
-  if (!editingAssetId) return;
-
-  const payload = {
-    model: getEl("edit-asset-model").value.trim(),
-    serial_number: getEl("edit-asset-serial").value.trim(),
-    description: getEl("edit-asset-description").value.trim(),
-    line_id: Number(getEl("edit-asset-line").value)
-  };
-
-  if (!payload.model || !payload.serial_number || !payload.line_id) {
-    return alert("Line, Machine and Serial are required");
-  }
-
-  try {
-    const res = await fetch(`${API}/assets/${editingAssetId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json",
-    "x-cmms-role": window.currentUserRole },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Update failed");
-    }
-
-    closeEditAsset();
-    await loadAssets(); // 🔄 refresh table    
-  } catch (err) {
-    alert(err.message);
-  }
-});
-
 /* =====================
    ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
    Works with value="__other__"
