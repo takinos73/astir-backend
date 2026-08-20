@@ -374,10 +374,13 @@ function renderAssetHistoryTable(history) {
       ev.stopPropagation();
 
       // toggle task filter
-      if (state.assetHistoryTaskFilter === e.task) {
+      const taskKey =
+        `${e.task}||${e.section || ""}||${e.unit || ""}`;
+
+      if (state.assetHistoryTaskFilter === taskKey) {
         state.assetHistoryTaskFilter = null;
       } else {
-        state.assetHistoryTaskFilter = `${e.task}||${e.section || ""}||${e.unit || ""}`;
+        state.assetHistoryTaskFilter = taskKey;
       }
 
       // 🔹 clear legend filter
@@ -474,6 +477,7 @@ function closeAssetView() {
   // ✅ reset selection / filter (safe)
   state.assetSelectedTaskIds?.clear?.();
   state.assetHistoryTypeFilter = "all";
+  state.assetHistoryTaskFilter = null;
 
   const tbody = document.querySelector("#assetTasksTable tbody");
   if (tbody) tbody.innerHTML = "";
@@ -730,8 +734,21 @@ function activateAssetTab(tabName) {
   const printBtn = document.getElementById("printAssetPreventiveBtn");
 
   if (printBtn) {
-    printBtn.style.display = tabName === "active" ? "inline-flex" : "none";
-  }
+
+    const hasPreventive =
+      Array.isArray(state.assetAllTasks) &&
+      state.assetAllTasks.some(
+        t =>
+          t.is_planned === true &&
+          Number(t.frequency_hours) > 0 &&
+          t.deleted_at == null
+      );
+
+    printBtn.style.display =
+      tabName === "active" && hasPreventive
+        ? "inline-flex"
+        : "none";
+  }  
 
   // --- DATA render (SAFE) ---
   if (tabName === "active") {
@@ -1030,7 +1047,6 @@ async function refreshAssetView() {
   // reset history legend filter to "all" on refresh
   state.assetHistoryTypeFilter = "all"; // ⚠ αν υπάρχει στο state, αλλιώς πρόσθεσέ το
   updateAssetHistoryLegendCounts(state.assetHistoryTasks);
-  bindAssetHistoryLegendClicks();
   highlightActiveHistoryLegend();
 
   // 🔄 3️⃣ re-render active tab
@@ -1051,6 +1067,7 @@ document.addEventListener("click", e => {
   console.log("🟡 HISTORY LEGEND CLICK:", type);
 
   state.assetHistoryTypeFilter = type;
+  state.assetHistoryTaskFilter = null;
 
   highlightActiveHistoryLegend();
 
