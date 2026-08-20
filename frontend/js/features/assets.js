@@ -671,3 +671,187 @@ async function resumeAllAssets() {
 
   }
 }
+
+/* =====================
+   ADD ASSET MODAL – SAFE OPEN
+===================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const addBtn = document.getElementById("addAssetBtn");
+  const overlay = document.getElementById("addAssetOverlay");
+  const cancelBtn = document.getElementById("cancelAssetBtn");
+
+  if (!addBtn || !overlay) {
+    console.warn("Add Asset elements not found");
+    return;
+  }
+
+  // OPEN MODAL
+  addBtn.addEventListener("click", e => {
+    e.preventDefault();
+
+    if (window.currentUserRole !== "admin") {
+      alert("Admin only action");
+      return;
+    }
+    loadLinesForAsset(); // 👈 ΕΔΩ
+    loadMachineModelsForAsset();
+
+    overlay.style.display = "flex";
+  });
+
+  // CLOSE MODAL
+  cancelBtn?.addEventListener("click", () => {
+    overlay.style.display = "none";
+  });
+});
+
+/* =====================
+   ADD ASSET – OTHER TOGGLE (FINAL, SAFE)
+   Works with value="__other__"
+===================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const lineSelect = document.getElementById("assetLine");
+  const machineSelect = document.getElementById("assetMachine");
+
+  const newLineField = document.getElementById("newLineField");
+  const newMachineField = document.getElementById("newMachineField");
+
+  // LINE → Other
+  lineSelect?.addEventListener("change", () => {
+    const isOther = lineSelect.value === "__other__";
+
+    if (newLineField) {
+      newLineField.style.display = isOther ? "block" : "none";
+    }
+
+    if (!isOther) {
+      const input = document.getElementById("assetNewLine");
+      if (input) input.value = "";
+    }
+  });
+
+  // MACHINE → Other
+  machineSelect?.addEventListener("change", () => {
+    const isOther = machineSelect.value === "__other__";
+
+    if (newMachineField) {
+      newMachineField.style.display = isOther ? "block" : "none";
+    }
+
+    if (!isOther) {
+      const input = document.getElementById("assetNewMachine");
+      if (input) input.value = "";
+    }
+  });
+});
+
+/* =====================
+   DELETE ASSET
+===================== */
+
+async function deleteAsset(id) {
+  // ROLE GUARD — only planner / admin
+  if (!hasRole("planner", "admin")) {
+    alert("You are not allowed to delete assets");
+    return;
+  }
+
+  if (!confirm("Διαγραφή asset;")) return;
+
+  try {
+    await fetch(`${API}/assets/${id}`, { method: "DELETE" });
+    loadAssets();
+  } catch (err) {
+    alert("Failed to delete asset");
+    console.error(err);
+  }
+}
+
+/* =====================
+   LOAD LINES (FOR ADD ASSET)
+===================== */
+async function loadLinesForAsset() {
+  const select = document.getElementById("assetLine");
+  if (!select) return;
+
+  try {
+    const res = await fetch(`${API}/lines`);
+    const lines = await res.json();
+
+    select.innerHTML = `<option value="">Select Line</option>`;
+
+    lines.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l.code;
+      opt.textContent = l.code;
+      select.appendChild(opt);
+    });
+
+    // ➕ OTHER
+    const other = document.createElement("option");
+    other.value = "__other__";
+    other.textContent = "➕ Other (new line)";
+    select.appendChild(other);
+
+  } catch (err) {
+    console.error("LOAD LINES ERROR:", err);
+  }
+}
+
+/* =====================
+   LOAD MACHINE MODELS (FOR ADD ASSET)
+   Backend returns: ["PMC250","PMC300",...]
+===================== */
+async function loadMachineModelsForAsset() {
+  const select = document.getElementById("assetMachine");
+  if (!select) return;
+
+  try {
+    const res = await fetch(`${API}/asset-models`);
+    const models = await res.json();
+
+    select.innerHTML = `<option value="">Select Machine</option>`;
+
+    models.forEach(model => {
+      if (!model) return;
+
+      const opt = document.createElement("option");
+      opt.value = model;
+      opt.textContent = model;
+      select.appendChild(opt);
+    });
+
+    // ➕ OTHER OPTION
+    const other = document.createElement("option");
+    other.value = "__other__";
+    other.textContent = "➕ Other (new machine)";
+    select.appendChild(other);
+
+  } catch (err) {
+    console.error("LOAD MACHINE MODELS ERROR:", err);
+  }
+}
+
+/* =====================
+   CLOSE ASSET MENUS
+   ON OUTSIDE CLICK
+===================== */
+document.addEventListener("click", e => {
+
+  document
+    .querySelectorAll(".asset-card-menu")
+    .forEach(menu => {
+
+      const card = menu.closest(".asset-card");
+
+      if (
+        card &&
+        !card.contains(e.target)
+      ) {
+        menu.style.display = "none";
+      }
+
+    });
+});
