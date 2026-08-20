@@ -214,20 +214,11 @@ function renderAssetTasksTable(tasks) {
     // =====================
     // STATUS (TYPE + DUE STATE)
     // =====================
-    let typeLabel = "Planned";
-    let typeClass = "planned";
-
-    if (isPreventive(t)) {
-      typeLabel = "Preventive";
-      typeClass = "preventive";
-    }
+    
+    const taskType = getTaskTypeMeta(t);
 
     const dueState = getDueState(t); // overdue | today | soon | ok
-    let dueLabel = "";
-
-    if (dueState === "overdue") dueLabel = "Overdue";
-    else if (dueState === "today") dueLabel = "Today";
-    else if (dueState === "soon") dueLabel = "Due soon";
+    const dueLabel = getDueStateLabel(dueState);
 
     // =====================
     // CHECKBOX CELL
@@ -260,8 +251,8 @@ function renderAssetTasksTable(tasks) {
     tr.insertAdjacentHTML(
       "beforeend",
       `
-      <td class="asset-status ${typeClass}">
-        <span class="status-type">${typeLabel}</span>
+      <td class="asset-status ${taskType.className}">
+        <span class="status-type">${taskType.label}</span>
         ${dueLabel ? `<span class="status-due ${dueState}">• ${dueLabel}</span>` : ""}
       </td>
       <td>

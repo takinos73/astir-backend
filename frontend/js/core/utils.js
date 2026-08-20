@@ -269,6 +269,19 @@ function getDueState(t) {
 
   return "ok";
 }
+/* =====================
+   DUE STATE LABEL
+   Returns compact UI label for due state
+===================== */
+
+function getDueStateLabel(dueState) {
+
+  if (dueState === "overdue") return "Overdue";
+  if (dueState === "today") return "Today";
+  if (dueState === "soon") return "Due soon";
+
+  return "";
+}
 
 /* =====================
    ROLE HELPERS
@@ -710,6 +723,39 @@ function getMaintenanceTypeLabel(task) {
   }
 
   return "Unplanned / Breakdown";
+}
+
+/* =====================================================
+   COMPACT TASK TYPE META
+   -----------------------------------------------------
+   Returns compact UI metadata for task type badges.
+
+   Used where short labels are preferred:
+   - Preventive
+   - Planned
+   - Unplanned
+===================================================== */
+
+function getTaskTypeMeta(task) {
+
+  if (isPreventive(task)) {
+    return {
+      label: "Preventive",
+      className: "preventive"
+    };
+  }
+
+  if (isPlannedManual(task)) {
+    return {
+      label: "Planned",
+      className: "planned"
+    };
+  }
+
+  return {
+    label: "Unplanned",
+    className: "unplanned"
+  };
 }
 
 
