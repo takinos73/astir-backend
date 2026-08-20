@@ -51,6 +51,12 @@ async function loginAsRole() {
   CURRENT_USER.role = role;
   window.currentUserRole = role;
 
+  console.log("LOGIN ROLE SET:", {
+  selectedRole: role,
+  windowRole: window.currentUserRole,
+  currentUserRole: CURRENT_USER.role
+});
+
   localStorage.setItem("cmmsRole", role);
 
   // Global UI permissions
@@ -60,6 +66,11 @@ async function loginAsRole() {
   if (typeof loadAssets === "function") {
     await loadAssets();
   }
+  console.log("LOGIN COMPLETE:", {
+  windowRole: window.currentUserRole,
+  assetsLoaded: Array.isArray(state.assetsData),
+  assetsCount: state.assetsData?.length || 0
+});
 
   alert(`Logged in as ${role}`);
 }

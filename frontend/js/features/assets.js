@@ -30,6 +30,13 @@ async function loadAssets() {
 
 function renderAssetsCards() {
 
+    console.log("RENDER ASSET CARDS:", {
+  windowRole: window.currentUserRole,
+  assetsCount: Array.isArray(state.assetsData)
+    ? state.assetsData.length
+    : 0
+});
+
   
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");
@@ -863,18 +870,29 @@ document.addEventListener("click", e => {
 });
 
 /* =====================
-   LOAD MACHINE MODELS (FOR ADD ASSET)
-   Backend returns: ["PMC250","PMC300",...]
+   APPLY ROLE PERMISSIONS
+   Hide Edit / Archive for non-admins
 ===================== */
 
 function applyRolePermissions() {
-  const role = window.currentUserRole;
 
-  if (role !== "admin") {
-    document.querySelectorAll(".asset-card-menu .edit")
-      .forEach(btn => btn.remove());
+  const isAdmin =
+    window.currentUserRole === "admin";
 
-    document.querySelectorAll(".asset-card-menu .archive")
-      .forEach(btn => btn.remove());
-  }
+  console.log("APPLY ROLE PERMISSIONS:", {
+    role: window.currentUserRole,
+    isAdmin
+  });
+
+  document
+    .querySelectorAll(".asset-card-menu .edit")
+    .forEach(btn => {
+      btn.style.display = isAdmin ? "" : "none";
+    });
+
+  document
+    .querySelectorAll(".asset-card-menu .archive")
+    .forEach(btn => {
+      btn.style.display = isAdmin ? "" : "none";
+    });
 }
