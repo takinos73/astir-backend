@@ -70,41 +70,101 @@ function getFilteredAssetHistory(list) {
   return filtered;
 
 }
-function bindHistoryRangeFilters(){
 
-  document.querySelectorAll(".history-range-btn")
-    .forEach(btn=>{
+/* =====================================================
+   PRINT REPORT HTML
+   -----------------------------------------------------
+   Prints report HTML through a hidden iframe.
 
-      btn.addEventListener("click",()=>{
+   Used by:
+   - Asset History
+   - Status Report
+   - Completed Report
+   - Non-Planned Report
+   - Overdue Report
+   - KPI Report
+===================================================== */
+
+function printReportHtml(html) {
+
+  if (!html) return;
+
+  const iframe =
+    document.createElement("iframe");
+
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  const doc =
+    iframe.contentWindow.document;
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    iframe.remove();
+  }, 1000);
+}
+
+function bindHistoryRangeFilters() {
+
+  document
+    .querySelectorAll(".history-range-btn")
+    .forEach(btn => {
+
+      // Prevent duplicate listeners
+      if (btn.dataset.historyRangeBound === "true") {
+        return;
+      }
+
+      btn.dataset.historyRangeBound = "true";
+
+      btn.addEventListener("click", () => {
 
         document
           .querySelectorAll(".history-range-btn")
-          .forEach(b=>b.classList.remove("active"));
+          .forEach(b =>
+            b.classList.remove("active")
+          );
 
         btn.classList.add("active");
 
-        const range = btn.dataset.range;
+        const range =
+          btn.dataset.range;
 
-        if(range==="all"){
+        if (range === "all") {
           state.historyDateFrom = null;
-        }
-        else{
+        } else {
+          const days =
+            parseInt(range, 10);
 
-          const days = parseInt(range);
+          const d =
+            new Date();
 
-          const d = new Date();
-          d.setDate(d.getDate() - days);
+          d.setDate(
+            d.getDate() - days
+          );
 
           state.historyDateFrom = d;
         }
 
-        renderAssetHistoryTable(state.assetHistoryTasks);
-
+        renderAssetHistoryTable(
+          state.assetHistoryTasks
+        );
       });
-
     });
-
 }
+
 //* =====================
 // PRINT ASSET HISTORY
 // ===================== */
@@ -270,25 +330,7 @@ if (state.historyDateFrom) {
   </html>
   `;
 
-  const iframe = document.createElement("iframe");
-
-  iframe.style.position = "fixed";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => document.body.removeChild(iframe), 1000);
+  printReportHtml(html);
 }
 
 /* =====================
@@ -523,9 +565,7 @@ function generateStatusReportPdf() {
   }
 
   const isOverdue =
-    t.status !== "Done" &&
-    t.due_date &&
-    new Date(t.due_date) < new Date();
+  getDueState(t) === "overdue";
 
   // ✅ TYPE CLASS (preventive vs planned manual)
   let statusClass = "status-planned";
@@ -592,24 +632,7 @@ function generateStatusReportPdf() {
   `;
 
   // 🔹 PRINT VIA IFRAME (SAFE)
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  printReportHtml(html);
 }
 
 function generateExecutionMixPie(execPct) {
@@ -745,9 +768,31 @@ function generateCompletedReportPdf() {
 
   const breakdownRate = execPct.breakdown;
 
-  const avgMttrAll = mttrLineRows.length
-    ? Math.round(mttrLineRows.reduce((s, r) => s + r.avg, 0) / mttrLineRows.length)
-    : 0;
+  // =====================
+  // OVERALL MTTR
+  // Weighted by actual breakdown count
+  // =====================
+
+  const mttrTotals =
+    Object.values(mttrByLine).reduce(
+      (acc, v) => {
+        acc.totalMin += v.total;
+        acc.count += v.count;
+        return acc;
+      },
+      {
+        totalMin: 0,
+        count: 0
+      }
+    );
+
+  const avgMttrAll =
+    mttrTotals.count > 0
+      ? Math.round(
+          mttrTotals.totalMin /
+          mttrTotals.count
+        )
+      : 0;
 
   const sortedTech = Object.entries(totalsByTech).sort((a, b) => b[1] - a[1]);
   const topTech = sortedTech.length ? sortedTech[0] : ["—", 0];
@@ -1066,22 +1111,7 @@ ${generateMttrBarChart(mttrLineRows)}
 </html>
 `;
 
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => document.body.removeChild(iframe), 1000);
+  printReportHtml(html);
 }
 
 /* =====================
@@ -1577,27 +1607,7 @@ function generateNonPlannedReportPdf() {
   `;
 
   /* 🔹 PRINT VIA HIDDEN IFRAME */
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  printReportHtml(html);
 }
 
 /* =====================
@@ -1886,12 +1896,8 @@ function generateOverdueReportPdf() {
 `;
 
   /* 🔹 PRINT VIA HIDDEN IFRAME */
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
+  printReportHtml(html);
+}
   iframe.style.border = "0";
 
   document.body.appendChild(iframe);
@@ -1907,7 +1913,7 @@ function generateOverdueReportPdf() {
   setTimeout(() => {
     document.body.removeChild(iframe);
   }, 1000);
-}
+
 /* =====================
    KPI REPORT – PRINT (1 PAGE)
    Uses: tasksData, executionsData, formatDuration()
@@ -1959,49 +1965,6 @@ function generateKpiReportPdf() {
     row && row.frequency_hours != null && safeNum(row.frequency_hours) > 0;
 
   const isBreakdownExec = (row) => row && row.is_planned === false;
-
-  const addHours = (date, hours) =>
-  new Date(date.getTime() + Number(hours) * 60 * 60 * 1000);
-
-  const countPreventiveOccurrencesInRange = (task) => {
-    if (!isPreventiveRow(task) || !task.due_date) return 0;
-
-    // Αν δεν υπάρχει επιλεγμένη περίοδος, fallback σε 1 occurrence
-    // γιατί "ALL" δεν μπορεί να υπολογίσει σωστά infinite recurrence.
-    if (!fromDate && !toDate) return 1;
-
-    const freqHours = safeNum(task.frequency_hours);
-    if (freqHours <= 0) return 0;
-
-    const rangeStart = fromDate || new Date(task.due_date);
-    const rangeEnd = toDate || today;
-
-    let due = new Date(task.due_date);
-    due.setHours(0, 0, 0, 0);
-
-    // Γύρνα πίσω σε προηγούμενες επαναλήψεις μέχρι να φτάσεις στην αρχή του range
-    while (addHours(due, -freqHours) >= rangeStart) {
-      due = addHours(due, -freqHours);
-    }
-
-    // Do NOT go backwards before the task's known due_date.
-    // due_date is treated as the first known scheduled occurrence.
-
-    let count = 0;
-
-    while (due <= rangeEnd) {
-      if (due >= rangeStart && due <= rangeEnd) {
-        count++;
-      }
-
-      due = addHours(due, freqHours);
-
-      // safety guard
-      if (count > 10000) break;
-    }
-
-    return count;
-  };
 
   const getExecType = (e) => {
     if (isBreakdownExec(e)) return "breakdown";
@@ -2567,27 +2530,7 @@ const maturityLevel =
 `;
 
   // --------- PRINT VIA HIDDEN IFRAME (no new tab) ----------
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  printReportHtml(html);
 }
 
 function generateMttrBarChart(mttrLineRows) {
