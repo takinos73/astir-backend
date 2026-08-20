@@ -848,6 +848,85 @@ function renderAssetKpis(tasks, history) {
   document.getElementById("assetOverdueCount").textContent = overdueCount;
   document.getElementById("assetHistoryCount").textContent = historyCount;
 }
+
+// =====================
+// MTTR PER ASSET (minutes)
+// =====================
+function getAssetMttrBySerial(serial) {
+  if (!serial || !Array.isArray(state.executionsData)) {
+    return null;
+  }
+
+  const serialKey = String(serial).trim();
+
+  // 🔥 ΜΟΝΟ breakdown executions
+  const breakdowns = state.executionsData.filter(e =>
+    String(e.serial_number || "").trim() === serialKey &&
+    e.is_planned === false &&
+    Number.isFinite(Number(e.duration_min)) &&
+    Number(e.duration_min) > 0
+  );
+
+  if (breakdowns.length === 0) {
+    return null;
+  }
+
+  let totalMin = 0;
+
+  breakdowns.forEach(e => {
+    totalMin += Number(e.duration_min);
+  });
+
+  return {
+    mttrMinutes: Math.round(totalMin / breakdowns.length),
+    breakdownCount: breakdowns.length
+  };
+}
+// =====================
+// RENDER ASSET MTBF + LAST BREAKDOWN
+// =====================
+function renderAssetMtbf(serial) {
+  const mtbfEl = document.getElementById("assetMtbfValue");
+  const lastEl = document.getElementById("assetLastBreakdown");
+
+  if (!mtbfEl || !lastEl) return;
+
+  const breakdowns = Array.isArray(state.assetHistoryTasks)
+    ? state.assetHistoryTasks.filter(e => e.is_planned === false)
+    : [];
+
+  const mtbfMin = calculateMtbfMinutes(breakdowns);
+
+  mtbfEl.textContent =
+    mtbfMin == null ? "—" : formatDuration(mtbfMin);
+
+  const lastDate = getLastBreakdownDate(breakdowns);
+
+  lastEl.textContent =
+    !lastDate
+      ? "No breakdowns recorded"
+      : `Last breakdown: ${formatDate(lastDate)}`;
+}
+
+/* =====================
+   GET LAST BREAKDOWN INFO BY SERIAL
+===================== */
+
+function getLastBreakdownInfo(serial) {
+  const list = (Array.isArray(state.executionsData) ? state.executionsData : [])
+    .filter(e =>
+      String(e.serial_number || "").trim() === String(serial).trim() &&
+      e.is_planned === false
+    )
+    .sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
+
+  if (!list.length) return null;
+
+  return {
+    executed_at: list[0].executed_at
+  };
+}
+
 // =====================
 // RENDER ASSET MTTR KPI
 // =====================
@@ -921,50 +1000,7 @@ function updateAssetHistoryLegendCounts(history) {
   pEl.textContent = preventive;    // 🟢 Preventive
   mEl.textContent = planned;       // 🟡 Planned (manual)
 }
-/* =====================
-   ASSET HISTORY LEGEND FILTER
-   Bind only once
-===================== */
 
-function bindAssetHistoryLegendClicks() {
-
-  document
-    .querySelectorAll(".asset-history-legend .legend-item")
-    .forEach(item => {
-
-      // Prevent duplicate listeners
-      if (item.dataset.legendBound === "true") {
-        return;
-      }
-
-      item.dataset.legendBound = "true";
-
-      item.addEventListener("click", () => {
-
-        const type =
-          item.dataset.type;
-
-        console.log(
-          "🟡 HISTORY LEGEND CLICK:",
-          type
-        );
-
-        // Set type filter
-        state.assetHistoryTypeFilter =
-          type || "all";
-
-        // Clear task filter to avoid conflicts
-        state.assetHistoryTaskFilter =
-          null;
-
-        highlightActiveHistoryLegend();
-
-        renderAssetHistoryTable(
-          state.assetHistoryTasks
-        );
-      });
-    });
-}
 
 // =====================
 // REFRESH ASSET VIEW DATA (FROM STATE)
@@ -1003,4 +1039,21 @@ async function refreshAssetView() {
 
   activateAssetTab(activeTab);
 }
+// =====================
+// ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
+// =====================
+document.addEventListener("click", e => {
+  const item = e.target.closest(".asset-history-legend .legend-item");
+  if (!item) return;
+
+  const type = item.dataset.type || "all";
+
+  console.log("🟡 HISTORY LEGEND CLICK:", type);
+
+  state.assetHistoryTypeFilter = type;
+
+  highlightActiveHistoryLegend();
+
+  renderAssetHistoryTable(state.assetHistoryTasks);
+});
 

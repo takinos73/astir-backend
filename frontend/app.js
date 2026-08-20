@@ -1291,23 +1291,7 @@ function updateCentralHistoryLegendCounts(filtered, all = state.executionsData) 
   if (m) m.textContent = `${fm} / ${tm}`;
 }
 
-// =====================
-// ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
-// =====================
-document.addEventListener("click", e => {
-  const item = e.target.closest(".asset-history-legend .legend-item");
-  if (!item) return;
 
-  const type = item.dataset.type || "all";
-
-  console.log("🟡 HISTORY LEGEND CLICK:", type);
-
-  state.assetHistoryTypeFilter = type;
-
-  highlightActiveHistoryLegend();
-
-  renderAssetHistoryTable(state.assetHistoryTasks);
-});
 /* =====================
 TASK VIEW DONE BUTTON HANDLER
 =====================*/
@@ -2520,31 +2504,6 @@ document.getElementById("taskPlannedType")
     applyAddTaskTypeUI(e.target.value === "planned");
   });
 
-// =====================
-// RENDER ASSET MTBF + LAST BREAKDOWN
-// =====================
-function renderAssetMtbf(serial) {
-  const mtbfEl = document.getElementById("assetMtbfValue");
-  const lastEl = document.getElementById("assetLastBreakdown");
-
-  if (!mtbfEl || !lastEl) return;
-
-  const breakdowns = Array.isArray(state.assetHistoryTasks)
-    ? state.assetHistoryTasks.filter(e => e.is_planned === false)
-    : [];
-
-  const mtbfMin = calculateMtbfMinutes(breakdowns);
-
-  mtbfEl.textContent =
-    mtbfMin == null ? "—" : formatDuration(mtbfMin);
-
-  const lastDate = getLastBreakdownDate(breakdowns);
-
-  lastEl.textContent =
-    !lastDate
-      ? "No breakdowns recorded"
-      : `Last breakdown: ${formatDate(lastDate)}`;
-}
 
 document
   .getElementById("printAssetHistoryBtn")
@@ -3390,36 +3349,55 @@ function resetSectionLockState() {
 
   /* =====================
     OPEN CONFIRM DONE MODAL
+    SINGLE TASK
   ===================== */
   function askTechnician(id) {
+
+    // 🔑 Force SINGLE mode
+    state.bulkDoneMode = false;
+
+    // 🔑 Store selected task
     state.pendingTaskId = id;
 
-    const task = state.tasksData.find(t => t.id === id);
+    const task = state.tasksData.find(
+      t => t.id === id
+    );
 
     if (!task) {
       alert("Task not found");
       return;
     }
 
-    // 🔥 ENSURE DROPDOWN IS FILLED
+    // Ensure technician dropdown is filled
     populateTechnicianDropdown();
 
-    // 📅 default completion date = today
-    const today = new Date().toISOString().split("T")[0];
-    const dateInput = getEl("completedDateInput");
+    // Default completion date = today
+    const today =
+      new Date().toISOString().split("T")[0];
+
+    const dateInput =
+      getEl("completedDateInput");
+
     if (dateInput) {
       dateInput.value = today;
     }
 
-    // 📝 PREFILL NOTES
-    const notesInput = getEl("doneNotesInput");
+    // Prefill existing notes
+    const notesInput =
+      getEl("doneNotesInput");
+
     if (notesInput) {
-      notesInput.value = task.notes || "";
+      notesInput.value =
+        task.notes || "";
     }
 
-    getEl("modalOverlay").style.display = "flex";
-  }
+    const overlay =
+      getEl("modalOverlay");
 
+    if (overlay) {
+      overlay.style.display = "flex";
+    }
+  }
 /* =====================
    CANCEL TASK COMPLETION
    - Closes modal
@@ -3493,6 +3471,8 @@ async function completeSingleTask({
 
 
   state.pendingTaskId = null;
+
+  alert("✔ Μια εργασία εκτελέστηκε");
 
   return true;
 }
@@ -4978,59 +4958,6 @@ async function loadMttrData() {
     state.mttrData = [];
   }
 }
-// =====================
-// MTTR PER ASSET (minutes)
-// =====================
-function getAssetMttrBySerial(serial) {
-  if (!serial || !Array.isArray(state.executionsData)) {
-    return null;
-  }
-
-  const serialKey = String(serial).trim();
-
-  // 🔥 ΜΟΝΟ breakdown executions
-  const breakdowns = state.executionsData.filter(e =>
-    String(e.serial_number || "").trim() === serialKey &&
-    e.is_planned === false &&
-    Number.isFinite(Number(e.duration_min)) &&
-    Number(e.duration_min) > 0
-  );
-
-  if (breakdowns.length === 0) {
-    return null;
-  }
-
-  let totalMin = 0;
-
-  breakdowns.forEach(e => {
-    totalMin += Number(e.duration_min);
-  });
-
-  return {
-    mttrMinutes: Math.round(totalMin / breakdowns.length),
-    breakdownCount: breakdowns.length
-  };
-}
-
-/* =====================
-   GET LAST BREAKDOWN INFO BY SERIAL
-===================== */
-
-function getLastBreakdownInfo(serial) {
-  const list = (Array.isArray(state.executionsData) ? state.executionsData : [])
-    .filter(e =>
-      String(e.serial_number || "").trim() === String(serial).trim() &&
-      e.is_planned === false
-    )
-    .sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
-
-  if (!list.length) return null;
-
-  return {
-    executed_at: list[0].executed_at
-  };
-}
-
 
 /* =====================
    LOAD REPORTS TAB
