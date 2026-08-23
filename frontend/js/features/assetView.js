@@ -163,6 +163,38 @@ async function openAssetViewBySerial(serial) {
   }
 }
 
+/* =====================
+   HIGHLIGHT ASSET TASK SEARCH
+===================== */
+
+function highlightAssetTaskSearch(value) {
+
+  const text =
+    String(value ?? "");
+
+  const query =
+    String(state.assetTaskSearchQuery || "")
+      .trim();
+
+  if (!query) {
+    return text;
+  }
+
+  const escapedQuery =
+    query.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const regex =
+    new RegExp(`(${escapedQuery})`, "gi");
+
+  return text.replace(
+    regex,
+    `<mark class="asset-task-search-highlight">$1</mark>`
+  );
+}
+
 // =====================
 // ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
 // =====================
@@ -1361,3 +1393,4 @@ document
     );
   });
 
+  
