@@ -318,14 +318,14 @@ function renderAssetTasksTable(tasks) {
 
       <td>
         <div class="asset-task-unit">
-          ${t.unit || "-"}
+          ${highlightAssetTaskSearch(t.unit || "-")}
         </div>
 
         ${
           t.section
             ? `
               <div class="asset-task-section">
-                ${t.section}
+                ${highlightAssetTaskSearch(t.section)}
               </div>
             `
             : ""
@@ -334,7 +334,7 @@ function renderAssetTasksTable(tasks) {
 
       <td>
         <div>
-          ${t.task}
+          ${highlightAssetTaskSearch(t.task)}
 
           ${
             t.notes
@@ -353,7 +353,7 @@ function renderAssetTasksTable(tasks) {
         ${renderImpactBadge(t.impact)}
       </td>
 
-      <td>${t.type || "-"}</td>
+      <td>${highlightAssetTaskSearch(t.type || "-")}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
       `

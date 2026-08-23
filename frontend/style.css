@@ -2799,6 +2799,49 @@ tr.history-unplanned {
 }
 
 /* =====================
+   ASSET ACTIVE TASK SEARCH
+===================== */
+
+.asset-task-search-wrap {
+  margin-left: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.asset-task-search-icon {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+  opacity: 0.65;
+  font-size: 14px;
+}
+
+#assetTaskSearch {
+  width: 240px;
+  height: 34px;
+  padding: 6px 12px 6px 32px;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+#assetTaskSearch:focus {
+  border-color: #9ca8ba;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+
+/* search match highlight */
+.asset-task-search-highlight {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #fff2a8;
+}
+
+/* =====================
    STATUS CELL COLORS
 ===================== */
 .asset-status {
