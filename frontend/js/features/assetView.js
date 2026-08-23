@@ -162,6 +162,7 @@ async function openAssetViewBySerial(serial) {
     alert("Asset view error (see console).");
   }
 }
+
 // =====================
 // ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
 // =====================
@@ -177,56 +178,104 @@ function renderAssetTasksTable(tasks) {
   if (historyWrap) historyWrap.style.display = "none";
 
   tbody.innerHTML = "";
-  state.assetSelectedTaskIds.clear(); // reset on render
-  updateAssetBulkActionsBar();  // hide bar on refresh
 
-  if (!tasks || tasks.length === 0) {
+  // Reset bulk selection on render
+  state.assetSelectedTaskIds.clear();
+  updateAssetBulkActionsBar();
+
+  // =====================
+  // SOURCE TASKS
+  // =====================
+  const sourceTasks =
+    Array.isArray(tasks) ? tasks : [];
+
+  if (sourceTasks.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="7" class="empty">No active tasks</td>
       </tr>
     `;
+
     tasksWrap.offsetHeight;
     tbody.offsetHeight;
     return;
   }
-    const groupedTasks = [...tasks].sort((a, b) => {
 
-    const dueCompare =
-      new Date(a.due_date || "9999-12-31") -
-      new Date(b.due_date || "9999-12-31");
+  // =====================
+  // FREE TEXT FILTER
+  // =====================
+  const filteredTasks =
+    getFilteredAssetActiveTasks(sourceTasks);
 
-    if (dueCompare !== 0) {
-      return dueCompare;
-    }
+  if (filteredTasks.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="empty">
+          No matching active tasks
+        </td>
+      </tr>
+    `;
 
-    return (a.section || "")
-      .localeCompare(b.section || "");
-  });
+    tasksWrap.offsetHeight;
+    tbody.offsetHeight;
+    return;
+  }
 
+  // =====================
+  // SORT
+  // Due date ASC → Section ASC
+  // =====================
+  const groupedTasks =
+    [...filteredTasks].sort((a, b) => {
+
+      const dueCompare =
+        new Date(a.due_date || "9999-12-31") -
+        new Date(b.due_date || "9999-12-31");
+
+      if (dueCompare !== 0) {
+        return dueCompare;
+      }
+
+      return (a.section || "")
+        .localeCompare(b.section || "");
+    });
+
+  // =====================
+  // RENDER ROWS
+  // =====================
   groupedTasks.forEach(t => {
+
     const tr = document.createElement("tr");
     tr.classList.add("clickable");
 
     const dur =
-      t.duration_min != null ? formatDuration(t.duration_min) : "—";
+      t.duration_min != null
+        ? formatDuration(t.duration_min)
+        : "—";
 
     // =====================
     // STATUS (TYPE + DUE STATE)
     // =====================
-    
-    const taskType = getTaskTypeMeta(t);
+    const taskType =
+      getTaskTypeMeta(t);
 
-    const dueState = getDueState(t); // overdue | today | soon | ok
-    const dueLabel = getDueStateLabel(dueState);
+    const dueState =
+      getDueState(t);
+
+    const dueLabel =
+      getDueStateLabel(dueState);
 
     // =====================
     // CHECKBOX CELL
     // =====================
-    const checkboxTd = document.createElement("td");
+    const checkboxTd =
+      document.createElement("td");
+
     checkboxTd.className = "select-cell";
 
-    const checkbox = document.createElement("input");
+    const checkbox =
+      document.createElement("input");
+
     checkbox.type = "checkbox";
     checkbox.className = "asset-task-checkbox";
 
@@ -252,9 +301,21 @@ function renderAssetTasksTable(tasks) {
       "beforeend",
       `
       <td class="asset-status ${taskType.className}">
-        <span class="status-type">${taskType.label}</span>
-        ${dueLabel ? `<span class="status-due ${dueState}">• ${dueLabel}</span>` : ""}
+        <span class="status-type">
+          ${taskType.label}
+        </span>
+
+        ${
+          dueLabel
+            ? `
+              <span class="status-due ${dueState}">
+                • ${dueLabel}
+              </span>
+            `
+            : ""
+        }
       </td>
+
       <td>
         <div class="asset-task-unit">
           ${t.unit || "-"}
@@ -262,51 +323,64 @@ function renderAssetTasksTable(tasks) {
 
         ${
           t.section
-            ? `<div class="asset-task-section">${t.section}</div>`
+            ? `
+              <div class="asset-task-section">
+                ${t.section}
+              </div>
+            `
             : ""
         }
       </td>
+
       <td>
         <div>
           ${t.task}
 
           ${
             t.notes
-              ? `<span
+              ? `
+                <span
                   class="task-note-indicator"
                   title="${t.notes}"
                 >
                   📝
-                </span>`
+                </span>
+              `
               : ""
           }
         </div>
 
         ${renderImpactBadge(t.impact)}
-
       </td>
+
       <td>${t.type || "-"}</td>
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
       `
     );
 
+    // =====================
+    // ROW CLICK → TASK VIEW
+    // =====================
     tr.addEventListener("click", () => {
-    // 🛑 Αν είμαστε σε bulk select mode, ΜΗΝ ανοίγεις task view
-    if (state.assetSelectedTaskIds.size > 0) {
-      return;
-    }
 
-    viewTask(t.id);
-  });
+      // If bulk selection exists,
+      // do not open Task View
+      if (state.assetSelectedTaskIds.size > 0) {
+        return;
+      }
+
+      viewTask(t.id);
+    });
 
     tbody.appendChild(tr);
   });
 
-  // 🔥 force reflow (display:none → block safety)
+  // 🔥 force reflow
   tasksWrap.offsetHeight;
   tbody.offsetHeight;
 }
+
 // =====================
 // ASSET HISTORY TABLE (EXECUTIONS)
 // =====================
@@ -508,23 +582,56 @@ function highlightActiveHistoryLegend() {
 // =====================
 // CLOSE
 // =====================
-function closeAssetView() {
-  const overlay = document.getElementById("assetViewOverlay");
-  if (overlay) overlay.style.display = "none";
 
-  // ✅ reset state (asset view scope)
+function closeAssetView() {
+
+  const overlay =
+    document.getElementById("assetViewOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+  // =====================
+  // RESET ASSET VIEW STATE
+  // =====================
+
   state.assetAllTasks = [];
   state.assetActiveTasks = [];
   state.assetHistoryTasks = [];
   state.currentAssetSerial = null;
 
-  // ✅ reset selection / filter (safe)
+  // =====================
+  // RESET SELECTION / FILTERS
+  // =====================
+
   state.assetSelectedTaskIds?.clear?.();
+
   state.assetHistoryTypeFilter = "all";
   state.assetHistoryTaskFilter = null;
+  state.assetTaskSearchQuery = "";
 
-  const tbody = document.querySelector("#assetTasksTable tbody");
-  if (tbody) tbody.innerHTML = "";
+  // =====================
+  // RESET SEARCH INPUT
+  // =====================
+
+  const searchInput =
+    document.getElementById("assetTaskSearch");
+
+  if (searchInput) {
+    searchInput.value = "";
+  }
+
+  // =====================
+  // CLEAR ACTIVE TASK TABLE
+  // =====================
+
+  const tbody =
+    document.querySelector("#assetTasksTable tbody");
+
+  if (tbody) {
+    tbody.innerHTML = "";
+  }
 }
 
 // =====================
@@ -1165,38 +1272,92 @@ document
   });
   
   // =====================
-// ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
+  // ASSET ADD TASK BUTTON (USING CURRENT ASSET CONTEXT)
+  // =====================
+
+  document.getElementById("assetAddTaskBtn")
+    ?.addEventListener("click", () => {
+
+      if (!state.currentAssetSerial) {
+        alert("Asset context missing");
+        return;
+      }
+
+      const ref =
+        state.assetAllTasks[0] ||
+        state.assetsData.find(a =>
+          String(a.serial_number).trim() === String(state.currentAssetSerial).trim()
+        );
+
+      if (!ref) {
+        alert("Asset data not found");
+        return;
+      }
+
+      // Bring Add Task modal above Asset View
+      const addOverlay = document.getElementById("addTaskOverlay");
+      if (addOverlay) {
+        addOverlay.style.zIndex = "1200"; // higher than assetViewOverlay
+      }
+
+      openAddTaskForAsset(
+        ref.machine_name || ref.model,
+        state.currentAssetSerial,
+        ref.line_code || ref.line
+      );
+    });
+
+  /* =====================
+    FILTER ASSET ACTIVE TASKS – FREE TEXT
+  ===================== */
+
+  function getFilteredAssetActiveTasks(tasks) {
+
+    const list =
+      Array.isArray(tasks) ? tasks : [];
+
+    const query =
+      String(state.assetTaskSearchQuery || "")
+        .trim()
+        .toLowerCase();
+
+    // No search → return all active tasks
+    if (!query) {
+      return list;
+    }
+
+    return list.filter(task => {
+
+      const searchableText = [
+        task.task,
+        task.section,
+        task.unit,
+        task.type,
+        task.notes
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(query);
+    });
+  }
+
+  // =====================
+// ASSET ACTIVE TASKS – FREE TEXT SEARCH
 // =====================
 
-document.getElementById("assetAddTaskBtn")
-  ?.addEventListener("click", () => {
+document
+  .getElementById("assetTaskSearch")
+  ?.addEventListener("input", e => {
 
-    if (!state.currentAssetSerial) {
-      alert("Asset context missing");
-      return;
-    }
+    state.assetTaskSearchQuery =
+      e.target.value || "";
 
-    const ref =
-      state.assetAllTasks[0] ||
-      state.assetsData.find(a =>
-        String(a.serial_number).trim() === String(state.currentAssetSerial).trim()
-      );
-
-    if (!ref) {
-      alert("Asset data not found");
-      return;
-    }
-
-    // Bring Add Task modal above Asset View
-    const addOverlay = document.getElementById("addTaskOverlay");
-    if (addOverlay) {
-      addOverlay.style.zIndex = "1200"; // higher than assetViewOverlay
-    }
-
-    openAddTaskForAsset(
-      ref.machine_name || ref.model,
-      state.currentAssetSerial,
-      ref.line_code || ref.line
+    renderAssetTasksTable(
+      Array.isArray(state.assetActiveTasks)
+        ? state.assetActiveTasks
+        : []
     );
   });
 

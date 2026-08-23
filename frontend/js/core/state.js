@@ -40,6 +40,7 @@ window.state = {
 
   // ASSET VIEW
   currentAssetSerial: null,
+  assetTaskSearchQuery: "",
   assetScopedTasks: [],
   assetAllTasks: [],
   assetActiveTasks: [],
