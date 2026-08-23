@@ -195,6 +195,38 @@ function highlightAssetTaskSearch(value) {
   );
 }
 
+/* =====================
+   HIGHLIGHT ASSET HISTORY SEARCH
+===================== */
+
+function highlightAssetHistorySearch(value) {
+
+  const text =
+    String(value ?? "");
+
+  const query =
+    String(state.assetHistorySearchQuery || "")
+      .trim();
+
+  if (!query) {
+    return text;
+  }
+
+  const escapedQuery =
+    query.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const regex =
+    new RegExp(`(${escapedQuery})`, "gi");
+
+  return text.replace(
+    regex,
+    `<mark class="asset-history-search-highlight">$1</mark>`
+  );
+}
+
 // =====================
 // ASSET ACTIVE TASKS TABLE – BULLETPROOF + MULTISELECT
 // =====================
@@ -417,183 +449,354 @@ function renderAssetTasksTable(tasks) {
 // ASSET HISTORY TABLE (EXECUTIONS)
 // =====================
 function renderAssetHistoryTable(history) {
+
   renderAssetHistoryActiveFilter();
-  const tasksWrap = document.querySelector(".asset-tasks-table");
-  const historyWrap = document.querySelector(".asset-history-table");
-  const tbody = document.querySelector("#assetHistoryTable tbody");
+
+  const tasksWrap =
+    document.querySelector(".asset-tasks-table");
+
+  const historyWrap =
+    document.querySelector(".asset-history-table");
+
+  const tbody =
+    document.querySelector("#assetHistoryTable tbody");
 
   if (!historyWrap || !tbody) return;
 
-  // toggle views
-  if (tasksWrap) tasksWrap.style.display = "none";
+  // =====================
+  // TOGGLE VIEWS
+  // =====================
+
+  if (tasksWrap) {
+    tasksWrap.style.display = "none";
+  }
+
   historyWrap.style.display = "block";
 
   tbody.innerHTML = "";
 
-  const list = Array.isArray(history) ? history : [];
+  const list =
+    Array.isArray(history)
+      ? history
+      : [];
+
+  // =====================
+  // EMPTY HISTORY
+  // =====================
 
   if (list.length === 0) {
+
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty">No history records</td>
+        <td colspan="6" class="empty">
+          No history records
+        </td>
       </tr>
     `;
+
     return;
   }
 
-  /* =====================
-     APPLY FILTERS
-  ===================== */
-  const filtered = getFilteredAssetHistory(list);
+  // =====================
+  // APPLY FILTERS
+  // =====================
+
+  const filtered =
+    getFilteredAssetHistory(list);
 
   if (filtered.length === 0) {
+
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty">No matching history records</td>
+        <td colspan="6" class="empty">
+          No matching history records
+        </td>
       </tr>
     `;
+
     return;
   }
-  const sortedHistory = [...filtered].sort((a, b) => {
 
-  const dateCompare =
-    new Date(b.executed_at || "1900-01-01") -
-    new Date(a.executed_at || "1900-01-01");
+  // =====================
+  // SORT
+  // Date DESC → Section ASC
+  // =====================
 
-  if (dateCompare !== 0) {
-    return dateCompare;
-  }
+  const sortedHistory =
+    [...filtered].sort((a, b) => {
 
-  return (a.section || "")
-    .localeCompare(b.section || "");
-});
+      const dateCompare =
+        new Date(b.executed_at || "1900-01-01") -
+        new Date(a.executed_at || "1900-01-01");
 
-  /* =====================
-     RENDER ROWS
-  ===================== */
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+
+      return (a.section || "")
+        .localeCompare(b.section || "");
+    });
+
+  // =====================
+  // RENDER ROWS
+  // =====================
+
   sortedHistory.forEach(e => {
 
-    const tr = document.createElement("tr");
+    const tr =
+      document.createElement("tr");
+
     tr.classList.add("clickable");
 
-    const execType = getExecutionType(e);
+    // =====================
+    // EXECUTION TYPE
+    // =====================
 
-    if (execType === "unplanned") tr.classList.add("history-unplanned");
-    else if (execType === "preventive") tr.classList.add("history-preventive");
-    else tr.classList.add("history-planned");
+    const execType =
+      getExecutionType(e);
+
+    if (execType === "unplanned") {
+      tr.classList.add("history-unplanned");
+    }
+    else if (execType === "preventive") {
+      tr.classList.add("history-preventive");
+    }
+    else {
+      tr.classList.add("history-planned");
+    }
+
+    // =====================
+    // ROW CONTENT
+    // =====================
 
     tr.innerHTML = `
-      <td>${formatDate(e.executed_at)}</td>
+      <td>
+        ${formatDate(e.executed_at)}
+      </td>
 
       <td class="task-filter">
+
         <div>
-          ${e.task}
+          ${highlightAssetHistorySearch(e.task || "-")}
         </div>
 
         ${
           (e.section || e.unit)
             ? `
               <small>
-                ${e.section || ""}
-                ${e.section && e.unit ? " / " : ""}
-                ${e.unit || ""}
+                ${highlightAssetHistorySearch(e.section || "")}
+
+                ${
+                  e.section && e.unit
+                    ? " / "
+                    : ""
+                }
+
+                ${highlightAssetHistorySearch(e.unit || "")}
               </small>
             `
             : ""
         }
 
         ${renderImpactBadge(e.impact)}
+
       </td>
 
-      <td>${e.type || "-"}</td>
-      <td>${e.executed_by || "-"}</td>
-      <td>${e.notes || "-"}</td>
+      <td>
+        ${highlightAssetHistorySearch(e.type || "-")}
+      </td>
 
       <td>
-        <button class="btn-secondary btn-sm">View</button>
+        ${highlightAssetHistorySearch(e.executed_by || "-")}
+      </td>
+
+      <td>
+        ${highlightAssetHistorySearch(e.notes || "-")}
+      </td>
+
+      <td>
+        <button
+          class="btn-secondary btn-sm"
+          type="button">
+          View
+        </button>
       </td>
     `;
 
-    /* =====================
-       TASK CLICK → FILTER
-    ===================== */
-    const taskCell = tr.querySelector(".task-filter");
+    // =====================
+    // TASK CLICK → EXACT TIMELINE FILTER
+    // =====================
+
+    const taskCell =
+      tr.querySelector(".task-filter");
 
     taskCell.onclick = ev => {
+
       ev.stopPropagation();
 
-      // toggle task filter
       const taskKey =
         `${e.task}||${e.section || ""}||${e.unit || ""}`;
 
-      if (state.assetHistoryTaskFilter === taskKey) {
+      if (
+        state.assetHistoryTaskFilter === taskKey
+      ) {
+
         state.assetHistoryTaskFilter = null;
+
       } else {
+
         state.assetHistoryTaskFilter = taskKey;
+
+        // Exact timeline mode
+        // → clear free-text search
+        state.assetHistorySearchQuery = "";
+
+        const historySearch =
+          document.getElementById(
+            "assetHistorySearch"
+          );
+
+        if (historySearch) {
+          historySearch.value = "";
+        }
       }
 
-      // 🔹 clear legend filter
+      // Exact task filter clears legend type filter
       state.assetHistoryTypeFilter = "all";
+
       highlightActiveHistoryLegend();
 
-      renderAssetHistoryTable(state.assetHistoryTasks);
+      renderAssetHistoryTable(
+        state.assetHistoryTasks
+      );
     };
 
-    /* =====================
-       VIEW BUTTON
-    ===================== */
-    tr.querySelector("button").onclick = ev => {
-      ev.stopPropagation();
-      viewHistoryEntry(e.id);
-    };
+    // =====================
+    // VIEW BUTTON
+    // =====================
+
+    const viewBtn =
+      tr.querySelector("button");
+
+    if (viewBtn) {
+
+      viewBtn.onclick = ev => {
+
+        ev.stopPropagation();
+
+        viewHistoryEntry(e.id);
+      };
+    }
 
     tbody.appendChild(tr);
   });
 }
 
 // =====================
-// ASSET HISTORY ACTIVE FILTER (TASK CLICK & LEGEND SYNC)
+// ASSET HISTORY ACTIVE FILTER
+// TASK CLICK & LEGEND SYNC
 // =====================
 
 function renderAssetHistoryActiveFilter() {
 
-  const box = document.getElementById("assetHistoryActiveFilter");
+  const box =
+    document.getElementById("assetHistoryActiveFilter");
+
   if (!box) return;
 
-  // task filter
+  // =====================
+  // TASK FILTER
+  // =====================
   if (state.assetHistoryTaskFilter) {
+
+    const [
+      task,
+      section,
+      unit
+    ] = String(state.assetHistoryTaskFilter).split("||");
+
+    let context = "";
+
+    if (section || unit) {
+      context = `
+        <small>
+          ${section || ""}
+          ${section && unit ? " / " : ""}
+          ${unit || ""}
+        </small>
+      `;
+    }
+
     box.innerHTML = `
       <span>
-        Filter: ${state.assetHistoryTaskFilter}
-        <button id="clearHistoryFilter">✕</button>
+        Filter:
+        <strong>${task || "-"}</strong>
+        ${context}
+        <button
+          id="clearHistoryFilter"
+          type="button"
+          title="Clear filter"
+        >
+          ✕
+        </button>
       </span>
     `;
   }
 
-  // type filter
+  // =====================
+  // TYPE FILTER
+  // =====================
   else if (state.assetHistoryTypeFilter !== "all") {
+
+    const typeLabels = {
+      unplanned: "Breakdown",
+      preventive: "Preventive",
+      planned: "Planned (Manual)"
+    };
+
+    const label =
+      typeLabels[state.assetHistoryTypeFilter] ||
+      state.assetHistoryTypeFilter;
+
     box.innerHTML = `
       <span>
-        Filter: ${state.assetHistoryTypeFilter}
-        <button id="clearHistoryFilter">✕</button>
+        Filter:
+        <strong>${label}</strong>
+        <button
+          id="clearHistoryFilter"
+          type="button"
+          title="Clear filter"
+        >
+          ✕
+        </button>
       </span>
     `;
   }
 
+  // =====================
+  // NO ACTIVE FILTER
+  // =====================
   else {
     box.innerHTML = "";
     return;
   }
 
-  document.getElementById("clearHistoryFilter").onclick = () => {
+  // =====================
+  // CLEAR FILTER
+  // =====================
+  document
+    .getElementById("clearHistoryFilter")
+    ?.addEventListener("click", () => {
 
-    state.assetHistoryTaskFilter = null;
-    state.assetHistoryTypeFilter = "all";
+      state.assetHistoryTaskFilter = null;
+      state.assetHistoryTypeFilter = "all";
 
-    highlightActiveHistoryLegend();
+      highlightActiveHistoryLegend();
 
-    renderAssetHistoryTable(state.assetHistoryTasks);
-  };
+      renderAssetHistoryTable(
+        state.assetHistoryTasks
+      );
+    });
 }
 
 /* =====================
@@ -610,6 +813,29 @@ function highlightActiveHistoryLegend() {
       );
     });
 }
+
+// =====================
+// ASSET HISTORY – FREE TEXT SEARCH
+// =====================
+
+document
+  .getElementById("assetHistorySearch")
+  ?.addEventListener("input", e => {
+
+    state.assetHistorySearchQuery =
+      e.target.value || "";
+
+    // Free search cancels exact task timeline filter
+    state.assetHistoryTaskFilter = null;
+
+    renderAssetHistoryActiveFilter();
+
+    renderAssetHistoryTable(
+      Array.isArray(state.assetHistoryTasks)
+        ? state.assetHistoryTasks
+        : []
+    );
+  });
 
 // =====================
 // CLOSE
@@ -641,7 +867,9 @@ function closeAssetView() {
 
   state.assetHistoryTypeFilter = "all";
   state.assetHistoryTaskFilter = null;
+
   state.assetTaskSearchQuery = "";
+  state.assetHistorySearchQuery = "";
 
   // =====================
   // RESET SEARCH INPUT
@@ -653,6 +881,12 @@ function closeAssetView() {
   if (searchInput) {
     searchInput.value = "";
   }
+  const historySearchInput =
+  document.getElementById("assetHistorySearch");
+
+if (historySearchInput) {
+  historySearchInput.value = "";
+}
 
   // =====================
   // CLEAR ACTIVE TASK TABLE
@@ -902,20 +1136,30 @@ async function completeBulkTasks({
 function activateAssetTab(tabName) {
   if (!tabName) return;
 
-  // --- UI state ---
+  // =====================
+  // UI STATE
+  // =====================
+
   document.querySelectorAll(".asset-tab").forEach(tab => {
-    tab.classList.toggle("active", tab.dataset.tab === tabName);
+    tab.classList.toggle(
+      "active",
+      tab.dataset.tab === tabName
+    );
   });
 
   document.querySelectorAll(".asset-tab-panel").forEach(panel => {
     panel.style.display =
-      panel.dataset.panel === tabName ? "block" : "none";
+      panel.dataset.panel === tabName
+        ? "block"
+        : "none";
   });
 
   // =====================
   // ACTION BUTTON VISIBILITY
   // =====================
-  const printBtn = document.getElementById("printAssetPreventiveBtn");
+
+  const printBtn =
+    document.getElementById("printAssetPreventiveBtn");
 
   if (printBtn) {
 
@@ -932,39 +1176,56 @@ function activateAssetTab(tabName) {
       tabName === "active" && hasPreventive
         ? "inline-flex"
         : "none";
-  }  
-
-  // --- DATA render (SAFE) ---
-  if (tabName === "active") {
-    renderAssetTasksTable(
-      Array.isArray(state.assetActiveTasks) ? state.assetActiveTasks : []
-    );
   }
 
-if (tabName === "history") {
+  // =====================
+  // ACTIVE TASKS
+  // =====================
 
-  // reset filters when entering history tab
-  state.assetHistoryTaskFilter = null;
-  state.assetHistoryTypeFilter = "all";
-  state.historyDateFrom = null;
-  state.historyDateTo = null;
+  if (tabName === "active") {
 
-  bindHistoryRangeFilters();
+    renderAssetTasksTable(
+      Array.isArray(state.assetActiveTasks)
+        ? state.assetActiveTasks
+        : []
+    );
 
-  renderAssetHistoryTable(
-    Array.isArray(state.assetHistoryTasks)
-      ? state.assetHistoryTasks
-      : []
-  );
+    return;
+  }
 
-  highlightActiveHistoryLegend();
+  // =====================
+  // HISTORY
+  // =====================
 
+  if (tabName === "history") {
+
+    // Reset History filters
+    state.assetHistoryTaskFilter = null;
+    state.assetHistoryTypeFilter = "all";
+    state.historyDateFrom = null;
+    state.historyDateTo = null;
+    state.assetHistorySearchQuery = "";
+
+    // Reset History search input
+    const historySearch =
+      document.getElementById("assetHistorySearch");
+
+    if (historySearch) {
+      historySearch.value = "";
+    }
+
+    bindHistoryRangeFilters();
+
+    renderAssetHistoryTable(
+      Array.isArray(state.assetHistoryTasks)
+        ? state.assetHistoryTasks
+        : []
+    );
+
+    highlightActiveHistoryLegend();
+  }
 }
-}
 
-// =====================
-// TAB CLICK HANDLER (SCOPED)
-// =====================
 // =====================
 // TAB CLICK HANDLER
 // Bind only once

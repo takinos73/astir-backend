@@ -57,6 +57,7 @@ window.state = {
  assetHistoryTaskFilter: null,
  lockSectionOnce : false,
  followUpSectionValue : null,
+ assetHistorySearchQuery: "",
 
  // TECHNICIANS
  techniciansData: [],

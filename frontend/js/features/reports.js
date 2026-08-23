@@ -8,23 +8,22 @@ function getFilteredAssetHistory(list) {
 
   let filtered = list;
 
-   /* DATE FILTER */
+  /* =====================
+     DATE FILTER
+  ===================== */
 
   if (state.historyDateFrom) {
 
     const from = state.historyDateFrom;
 
     filtered = filtered.filter(e => {
-      console.log("EXEC:", e.executed_at);
 
       const execDate = new Date(e.executed_at);
 
       if (isNaN(execDate)) return false;
 
       return execDate >= from;
-
     });
-
   }
 
   if (state.historyDateTo) {
@@ -38,22 +37,28 @@ function getFilteredAssetHistory(list) {
       if (isNaN(execDate)) return false;
 
       return execDate <= to;
-
     });
-
   }
-  
-  /* TYPE FILTER */
+
+  /* =====================
+     TYPE FILTER
+  ===================== */
+
   if (state.assetHistoryTypeFilter !== "all") {
 
     filtered = filtered.filter(e => {
+
       const type = getExecutionType(e);
+
       return type === state.assetHistoryTypeFilter;
     });
-
   }
 
-  /* TASK FILTER */
+  /* =====================
+     EXACT TASK TIMELINE FILTER
+     Has priority over free-text search
+  ===================== */
+
   if (state.assetHistoryTaskFilter) {
 
     filtered = filtered.filter(e => {
@@ -62,13 +67,43 @@ function getFilteredAssetHistory(list) {
         `${e.task}||${e.section || ""}||${e.unit || ""}`;
 
       return key === state.assetHistoryTaskFilter;
-
     });
+  }
 
+  /* =====================
+     FREE TEXT SEARCH
+     Only when no exact task filter is active
+  ===================== */
+
+  else {
+
+    const query =
+      String(state.assetHistorySearchQuery || "")
+        .trim()
+        .toLowerCase();
+
+    if (query) {
+
+      filtered = filtered.filter(e => {
+
+        const searchableText = [
+          e.task,
+          e.section,
+          e.unit,
+          e.type,
+          e.executed_by,
+          e.notes
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(query);
+      });
+    }
   }
 
   return filtered;
-
 }
 /* =====================================================
    FILTER REPORT EXECUTIONS

@@ -2756,7 +2756,11 @@ tr.history-unplanned {
 .asset-history-legend .legend-item[data-type="all"]::before {
   background: #9ca3af;
 }
-
+.asset-history-search-highlight {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #fff2a8;
+}
 
 
 /* =====================
