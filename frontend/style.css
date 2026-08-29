@@ -3072,48 +3072,6 @@ tr.history-unplanned {
   padding: 0 16px;
   max-width: 1400px;
 }
-/* =====================
-   DASHBOARD – COMPACT MODE
-===================== */
-
-#assetDashboard.compact .dashboard-card {
-  padding: 10px 12px;
-}
-
-/* Top row tighter */
-#assetDashboard.compact .asset-card-top {
-  margin-bottom: 4px;
-}
-
-/* Machine title smaller */
-#assetDashboard.compact .asset-title {
-  font-size: 0.9rem;
-  margin-bottom: 4px;
-}
-
-/* Metrics grid becomes 2 rows max */
-#assetDashboard.compact .asset-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px 10px;
-  font-size: 0.75rem;
-}
-
-/* Hide less critical metrics */
-#assetDashboard.compact .metric.mttr,
-#assetDashboard.compact .metric.manual {
-  display: none;
-}
-
-/* Actions more subtle */
-#assetDashboard.compact .asset-actions {
-  margin-top: 6px;
-}
-
-#assetDashboard.compact .asset-actions button {
-  font-size: 0.7rem;
-  padding: 4px 6px;
-}
 
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
