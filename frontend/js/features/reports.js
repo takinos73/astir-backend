@@ -463,302 +463,596 @@ if (state.historyDateFrom) {
    STATUS REPORT – PDF
    (GROUPED BY LINE / ASSET)
 ===================== */
-function generateStatusReportPdf() {
+async function generateStatusReportPdf() {
 
-  const tasks = getFilteredTasksForStatusReport();
+  try {
 
-  if (tasks.length === 0) {
-    alert("No tasks found for this report");
-    return;
-  }
-
-  const from =
-    document.getElementById("dateFrom")?.value || "—";
-
-  const to =
-    document.getElementById("dateTo")?.value || "—";
-
-  const selectedLines =
-    getSelectedReportLines();
-
-  const lineFilterLabel =
-    selectedLines.includes("all")
-      ? "ALL"
-      : selectedLines.join(", ");
-
-  const status =
-    document.getElementById("reportStatus")?.value || "ALL";
-
-  // 🔽 SORT: LINE → ASSET → DUE DATE
-  const sorted = [...tasks].sort((a, b) => {
-
-    const la =
-      a.line_code || a.line || "";
-
-    const lb =
-      b.line_code || b.line || "";
-
-    if (la !== lb) {
-      return la.localeCompare(
-        lb,
-        "el",
-        { numeric: true }
+    // =========================
+    // TEST EXTERNAL TEMPLATE
+    // =========================
+    const template =
+      await loadReportTemplate(
+        "maintenance-status"
       );
-    }
 
-    const aa =
-      `${a.machine_name} ${a.serial_number || ""}`;
-
-    const ab =
-      `${b.machine_name} ${b.serial_number || ""}`;
-
-    if (aa !== ab) {
-      return aa.localeCompare(ab, "el");
-    }
-
-    return (
-      new Date(a.due_date || 0) -
-      new Date(b.due_date || 0)
+    console.log(
+      "Maintenance Status template loaded:",
+      template
     );
-  });
-
-  // ⏱ GRAND TOTAL
-  const totalMinutes = tasks.reduce((sum, t) => {
-    return t.duration_min != null ? sum + Number(t.duration_min) : sum;
-  }, 0);
-
-  let totalDurationLabel = "";
-  if (totalMinutes > 0) {
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    totalDurationLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
-
-  let html = `
-  <html>
-  <head>
-    <title>Maintenance Status Report</title>
-    <style>
-      @page { size: A4; margin: 15mm; }
-      body { font-family: Arial, sans-serif; font-size: 12px; }
-      h2 { margin-bottom: 6px; }
-      h3 { margin: 14px 0 6px; border-bottom: 2px solid #ccc; padding-bottom: 2px; }
-      h4 { margin: 10px 0 4px; font-size: 13px; }
-      .meta { margin-bottom: 14px; color: #555; }
-
-      table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-      th, td {
-        border: 1px solid #ddd;
-        padding: 6px 8px;
-        vertical-align: top;
-      }
-      th { background: #eee; }
-
-      .sn { font-size: 11px; color: #666; }
-
-      .status-overdue {
-  color: #c62828;
-  font-weight: bold;
-}
-
-/* Preventive tasks */
-.status-planned {
-  color: #2e7d32;   /* πράσινο */
-  font-weight: bold;
-}
-
-/* Planned manual tasks */
-.status-planned_manual {
-  color: #fe9c00;   /* amber */
-  font-weight: bold;
-}
 
 
-      .line-footer {
-        margin: 8px 0 12px;
-        padding-top: 4px;
-        border-top: 1px dashed #d6d6d6;
-        font-size: 11px;
-        color: #666;
-        text-align: right;
-      }
-    </style>
-  </head>
-  <body>
+    // =========================
+    // EXISTING REPORT LOGIC
+    // =========================
+    const tasks =
+      getFilteredTasksForStatusReport();
 
-    <h2>Maintenance Status Report</h2>
-
-    <div class="meta">
-      Date: ${new Date().toLocaleDateString("el-GR")}<br>
-      Period: ${from} → ${to}<br>
-      Line: ${lineFilterLabel}<br>
-      Status: ${status.toUpperCase()}<br>
-      <strong>Tasks: ${tasks.length}</strong>
-      ${totalDurationLabel ? ` • Estimated duration: ${totalDurationLabel}` : ""}
-    </div>
-  `;
-
-  let currentLine = null;
-  let currentAsset = null;
-  let lineMinutes = 0;
-  const lineSummary = {}; 
-
-  sorted.forEach(t => {
-  const line = t.line_code || t.line || "—";
-  const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
-
-  // =====================
-  // INIT LINE SUMMARY
-  // =====================
-  if (!lineSummary[line]) {
-    lineSummary[line] = {
-      preventive: 0,
-      manual: 0,
-      overdue: 0
-    };
-  }
-
-  // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
-  if (line !== currentLine && currentAsset !== null) {
-    html += `
-          </tbody>
-        </table>
-    `;
-    currentAsset = null;
-  }
-
-  // 🟦 NEW LINE
-  if (line !== currentLine) {
-    if (currentLine !== null) {
-      html += `
-        <div class="line-footer">
-          <strong>Summary:</strong>
-          <span class="status-planned">
-            Preventive: ${lineSummary[currentLine]?.preventive || 0}
-          </span>
-          &nbsp;•&nbsp;
-          <span class="status-planned_manual">
-            Planned (Manual): ${lineSummary[currentLine]?.manual || 0}
-          </span>
-          &nbsp;•&nbsp;
-          <span class="status-overdue">
-            Overdue: ${lineSummary[currentLine]?.overdue || 0}
-          </span>
-          <br>
-          LINE total duration: ${formatDuration(lineMinutes)}
-        </div>
-      `;
+    if (tasks.length === 0) {
+      alert("No tasks found for this report");
+      return;
     }
 
-    html += `<h3>LINE ${line}</h3>`;
-    currentLine = line;
-    currentAsset = null;
-    lineMinutes = 0;
-  }
+    const from =
+      document.getElementById("dateFrom")?.value || "—";
 
-  // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
-  if (assetKey !== currentAsset && currentAsset !== null) {
-    html += `
-          </tbody>
-        </table>
-    `;
-  }
+    const to =
+      document.getElementById("dateTo")?.value || "—";
 
-  // 🟨 NEW ASSET
-  if (assetKey !== currentAsset) {
-    html += `
-      <h4>
-        ${t.machine_name}
-        <span class="sn">SN: ${t.serial_number || "-"}</span>
-      </h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Type</th>
-            <th>Due Date</th>
-            <th>Duration</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    currentAsset = assetKey;
-  }
+    const selectedLines =
+      getSelectedReportLines();
 
-  if (t.duration_min != null) {
-    lineMinutes += Number(t.duration_min);
-  }
+    const lineFilterLabel =
+      selectedLines.includes("all")
+        ? "ALL"
+        : selectedLines.join(", ");
 
-  const isOverdue =
-  getDueState(t) === "overdue";
+    const status =
+      document.getElementById("reportStatus")?.value || "ALL";
 
-  // ✅ TYPE CLASS (preventive vs planned manual)
-  let statusClass = "status-planned";
-  let statusLabel = "Preventive";
 
-  if (typeof isPlannedManual === "function" && isPlannedManual(t)) {
-    statusClass = "status-planned_manual";
-    statusLabel = "Planned (Manual)";
-  }
+    // =========================
+    // SORT:
+    // LINE → ASSET → DUE DATE
+    // =========================
+    const sorted = [...tasks].sort((a, b) => {
 
-  if (isOverdue) {
-    statusClass = "status-overdue";
-    statusLabel = "Overdue";
-  }
+      const la =
+        a.line_code || a.line || "";
 
-  // =====================
-  // UPDATE LINE SUMMARY
-  // =====================
-  if (isOverdue) {
-    lineSummary[line].overdue++;
-  } else if (typeof isPlannedManual === "function" && isPlannedManual(t)) {
-    lineSummary[line].manual++;
-  } else {
-    lineSummary[line].preventive++;
-  }
+      const lb =
+        b.line_code || b.line || "";
 
-  html += `
-    <tr>
-      <td>
-        <div>${t.task}</div>
+      if (la !== lb) {
+        return la.localeCompare(
+          lb,
+          "el",
+          { numeric: true }
+        );
+      }
+
+      const aa =
+        `${a.machine_name} ${a.serial_number || ""}`;
+
+      const ab =
+        `${b.machine_name} ${b.serial_number || ""}`;
+
+      if (aa !== ab) {
+        return aa.localeCompare(
+          ab,
+          "el"
+        );
+      }
+
+      return (
+        new Date(a.due_date || 0) -
+        new Date(b.due_date || 0)
+      );
+    });
+
+
+    // =========================
+    // GRAND TOTAL
+    // =========================
+    const totalMinutes =
+      tasks.reduce((sum, t) => {
+
+        return t.duration_min != null
+          ? sum + Number(t.duration_min)
+          : sum;
+
+      }, 0);
+
+
+    let totalDurationLabel = "";
+
+    if (totalMinutes > 0) {
+
+      const h =
+        Math.floor(totalMinutes / 60);
+
+      const m =
+        totalMinutes % 60;
+
+      totalDurationLabel =
+        h > 0
+          ? `${h}h ${m}m`
+          : `${m}m`;
+    }
+
+
+    // =========================
+    // CURRENT EMBEDDED HTML
+    // TEMPORARILY KEPT
+    // =========================
+    let html = `
+    <html>
+    <head>
+
+      <title>
+        Maintenance Status Report
+      </title>
+
+      <style>
+
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+        }
+
+        h2 {
+          margin-bottom: 6px;
+        }
+
+        h3 {
+          margin: 14px 0 6px;
+          border-bottom: 2px solid #ccc;
+          padding-bottom: 2px;
+        }
+
+        h4 {
+          margin: 10px 0 4px;
+          font-size: 13px;
+        }
+
+        .meta {
+          margin-bottom: 14px;
+          color: #555;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 6px;
+        }
+
+        th,
+        td {
+          border: 1px solid #ddd;
+          padding: 6px 8px;
+          vertical-align: top;
+        }
+
+        th {
+          background: #eee;
+        }
+
+        .sn {
+          font-size: 11px;
+          color: #666;
+        }
+
+        .status-overdue {
+          color: #c62828;
+          font-weight: bold;
+        }
+
+        .status-planned {
+          color: #2e7d32;
+          font-weight: bold;
+        }
+
+        .status-planned_manual {
+          color: #fe9c00;
+          font-weight: bold;
+        }
+
+        .line-footer {
+          margin: 8px 0 12px;
+          padding-top: 4px;
+          border-top: 1px dashed #d6d6d6;
+          font-size: 11px;
+          color: #666;
+          text-align: right;
+        }
+
+      </style>
+
+    </head>
+
+    <body>
+
+      <h2>
+        Maintenance Status Report
+      </h2>
+
+      <div class="meta">
+
+        Date:
+        ${new Date().toLocaleDateString("el-GR")}
+        <br>
+
+        Period:
+        ${from} → ${to}
+        <br>
+
+        Line:
+        ${lineFilterLabel}
+        <br>
+
+        Status:
+        ${status.toUpperCase()}
+        <br>
+
+        <strong>
+          Tasks: ${tasks.length}
+        </strong>
+
         ${
-          t.section || t.unit
-            ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">
-                ${t.section || ""}
-                ${t.section && t.unit ? " / " : ""}
-                ${t.unit || ""}
-              </div>`
+          totalDurationLabel
+            ? ` • Estimated duration: ${totalDurationLabel}`
             : ""
         }
-      </td>
-      <td>${t.type || "-"}</td>
-      <td>${formatDate(t.due_date)}</td>
-      <td>${formatDuration(t.duration_min)}</td>
-      <td class="${statusClass}">
-        ${statusLabel}
-      </td>
-    </tr>
-  `;
-});
 
-
-  // 🔚 LAST LINE FOOTER
-  html += `
-        </tbody>
-      </table>
-      <div class="line-footer">
-        LINE total duration: ${formatDuration(lineMinutes)}
       </div>
-  `;
+    `;
 
-  html += `
-  </body>
-  </html>
-  `;
 
-  // 🔹 PRINT VIA IFRAME (SAFE)
-  printReportHtml(html);
+    let currentLine = null;
+    let currentAsset = null;
+    let lineMinutes = 0;
+
+    const lineSummary = {};
+
+
+    // =========================
+    // BUILD REPORT CONTENT
+    // =========================
+    sorted.forEach(t => {
+
+      const line =
+        t.line_code ||
+        t.line ||
+        "—";
+
+      const assetKey =
+        `${t.machine_name}||${t.serial_number || ""}`;
+
+
+      // =========================
+      // INIT LINE SUMMARY
+      // =========================
+      if (!lineSummary[line]) {
+
+        lineSummary[line] = {
+          preventive: 0,
+          manual: 0,
+          overdue: 0
+        };
+      }
+
+
+      // =========================
+      // CLOSE PREVIOUS ASSET TABLE
+      // WHEN LINE CHANGES
+      // =========================
+      if (
+        line !== currentLine &&
+        currentAsset !== null
+      ) {
+
+        html += `
+            </tbody>
+          </table>
+        `;
+
+        currentAsset = null;
+      }
+
+
+      // =========================
+      // NEW LINE
+      // =========================
+      if (line !== currentLine) {
+
+        if (currentLine !== null) {
+
+          html += `
+            <div class="line-footer">
+
+              <strong>
+                Summary:
+              </strong>
+
+              <span class="status-planned">
+                Preventive:
+                ${
+                  lineSummary[currentLine]
+                    ?.preventive || 0
+                }
+              </span>
+
+              &nbsp;•&nbsp;
+
+              <span class="status-planned_manual">
+                Planned (Manual):
+                ${
+                  lineSummary[currentLine]
+                    ?.manual || 0
+                }
+              </span>
+
+              &nbsp;•&nbsp;
+
+              <span class="status-overdue">
+                Overdue:
+                ${
+                  lineSummary[currentLine]
+                    ?.overdue || 0
+                }
+              </span>
+
+              <br>
+
+              LINE total duration:
+              ${formatDuration(lineMinutes)}
+
+            </div>
+          `;
+        }
+
+
+        html += `
+          <h3>
+            LINE ${line}
+          </h3>
+        `;
+
+
+        currentLine = line;
+        currentAsset = null;
+        lineMinutes = 0;
+      }
+
+
+      // =========================
+      // CLOSE PREVIOUS ASSET TABLE
+      // WHEN ASSET CHANGES
+      // =========================
+      if (
+        assetKey !== currentAsset &&
+        currentAsset !== null
+      ) {
+
+        html += `
+            </tbody>
+          </table>
+        `;
+      }
+
+
+      // =========================
+      // NEW ASSET
+      // =========================
+      if (assetKey !== currentAsset) {
+
+        html += `
+          <h4>
+
+            ${t.machine_name}
+
+            <span class="sn">
+              SN:
+              ${t.serial_number || "-"}
+            </span>
+
+          </h4>
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Due Date</th>
+                <th>Duration</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+        `;
+
+
+        currentAsset = assetKey;
+      }
+
+
+      // =========================
+      // LINE DURATION
+      // =========================
+      if (t.duration_min != null) {
+
+        lineMinutes +=
+          Number(t.duration_min);
+      }
+
+
+      // =========================
+      // STATUS
+      // =========================
+      const isOverdue =
+        getDueState(t) === "overdue";
+
+
+      let statusClass =
+        "status-planned";
+
+      let statusLabel =
+        "Preventive";
+
+
+      if (
+        typeof isPlannedManual === "function" &&
+        isPlannedManual(t)
+      ) {
+
+        statusClass =
+          "status-planned_manual";
+
+        statusLabel =
+          "Planned (Manual)";
+      }
+
+
+      if (isOverdue) {
+
+        statusClass =
+          "status-overdue";
+
+        statusLabel =
+          "Overdue";
+      }
+
+
+      // =========================
+      // UPDATE LINE SUMMARY
+      // =========================
+      if (isOverdue) {
+
+        lineSummary[line].overdue++;
+
+      } else if (
+        typeof isPlannedManual === "function" &&
+        isPlannedManual(t)
+      ) {
+
+        lineSummary[line].manual++;
+
+      } else {
+
+        lineSummary[line].preventive++;
+      }
+
+
+      // =========================
+      // TASK ROW
+      // =========================
+      html += `
+        <tr>
+
+          <td>
+
+            <div>
+              ${t.task}
+            </div>
+
+            ${
+              t.section || t.unit
+                ? `
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: #666;
+                      margin-top: 2px;
+                    "
+                  >
+
+                    ${t.section || ""}
+
+                    ${
+                      t.section && t.unit
+                        ? " / "
+                        : ""
+                    }
+
+                    ${t.unit || ""}
+
+                  </div>
+                `
+                : ""
+            }
+
+          </td>
+
+          <td>
+            ${t.type || "-"}
+          </td>
+
+          <td>
+            ${formatDate(t.due_date)}
+          </td>
+
+          <td>
+            ${formatDuration(t.duration_min)}
+          </td>
+
+          <td class="${statusClass}">
+            ${statusLabel}
+          </td>
+
+        </tr>
+      `;
+
+    });
+
+
+    // =========================
+    // CLOSE LAST ASSET / LINE
+    // =========================
+    html += `
+          </tbody>
+        </table>
+
+        <div class="line-footer">
+
+          LINE total duration:
+          ${formatDuration(lineMinutes)}
+
+        </div>
+    `;
+
+
+    // =========================
+    // CLOSE DOCUMENT
+    // =========================
+    html += `
+      </body>
+      </html>
+    `;
+
+
+    // =========================
+    // PRINT VIA IFRAME
+    // =========================
+    printReportHtml(html);
+
+
+  } catch (err) {
+
+    console.error(
+      "Failed to generate Maintenance Status Report",
+      err
+    );
+
+    alert(
+      "Could not generate report."
+    );
+  }
 }
 
 function generateExecutionMixPie(execPct) {
@@ -2538,4 +2832,17 @@ function generateMttrBarChart(mttrLineRows) {
       }).join("")}
     </svg>
   `;
+}
+async function loadReportTemplate(templateName) {
+
+  const response =
+    await fetch(`./reports/${templateName}.html`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load report template: ${templateName}`
+    );
+  }
+
+  return await response.text();
 }

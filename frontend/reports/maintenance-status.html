@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+
+  <title>Maintenance Status Report</title>
+
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    h2 {
+      margin-bottom: 6px;
+    }
+
+    h3 {
+      margin: 14px 0 6px;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 2px;
+    }
+
+    h4 {
+      margin: 10px 0 4px;
+      font-size: 13px;
+    }
+
+    .meta {
+      margin-bottom: 14px;
+      color: #555;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    .sn {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .status-overdue {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    .status-planned {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .status-planned_manual {
+      color: #fe9c00;
+      font-weight: bold;
+    }
+
+    .line-footer {
+      margin: 8px 0 12px;
+      padding-top: 4px;
+      border-top: 1px dashed #d6d6d6;
+      font-size: 11px;
+      color: #666;
+      text-align: right;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Maintenance Status Report</h2>
+
+  <div class="meta">
+    Date: {{GENERATED_DATE}}<br>
+    Period: {{FROM}} → {{TO}}<br>
+    Line: {{LINE_FILTER}}<br>
+    Status: {{STATUS}}<br>
+
+    <strong>Tasks: {{TASK_COUNT}}</strong>
+
+    {{TOTAL_DURATION}}
+  </div>
+
+  {{REPORT_CONTENT}}
+
+</body>
+</html>
