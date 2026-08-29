@@ -211,53 +211,134 @@ function getFilteredReportExecutions({
    - KPI Report
 ===================================================== */
 
-function printReportHtml(html) {
+async function printReportHtml(html) {
 
   if (!html) return;
 
+  try {
 
-  const iframe =
-    document.createElement("iframe");
+    // =========================
+    // LOAD COMMON REPORT CSS
+    // =========================
+    const cssResponse =
+      await fetch("./css/reports.css");
 
+    if (!cssResponse.ok) {
+      throw new Error(
+        "Failed to load reports.css"
+      );
+    }
 
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-
-
-  document.body.appendChild(iframe);
-
-
-  const printWindow =
-    iframe.contentWindow;
-
-  const doc =
-    printWindow.document;
+    const reportCss =
+      await cssResponse.text();
 
 
-  iframe.onload = () => {
+    // =========================
+    // INJECT CSS DIRECTLY
+    // INTO PRINT HTML
+    // =========================
+    const styleBlock = `
+      <style>
+        ${reportCss}
+      </style>
+    `;
 
-    printWindow.focus();
+    let finalHtml = html;
 
-    printWindow.print();
+    if (
+      finalHtml.toLowerCase().includes("</head>")
+    ) {
+
+      finalHtml =
+        finalHtml.replace(
+          /<\/head>/i,
+          `${styleBlock}</head>`
+        );
+
+    } else {
+
+      finalHtml =
+        `${styleBlock}${finalHtml}`;
+    }
 
 
-    setTimeout(() => {
+    // =========================
+    // DEBUG
+    // =========================
+    console.log(
+      "REPORT CSS LOADED:",
+      reportCss.length,
+      "characters"
+    );
 
-      iframe.remove();
+    console.log(
+      "TABLE BORDER CSS PRESENT:",
+      finalHtml.includes(
+        "border: 1px solid #ddd"
+      )
+    );
 
-    }, 1000);
-  };
+
+    // =========================
+    // CREATE PRINT IFRAME
+    // =========================
+    const iframe =
+      document.createElement("iframe");
+
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+
+    document.body.appendChild(iframe);
 
 
-  doc.open();
+    const printWindow =
+      iframe.contentWindow;
 
-  doc.write(html);
+    const doc =
+      printWindow.document;
 
-  doc.close();
+
+    // =========================
+    // PRINT WHEN READY
+    // =========================
+    iframe.onload = () => {
+
+      setTimeout(() => {
+
+        printWindow.focus();
+        printWindow.print();
+
+        setTimeout(() => {
+          iframe.remove();
+        }, 1000);
+
+      }, 100);
+    };
+
+
+    // =========================
+    // WRITE FINAL DOCUMENT
+    // =========================
+    doc.open();
+    doc.write(finalHtml);
+    doc.close();
+
+
+  } catch (err) {
+
+    console.error(
+      "Failed to print report:",
+      err
+    );
+
+    alert(
+      "Could not prepare report for printing."
+    );
+  }
 }
 
 function bindHistoryRangeFilters() {
@@ -492,9 +573,6 @@ async function generateStatusReportPdf() {
       await loadReportTemplate(
         "maintenance-status"
       );
-      const reportCss =
-        await loadReportCss();
-
 
     // =========================
     // GET FILTERED TASKS
@@ -1008,11 +1086,6 @@ async function generateStatusReportPdf() {
         reportContent
       );
       template = template
-
-      .replace(
-        "{{REPORT_CSS}}",
-        reportCss
-      )
 
       .replace(
         "{{GENERATED_DATE}}",
@@ -2825,19 +2898,6 @@ async function loadReportTemplate(templateName) {
   if (!response.ok) {
     throw new Error(
       `Failed to load report template: ${templateName}`
-    );
-  }
-
-  return await response.text();
-}
-async function loadReportCss() {
-
-  const response =
-    await fetch("./css/reports.css");
-
-  if (!response.ok) {
-    throw new Error(
-      "Failed to load reports.css"
     );
   }
 
