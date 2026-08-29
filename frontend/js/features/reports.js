@@ -215,8 +215,10 @@ function printReportHtml(html) {
 
   if (!html) return;
 
+
   const iframe =
     document.createElement("iframe");
+
 
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -225,21 +227,37 @@ function printReportHtml(html) {
   iframe.style.height = "0";
   iframe.style.border = "0";
 
+
   document.body.appendChild(iframe);
 
+
+  const printWindow =
+    iframe.contentWindow;
+
   const doc =
-    iframe.contentWindow.document;
+    printWindow.document;
+
+
+  iframe.onload = () => {
+
+    printWindow.focus();
+
+    printWindow.print();
+
+
+    setTimeout(() => {
+
+      iframe.remove();
+
+    }, 1000);
+  };
+
 
   doc.open();
+
   doc.write(html);
+
   doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    iframe.remove();
-  }, 1000);
 }
 
 function bindHistoryRangeFilters() {
