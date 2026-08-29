@@ -272,10 +272,23 @@ async function printReportHtml(html) {
     );
 
     console.log(
-      "TABLE BORDER CSS PRESENT:",
-      finalHtml.includes(
-        "border: 1px solid #ddd"
-      )
+      "REPORT CSS FIRST 1000:",
+      reportCss.substring(0, 1000)
+    );
+
+    console.log(
+      "HAS TABLE RULE:",
+      reportCss.includes("table")
+    );
+
+    console.log(
+      "HAS BORDER COLLAPSE:",
+      reportCss.includes("border-collapse")
+    );
+
+    console.log(
+      "REPORT CSS URL:",
+      cssResponse.url
     );
 
 
