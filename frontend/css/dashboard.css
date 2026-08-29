@@ -1,0 +1,231 @@
+/* =========================================================
+   ASTIR CMMS - DASHBOARD / ANALYTICS
+   ========================================================= */
+
+
+/* =====================
+   KPI STRIP
+===================== */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kpi-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.kpi-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpi-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kpi-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 2px 0;
+}
+
+
+/* Do NOT move .kpi-sub yet.
+   It has another later declaration in style.css. */
+
+
+#assetLastBreakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+#assetLastBreakdown::before {
+  content: "🕒";
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+
+/* =====================
+   KPI ANALYTICS
+===================== */
+
+#analyticsOverlay .modal-box {
+  max-height: 99vh;
+  overflow: hidden;
+}
+
+#kpiTopAssetsOverdueList {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+#kpiTopAssetsOverdueList::-webkit-scrollbar {
+  width: 6px;
+}
+
+#kpiTopAssetsOverdueList::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+}
+
+#kpiTopAssetsOverdueList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+/* =====================
+   KPI - PLANNING MIX
+===================== */
+
+#kpiPlanningMixTime {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.25px;
+}
+
+#kpiPlanningMixCount {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.mix-prev {
+  color: #2b6cb0;
+}
+
+.mix-plan {
+  color: #d69e2e;
+}
+
+
+/* =====================
+   ANALYTICS RISK LIST
+===================== */
+
+.analytics-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analytics-card .label {
+  font-size: 14px;
+  color: #bbb;
+  margin-bottom: 4px;
+}
+
+.analytics-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+
+  cursor: pointer;
+}
+
+.analytics-list-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.analytics-list-row .asset {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.analytics-list-row .asset strong {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.analytics-list-row .asset small {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.analytics-list-row .meta {
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.analytics-empty {
+  font-size: 12px;
+  opacity: 0.6;
+  padding: 6px 0;
+}
+
+
+/* =====================
+   KPI DRILL-DOWN
+===================== */
+
+.analytics-list-row:hover .asset strong {
+  text-decoration: underline;
+}
+
+
+/* =====================
+   ANALYTICS DIVIDER
+===================== */
+
+.analytics-section {
+  position: relative;
+  padding-top: 12px;
+  margin-top: 22px;
+}
+
+.analytics-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+}
