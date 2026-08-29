@@ -2372,245 +2372,626 @@ function getFilteredNonPlannedExecutionsForReport() {
    NON-PLANNED (BREAKDOWN) REPORT – PDF
 ===================== */
 
-function generateNonPlannedReportPdf() {
-  const rows = getFilteredNonPlannedExecutionsForReport();
+async function generateNonPlannedReportPdf() {
 
-  if (!rows.length) {
-    alert("No non-planned tasks found for selected criteria");
-    return;
-  }
+  try {
 
-  const from = document.getElementById("dateFrom")?.value || "—";
-  const to = document.getElementById("dateTo")?.value || "—";
-  const selectedLines = getSelectedReportLines();
+    // =========================
+    // LOAD TEMPLATE
+    // =========================
+    let template =
+      await loadReportTemplate(
+        "breakdown-report"
+      );
 
-  const lineFilterLabel =
-    selectedLines.includes("all")
-      ? "ALL"
-      : selectedLines.join(", ");
-  const technician =
-    document.getElementById("reportTechnician")?.value || "ALL";
 
-  // 🔽 SORT: LINE → ASSET → DATE
-  const sorted = [...rows].sort((a, b) => {
-    const la = (a.line || "");
-    const lb = (b.line || "");
-    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+    // =========================
+    // GET FILTERED DATA
+    // =========================
+    const rows =
+      getFilteredNonPlannedExecutionsForReport();
 
-    const aa = `${a.machine} ${a.serial_number || ""}`;
-    const ab = `${b.machine} ${b.serial_number || ""}`;
-    if (aa !== ab) return aa.localeCompare(ab);
 
-    return new Date(a.executed_at || 0) - new Date(b.executed_at || 0);
-  });
+    if (
+      !Array.isArray(rows) ||
+      rows.length === 0
+    ) {
 
-  // 📊 TOTALS & SERVICE TIME
-  const totalBreakdowns = rows.length;
-  const totalLines = new Set(rows.map(r => r.line)).size;
-  const totalAssets = new Set(
-    rows.map(r => `${r.machine}||${r.serial_number || ""}`)
-  ).size;
+      alert(
+        "No non-planned tasks found for selected criteria"
+      );
 
-  const totalServiceMinutes = rows.reduce(
-    (sum, r) =>
-      r.duration_min != null ? sum + Number(r.duration_min) : sum,
-    0
-  );
+      return;
+    }
 
-  const avgServiceMinutes =
-    totalServiceMinutes && totalBreakdowns
-      ? Math.round(totalServiceMinutes / totalBreakdowns)
-      : 0;
 
-  let html = `
-    <html>
-    <head>
-      <title>Non-Planned Maintenance Report</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
+    // =========================
+    // FILTER LABELS
+    // =========================
+    const from =
+      document.getElementById(
+        "dateFrom"
+      )?.value || "—";
 
-        body {
-          font-family: Arial, sans-serif;
-          color: #111;
-          font-size: 12px;
+
+    const to =
+      document.getElementById(
+        "dateTo"
+      )?.value || "—";
+
+
+    const selectedLines =
+      getSelectedReportLines();
+
+
+    const lineFilterLabel =
+      selectedLines.includes("all")
+        ? "ALL"
+        : selectedLines.join(", ");
+
+
+    const technicianSelect =
+      document.getElementById(
+        "reportTechnician"
+      );
+
+
+    const technicianValue =
+      technicianSelect?.value || "all";
+
+
+    const technicianLabel =
+      technicianValue === "all"
+        ? "ALL TECHNICIANS"
+        : technicianSelect
+            ?.selectedOptions?.[0]
+            ?.textContent || technicianValue;
+
+
+    // =========================
+    // SORT
+    // LINE → ASSET → DATE
+    // =========================
+    const sorted =
+      [...rows].sort((a, b) => {
+
+        const la =
+          (a.line || "").toString();
+
+        const lb =
+          (b.line || "").toString();
+
+
+        if (la !== lb) {
+
+          return la.localeCompare(
+            lb,
+            "el",
+            { numeric: true }
+          );
         }
 
-        h2 { margin-bottom: 6px; }
-        h3 {
-          margin: 16px 0 6px;
-          padding-bottom: 2px;
-          border-bottom: 2px solid #ccc;
-        }
-        h4 {
-          margin: 10px 0 4px;
-          font-size: 13px;
-        }
 
-        .meta {
-          font-size: 12px;
-          margin-bottom: 14px;
-          color: #444;
-        }
+        const aa =
+          `${a.machine || ""} ${a.serial_number || ""}`;
 
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-          margin-bottom: 6px;
+        const ab =
+          `${b.machine || ""} ${b.serial_number || ""}`;
+
+
+        if (aa !== ab) {
+
+          return aa.localeCompare(
+            ab,
+            "el"
+          );
         }
 
-        th, td {
-          border: 1px solid #ddd;
-          padding: 6px 8px;
-          vertical-align: top;
-        }
 
-        th {
-          background: #eee;
-          text-align: left;
-        }
+        return (
+          new Date(
+            a.executed_at || 0
+          ) -
+          new Date(
+            b.executed_at || 0
+          )
+        );
 
-        .small {
-          font-size: 10px;
-          color: #555;
-        }
+      });
 
-        .line-footer {
-          margin: 8px 0 14px;
-          padding-top: 4px;
-          border-top: 1px dashed #d6d6d6;
-          font-size: 11px;
-          color: #666;
-          text-align: right;
-        }
 
-        .report-summary {
-          margin-top: 30px;
-          padding-top: 10px;
-          border-top: 1px solid #e0e0e0;
-          font-size: 11px;
-          color: #555;
-        }
+    // =========================
+    // BASIC TOTALS
+    // =========================
+    const totalBreakdowns =
+      rows.length;
 
-        .report-summary strong {
-          color: #111;
-        }
-      </style>
-    </head>
-    <body>
 
-      <h2>Non-Planned Maintenance / Breakdown Report</h2>
+    const totalLines =
+      new Set(
+        rows
+          .map(r => r.line)
+          .filter(Boolean)
+      ).size;
 
-      <div class="meta">
-        Period: ${from} → ${to}<br>
-        Line: ${lineFilterLabel}<br>
-        Technician: ${technician}<br>
-        Generated: ${new Date().toLocaleDateString("en-GB")}
-      </div>
-  `;
 
-  let currentLine = null;
-  let currentAsset = null;
-  let lineCount = 0;
+    const totalAssets =
+      new Set(
+        rows.map(
+          r =>
+            `${r.machine}||${r.serial_number || ""}`
+        )
+      ).size;
 
-  sorted.forEach(r => {
-    const line = r.line || "—";
-    const assetKey = `${r.machine}||${r.serial_number || ""}`;
-    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
-    if (line !== currentLine && currentAsset !== null) {
-      html += `
+
+    // =========================
+    // TOTAL SERVICE TIME
+    // =========================
+    const totalServiceMinutes =
+      rows.reduce(
+
+        (sum, r) => {
+
+          return r.duration_min != null
+            ? sum + Number(r.duration_min)
+            : sum;
+
+        },
+
+        0
+      );
+
+
+    const avgServiceMinutes =
+      totalBreakdowns > 0
+        ? Math.round(
+            totalServiceMinutes /
+            totalBreakdowns
+          )
+        : 0;
+
+
+    // =========================
+    // BREAKDOWNS BY LINE
+    // =========================
+    const breakdownsByLine = {};
+
+
+    rows.forEach(r => {
+
+      const line =
+        r.line || "—";
+
+
+      breakdownsByLine[line] =
+        (
+          breakdownsByLine[line] || 0
+        ) + 1;
+
+    });
+
+
+    const worstLineEntry =
+      Object.entries(
+        breakdownsByLine
+      )
+
+        .sort(
+          (a, b) =>
+            b[1] - a[1]
+        )[0] || ["—", 0];
+
+
+    const worstLine =
+      worstLineEntry[0];
+
+
+    const worstLineCount =
+      worstLineEntry[1];
+
+
+    // =========================
+    // BUILD REPORT CONTENT
+    // =========================
+    let reportContent = "";
+
+    let currentLine = null;
+    let currentAsset = null;
+
+    let lineCount = 0;
+    let lineMinutes = 0;
+
+
+    sorted.forEach(r => {
+
+      const line =
+        r.line || "—";
+
+
+      const assetKey =
+        `${r.machine}||${r.serial_number || ""}`;
+
+
+      // =========================
+      // CLOSE ASSET TABLE
+      // WHEN LINE CHANGES
+      // =========================
+      if (
+        line !== currentLine &&
+        currentAsset !== null
+      ) {
+
+        reportContent += `
             </tbody>
           </table>
-      `;
-      currentAsset = null;
-}
+        `;
 
-    // 🟦 NEW LINE
-    if (line !== currentLine) {
-      if (currentLine !== null) {
-        html += `
-          <div class="line-footer">
-            Breakdowns in LINE: ${lineCount}
-          </div>
+        currentAsset = null;
+      }
+
+
+      // =========================
+      // NEW LINE
+      // =========================
+      if (
+        line !== currentLine
+      ) {
+
+        if (
+          currentLine !== null
+        ) {
+
+          reportContent += `
+
+            <div class="breakdown-line-summary">
+
+              <span class="breakdown-count">
+                ${lineCount}
+              </span>
+
+              breakdowns
+
+              &nbsp;•&nbsp;
+
+              Total service time:
+              <strong>
+                ${formatDuration(lineMinutes)}
+              </strong>
+
+            </div>
+          `;
+        }
+
+
+        reportContent += `
+
+          <h3>
+            LINE ${line}
+          </h3>
+        `;
+
+
+        currentLine =
+          line;
+
+        currentAsset =
+          null;
+
+        lineCount =
+          0;
+
+        lineMinutes =
+          0;
+      }
+
+
+      // =========================
+      // CLOSE TABLE
+      // WHEN ASSET CHANGES
+      // =========================
+      if (
+        assetKey !== currentAsset &&
+        currentAsset !== null
+      ) {
+
+        reportContent += `
+            </tbody>
+          </table>
         `;
       }
 
-      html += `<h3>LINE ${line}</h3>`;
-      currentLine = line;
-      currentAsset = null;
-      lineCount = 0;
-    }
-      // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
-    if (assetKey !== currentAsset && currentAsset !== null) {
-      html += `
-            </tbody>
-          </table>
+
+      // =========================
+      // NEW ASSET
+      // =========================
+      if (
+        assetKey !== currentAsset
+      ) {
+
+        reportContent += `
+
+          <h4>
+
+            ${r.machine || "-"}
+
+            <span class="sn">
+
+              SN:
+              ${r.serial_number || "-"}
+
+            </span>
+
+          </h4>
+
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th style="width:15%;">
+                  Date
+                </th>
+
+                <th style="width:55%;">
+                  Breakdown Description
+                </th>
+
+                <th style="width:15%;">
+                  Technician
+                </th>
+
+                <th style="width:15%;">
+                  Duration
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+        `;
+
+
+        currentAsset =
+          assetKey;
+      }
+
+
+      // =========================
+      // LINE TOTALS
+      // =========================
+      lineCount++;
+
+
+      if (
+        r.duration_min != null
+      ) {
+
+        lineMinutes +=
+          Number(
+            r.duration_min
+          );
+      }
+
+
+      // =========================
+      // ROW
+      // =========================
+      reportContent += `
+
+        <tr>
+
+          <td>
+            ${formatDateOnly(
+              r.executed_at
+            )}
+          </td>
+
+
+          <td>
+
+            <strong>
+              ${r.task || "-"}
+            </strong>
+
+            ${
+              r.section || r.unit
+                ? `
+                  <br>
+
+                  <span class="small">
+
+                    ${r.section || ""}
+
+                    ${
+                      r.section &&
+                      r.unit
+                        ? " / "
+                        : ""
+                    }
+
+                    ${r.unit || ""}
+
+                  </span>
+                `
+                : ""
+            }
+
+          </td>
+
+
+          <td>
+            ${r.executed_by || "-"}
+          </td>
+
+
+          <td>
+            ${formatDuration(
+              r.duration_min
+            )}
+          </td>
+
+        </tr>
+      `;
+
+    });
+
+
+    // =========================
+    // CLOSE LAST ASSET TABLE
+    // =========================
+    if (
+      currentAsset !== null
+    ) {
+
+      reportContent += `
+          </tbody>
+        </table>
       `;
     }
 
-    // 🟨 NEW ASSET
-    if (assetKey !== currentAsset) {
-      html += `
-        <h4>
-          ${r.machine}
-          <span class="small">SN: ${r.serial_number || "-"}</span>
-        </h4>
-        <table>
-          <thead>
-            <tr>
-              <th style="width:15%">Date</th>
-              <th style="width:55%">Breakdown Description</th>
-              <th style="width:15%">Technician</th>
-              <th style="width:15%">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-      currentAsset = assetKey;
-    }
 
-    lineCount++;
+    // =========================
+    // LAST LINE SUMMARY
+    // =========================
+    if (
+      currentLine !== null
+    ) {
 
-    html += `
-      <tr>
-        <td>${formatDateOnly(r.executed_at)}</td>
-        <td>
-          <strong>${r.task}</strong><br>
-          <span class="small">
-            ${r.section || ""}
-            ${r.section && r.unit ? " / " : ""}
-            ${r.unit || ""}
+      reportContent += `
+
+        <div class="breakdown-line-summary">
+
+          <span class="breakdown-count">
+            ${lineCount}
           </span>
-        </td>
-        <td>${r.executed_by || "-"}</td>
-        <td>${formatDuration(r.duration_min)}</td>
-      </tr>
-    `;
-  });
 
-  // 🔚 LAST LINE FOOTER + SUMMARY
-  html += `
-        </tbody>
-      </table>
-      <div class="line-footer">
-        Breakdowns in LINE: ${lineCount}
-      </div>
+          breakdowns
 
-      <div class="report-summary">
-        <strong>Total breakdowns:</strong> ${totalBreakdowns}<br>
-        <strong>Lines affected:</strong> ${totalLines}<br>
-        <strong>Assets affected:</strong> ${totalAssets}<br>
-        <strong>Total service time:</strong> ${formatDuration(totalServiceMinutes)}<br>
-        <strong>Average service time / breakdown:</strong>
-        ${avgServiceMinutes ? formatDuration(avgServiceMinutes) : "—"}
-      </div>
+          &nbsp;•&nbsp;
 
-    </body>
-    </html>
-  `;
+          Total service time:
 
-  /* 🔹 PRINT VIA HIDDEN IFRAME */
-  printReportHtml(html);
+          <strong>
+            ${formatDuration(lineMinutes)}
+          </strong>
+
+        </div>
+      `;
+    }
+
+
+    // =========================
+    // GENERATED DATE
+    // =========================
+    const generatedDate =
+      new Date()
+        .toLocaleDateString(
+          "el-GR"
+        );
+
+
+    // =========================
+    // FILL TEMPLATE
+    // =========================
+    template = template
+
+      .replaceAll(
+        "{{GENERATED_DATE}}",
+        generatedDate
+      )
+
+      .replace(
+        "{{FROM}}",
+        from
+      )
+
+      .replace(
+        "{{TO}}",
+        to
+      )
+
+      .replace(
+        "{{LINE_FILTER}}",
+        lineFilterLabel
+      )
+
+      .replace(
+        "{{TECHNICIAN_FILTER}}",
+        technicianLabel
+      )
+
+      .replace(
+        "{{TOTAL_BREAKDOWNS}}",
+        String(totalBreakdowns)
+      )
+
+      .replace(
+        "{{TOTAL_LINES}}",
+        String(totalLines)
+      )
+
+      .replace(
+        "{{TOTAL_ASSETS}}",
+        String(totalAssets)
+      )
+
+      .replaceAll(
+        "{{TOTAL_SERVICE_TIME}}",
+        formatDuration(
+          totalServiceMinutes
+        )
+      )
+
+      .replaceAll(
+        "{{AVG_SERVICE_TIME}}",
+        avgServiceMinutes
+          ? formatDuration(
+              avgServiceMinutes
+            )
+          : "—"
+      )
+
+      .replace(
+        "{{WORST_LINE}}",
+        worstLine
+      )
+
+      .replace(
+        "{{WORST_LINE_COUNT}}",
+        String(
+          worstLineCount
+        )
+      )
+
+      .replace(
+        "{{REPORT_CONTENT}}",
+        reportContent
+      );
+
+
+    // =========================
+    // PRINT
+    // =========================
+    await printReportHtml(
+      template
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "Failed to generate Breakdown Report",
+      err
+    );
+
+
+    alert(
+      "Could not generate Breakdown Report."
+    );
+  }
 }
 
 /* =====================

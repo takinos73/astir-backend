@@ -448,3 +448,28 @@ tbody tr:nth-child(even) {
 
   page-break-inside: avoid;
 }
+/* =========================================================
+   BREAKDOWN REPORT
+   ========================================================= */
+
+.breakdown-line-summary {
+  margin: 6px 0 14px;
+  padding: 7px 8px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 4px;
+
+  background: #f8f9fb;
+
+  font-size: 9px;
+  color: #555f6d;
+
+  text-align: right;
+
+  page-break-inside: avoid;
+}
+
+.breakdown-count {
+  font-weight: 700;
+  color: #b42318;
+}
