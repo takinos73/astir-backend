@@ -3032,32 +3032,7 @@ tr.history-unplanned {
   color: #fff;
   border-radius: 3px;
 }
-/* =====================
-   ANALYTICS DIVIDER + GLOW
-===================== */
 
-.analytics-section {
-  position: relative;
-  padding-top: 12px;
-  margin-top: 22px;
-}
-
-/* subtle divider line */
-.analytics-section::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.18),
-    transparent
-  );
-}
 .asset-dashboard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
