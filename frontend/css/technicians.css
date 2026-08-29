@@ -1,0 +1,90 @@
+/* =========================================================
+   ASTIR CMMS - TECHNICIANS
+   ========================================================= */
+
+
+/* =====================
+   TECHNICIANS TABLE LINKS
+===================== */
+
+#techniciansTable a {
+  color: var(--accent-color, #4da3ff);
+  text-decoration: none;
+  font-size: 13px;
+  transition: opacity 0.2s ease;
+}
+
+#techniciansTable a:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+#techniciansTable a:visited {
+  color: var(--accent-color, #4da3ff);
+}
+
+.technicians-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+/* =====================
+   PASSWORD FIELD
+===================== */
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+
+/* =====================
+   LOGGED USER INFO
+===================== */
+
+.logged-user-info {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.logged-user-label {
+  padding: 5px 5px;
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.logged-user-separator {
+  padding: 5px 5px;
+  opacity: 0.75;
+}
+
+#loggedTechnicianName {
+  padding: 5px 5px;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+#loggedRoleBadge {
+  padding: 5px 5px;
+  font-size: 12px;
+}
