@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+
+  <title>
+    Completed Tasks Report
+  </title>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <div class="report-header">
+
+    <div class="report-brand">
+
+      <div class="report-company">
+        ASTIR
+      </div>
+
+      <div class="report-system">
+        Computerized Maintenance Management System
+      </div>
+
+    </div>
+
+    <div class="report-header-right">
+      Generated: {{GENERATED_DATE}}
+      <br>
+      CMMS Maintenance Reporting
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TITLE
+  ====================================================== -->
+
+  <div class="report-title-block">
+
+    <h1 class="report-title">
+      Completed Tasks Report
+    </h1>
+
+    <div class="report-subtitle">
+      Maintenance execution, workload and breakdown performance overview
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       FILTERS / META
+  ====================================================== -->
+
+  <div class="report-meta">
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Period
+      </span>
+
+      <span class="report-meta-value">
+        {{FROM}} → {{TO}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Line
+      </span>
+
+      <span class="report-meta-value">
+        {{LINE_FILTER}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Technician
+      </span>
+
+      <span class="report-meta-value">
+        {{TECHNICIAN_FILTER}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Generated
+      </span>
+
+      <span class="report-meta-value">
+        {{GENERATED_DATE}}
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       MAIN KPI SUMMARY
+  ====================================================== -->
+
+  <div class="report-kpi-grid">
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Completed Tasks
+      </div>
+
+      <div class="report-kpi-value">
+        {{TOTAL_TASKS}}
+      </div>
+
+      <div class="report-kpi-sub">
+        Total executions
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Breakdown Rate
+      </div>
+
+      <div class="report-kpi-value">
+        {{BREAKDOWN_RATE}}%
+      </div>
+
+      <div class="report-kpi-sub">
+        Share of reactive work
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Average MTTR
+      </div>
+
+      <div class="report-kpi-value">
+        {{AVG_MTTR}}
+      </div>
+
+      <div class="report-kpi-sub">
+        Breakdown recovery time
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Breakdown Downtime
+      </div>
+
+      <div class="report-kpi-value">
+        {{BREAKDOWN_HOURS}} h
+      </div>
+
+      <div class="report-kpi-sub">
+        Total recorded downtime
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       MAINTENANCE PROFILE
+  ====================================================== -->
+
+  <h3>
+    Maintenance Profile
+  </h3>
+
+  <table>
+
+    <tbody>
+
+      <tr>
+        <td>
+          <strong>Maintenance Profile</strong>
+        </td>
+
+        <td style="text-align:right;">
+          {{MAINTENANCE_PROFILE}}
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Workload Distribution
+        </td>
+
+        <td style="text-align:right;">
+          {{WORKLOAD_RISK}}
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Technicians Involved
+        </td>
+
+        <td style="text-align:right;">
+          {{TOTAL_TECHS}}
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Lines Covered
+        </td>
+
+        <td style="text-align:right;">
+          {{TOTAL_LINES}}
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Top Technician
+        </td>
+
+        <td style="text-align:right;">
+          {{TOP_TECH}}
+        </td>
+      </tr>
+
+    </tbody>
+
+  </table>
+
+
+  <!-- =====================================================
+       TECHNICIAN SUMMARY
+  ====================================================== -->
+
+  <h3>
+    Summary by Technician
+  </h3>
+
+  {{TECHNICIAN_SUMMARY}}
+
+
+  <!-- =====================================================
+       EXECUTION MIX
+  ====================================================== -->
+
+  <h3>
+    Execution Mix
+  </h3>
+
+  {{EXECUTION_MIX}}
+
+
+  <!-- =====================================================
+       MTTR BY LINE
+  ====================================================== -->
+
+  {{MTTR_SECTION}}
+
+
+  <!-- =====================================================
+       OPTIONAL DETAILS
+  ====================================================== -->
+
+  {{DETAILS_SECTION}}
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
+
+  <div class="report-footer">
+
+    <div>
+      ASTIR CMMS
+    </div>
+
+    <div>
+      Completed Tasks Report
+    </div>
+
+  </div>
+
+</body>
+
+</html>

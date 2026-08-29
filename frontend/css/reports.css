@@ -365,3 +365,86 @@ tbody tr:nth-child(even) {
     page-break-inside: avoid;
   }
 }
+/* =========================================================
+   COMPLETED TASKS REPORT
+   ========================================================= */
+
+.execution-mix-layout {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  margin-bottom: 10px;
+  page-break-inside: avoid;
+}
+
+.execution-mix-chart {
+  flex: 0 0 auto;
+}
+
+.execution-mix-values {
+  flex: 1;
+}
+
+.execution-mix-values p {
+  margin: 4px 0;
+}
+
+.report-table-center {
+  text-align: center;
+}
+
+.report-table-right {
+  text-align: right;
+}
+
+.col-date {
+  width: 10%;
+}
+
+.col-machine {
+  width: 18%;
+}
+
+.col-secunit {
+  width: 20%;
+}
+
+.col-task {
+  width: 34%;
+}
+
+.col-tech {
+  width: 18%;
+}
+
+.small {
+  font-size: 8px;
+  color: #777f8b;
+}
+
+.page-break {
+  page-break-before: always;
+}
+
+.report-line-row td {
+  background: #eef1f5 !important;
+  font-weight: 700;
+  padding: 7px 8px;
+  border-top: 2px solid #526173;
+  color: #253247;
+}
+
+.report-summary {
+  margin-top: 16px;
+  padding: 8px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 4px;
+
+  background: #f8f9fb;
+
+  font-size: 9px;
+  color: #555f6d;
+
+  page-break-inside: avoid;
+}
