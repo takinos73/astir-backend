@@ -125,56 +125,22 @@ function getAssetTaskStats(assetId) {
    SINGLE SOURCE OF TRUTH
 ===================== */
 
-/* =====================
-   RISK LEVEL FUNCTION
-   SINGLE SOURCE OF TRUTH
-===================== */
-
 function getAssetRiskLevel(a) {
 
-  const HIGH_LOAD = 8;
-  const MED_LOAD = 2;
+  const score = Number(a.score || 0);
 
-  // Safe numeric values
-  const overdue = Number(a.overdue || 0);
-  const dueSoon = Number(a.dueSoon || 0);
-  const manualLoad = Number(a.manualPlanned30d || 0);
-
-  const safetyOverdue = Number(a.safetyOverdue || 0);
-  const safetyDueSoon = Number(a.safetyDueSoon || 0);
-
-  const qualityOverdue = Number(a.qualityOverdue || 0);
-  const qualityDueSoon = Number(a.qualityDueSoon || 0);
-
-  const lastBreakdownDays =
-    a.lastBreakdownDays != null
-      ? Number(a.lastBreakdownDays)
-      : null;
+  const safetyOverdue =
+    Number(a.safetyOverdue || 0);
 
 
   /* =====================
      🔴 CRITICAL
-
-     Reserved for genuinely urgent
-     maintenance situations.
   ===================== */
 
+  // Hard safety override
   if (
-
-    // Safety overdue always critical
     safetyOverdue > 0 ||
-
-    // Large overdue workload
-    overdue >= 6 ||
-
-    // Several overdue tasks combined
-    // with a very recent breakdown
-    (
-      overdue >= 3 &&
-      lastBreakdownDays != null &&
-      lastBreakdownDays <= 3
-    )
-
+    score >= 70
   ) {
     return {
       level: "critical",
@@ -186,40 +152,9 @@ function getAssetRiskLevel(a) {
 
   /* =====================
      🟠 AT RISK
-
-     Significant maintenance attention
-     required, but not yet critical.
   ===================== */
 
-  if (
-
-    // Safety task approaching due date
-    safetyDueSoon > 0 ||
-
-    // Quality task already overdue
-    qualityOverdue > 0 ||
-
-    // Multiple overdue tasks
-    (overdue >= 2 && overdue <= 5) ||
-
-    // Heavy planned workload
-    manualLoad >= HIGH_LOAD ||
-
-    // Many tasks approaching due date
-    dueSoon >= 4 ||
-
-    // Recent breakdown + another
-    // maintenance warning
-    (
-      lastBreakdownDays != null &&
-      lastBreakdownDays <= 3 &&
-      (
-        overdue >= 1 ||
-        dueSoon >= 2
-      )
-    )
-
-  ) {
+  if (score >= 35) {
     return {
       level: "risk",
       label: "AT RISK",
@@ -230,35 +165,9 @@ function getAssetRiskLevel(a) {
 
   /* =====================
      🟡 WATCH
-
-     Asset requires monitoring,
-     but no immediate intervention.
   ===================== */
 
-  if (
-
-    // Quality task approaching due date
-    qualityDueSoon > 0 ||
-
-    // Single overdue task
-    overdue === 1 ||
-
-    // Some maintenance coming soon
-    (dueSoon >= 1 && dueSoon <= 3) ||
-
-    // Moderate planned workload
-    (
-      manualLoad >= MED_LOAD &&
-      manualLoad < HIGH_LOAD
-    ) ||
-
-    // Recent breakdown by itself
-    (
-      lastBreakdownDays != null &&
-      lastBreakdownDays <= 3
-    )
-
-  ) {
+  if (score >= 15) {
     return {
       level: "watch",
       label: "WATCH",

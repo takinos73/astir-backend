@@ -503,9 +503,13 @@ function calculateAssetDashboardScore(
   // utils.js
   // =====================
 
-  const risk =
-    getAssetRiskLevel(asset);
+  // Make final priority score available
+  // to the central risk engine
 
+      asset.score = score;
+
+    const risk =
+      getAssetRiskLevel(asset);
 
   // =====================
   // DASHBOARD OBJECT
