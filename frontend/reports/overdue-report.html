@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+
+  <title>
+    Overdue Maintenance Report
+  </title>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <div class="report-header">
+
+    <div class="report-brand">
+
+      <div class="report-company">
+        ASTIR
+      </div>
+
+      <div class="report-system">
+        Computerized Maintenance Management System
+      </div>
+
+    </div>
+
+    <div class="report-header-right">
+
+      Generated:
+      {{GENERATED_DATE}}
+
+      <br>
+
+      CMMS Maintenance Reporting
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TITLE
+  ====================================================== -->
+
+  <div class="report-title-block">
+
+    <h1 class="report-title">
+      Overdue Maintenance Report
+    </h1>
+
+    <div class="report-subtitle">
+      Outstanding maintenance workload and overdue exposure overview
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       FILTERS
+  ====================================================== -->
+
+  <div class="report-meta">
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Line
+      </span>
+
+      <span class="report-meta-value">
+        {{LINE_FILTER}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Lines Affected
+      </span>
+
+      <span class="report-meta-value">
+        {{TOTAL_LINES}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Assets Affected
+      </span>
+
+      <span class="report-meta-value">
+        {{TOTAL_ASSETS}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Generated
+      </span>
+
+      <span class="report-meta-value">
+        {{GENERATED_DATE}}
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       KPI SUMMARY
+  ====================================================== -->
+
+  <div class="report-kpi-grid">
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Total Overdue
+      </div>
+
+      <div class="report-kpi-value status-overdue">
+        {{TOTAL_TASKS}}
+      </div>
+
+      <div class="report-kpi-sub">
+        Outstanding overdue tasks
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Average Days Overdue
+      </div>
+
+      <div class="report-kpi-value">
+        {{AVG_DAYS_OVERDUE}}
+      </div>
+
+      <div class="report-kpi-sub">
+        Average overdue exposure
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Oldest Overdue
+      </div>
+
+      <div class="report-kpi-value status-overdue">
+        {{OLDEST_DAYS}}
+      </div>
+
+      <div class="report-kpi-sub">
+        Days overdue
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Most Affected Line
+      </div>
+
+      <div class="report-kpi-value">
+        {{WORST_LINE}}
+      </div>
+
+      <div class="report-kpi-sub">
+        {{WORST_LINE_COUNT}} overdue tasks
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       OVERVIEW
+  ====================================================== -->
+
+  <h3>
+    Overdue Exposure
+  </h3>
+
+  <table>
+
+    <tbody>
+
+      <tr>
+
+        <td>
+          <strong>Total Overdue Tasks</strong>
+        </td>
+
+        <td class="report-table-right status-overdue">
+          {{TOTAL_TASKS}}
+        </td>
+
+      </tr>
+
+
+      <tr>
+
+        <td>
+          <strong>Lines Affected</strong>
+        </td>
+
+        <td class="report-table-right">
+          {{TOTAL_LINES}}
+        </td>
+
+      </tr>
+
+
+      <tr>
+
+        <td>
+          <strong>Assets Affected</strong>
+        </td>
+
+        <td class="report-table-right">
+          {{TOTAL_ASSETS}}
+        </td>
+
+      </tr>
+
+
+      <tr>
+
+        <td>
+          <strong>Average Days Overdue</strong>
+        </td>
+
+        <td class="report-table-right">
+          {{AVG_DAYS_OVERDUE}}
+        </td>
+
+      </tr>
+
+
+      <tr>
+
+        <td>
+          <strong>Oldest Overdue Task</strong>
+        </td>
+
+        <td class="report-table-right">
+          {{OLDEST_TASK}}
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+
+  <!-- =====================================================
+       TASK DETAILS
+  ====================================================== -->
+
+  {{REPORT_CONTENT}}
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
+
+  <div class="report-footer">
+
+    <div>
+      ASTIR CMMS
+    </div>
+
+    <div>
+      Overdue Maintenance Report
+    </div>
+
+  </div>
+
+</body>
+
+</html>

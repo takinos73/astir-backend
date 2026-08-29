@@ -3042,245 +3042,728 @@ function getFilteredOverdueTasksForReport() {
    OVERDUE TASKS REPORT – PDF (GROUPED BY LINE / ASSET)
 ===================== */
 
-function generateOverdueReportPdf() {
-  const rows = getFilteredOverdueTasksForReport();
+async function generateOverdueReportPdf() {
 
-  if (!rows.length) {
-    alert("No overdue tasks found");
-    return;
-  }
+  try {
 
-  const selectedLines =
-    getSelectedReportLines();
+    // =========================
+    // LOAD TEMPLATE
+    // =========================
+    let template =
+      await loadReportTemplate(
+        "overdue-report"
+      );
 
-  const lineFilterLabel =
-    selectedLines.includes("all")
-      ? "ALL"
-      : selectedLines.join(", ");
 
-  // 🔽 SORT: LINE → ASSET → DUE DATE
-  const sorted = [...rows].sort((a, b) => {
-    const la = (a.line_code || "");
-    const lb = (b.line_code || "");
-    if (la !== lb) return la.localeCompare(lb, "el", { numeric: true });
+    // =========================
+    // FILTERED DATA
+    // =========================
+    const rows =
+      getFilteredOverdueTasksForReport();
 
-    const aa = `${a.machine_name} ${a.serial_number || ""}`;
-    const ab = `${b.machine_name} ${b.serial_number || ""}`;
-    if (aa !== ab) return aa.localeCompare(ab, "el");
 
-    return new Date(a.due_date || 0) - new Date(b.due_date || 0);
-  });
+    if (
+      !Array.isArray(rows) ||
+      rows.length === 0
+    ) {
 
-  // 📊 TOTALS
-  const totalTasks = rows.length;
-  const totalLines = new Set(rows.map(r => r.line_code)).size;
-  const totalAssets = new Set(
-    rows.map(r => `${r.machine_name}||${r.serial_number || ""}`)
-  ).size;
+      alert(
+        "No overdue tasks found"
+      );
 
-  let html = `
-  <html>
-  <head>
-    <title>Overdue Tasks Report</title>
-    <style>
-      @page { size: A4; margin: 15mm; }
-
-      body {
-        font-family: Arial, sans-serif;
-        color: #111;
-        font-size: 12px;
-      }
-
-      h2 { margin-bottom: 6px; }
-
-      h3 {
-        margin: 20px 0 8px;
-        padding-bottom: 4px;
-        border-bottom: 2px solid #333;
-        font-size: 15px;
-      }
-
-      .asset-block {
-        margin: 14px 0 10px;
-        padding: 8px 10px;
-        background: #f6f6f6;
-        border-left: 4px solid #999;
-      }
-
-      .asset-title {
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      .asset-sn {
-        font-size: 11px;
-        color: #555;
-      }
-
-      .meta {
-        font-size: 12px;
-        margin-bottom: 16px;
-        color: #444;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-        margin-bottom: 10px;
-      }
-
-      th, td {
-        border: 1px solid #ddd;
-        padding: 8px 10px;
-        vertical-align: top;
-      }
-
-      th {
-        background: #eee;
-        text-align: left;
-      }
-
-      .due-col {
-        width: 22%;
-        white-space: nowrap;
-      }
-
-      .task-col {
-        width: 78%;
-      }
-
-      .small {
-        font-size: 10px;
-        color: #555;
-      }
-
-      .line-footer {
-        margin: 6px 0 18px;
-        padding-top: 6px;
-        border-top: 1px dashed #ccc;
-        font-size: 11px;
-        color: #666;
-        text-align: right;
-      }
-
-      .report-summary {
-        margin-top: 30px;
-        padding-top: 12px;
-        border-top: 2px solid #333;
-        font-size: 12px;
-      }
-    </style>
-  </head>
-  <body>
-
-    <h2>Overdue Maintenance Tasks</h2>
-
-    <div class="meta">
-      Line filter: ${lineFilterLabel}<br>
-      Generated: ${new Date().toLocaleDateString("en-GB")}
-    </div>
-`;
-
-  let currentLine = null;
-  let currentAsset = null;
-  let lineCount = 0;
-
-  sorted.forEach(t => {
-    const line = t.line_code || "—";
-    const assetKey = `${t.machine_name}||${t.serial_number || ""}`;
-    
-    // 🔒 CLOSE PREVIOUS ASSET TABLE (when line changes)
-    if (line !== currentLine && currentAsset !== null) {
-      html += `
-            </tbody>
-          </table>
-      `;
-      currentAsset = null;
+      return;
     }
 
-    // 🟦 NEW LINE
-    if (line !== currentLine) {
-      if (currentLine !== null) {
-        html += `
-          <div class="line-footer">
-            Overdue tasks in LINE: ${lineCount}
-          </div>
+
+    // =========================
+    // FILTER LABEL
+    // =========================
+    const selectedLines =
+      getSelectedReportLines();
+
+
+    const lineFilterLabel =
+      selectedLines.includes("all")
+        ? "ALL"
+        : selectedLines.join(", ");
+
+
+    // =========================
+    // SORT
+    // LINE → ASSET → DUE DATE
+    // =========================
+    const sorted =
+      [...rows].sort((a, b) => {
+
+        const la =
+          (a.line_code || "")
+            .toString();
+
+        const lb =
+          (b.line_code || "")
+            .toString();
+
+
+        if (la !== lb) {
+
+          return la.localeCompare(
+            lb,
+            "el",
+            { numeric: true }
+          );
+        }
+
+
+        const aa =
+          `${a.machine_name || ""} ${a.serial_number || ""}`;
+
+        const ab =
+          `${b.machine_name || ""} ${b.serial_number || ""}`;
+
+
+        if (aa !== ab) {
+
+          return aa.localeCompare(
+            ab,
+            "el"
+          );
+        }
+
+
+        return (
+          new Date(
+            a.due_date || 0
+          ) -
+          new Date(
+            b.due_date || 0
+          )
+        );
+
+      });
+
+
+    // =========================
+    // BASIC TOTALS
+    // =========================
+    const totalTasks =
+      rows.length;
+
+
+    const totalLines =
+      new Set(
+        rows
+          .map(r => r.line_code)
+          .filter(Boolean)
+      ).size;
+
+
+    const totalAssets =
+      new Set(
+        rows.map(
+          r =>
+            `${r.machine_name}||${r.serial_number || ""}`
+        )
+      ).size;
+
+
+    // =========================
+    // DAYS OVERDUE
+    // =========================
+    const now =
+      new Date();
+
+
+    now.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+
+    const overdueMetrics =
+      rows.map(t => {
+
+        const due =
+          new Date(
+            t.due_date
+          );
+
+
+        due.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        const diffMs =
+          now - due;
+
+
+        const days =
+          Math.max(
+            0,
+            Math.floor(
+              diffMs /
+              (
+                1000 *
+                60 *
+                60 *
+                24
+              )
+            )
+          );
+
+
+        return {
+          task: t,
+          days
+        };
+
+      });
+
+
+    // =========================
+    // AVERAGE DAYS OVERDUE
+    // =========================
+    const totalOverdueDays =
+      overdueMetrics.reduce(
+
+        (sum, item) =>
+          sum + item.days,
+
+        0
+      );
+
+
+    const avgDaysOverdue =
+      overdueMetrics.length
+
+        ? Math.round(
+            totalOverdueDays /
+            overdueMetrics.length
+          )
+
+        : 0;
+
+
+    // =========================
+    // OLDEST OVERDUE TASK
+    // =========================
+    const oldest =
+      [...overdueMetrics].sort(
+        (a, b) =>
+          b.days - a.days
+      )[0];
+
+
+    const oldestDays =
+      oldest?.days || 0;
+
+
+    const oldestTaskLabel =
+      oldest
+        ? `${oldest.task.task || "-"} — ${oldestDays} days`
+        : "—";
+
+
+    // =========================
+    // OVERDUE BY LINE
+    // =========================
+    const overdueByLine = {};
+
+
+    rows.forEach(t => {
+
+      const line =
+        t.line_code || "—";
+
+
+      overdueByLine[line] =
+        (
+          overdueByLine[line] || 0
+        ) + 1;
+
+    });
+
+
+    const worstLineEntry =
+      Object.entries(
+        overdueByLine
+      )
+        .sort(
+          (a, b) =>
+            b[1] - a[1]
+        )[0] || ["—", 0];
+
+
+    const worstLine =
+      worstLineEntry[0];
+
+
+    const worstLineCount =
+      worstLineEntry[1];
+
+
+    // =========================
+    // HELPER:
+    // DAYS OVERDUE FOR TASK
+    // =========================
+    const getDaysOverdue =
+      dueDate => {
+
+        if (!dueDate) {
+          return 0;
+        }
+
+
+        const due =
+          new Date(
+            dueDate
+          );
+
+
+        due.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        return Math.max(
+          0,
+          Math.floor(
+            (
+              now - due
+            ) /
+            (
+              1000 *
+              60 *
+              60 *
+              24
+            )
+          )
+        );
+      };
+
+
+    // =========================
+    // BUILD REPORT CONTENT
+    // =========================
+    let reportContent = "";
+
+    let currentLine = null;
+    let currentAsset = null;
+
+    let lineCount = 0;
+
+    let lineTotalDays = 0;
+
+
+    sorted.forEach(t => {
+
+      const line =
+        t.line_code || "—";
+
+
+      const assetKey =
+        `${t.machine_name}||${t.serial_number || ""}`;
+
+
+      const daysOverdue =
+        getDaysOverdue(
+          t.due_date
+        );
+
+
+      // =========================
+      // CLOSE PREVIOUS TABLE
+      // WHEN LINE CHANGES
+      // =========================
+      if (
+        line !== currentLine &&
+        currentAsset !== null
+      ) {
+
+        reportContent += `
+            </tbody>
+          </table>
+        `;
+
+
+        currentAsset =
+          null;
+      }
+
+
+      // =========================
+      // NEW LINE
+      // =========================
+      if (
+        line !== currentLine
+      ) {
+
+        if (
+          currentLine !== null
+        ) {
+
+          const avgLineDays =
+            lineCount
+              ? Math.round(
+                  lineTotalDays /
+                  lineCount
+                )
+              : 0;
+
+
+          reportContent += `
+
+            <div class="overdue-line-summary">
+
+              <strong>
+                ${lineCount}
+              </strong>
+
+              overdue tasks
+
+              &nbsp;•&nbsp;
+
+              Average overdue:
+
+              <span class="days-overdue">
+                ${avgLineDays} days
+              </span>
+
+            </div>
+          `;
+        }
+
+
+        reportContent += `
+
+          <h3>
+            LINE ${line}
+          </h3>
+        `;
+
+
+        currentLine =
+          line;
+
+        currentAsset =
+          null;
+
+        lineCount =
+          0;
+
+        lineTotalDays =
+          0;
+      }
+
+
+      // =========================
+      // CLOSE TABLE
+      // WHEN ASSET CHANGES
+      // =========================
+      if (
+        assetKey !== currentAsset &&
+        currentAsset !== null
+      ) {
+
+        reportContent += `
+            </tbody>
+          </table>
         `;
       }
 
-      html += `<h3>LINE ${line}</h3>`;
-      currentLine = line;
-      currentAsset = null;
-      lineCount = 0;
-    }
-    // 🔒 CLOSE PREVIOUS ASSET TABLE (when asset changes)
-    if (assetKey !== currentAsset && currentAsset !== null) {
-      html += `
-            </tbody>
-          </table>
+
+      // =========================
+      // NEW ASSET
+      // =========================
+      if (
+        assetKey !== currentAsset
+      ) {
+
+        reportContent += `
+
+          <div class="overdue-asset-block">
+
+            <div class="overdue-asset-title">
+              ${t.machine_name || "-"}
+            </div>
+
+            <div class="overdue-asset-sn">
+              SN:
+              ${t.serial_number || "-"}
+            </div>
+
+          </div>
+
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th class="overdue-due-col">
+                  Due Date
+                </th>
+
+                <th class="overdue-days-col">
+                  Days Overdue
+                </th>
+
+                <th class="overdue-task-col">
+                  Overdue Task
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+        `;
+
+
+        currentAsset =
+          assetKey;
+      }
+
+
+      // =========================
+      // LINE METRICS
+      // =========================
+      lineCount++;
+
+      lineTotalDays +=
+        daysOverdue;
+
+
+      // =========================
+      // ROW
+      // =========================
+      reportContent += `
+
+        <tr>
+
+          <td class="overdue-due-col">
+
+            ${formatDate(
+              t.due_date
+            )}
+
+          </td>
+
+
+          <td class="overdue-days-col days-overdue">
+
+            ${daysOverdue} days
+
+          </td>
+
+
+          <td class="overdue-task-col">
+
+            <strong>
+              ${t.task || "-"}
+            </strong>
+
+            ${
+              t.section ||
+              t.unit
+
+                ? `
+
+                  <br>
+
+                  <span class="small">
+
+                    ${t.section || ""}
+
+                    ${
+                      t.section &&
+                      t.unit
+                        ? " / "
+                        : ""
+                    }
+
+                    ${t.unit || ""}
+
+                  </span>
+
+                `
+
+                : ""
+            }
+
+          </td>
+
+        </tr>
+      `;
+
+    });
+
+
+    // =========================
+    // CLOSE LAST TABLE
+    // =========================
+    if (
+      currentAsset !== null
+    ) {
+
+      reportContent += `
+          </tbody>
+        </table>
       `;
     }
 
-    // 🟨 NEW ASSET
-    if (assetKey !== currentAsset) {
-      html += `
-        <div class="asset-block">
-          <div class="asset-title">${t.machine_name}</div>
-          <div class="asset-sn">SN: ${t.serial_number || "-"}</div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th class="due-col">Due Date</th>
-              <th class="task-col">Overdue Task</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-      currentAsset = assetKey;
-    }
+    // =========================
+    // LAST LINE SUMMARY
+    // =========================
+    if (
+      currentLine !== null
+    ) {
+
+      const avgLineDays =
+        lineCount
+          ? Math.round(
+              lineTotalDays /
+              lineCount
+            )
+          : 0;
 
 
-    lineCount++;
+      reportContent += `
 
-    html += `
-      <tr>
-        <td>${formatDate(t.due_date)}</td>
-        <td>
-          <strong>${t.task}</strong><br>
-          <span class="small">
-            ${t.section || ""}
-            ${t.section && t.unit ? " / " : ""}
-            ${t.unit || ""}
+        <div class="overdue-line-summary">
+
+          <strong>
+            ${lineCount}
+          </strong>
+
+          overdue tasks
+
+          &nbsp;•&nbsp;
+
+          Average overdue:
+
+          <span class="days-overdue">
+            ${avgLineDays} days
           </span>
-        </td>
-      </tr>
-    `;
-  });
 
-  // 🔚 LAST LINE FOOTER
-  html += `
-      </tbody>
-    </table>
+        </div>
+      `;
+    }
 
-    <div class="line-footer">
-      Overdue tasks in LINE: ${lineCount}
-    </div>
 
-    <div class="report-summary">
-      <strong>Total overdue tasks:</strong> ${totalTasks}<br>
-      <strong>Lines affected:</strong> ${totalLines}<br>
-      <strong>Assets affected:</strong> ${totalAssets}
-    </div>
+    // =========================
+    // GENERATED DATE
+    // =========================
+    const generatedDate =
+      new Date()
+        .toLocaleDateString(
+          "el-GR"
+        );
 
-  </body>
-  </html>
-`;
 
-  /* 🔹 PRINT VIA HIDDEN IFRAME */
-  printReportHtml(html);
+    // =========================
+    // FILL TEMPLATE
+    // =========================
+    template = template
+
+      .replaceAll(
+        "{{GENERATED_DATE}}",
+        generatedDate
+      )
+
+      .replace(
+        "{{LINE_FILTER}}",
+        lineFilterLabel
+      )
+
+      .replaceAll(
+        "{{TOTAL_TASKS}}",
+        String(
+          totalTasks
+        )
+      )
+
+      .replaceAll(
+        "{{TOTAL_LINES}}",
+        String(
+          totalLines
+        )
+      )
+
+      .replaceAll(
+        "{{TOTAL_ASSETS}}",
+        String(
+          totalAssets
+        )
+      )
+
+      .replaceAll(
+        "{{AVG_DAYS_OVERDUE}}",
+        String(
+          avgDaysOverdue
+        )
+      )
+
+      .replaceAll(
+        "{{OLDEST_DAYS}}",
+        String(
+          oldestDays
+        )
+      )
+
+      .replace(
+        "{{OLDEST_TASK}}",
+        oldestTaskLabel
+      )
+
+      .replace(
+        "{{WORST_LINE}}",
+        worstLine
+      )
+
+      .replace(
+        "{{WORST_LINE_COUNT}}",
+        String(
+          worstLineCount
+        )
+      )
+
+      .replace(
+        "{{REPORT_CONTENT}}",
+        reportContent
+      );
+
+
+    // =========================
+    // PRINT
+    // =========================
+    await printReportHtml(
+      template
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "Failed to generate Overdue Maintenance Report",
+      err
+    );
+
+
+    alert(
+      "Could not generate Overdue Maintenance Report."
+    );
+  }
 }
   iframe.style.border = "0";
 

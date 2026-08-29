@@ -473,3 +473,65 @@ tbody tr:nth-child(even) {
   font-weight: 700;
   color: #b42318;
 }
+/* =========================================================
+   OVERDUE REPORT
+   ========================================================= */
+
+.overdue-asset-block {
+  margin: 10px 0 5px;
+  padding: 7px 9px;
+
+  border-left: 4px solid #b42318;
+  background: #f8f9fb;
+
+  page-break-after: avoid;
+}
+
+.overdue-asset-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #273142;
+}
+
+.overdue-asset-sn {
+  margin-top: 1px;
+  font-size: 8px;
+  color: #777f8b;
+}
+
+.overdue-line-summary {
+  margin: 6px 0 14px;
+  padding: 7px 8px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 4px;
+
+  background: #f8f9fb;
+
+  font-size: 9px;
+  color: #555f6d;
+
+  text-align: right;
+
+  page-break-inside: avoid;
+}
+
+.days-overdue {
+  font-weight: 700;
+  color: #b42318;
+  white-space: nowrap;
+}
+
+.overdue-due-col {
+  width: 18%;
+  white-space: nowrap;
+}
+
+.overdue-days-col {
+  width: 14%;
+  white-space: nowrap;
+}
+
+.overdue-task-col {
+  width: 68%;
+}
