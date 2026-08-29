@@ -468,21 +468,16 @@ async function generateStatusReportPdf() {
   try {
 
     // =========================
-    // TEST EXTERNAL TEMPLATE
+    // LOAD EXTERNAL TEMPLATE
     // =========================
-    const template =
+    let template =
       await loadReportTemplate(
         "maintenance-status"
       );
 
-    console.log(
-      "Maintenance Status template loaded:",
-      template
-    );
-
 
     // =========================
-    // EXISTING REPORT LOGIC
+    // GET FILTERED TASKS
     // =========================
     const tasks =
       getFilteredTasksForStatusReport();
@@ -492,6 +487,10 @@ async function generateStatusReportPdf() {
       return;
     }
 
+
+    // =========================
+    // REPORT FILTER VALUES
+    // =========================
     const from =
       document.getElementById("dateFrom")?.value || "—";
 
@@ -551,7 +550,7 @@ async function generateStatusReportPdf() {
 
 
     // =========================
-    // GRAND TOTAL
+    // GRAND TOTAL DURATION
     // =========================
     const totalMinutes =
       tasks.reduce((sum, t) => {
@@ -581,136 +580,9 @@ async function generateStatusReportPdf() {
 
 
     // =========================
-    // CURRENT EMBEDDED HTML
-    // TEMPORARILY KEPT
+    // BUILD DYNAMIC REPORT BODY
     // =========================
-    let html = `
-    <html>
-    <head>
-
-      <title>
-        Maintenance Status Report
-      </title>
-
-      <style>
-
-        @page {
-          size: A4;
-          margin: 15mm;
-        }
-
-        body {
-          font-family: Arial, sans-serif;
-          font-size: 12px;
-        }
-
-        h2 {
-          margin-bottom: 6px;
-        }
-
-        h3 {
-          margin: 14px 0 6px;
-          border-bottom: 2px solid #ccc;
-          padding-bottom: 2px;
-        }
-
-        h4 {
-          margin: 10px 0 4px;
-          font-size: 13px;
-        }
-
-        .meta {
-          margin-bottom: 14px;
-          color: #555;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 6px;
-        }
-
-        th,
-        td {
-          border: 1px solid #ddd;
-          padding: 6px 8px;
-          vertical-align: top;
-        }
-
-        th {
-          background: #eee;
-        }
-
-        .sn {
-          font-size: 11px;
-          color: #666;
-        }
-
-        .status-overdue {
-          color: #c62828;
-          font-weight: bold;
-        }
-
-        .status-planned {
-          color: #2e7d32;
-          font-weight: bold;
-        }
-
-        .status-planned_manual {
-          color: #fe9c00;
-          font-weight: bold;
-        }
-
-        .line-footer {
-          margin: 8px 0 12px;
-          padding-top: 4px;
-          border-top: 1px dashed #d6d6d6;
-          font-size: 11px;
-          color: #666;
-          text-align: right;
-        }
-
-      </style>
-
-    </head>
-
-    <body>
-
-      <h2>
-        Maintenance Status Report
-      </h2>
-
-      <div class="meta">
-
-        Date:
-        ${new Date().toLocaleDateString("el-GR")}
-        <br>
-
-        Period:
-        ${from} → ${to}
-        <br>
-
-        Line:
-        ${lineFilterLabel}
-        <br>
-
-        Status:
-        ${status.toUpperCase()}
-        <br>
-
-        <strong>
-          Tasks: ${tasks.length}
-        </strong>
-
-        ${
-          totalDurationLabel
-            ? ` • Estimated duration: ${totalDurationLabel}`
-            : ""
-        }
-
-      </div>
-    `;
-
+    let reportContent = "";
 
     let currentLine = null;
     let currentAsset = null;
@@ -719,9 +591,6 @@ async function generateStatusReportPdf() {
     const lineSummary = {};
 
 
-    // =========================
-    // BUILD REPORT CONTENT
-    // =========================
     sorted.forEach(t => {
 
       const line =
@@ -755,7 +624,7 @@ async function generateStatusReportPdf() {
         currentAsset !== null
       ) {
 
-        html += `
+        reportContent += `
             </tbody>
           </table>
         `;
@@ -771,7 +640,7 @@ async function generateStatusReportPdf() {
 
         if (currentLine !== null) {
 
-          html += `
+          reportContent += `
             <div class="line-footer">
 
               <strong>
@@ -816,7 +685,7 @@ async function generateStatusReportPdf() {
         }
 
 
-        html += `
+        reportContent += `
           <h3>
             LINE ${line}
           </h3>
@@ -838,7 +707,7 @@ async function generateStatusReportPdf() {
         currentAsset !== null
       ) {
 
-        html += `
+        reportContent += `
             </tbody>
           </table>
         `;
@@ -850,7 +719,7 @@ async function generateStatusReportPdf() {
       // =========================
       if (assetKey !== currentAsset) {
 
-        html += `
+        reportContent += `
           <h4>
 
             ${t.machine_name}
@@ -952,7 +821,7 @@ async function generateStatusReportPdf() {
       // =========================
       // TASK ROW
       // =========================
-      html += `
+      reportContent += `
         <tr>
 
           <td>
@@ -1012,34 +881,118 @@ async function generateStatusReportPdf() {
 
 
     // =========================
-    // CLOSE LAST ASSET / LINE
+    // CLOSE LAST ASSET TABLE
     // =========================
-    html += `
+    if (currentAsset !== null) {
+
+      reportContent += `
           </tbody>
         </table>
+      `;
+    }
 
+
+    // =========================
+    // LAST LINE FOOTER
+    // =========================
+    if (currentLine !== null) {
+
+      reportContent += `
         <div class="line-footer">
+
+          <strong>
+            Summary:
+          </strong>
+
+          <span class="status-planned">
+            Preventive:
+            ${
+              lineSummary[currentLine]
+                ?.preventive || 0
+            }
+          </span>
+
+          &nbsp;•&nbsp;
+
+          <span class="status-planned_manual">
+            Planned (Manual):
+            ${
+              lineSummary[currentLine]
+                ?.manual || 0
+            }
+          </span>
+
+          &nbsp;•&nbsp;
+
+          <span class="status-overdue">
+            Overdue:
+            ${
+              lineSummary[currentLine]
+                ?.overdue || 0
+            }
+          </span>
+
+          <br>
 
           LINE total duration:
           ${formatDuration(lineMinutes)}
 
         </div>
-    `;
+      `;
+    }
 
 
     // =========================
-    // CLOSE DOCUMENT
+    // FILL TEMPLATE PLACEHOLDERS
     // =========================
-    html += `
-      </body>
-      </html>
-    `;
+    template = template
+      .replace(
+        "{{GENERATED_DATE}}",
+        new Date().toLocaleDateString("el-GR")
+      )
+
+      .replace(
+        "{{FROM}}",
+        from
+      )
+
+      .replace(
+        "{{TO}}",
+        to
+      )
+
+      .replace(
+        "{{LINE_FILTER}}",
+        lineFilterLabel
+      )
+
+      .replace(
+        "{{STATUS}}",
+        status.toUpperCase()
+      )
+
+      .replace(
+        "{{TASK_COUNT}}",
+        String(tasks.length)
+      )
+
+      .replace(
+        "{{TOTAL_DURATION}}",
+        totalDurationLabel
+          ? ` • Estimated duration: ${totalDurationLabel}`
+          : ""
+      )
+
+      .replace(
+        "{{REPORT_CONTENT}}",
+        reportContent
+      );
 
 
     // =========================
     // PRINT VIA IFRAME
     // =========================
-    printReportHtml(html);
+    printReportHtml(template);
 
 
   } catch (err) {
