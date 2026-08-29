@@ -492,6 +492,8 @@ async function generateStatusReportPdf() {
       await loadReportTemplate(
         "maintenance-status"
       );
+      const reportCss =
+        await loadReportCss();
 
 
     // =========================
@@ -1005,6 +1007,17 @@ async function generateStatusReportPdf() {
         "{{REPORT_CONTENT}}",
         reportContent
       );
+      template = template
+
+      .replace(
+        "{{REPORT_CSS}}",
+        reportCss
+      )
+
+      .replace(
+        "{{GENERATED_DATE}}",
+        new Date().toLocaleDateString("el-GR")
+      )
 
 
     // =========================
@@ -2812,6 +2825,19 @@ async function loadReportTemplate(templateName) {
   if (!response.ok) {
     throw new Error(
       `Failed to load report template: ${templateName}`
+    );
+  }
+
+  return await response.text();
+}
+async function loadReportCss() {
+
+  const response =
+    await fetch("./css/reports.css");
+
+  if (!response.ok) {
+    throw new Error(
+      "Failed to load reports.css"
     );
   }
 
