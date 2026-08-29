@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+
+  <title>
+    Maintenance KPI Report
+  </title>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <div class="report-header">
+
+    <div class="report-brand">
+
+      <div class="report-company">
+        ASTIR
+      </div>
+
+      <div class="report-system">
+        Computerized Maintenance Management System
+      </div>
+
+    </div>
+
+    <div class="report-header-right">
+
+      Generated:
+      {{GENERATED_DATE}}
+
+      <br>
+
+      CMMS Maintenance Reporting
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TITLE
+  ====================================================== -->
+
+  <div class="report-title-block">
+
+    <h1 class="report-title">
+      Maintenance KPI Report
+    </h1>
+
+    <div class="report-subtitle">
+      Maintenance performance, compliance and operational health overview
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       META
+  ====================================================== -->
+
+  <div class="report-meta">
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Period
+      </span>
+
+      <span class="report-meta-value">
+        {{PERIOD}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Scope
+      </span>
+
+      <span class="report-meta-value">
+        {{SCOPE}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Executions
+      </span>
+
+      <span class="report-meta-value">
+        {{EXEC_TOTAL}}
+      </span>
+
+    </div>
+
+
+    <div class="report-meta-item">
+
+      <span class="report-meta-label">
+        Generated
+      </span>
+
+      <span class="report-meta-value">
+        {{GENERATED_DATE}}
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       PRIMARY KPIs
+  ====================================================== -->
+
+  <div class="report-kpi-grid">
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Overdue Tasks
+      </div>
+
+      <div class="report-kpi-value">
+        {{OVERDUE_COUNT}}
+      </div>
+
+      <div class="report-kpi-sub">
+        {{OVERDUE_RATE}}% of active due tasks
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Preventive Compliance
+      </div>
+
+      <div class="report-kpi-value">
+        {{PREV_COMPLIANCE}}%
+      </div>
+
+      <div class="report-kpi-sub">
+        {{COMPLIANCE_STATUS}}
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Breakdown Ratio
+      </div>
+
+      <div class="report-kpi-value">
+        {{BREAKDOWN_PCT}}%
+      </div>
+
+      <div class="report-kpi-sub">
+        {{BREAKDOWN_STATUS}}
+      </div>
+
+    </div>
+
+
+    <div class="report-kpi">
+
+      <div class="report-kpi-label">
+        Maintenance Health
+      </div>
+
+      <div class="report-kpi-value">
+        {{MATURITY_SCORE}}/100
+      </div>
+
+      <div class="report-kpi-sub">
+        {{MATURITY_LEVEL}}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       KPI DETAILS
+  ====================================================== -->
+
+  <h3>
+    Performance Overview
+  </h3>
+
+  <div class="kpi-detail-grid">
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Overdue Performance
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Overdue tasks</span>
+        <strong>{{OVERDUE_COUNT}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Overdue rate</span>
+        <strong>{{OVERDUE_RATE}}%</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Active tasks with due date</span>
+        <strong>{{ACTIVE_DUE_TASKS}}</strong>
+      </div>
+
+    </div>
+
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Preventive Compliance
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Preventive expected</span>
+        <strong>{{PREV_DUE_COUNT}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Preventive completed</span>
+        <strong>{{PREV_COMPLETED_COUNT}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Completed for expected</span>
+        <strong>{{PREV_COMPLETED_COMPLIANCE}}</strong>
+      </div>
+
+      {{OUT_OF_PERIOD_ROW}}
+
+    </div>
+
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Maintenance Mix
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Preventive</span>
+        <strong>{{PREV_PCT}}%</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Planned manual</span>
+        <strong>{{PLANNED_PCT}}%</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Breakdown</span>
+        <strong>{{BREAKDOWN_PCT}}%</strong>
+      </div>
+
+    </div>
+
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Service Time
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Total service time</span>
+        <strong>{{TOTAL_SERVICE_TIME}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Average per execution</span>
+        <strong>{{AVG_SERVICE_MIN}} min</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Executions</span>
+        <strong>{{EXEC_TOTAL}}</strong>
+      </div>
+
+    </div>
+
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Top Line Impact
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Line</span>
+        <strong>{{TOP_LINE}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Service time</span>
+        <strong>{{TOP_LINE_TIME}}</strong>
+      </div>
+
+    </div>
+
+
+    <div class="kpi-detail-card">
+
+      <div class="kpi-detail-title">
+        Execution Volume
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Total executions</span>
+        <strong>{{EXEC_TOTAL}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Breakdowns</span>
+        <strong>{{BREAKDOWN_COUNT}}</strong>
+      </div>
+
+      <div class="kpi-detail-row">
+        <span>Non-breakdown</span>
+        <strong>{{NON_BREAKDOWN_COUNT}}</strong>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       MTTR
+  ====================================================== -->
+
+  {{MTTR_SECTION}}
+
+
+  <!-- =====================================================
+       INSIGHTS
+  ====================================================== -->
+
+  <h3>
+    Insights
+  </h3>
+
+  <div class="report-insights">
+    {{INSIGHTS}}
+  </div>
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
+
+  <div class="report-footer">
+
+    <div>
+      ASTIR CMMS
+    </div>
+
+    <div>
+      Maintenance KPI Report • {{SCOPE}}
+    </div>
+
+  </div>
+
+</body>
+
+</html>

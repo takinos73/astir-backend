@@ -535,3 +535,87 @@ tbody tr:nth-child(even) {
 .overdue-task-col {
   width: 68%;
 }
+/* =========================================================
+   KPI REPORT
+   ========================================================= */
+
+.kpi-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.kpi-detail-card {
+  border: 1px solid #dfe3e8;
+  border-radius: 5px;
+  padding: 8px 9px;
+  background: #f8f9fb;
+  page-break-inside: avoid;
+}
+
+.kpi-detail-title {
+  margin-bottom: 6px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  color: #596273;
+}
+
+.kpi-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 3px 0;
+
+  border-bottom: 1px solid #e6e9ed;
+
+  font-size: 9px;
+}
+
+.kpi-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.kpi-detail-row span {
+  color: #687180;
+}
+
+.kpi-detail-row strong {
+  color: #253247;
+  text-align: right;
+}
+
+.report-insights {
+  border: 1px solid #dfe3e8;
+  border-left: 4px solid #b68a1e;
+
+  border-radius: 5px;
+
+  padding: 8px 10px;
+
+  background: #fffdf6;
+
+  font-size: 9px;
+  color: #455160;
+
+  page-break-inside: avoid;
+}
+
+.report-insights ul {
+  margin: 0;
+  padding-left: 17px;
+}
+
+.report-insights li {
+  margin: 3px 0;
+}
+
+.kpi-mttr-table {
+  margin-top: 6px;
+}

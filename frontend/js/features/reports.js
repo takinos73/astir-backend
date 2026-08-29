@@ -3786,618 +3786,1134 @@ async function generateOverdueReportPdf() {
    Uses: tasksData, executionsData, formatDuration()
    Filters: #dateFrom, #dateTo, #reportLine
 ===================== */
-function generateKpiReportPdf() {
-  // --------- INPUTS ----------
-  const fromVal = document.getElementById("dateFrom")?.value || "";
-  const toVal = document.getElementById("dateTo")?.value || "";
-  const selectedLines = getSelectedReportLines();
-  const isAllLines =
-    selectedLines.includes("all");
+async function generateKpiReportPdf() {
 
-  const fromDate = fromVal ? new Date(fromVal) : null;
-  const toDate = toVal ? new Date(toVal) : null;
-  if (fromDate) fromDate.setHours(0, 0, 0, 0);
-  if (toDate) toDate.setHours(23, 59, 59, 999);
+  try {
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+    // =========================
+    // LOAD TEMPLATE
+    // =========================
+    let template =
+      await loadReportTemplate(
+        "kpi-report"
+      );
 
-  // --------- SAFE HELPERS ----------
-  const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-  const safe = (v) => (v == null || v === "" ? "—" : String(v));
-  const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 
-  const inRange = (d) => {
-    if (!d) return false;
-    const x = new Date(d);
-    if (fromDate && x < fromDate) return false;
-    if (toDate && x > toDate) return false;
-    return true;
-  };
+    // =========================
+    // INPUTS
+    // =========================
+    const fromVal =
+      document.getElementById(
+        "dateFrom"
+      )?.value || "";
 
-  const sameLine = (row) => {
-  if (!row) return false;
 
-  if (isAllLines) {
-    return true;
-  }
+    const toVal =
+      document.getElementById(
+        "dateTo"
+      )?.value || "";
 
-  const line =
-    String(row.line_code || row.line || "");
 
-  return selectedLines.includes(line);
-};
+    const selectedLines =
+      getSelectedReportLines();
 
-  const isPreventiveRow = (row) =>
-    row && row.frequency_hours != null && safeNum(row.frequency_hours) > 0;
 
-  const isBreakdownExec = (row) => row && row.is_planned === false;
+    const isAllLines =
+      selectedLines.includes("all");
 
-  const getExecType = (e) => {
-    if (isBreakdownExec(e)) return "breakdown";
-    if (isPreventiveRow(e)) return "preventive";
-    return "planned";
-  };
 
-  // --------- DATASETS ----------
-  const allTasks = Array.isArray(state.tasksData) ? state.tasksData : [];
-  const allExec = Array.isArray(state.executionsData) ? state.executionsData : [];
+    const fromDate =
+      fromVal
+        ? new Date(fromVal)
+        : null;
 
-  // Tasks scoped (for overdue + due-in-period)
-  const scopedTasks = allTasks.filter(t => sameLine(t));
-  const activeTasksWithDue = scopedTasks.filter(t => t.status !== "Done" && !!t.due_date);
 
-  const overdueTasks = activeTasksWithDue.filter(t => {
-    const due = new Date(t.due_date);
-    due.setHours(0, 0, 0, 0);
-    return due < today;
-  });
+    const toDate =
+      toVal
+        ? new Date(toVal)
+        : null;
 
-  const preventiveExpectedExecutions = allExec
-    .filter(e => {
 
-      if (!sameLine(e)) {
-        return false;
-      }
-
-      if (!isPreventiveRow(e)) {
-        return false;
-      }
-
-      if (!e.prev_due_date) {
-        return false;
-      }
-
-      return inRange(e.prev_due_date);
-    });
-
-const preventiveExpectedCount = preventiveExpectedExecutions.length;
-
-  // Executions scoped + period
-  const scopedExecPeriod = allExec
-  .filter(e => sameLine(e))
-  .filter(e => inRange(e.executed_at));
-
-  if (scopedExecPeriod.length === 0 && activeTasksWithDue.length === 0) {
-    alert("No KPI data found for selected criteria");
-    return;
-  }
-
-  // Completed preventive executions in selected period
-  // This must match History preventive count for the same filters.
-  const preventiveCompletedPeriod = scopedExecPeriod.filter(e =>
-    getExecType(e) === "preventive"
-  );
-
-// Preventive completed against due schedule in selected period
-// Used only for compliance calculation.
-const preventiveCompletedForCompliance = preventiveExpectedExecutions.filter(e =>
-  e.executed_at && inRange(e.executed_at)
-);
-
-  // Mix (period)
-  const breakdownExec = scopedExecPeriod.filter(e => getExecType(e) === "breakdown");
-  const plannedExec = scopedExecPeriod.filter(e => getExecType(e) === "planned");
-
-  // Service time (period) from executions.duration_min
-  const totalServiceMin = scopedExecPeriod.reduce((sum, e) => sum + safeNum(e.duration_min), 0);
-  const avgServiceMin = scopedExecPeriod.length ? Math.round(totalServiceMin / scopedExecPeriod.length) : 0;
-
-  // =====================
-// TOP LINE IMPACT
-// =====================
-let topLine = "—";
-let topLineMin = 0;
-
-if (isAllLines || selectedLines.length > 1) {
-
-  const map = new Map();
-
-  scopedExecPeriod.forEach(e => {
-
-    const line =
-      String(e.line || "—");
-
-    map.set(
-      line,
-      (map.get(line) || 0) +
-      safeNum(e.duration_min)
-    );
-  });
-
-  for (const [line, minutes] of map.entries()) {
-
-    if (minutes > topLineMin) {
-      topLineMin = minutes;
-      topLine = line;
+    if (fromDate) {
+      fromDate.setHours(
+        0,
+        0,
+        0,
+        0
+      );
     }
-  }
-
-} else if (selectedLines.length === 1) {
-
-  topLine =
-    selectedLines[0].toUpperCase();
-
-  topLineMin =
-    totalServiceMin;
-}
-
-  // KPIs
-  const overdueCount = overdueTasks.length;
-  const overdueRate = pct(overdueCount, activeTasksWithDue.length);
-
-  const prevDueCount = preventiveExpectedCount;
-
-  // Visible completed count.
-  // This matches History preventive executions in the selected period.
-  const prevCompletedCount = preventiveCompletedPeriod.length;
-
-  // Used only for compliance calculation.
-  // These are preventive executions whose prev_due_date belongs to the selected period.
-  const prevCompletedForComplianceCount = preventiveCompletedForCompliance.length;
-
-  const prevComplianceRaw = pct(prevCompletedForComplianceCount, prevDueCount);
-  const prevCompliance = Math.min(100, prevComplianceRaw);
-
-  // Preventive executions done in this period,
-  // but scheduled/due in another period.
-  const preventiveOutOfPeriodDueCount = Math.max(
-    0,
-    prevCompletedCount - prevCompletedForComplianceCount
-  );
-
-  const execTotal = scopedExecPeriod.length;
-  const breakdownCount = breakdownExec.length;
-
-  const prevPct = pct(prevCompletedCount, execTotal);
-  const plannedPct = pct(plannedExec.length, execTotal);
-  const breakdownPct = pct(breakdownCount, execTotal);
-// =====================
-// MTTR per Asset (Top offenders)
-// =====================
-const mttrByAssetMap = new Map();
-
-breakdownExec.forEach(e => {
-  const key = `${e.machine}||${e.serial_number || "—"}||${e.line || "—"}`;
-  const curr = mttrByAssetMap.get(key) || {
-    machine: e.machine,
-    serial: e.serial_number || "—",
-    line: e.line || "—",
-    totalMin: 0,
-    count: 0
-  };
-
-  curr.totalMin += safeNum(e.duration_min);
-  curr.count += 1;
-  mttrByAssetMap.set(key, curr);
-});
-
-const mttrTopAssets = [...mttrByAssetMap.values()]
-  .map(a => ({
-    ...a,
-    mttr: a.count ? Math.round(a.totalMin / a.count) : 0
-  }))
-  .filter(a => a.mttr > 0)
-  .sort((a, b) => b.mttr - a.mttr)
-  .slice(0, 5);
 
 
-  // Insights (max 3)
-  const insights = [];
-  if (prevDueCount > 0 && prevCompliance < 90) {
-    insights.push(`Preventive compliance below target (${prevCompliance}%).`);
-  }
-  if (overdueRate >= 10) {
-    insights.push(`Overdue rate is ${overdueRate}%, review scheduling & staffing.`);
-  }
-  if (breakdownPct >= 25) {
-    insights.push(`Breakdown ratio is high (${breakdownPct}%) — consider RCA / preventive reinforcement.`);
-  }
-  // top-line share insight (only for ALL)
-  if (
-  (isAllLines || selectedLines.length > 1) &&
-  totalServiceMin > 0 &&
-  topLineMin > 0
-) {
-  const share =
-    pct(topLineMin, totalServiceMin);
+    if (toDate) {
+      toDate.setHours(
+        23,
+        59,
+        59,
+        999
+      );
+    }
 
-  if (share >= 35) {
-    insights.push(
-      `Line ${topLine} accounts for ${share}% of service time.`
+
+    const today =
+      new Date();
+
+
+    today.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+
+    // =========================
+    // SAFE HELPERS
+    // =========================
+    const safeNum =
+      v =>
+        Number.isFinite(
+          Number(v)
+        )
+          ? Number(v)
+          : 0;
+
+
+    const safe =
+      v =>
+        v == null ||
+        v === ""
+          ? "—"
+          : String(v);
+
+
+    const pct =
+      (num, den) =>
+        den > 0
+          ? Math.round(
+              num /
+              den *
+              100
+            )
+          : 0;
+
+
+    const inRange =
+      d => {
+
+        if (!d) {
+          return false;
+        }
+
+
+        const x =
+          new Date(d);
+
+
+        if (
+          fromDate &&
+          x < fromDate
+        ) {
+          return false;
+        }
+
+
+        if (
+          toDate &&
+          x > toDate
+        ) {
+          return false;
+        }
+
+
+        return true;
+      };
+
+
+    const sameLine =
+      row => {
+
+        if (!row) {
+          return false;
+        }
+
+
+        if (isAllLines) {
+          return true;
+        }
+
+
+        const line =
+          String(
+            row.line_code ||
+            row.line ||
+            ""
+          );
+
+
+        return selectedLines.includes(
+          line
+        );
+      };
+
+
+    const isPreventiveRow =
+      row =>
+        row &&
+        row.frequency_hours != null &&
+        safeNum(
+          row.frequency_hours
+        ) > 0;
+
+
+    const isBreakdownExec =
+      row =>
+        row &&
+        row.is_planned === false;
+
+
+    const getExecType =
+      e => {
+
+        if (
+          isBreakdownExec(e)
+        ) {
+          return "breakdown";
+        }
+
+
+        if (
+          isPreventiveRow(e)
+        ) {
+          return "preventive";
+        }
+
+
+        return "planned";
+      };
+
+
+    // =========================
+    // DATASETS
+    // =========================
+    const allTasks =
+      Array.isArray(
+        state.tasksData
+      )
+        ? state.tasksData
+        : [];
+
+
+    const allExec =
+      Array.isArray(
+        state.executionsData
+      )
+        ? state.executionsData
+        : [];
+
+
+    // =========================
+    // ACTIVE TASKS
+    // =========================
+    const scopedTasks =
+      allTasks.filter(
+        t => sameLine(t)
+      );
+
+
+    const activeTasksWithDue =
+      scopedTasks.filter(
+        t =>
+          t.status !== "Done" &&
+          !!t.due_date
+      );
+
+
+    const overdueTasks =
+      activeTasksWithDue.filter(
+        t => {
+
+          const due =
+            new Date(
+              t.due_date
+            );
+
+
+          due.setHours(
+            0,
+            0,
+            0,
+            0
+          );
+
+
+          return due < today;
+        }
+      );
+
+
+    // =========================
+    // EXPECTED PREVENTIVE
+    // =========================
+    const preventiveExpectedExecutions =
+      allExec.filter(
+        e => {
+
+          if (!sameLine(e)) {
+            return false;
+          }
+
+
+          if (
+            !isPreventiveRow(e)
+          ) {
+            return false;
+          }
+
+
+          if (
+            !e.prev_due_date
+          ) {
+            return false;
+          }
+
+
+          return inRange(
+            e.prev_due_date
+          );
+        }
+      );
+
+
+    const preventiveExpectedCount =
+      preventiveExpectedExecutions.length;
+
+
+    // =========================
+    // EXECUTIONS IN PERIOD
+    // =========================
+    const scopedExecPeriod =
+      allExec
+
+        .filter(
+          e => sameLine(e)
+        )
+
+        .filter(
+          e =>
+            inRange(
+              e.executed_at
+            )
+        );
+
+
+    if (
+      scopedExecPeriod.length === 0 &&
+      activeTasksWithDue.length === 0
+    ) {
+
+      alert(
+        "No KPI data found for selected criteria"
+      );
+
+      return;
+    }
+
+
+    // =========================
+    // PREVENTIVE COMPLETED
+    // =========================
+    const preventiveCompletedPeriod =
+      scopedExecPeriod.filter(
+        e =>
+          getExecType(e) ===
+          "preventive"
+      );
+
+
+    const preventiveCompletedForCompliance =
+      preventiveExpectedExecutions.filter(
+        e =>
+          e.executed_at &&
+          inRange(
+            e.executed_at
+          )
+      );
+
+
+    // =========================
+    // MIX
+    // =========================
+    const breakdownExec =
+      scopedExecPeriod.filter(
+        e =>
+          getExecType(e) ===
+          "breakdown"
+      );
+
+
+    const plannedExec =
+      scopedExecPeriod.filter(
+        e =>
+          getExecType(e) ===
+          "planned"
+      );
+
+
+    // =========================
+    // SERVICE TIME
+    // =========================
+    const totalServiceMin =
+      scopedExecPeriod.reduce(
+
+        (sum, e) =>
+          sum +
+          safeNum(
+            e.duration_min
+          ),
+
+        0
+      );
+
+
+    const avgServiceMin =
+      scopedExecPeriod.length
+        ? Math.round(
+            totalServiceMin /
+            scopedExecPeriod.length
+          )
+        : 0;
+
+
+    // =========================
+    // TOP LINE IMPACT
+    // =========================
+    let topLine =
+      "—";
+
+    let topLineMin =
+      0;
+
+
+    if (
+      isAllLines ||
+      selectedLines.length > 1
+    ) {
+
+      const map =
+        new Map();
+
+
+      scopedExecPeriod.forEach(
+        e => {
+
+          const line =
+            String(
+              e.line || "—"
+            );
+
+
+          map.set(
+            line,
+            (
+              map.get(line) || 0
+            ) +
+            safeNum(
+              e.duration_min
+            )
+          );
+        }
+      );
+
+
+      for (
+        const [line, minutes]
+        of map.entries()
+      ) {
+
+        if (
+          minutes >
+          topLineMin
+        ) {
+
+          topLineMin =
+            minutes;
+
+          topLine =
+            line;
+        }
+      }
+
+    } else if (
+      selectedLines.length === 1
+    ) {
+
+      topLine =
+        selectedLines[0]
+          .toUpperCase();
+
+
+      topLineMin =
+        totalServiceMin;
+    }
+
+
+    // =========================
+    // KPIs
+    // =========================
+    const overdueCount =
+      overdueTasks.length;
+
+
+    const overdueRate =
+      pct(
+        overdueCount,
+        activeTasksWithDue.length
+      );
+
+
+    const prevDueCount =
+      preventiveExpectedCount;
+
+
+    const prevCompletedCount =
+      preventiveCompletedPeriod.length;
+
+
+    const prevCompletedForComplianceCount =
+      preventiveCompletedForCompliance.length;
+
+
+    const prevComplianceRaw =
+      pct(
+        prevCompletedForComplianceCount,
+        prevDueCount
+      );
+
+
+    const prevCompliance =
+      Math.min(
+        100,
+        prevComplianceRaw
+      );
+
+
+    const preventiveOutOfPeriodDueCount =
+      Math.max(
+        0,
+        prevCompletedCount -
+        prevCompletedForComplianceCount
+      );
+
+
+    const execTotal =
+      scopedExecPeriod.length;
+
+
+    const breakdownCount =
+      breakdownExec.length;
+
+
+    const prevPct =
+      pct(
+        prevCompletedCount,
+        execTotal
+      );
+
+
+    const plannedPct =
+      pct(
+        plannedExec.length,
+        execTotal
+      );
+
+
+    const breakdownPct =
+      pct(
+        breakdownCount,
+        execTotal
+      );
+
+
+    // =========================
+    // MTTR TOP ASSETS
+    // =========================
+    const mttrByAssetMap =
+      new Map();
+
+
+    breakdownExec.forEach(
+      e => {
+
+        const key =
+          `${e.machine}||${e.serial_number || "—"}||${e.line || "—"}`;
+
+
+        const curr =
+          mttrByAssetMap.get(key) ||
+          {
+            machine: e.machine,
+            serial:
+              e.serial_number || "—",
+            line:
+              e.line || "—",
+            totalMin: 0,
+            count: 0
+          };
+
+
+        curr.totalMin +=
+          safeNum(
+            e.duration_min
+          );
+
+
+        curr.count += 1;
+
+
+        mttrByAssetMap.set(
+          key,
+          curr
+        );
+      }
+    );
+
+
+    const mttrTopAssets =
+      [...mttrByAssetMap.values()]
+
+        .map(
+          a => ({
+            ...a,
+
+            mttr:
+              a.count
+                ? Math.round(
+                    a.totalMin /
+                    a.count
+                  )
+                : 0
+          })
+        )
+
+        .filter(
+          a =>
+            a.mttr > 0
+        )
+
+        .sort(
+          (a, b) =>
+            b.mttr - a.mttr
+        )
+
+        .slice(
+          0,
+          5
+        );
+
+
+    // =========================
+    // INSIGHTS
+    // =========================
+    const insights = [];
+
+
+    if (
+      prevDueCount > 0 &&
+      prevCompliance < 90
+    ) {
+
+      insights.push(
+        `Preventive compliance below target (${prevCompliance}%).`
+      );
+    }
+
+
+    if (
+      overdueRate >= 10
+    ) {
+
+      insights.push(
+        `Overdue rate is ${overdueRate}%, review scheduling & staffing.`
+      );
+    }
+
+
+    if (
+      breakdownPct >= 25
+    ) {
+
+      insights.push(
+        `Breakdown ratio is high (${breakdownPct}%) — consider RCA / preventive reinforcement.`
+      );
+    }
+
+
+    if (
+      (
+        isAllLines ||
+        selectedLines.length > 1
+      ) &&
+      totalServiceMin > 0 &&
+      topLineMin > 0
+    ) {
+
+      const share =
+        pct(
+          topLineMin,
+          totalServiceMin
+        );
+
+
+      if (
+        share >= 35
+      ) {
+
+        insights.push(
+          `Line ${topLine} accounts for ${share}% of service time.`
+        );
+      }
+    }
+
+
+    const finalInsights =
+      insights.slice(
+        0,
+        3
+      );
+
+
+    // =========================
+    // LABELS
+    // =========================
+    const periodLabel =
+      fromVal || toVal
+        ? `${fromVal || "—"} → ${toVal || "—"}`
+        : "ALL";
+
+
+    const scopeLabel =
+      isAllLines
+        ? "ALL LINES"
+        : selectedLines.length === 1
+          ? `LINE ${selectedLines[0].toUpperCase()}`
+          : `LINES ${selectedLines.join(", ")}`;
+
+
+    // =========================
+    // STATUS FLAGS
+    // =========================
+    const overdueStatus =
+      overdueRate >= 15
+        ? "Critical"
+        : overdueRate >= 5
+          ? "Attention"
+          : "Healthy";
+
+
+    const complianceStatus =
+      prevCompliance >= 95
+        ? "Excellent"
+        : prevCompliance >= 85
+          ? "Acceptable"
+          : "At Risk";
+
+
+    const breakdownStatus =
+      breakdownPct >= 30
+        ? "Reactive"
+        : breakdownPct >= 15
+          ? "Monitor"
+          : "Controlled";
+
+
+    // =========================
+    // MAINTENANCE HEALTH INDEX
+    // =========================
+    let maturityScore =
+      100;
+
+
+    maturityScore -=
+      overdueRate * 0.5;
+
+
+    maturityScore -=
+      breakdownPct * 0.7;
+
+
+    maturityScore +=
+      (
+        prevCompliance - 80
+      ) * 0.3;
+
+
+    maturityScore =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            maturityScore
+          )
+        )
+      );
+
+
+    const maturityLevel =
+      maturityScore >= 85
+        ? "Optimized"
+        : maturityScore >= 65
+          ? "Controlled"
+          : "Reactive";
+
+
+    // =========================
+    // OUT OF PERIOD ROW
+    // =========================
+    const outOfPeriodRow =
+      preventiveOutOfPeriodDueCount > 0
+
+        ? `
+
+          <div class="kpi-detail-row">
+
+            <span>
+              Completed from other due periods
+            </span>
+
+            <strong>
+              ${preventiveOutOfPeriodDueCount}
+            </strong>
+
+          </div>
+
+        `
+
+        : "";
+
+
+    // =========================
+    // MTTR SECTION
+    // =========================
+    let mttrSection = "";
+
+
+    if (
+      mttrTopAssets.length
+    ) {
+
+      mttrSection = `
+
+        <h3>
+          Top 5 Assets by MTTR
+        </h3>
+
+
+        <table class="kpi-mttr-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Asset
+              </th>
+
+              <th>
+                Line
+              </th>
+
+              <th class="report-table-center">
+                Breakdowns
+              </th>
+
+              <th class="report-table-right">
+                MTTR
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${
+              mttrTopAssets
+
+                .map(
+                  a => `
+
+                    <tr>
+
+                      <td>
+
+                        <strong>
+                          ${a.machine || "-"}
+                        </strong>
+
+                        <br>
+
+                        <span class="small">
+                          SN: ${a.serial}
+                        </span>
+
+                      </td>
+
+
+                      <td>
+                        ${a.line}
+                      </td>
+
+
+                      <td class="report-table-center">
+                        ${a.count}
+                      </td>
+
+
+                      <td class="report-table-right">
+
+                        <strong>
+                          ${formatDuration(
+                            a.mttr
+                          )}
+                        </strong>
+
+                      </td>
+
+                    </tr>
+
+                  `
+                )
+
+                .join("")
+            }
+
+          </tbody>
+
+        </table>
+      `;
+    }
+
+
+    // =========================
+    // INSIGHTS HTML
+    // =========================
+    const insightsHtml =
+      finalInsights.length
+
+        ? `
+
+          <ul>
+
+            ${
+              finalInsights
+                .map(
+                  x =>
+                    `<li>${x}</li>`
+                )
+                .join("")
+            }
+
+          </ul>
+
+        `
+
+        : `
+
+          <div>
+            No notable exceptions detected for the selected scope.
+          </div>
+
+        `;
+
+
+    // =========================
+    // GENERATED DATE
+    // =========================
+    const generatedDate =
+      new Date()
+        .toLocaleDateString(
+          "el-GR"
+        );
+
+
+    // =========================
+    // FILL TEMPLATE
+    // =========================
+    template = template
+
+      .replaceAll(
+        "{{GENERATED_DATE}}",
+        generatedDate
+      )
+
+      .replaceAll(
+        "{{PERIOD}}",
+        periodLabel
+      )
+
+      .replaceAll(
+        "{{SCOPE}}",
+        scopeLabel
+      )
+
+      .replaceAll(
+        "{{EXEC_TOTAL}}",
+        String(execTotal)
+      )
+
+      .replaceAll(
+        "{{OVERDUE_COUNT}}",
+        String(overdueCount)
+      )
+
+      .replaceAll(
+        "{{OVERDUE_RATE}}",
+        String(overdueRate)
+      )
+
+      .replace(
+        "{{OVERDUE_STATUS}}",
+        overdueStatus
+      )
+
+      .replaceAll(
+        "{{ACTIVE_DUE_TASKS}}",
+        String(
+          activeTasksWithDue.length
+        )
+      )
+
+      .replaceAll(
+        "{{PREV_COMPLIANCE}}",
+        String(prevCompliance)
+      )
+
+      .replaceAll(
+        "{{COMPLIANCE_STATUS}}",
+        complianceStatus
+      )
+
+      .replaceAll(
+        "{{BREAKDOWN_PCT}}",
+        String(breakdownPct)
+      )
+
+      .replaceAll(
+        "{{BREAKDOWN_STATUS}}",
+        breakdownStatus
+      )
+
+      .replaceAll(
+        "{{MATURITY_SCORE}}",
+        String(maturityScore)
+      )
+
+      .replaceAll(
+        "{{MATURITY_LEVEL}}",
+        maturityLevel
+      )
+
+      .replaceAll(
+        "{{PREV_DUE_COUNT}}",
+        String(prevDueCount)
+      )
+
+      .replaceAll(
+        "{{PREV_COMPLETED_COUNT}}",
+        String(prevCompletedCount)
+      )
+
+      .replaceAll(
+        "{{PREV_COMPLETED_COMPLIANCE}}",
+        String(
+          prevCompletedForComplianceCount
+        )
+      )
+
+      .replace(
+        "{{OUT_OF_PERIOD_ROW}}",
+        outOfPeriodRow
+      )
+
+      .replaceAll(
+        "{{PREV_PCT}}",
+        String(prevPct)
+      )
+
+      .replaceAll(
+        "{{PLANNED_PCT}}",
+        String(plannedPct)
+      )
+
+      .replaceAll(
+        "{{TOTAL_SERVICE_TIME}}",
+        formatDuration(
+          totalServiceMin
+        )
+      )
+
+      .replaceAll(
+        "{{AVG_SERVICE_MIN}}",
+        String(avgServiceMin)
+      )
+
+      .replaceAll(
+        "{{TOP_LINE}}",
+        safe(topLine)
+      )
+
+      .replaceAll(
+        "{{TOP_LINE_TIME}}",
+        formatDuration(
+          topLineMin
+        )
+      )
+
+      .replaceAll(
+        "{{BREAKDOWN_COUNT}}",
+        String(breakdownCount)
+      )
+
+      .replaceAll(
+        "{{NON_BREAKDOWN_COUNT}}",
+        String(
+          execTotal -
+          breakdownCount
+        )
+      )
+
+      .replace(
+        "{{MTTR_SECTION}}",
+        mttrSection
+      )
+
+      .replace(
+        "{{INSIGHTS}}",
+        insightsHtml
+      );
+
+
+    // =========================
+    // PRINT
+    // =========================
+    await printReportHtml(
+      template
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "Failed to generate Maintenance KPI Report",
+      err
+    );
+
+
+    alert(
+      "Could not generate Maintenance KPI Report."
     );
   }
-}
-  const finalInsights = insights.slice(0, 3);
-
-  const periodLabel =
-    fromVal || toVal ? `${fromVal || "—"} → ${toVal || "—"}` : "ALL";
-
-  const scopeLabel =
-    isAllLines
-      ? "ALL LINES"
-      : selectedLines.length === 1
-        ? `LINE ${selectedLines[0].toUpperCase()}`
-        : `LINES ${selectedLines.join(", ")}`;
-  // 🔹 KPI Status Flags
-const overdueStatus =
-  overdueRate >= 15 ? "🔴 Critical"
-  : overdueRate >= 5 ? "🟠 Attention"
-  : "🟢 Healthy";
-
-const complianceStatus =
-  prevCompliance >= 95 ? "🟢 Excellent"
-  : prevCompliance >= 85 ? "🟠 Acceptable"
-  : "🔴 At Risk";
-
-const breakdownStatus =
-  breakdownPct >= 30 ? "🔴 Reactive"
-  : breakdownPct >= 15 ? "🟠 Monitor"
-  : "🟢 Controlled";
-  // 🔹 Maintenance Maturity Score (0–100)
-let maturityScore = 100;
-
-maturityScore -= overdueRate * 0.5;
-maturityScore -= breakdownPct * 0.7;
-maturityScore += (prevCompliance - 80) * 0.3;
-
-maturityScore = Math.max(0, Math.min(100, Math.round(maturityScore)));
-
-const maturityLevel =
-  maturityScore >= 85 ? "🟢 Optimized"
-  : maturityScore >= 65 ? "🟠 Controlled"
-  : "🔴 Reactive";
-
-
-  // --------- HTML ----------
-  const html = `
-<html>
-<head>
-  <title>Maintenance KPI Report</title>
-  <style>
-  @page {
-    size: A4;
-    margin: 14mm;
-  }
-
-  body {
-    font-family: Arial, sans-serif;
-    color: #1b2430;
-    margin: 0;
-    padding: 0;
-    font-size: 12px;
-    background: #ffffff;
-  }
-
-  h1 {
-    font-size: 24px;
-    margin: 0 0 8px;
-    letter-spacing: .3px;
-    color: #172033;
-  }
-
-  .meta {
-    background: #1f2937;
-    color: #f3f4f6;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 13px;
-    line-height: 1.6;
-    margin-bottom: 14px;
-  }
-
-  .meta strong {
-    color: #ffffff;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .card {
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 11px 12px;
-    background: #f8fafc;
-    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
-    break-inside: avoid;
-  }
-
-  .kpi-title {
-    font-size: 10px;
-    color: #475569;
-    margin-bottom: 7px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    font-weight: 700;
-  }
-
-  .kpi-value {
-    font-size: 24px;
-    font-weight: 800;
-    margin: 0;
-    line-height: 1.1;
-    color: #18243f;
-  }
-
-  .kpi-sub {
-    margin-top: 8px;
-    color: #475569;
-    font-size: 11px;
-    line-height: 1.45;
-  }
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 5px;
-  }
-
-  .label {
-    color: #64748b;
-  }
-
-  .value {
-    font-weight: 700;
-    color: #1e293b;
-  }
-
-  .divider {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #d8dee8;
-  }
-
-  .insights {
-    border: 1px solid #cbd5e1;
-    border-left: 5px solid #d6a928;
-    border-radius: 10px;
-    padding: 11px 13px;
-    background: #fffdf5;
-    color: #334155;
-    margin-bottom: 12px;
-  }
-
-  .insights h3 {
-    margin: 0 0 7px;
-    font-size: 11px;
-    color: #334155;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-  }
-
-  .insights ul {
-    margin: 0;
-    padding-left: 17px;
-  }
-
-  .insights li {
-    margin-bottom: 4px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
-    font-size: 11px;
-  }
-
-  th {
-    background: #1f2937;
-    color: #ffffff;
-    font-weight: 700;
-  }
-
-  th,
-  td {
-    border: 1px solid #d6dce5;
-    padding: 7px 8px;
-  }
-
-  td {
-    background: #ffffff;
-  }
-
-  tr:nth-child(even) td {
-    background: #f8fafc;
-  }
-
-  .footer {
-    margin-top: 12px;
-    color: #64748b;
-    font-size: 10px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    border-top: 1px solid #cbd5e1;
-    padding-top: 8px;
-  }
-
-  .end-divider {
-    margin-top: 10px;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 9px;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-  }
-</style>
-</head>
-<body>
-
-  <h1>Maintenance KPI Report</h1>
-  <div class="meta">
-    <div><strong>Period:</strong> ${periodLabel}</div>
-    <div><strong>Scope:</strong> ${scopeLabel}</div>
-    <div><strong>Generated:</strong> ${new Date().toLocaleDateString("el-GR")}</div>
-  </div>
-
-  <div class="grid">
-    <div class="card">
-      <div class="kpi-title">Overdue Performance</div>
-      <div class="kpi-value">${overdueCount}</div>
-      <div class="kpi-sub">
-        <div class="row"><span class="label">Overdue rate</span><span class="value">${overdueRate}%</span></div>
-        <div class="row"><span class="label">Active tasks (with due)</span><span class="value">${activeTasksWithDue.length}</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="kpi-title">Preventive Compliance • ${complianceStatus}</div>
-      <div class="kpi-value">${prevCompliance}%</div>
-      <div class="kpi-sub">
-        
-        <div class="row">
-          <span class="label">Preventive expected</span>
-          <span class="value">${prevDueCount}</span>
-        </div>
-
-        <div class="row">
-          <span class="label">Preventive completed</span>
-          <span class="value">${prevCompletedCount}</span>
-        </div>
-
-        <div class="row">
-          <span class="label">Completed for expected</span>
-          <span class="value">${prevCompletedForComplianceCount}</span>
-        </div>
-
-        ${preventiveOutOfPeriodDueCount > 0 ? `
-          <div class="row">
-            <span class="label">Completed from other due periods</span>
-            <span class="value">${preventiveOutOfPeriodDueCount}</span>
-          </div>
-        ` : ""}
-
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="kpi-title">Maintenance Mix</div>
-      <div class="kpi-sub">
-        <div class="row"><span class="label">Preventive</span><span class="value">${prevPct}%</span></div>
-        <div class="row"><span class="label">Planned (manual)</span><span class="value">${plannedPct}%</span></div>
-        <div class="row"><span class="label">Breakdown</span><span class="value">${breakdownPct}%</span></div>
-      </div>
-      <div class="divider kpi-sub">
-        <div class="row"><span class="label">Executions (period)</span><span class="value">${execTotal}</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="kpi-title">Service Time</div>
-      <div class="kpi-value">${formatDuration(totalServiceMin)}</div>
-      <div class="kpi-sub">
-        <div class="row"><span class="label">Average per execution</span><span class="value">${avgServiceMin} min</span></div>
-        <div class="row"><span class="label">Data source</span><span class="value">executions.duration_min</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="kpi-title">Top Line Impact</div>
-      <div class="kpi-value">${safe(topLine)}</div>
-      <div class="kpi-sub">
-        <div class="row"><span class="label">Service time</span><span class="value">${formatDuration(topLineMin)}</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="kpi-title">Execution Volume</div>
-      <div class="kpi-value">${execTotal}</div>
-      <div class="kpi-sub">
-        <div class="row"><span class="label">Breakdowns</span><span class="value">${breakdownCount}</span></div>
-        <div class="row"><span class="label">Non-breakdown</span><span class="value">${execTotal - breakdownCount}</span></div>
-      </div>
-    </div>
-    ${mttrTopAssets.length ? `
-  <div class="card" style="margin-top:10px;">
-    <div class="kpi-title">Top 5 Assets by MTTR (Breakdowns)</div>
-
-    <table style="width:100%; border-collapse:collapse; font-size:11px;">
-      <thead>
-        <tr style="background:#eee;">
-          <th style="text-align:left; padding:6px;">Asset</th>
-          <th style="text-align:left; padding:6px;">Line</th>
-          <th style="text-align:center; padding:6px;">Breakdowns</th>
-          <th style="text-align:right; padding:6px;">MTTR</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${mttrTopAssets.map(a => `
-          <tr>
-            <td style="padding:6px;">
-              <strong>${a.machine}</strong><br>
-              <span style="font-size:10px; color:#666;">SN: ${a.serial}</span>
-            </td>
-            <td style="padding:6px;">${a.line}</td>
-            <td style="padding:6px; text-align:center;">${a.count}</td>
-            <td style="padding:6px; text-align:right;">
-              <strong>${formatDuration(a.mttr)}</strong>
-            </td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  </div>    
-` : ""}
-<div class="card">
-      <div class="kpi-title">Maintenance Health Index</div>
-      <div class="kpi-value">${maturityScore}/100</div>
-      <div class="kpi-sub">
-        <div class="row">
-          <span class="label">Maturity Level</span>
-          <span class="value">${maturityLevel}</span>
-        </div>
-      </div>
-    </div>
-
-  </div>
-    <div class="insights">
-      <h3>Insights</h3>
-      ${
-        finalInsights.length
-          ? `<ul>${finalInsights.map(x => `<li>${x}</li>`).join("")}</ul>`
-          : `<div style="color:#666;">No notable exceptions detected for the selected scope.</div>`
-      }
-    </div>
-
-  <div class="footer">
-    <div>ASTIR CMMS • KPI Report</div>
-    <div>${scopeLabel}</div>
-  </div>
-
-  <div class="end-divider">End of Report</div>
-
-</body>
-</html>
-`;
-
-  // --------- PRINT VIA HIDDEN IFRAME (no new tab) ----------
-  printReportHtml(html);
 }
 
 function generateMttrBarChart(mttrLineRows) {
