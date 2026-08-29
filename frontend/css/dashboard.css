@@ -584,3 +584,81 @@
   font-size: 0.7rem;
   padding: 4px 6px;
 }
+/* =========================
+   DASHBOARD HEADER
+   + DAILY BRIEF BUTTON
+========================= */
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.dashboard-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* Daily Brief button */
+.btn-daily-brief {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  flex-shrink: 0;
+
+  padding: 8px 14px;
+
+  background: #1b2029;
+  color: #f6c343;
+
+  border: 1px solid #343c49;
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.btn-daily-brief:hover {
+  background: #242b36;
+  border-color: #f6c343;
+  transform: translateY(-1px);
+}
+
+.btn-daily-brief:active {
+  transform: translateY(0);
+}
+
+.dashboard-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fdfdfd;
+}
+
+.dashboard-count {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+}
+
+.dashboard-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #888;
+}
