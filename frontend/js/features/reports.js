@@ -230,7 +230,18 @@ async function printReportHtml(html) {
     }
 
     const reportCss =
-      await cssResponse.text();
+        await cssResponse.text();
+
+      console.log(
+        "REPORT CSS LOADED:",
+        reportCss.length,
+        "characters"
+      );
+
+      console.log(
+        "REPORT CSS URL:",
+        cssResponse.url
+      );
 
 
     // =========================
