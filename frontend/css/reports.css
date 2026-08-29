@@ -1,75 +1,367 @@
+/* =========================================================
+   ASTIR CMMS - COMMON REPORT STYLES
+   ========================================================= */
+
 @page {
   size: A4;
-  margin: 15mm;
+  margin: 14mm 12mm 14mm 12mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  font-size: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #1f2937;
+  background: #fff;
 }
 
-h2 {
-  margin-bottom: 6px;
+
+/* =========================================================
+   REPORT HEADER
+   ========================================================= */
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+
+  border-bottom: 2px solid #26364a;
 }
 
+.report-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.report-company {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #172033;
+}
+
+.report-system {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6b7280;
+}
+
+.report-header-right {
+  text-align: right;
+  font-size: 9px;
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.report-title-block {
+  margin-bottom: 12px;
+}
+
+.report-title {
+  margin: 0 0 3px 0;
+  padding: 0;
+
+  font-size: 20px;
+  font-weight: 700;
+
+  color: #172033;
+}
+
+.report-subtitle {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   REPORT META
+   ========================================================= */
+
+.report-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+
+  margin-bottom: 12px;
+}
+
+.report-meta-item {
+  border: 1px solid #dfe3e8;
+  border-radius: 4px;
+
+  padding: 6px 8px;
+
+  background: #f8f9fb;
+}
+
+.report-meta-label {
+  display: block;
+
+  margin-bottom: 2px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  color: #7b8491;
+}
+
+.report-meta-value {
+  font-size: 10px;
+  font-weight: 600;
+  color: #273142;
+}
+
+
+/* =========================================================
+   KPI CARDS
+   ========================================================= */
+
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+
+  margin-bottom: 15px;
+}
+
+.report-kpi {
+  min-height: 50px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 5px;
+
+  padding: 7px 9px;
+
+  background: #fff;
+}
+
+.report-kpi-label {
+  margin-bottom: 3px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  color: #7b8491;
+}
+
+.report-kpi-value {
+  font-size: 17px;
+  font-weight: 700;
+
+  color: #1e293b;
+}
+
+.report-kpi-sub {
+  margin-top: 1px;
+
+  font-size: 8px;
+  color: #8a929d;
+}
+
+
+/* =========================================================
+   SECTION HEADINGS
+   ========================================================= */
+
+.report-section-title,
 h3 {
-  margin: 14px 0 6px;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 2px;
+  margin: 16px 0 7px 0;
+  padding: 5px 8px;
+
+  border-left: 4px solid #34495e;
+  border-bottom: 1px solid #dfe3e8;
+
+  background: #f7f8fa;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: #202b3c;
+
+  page-break-after: avoid;
 }
 
 h4 {
-  margin: 10px 0 4px;
-  font-size: 13px;
-}
+  margin: 10px 0 5px 0;
 
-.meta {
-  margin-bottom: 14px;
-  color: #555;
-}
+  font-size: 11px;
+  font-weight: 700;
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 6px;
-}
+  color: #333f50;
 
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 6px 8px;
-  vertical-align: top;
-}
-
-th {
-  background: #eee;
+  page-break-after: avoid;
 }
 
 .sn {
-  font-size: 11px;
-  color: #666;
+  margin-left: 5px;
+
+  font-size: 9px;
+  font-weight: 400;
+
+  color: #777f8b;
 }
 
+
+/* =========================================================
+   TABLES
+   ========================================================= */
+
+table {
+  width: 100%;
+
+  margin-bottom: 7px;
+
+  border-collapse: collapse;
+
+  page-break-inside: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+th {
+  padding: 5px 6px;
+
+  border: 1px solid #cfd5dc;
+
+  background: #e9edf2;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-align: left;
+
+  color: #253247;
+}
+
+td {
+  padding: 5px 6px;
+
+  border: 1px solid #d9dee4;
+
+  vertical-align: top;
+
+  font-size: 9px;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
 .status-overdue {
-  color: #c62828;
-  font-weight: bold;
+  color: #b42318;
+  font-weight: 700;
 }
 
 .status-planned {
-  color: #2e7d32;
-  font-weight: bold;
+  color: #2f6f44;
+  font-weight: 700;
 }
 
 .status-planned_manual {
-  color: #fe9c00;
-  font-weight: bold;
+  color: #b36b00;
+  font-weight: 700;
 }
 
+
+/* =========================================================
+   LINE SUMMARY
+   ========================================================= */
+
 .line-footer {
-  margin: 8px 0 12px;
-  padding-top: 4px;
-  border-top: 1px dashed #d6d6d6;
-  font-size: 11px;
-  color: #666;
+  margin: 6px 0 14px 0;
+  padding: 7px 8px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 4px;
+
+  background: #f8f9fb;
+
+  font-size: 9px;
+  color: #555f6d;
+
   text-align: right;
+
+  page-break-inside: avoid;
+}
+
+
+/* =========================================================
+   REPORT FOOTER
+   ========================================================= */
+
+.report-footer {
+  margin-top: 18px;
+  padding-top: 7px;
+
+  border-top: 1px solid #d6dbe1;
+
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 8px;
+  color: #8a929d;
+}
+
+
+/* =========================================================
+   PRINT SAFETY
+   ========================================================= */
+
+.report-no-break {
+  page-break-inside: avoid;
+}
+
+@media print {
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .report-header,
+  .report-title-block,
+  .report-meta,
+  .report-kpi-grid,
+  .line-footer {
+    page-break-inside: avoid;
+  }
 }

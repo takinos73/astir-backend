@@ -591,12 +591,13 @@ async function generateStatusReportPdf() {
   try {
 
     // =========================
-    // LOAD EXTERNAL TEMPLATE
+    // LOAD TEMPLATE
     // =========================
     let template =
       await loadReportTemplate(
         "maintenance-status"
       );
+
 
     // =========================
     // GET FILTERED TASKS
@@ -635,44 +636,45 @@ async function generateStatusReportPdf() {
     // SORT:
     // LINE → ASSET → DUE DATE
     // =========================
-    const sorted = [...tasks].sort((a, b) => {
+    const sorted =
+      [...tasks].sort((a, b) => {
 
-      const la =
-        a.line_code || a.line || "";
+        const la =
+          a.line_code || a.line || "";
 
-      const lb =
-        b.line_code || b.line || "";
+        const lb =
+          b.line_code || b.line || "";
 
-      if (la !== lb) {
-        return la.localeCompare(
-          lb,
-          "el",
-          { numeric: true }
+        if (la !== lb) {
+          return la.localeCompare(
+            lb,
+            "el",
+            { numeric: true }
+          );
+        }
+
+        const aa =
+          `${a.machine_name} ${a.serial_number || ""}`;
+
+        const ab =
+          `${b.machine_name} ${b.serial_number || ""}`;
+
+        if (aa !== ab) {
+          return aa.localeCompare(
+            ab,
+            "el"
+          );
+        }
+
+        return (
+          new Date(a.due_date || 0) -
+          new Date(b.due_date || 0)
         );
-      }
-
-      const aa =
-        `${a.machine_name} ${a.serial_number || ""}`;
-
-      const ab =
-        `${b.machine_name} ${b.serial_number || ""}`;
-
-      if (aa !== ab) {
-        return aa.localeCompare(
-          ab,
-          "el"
-        );
-      }
-
-      return (
-        new Date(a.due_date || 0) -
-        new Date(b.due_date || 0)
-      );
-    });
+      });
 
 
     // =========================
-    // GRAND TOTAL DURATION
+    // TOTAL DURATION
     // =========================
     const totalMinutes =
       tasks.reduce((sum, t) => {
@@ -699,6 +701,45 @@ async function generateStatusReportPdf() {
           ? `${h}h ${m}m`
           : `${m}m`;
     }
+
+
+    // =========================
+    // KPI COUNTS
+    // =========================
+    const preventiveCount =
+      tasks.filter(t => {
+
+        const isOverdue =
+          getDueState(t) === "overdue";
+
+        const isManual =
+          typeof isPlannedManual === "function" &&
+          isPlannedManual(t);
+
+        return !isOverdue && !isManual;
+
+      }).length;
+
+
+    const plannedCount =
+      tasks.filter(t => {
+
+        const isOverdue =
+          getDueState(t) === "overdue";
+
+        const isManual =
+          typeof isPlannedManual === "function" &&
+          isPlannedManual(t);
+
+        return !isOverdue && isManual;
+
+      }).length;
+
+
+    const overdueCount =
+      tasks.filter(
+        t => getDueState(t) === "overdue"
+      ).length;
 
 
     // =========================
@@ -957,8 +998,8 @@ async function generateStatusReportPdf() {
                 ? `
                   <div
                     style="
-                      font-size: 11px;
-                      color: #666;
+                      font-size: 8px;
+                      color: #7b8491;
                       margin-top: 2px;
                     "
                   >
@@ -1065,12 +1106,22 @@ async function generateStatusReportPdf() {
 
 
     // =========================
-    // FILL TEMPLATE PLACEHOLDERS
+    // FILL TEMPLATE
     // =========================
+    const generatedDate =
+      new Date().toLocaleDateString("el-GR");
+
+
     template = template
+
       .replace(
         "{{GENERATED_DATE}}",
-        new Date().toLocaleDateString("el-GR")
+        generatedDate
+      )
+
+      .replace(
+        "{{GENERATED_DATE}}",
+        generatedDate
       )
 
       .replace(
@@ -1099,6 +1150,21 @@ async function generateStatusReportPdf() {
       )
 
       .replace(
+        "{{PREVENTIVE_COUNT}}",
+        String(preventiveCount)
+      )
+
+      .replace(
+        "{{PLANNED_COUNT}}",
+        String(plannedCount)
+      )
+
+      .replace(
+        "{{OVERDUE_COUNT}}",
+        String(overdueCount)
+      )
+
+      .replace(
         "{{TOTAL_DURATION}}",
         totalDurationLabel
           ? ` • Estimated duration: ${totalDurationLabel}`
@@ -1109,18 +1175,12 @@ async function generateStatusReportPdf() {
         "{{REPORT_CONTENT}}",
         reportContent
       );
-      template = template
-
-      .replace(
-        "{{GENERATED_DATE}}",
-        new Date().toLocaleDateString("el-GR")
-      )
 
 
     // =========================
-    // PRINT VIA IFRAME
+    // PRINT
     // =========================
-    printReportHtml(template);
+    await printReportHtml(template);
 
 
   } catch (err) {
