@@ -229,3 +229,243 @@
     transparent
   );
 }
+/* =====================
+   DASHBOARD – ASSET CARDS
+===================== */
+
+#assetDashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+/* Card */
+.dashboard-card {
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+
+/* Top row */
+.asset-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asset-line {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+
+/* Risk badge */
+.asset-risk-badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.asset-risk-badge.critical {
+  background: rgba(255,60,60,0.18);
+  color: #ff7a7a;
+}
+
+.asset-risk-badge.risk {
+  background: rgba(255,165,0,0.18);
+  color: #ffb84d;
+}
+
+.asset-risk-badge.watch {
+  background: rgba(255,220,120,0.15);
+  color: #ffd976;
+}
+
+/* Title */
+.asset-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.asset-title .sn {
+  font-size: 0.75rem;
+  opacity: 0.55;
+  margin-left: 6px;
+}
+
+/* Metrics */
+.asset-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.asset-metrics .metric {
+  opacity: 0.85;
+}
+
+.asset-metrics .metric.overdue {
+  color: #ff8a8a;
+}
+
+.asset-metrics .metric.soon {
+  color: #ffcc80;
+}
+
+.asset-metrics .metric.mttr {
+  color: #9ad1ff;
+}
+
+.asset-metrics .metric.manual {
+  color: #b5e0c0;
+}
+
+.asset-metrics .metric.last {
+  grid-column: 1 / -1;
+  opacity: 0.7;
+}
+
+/* Actions */
+.asset-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.asset-actions button {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.asset-actions button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* =====================
+   COMPACT MODE
+===================== */
+#assetDashboard.compact + .dashboard-toggle {
+  opacity: 0.6;
+}
+
+#assetDashboard.compact ~ .dashboard-filters {
+  margin-bottom: 6px;
+}
+
+#assetDashboard.compact .dashboard-card {
+  padding: 10px 12px;
+  gap: 6px;
+}
+
+#assetDashboard.compact .asset-metrics {
+  grid-template-columns: 1fr;
+}
+/* =====================
+   DASHBOARD FILTER BAR
+===================== */
+
+.dashboard-filters {
+  display: flex;
+  align-items: left;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  margin: 2px 16px 12px;
+}
+
+/* Risk buttons */
+.filter-group.risk {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #d0d0d0;
+  font-size: 0.75rem;
+  padding: 6px 12px;   /* λίγο πιο ισορροπημένο */
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.filter-btn.active {
+  border-color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+/* Flags */
+.filter-group.flags {
+  display: flex;
+  gap: 14px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.filter-flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.filter-flag input {
+  accent-color: #7aaeff;
+}
+
+/* =====================
+   COMPACT TOGGLE
+===================== */
+
+.dashboard-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  opacity: 0.75;
+  margin: 2px 14px 2px;
+  cursor: pointer;
+}
+
+.dashboard-toggle input {
+  accent-color: #7aaeff;
+}
+
+/* =====================
+   DASHBOARD GRID
+===================== */
+
+#assetDashboard {
+  margin-top: 6px;
+}
+
+#assetDashboardCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
