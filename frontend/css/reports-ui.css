@@ -1,0 +1,432 @@
+/* =========================================================
+   ASTIR CMMS - REPORTS UI
+   ========================================================= */
+
+
+/* =====================
+   REPORTS TAB
+===================== */
+
+.reports-header {
+  margin-bottom: 20px;
+}
+
+.reports-header h2 {
+  margin-bottom: 4px;
+}
+
+.reports-subtitle {
+  font-size: 14px;
+  color: #aaa;
+}
+
+
+/* Card */
+
+.reports-card {
+  background: #14161c;
+  border-radius: 10px;
+  border-block: solid;
+  padding: 20px;
+  max-width: 1000px;
+}
+
+
+/* Grid */
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+
+/* Fields */
+
+.reports-card .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-right {
+  justify-self: end;
+  max-width: 180px;
+}
+
+.reports-card label {
+  font-size: 12px;
+  color: #bbb;
+}
+
+.reports-card input,
+.reports-card select {
+  background: #0f1116;
+  border: 1px solid #2a2d36;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.reports-card input::placeholder {
+  color: #666;
+}
+
+
+/* Hidden field */
+
+.field-hidden {
+  display: none;
+}
+
+
+/* Preview */
+
+.reports-preview {
+  background: #0f1116;
+  border: 1px dashed #2a2d36;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.preview-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.preview-lines,
+.preview-dates,
+.preview-type {
+  color: #ccc;
+  margin-bottom: 2px;
+}
+
+
+/* Actions */
+
+.reports-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.reports-actions .btn-primary {
+  padding: 8px 14px;
+}
+
+.reports-actions .btn-secondary {
+  padding: 8px 14px;
+}
+
+
+/* Unplanned task visual cue */
+
+.unplanned-mode {
+  border-left: 5px solid #ff4d4d;
+}
+
+.task-sub {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+
+/* =====================
+   REPORTS FIELD WIDTH TUNING
+===================== */
+
+.reports-grid .field:has(#reportLine),
+.reports-grid .field:has(#reportStatus) {
+  max-width: 200px;
+  justify-self: end;
+}
+
+.reports-grid .field select {
+  width: 100%;
+}
+
+
+/* =========================
+   REPORT LINE MULTI SELECT
+========================= */
+
+.multi-select {
+  position: relative;
+  width: 190px;
+}
+
+.multi-select-btn {
+  width: 100%;
+  min-height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 12px;
+
+  background: #1f2937;
+  color: #f8fafc;
+
+  border: 1px solid #374151;
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.multi-select-btn::after {
+  content: "▾";
+  margin-left: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.multi-select-btn:hover {
+  background: #273449;
+  border-color: #4b5d78;
+}
+
+.multi-select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+
+  z-index: 1500;
+
+  width: 210px;
+  max-height: 300px;
+  overflow-y: auto;
+
+  padding: 7px;
+
+  background: #182231;
+
+  border: 1px solid #344154;
+  border-radius: 10px;
+
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.30);
+
+  color: #e5e7eb;
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-height: 34px;
+  padding: 6px 9px;
+
+  border-radius: 6px;
+
+  color: #dce3ec;
+  font-size: 13px;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.multi-select-option:hover {
+  background: #263448;
+  color: #ffffff;
+}
+
+.multi-select-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+
+  accent-color: #4fd18b;
+
+  cursor: pointer;
+}
+
+#reportLineMenu > .multi-select-option:first-child {
+  font-weight: 700;
+  color: #ffffff;
+
+  border-bottom: 1px solid #344154;
+  border-radius: 6px 6px 0 0;
+
+  margin-bottom: 5px;
+  padding-bottom: 9px;
+}
+
+.multi-select-option:has(input:checked) {
+  background: rgba(79, 209, 139, 0.12);
+  color: #7be4ab;
+}
+
+.multi-select-option:has(input:disabled) {
+  opacity: 0.45;
+}
+
+
+/* Scrollbar */
+
+.multi-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.multi-select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.multi-select-menu::-webkit-scrollbar-thumb {
+  background: #465469;
+  border-radius: 10px;
+}
+
+.multi-select-menu::-webkit-scrollbar-thumb:hover {
+  background: #596981;
+}
+
+
+/* =====================
+   PRIMARY ACTION – PDF
+===================== */
+
+#generatePdfBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  height: 38px;
+  padding: 0 16px;
+
+  background: linear-gradient(
+    180deg,
+    #2563eb,
+    #1d4ed8
+  );
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.06),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+#generatePdfBtn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.08),
+    0 8px 22px rgba(0,0,0,0.45);
+}
+
+#generatePdfBtn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 4px 12px rgba(0,0,0,0.35);
+}
+
+#generatePdfBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
+
+/* =====================
+   REPORT DATE RANGE – FINAL
+===================== */
+
+.report-date-range-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  min-height: 38px;
+  padding: 6px 12px;
+  margin-top: 22px;
+  align-self: end;
+
+  background: linear-gradient(180deg, #121826, #0f1520);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  overflow: hidden;
+}
+
+.report-date-range-pill .date-range-label,
+.report-date-range-pill .date-range-sep {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.report-date-range-pill input[type="date"] {
+  position: relative;
+  z-index: 2;
+
+  background: transparent;
+  border: none;
+  color: #e6eaf0;
+  font-size: 13px;
+
+  padding: 2px 28px 2px 4px;
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.report-date-range-pill input[type="date"]:focus {
+  outline: none;
+}
+
+.report-date-range-pill
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: relative;
+  z-index: 3;
+  margin-left: auto;
+  filter: invert(1) opacity(0.6);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+
+/* =====================
+   REPORTS GRID ALIGNMENT
+===================== */
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  gap: 20px;
+  align-items: end;
+}
