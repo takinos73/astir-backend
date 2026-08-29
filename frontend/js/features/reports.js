@@ -221,7 +221,7 @@ async function printReportHtml(html) {
     // LOAD COMMON REPORT CSS
     // =========================
     const cssResponse =
-      await fetch("./css/reports.css");
+  await fetch("/reports.css");
 
     if (!cssResponse.ok) {
       throw new Error(
