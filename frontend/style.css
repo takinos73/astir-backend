@@ -3118,30 +3118,6 @@ tr.history-unplanned {
 }
 
 /* =====================
-   ACTIONS (SUBTLE)
-===================== */
-.asset-card-actions {
-  position: relative;
-  margin-top: auto;
-  display: flex;
-  justify-content: flex-start; /* ⬅ LEFT */
-  gap: 8px;
-
-  opacity: 0.65;
-  transition: opacity 0.2s ease;
-}
-
-.asset-card:hover .asset-card-actions {
-  opacity: 1;
-}
-
-/* Buttons base */
-.asset-card-actions button {
-  font-size: 0.75rem;
-  padding: 6px 10px;
-}
-
-/* =====================
    MORE (⋮) BUTTON
 ===================== */
 .asset-card-more {
