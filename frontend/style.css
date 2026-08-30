@@ -3118,42 +3118,6 @@ tr.history-unplanned {
 }
 
 /* =====================
-   META
-===================== */
-.asset-card-meta {
-  font-size: 0.8rem;
-  opacity: 0.75;
-}
-
-/* =====================
-   LAST ACTIVITY BADGE
-===================== */
-.asset-card-activity {
-  margin-top: 8px;
-  font-size: 0.85rem;
-}
-
-.asset-card-activity .activity {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-}
-
-.asset-card-activity .activity.ok {
-  color: #8fd3a8;
-}
-
-.asset-card-activity .activity.danger {
-  color: #ff4545;
-  background: rgba(69, 0, 0, 0.12);
-}
-
-.asset-card-activity .activity.muted {
-  color: #888;
-}
-
-/* =====================
    ACTIONS (SUBTLE)
 ===================== */
 .asset-card-actions {
