@@ -558,3 +558,92 @@ tr.highlight-execution {
   font-size: 0.8em;
   opacity: 0.85;
 }
+
+/* =====================
+   ASSET VIEW – MODAL LAYOUT
+===================== */
+
+/* Asset View (base layer) */
+#assetViewOverlay {
+  z-index: 1000;
+}
+/* ⛔ ΜΗΝ κάνει scroll όλο το modal */
+#assetViewOverlay .modal-box {
+  max-height: 95vh;  
+  overflow: hidden;
+}
+
+/* ✅ Asset View modal width ONLY */
+#assetViewOverlay .modal-box.asset-view {
+  max-width: 1140px;   /* adjust 1000–1300 αν θες */
+  width: 120vw;
+}
+#assetViewTitle {
+  margin-top: 6px;
+  margin-bottom: 10px;
+  padding: 0 6px;
+}
+/* History / Execution modal (above Asset View) */
+#historyViewOverlay {
+  z-index: 1100;
+}
+.asset-view-footer {
+  display: flex;
+  justify-content: space-between; /* Close ←→ Add Task */
+  align-items: center;
+  padding: 16px;
+  border-top: 1px solid #e5e5e5;
+  gap: 12px;
+}
+
+.asset-view-actions {
+  display: flex;
+  gap: 8px;
+}
+/* Asset View – Add Task button */
+.asset-view-actions .btn-primary {
+  background: linear-gradient(135deg, #2e8bff, #1f6fd6);
+  color: #fff;
+  border: none;
+  padding: 2px 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: 
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.1s ease;
+}
+
+/* Hover */
+.asset-view-actions .btn-primary:hover {
+  background: linear-gradient(135deg, #3a95ff, #2a7be0);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Active / click */
+.asset-view-actions .btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Focus (keyboard users) */
+.asset-view-actions .btn-primary:focus-visible {
+  outline: 2px solid rgba(46, 139, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.row-highlight {
+  animation: highlightFade 2.5s ease-out;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: rgba(255, 230, 150, 0.9);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
