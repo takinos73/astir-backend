@@ -181,3 +181,59 @@
   font-size: 0.75rem;
   padding: 6px 10px;
 }
+/* =====================
+   MORE (⋮) BUTTON
+===================== */
+
+.asset-card-more {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.asset-card-more:hover {
+  color: #fff;
+}
+
+/* =====================
+   CONTEXT MENU (LEFT)
+===================== */
+
+.asset-card-menu {
+  position: absolute;
+  left: 20%;          /* ⬅ open to the LEFT of the button */
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 6px;   /* small gap from ⋮ */
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  min-width: 120px;
+  z-index: 10;
+}
+
+/* Menu items */
+
+.asset-card-menu-item {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #e0e0e0;
+  cursor: pointer;
+}
+
+.asset-card-menu-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.asset-card-menu-item.archive {
+  color: #ff9a9a;
+}
