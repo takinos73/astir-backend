@@ -1186,3 +1186,11 @@ tr.highlight-execution {
 .history-filters input::placeholder {
   color: #8f96a0;
 }
+/* =====================
+   ASSET HISTORY – SMALL TEXT
+===================== */
+
+#assetHistoryTable small {
+  font-size: .75em;
+  color: #a0a0a0;
+}
