@@ -58,3 +58,30 @@
   transform: none;
   box-shadow: none;
 }
+/* =========================
+   TASK VIEW - IMPACT BADGES
+========================= */
+
+.badge-impact {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.badge-impact-safety {
+  background: rgba(239, 83, 80, 0.16);
+  color: #ef7774;
+  border: 1px solid rgba(239, 83, 80, 0.28);
+}
+
+.badge-impact-quality {
+  background: rgba(66, 165, 245, 0.14);
+  color: #70b7ef;
+  border: 1px solid rgba(66, 165, 245, 0.25);
+}
+
+.badge-impact-safety_quality {
+  background: rgba(171, 71, 188, 0.15);
+  color: #cf83db;
+  border: 1px solid rgba(171, 71, 188, 0.27);
+}
