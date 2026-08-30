@@ -647,3 +647,58 @@ tr.highlight-execution {
     background-color: transparent;
   }
 }
+/* =====================
+   ASSET VIEW – ACTION BARS (CLEAN)
+===================== */
+
+#assetViewOverlay .modal-actions,
+#assetViewOverlay .bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ⬅ κρατά ΜΟΝΟ το info αριστερά */
+#assetViewOverlay .modal-actions span,
+#assetViewOverlay .bulk-actions span {
+  margin-right: auto;
+  opacity: 0.85;
+}
+.bulk-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.bulk-actions-left #assetBulkClearBtn {
+  margin-left: auto;    
+}
+/* Scroll ΜΟΝΟ στο table container */
+.asset-tasks-table {
+  max-height: 320px;        /* ~6–8 rows */
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
+}
+
+/* Sticky table header */
+.asset-tasks-table thead th {
+  position: sticky;
+  top: 0;
+  background: #1e222b;
+  z-index: 2;
+}
+
+/* Προαιρετικό – πιο καθαρό scrollbar */
+.asset-tasks-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.asset-tasks-table::-webkit-scrollbar-thumb {
+  background: #3a4050;
+  border-radius: 4px;
+}
+
+.asset-tasks-table::-webkit-scrollbar-track {
+  background: transparent;
+}
