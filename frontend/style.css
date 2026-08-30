@@ -3117,33 +3117,6 @@ tr.history-unplanned {
   cursor: not-allowed;
 }
 
-.asset-risk-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-left: 6px;
-  border-radius: 50%;
-  background: #ff4343;
-  vertical-align: middle;
-}
-
-
-/* =====================
-   LINE HEADER
-===================== */
-.assets-line-header {
-  margin: 18px 4px 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-/* Highlight last execution in asset history */
-tr.highlight-execution {
-  background: rgba(46, 139, 255, 0.12);
-  box-shadow: inset 3px 0 0 #2e8bff;
-}
 /* =====================
    PREVENTIVE INFO BANNER
 ===================== */
