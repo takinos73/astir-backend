@@ -452,3 +452,28 @@ tr.highlight-execution {
 .activity-badge:hover {
   filter: brightness(1.15);
 }
+
+/* =====================
+   EDIT ASSET – DESCRIPTION FIX
+===================== */
+
+.addtask-block-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.addtask-block-vertical label {
+  font-weight: 600;
+}
+
+/* textarea behavior */
+#edit-asset-description {
+  resize: none;
+  min-height: 72px;   /* ~3 lines */
+  max-height: 72px;
+  overflow-y: auto;
+  line-height: 1.4;
+  padding: 8px 10px;
+  font-family: inherit;
+}
