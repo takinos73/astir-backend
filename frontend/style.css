@@ -1585,20 +1585,6 @@ tr.history-unplanned {
   justify-content: space-between;
 }
 
-.task-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.task-note-indicator {
-  margin-left: 6px;
-  opacity: 0.7;
-  font-size: 12px;
-  cursor: help;
-  flex-shrink: 0;
-}
-
 /* =====================
    SCROLLABLE HISTORY TABLE
 ===================== */
