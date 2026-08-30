@@ -422,3 +422,33 @@ tr.highlight-execution {
 .asset-actions .btn-secondary:hover {
   opacity: 1;
 }
+/* =====================
+   LAST ACTIVITY BADGES
+===================== */
+
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.activity-planned {
+  color: #f9a825; /* yellow */
+}
+
+.activity-breakdown {
+  color: #c62828; /* red */
+  font-weight: 600;
+}
+
+.activity-check {
+  color: #2e7d32; /* green */
+}
+
+.activity-badge:hover {
+  filter: brightness(1.15);
+}
