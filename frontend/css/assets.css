@@ -752,3 +752,42 @@ tr.highlight-execution {
 .asset-tab-panel.active .asset-tasks-table {
   max-height: 360px;
 }
+
+/* =====================
+   ASSET VIEW – KPI & TASK METADATA
+===================== */
+
+.asset-kpi-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.asset-kpi-line .sep {
+  opacity: 0.6;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: #9aa4b2;
+  margin-top: 2px;
+  display: block;
+}
+
+.asset-task-unit {
+  font-weight: 500;
+}
+
+.asset-task-section {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.5;
+  line-height: 1.2;
+}
+
+#assetTasksTable th:nth-child(3),
+#assetTasksTable td:nth-child(3) {
+  width: 25%;
+}
