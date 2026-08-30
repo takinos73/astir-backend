@@ -702,3 +702,53 @@ tr.highlight-execution {
 .asset-tasks-table::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* =====================
+   ASSET VIEW – TABS & PANELS
+===================== */
+
+.asset-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.asset-tab {
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: #868585;
+  opacity: 1;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.asset-tab.active {
+  opacity: 1;
+  border-bottom: 2px solid #868484;
+}
+
+.asset-tab-panel {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.asset-tab-panel.active {
+  display: flex;
+  min-height: 0;
+}
+
+.asset-tasks-table {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 420px;   /* 6–8 rows */
+}
+
+.asset-tab-panel.active .asset-tasks-table {
+  max-height: 360px;
+}
