@@ -927,3 +927,55 @@ tr.highlight-execution {
   border-radius: 3px;
   background: #fff2a8;
 }
+
+/* =====================
+   ASSET HISTORY SEARCH
+===================== */
+
+.asset-history-search-wrap {
+  margin-left: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 260px;
+}
+
+.asset-history-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.65;
+
+  pointer-events: none;
+}
+
+#assetHistorySearch {
+  width: 100%;
+  height: 34px;
+
+  padding: 6px 12px 6px 34px;
+
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+#assetHistorySearch:focus {
+  border-color: #9ca8ba;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Search match highlight */
+.asset-history-search-highlight {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #fff2a8;
+}
