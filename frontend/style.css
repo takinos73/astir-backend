@@ -396,45 +396,6 @@ tbody tr:hover { background: #131520; }
 }
 
 /* =====================
-   TITLE & META
-===================== */
-
-.task-view-title {
-  margin:4px 2px 18px;
-  font-size: 1.4em;
-  font-weight: 200;
-  line-height: 1.25;
-}
-
-.task-view-meta {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin:4px 4px 6px;
-}
-.task-view-notes {
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.04);
-}
-
-.task-view-notes label {
-  display: block;
-  font-size: 11px;
-  opacity: 0.65;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.task-view-notes div {
-  font-size: 13px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-}
-
-/* =====================
    BADGES
 ===================== */
 
