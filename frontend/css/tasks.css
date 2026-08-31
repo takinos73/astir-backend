@@ -124,3 +124,20 @@
   line-height: 1.45;
   white-space: pre-wrap;
 }
+
+/* =====================
+   COMPLETED BLOCK
+===================== */
+
+.task-view-completed {
+  margin-top: 18px;
+  padding: 10px 12px;
+  border-left: 4px solid #1f6f5c;
+  background: rgba(31,111,92,0.12);
+  font-size: 0.85em;
+  border-radius: 6px;
+}
+
+.task-view-completed span {
+  color: #cfd8dc;
+}
