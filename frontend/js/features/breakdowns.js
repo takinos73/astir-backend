@@ -19,6 +19,7 @@
 ===================== */
 
 let currentBreakdownId = null;
+let currentBreakdownTasks = [];
 
 /* =====================
    LOAD BREAKDOWNS
@@ -2005,6 +2006,7 @@ async function loadRestorationTasks(breakdownId) {
         ? result.tasks
         : [];
 
+    currentBreakdownTasks = tasks;
 
     renderRestorationTasks(
       tasks
@@ -2685,6 +2687,245 @@ document
       completeRestorationTask(
         taskId
       );
+
+    }
+  );
+
+  /* =========================================================
+   CLOSE BREAKDOWN MODAL
+   UI ONLY
+
+   The actual PATCH /close is added in 4A.6.2.
+========================================================= */
+
+function openCloseBreakdownModal() {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+    return;
+  }
+
+
+  const overlay =
+    document.getElementById(
+      "closeBreakdownOverlay"
+    );
+
+  if (!overlay) return;
+
+
+  /* =====================
+     BREAKDOWN REFERENCE
+  ===================== */
+
+  const referenceEl =
+    document.getElementById(
+      "closeBreakdownRef"
+    );
+
+  if (referenceEl) {
+
+    referenceEl.textContent =
+      `BD-${String(
+        breakdownId
+      ).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     DEFAULT RESTORED AT
+     Current local date/time
+  ===================== */
+
+  const restoredAtInput =
+    document.getElementById(
+      "close-breakdown-restored-at"
+    );
+
+  if (restoredAtInput) {
+
+    restoredAtInput.value =
+      getBreakdownLocalDateTime();
+
+  }
+
+
+  /* =====================
+     RESET CLOSE DETAILS
+  ===================== */
+
+  const failureCause =
+    document.getElementById(
+      "close-breakdown-failure-cause"
+    );
+
+  const rootCause =
+    document.getElementById(
+      "close-breakdown-root-cause"
+    );
+
+  const correctiveAction =
+    document.getElementById(
+      "close-breakdown-corrective-action"
+    );
+
+
+  if (failureCause) {
+    failureCause.value = "";
+  }
+
+  if (rootCause) {
+    rootCause.value = "";
+  }
+
+  if (correctiveAction) {
+    correctiveAction.value = "";
+  }
+
+
+  /* =====================
+     OPEN RESTORATION TASKS
+  ===================== */
+
+  const openTasks =
+    Array.isArray(currentBreakdownTasks)
+      ? currentBreakdownTasks.filter(
+          task =>
+            task.status === "Planned" ||
+            task.status === "Overdue"
+        )
+      : [];
+
+
+  const warning =
+    document.getElementById(
+      "closeBreakdownTaskWarning"
+    );
+
+  const warningText =
+    document.getElementById(
+      "closeBreakdownTaskWarningText"
+    );
+
+
+  if (warning) {
+
+    if (openTasks.length > 0) {
+
+      warning.style.display =
+        "block";
+
+
+      if (warningText) {
+
+        warningText.textContent =
+          `This Breakdown still has ${openTasks.length} open Restoration Task${
+            openTasks.length === 1
+              ? ""
+              : "s"
+          }.`;
+
+      }
+
+    } else {
+
+      warning.style.display =
+        "none";
+
+    }
+
+  }
+
+
+  /* =====================
+     SHOW
+  ===================== */
+
+  overlay.style.display = "flex";
+
+}
+function closeCloseBreakdownModal() {
+
+  const overlay =
+    document.getElementById(
+      "closeBreakdownOverlay"
+    );
+
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+}
+
+/* =====================
+   OPEN CLOSE BREAKDOWN
+===================== */
+
+document
+  .getElementById(
+    "closeBreakdownBtn"
+  )
+  ?.addEventListener(
+    "click",
+    openCloseBreakdownModal
+  );
+
+
+/* =====================
+   CLOSE X
+===================== */
+
+document
+  .getElementById(
+    "closeBreakdownModalBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeCloseBreakdownModal
+  );
+
+
+/* =====================
+   CANCEL
+===================== */
+
+document
+  .getElementById(
+    "cancelCloseBreakdownBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeCloseBreakdownModal
+  );
+
+
+/* =====================
+   CLICK OUTSIDE
+===================== */
+
+document
+  .getElementById(
+    "closeBreakdownOverlay"
+  )
+  ?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id ===
+        "closeBreakdownOverlay"
+      ) {
+
+        closeCloseBreakdownModal();
+
+      }
 
     }
   );

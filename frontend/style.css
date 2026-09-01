@@ -2798,3 +2798,107 @@ tr.history-unplanned {
 
   white-space: nowrap;
 }
+
+/* =========================================================
+   CLOSE BREAKDOWN MODAL
+========================================================= */
+
+#closeBreakdownModal {
+  width: min(650px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background: #ffffff;
+  color: #1f2937;
+}
+
+
+#closeBreakdownModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+
+#closeBreakdownModal .modal-header h2 {
+  margin: 0 0 4px 0;
+  color: #111827;
+}
+
+
+#closeBreakdownModal .section-subtitle {
+  color: #6b7280;
+  opacity: 1;
+}
+
+
+#closeBreakdownModal .field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+
+#closeBreakdownModal .field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+
+#closeBreakdownModal input,
+#closeBreakdownModal select,
+#closeBreakdownModal textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+#closeBreakdownModal textarea {
+  resize: vertical;
+}
+
+
+#closeBreakdownModal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 22px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+
+/* =====================
+   OPEN TASK WARNING
+===================== */
+
+.breakdown-close-warning {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+
+  border: 1px solid #ffe69c;
+  border-radius: 6px;
+
+  background: #fff3cd;
+  color: #664d03;
+}
+
+.breakdown-close-warning strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.breakdown-close-warning .section-subtitle {
+  margin-top: 5px;
+  color: #664d03 !important;
+}
