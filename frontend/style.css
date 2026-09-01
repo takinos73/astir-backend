@@ -2786,3 +2786,15 @@ tr.history-unplanned {
   font-size: 13px;
   color: #4b5563;
 }
+/* =====================
+   RESTORATION TASK DONE
+===================== */
+
+.restoration-task-done {
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #198754;
+
+  white-space: nowrap;
+}

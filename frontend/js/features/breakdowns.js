@@ -2097,14 +2097,38 @@ function renderRestorationTasks(tasks) {
 
           <div class="restoration-task-main">
 
-            <div class="restoration-task-title">
-              ${escapeBreakdownHtml(title)}
+            <div>
+
+              <div class="restoration-task-title">
+                ${escapeBreakdownHtml(title)}
+              </div>
+
+              <div class="task-meta">
+                Task #${escapeBreakdownHtml(id)}
+                • ${escapeBreakdownHtml(status)}
+              </div>
+
             </div>
 
-            <div class="task-meta">
-              Task #${escapeBreakdownHtml(id)}
-              • ${escapeBreakdownHtml(status)}
-            </div>
+
+            ${
+              status === "Planned" ||
+              status === "Overdue"
+                ? `
+                  <button
+                    class="btn-table restoration-complete-btn"
+                    type="button"
+                    data-task-id="${id}"
+                  >
+                    Complete
+                  </button>
+                `
+                : `
+                  <span class="restoration-task-done">
+                    ✓ Done
+                  </span>
+                `
+            }
 
           </div>
 
@@ -2471,4 +2495,196 @@ document
   ?.addEventListener(
     "click",
     createRestorationTask
+  );
+
+  /* =========================================================
+   COMPLETE RESTORATION TASK
+   PATCH /tasks/:id
+
+   Uses the existing CMMS task completion engine.
+
+   RESULT:
+   - maintenance_task → Done
+   - task_execution is created
+   - execution appears in History
+
+   IMPORTANT:
+   - Breakdown status is NOT changed
+   - Breakdown is NOT automatically closed
+========================================================= */
+
+async function completeRestorationTask(taskId) {
+
+  const id =
+    Number(taskId);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     CONFIRM
+  ===================== */
+
+  const confirmed =
+    confirm(
+      `Complete Restoration Task #${id}?`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  /* =====================
+     CURRENT USER
+  ===================== */
+
+  const completedBy =
+    localStorage.getItem(
+      "cmmsTechnicianName"
+    ) || "Unknown";
+
+
+  const technicianIdRaw =
+    localStorage.getItem(
+      "cmmsTechnicianId"
+    );
+
+
+  const technicianId =
+    technicianIdRaw
+      ? Number(technicianIdRaw)
+      : null;
+
+
+  /* =====================
+     PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    completed_by:
+      completedBy,
+
+    completed_at:
+      new Date().toISOString(),
+
+    notes:
+      "Completed from Breakdown Restoration Tasks",
+
+    technician_id:
+      Number.isInteger(technicianId) &&
+      technicianId > 0
+        ? technicianId
+        : null
+
+  };
+
+
+  /* =====================
+     COMPLETE
+  ===================== */
+
+  try {
+
+    const response =
+      await fetch(
+        `/tasks/${id}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to complete Restoration Task"
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH RESTORATION LIST
+    ===================== */
+
+    if (currentBreakdownId) {
+
+      await loadRestorationTasks(
+        currentBreakdownId
+      );
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "COMPLETE RESTORATION TASK ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not complete Restoration Task."
+    );
+
+  }
+
+}
+/* =====================
+   COMPLETE RESTORATION TASK BUTTON
+
+   Event delegation because task rows
+   are dynamically rendered.
+===================== */
+
+document
+  .getElementById(
+    "bd-restoration-tasks"
+  )
+  ?.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          ".restoration-complete-btn"
+        );
+
+
+      if (!button) return;
+
+
+      const taskId =
+        button.dataset.taskId;
+
+
+      completeRestorationTask(
+        taskId
+      );
+
+    }
   );
