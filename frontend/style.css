@@ -2740,3 +2740,49 @@ tr.history-unplanned {
   }
 
 }
+/* =========================================================
+   RESTORATION TASK LIST
+   Functional styling only
+========================================================= */
+
+.restoration-task-item {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+
+  background: #ffffff;
+}
+
+.restoration-task-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 16px;
+}
+
+.restoration-task-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.restoration-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px 18px;
+
+  margin-top: 10px;
+
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.restoration-task-notes {
+  margin-top: 10px;
+
+  font-size: 13px;
+  color: #4b5563;
+}

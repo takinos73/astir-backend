@@ -1109,6 +1109,9 @@ currentBreakdownId = id;
     populateBreakdownDetail(
       breakdown
     );
+    await loadRestorationTasks(
+      id
+    );
 
 
     /* =====================
@@ -1933,4 +1936,539 @@ document
       }
 
     }
+  );
+
+  /* =========================================================
+   LOAD RESTORATION TASKS
+   GET /breakdowns/:id/tasks
+
+   Loads all work items linked to one Breakdown.
+========================================================= */
+
+async function loadRestorationTasks(breakdownId) {
+
+  const container =
+    document.getElementById(
+      "bd-restoration-tasks"
+    );
+
+  if (!container) return;
+
+
+  const id =
+    Number(breakdownId);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     LOADING STATE
+  ===================== */
+
+  container.innerHTML = `
+    <div class="breakdown-empty-state">
+      Loading restoration tasks...
+    </div>
+  `;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/breakdowns/${id}/tasks`
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to load Restoration Tasks"
+      );
+
+    }
+
+
+    const tasks =
+      Array.isArray(result?.tasks)
+        ? result.tasks
+        : [];
+
+
+    renderRestorationTasks(
+      tasks
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD RESTORATION TASKS ERROR:",
+      err
+    );
+
+
+    container.innerHTML = `
+      <div class="breakdown-empty-state">
+        Failed to load restoration tasks.
+      </div>
+    `;
+
+  }
+
+}
+/* =====================
+   RENDER RESTORATION TASKS
+===================== */
+
+function renderRestorationTasks(tasks) {
+
+  const container =
+    document.getElementById(
+      "bd-restoration-tasks"
+    );
+
+  if (!container) return;
+
+
+  if (
+    !Array.isArray(tasks) ||
+    tasks.length === 0
+  ) {
+
+    container.innerHTML = `
+      <div class="breakdown-empty-state">
+        No restoration tasks yet.
+      </div>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML =
+    tasks.map(task => {
+
+      const id =
+        task.id ?? "";
+
+      const title =
+        task.task || "-";
+
+      const status =
+        task.status || "-";
+
+      const section =
+        task.section || "";
+
+      const unit =
+        task.unit || "";
+
+      const notes =
+        task.notes || "";
+
+      const duration =
+        task.duration_min;
+
+      const due =
+        task.due_date
+          ? formatBreakdownDate(
+              task.due_date
+            )
+          : "-";
+
+
+      return `
+        <div
+          class="restoration-task-item"
+          data-task-id="${id}"
+        >
+
+          <div class="restoration-task-main">
+
+            <div class="restoration-task-title">
+              ${escapeBreakdownHtml(title)}
+            </div>
+
+            <div class="task-meta">
+              Task #${escapeBreakdownHtml(id)}
+              • ${escapeBreakdownHtml(status)}
+            </div>
+
+          </div>
+
+
+          <div class="restoration-task-meta">
+
+            ${
+              section
+                ? `
+                  <div>
+                    <strong>Section:</strong>
+                    ${escapeBreakdownHtml(section)}
+                  </div>
+                `
+                : ""
+            }
+
+            ${
+              unit
+                ? `
+                  <div>
+                    <strong>Unit:</strong>
+                    ${escapeBreakdownHtml(unit)}
+                  </div>
+                `
+                : ""
+            }
+
+            <div>
+              <strong>Due:</strong>
+              ${escapeBreakdownHtml(due)}
+            </div>
+
+            ${
+              duration !== null &&
+              duration !== undefined
+                ? `
+                  <div>
+                    <strong>Est.:</strong>
+                    ${escapeBreakdownHtml(duration)} min
+                  </div>
+                `
+                : ""
+            }
+
+          </div>
+
+
+          ${
+            notes
+              ? `
+                <div class="restoration-task-notes">
+                  ${escapeBreakdownHtml(notes)}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+      `;
+
+    }).join("");
+
+}
+/* =========================================================
+   CREATE RESTORATION TASK
+   POST /breakdowns/:id/tasks
+========================================================= */
+
+async function createRestorationTask() {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+  const saveBtn =
+    document.getElementById(
+      "saveRestorationTaskBtn"
+    );
+
+  const taskInput =
+    document.getElementById(
+      "restoration-task"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "restoration-section"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit"
+    );
+
+  const dueDateInput =
+    document.getElementById(
+      "restoration-due-date"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "restoration-duration"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "restoration-notes"
+    );
+
+
+  /* =====================
+     CURRENT BREAKDOWN
+  ===================== */
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+
+    alert(
+      "No active Breakdown selected."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     READ VALUES
+  ===================== */
+
+  const task =
+    String(
+      taskInput?.value || ""
+    ).trim();
+
+  const section =
+    String(
+      sectionInput?.value || ""
+    ).trim();
+
+  const unit =
+    String(
+      unitInput?.value || ""
+    ).trim();
+
+  const notes =
+    String(
+      notesInput?.value || ""
+    ).trim();
+
+  const dueDateValue =
+    dueDateInput?.value || "";
+
+  const durationValue =
+    durationInput?.value || "";
+
+
+  /* =====================
+     VALIDATION
+  ===================== */
+
+  if (!task) {
+
+    alert(
+      "Please enter the Restoration Task."
+    );
+
+    taskInput?.focus();
+
+    return;
+  }
+
+
+  /* =====================
+     DUE DATE
+  ===================== */
+
+  let dueDate = null;
+
+  if (dueDateValue) {
+
+    const parsedDueDate =
+      new Date(dueDateValue);
+
+
+    if (
+      Number.isNaN(
+        parsedDueDate.getTime()
+      )
+    ) {
+
+      alert(
+        "Invalid Due Date."
+      );
+
+      dueDateInput?.focus();
+
+      return;
+    }
+
+
+    dueDate =
+      parsedDueDate.toISOString();
+
+  }
+
+
+  /* =====================
+     ESTIMATED DURATION
+  ===================== */
+
+  let durationMin = null;
+
+  if (durationValue !== "") {
+
+    durationMin =
+      Number(durationValue);
+
+
+    if (
+      !Number.isFinite(durationMin) ||
+      durationMin < 0
+    ) {
+
+      alert(
+        "Estimated Duration must be zero or greater."
+      );
+
+      durationInput?.focus();
+
+      return;
+    }
+
+  }
+
+
+  /* =====================
+     PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    task,
+
+    section:
+      section || null,
+
+    unit:
+      unit || null,
+
+    due_date:
+      dueDate,
+
+    duration_min:
+      durationMin,
+
+    notes:
+      notes || null
+
+  };
+
+
+  /* =====================
+     CREATE
+  ===================== */
+
+  try {
+
+    if (saveBtn) {
+
+      saveBtn.disabled = true;
+
+      saveBtn.textContent =
+        "Adding...";
+
+    }
+
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}/tasks`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to create Restoration Task"
+      );
+
+    }
+
+
+    /* =====================
+       SUCCESS
+    ===================== */
+
+    closeRestorationTaskModal();
+
+
+    /*
+      Refresh child task list only.
+      Breakdown itself does not change.
+    */
+
+    await loadRestorationTasks(
+      breakdownId
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "CREATE RESTORATION TASK ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not create Restoration Task."
+    );
+
+
+  } finally {
+
+    if (saveBtn) {
+
+      saveBtn.disabled = false;
+
+      saveBtn.textContent =
+        "Add Task";
+
+    }
+
+  }
+
+}
+/* =====================
+   SAVE RESTORATION TASK
+===================== */
+
+document
+  .getElementById(
+    "saveRestorationTaskBtn"
+  )
+  ?.addEventListener(
+    "click",
+    createRestorationTask
   );
