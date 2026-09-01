@@ -1035,6 +1035,191 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
 
 });
 
+/* =========================================================
+   CLOSE BREAKDOWN
+   PATCH /breakdowns/:id/close
+
+   Closes an OPEN or IN_PROGRESS breakdown.
+
+   A breakdown may be closed even if restoration tasks
+   are still open. Closing the breakdown means that the
+   asset / production has been restored.
+
+   IMPORTANT:
+   - Does NOT complete maintenance tasks
+   - Does NOT create task executions
+   - Does NOT delete restoration tasks
+   - CLOSED breakdowns cannot be closed again
+========================================================= */
+
+app.patch("/breakdowns/:id/close", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+    const {
+      closed_at,
+      failure_cause,
+      root_cause,
+      corrective_action
+    } = req.body;
+
+
+    /* =====================
+       VALIDATE ID
+    ===================== */
+
+    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       LOAD BREAKDOWN
+    ===================== */
+
+    const existingResult = await pool.query(
+      `
+      SELECT
+        id,
+        status,
+        started_at,
+        closed_at
+      FROM breakdowns
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+
+    const breakdown = existingResult.rows[0];
+
+
+    /* =====================
+       LIFECYCLE VALIDATION
+    ===================== */
+
+    if (breakdown.status === "CLOSED") {
+      return res.status(400).json({
+        error: "Breakdown is already closed"
+      });
+    }
+
+
+    if (
+      breakdown.status !== "OPEN" &&
+      breakdown.status !== "IN_PROGRESS"
+    ) {
+      return res.status(400).json({
+        error: "Breakdown cannot be closed from its current status"
+      });
+    }
+
+
+    /* =====================
+       RESOLVE CLOSED DATE
+    ===================== */
+
+    const resolvedClosedAt =
+      closed_at || new Date().toISOString();
+
+
+    const startedAtDate =
+      new Date(breakdown.started_at);
+
+    const closedAtDate =
+      new Date(resolvedClosedAt);
+
+
+    if (Number.isNaN(closedAtDate.getTime())) {
+      return res.status(400).json({
+        error: "Invalid closed_at date"
+      });
+    }
+
+
+    if (closedAtDate < startedAtDate) {
+      return res.status(400).json({
+        error: "Closed date cannot be earlier than breakdown start"
+      });
+    }
+
+
+    /* =====================
+       CLOSE BREAKDOWN
+    ===================== */
+
+    const result = await pool.query(
+      `
+      UPDATE breakdowns
+
+      SET
+        status = 'CLOSED',
+        closed_at = $1,
+        failure_cause = $2,
+        root_cause = $3,
+        corrective_action = $4,
+        updated_at = NOW()
+
+      WHERE id = $5
+
+      RETURNING *
+      `,
+      [
+        resolvedClosedAt,
+
+        failure_cause !== undefined
+          ? String(failure_cause || "").trim() || null
+          : null,
+
+        root_cause !== undefined
+          ? String(root_cause || "").trim() || null
+          : null,
+
+        corrective_action !== undefined
+          ? String(corrective_action || "").trim() || null
+          : null,
+
+        breakdownId
+      ]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      message: "Breakdown closed successfully",
+      breakdown: result.rows[0]
+    });
+
+  } catch (err) {
+
+    console.error(
+      "PATCH /breakdowns/:id/close error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to close breakdown"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
