@@ -2929,3 +2929,255 @@ document
 
     }
   );
+
+  /* =========================================================
+   CLOSE BREAKDOWN
+   PATCH /breakdowns/:id/close
+
+   Closes the Breakdown incident.
+
+   IMPORTANT:
+   - Open Restoration Tasks are allowed to remain open.
+   - Breakdown downtime stops at closed_at.
+   - Restoration Tasks are NOT auto-completed.
+========================================================= */
+
+async function closeBreakdown() {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     READ FORM VALUES
+  ===================== */
+
+  const restoredAtRaw =
+    document.getElementById(
+      "close-breakdown-restored-at"
+    )?.value;
+
+
+  const failureCause =
+    document.getElementById(
+      "close-breakdown-failure-cause"
+    )?.value?.trim() || null;
+
+
+  const rootCause =
+    document.getElementById(
+      "close-breakdown-root-cause"
+    )?.value?.trim() || null;
+
+
+  const correctiveAction =
+    document.getElementById(
+      "close-breakdown-corrective-action"
+    )?.value?.trim() || null;
+
+
+  /* =====================
+     VALIDATION
+  ===================== */
+
+  if (!restoredAtRaw) {
+
+    alert(
+      "Please select the restoration date and time."
+    );
+
+    return;
+  }
+
+
+  const restoredAt =
+    new Date(restoredAtRaw);
+
+
+  if (
+    Number.isNaN(
+      restoredAt.getTime()
+    )
+  ) {
+
+    alert(
+      "Invalid restoration date/time."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    closed_at:
+      restoredAt.toISOString(),
+
+    failure_cause:
+      failureCause,
+
+    root_cause:
+      rootCause,
+
+    corrective_action:
+      correctiveAction
+
+  };
+
+
+  const button =
+    document.getElementById(
+      "confirmCloseBreakdownBtn"
+    );
+
+
+  const originalText =
+    button?.textContent;
+
+
+  try {
+
+    if (button) {
+
+      button.disabled = true;
+
+      button.textContent =
+        "Closing...";
+
+    }
+
+
+    /* =====================
+       API
+    ===================== */
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}/close`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to close Breakdown"
+      );
+
+    }
+
+
+    /* =====================
+       CLOSE CHILD MODAL
+    ===================== */
+
+    closeCloseBreakdownModal();
+
+
+    /* =====================
+       REFRESH DETAIL
+    ===================== */
+
+    const detailResponse =
+      await fetch(
+        `/breakdowns/${breakdownId}`
+      );
+
+
+    if (!detailResponse.ok) {
+
+      throw new Error(
+        "Breakdown closed, but detail refresh failed."
+      );
+
+    }
+
+
+    const breakdown =
+      await detailResponse.json();
+
+
+    populateBreakdownDetail(
+      breakdown
+    );
+
+
+    await loadRestorationTasks(
+      breakdownId
+    );
+
+
+    /* =====================
+       REFRESH MAIN LIST
+    ===================== */
+
+    await loadBreakdowns();
+
+
+  } catch (err) {
+
+    console.error(
+      "CLOSE BREAKDOWN ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not close Breakdown."
+    );
+
+  } finally {
+
+    if (button) {
+
+      button.disabled = false;
+
+      button.textContent =
+        originalText ||
+        "Close Breakdown";
+
+    }
+
+  }
+
+}
+/* =====================
+   CONFIRM CLOSE BREAKDOWN
+===================== */
+
+document
+  .getElementById(
+    "confirmCloseBreakdownBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeBreakdown
+  );
