@@ -1454,6 +1454,142 @@ app.post("/breakdowns/:id/tasks", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET RESTORATION TASKS
+   GET /breakdowns/:id/tasks
+
+   Returns all Restoration Tasks linked to one Breakdown.
+
+   IMPORTANT:
+   - Reads from maintenance_tasks
+   - Uses breakdown_id as the relationship
+   - Does NOT read legacy breakdown tasks
+   - Does NOT create executions
+   - Does NOT change Breakdown status
+========================================================= */
+
+app.get("/breakdowns/:id/tasks", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+
+    /* =====================
+       VALIDATE BREAKDOWN ID
+    ===================== */
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       VERIFY BREAKDOWN EXISTS
+    ===================== */
+
+    const breakdownResult = await pool.query(
+      `
+      SELECT
+        id,
+        asset_id,
+        status
+      FROM breakdowns
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+
+    if (breakdownResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+
+    /* =====================
+       LOAD RESTORATION TASKS
+    ===================== */
+
+    const result = await pool.query(
+      `
+      SELECT
+        t.id,
+        t.asset_id,
+        t.task,
+        t.section,
+        t.unit,
+        t.type,
+        t.impact,
+        t.status,
+        t.due_date,
+        t.frequency_hours,
+        t.duration_min,
+        t.notes,
+        t.is_planned,
+        t.breakdown_id,
+
+        a.model AS asset_model,
+        a.serial_number AS asset_serial,
+        a.line_id,
+
+        l.name AS line_name
+
+      FROM maintenance_tasks t
+
+      JOIN assets a
+        ON a.id = t.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE t.breakdown_id = $1
+
+      ORDER BY
+        CASE t.status
+          WHEN 'Overdue' THEN 1
+          WHEN 'Planned' THEN 2
+          WHEN 'Done' THEN 3
+          ELSE 4
+        END,
+        t.due_date ASC NULLS LAST,
+        t.id ASC
+      `,
+      [breakdownId]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      breakdown_id: breakdownId,
+      tasks: result.rows
+    });
+
+  } catch (err) {
+
+    console.error(
+      "GET /breakdowns/:id/tasks error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to load restoration tasks"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
