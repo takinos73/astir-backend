@@ -869,10 +869,9 @@ async function createBreakdown() {
 
     }
 
-
     const response =
       await fetch(
-        `${API_BASE}/breakdowns`,
+        "/breakdowns",
         {
           method: "POST",
 
