@@ -2561,3 +2561,67 @@ tr.history-unplanned {
   border-color: #a4bdb2;
   color: #0f5132;
 }
+/* =========================================================
+   BREAKDOWN DETAIL MODAL
+   LIGHT CONTENT / CONTRAST FIX
+========================================================= */
+
+#breakdownDetailModal {
+  background: #ffffff;
+  color: #1f2937;
+}
+
+
+/* Main headings */
+
+#breakdownDetailModal h2,
+#breakdownDetailModal h3 {
+  color: #1f2937;
+}
+
+
+/* Asset / subtitle */
+
+#breakdownDetailModal .section-subtitle {
+  color: #6b7280;
+  opacity: 1;
+}
+
+
+/* Field labels */
+
+#breakdownDetailModal .breakdown-detail-label {
+  color: #6b7280;
+  opacity: 1;
+}
+
+
+/* Actual Breakdown information */
+
+#breakdownDetailModal .breakdown-detail-value {
+  color: #1f2937;
+}
+
+
+/* Main fault title */
+
+#breakdownDetailModal .breakdown-detail-fault {
+  color: #111827;
+}
+
+
+/* Empty Restoration Task message */
+
+#breakdownDetailModal .breakdown-empty-state {
+  color: #6b7280;
+  opacity: 1;
+}
+
+
+/* Dividers */
+
+#breakdownDetailModal .breakdown-detail-section,
+#breakdownDetailModal .breakdown-restoration-section,
+#breakdownDetailModal .modal-actions {
+  border-color: #e5e7eb;
+}
