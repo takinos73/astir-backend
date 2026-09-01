@@ -23,6 +23,30 @@ let currentBreakdownTasks = [];
 let currentBreakdown = null;
 
 
+/* =========================================================
+   BREAKDOWN STATUS CLASS
+========================================================= */
+
+function getBreakdownStatusClass(status) {
+
+  switch (String(status || "").toUpperCase()) {
+
+    case "OPEN":
+      return "breakdown-status-open";
+
+    case "IN_PROGRESS":
+      return "breakdown-status-progress";
+
+    case "CLOSED":
+      return "breakdown-status-closed";
+
+    default:
+      return "";
+  }
+
+}
+
+
 /* =====================
    LOAD BREAKDOWNS
 ===================== */
@@ -186,7 +210,9 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
-            ${escapeBreakdownHtml(status)}
+            <span class="breakdown-status ${getBreakdownStatusClass(status)}">
+              ${escapeBreakdownHtml(status.replace("_", " "))}
+            </span>
           </td>
 
           <td>
@@ -678,7 +704,7 @@ function updateBreakdownStatusUI(breakdown) {
     /*
       Status-specific class.
 
-      Useful now and later for CSS badges.
+      Used for Breakdown status badges.
     */
 
     statusEl.classList.remove(
@@ -718,7 +744,7 @@ function updateBreakdownStatusUI(breakdown) {
 
 
   /* =====================
-     START WORK
+     START RESTORATION
 
      Only OPEN Breakdowns
      can move to IN_PROGRESS.
@@ -738,7 +764,7 @@ function updateBreakdownStatusUI(breakdown) {
      CLOSE BREAKDOWN
 
      OPEN and IN_PROGRESS
-     can be closed.
+     Breakdowns can be closed.
   ===================== */
 
   if (closeBtn) {
@@ -755,15 +781,23 @@ function updateBreakdownStatusUI(breakdown) {
 
 
   /* =====================
-     RESTORATION TASKS
+     ADD RESTORATION TASK
 
-     Intentionally remain available
-     even after Breakdown closure.
+     New Restoration Tasks are allowed
+     only while the Breakdown is active.
+
+     CLOSED Breakdown:
+     - Existing tasks remain visible
+     - Existing open tasks may still be completed
+     - New Restoration Tasks cannot be created
   ===================== */
 
   if (addTaskBtn) {
 
-    addTaskBtn.style.display = "";
+    addTaskBtn.style.display =
+      status === "CLOSED"
+        ? "none"
+        : "";
 
   }
 
@@ -1770,7 +1804,27 @@ function openRestorationTaskModal() {
 
   if (!overlay) return;
 
+/* =====================
+    CLOSED BREAKDOWN GUARD
 
+    A closed Breakdown may contain
+    existing follow-up tasks,
+    but no NEW Restoration Tasks
+    can be created.
+  ===================== */
+
+  if (
+    String(
+      currentBreakdown?.status || ""
+    ).toUpperCase() === "CLOSED"
+  ) {
+
+    alert(
+      "This Breakdown is closed. New Restoration Tasks cannot be added."
+    );
+
+    return;
+  }
   /* =====================
      RESET FIELDS
   ===================== */

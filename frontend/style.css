@@ -2902,3 +2902,48 @@ tr.history-unplanned {
   margin-top: 5px;
   color: #664d03 !important;
 }
+
+/* =========================================================
+   BREAKDOWN TABLE STATUS
+========================================================= */
+
+.breakdown-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 96px;
+
+  padding: 4px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1.2;
+}
+
+
+/* OPEN */
+
+.breakdown-status-open {
+  background: #fff3cd;
+  color: #856404;
+}
+
+
+/* IN PROGRESS */
+
+.breakdown-status-progress {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+
+/* CLOSED */
+
+.breakdown-status-closed {
+  background: #d1e7dd;
+  color: #0f5132;
+}
