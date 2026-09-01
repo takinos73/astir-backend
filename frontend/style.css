@@ -2363,6 +2363,9 @@ tr.history-unplanned {
   max-height: 90vh;
   overflow-y: auto;
   padding: 24px;
+
+  /* Solid background for easier reading */
+  background: #ffffff;
 }
 
 
@@ -2536,4 +2539,25 @@ tr.history-unplanned {
     flex-direction: column;
   }
 
+}
+/* =====================
+   BREAKDOWN STATUS BADGES
+===================== */
+
+.breakdown-status.status-open {
+  background: #fff3cd;
+  border-color: #ffe69c;
+  color: #664d03;
+}
+
+.breakdown-status.status-in-progress {
+  background: #cff4fc;
+  border-color: #9eeaf9;
+  color: #055160;
+}
+
+.breakdown-status.status-closed {
+  background: #d1e7dd;
+  border-color: #a3cfbb;
+  color: #0f5132;
 }

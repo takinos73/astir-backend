@@ -607,6 +607,158 @@ function populateBreakdownAssetDropdown() {
 
 }
 
+/* =====================
+   BREAKDOWN STATUS UI
+
+   Controls which actions are available
+   according to the Breakdown lifecycle.
+
+   OPEN
+   - Start Work
+   - Close Breakdown
+
+   IN_PROGRESS
+   - Close Breakdown
+
+   CLOSED
+   - No Breakdown lifecycle actions
+
+   Restoration Tasks remain independent
+   from the Breakdown lifecycle.
+===================== */
+
+function updateBreakdownStatusUI(breakdown) {
+
+  const status =
+    String(
+      breakdown?.status || ""
+    ).toUpperCase();
+
+
+  const statusEl =
+    document.getElementById(
+      "bd-detail-status"
+    );
+
+  const startBtn =
+    document.getElementById(
+      "startBreakdownBtn"
+    );
+
+  const closeBtn =
+    document.getElementById(
+      "closeBreakdownBtn"
+    );
+
+  const addTaskBtn =
+    document.getElementById(
+      "addRestorationTaskBtn"
+    );
+
+
+  /* =====================
+     STATUS LABEL
+  ===================== */
+
+  if (statusEl) {
+
+    statusEl.textContent =
+      status || "-";
+
+    /*
+      Status-specific class.
+
+      Useful now and later for CSS badges.
+    */
+
+    statusEl.classList.remove(
+      "status-open",
+      "status-in-progress",
+      "status-closed"
+    );
+
+
+    if (status === "OPEN") {
+
+      statusEl.classList.add(
+        "status-open"
+      );
+
+    }
+
+
+    if (status === "IN_PROGRESS") {
+
+      statusEl.classList.add(
+        "status-in-progress"
+      );
+
+    }
+
+
+    if (status === "CLOSED") {
+
+      statusEl.classList.add(
+        "status-closed"
+      );
+
+    }
+
+  }
+
+
+  /* =====================
+     START WORK
+
+     Only OPEN Breakdowns
+     can move to IN_PROGRESS.
+  ===================== */
+
+  if (startBtn) {
+
+    startBtn.style.display =
+      status === "OPEN"
+        ? ""
+        : "none";
+
+  }
+
+
+  /* =====================
+     CLOSE BREAKDOWN
+
+     OPEN and IN_PROGRESS
+     can be closed.
+  ===================== */
+
+  if (closeBtn) {
+
+    closeBtn.style.display =
+      (
+        status === "OPEN" ||
+        status === "IN_PROGRESS"
+      )
+        ? ""
+        : "none";
+
+  }
+
+
+  /* =====================
+     RESTORATION TASKS
+
+     Intentionally remain available
+     even after Breakdown closure.
+  ===================== */
+
+  if (addTaskBtn) {
+
+    addTaskBtn.style.display = "";
+
+  }
+
+}
+
 
 /* =====================
    LOCAL DATETIME FORMAT
@@ -1021,8 +1173,16 @@ function populateBreakdownDetail(breakdown) {
         : "-";
 
   }
+  /* =====================
+    STATUS-AWARE ACTIONS
+  ===================== */
+
+  updateBreakdownStatusUI(
+    breakdown
+  );
 
 }
+
 
 
 
