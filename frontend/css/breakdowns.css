@@ -351,7 +351,7 @@
 .restoration-task-item {
   padding: 14px 15px;
   margin-bottom: 9px;
-  background: linear-gradient(180deg, rgba(255,255,255,.022), rgba(255,255,255,.008)), #151922;
+  background: linear-gradient(180deg, rgba(255,255,255,.022), rgba(255,255,255,.008)), #202633;
   border: 1px solid var(--bd-border);
   border-radius: 10px;
   transition: border-color .15s ease, background .15s ease, transform .15s ease;
