@@ -652,6 +652,109 @@ app.get("/breakdowns", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET BREAKDOWN BY ID
+   GET /breakdowns/:id
+
+   Returns one breakdown incident together with
+   Asset and Line information.
+
+   This endpoint will be used by the future
+   Breakdown Detail View.
+========================================================= */
+
+app.get("/breakdowns/:id", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
+    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       LOAD BREAKDOWN
+    ===================== */
+
+    const result = await pool.query(
+      `
+      SELECT
+        b.id,
+        b.asset_id,
+        b.title,
+        b.description,
+        b.status,
+        b.started_at,
+        b.closed_at,
+        b.reported_by,
+        b.reported_by_id,
+        b.failure_cause,
+        b.root_cause,
+        b.corrective_action,
+        b.created_at,
+        b.updated_at,
+
+        a.model AS asset_model,
+        a.serial_number AS asset_serial,
+        a.line_id,
+
+        l.name AS line_name
+
+      FROM breakdowns b
+
+      JOIN assets a
+        ON a.id = b.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE b.id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+
+    /* =====================
+       NOT FOUND
+    ===================== */
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json(result.rows[0]);
+
+  } catch (err) {
+
+    console.error(
+      "GET /breakdowns/:id error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to load breakdown"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
