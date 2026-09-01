@@ -188,7 +188,15 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
-            <!-- Future: View Breakdown -->
+            <td>
+              <button
+                class="btn-table breakdown-view-btn"
+                type="button"
+                data-breakdown-id="${id}"
+              >
+                View
+              </button>
+            </td>
           </td>
 
         </tr>
