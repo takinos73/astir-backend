@@ -20,6 +20,8 @@
 
 let currentBreakdownId = null;
 let currentBreakdownTasks = [];
+let currentBreakdown = null;
+
 
 /* =====================
    LOAD BREAKDOWNS
@@ -1153,6 +1155,12 @@ currentBreakdownId = id;
 
 function populateBreakdownDetail(breakdown) {
 
+  /* =====================
+    CURRENT BREAKDOWN
+  ===================== */
+
+  currentBreakdown = breakdown;
+
   if (!breakdown) return;
 
 
@@ -1841,6 +1849,27 @@ function openRestorationTaskModal() {
 
   }
 
+  /* =====================
+   LOAD SECTION / UNIT
+   FROM BREAKDOWN ASSET
+===================== */
+
+const assetId =
+  Number(
+    currentBreakdown?.asset_id
+  );
+
+
+if (
+  Number.isInteger(assetId) &&
+  assetId > 0
+) {
+
+  populateRestorationSections(
+    assetId
+  );
+
+}
 
   /* =====================
      SHOW
@@ -2198,6 +2227,12 @@ function renderRestorationTasks(tasks) {
 /* =========================================================
    CREATE RESTORATION TASK
    POST /breakdowns/:id/tasks
+
+   Supports:
+   - Existing Section dropdown
+   - Manual Section input
+   - Existing Unit dropdown
+   - New / manual Unit input
 ========================================================= */
 
 async function createRestorationTask() {
@@ -2215,14 +2250,24 @@ async function createRestorationTask() {
       "restoration-task"
     );
 
-  const sectionInput =
+  const sectionSelect =
     document.getElementById(
       "restoration-section"
     );
 
-  const unitInput =
+  const sectionInput =
+    document.getElementById(
+      "restoration-section-input"
+    );
+
+  const unitSelect =
     document.getElementById(
       "restoration-unit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit-input"
     );
 
   const dueDateInput =
@@ -2259,7 +2304,7 @@ async function createRestorationTask() {
 
 
   /* =====================
-     READ VALUES
+     READ TASK
   ===================== */
 
   const task =
@@ -2267,15 +2312,105 @@ async function createRestorationTask() {
       taskInput?.value || ""
     ).trim();
 
-  const section =
-    String(
-      sectionInput?.value || ""
-    ).trim();
 
-  const unit =
-    String(
-      unitInput?.value || ""
-    ).trim();
+  /* =====================
+     READ SECTION
+
+     Existing dropdown OR
+     manual Section input.
+  ===================== */
+
+  let section = "";
+
+
+  if (
+    sectionSelect &&
+    sectionSelect.style.display !== "none"
+  ) {
+
+    section =
+      String(
+        sectionSelect.value || ""
+      ).trim();
+
+  }
+
+  else {
+
+    section =
+      String(
+        sectionInput?.value || ""
+      ).trim();
+
+  }
+
+
+  /* =====================
+     READ UNIT
+
+     Existing dropdown OR
+     manual/new Unit input.
+  ===================== */
+
+  let unit = "";
+
+
+  if (
+    unitSelect &&
+    unitSelect.style.display !== "none"
+  ) {
+
+    /*
+      Operator selected:
+      ➕ New unit
+    */
+
+    if (
+      unitSelect.value === "__new__"
+    ) {
+
+      unit =
+        String(
+          unitInput?.value || ""
+        ).trim();
+
+    }
+
+    /*
+      Existing Unit selected
+    */
+
+    else {
+
+      unit =
+        String(
+          unitSelect.value || ""
+        ).trim();
+
+    }
+
+  }
+
+  /*
+    No known Units exist for
+    Asset + Section.
+
+    Use manual input.
+  */
+
+  else {
+
+    unit =
+      String(
+        unitInput?.value || ""
+      ).trim();
+
+  }
+
+
+  /* =====================
+     READ OTHER VALUES
+  ===================== */
 
   const notes =
     String(
@@ -2300,6 +2435,31 @@ async function createRestorationTask() {
     );
 
     taskInput?.focus();
+
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE NEW UNIT
+
+     If operator selected
+     "➕ New unit",
+     a value must be entered.
+  ===================== */
+
+  if (
+    unitSelect &&
+    unitSelect.style.display !== "none" &&
+    unitSelect.value === "__new__" &&
+    !unit
+  ) {
+
+    alert(
+      "Please enter the new Unit."
+    );
+
+    unitInput?.focus();
 
     return;
   }
@@ -2450,7 +2610,8 @@ async function createRestorationTask() {
 
     /*
       Refresh child task list only.
-      Breakdown itself does not change.
+
+      Breakdown status does not change.
     */
 
     await loadRestorationTasks(
@@ -2486,6 +2647,7 @@ async function createRestorationTask() {
   }
 
 }
+
 /* =====================
    SAVE RESTORATION TASK
 ===================== */
@@ -3180,4 +3342,428 @@ document
   ?.addEventListener(
     "click",
     closeBreakdown
+  );
+
+  /* =========================================================
+   POPULATE RESTORATION SECTIONS
+
+   Loads the existing Sections for the Asset
+   associated with the current Breakdown.
+
+   Uses the existing CMMS helper:
+   getSectionsForAsset(assetId)
+
+   Behaviour:
+   - Existing Sections found → show dropdown
+   - No Sections found       → show manual input
+   - Unit fields are reset whenever Sections reload
+========================================================= */
+
+function populateRestorationSections(assetId) {
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const sectionSelect =
+    document.getElementById(
+      "restoration-section"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "restoration-section-input"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "restoration-unit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit-input"
+    );
+
+
+  if (
+    !sectionSelect ||
+    !sectionInput
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET SECTION
+  ===================== */
+
+  sectionSelect.innerHTML =
+    `<option value="">Select section</option>`;
+
+  sectionSelect.value = "";
+
+  sectionInput.value = "";
+
+
+  /* =====================
+     RESET UNIT
+
+     Unit depends on Section,
+     so every Section reload
+     must also reset Unit.
+  ===================== */
+
+  if (unitSelect) {
+
+    unitSelect.innerHTML =
+      `<option value="">Select unit</option>`;
+
+    unitSelect.value = "";
+
+    unitSelect.style.display =
+      "none";
+
+  }
+
+
+  if (unitInput) {
+
+    unitInput.value = "";
+
+    unitInput.style.display =
+      "none";
+
+  }
+
+
+  /* =====================
+     GET EXISTING SECTIONS
+
+     Same source used by
+     the normal Add Task modal.
+  ===================== */
+
+  const sections =
+    typeof getSectionsForAsset === "function"
+      ? getSectionsForAsset(assetId)
+      : [];
+
+
+  /* =====================
+     EXISTING SECTIONS FOUND
+  ===================== */
+
+  if (sections.length > 0) {
+
+    sectionSelect.innerHTML =
+      `<option value="">Select section</option>` +
+      sections
+        .map(
+          section =>
+            `<option value="${escapeBreakdownHtml(section)}">${escapeBreakdownHtml(section)}</option>`
+        )
+        .join("");
+
+
+    // Show dropdown
+    sectionSelect.style.display =
+      "block";
+
+
+    // Hide manual Section
+    sectionInput.style.display =
+      "none";
+
+    sectionInput.value = "";
+
+
+    return;
+  }
+
+
+  /* =====================
+     NO EXISTING SECTIONS
+
+     Allow operator to enter
+     a Section manually.
+  ===================== */
+
+  sectionSelect.style.display =
+    "none";
+
+
+  sectionInput.style.display =
+    "block";
+
+  sectionInput.value = "";
+
+}
+
+/* =========================================================
+   POPULATE RESTORATION UNITS
+
+   Loads the existing Units for:
+   Breakdown Asset + selected Section
+
+   Uses the existing CMMS helper:
+   getUnitsForAssetSection(assetId, section)
+
+   Behaviour:
+   - Existing Units found → show dropdown
+   - Dropdown also includes "➕ New unit"
+   - No Units found       → show manual input
+   - No Section selected  → hide both Unit fields
+========================================================= */
+
+function populateRestorationUnits(assetId, section) {
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const unitSelect =
+    document.getElementById(
+      "restoration-unit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit-input"
+    );
+
+
+  if (
+    !unitSelect ||
+    !unitInput
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET UNIT
+  ===================== */
+
+  unitSelect.innerHTML =
+    `<option value="">Select unit</option>`;
+
+  unitSelect.value = "";
+
+  unitInput.value = "";
+
+
+  /* =====================
+     NO SECTION SELECTED
+
+     Unit depends on Section,
+     so nothing should be shown yet.
+  ===================== */
+
+  if (
+    !section ||
+    String(section).trim() === ""
+  ) {
+
+    unitSelect.style.display =
+      "none";
+
+    unitInput.style.display =
+      "none";
+
+    return;
+  }
+
+
+  /* =====================
+     GET EXISTING UNITS
+
+     Same source used by
+     the normal Add Task modal.
+  ===================== */
+
+  const units =
+    typeof getUnitsForAssetSection === "function"
+      ? getUnitsForAssetSection(
+          assetId,
+          String(section).trim()
+        )
+      : [];
+
+
+  /* =====================
+     EXISTING UNITS FOUND
+  ===================== */
+
+  if (units.length > 0) {
+
+    unitSelect.innerHTML =
+      `<option value="">Select unit</option>` +
+
+      units
+        .map(
+          unit =>
+            `<option value="${escapeBreakdownHtml(unit)}">${escapeBreakdownHtml(unit)}</option>`
+        )
+        .join("") +
+
+      `<option value="__new__">➕ New unit</option>`;
+
+
+    // Show Unit dropdown
+    unitSelect.style.display =
+      "block";
+
+
+    // Manual Unit remains hidden
+    // until "➕ New unit" is selected.
+    unitInput.style.display =
+      "none";
+
+    unitInput.value = "";
+
+
+    return;
+  }
+
+
+  /* =====================
+     NO EXISTING UNITS
+
+     Allow operator to enter
+     a Unit manually.
+  ===================== */
+
+  unitSelect.style.display =
+    "none";
+
+
+  unitInput.style.display =
+    "block";
+
+  unitInput.value = "";
+
+}
+
+/* =========================================================
+   RESTORATION SECTION → UNITS
+
+   Existing Section dropdown:
+   loads Units for the current Breakdown Asset + Section
+========================================================= */
+
+document
+  .getElementById(
+    "restoration-section"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const assetId =
+        Number(
+          currentBreakdown?.asset_id
+        );
+
+      const section =
+        event.target.value;
+
+      populateRestorationUnits(
+        assetId,
+        section
+      );
+
+    }
+  );
+
+  /* =========================================================
+   RESTORATION MANUAL SECTION → UNITS
+========================================================= */
+
+document
+  .getElementById(
+    "restoration-section-input"
+  )
+  ?.addEventListener(
+    "input",
+    event => {
+
+      const assetId =
+        Number(
+          currentBreakdown?.asset_id
+        );
+
+      const section =
+        event.target.value.trim();
+
+      populateRestorationUnits(
+        assetId,
+        section
+      );
+
+    }
+  );
+
+  /* =========================================================
+   RESTORATION UNIT → NEW UNIT
+
+   When the operator selects "➕ New unit",
+   show the manual Unit input.
+
+   When an existing Unit is selected,
+   hide and clear the manual input.
+========================================================= */
+
+document
+  .getElementById(
+    "restoration-unit"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const unitInput =
+        document.getElementById(
+          "restoration-unit-input"
+        );
+
+
+      if (!unitInput) {
+        return;
+      }
+
+
+      /* =====================
+         NEW UNIT SELECTED
+      ===================== */
+
+      if (
+        event.target.value === "__new__"
+      ) {
+
+        unitInput.style.display =
+          "block";
+
+        unitInput.value = "";
+
+        unitInput.focus();
+
+      }
+
+
+      /* =====================
+         EXISTING UNIT
+         OR EMPTY SELECTION
+      ===================== */
+
+      else {
+
+        unitInput.style.display =
+          "none";
+
+        unitInput.value = "";
+
+      }
+
+    }
   );

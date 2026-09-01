@@ -1806,21 +1806,50 @@
 
       <div class="restoration-form-grid">
 
+        <!-- =====================
+            SECTION
+        ===================== -->
+
         <div class="field">
 
           <label for="restoration-section">
             Section
           </label>
 
-          <input
+          <!--
+            Existing Sections for the Breakdown Asset.
+            Populated dynamically from the existing
+            CMMS task structure.
+          -->
+          <select
             id="restoration-section"
+            style="display:none;"
+          >
+            <option value="">
+              Select section
+            </option>
+          </select>
+
+          <!--
+            Manual Section.
+
+            Displayed when the selected Asset
+            has no existing Sections.
+          -->
+          <input
+            id="restoration-section-input"
             type="text"
-            placeholder="Optional"
+            placeholder="Enter section"
             autocomplete="off"
+            style="display:none;"
           />
 
         </div>
 
+
+        <!-- =====================
+            UNIT
+        ===================== -->
 
         <div class="field">
 
@@ -1828,11 +1857,35 @@
             Unit
           </label>
 
-          <input
+          <!--
+            Existing Units for the selected
+            Asset + Section.
+
+            Also includes:
+            ➕ New unit
+          -->
+          <select
             id="restoration-unit"
+            style="display:none;"
+          >
+            <option value="">
+              Select unit
+            </option>
+          </select>
+
+          <!--
+            Manual / New Unit.
+
+            Displayed when:
+            1. No existing Units are available, or
+            2. Operator selects "➕ New unit".
+          -->
+          <input
+            id="restoration-unit-input"
             type="text"
-            placeholder="Optional"
+            placeholder="Enter new unit"
             autocomplete="off"
+            style="display:none;"
           />
 
         </div>
