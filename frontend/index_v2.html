@@ -1190,31 +1190,121 @@
   </header>
   
 
-  <!-- MAIN TABS -->
-<section class="main-tabs">
-  <button class="main-tab active" data-tab="dashboard">Dashboard</button>
-  <button class="main-tab" data-tab="assets">Assets</button>
-  <button class="main-tab" data-tab="tasks">Tasks</button>
-  <button class="main-tab" data-tab="technicians">👷 Technicians</button>  
-  <button class="main-tab" data-tab="reports">Reports</button>
-  <button class="main-tab" data-tab="library">Library</button>
-  <button class="main-tab" data-tab="docs">Docs</button>
+    <!-- MAIN TABS -->
+  <section class="main-tabs">
+    <button class="main-tab active" data-tab="dashboard">Dashboard</button>
+    <button class="main-tab" data-tab="assets">Assets</button>
+    <button class="main-tab" data-tab="tasks">Tasks</button>
+    <!-- NEW BREAKDOWN MANAGEMENT -->
+    <button class="main-tab" data-tab="breakdowns">Breakdowns</button>
+    <button class="main-tab" data-tab="technicians">👷 Technicians</button>  
+    <button class="main-tab" data-tab="reports">Reports</button>
+    <button class="main-tab" data-tab="library">Library</button>
+    <button class="main-tab" data-tab="docs">Docs</button>
 
-  <!-- 🔧 ADMIN / TOOLS -->
-  <div class="top-tools">
-    <label class="btn-secondary admin-only">
-      📂 Upload Excel
-      <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" hidden />
-    </label>
-    <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import Excel</button>
-    <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
-    <label class="btn-secondary admin-only">
-      ♻ Load Snapshot
-      <input type="file" id="snapshotFile" accept="application/json" hidden />
-    </label>
-    <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
-  </div>
-</section>
+    <!-- 🔧 ADMIN / TOOLS -->
+    <div class="top-tools">
+      <label class="btn-secondary admin-only">
+        📂 Upload Excel
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" hidden />
+      </label>
+      <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import Excel</button>
+      <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
+      <label class="btn-secondary admin-only">
+        ♻ Load Snapshot
+        <input type="file" id="snapshotFile" accept="application/json" hidden />
+      </label>
+      <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
+    </div>
+  </section>
+
+  <!-- =====================
+      BREAKDOWNS TAB
+      New Breakdown Management System
+  ===================== -->
+
+  <div
+    id="tab-breakdowns"
+    class="tab-panel"
+    style="display:none;"
+  >
+
+    <!-- =====================
+        BREAKDOWNS HEADER
+    ===================== -->
+
+    <div class="table-header">
+
+      <div>
+        <h2>Breakdowns</h2>
+
+        <div class="section-subtitle">
+          Equipment failure incidents and restoration work
+        </div>
+      </div>
+
+
+      <!-- Future:
+          This button will open the
+          New Breakdown modal.
+          No functionality yet.
+      -->
+
+      <button
+        id="newBreakdownBtn"
+        class="btn-table"
+        type="button"
+      >
+        + New Breakdown
+      </button>
+
+    </div>
+
+
+    <!-- =====================
+        BREAKDOWNS TABLE
+    ===================== -->
+
+    <table
+      id="breakdownsTable"
+      class="data-table"
+    >
+
+      <thead>
+
+        <tr>
+          <th>ID</th>
+          <th>Asset</th>
+          <th>Line</th>
+          <th>Fault</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Downtime</th>
+          <th></th>
+        </tr>
+
+      </thead>
+
+
+      <tbody id="breakdownsTableBody">
+
+        <!--
+          Populated later by:
+          js/features/breakdowns.js
+        -->
+
+        <tr>
+          <td colspan="8">
+            No breakdowns recorded.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>  
+
 <!-- =====================
      TECHNICIANS TAB
 ===================== -->
