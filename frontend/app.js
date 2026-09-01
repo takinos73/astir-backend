@@ -3894,7 +3894,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     console.log("TAB CLICKED:", tab.dataset.tab);
 
     // 2️⃣ Hide all panels
-    ["dashboard", "tasks", "assets", "technicians", "library", "docs", "reports"].forEach(t => {
+    ["dashboard","tasks","assets","breakdowns","technicians","library","docs","reports"].forEach(t => {
       const el = getEl(`tab-${t}`);
       if (el) el.style.display = "none";
     });
@@ -3919,6 +3919,9 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
     if (sel === "dashboard" && typeof renderAssetDashboard === "function") {
       renderAssetDashboard();
+    }
+    if (sel === "breakdowns") {
+      loadBreakdowns();
     }
 
     // ✅ 🔥 THE FIX – LIBRARY
