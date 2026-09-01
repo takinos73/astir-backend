@@ -426,6 +426,150 @@ app.get("/lines", async (req, res) => {
   }
 });
 
+/* =========================================================
+   BREAKDOWNS API
+   New Breakdown Management System
+   ---------------------------------------------------------
+   IMPORTANT:
+   - This module runs in parallel with the legacy breakdown flow.
+   - Existing /tasks and /executions routes remain unchanged.
+   - A Breakdown represents a failure INCIDENT.
+   - Restoration work will later be linked through:
+         maintenance_tasks.breakdown_id
+   ========================================================= */
+
+
+/* =========================================================
+   CREATE BREAKDOWN
+   POST /breakdowns
+
+   Creates a new breakdown incident.
+
+   This does NOT create:
+   - maintenance task
+   - task execution
+   - restoration task
+
+   Those will be handled separately.
+========================================================= */
+
+app.post("/breakdowns", async (req, res) => {
+
+  try {
+
+    const {
+      asset_id,
+      title,
+      description,
+      started_at,
+      reported_by,
+      reported_by_id
+    } = req.body;
+
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
+    if (!asset_id) {
+      return res.status(400).json({
+        error: "Asset is required"
+      });
+    }
+
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({
+        error: "Breakdown title is required"
+      });
+    }
+
+
+    /* =====================
+       VERIFY ASSET
+    ===================== */
+
+    const assetResult = await pool.query(
+      `
+      SELECT id
+      FROM assets
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [asset_id]
+    );
+
+    if (assetResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Asset not found"
+      });
+    }
+
+
+    /* =====================
+       CREATE BREAKDOWN
+    ===================== */
+
+    const result = await pool.query(
+      `
+      INSERT INTO breakdowns (
+        asset_id,
+        title,
+        description,
+        status,
+        started_at,
+        reported_by,
+        reported_by_id,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        'OPEN',
+        COALESCE($4::timestamptz, NOW()),
+        $5,
+        $6,
+        NOW(),
+        NOW()
+      )
+      RETURNING *
+      `,
+      [
+        asset_id,
+        String(title).trim(),
+        description?.trim() || null,
+        started_at || null,
+        reported_by?.trim() || null,
+        reported_by_id || null
+      ]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.status(201).json({
+      message: "Breakdown created successfully",
+      breakdown: result.rows[0]
+    });
+
+  } catch (err) {
+
+    console.error(
+      "POST /breakdowns error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to create breakdown"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
