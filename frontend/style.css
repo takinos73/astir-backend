@@ -2557,7 +2557,7 @@ tr.history-unplanned {
 }
 
 .breakdown-status.status-closed {
-  background: #d1e7dd;
-  border-color: #a3cfbb;
+  background: #414141;
+  border-color: #a4bdb2;
   color: #0f5132;
 }

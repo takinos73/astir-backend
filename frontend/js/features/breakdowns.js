@@ -12,6 +12,13 @@
    - Reads only from GET /breakdowns
 ========================================================= */
 
+/* =====================
+   BREAKDOWN UI STATE
+
+   Currently opened Breakdown
+===================== */
+
+let currentBreakdownId = null;
 
 /* =====================
    LOAD BREAKDOWNS
@@ -759,6 +766,168 @@ function updateBreakdownStatusUI(breakdown) {
 
 }
 
+/* =========================================================
+   START BREAKDOWN WORK
+   PATCH /breakdowns/:id/start
+
+   Lifecycle:
+   OPEN → IN_PROGRESS
+
+   IMPORTANT:
+   - Does NOT create a Restoration Task
+   - Does NOT create a task_execution
+   - Does NOT modify started_at
+========================================================= */
+
+async function startBreakdownWork() {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+  const startBtn =
+    document.getElementById(
+      "startBreakdownBtn"
+    );
+
+
+  /* =====================
+     VALIDATE CURRENT ID
+  ===================== */
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+
+    console.error(
+      "START BREAKDOWN: Invalid current Breakdown ID"
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     REQUEST
+  ===================== */
+
+  try {
+
+    if (startBtn) {
+
+      startBtn.disabled = true;
+
+      startBtn.textContent =
+        "Starting...";
+
+    }
+
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}/start`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to start Breakdown work"
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH DETAIL
+
+       Re-read from backend so the UI
+       always reflects DB state.
+    ===================== */
+
+    const detailResponse =
+      await fetch(
+        `/breakdowns/${breakdownId}`
+      );
+
+
+    const breakdown =
+      await detailResponse.json();
+
+
+    if (!detailResponse.ok) {
+
+      throw new Error(
+        breakdown?.error ||
+        "Failed to refresh Breakdown"
+      );
+
+    }
+
+
+    populateBreakdownDetail(
+      breakdown
+    );
+
+
+    /* =====================
+       REFRESH TABLE
+    ===================== */
+
+    await loadBreakdowns();
+
+
+  } catch (err) {
+
+    console.error(
+      "START BREAKDOWN ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not start Breakdown work."
+    );
+
+
+  } finally {
+
+    /*
+      If status changed to IN_PROGRESS,
+      updateBreakdownStatusUI() has already
+      hidden this button.
+
+      We still restore its normal state
+      for future OPEN Breakdowns.
+    */
+
+    if (startBtn) {
+
+      startBtn.disabled = false;
+
+      startBtn.textContent =
+        "Start Work";
+
+    }
+
+  }
+
+}
+
 
 /* =====================
    LOCAL DATETIME FORMAT
@@ -903,6 +1072,12 @@ async function openBreakdownDetail(breakdownId) {
   ) {
     return;
   }
+
+  /* =====================
+    CURRENT BREAKDOWN
+  ===================== */
+
+currentBreakdownId = id;
 
 
   try {
@@ -1200,6 +1375,7 @@ function closeBreakdownDetailModal() {
   if (!overlay) return;
 
   overlay.style.display = "none";
+  currentBreakdownId = null;
 
 }
 
@@ -1517,8 +1693,6 @@ async function createBreakdown() {
 
 }
 
-
-
 /* =====================
    CREATE BUTTON
 ===================== */
@@ -1528,4 +1702,17 @@ document
   ?.addEventListener(
     "click",
     createBreakdown
+  );
+
+  /* =====================
+   START WORK BUTTON
+===================== */
+
+document
+  .getElementById(
+    "startBreakdownBtn"
+  )
+  ?.addEventListener(
+    "click",
+    startBreakdownWork
   );
