@@ -721,6 +721,410 @@ document
   );
 
   /* =========================================================
+   BREAKDOWN DETAIL
+   GET /breakdowns/:id
+
+   Responsibilities:
+   - Load one Breakdown incident
+   - Populate Breakdown Detail modal
+   - Open / close Detail modal
+
+   IMPORTANT:
+   - Read only
+   - Does NOT change Breakdown status
+   - Does NOT load Restoration Tasks yet
+========================================================= */
+
+
+/* =====================
+   OPEN BREAKDOWN DETAIL
+===================== */
+
+async function openBreakdownDetail(breakdownId) {
+
+  const id =
+    Number(breakdownId);
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/breakdowns/${id}`
+      );
+
+
+    const breakdown =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        breakdown?.error ||
+        "Failed to load Breakdown"
+      );
+
+    }
+
+
+    /* =====================
+       POPULATE DETAIL
+    ===================== */
+
+    populateBreakdownDetail(
+      breakdown
+    );
+
+
+    /* =====================
+       OPEN MODAL
+    ===================== */
+
+    const overlay =
+      document.getElementById(
+        "breakdownDetailOverlay"
+      );
+
+    if (overlay) {
+      overlay.style.display = "flex";
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD BREAKDOWN DETAIL ERROR:",
+      err
+    );
+
+    alert(
+      err.message ||
+      "Could not load Breakdown."
+    );
+
+  }
+
+}
+
+
+
+/* =====================
+   POPULATE DETAIL MODAL
+===================== */
+
+function populateBreakdownDetail(breakdown) {
+
+  if (!breakdown) return;
+
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const codeEl =
+    document.getElementById(
+      "bd-detail-code"
+    );
+
+  const statusEl =
+    document.getElementById(
+      "bd-detail-status"
+    );
+
+  const assetEl =
+    document.getElementById(
+      "bd-detail-asset"
+    );
+
+  const titleEl =
+    document.getElementById(
+      "bd-detail-title"
+    );
+
+  const descriptionEl =
+    document.getElementById(
+      "bd-detail-description"
+    );
+
+  const startedEl =
+    document.getElementById(
+      "bd-detail-started"
+    );
+
+  const reportedByEl =
+    document.getElementById(
+      "bd-detail-reported-by"
+    );
+
+  const downtimeEl =
+    document.getElementById(
+      "bd-detail-downtime"
+    );
+
+  const closedEl =
+    document.getElementById(
+      "bd-detail-closed"
+    );
+
+
+  /* =====================
+     BREAKDOWN CODE
+  ===================== */
+
+  if (codeEl) {
+
+    codeEl.textContent =
+      `BD-${String(
+        breakdown.id
+      ).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  if (statusEl) {
+
+    statusEl.textContent =
+      breakdown.status || "-";
+
+  }
+
+
+  /* =====================
+     ASSET / SERIAL / LINE
+  ===================== */
+
+  if (assetEl) {
+
+    const parts = [];
+
+
+    if (breakdown.asset_model) {
+      parts.push(
+        breakdown.asset_model
+      );
+    }
+
+
+    if (breakdown.asset_serial) {
+
+      parts.push(
+        `S/N ${breakdown.asset_serial}`
+      );
+
+    }
+
+
+    if (breakdown.line_name) {
+
+      parts.push(
+        breakdown.line_name
+      );
+
+    }
+
+
+    assetEl.textContent =
+      parts.length
+        ? parts.join(" • ")
+        : "-";
+
+  }
+
+
+  /* =====================
+     FAULT
+  ===================== */
+
+  if (titleEl) {
+
+    titleEl.textContent =
+      breakdown.title || "-";
+
+  }
+
+
+  /* =====================
+     DESCRIPTION
+  ===================== */
+
+  if (descriptionEl) {
+
+    descriptionEl.textContent =
+      breakdown.description || "-";
+
+  }
+
+
+  /* =====================
+     STARTED AT
+  ===================== */
+
+  if (startedEl) {
+
+    startedEl.textContent =
+      formatBreakdownDate(
+        breakdown.started_at
+      );
+
+  }
+
+
+  /* =====================
+     REPORTED BY
+  ===================== */
+
+  if (reportedByEl) {
+
+    reportedByEl.textContent =
+      breakdown.reported_by || "-";
+
+  }
+
+
+  /* =====================
+     DOWNTIME
+  ===================== */
+
+  if (downtimeEl) {
+
+    downtimeEl.textContent =
+      formatBreakdownDowntime(
+        breakdown
+      );
+
+  }
+
+
+  /* =====================
+     RESTORED AT
+  ===================== */
+
+  if (closedEl) {
+
+    closedEl.textContent =
+      breakdown.closed_at
+        ? formatBreakdownDate(
+            breakdown.closed_at
+          )
+        : "-";
+
+  }
+
+}
+
+
+
+/* =====================
+   CLOSE DETAIL MODAL
+===================== */
+
+function closeBreakdownDetailModal() {
+
+  const overlay =
+    document.getElementById(
+      "breakdownDetailOverlay"
+    );
+
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+}
+
+
+
+/* =========================================================
+   DETAIL EVENT LISTENERS
+========================================================= */
+
+
+/* =====================
+   VIEW BUTTON
+
+   Event delegation is used because
+   Breakdown rows are rendered dynamically.
+===================== */
+
+document
+  .getElementById("breakdownsTableBody")
+  ?.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          ".breakdown-view-btn"
+        );
+
+
+      if (!button) return;
+
+
+      const breakdownId =
+        button.dataset.breakdownId;
+
+
+      openBreakdownDetail(
+        breakdownId
+      );
+
+    }
+  );
+
+
+
+/* =====================
+   CLOSE X
+===================== */
+
+document
+  .getElementById(
+    "closeBreakdownDetailBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeBreakdownDetailModal
+  );
+
+
+
+/* =====================
+   CLICK OUTSIDE MODAL
+===================== */
+
+document
+  .getElementById(
+    "breakdownDetailOverlay"
+  )
+  ?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id ===
+        "breakdownDetailOverlay"
+      ) {
+
+        closeBreakdownDetailModal();
+
+      }
+
+    }
+  );
+
+  /* =========================================================
    CREATE BREAKDOWN
    POST /breakdowns
 
