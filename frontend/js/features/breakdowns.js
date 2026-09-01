@@ -321,3 +321,393 @@ function escapeBreakdownHtml(value) {
     .replaceAll("'", "&#039;");
 
 }
+
+/* =========================================================
+   NEW BREAKDOWN MODAL
+   UI ONLY
+
+   Responsibilities:
+   - Open / close modal
+   - Populate Asset dropdown
+   - Set current local date/time
+   - Prefill Reported By from logged-in user
+
+   IMPORTANT:
+   - NO Breakdown is created here yet
+   - POST /breakdowns will be added in the next step
+========================================================= */
+
+
+/* =====================
+   OPEN NEW BREAKDOWN
+===================== */
+
+async function openNewBreakdownModal() {
+
+  const overlay =
+    document.getElementById("newBreakdownOverlay");
+
+  if (!overlay) return;
+
+
+  /* =====================
+     ENSURE ASSETS EXIST
+  ===================== */
+
+  if (
+    !Array.isArray(state.assetsData) ||
+    state.assetsData.length === 0
+  ) {
+    await loadAssets();
+  }
+
+
+  /* =====================
+     RESET FORM
+  ===================== */
+
+  const assetSelect =
+    document.getElementById("bd-asset");
+
+  const titleInput =
+    document.getElementById("bd-title");
+
+  const descriptionInput =
+    document.getElementById("bd-description");
+
+  const startedInput =
+    document.getElementById("bd-started-at");
+
+  const reportedByInput =
+    document.getElementById("bd-reported-by");
+
+
+  if (titleInput) {
+    titleInput.value = "";
+  }
+
+  if (descriptionInput) {
+    descriptionInput.value = "";
+  }
+
+
+  /* =====================
+     POPULATE ASSETS
+  ===================== */
+
+  populateBreakdownAssetDropdown();
+
+
+  if (assetSelect) {
+    assetSelect.value = "";
+  }
+
+
+  /* =====================
+     DEFAULT STARTED AT
+     Current LOCAL date/time
+  ===================== */
+
+  if (startedInput) {
+    startedInput.value =
+      getBreakdownLocalDateTime();
+  }
+
+
+  /* =====================
+     DEFAULT REPORTED BY
+     Logged-in CMMS user
+  ===================== */
+
+  if (reportedByInput) {
+
+    reportedByInput.value =
+      localStorage.getItem(
+        "cmmsTechnicianName"
+      ) || "";
+
+  }
+
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
+
+  overlay.style.display = "flex";
+
+
+  /* =====================
+     UX
+  ===================== */
+
+  setTimeout(() => {
+    assetSelect?.focus();
+  }, 0);
+
+}
+
+
+
+/* =====================
+   CLOSE NEW BREAKDOWN
+===================== */
+
+function closeNewBreakdownModal() {
+
+  const overlay =
+    document.getElementById("newBreakdownOverlay");
+
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+}
+
+
+
+/* =====================
+   POPULATE ASSET DROPDOWN
+===================== */
+
+function populateBreakdownAssetDropdown() {
+
+  const select =
+    document.getElementById("bd-asset");
+
+  if (!select) return;
+
+
+  const assets =
+    Array.isArray(state.assetsData)
+      ? state.assetsData
+      : [];
+
+
+  /* =====================
+     DEFAULT OPTION
+  ===================== */
+
+  select.innerHTML = `
+    <option value="">
+      Select asset...
+    </option>
+  `;
+
+
+  /* =====================
+     SORT ASSETS
+     Line → Model → Serial
+  ===================== */
+
+  const sortedAssets =
+    [...assets].sort((a, b) => {
+
+      const lineA =
+        String(
+          a.line_name ||
+          a.line_code ||
+          a.line ||
+          ""
+        );
+
+      const lineB =
+        String(
+          b.line_name ||
+          b.line_code ||
+          b.line ||
+          ""
+        );
+
+
+      const lineCompare =
+        lineA.localeCompare(
+          lineB,
+          undefined,
+          { numeric: true }
+        );
+
+
+      if (lineCompare !== 0) {
+        return lineCompare;
+      }
+
+
+      const modelCompare =
+        String(a.model || "")
+          .localeCompare(
+            String(b.model || "")
+          );
+
+
+      if (modelCompare !== 0) {
+        return modelCompare;
+      }
+
+
+      return String(
+        a.serial_number || ""
+      ).localeCompare(
+        String(
+          b.serial_number || ""
+        )
+      );
+
+    });
+
+
+  /* =====================
+     CREATE OPTIONS
+  ===================== */
+
+  sortedAssets.forEach(asset => {
+
+    if (!asset?.id) return;
+
+
+    const option =
+      document.createElement("option");
+
+
+    option.value =
+      asset.id;
+
+
+    const line =
+      asset.line_name ||
+      asset.line_code ||
+      asset.line ||
+      "-";
+
+
+    const model =
+      asset.model ||
+      "Unknown Asset";
+
+
+    const serial =
+      asset.serial_number ||
+      "-";
+
+
+    option.textContent =
+      `${line} — ${model} — S/N ${serial}`;
+
+
+    select.appendChild(option);
+
+  });
+
+}
+
+
+/* =====================
+   LOCAL DATETIME FORMAT
+
+   datetime-local requires:
+   YYYY-MM-DDTHH:mm
+
+   IMPORTANT:
+   Do NOT use toISOString()
+   because that converts to UTC.
+===================== */
+
+function getBreakdownLocalDateTime() {
+
+  const now =
+    new Date();
+
+
+  const pad =
+    value =>
+      String(value)
+        .padStart(2, "0");
+
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    pad(now.getMonth() + 1);
+
+  const day =
+    pad(now.getDate());
+
+  const hours =
+    pad(now.getHours());
+
+  const minutes =
+    pad(now.getMinutes());
+
+
+  return (
+    `${year}-${month}-${day}` +
+    `T${hours}:${minutes}`
+  );
+
+}
+
+
+
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
+
+
+/* =====================
+   OPEN BUTTON
+===================== */
+
+document
+  .getElementById("newBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    openNewBreakdownModal
+  );
+
+
+
+/* =====================
+   CLOSE X
+===================== */
+
+document
+  .getElementById("closeNewBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    closeNewBreakdownModal
+  );
+
+
+
+/* =====================
+   CANCEL BUTTON
+===================== */
+
+document
+  .getElementById("cancelNewBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    closeNewBreakdownModal
+  );
+
+
+
+/* =====================
+   CLICK OUTSIDE MODAL
+===================== */
+
+document
+  .getElementById("newBreakdownOverlay")
+  ?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id ===
+        "newBreakdownOverlay"
+      ) {
+        closeNewBreakdownModal();
+      }
+
+    }
+  );
