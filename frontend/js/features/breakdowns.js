@@ -1693,6 +1693,7 @@ async function createBreakdown() {
 
 }
 
+
 /* =====================
    CREATE BUTTON
 ===================== */
@@ -1715,4 +1716,221 @@ document
   ?.addEventListener(
     "click",
     startBreakdownWork
+  );
+
+  /* =========================================================
+   RESTORATION TASK MODAL
+   UI ONLY
+
+   IMPORTANT:
+   - Uses currentBreakdownId
+   - Does NOT create the task yet
+========================================================= */
+
+
+/* =====================
+   OPEN MODAL
+===================== */
+
+function openRestorationTaskModal() {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+
+    console.error(
+      "ADD RESTORATION TASK: No active Breakdown"
+    );
+
+    return;
+  }
+
+
+  const overlay =
+    document.getElementById(
+      "restorationTaskOverlay"
+    );
+
+  if (!overlay) return;
+
+
+  /* =====================
+     RESET FIELDS
+  ===================== */
+
+  const taskInput =
+    document.getElementById(
+      "restoration-task"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "restoration-section"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit"
+    );
+
+  const dueDateInput =
+    document.getElementById(
+      "restoration-due-date"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "restoration-duration"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "restoration-notes"
+    );
+
+
+  if (taskInput) {
+    taskInput.value = "";
+  }
+
+  if (sectionInput) {
+    sectionInput.value = "";
+  }
+
+  if (unitInput) {
+    unitInput.value = "";
+  }
+
+  if (dueDateInput) {
+    dueDateInput.value = "";
+  }
+
+  if (durationInput) {
+    durationInput.value = "";
+  }
+
+  if (notesInput) {
+    notesInput.value = "";
+  }
+
+
+  /* =====================
+     BREAKDOWN REFERENCE
+  ===================== */
+
+  const referenceEl =
+    document.getElementById(
+      "restorationTaskBreakdownRef"
+    );
+
+  if (referenceEl) {
+
+    referenceEl.textContent =
+      `BD-${String(
+        breakdownId
+      ).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     SHOW
+  ===================== */
+
+  overlay.style.display = "flex";
+
+
+  setTimeout(() => {
+    taskInput?.focus();
+  }, 0);
+
+}
+
+
+
+/* =====================
+   CLOSE MODAL
+===================== */
+
+function closeRestorationTaskModal() {
+
+  const overlay =
+    document.getElementById(
+      "restorationTaskOverlay"
+    );
+
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+}
+/* =====================
+   ADD RESTORATION BUTTON
+===================== */
+
+document
+  .getElementById(
+    "addRestorationTaskBtn"
+  )
+  ?.addEventListener(
+    "click",
+    openRestorationTaskModal
+  );
+
+
+/* =====================
+   CLOSE X
+===================== */
+
+document
+  .getElementById(
+    "closeRestorationTaskBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeRestorationTaskModal
+  );
+
+
+/* =====================
+   CANCEL
+===================== */
+
+document
+  .getElementById(
+    "cancelRestorationTaskBtn"
+  )
+  ?.addEventListener(
+    "click",
+    closeRestorationTaskModal
+  );
+
+
+/* =====================
+   CLICK OUTSIDE
+===================== */
+
+document
+  .getElementById(
+    "restorationTaskOverlay"
+  )
+  ?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id ===
+        "restorationTaskOverlay"
+      ) {
+
+        closeRestorationTaskModal();
+
+      }
+
+    }
   );

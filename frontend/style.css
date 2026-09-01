@@ -2545,19 +2545,19 @@ tr.history-unplanned {
 ===================== */
 
 .breakdown-status.status-open {
-  background: #414141;
+  background: #5b5b5b;
   border-color: #ffe69c;
   color: #664d03;
 }
 
 .breakdown-status.status-in-progress {
-  background: #414141;
-  border-color: #9eeaf9;
+  background: #5b5b5b;
+  border-color: #9eb3f9;
   color: #055160;
 }
 
 .breakdown-status.status-closed {
-  background: #414141;
+  background: #5b5b5b;
   border-color: #a4bdb2;
   color: #0f5132;
 }
@@ -2567,7 +2567,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #breakdownDetailModal {
-  background: #ffffff;
+  background: #b4b4b4;
   color: #1f2937;
 }
 
@@ -2624,4 +2624,119 @@ tr.history-unplanned {
 #breakdownDetailModal .breakdown-restoration-section,
 #breakdownDetailModal .modal-actions {
   border-color: #e5e7eb;
+}
+
+/* =========================================================
+   RESTORATION TASK MODAL
+========================================================= */
+
+#restorationTaskModal {
+  width: min(650px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background: #ffffff;
+  color: #1f2937;
+}
+
+
+/* =====================
+   HEADER
+===================== */
+
+#restorationTaskModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+#restorationTaskModal .modal-header h2 {
+  margin: 0 0 4px 0;
+  color: #111827;
+}
+
+#restorationTaskModal .section-subtitle {
+  color: #6b7280;
+  opacity: 1;
+}
+
+
+/* =====================
+   FIELDS
+===================== */
+
+#restorationTaskModal .field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+#restorationTaskModal .field label {
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #374151;
+}
+
+#restorationTaskModal input,
+#restorationTaskModal textarea,
+#restorationTaskModal select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#restorationTaskModal textarea {
+  resize: vertical;
+}
+
+
+/* =====================
+   TWO COLUMN GRID
+===================== */
+
+.restoration-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* =====================
+   ACTIONS
+===================== */
+
+#restorationTaskModal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 22px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+
+/* =====================
+   MOBILE
+===================== */
+
+@media (max-width: 650px) {
+
+  .restoration-form-grid {
+    grid-template-columns: 1fr;
+  }
+
 }
