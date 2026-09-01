@@ -711,3 +711,250 @@ document
 
     }
   );
+
+  /* =========================================================
+   CREATE BREAKDOWN
+   POST /breakdowns
+
+   Creates the Breakdown incident.
+
+   REQUIRED:
+   - Asset
+   - Fault / Title
+   - Started At
+
+   OPTIONAL:
+   - Description
+   - Reported By
+
+   IMPORTANT:
+   - Creates Breakdown only
+   - Does NOT create Restoration Tasks
+   - Backend creates it as OPEN
+========================================================= */
+
+async function createBreakdown() {
+
+  const saveBtn =
+    document.getElementById("saveBreakdownBtn");
+
+  const assetSelect =
+    document.getElementById("bd-asset");
+
+  const titleInput =
+    document.getElementById("bd-title");
+
+  const descriptionInput =
+    document.getElementById("bd-description");
+
+  const startedInput =
+    document.getElementById("bd-started-at");
+
+  const reportedByInput =
+    document.getElementById("bd-reported-by");
+
+
+  /* =====================
+     READ VALUES
+  ===================== */
+
+  const assetId =
+    Number(assetSelect?.value);
+
+  const title =
+    String(titleInput?.value || "").trim();
+
+  const description =
+    String(descriptionInput?.value || "").trim();
+
+  const startedAt =
+    startedInput?.value || "";
+
+  const reportedBy =
+    String(reportedByInput?.value || "").trim();
+
+
+  /* =====================
+     VALIDATION
+  ===================== */
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+
+    alert("Please select an Asset.");
+
+    assetSelect?.focus();
+
+    return;
+  }
+
+
+  if (!title) {
+
+    alert("Please enter the Fault / Title.");
+
+    titleInput?.focus();
+
+    return;
+  }
+
+
+  if (!startedAt) {
+
+    alert("Please enter the Breakdown start date and time.");
+
+    startedInput?.focus();
+
+    return;
+  }
+
+
+  /* =====================
+     DATETIME VALIDATION
+  ===================== */
+
+  const startedDate =
+    new Date(startedAt);
+
+  if (
+    Number.isNaN(
+      startedDate.getTime()
+    )
+  ) {
+
+    alert("Invalid Breakdown start date and time.");
+
+    startedInput?.focus();
+
+    return;
+  }
+
+
+  /* =====================
+     REQUEST BODY
+  ===================== */
+
+  const payload = {
+
+    asset_id: assetId,
+
+    title,
+
+    description:
+      description || null,
+
+    started_at:
+      startedDate.toISOString(),
+
+    reported_by:
+      reportedBy || null
+
+  };
+
+
+  /* =====================
+     SAVE
+  ===================== */
+
+  try {
+
+    if (saveBtn) {
+
+      saveBtn.disabled = true;
+
+      saveBtn.textContent =
+        "Creating...";
+
+    }
+
+
+    const response =
+      await fetch(
+        `${API_BASE}/breakdowns`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to create Breakdown"
+      );
+
+    }
+
+
+    /* =====================
+       SUCCESS
+    ===================== */
+
+    closeNewBreakdownModal();
+
+
+    /*
+      Reload only the Breakdown list.
+
+      We do NOT reload the whole app.
+    */
+
+    await loadBreakdowns();
+
+
+  } catch (err) {
+
+    console.error(
+      "CREATE BREAKDOWN ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not create Breakdown."
+    );
+
+
+  } finally {
+
+    if (saveBtn) {
+
+      saveBtn.disabled = false;
+
+      saveBtn.textContent =
+        "Create Breakdown";
+
+    }
+
+  }
+
+}
+
+
+
+/* =====================
+   CREATE BUTTON
+===================== */
+
+document
+  .getElementById("saveBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    createBreakdown
+  );
