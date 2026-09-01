@@ -2545,13 +2545,13 @@ tr.history-unplanned {
 ===================== */
 
 .breakdown-status.status-open {
-  background: #fff3cd;
+  background: #414141;
   border-color: #ffe69c;
   color: #664d03;
 }
 
 .breakdown-status.status-in-progress {
-  background: #cff4fc;
+  background: #414141;
   border-color: #9eeaf9;
   color: #055160;
 }
