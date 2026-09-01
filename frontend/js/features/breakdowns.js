@@ -41,7 +41,7 @@ async function loadBreakdowns() {
   try {
 
     const response =
-      await fetch(`${API_BASE}/breakdowns`);
+      await fetch("/breakdowns");
 
 
     if (!response.ok) {
