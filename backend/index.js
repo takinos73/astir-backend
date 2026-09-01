@@ -907,6 +907,134 @@ app.patch("/breakdowns/:id", async (req, res) => {
 
 });
 
+/* =========================================================
+   START BREAKDOWN
+   PATCH /breakdowns/:id/start
+
+   Moves a breakdown from:
+       OPEN -> IN_PROGRESS
+
+   IMPORTANT:
+   - Does NOT change started_at
+   - Does NOT create maintenance tasks
+   - Does NOT create task executions
+   - CLOSED breakdowns cannot be started again
+========================================================= */
+
+app.patch("/breakdowns/:id/start", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+
+    /* =====================
+       VALIDATE ID
+    ===================== */
+
+    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       LOAD BREAKDOWN
+    ===================== */
+
+    const existingResult = await pool.query(
+      `
+      SELECT
+        id,
+        status
+      FROM breakdowns
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+
+    const breakdown = existingResult.rows[0];
+
+
+    /* =====================
+       LIFECYCLE VALIDATION
+    ===================== */
+
+    if (breakdown.status === "CLOSED") {
+      return res.status(400).json({
+        error: "Closed breakdown cannot be started"
+      });
+    }
+
+
+    if (breakdown.status === "IN_PROGRESS") {
+      return res.status(400).json({
+        error: "Breakdown is already in progress"
+      });
+    }
+
+
+    if (breakdown.status !== "OPEN") {
+      return res.status(400).json({
+        error: "Breakdown cannot be started from its current status"
+      });
+    }
+
+
+    /* =====================
+       START BREAKDOWN
+    ===================== */
+
+    const result = await pool.query(
+      `
+      UPDATE breakdowns
+
+      SET
+        status = 'IN_PROGRESS',
+        updated_at = NOW()
+
+      WHERE id = $1
+
+      RETURNING *
+      `,
+      [breakdownId]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      message: "Breakdown started successfully",
+      breakdown: result.rows[0]
+    });
+
+  } catch (err) {
+
+    console.error(
+      "PATCH /breakdowns/:id/start error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to start breakdown"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
