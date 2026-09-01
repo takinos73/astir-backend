@@ -2591,100 +2591,220 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-
 /* =====================
    UNDO TASK EXECUTION
-   - Planned: restore schedule
-   - Unplanned: delete entirely
+
+   LEGACY BEHAVIOR:
+   - Unplanned: delete execution + task
+   - Planned: restore previous due date
+
+   RESTORATION TASK:
+   - Restore task to Planned
+   - Delete execution
+   - due_date may legitimately be NULL
+   - Breakdown itself is NOT modified
 ===================== */
 
 app.post("/executions/:id/undo", async (req, res) => {
+
   const { id } = req.params;
   const client = await pool.connect();
 
   try {
+
     await client.query("BEGIN");
 
-    // 1️⃣ Fetch execution + task info
+
+    /* =====================
+       1. FETCH EXECUTION
+          + TASK INFORMATION
+    ===================== */
+
     const execRes = await client.query(
       `
       SELECT
         e.id,
         e.task_id,
         e.prev_due_date,
-        t.is_planned
+
+        t.is_planned,
+        t.type,
+        t.breakdown_id
+
       FROM task_executions e
-      JOIN maintenance_tasks t ON t.id = e.task_id
+
+      JOIN maintenance_tasks t
+        ON t.id = e.task_id
+
       WHERE e.id = $1
       `,
       [id]
     );
 
+
     if (!execRes.rows.length) {
+
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Execution not found" });
+
+      return res.status(404).json({
+        error: "Execution not found"
+      });
+
     }
+
 
     const exec = execRes.rows[0];
 
-    // 🔴 CASE 1: UNPLANNED → DELETE EVERYTHING
+
+    /* =====================
+       DETECT RESTORATION TASK
+    ===================== */
+
+    const isRestorationTask =
+      exec.type === "Restoration" &&
+      exec.breakdown_id !== null;
+
+
+    /* =====================
+       CASE 1
+       LEGACY UNPLANNED TASK
+
+       Keep existing behavior
+       completely unchanged.
+    ===================== */
+
     if (exec.is_planned === false) {
 
-      // Delete execution
       await client.query(
-        `DELETE FROM task_executions WHERE id = $1`,
+        `
+        DELETE FROM task_executions
+        WHERE id = $1
+        `,
         [exec.id]
       );
 
-      // Delete task entirely
+
       await client.query(
-        `DELETE FROM maintenance_tasks WHERE id = $1`,
+        `
+        DELETE FROM maintenance_tasks
+        WHERE id = $1
+        `,
         [exec.task_id]
       );
 
+
       await client.query("COMMIT");
-      return res.json({ success: true, mode: "unplanned_deleted" });
+
+      return res.json({
+        success: true,
+        mode: "unplanned_deleted"
+      });
+
     }
 
-    // 🟢 CASE 2: PLANNED → RESTORE SCHEDULE
-    if (!exec.prev_due_date) {
+
+    /* =====================
+       CASE 2
+       NORMAL PLANNED TASK
+
+       Existing planned tasks still
+       require prev_due_date.
+
+       Restoration Tasks are allowed
+       to have NULL due_date.
+    ===================== */
+
+    if (
+      !exec.prev_due_date &&
+      !isRestorationTask
+    ) {
+
       await client.query("ROLLBACK");
+
       return res.status(400).json({
         error: "Cannot undo planned task: missing prev_due_date"
       });
+
     }
 
-    // Restore task
+
+    /* =====================
+       3. RESTORE TASK
+
+       For Restoration Tasks:
+       prev_due_date may be NULL.
+
+       Therefore due_date simply
+       becomes NULL again.
+    ===================== */
+
     await client.query(
       `
       UPDATE maintenance_tasks
+
       SET
         due_date = $2,
         status = 'Planned',
         completed_at = NULL,
         completed_by = NULL,
         updated_at = NOW()
+
       WHERE id = $1
       `,
-      [exec.task_id, exec.prev_due_date]
+      [
+        exec.task_id,
+        exec.prev_due_date || null
+      ]
     );
 
-    // Delete execution (history)
+
+    /* =====================
+       4. DELETE EXECUTION
+          FROM HISTORY
+    ===================== */
+
     await client.query(
-      `DELETE FROM task_executions WHERE id = $1`,
+      `
+      DELETE FROM task_executions
+      WHERE id = $1
+      `,
       [exec.id]
     );
 
+
     await client.query("COMMIT");
-    res.json({ success: true, mode: "planned_restored" });
+
+
+    return res.json({
+
+      success: true,
+
+      mode: isRestorationTask
+        ? "restoration_restored"
+        : "planned_restored"
+
+    });
+
 
   } catch (err) {
+
     await client.query("ROLLBACK");
-    console.error("UNDO execution ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "UNDO execution ERROR:",
+      err.message
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+
   } finally {
+
     client.release();
+
   }
+
 });
 
 // Undo to planned
