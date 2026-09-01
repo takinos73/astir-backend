@@ -570,6 +570,88 @@ app.post("/breakdowns", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET BREAKDOWNS
+   GET /breakdowns
+
+   Returns the list of breakdown incidents together with
+   basic Asset information.
+
+   Notes:
+   - Legacy breakdown tasks are NOT included here.
+   - This endpoint reads only from the new breakdowns table.
+   - Existing /tasks and /executions remain unchanged.
+========================================================= */
+
+app.get("/breakdowns", async (req, res) => {
+
+  try {
+
+    const result = await pool.query(
+      `
+      SELECT
+        b.id,
+        b.asset_id,
+        b.title,
+        b.description,
+        b.status,
+        b.started_at,
+        b.closed_at,
+        b.reported_by,
+        b.reported_by_id,
+        b.failure_cause,
+        b.root_cause,
+        b.corrective_action,
+        b.created_at,
+        b.updated_at,
+
+        a.model AS asset_model,
+        a.serial_number AS asset_serial,
+        a.line_id,
+
+        l.name AS line_name
+
+      FROM breakdowns b
+
+      JOIN assets a
+        ON a.id = b.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      ORDER BY
+        CASE b.status
+          WHEN 'OPEN' THEN 1
+          WHEN 'IN_PROGRESS' THEN 2
+          WHEN 'CLOSED' THEN 3
+          ELSE 4
+        END,
+        b.started_at DESC
+      `
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(
+      "GET /breakdowns error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to load breakdowns"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
