@@ -1220,6 +1220,240 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
 
 });
 
+/* =========================================================
+   CREATE RESTORATION TASK
+   POST /breakdowns/:id/tasks
+
+   Creates a maintenance task linked to a Breakdown.
+
+   RESTORATION TASK SEMANTICS:
+   - breakdown_id      = Breakdown ID
+   - type              = 'Restoration'
+   - is_planned        = true
+   - status            = 'Planned'
+   - frequency_hours   = 0
+   - NO task_execution is created here
+
+   IMPORTANT:
+   - Uses the existing maintenance_tasks table
+   - Does NOT modify the Breakdown status
+   - Does NOT close the Breakdown
+   - Does NOT use the legacy unplanned/breakdown flow
+========================================================= */
+
+app.post("/breakdowns/:id/tasks", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+    const {
+      task,
+      section,
+      unit,
+      due_date,
+      duration_min,
+      notes,
+      impact
+    } = req.body;
+
+
+    /* =====================
+       VALIDATE BREAKDOWN ID
+    ===================== */
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE TASK
+    ===================== */
+
+    if (!task || !String(task).trim()) {
+      return res.status(400).json({
+        error: "Restoration task is required"
+      });
+    }
+
+
+    /* =====================
+       LOAD BREAKDOWN
+
+       Asset ID is taken directly from the Breakdown.
+
+       The frontend is NOT allowed to choose another
+       asset for a Restoration Task.
+    ===================== */
+
+    const breakdownResult = await pool.query(
+      `
+      SELECT
+        id,
+        asset_id,
+        status
+      FROM breakdowns
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+
+    if (breakdownResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+
+    const breakdown =
+      breakdownResult.rows[0];
+
+
+    /* =====================
+       VALIDATE DURATION
+    ===================== */
+
+    let estimatedDuration = null;
+
+    if (
+      duration_min !== undefined &&
+      duration_min !== null &&
+      duration_min !== ""
+    ) {
+
+      estimatedDuration =
+        Number(duration_min);
+
+      if (
+        !Number.isFinite(estimatedDuration) ||
+        estimatedDuration < 0
+      ) {
+        return res.status(400).json({
+          error: "Invalid estimated duration"
+        });
+      }
+
+    }
+
+
+    /* =====================
+       CREATE RESTORATION TASK
+
+       IMPORTANT:
+
+       is_planned = true
+       -----------------
+       This allows the task to use the normal existing
+       task completion -> task_executions flow.
+
+       frequency_hours = 0
+       -------------------
+       Restoration Tasks are NOT preventive tasks.
+
+       breakdown_id
+       ------------
+       This is the relationship between the work item
+       and the Breakdown incident.
+    ===================== */
+
+    const result = await pool.query(
+      `
+      INSERT INTO maintenance_tasks (
+        asset_id,
+        task,
+        section,
+        unit,
+        type,
+        impact,
+        status,
+        due_date,
+        frequency_hours,
+        duration_min,
+        notes,
+        is_planned,
+        breakdown_id
+      )
+
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        'Restoration',
+        $5,
+        'Planned',
+        $6,
+        0,
+        $7,
+        $8,
+        true,
+        $9
+      )
+
+      RETURNING *
+      `,
+      [
+        breakdown.asset_id,
+        String(task).trim(),
+
+        section !== undefined
+          ? String(section || "").trim() || null
+          : null,
+
+        unit !== undefined
+          ? String(unit || "").trim() || null
+          : null,
+
+        impact !== undefined
+          ? String(impact || "").trim() || "normal"
+          : "normal",
+
+        due_date || null,
+
+        estimatedDuration,
+
+        notes !== undefined
+          ? String(notes || "").trim() || null
+          : null,
+
+        breakdownId
+      ]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.status(201).json({
+      message: "Restoration task created successfully",
+      task: result.rows[0]
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "POST /breakdowns/:id/tasks error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to create restoration task"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
