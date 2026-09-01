@@ -3765,21 +3765,6 @@ async function generateOverdueReportPdf() {
     );
   }
 }
-  iframe.style.border = "0";
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
 
 /* =====================
    KPI REPORT – PRINT (1 PAGE)
