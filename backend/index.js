@@ -755,6 +755,158 @@ app.get("/breakdowns/:id", async (req, res) => {
 
 });
 
+/* =========================================================
+   UPDATE BREAKDOWN
+   PATCH /breakdowns/:id
+
+   Updates the editable information of an existing
+   breakdown incident.
+
+   IMPORTANT:
+   - Does NOT close the breakdown.
+   - Does NOT change breakdown status.
+   - Does NOT create or modify maintenance tasks.
+   - Does NOT create task executions.
+
+   Breakdown lifecycle actions are handled separately.
+========================================================= */
+
+app.patch("/breakdowns/:id", async (req, res) => {
+
+  try {
+
+    const breakdownId = Number(req.params.id);
+
+    const {
+      title,
+      description,
+      started_at,
+      reported_by,
+      reported_by_id
+    } = req.body;
+
+
+    /* =====================
+       VALIDATE ID
+    ===================== */
+
+    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+
+    /* =====================
+       LOAD EXISTING BREAKDOWN
+    ===================== */
+
+    const existingResult = await pool.query(
+      `
+      SELECT *
+      FROM breakdowns
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [breakdownId]
+    );
+
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+    const existing = existingResult.rows[0];
+
+
+    /* =====================
+       VALIDATE TITLE
+    ===================== */
+
+    if (
+      title !== undefined &&
+      !String(title).trim()
+    ) {
+      return res.status(400).json({
+        error: "Breakdown title cannot be empty"
+      });
+    }
+
+
+    /* =====================
+       UPDATE BREAKDOWN
+
+       Only explicitly editable fields are updated.
+       Missing fields keep their existing values.
+    ===================== */
+
+    const result = await pool.query(
+      `
+      UPDATE breakdowns
+
+      SET
+        title = $1,
+        description = $2,
+        started_at = $3,
+        reported_by = $4,
+        reported_by_id = $5,
+        updated_at = NOW()
+
+      WHERE id = $6
+
+      RETURNING *
+      `,
+      [
+        title !== undefined
+          ? String(title).trim()
+          : existing.title,
+
+        description !== undefined
+          ? String(description || "").trim() || null
+          : existing.description,
+
+        started_at !== undefined
+          ? started_at
+          : existing.started_at,
+
+        reported_by !== undefined
+          ? String(reported_by || "").trim() || null
+          : existing.reported_by,
+
+        reported_by_id !== undefined
+          ? reported_by_id || null
+          : existing.reported_by_id,
+
+        breakdownId
+      ]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      message: "Breakdown updated successfully",
+      breakdown: result.rows[0]
+    });
+
+  } catch (err) {
+
+    console.error(
+      "PATCH /breakdowns/:id error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to update breakdown"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
