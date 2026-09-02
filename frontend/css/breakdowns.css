@@ -691,3 +691,141 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* =========================================================
+   MACHINE STATE
+========================================================= */
+
+.machine-state-panel {
+  margin-top: 18px;
+  padding: 16px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+
+.machine-state-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+
+.machine-state-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+
+.machine-state-current {
+  margin-top: 5px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+
+.machine-state-totals {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+
+.machine-state-total {
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+
+.machine-state-total span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+
+.machine-state-total strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+
+.machine-state-history {
+  border-top:
+    1px solid var(--border-subtle);
+  padding-top: 10px;
+}
+
+
+.machine-state-history-row {
+  display: grid;
+  grid-template-columns:
+    120px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom:
+    1px solid var(--border-subtle);
+}
+
+
+.machine-state-history-row:last-child {
+  border-bottom: none;
+}
+
+
+.machine-state-history-state {
+  font-weight: 600;
+}
+
+
+.machine-state-history-time {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+
+.machine-state-history-duration {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+
+.machine-state-loading,
+.machine-state-error,
+.machine-state-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+
+.machine-state-error {
+  color: var(--danger);
+}
+
+
+@media (max-width: 800px) {
+
+  .machine-state-totals {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+
+  .machine-state-history-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+}

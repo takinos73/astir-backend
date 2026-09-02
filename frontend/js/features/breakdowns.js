@@ -1401,6 +1401,335 @@ function populateBreakdownDetail(breakdown) {
   updateBreakdownStatusUI(
     breakdown
   );
+  /* =========================================================
+    MACHINE STATE
+    Load current Machine State + history
+  ========================================================= */
+
+  loadBreakdownMachineState(breakdown.id);
+
+}
+
+/* =========================================================
+   LOAD BREAKDOWN MACHINE STATE
+========================================================= */
+
+async function loadBreakdownMachineState(breakdownId) {
+
+  const container =
+    document.getElementById("breakdownMachineStateContainer");
+
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="machine-state-loading">
+      Loading Machine State...
+    </div>
+  `;
+
+  try {
+
+    const response = await fetch(
+      `/breakdowns/${breakdownId}/machine-state`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Failed to load Machine State"
+      );
+    }
+
+    renderBreakdownMachineState(data);
+
+  } catch (err) {
+
+    console.error(
+      "loadBreakdownMachineState error:",
+      err
+    );
+
+    container.innerHTML = `
+      <div class="machine-state-error">
+        Unable to load Machine State
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER MACHINE STATE
+========================================================= */
+
+function renderBreakdownMachineState(data) {
+
+  const container =
+    document.getElementById("breakdownMachineStateContainer");
+
+  if (!container) return;
+
+
+  const currentState =
+    data.current_state || null;
+
+
+  const currentLabel =
+    currentState
+      ? formatMachineStateLabel(currentState)
+      : "No active state";
+
+
+  const history =
+    Array.isArray(data.history)
+      ? data.history
+      : [];
+
+
+  const totals =
+    data.totals_seconds || {};
+
+
+  container.innerHTML = `
+
+    <div class="machine-state-header">
+
+      <div>
+
+        <div class="machine-state-title">
+          Machine State
+        </div>
+
+        <div class="machine-state-current">
+          ${currentLabel}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="machine-state-totals">
+
+      ${renderMachineStateTotal(
+        "DOWN",
+        totals.DOWN
+      )}
+
+      ${renderMachineStateTotal(
+        "TRIAL",
+        totals.TRIAL
+      )}
+
+      ${renderMachineStateTotal(
+        "DEGRADED",
+        totals.DEGRADED
+      )}
+
+      ${renderMachineStateTotal(
+        "RUNNING",
+        totals.RUNNING
+      )}
+
+    </div>
+
+
+    <div class="machine-state-history">
+
+      ${
+        history.length
+          ? history
+              .map(renderMachineStateHistoryRow)
+              .join("")
+          : `
+            <div class="machine-state-empty">
+              No Machine State history yet
+            </div>
+          `
+      }
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   MACHINE STATE LABEL
+========================================================= */
+
+function formatMachineStateLabel(state) {
+
+  switch (String(state || "").toUpperCase()) {
+
+    case "DOWN":
+      return "🔴 DOWN";
+
+    case "TRIAL":
+      return "🟠 TRIAL";
+
+    case "DEGRADED":
+      return "🟡 DEGRADED";
+
+    case "RUNNING":
+      return "🟢 RUNNING";
+
+    default:
+      return state || "—";
+
+  }
+
+}
+
+
+/* =========================================================
+   MACHINE STATE TOTAL
+========================================================= */
+
+function renderMachineStateTotal(
+  state,
+  seconds
+) {
+
+  return `
+    <div class="machine-state-total">
+
+      <span>
+        ${formatMachineStateLabel(state)}
+      </span>
+
+      <strong>
+        ${formatMachineStateDuration(seconds)}
+      </strong>
+
+    </div>
+  `;
+
+}
+
+
+/* =========================================================
+   MACHINE STATE HISTORY ROW
+========================================================= */
+
+function renderMachineStateHistoryRow(item) {
+
+  const started =
+    formatMachineStateDateTime(
+      item.started_at
+    );
+
+
+  const ended =
+    item.ended_at
+      ? formatMachineStateDateTime(
+          item.ended_at
+        )
+      : "NOW";
+
+
+  return `
+    <div class="machine-state-history-row">
+
+      <div class="machine-state-history-state">
+        ${formatMachineStateLabel(item.state)}
+      </div>
+
+      <div class="machine-state-history-time">
+        ${started} → ${ended}
+      </div>
+
+      <div class="machine-state-history-duration">
+        ${formatMachineStateDuration(
+          item.duration_seconds
+        )}
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* =========================================================
+   FORMAT MACHINE STATE DURATION
+========================================================= */
+
+function formatMachineStateDuration(seconds) {
+
+  const totalSeconds =
+    Math.max(
+      0,
+      Number(seconds) || 0
+    );
+
+
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+
+
+  const secs =
+    totalSeconds % 60;
+
+
+  if (hours > 0) {
+
+    return `${hours}h ${minutes}m`;
+
+  }
+
+
+  if (minutes > 0) {
+
+    return `${minutes}m ${secs}s`;
+
+  }
+
+
+  return `${secs}s`;
+
+}
+
+
+/* =========================================================
+   FORMAT MACHINE STATE DATETIME
+========================================================= */
+
+function formatMachineStateDateTime(value) {
+
+  if (!value) return "—";
+
+
+  const date =
+    new Date(value);
+
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+
+  return date.toLocaleString(
+    "el-GR",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 
 }
 
