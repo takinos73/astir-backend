@@ -438,22 +438,29 @@ app.get("/lines", async (req, res) => {
          maintenance_tasks.breakdown_id
    ========================================================= */
 
-
 /* =========================================================
    CREATE BREAKDOWN
    POST /breakdowns
 
    Creates a new breakdown incident.
 
+   DEFAULT MACHINE STATE:
+   - Every new Breakdown starts with Machine State = DOWN
+   - Machine State started_at is EXACTLY the same as
+     Breakdown started_at
+
    This does NOT create:
    - maintenance task
    - task execution
    - restoration task
 
-   Those will be handled separately.
+   Breakdown + initial Machine State are created
+   in the same database transaction.
 ========================================================= */
 
 app.post("/breakdowns", async (req, res) => {
+
+  const client = await pool.connect();
 
   try {
 
@@ -488,7 +495,7 @@ app.post("/breakdowns", async (req, res) => {
        VERIFY ASSET
     ===================== */
 
-    const assetResult = await pool.query(
+    const assetResult = await client.query(
       `
       SELECT id
       FROM assets
@@ -506,10 +513,17 @@ app.post("/breakdowns", async (req, res) => {
 
 
     /* =====================
+       START TRANSACTION
+    ===================== */
+
+    await client.query("BEGIN");
+
+
+    /* =====================
        CREATE BREAKDOWN
     ===================== */
 
-    const result = await pool.query(
+    const result = await client.query(
       `
       INSERT INTO breakdowns (
         asset_id,
@@ -546,25 +560,110 @@ app.post("/breakdowns", async (req, res) => {
     );
 
 
+    const breakdown =
+      result.rows[0];
+
+
+    /* =====================================================
+       CREATE INITIAL MACHINE STATE
+
+       Every new Breakdown starts as DOWN.
+
+       IMPORTANT:
+       Machine State started_at uses the actual
+       Breakdown started_at returned by PostgreSQL.
+
+       Therefore:
+
+       breakdown.started_at
+             =
+       machine_state.started_at
+    ===================================================== */
+
+    const machineStateResult = await client.query(
+      `
+      INSERT INTO breakdown_state_history (
+        breakdown_id,
+        state,
+        started_at,
+        ended_at,
+        changed_by,
+        changed_by_id,
+        created_at
+      )
+      VALUES (
+        $1,
+        'DOWN',
+        $2,
+        NULL,
+        $3,
+        $4,
+        NOW()
+      )
+      RETURNING *
+      `,
+      [
+        breakdown.id,
+        breakdown.started_at,
+        reported_by?.trim() || null,
+        reported_by_id || null
+      ]
+    );
+
+
+    /* =====================
+       COMMIT TRANSACTION
+    ===================== */
+
+    await client.query("COMMIT");
+
+
     /* =====================
        RESPONSE
     ===================== */
 
     return res.status(201).json({
-      message: "Breakdown created successfully",
-      breakdown: result.rows[0]
+
+      message:
+        "Breakdown created successfully",
+
+      breakdown,
+
+      machine_state:
+        machineStateResult.rows[0]
+
     });
 
+
   } catch (err) {
+
+    /* =====================
+       ROLLBACK ON ERROR
+    ===================== */
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
 
     console.error(
       "POST /breakdowns error:",
       err
     );
 
+
     return res.status(500).json({
       error: "Failed to create breakdown"
     });
+
+
+  } finally {
+
+    /* =====================
+       RELEASE DB CLIENT
+    ===================== */
+
+    client.release();
 
   }
 
