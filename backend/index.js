@@ -1396,6 +1396,238 @@ app.patch("/breakdowns/:id/machine-state", async (req, res) => {
 );
 
 /* =========================================================
+   GET MACHINE STATE HISTORY
+   GET /breakdowns/:id/machine-state
+
+   Returns:
+   - Current Machine State
+   - Complete Machine State history
+   - Duration of every state interval
+   - Total duration per Machine State
+
+   IMPORTANT:
+   - Read only
+   - Does NOT change Breakdown status
+   - Does NOT change Machine State
+   - Active state duration is calculated up to NOW()
+========================================================= */
+
+app.get("/breakdowns/:id/machine-state", async (req, res) => {
+
+    try {
+
+      const breakdownId =
+        Number(req.params.id);
+
+
+      /* =====================
+         VALIDATE ID
+      ===================== */
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0
+      ) {
+
+        return res.status(400).json({
+          error: "Invalid breakdown id"
+        });
+
+      }
+
+
+      /* =====================
+         VERIFY BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            status,
+            started_at,
+            closed_at
+
+          FROM breakdowns
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        breakdownResult.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+
+      }
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         LOAD STATE HISTORY
+
+         Active interval:
+         ended_at = NULL
+
+         For duration calculation:
+         - active Breakdown -> NOW()
+         - closed Breakdown -> closed_at
+      ===================== */
+
+      const historyResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            breakdown_id,
+            state,
+            started_at,
+            ended_at,
+            changed_by,
+            changed_by_id,
+            created_at,
+
+            EXTRACT(
+              EPOCH FROM (
+                COALESCE(
+                  ended_at,
+                  $2::timestamptz,
+                  NOW()
+                )
+                - started_at
+              )
+            )::bigint AS duration_seconds
+
+          FROM breakdown_state_history
+
+          WHERE breakdown_id = $1
+
+          ORDER BY
+            started_at ASC,
+            id ASC
+          `,
+          [
+            breakdownId,
+            breakdown.closed_at || null
+          ]
+        );
+
+
+      const history =
+        historyResult.rows;
+
+
+      /* =====================
+         CURRENT STATE
+      ===================== */
+
+      const currentState =
+        history.find(
+          item =>
+            item.ended_at === null
+        ) || null;
+
+
+      /* =====================
+         TOTALS
+
+         Keep all four states in the
+         response even when duration = 0.
+      ===================== */
+
+      const totals = {
+
+        DOWN: 0,
+        TRIAL: 0,
+        DEGRADED: 0,
+        RUNNING: 0
+
+      };
+
+
+      for (const item of history) {
+
+        const seconds =
+          Number(
+            item.duration_seconds
+          ) || 0;
+
+
+        if (
+          Object.prototype.hasOwnProperty.call(
+            totals,
+            item.state
+          )
+        ) {
+
+          totals[item.state] +=
+            seconds;
+
+        }
+
+      }
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        breakdown_id:
+          breakdownId,
+
+        breakdown_status:
+          breakdown.status,
+
+        current_state:
+          currentState
+            ? currentState.state
+            : null,
+
+        current_state_started_at:
+          currentState
+            ? currentState.started_at
+            : null,
+
+        totals_seconds:
+          totals,
+
+        history
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /breakdowns/:id/machine-state error:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to load Machine State history"
+      });
+
+    }
+
+  }
+);
+
+/* =========================================================
    CLOSE BREAKDOWN
    PATCH /breakdowns/:id/close
 
