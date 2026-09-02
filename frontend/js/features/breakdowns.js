@@ -3233,6 +3233,66 @@ async function closeBreakdown() {
 
 
   /* =====================
+     OPEN RESTORATION TASKS
+
+     Final safety check before closing.
+
+     Breakdown may still be closed
+     with pending Restoration Tasks,
+     but the technician must confirm it.
+  ===================== */
+
+  const openTasks =
+    Array.isArray(currentBreakdownTasks)
+      ? currentBreakdownTasks.filter(
+          task =>
+            task.status === "Planned" ||
+            task.status === "Overdue"
+        )
+      : [];
+
+
+  /* =====================
+     CLOSE CONFIRMATION
+  ===================== */
+
+  let confirmationMessage;
+
+
+  if (openTasks.length > 0) {
+
+    confirmationMessage =
+      `This Breakdown still has ${openTasks.length} open Restoration Task${
+        openTasks.length === 1
+          ? ""
+          : "s"
+      }.\n\n` +
+      "Closing the Breakdown will end the downtime, " +
+      "but the open Restoration Tasks will remain pending.\n\n" +
+      "Are you sure the asset has been restored and you want to close this Breakdown?";
+
+  } else {
+
+    confirmationMessage =
+      "There are no pending Restoration Tasks.\n\n" +
+      "Please confirm that the asset has been restored " +
+      "and this Breakdown can be closed.";
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      confirmationMessage
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  /* =====================
      PAYLOAD
   ===================== */
 
@@ -3385,6 +3445,7 @@ async function closeBreakdown() {
   }
 
 }
+
 /* =====================
    CONFIRM CLOSE BREAKDOWN
 ===================== */
