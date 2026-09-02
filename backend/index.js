@@ -1036,6 +1036,366 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
 });
 
 /* =========================================================
+   CHANGE MACHINE STATE
+   PATCH /breakdowns/:id/machine-state
+
+   Changes the operational state of the machine
+   during an active Breakdown.
+
+   Valid states:
+   - DOWN
+   - TRIAL
+   - DEGRADED
+   - RUNNING
+
+   IMPORTANT:
+   - Breakdown lifecycle remains independent.
+   - Does NOT change OPEN / IN_PROGRESS / CLOSED.
+   - Does NOT create maintenance tasks.
+   - Does NOT create task executions.
+   - CLOSED Breakdowns cannot change Machine State.
+   - Only one Machine State may be active at a time.
+========================================================= */
+
+app.patch("/breakdowns/:id/machine-state", async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+    try {
+
+      const breakdownId =
+        Number(req.params.id);
+
+      const {
+        state,
+        changed_by,
+        changed_by_id
+      } = req.body;
+
+
+      /* =====================
+         VALIDATE ID
+      ===================== */
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0
+      ) {
+
+        return res.status(400).json({
+          error: "Invalid breakdown id"
+        });
+
+      }
+
+
+      /* =====================
+         VALIDATE STATE
+      ===================== */
+
+      const machineState =
+        String(state || "")
+          .trim()
+          .toUpperCase();
+
+
+      const validStates = [
+        "DOWN",
+        "TRIAL",
+        "DEGRADED",
+        "RUNNING"
+      ];
+
+
+      if (
+        !validStates.includes(
+          machineState
+        )
+      ) {
+
+        return res.status(400).json({
+          error: "Invalid Machine State"
+        });
+
+      }
+
+
+      /* =====================
+         TRANSACTION
+
+         State transition must be atomic.
+
+         Example:
+         DOWN    10:00 -> 10:30
+         TRIAL   10:30 -> NULL
+
+         Both timestamps use the SAME
+         database transaction timestamp.
+      ===================== */
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOCK BREAKDOWN
+
+         Prevent simultaneous state
+         changes for the same Breakdown.
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            status,
+            started_at,
+            closed_at
+
+          FROM breakdowns
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        breakdownResult.rows.length === 0
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+
+      }
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         CLOSED GUARD
+      ===================== */
+
+      if (
+        breakdown.status === "CLOSED"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Machine State cannot be changed on a closed Breakdown."
+        });
+
+      }
+
+
+      /* =====================
+         TRANSITION TIMESTAMP
+
+         PostgreSQL transaction timestamp
+         ensures old state ends exactly
+         when new state starts.
+      ===================== */
+
+      const timestampResult =
+        await client.query(
+          `
+          SELECT NOW() AS transition_at
+          `
+        );
+
+
+      const transitionAt =
+        timestampResult.rows[0]
+          .transition_at;
+
+
+      /* =====================
+         LOAD CURRENT STATE
+      ===================== */
+
+      const currentResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            state,
+            started_at
+
+          FROM breakdown_state_history
+
+          WHERE
+            breakdown_id = $1
+            AND ended_at IS NULL
+
+          LIMIT 1
+
+          FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+
+      const currentState =
+        currentResult.rows[0] || null;
+
+
+      /* =====================
+         SAME STATE GUARD
+
+         Avoid creating meaningless:
+
+         DOWN -> DOWN
+         RUNNING -> RUNNING
+      ===================== */
+
+      if (
+        currentState &&
+        currentState.state === machineState
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            `Machine is already in ${machineState} state.`
+        });
+
+      }
+
+
+      /* =====================
+         CLOSE CURRENT STATE
+      ===================== */
+
+      if (currentState) {
+
+        await client.query(
+          `
+          UPDATE breakdown_state_history
+
+          SET ended_at = $1
+
+          WHERE id = $2
+          `,
+          [
+            transitionAt,
+            currentState.id
+          ]
+        );
+
+      }
+
+
+      /* =====================
+         CREATE NEW STATE
+      ===================== */
+
+      const result =
+        await client.query(
+          `
+          INSERT INTO breakdown_state_history (
+            breakdown_id,
+            state,
+            started_at,
+            ended_at,
+            changed_by,
+            changed_by_id,
+            created_at
+          )
+
+          VALUES (
+            $1,
+            $2,
+            $3,
+            NULL,
+            $4,
+            $5,
+            NOW()
+          )
+
+          RETURNING *
+          `,
+          [
+            breakdownId,
+            machineState,
+            transitionAt,
+
+            changed_by !== undefined
+              ? String(
+                  changed_by || ""
+                ).trim() || null
+              : null,
+
+            changed_by_id || null
+          ]
+        );
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        message:
+          `Machine State changed to ${machineState}`,
+
+        machine_state:
+          result.rows[0]
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch (_) {
+        // Ignore rollback errors
+      }
+
+
+      console.error(
+        "PATCH /breakdowns/:id/machine-state error:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to change Machine State"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    CLOSE BREAKDOWN
    PATCH /breakdowns/:id/close
 
@@ -3295,6 +3655,11 @@ app.post("/assets", async (req, res) => {
   }
 });
 
+/* =====================
+   DELETE ASSET
+   - Hard delete (admin only)
+   - Only if no tasks exist for this asset
+===================== */
 
 app.delete("/assets/:id", async (req, res) => {
   try {

@@ -665,3 +665,29 @@
   outline: 2px solid rgba(78,168,255,.50);
   outline-offset: 2px;
 }
+/* =========================
+   CLOSE BREAKDOWN
+   Warning / final action
+========================= */
+
+.btn-close-breakdown {
+  background: #d99a2b;
+  color: #111318;
+  border: 1px solid #e8ad43;
+
+  font-weight: 700;
+}
+
+.btn-close-breakdown:hover {
+  background: #e5a83a;
+  border-color: #f0bb59;
+}
+
+.btn-close-breakdown:active {
+  background: #c98b22;
+}
+
+.btn-close-breakdown:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
