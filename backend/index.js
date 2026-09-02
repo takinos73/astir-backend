@@ -1631,20 +1631,18 @@ app.get("/breakdowns/:id/machine-state", async (req, res) => {
    CLOSE BREAKDOWN
    PATCH /breakdowns/:id/close
 
-   Closes an OPEN or IN_PROGRESS breakdown.
+   Closes the Breakdown incident.
 
-   A breakdown may be closed even if restoration tasks
-   are still open. Closing the breakdown means that the
-   asset / production has been restored.
-
-   IMPORTANT:
-   - Does NOT complete maintenance tasks
-   - Does NOT create task executions
-   - Does NOT delete restoration tasks
-   - CLOSED breakdowns cannot be closed again
+   MACHINE STATE INTEGRATION:
+   - If an active Machine State exists, it is closed
+     at exactly the same timestamp as breakdown.closed_at.
+   - Breakdown + Machine State are updated in the
+     same database transaction.
 ========================================================= */
 
 app.patch("/breakdowns/:id/close", async (req, res) => {
+
+  const client = await pool.connect();
 
   try {
 
@@ -1663,35 +1661,53 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
     ===================== */
 
     if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+
       return res.status(400).json({
         error: "Invalid breakdown id"
       });
+
     }
 
 
     /* =====================
-       LOAD BREAKDOWN
+       START TRANSACTION
     ===================== */
 
-    const existingResult = await pool.query(
+    await client.query("BEGIN");
+
+
+    /* =====================
+       LOAD + LOCK BREAKDOWN
+    ===================== */
+
+    const existingResult = await client.query(
       `
       SELECT
         id,
         status,
         started_at,
         closed_at
+
       FROM breakdowns
+
       WHERE id = $1
+
       LIMIT 1
+
+      FOR UPDATE
       `,
       [breakdownId]
     );
 
 
     if (existingResult.rows.length === 0) {
+
+      await client.query("ROLLBACK");
+
       return res.status(404).json({
         error: "Breakdown not found"
       });
+
     }
 
 
@@ -1703,9 +1719,13 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
     ===================== */
 
     if (breakdown.status === "CLOSED") {
+
+      await client.query("ROLLBACK");
+
       return res.status(400).json({
         error: "Breakdown is already closed"
       });
+
     }
 
 
@@ -1713,9 +1733,14 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
       breakdown.status !== "OPEN" &&
       breakdown.status !== "IN_PROGRESS"
     ) {
+
+      await client.query("ROLLBACK");
+
       return res.status(400).json({
-        error: "Breakdown cannot be closed from its current status"
+        error:
+          "Breakdown cannot be closed from its current status"
       });
+
     }
 
 
@@ -1735,16 +1760,117 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
 
 
     if (Number.isNaN(closedAtDate.getTime())) {
+
+      await client.query("ROLLBACK");
+
       return res.status(400).json({
         error: "Invalid closed_at date"
       });
+
     }
 
 
     if (closedAtDate < startedAtDate) {
+
+      await client.query("ROLLBACK");
+
       return res.status(400).json({
-        error: "Closed date cannot be earlier than breakdown start"
+        error:
+          "Closed date cannot be earlier than breakdown start"
       });
+
+    }
+
+
+    /* =====================================================
+       LOAD + LOCK ACTIVE MACHINE STATE
+
+       There can be maximum one active Machine State
+       because of uq_breakdown_active_machine_state.
+    ===================================================== */
+
+    const activeMachineStateResult =
+      await client.query(
+        `
+        SELECT
+          id,
+          state,
+          started_at
+
+        FROM breakdown_state_history
+
+        WHERE breakdown_id = $1
+          AND ended_at IS NULL
+
+        LIMIT 1
+
+        FOR UPDATE
+        `,
+        [breakdownId]
+      );
+
+
+    const activeMachineState =
+      activeMachineStateResult.rows[0] || null;
+
+
+    /* =====================================================
+       VALIDATE MACHINE STATE DATE
+
+       Example we must reject:
+
+       Machine State started : 20:10
+       Breakdown Restored At : 20:05
+
+       A Machine State cannot end before it started.
+    ===================================================== */
+
+    if (activeMachineState) {
+
+      const machineStateStartedAt =
+        new Date(activeMachineState.started_at);
+
+
+      if (closedAtDate < machineStateStartedAt) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+          error:
+            "Restored At cannot be earlier than the current Machine State start time."
+        });
+
+      }
+
+    }
+
+
+    /* =====================================================
+       CLOSE ACTIVE MACHINE STATE
+
+       IMPORTANT:
+       Machine State ended_at receives EXACTLY the same
+       timestamp as breakdown.closed_at.
+
+       If no Machine State exists, nothing happens.
+    ===================================================== */
+
+    if (activeMachineState) {
+
+      await client.query(
+        `
+        UPDATE breakdown_state_history
+
+        SET ended_at = $1
+
+        WHERE id = $2
+        `,
+        [
+          resolvedClosedAt,
+          activeMachineState.id
+        ]
+      );
+
     }
 
 
@@ -1752,7 +1878,7 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
        CLOSE BREAKDOWN
     ===================== */
 
-    const result = await pool.query(
+    const result = await client.query(
       `
       UPDATE breakdowns
 
@@ -1789,24 +1915,61 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
 
 
     /* =====================
+       COMMIT TRANSACTION
+    ===================== */
+
+    await client.query("COMMIT");
+
+
+    /* =====================
        RESPONSE
     ===================== */
 
     return res.json({
-      message: "Breakdown closed successfully",
-      breakdown: result.rows[0]
+
+      message:
+        "Breakdown closed successfully",
+
+      breakdown:
+        result.rows[0],
+
+      machine_state_closed:
+        activeMachineState
+          ? activeMachineState.state
+          : null
+
     });
 
+
   } catch (err) {
+
+    /* =====================
+       ROLLBACK ON ERROR
+    ===================== */
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
 
     console.error(
       "PATCH /breakdowns/:id/close error:",
       err
     );
 
+
     return res.status(500).json({
       error: "Failed to close breakdown"
     });
+
+
+  } finally {
+
+    /* =====================
+       RELEASE DB CLIENT
+    ===================== */
+
+    client.release();
 
   }
 
