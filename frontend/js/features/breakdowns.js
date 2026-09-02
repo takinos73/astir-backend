@@ -1511,6 +1511,7 @@ function renderBreakdownMachineState(data) {
 
     </div>
 
+    ${renderMachineStateControls(data)}
 
     <div class="machine-state-totals">
 
@@ -1730,6 +1731,279 @@ function formatMachineStateDateTime(value) {
       minute: "2-digit"
     }
   );
+
+}
+
+/* =========================================================
+   MACHINE STATE CONTROLS
+========================================================= */
+
+function renderMachineStateControls(data) {
+
+  const breakdownStatus =
+    String(
+      data.breakdown_status || ""
+    ).toUpperCase();
+
+
+  const currentState =
+    String(
+      data.current_state || ""
+    ).toUpperCase();
+
+
+  /* CLOSED Breakdown:
+     no Machine State changes allowed
+  */
+
+  if (breakdownStatus === "CLOSED") {
+
+    return `
+      <div class="machine-state-controls-closed">
+        Machine State history is locked because
+        this Breakdown is closed.
+      </div>
+    `;
+
+  }
+
+
+  const states = [
+    {
+      state: "DOWN",
+      label: "🔴 DOWN"
+    },
+    {
+      state: "TRIAL",
+      label: "🟠 TRIAL"
+    },
+    {
+      state: "DEGRADED",
+      label: "🟡 DEGRADED"
+    },
+    {
+      state: "RUNNING",
+      label: "🟢 RUNNING"
+    }
+  ];
+
+
+  return `
+    <div class="machine-state-controls">
+
+      <div class="machine-state-controls-label">
+        Change Machine State
+      </div>
+
+      <div class="machine-state-buttons">
+
+        ${states.map(item => {
+
+          const isActive =
+            currentState === item.state;
+
+          return `
+            <button
+              type="button"
+              class="
+                machine-state-btn
+                ${isActive ? "active" : ""}
+              "
+              data-machine-state="${item.state}"
+              ${isActive ? "disabled" : ""}
+              onclick="
+                changeBreakdownMachineState(
+                  '${item.state}'
+                )
+              "
+            >
+              ${item.label}
+            </button>
+          `;
+
+        }).join("")}
+
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* =========================================================
+   CHANGE BREAKDOWN MACHINE STATE
+========================================================= */
+
+async function changeBreakdownMachineState(newState) {
+
+  if (!currentBreakdownId) {
+
+    console.error(
+      "No active Breakdown selected"
+    );
+
+    return;
+
+  }
+
+
+  const breakdownStatus =
+    String(
+      currentBreakdown?.status || ""
+    ).toUpperCase();
+
+
+  if (breakdownStatus === "CLOSED") {
+
+    alert(
+      "This Breakdown is closed. Machine State cannot be changed."
+    );
+
+    return;
+
+  }
+
+
+  const state =
+    String(
+      newState || ""
+    ).trim().toUpperCase();
+
+
+  const validStates = [
+    "DOWN",
+    "TRIAL",
+    "DEGRADED",
+    "RUNNING"
+  ];
+
+
+  if (!validStates.includes(state)) {
+
+    console.error(
+      "Invalid Machine State:",
+      state
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    setMachineStateButtonsDisabled(true);
+
+
+    const changedBy =
+      localStorage.getItem(
+        "cmmsTechnicianName"
+      ) || null;
+
+
+    const changedByIdRaw =
+      localStorage.getItem(
+        "cmmsTechnicianId"
+      );
+
+
+    const changedById =
+      changedByIdRaw
+        ? Number(changedByIdRaw)
+        : null;
+
+
+    const response = await fetch(
+      `/breakdowns/${currentBreakdownId}/machine-state`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+
+          state,
+
+          changed_by:
+            changedBy,
+
+          changed_by_id:
+            Number.isInteger(changedById)
+              ? changedById
+              : null
+
+        })
+
+      }
+    );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Failed to change Machine State"
+      );
+
+    }
+
+
+    /* Reload Machine State panel */
+
+    await loadBreakdownMachineState(
+      currentBreakdownId
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "changeBreakdownMachineState error:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Failed to change Machine State"
+    );
+
+
+  } finally {
+
+    setMachineStateButtonsDisabled(false);
+
+  }
+
+}
+
+
+/* =========================================================
+   DISABLE / ENABLE MACHINE STATE BUTTONS
+========================================================= */
+
+function setMachineStateButtonsDisabled(disabled) {
+
+  const buttons =
+    document.querySelectorAll(
+      ".machine-state-btn"
+    );
+
+
+  buttons.forEach(button => {
+
+    button.disabled =
+      Boolean(disabled);
+
+  });
 
 }
 
