@@ -146,7 +146,9 @@ async function loadBreakdowns() {
 function renderBreakdownsTable(breakdowns) {
 
   const tbody =
-    document.getElementById("breakdownsTableBody");
+    document.getElementById(
+      "breakdownsTableBody"
+    );
 
   if (!tbody) return;
 
@@ -202,8 +204,23 @@ function renderBreakdownsTable(breakdowns) {
           b.started_at
         );
 
-      const downtime =
-        formatBreakdownDowntime(b);
+
+      /* =====================
+         ACTUAL DOWN TIME
+
+         Source:
+         breakdown_state_history
+
+         This is NOT Incident Duration.
+      ===================== */
+
+      const downSeconds =
+        Number(b.down_seconds || 0);
+
+      const downTime =
+        formatBreakdownSeconds(
+          downSeconds
+        );
 
 
       return `
@@ -214,10 +231,17 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
-            <strong>${escapeBreakdownHtml(asset)}</strong>
+            <strong>
+              ${escapeBreakdownHtml(asset)}
+            </strong>
+
             ${
               serial
-                ? `<div class="task-meta">${escapeBreakdownHtml(serial)}</div>`
+                ? `
+                  <div class="task-meta">
+                    ${escapeBreakdownHtml(serial)}
+                  </div>
+                `
                 : ""
             }
           </td>
@@ -231,8 +255,12 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
-            <span class="breakdown-status ${getBreakdownStatusClass(status)}">
-              ${escapeBreakdownHtml(status.replace("_", " "))}
+            <span
+              class="breakdown-status ${getBreakdownStatusClass(status)}"
+            >
+              ${escapeBreakdownHtml(
+                status.replace("_", " ")
+              )}
             </span>
           </td>
 
@@ -241,19 +269,17 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
-            ${escapeBreakdownHtml(downtime)}
+            ${escapeBreakdownHtml(downTime)}
           </td>
 
           <td>
-            <td>
-              <button
-                class="btn-table breakdown-view-btn"
-                type="button"
-                data-breakdown-id="${id}"
-              >
-                View
-              </button>
-            </td>
+            <button
+              class="btn-table breakdown-view-btn"
+              type="button"
+              data-breakdown-id="${id}"
+            >
+              View
+            </button>
           </td>
 
         </tr>
@@ -291,7 +317,6 @@ function formatBreakdownDate(value) {
   );
 
 }
-
 
 
 /* =====================
@@ -366,7 +391,54 @@ function formatBreakdownDowntime(breakdown) {
 
 }
 
+/* =========================================================
+   FORMAT BREAKDOWN SECONDS
 
+   Used for actual Machine State durations.
+========================================================= */
+
+function formatBreakdownSeconds(seconds) {
+
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.floor(
+        Number(seconds) || 0
+      )
+    );
+
+
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+
+  const secs =
+    totalSeconds % 60;
+
+
+  if (hours > 0) {
+
+    return `${hours}h ${minutes}m`;
+
+  }
+
+
+  if (minutes > 0) {
+
+    return `${minutes}m`;
+
+  }
+
+
+  return `${secs}s`;
+
+}
 
 /* =====================
    BASIC HTML ESCAPE
