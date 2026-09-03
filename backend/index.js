@@ -4477,6 +4477,117 @@ app.post("/assets/resume-all", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /assets/:id/locations
+// Returns historical Section / Unit catalogue for one Asset
+// Source: maintenance_tasks (all statuses)
+// Excludes soft-deleted tasks and placeholder values like "__new__"
+// ============================================================
+
+app.get('/assets/:id/locations', async (req, res) => {
+  try {
+    const assetId = Number(req.params.id);
+
+    if (!Number.isInteger(assetId) || assetId <= 0) {
+      return res.status(400).json({
+        error: 'Invalid asset id'
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+          TRIM(section) AS section,
+          TRIM(unit) AS unit,
+          COUNT(*)::int AS usage_count
+      FROM maintenance_tasks
+      WHERE asset_id = $1
+
+        -- Exclude soft-deleted tasks
+        AND deleted_at IS NULL
+
+        -- Valid Section
+        AND section IS NOT NULL
+        AND TRIM(section) <> ''
+        AND LOWER(TRIM(section)) <> '__new__'
+
+        -- Valid Unit
+        AND unit IS NOT NULL
+        AND TRIM(unit) <> ''
+        AND LOWER(TRIM(unit)) <> '__new__'
+
+      GROUP BY
+          TRIM(section),
+          TRIM(unit)
+
+      ORDER BY
+          TRIM(section),
+          TRIM(unit)
+      `,
+      [assetId]
+    );
+
+    // ----------------------------------------------------------
+    // Case-insensitive deduplication.
+    // Example:
+    // "Τροφοδότης" and "ΤΡΟΦΟΔΟΤΗΣ"
+    // are treated as the same Section/Unit combination.
+    //
+    // If duplicates exist, keep the version with the highest usage.
+    // ----------------------------------------------------------
+    const locationMap = new Map();
+
+    for (const row of result.rows) {
+      const section = row.section?.trim();
+      const unit = row.unit?.trim();
+
+      if (!section || !unit) continue;
+
+      const key =
+        `${section.toLocaleLowerCase('el-GR')}|||${unit.toLocaleLowerCase('el-GR')}`;
+
+      const existing = locationMap.get(key);
+
+      if (!existing || row.usage_count > existing.usage_count) {
+        locationMap.set(key, {
+          section,
+          unit,
+          usage_count: row.usage_count
+        });
+      }
+    }
+
+    const locations = Array.from(locationMap.values())
+      .sort((a, b) => {
+        const sectionCompare = a.section.localeCompare(
+          b.section,
+          'el',
+          { sensitivity: 'base' }
+        );
+
+        if (sectionCompare !== 0) return sectionCompare;
+
+        return a.unit.localeCompare(
+          b.unit,
+          'el',
+          { sensitivity: 'base' }
+        );
+      });
+
+    return res.json({
+      asset_id: assetId,
+      locations
+    });
+
+  } catch (err) {
+    console.error('GET /assets/:id/locations error:', err);
+
+    return res.status(500).json({
+      error: 'Failed to load asset locations'
+    });
+  }
+});
+
 
 /* =====================================================
    IMPORT HELPERS
