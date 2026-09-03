@@ -669,6 +669,409 @@ app.post("/breakdowns", async (req, res) => {
 
 });
 
+// ============================================================
+// POST /breakdowns/historical
+//
+// Creates a Breakdown that has ALREADY been restored.
+//
+// Use case:
+// - Failure happened earlier (e.g. during night shift)
+// - Technician restored the machine
+// - Breakdown was not entered into CMMS at that time
+// - It is entered later with the REAL failure/restoration times
+//
+// Result:
+//
+// Breakdown:
+//   status     = CLOSED
+//   started_at = actual failure time
+//   closed_at  = actual restoration time
+//
+// Machine State:
+//   DOWN
+//   started_at = breakdown.started_at
+//   ended_at   = breakdown.closed_at
+//
+// IMPORTANT:
+// No active Machine State is ever created.
+// Therefore a historical 35-minute Breakdown will NEVER
+// temporarily appear as a 9-hour active Breakdown.
+// ============================================================
+
+app.post( "/breakdowns/historical", async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      const {
+        asset_id,
+        title,
+        description,
+        started_at,
+        restored_at,
+        reported_by,
+        reported_by_id,
+        failure_cause,
+        root_cause,
+        corrective_action
+      } = req.body;
+
+
+      /* =====================
+         BASIC VALIDATION
+      ===================== */
+
+      if (!asset_id) {
+
+        return res.status(400).json({
+          error: "Asset is required"
+        });
+
+      }
+
+
+      if (
+        !title ||
+        !String(title).trim()
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Breakdown title is required"
+        });
+
+      }
+
+
+      if (!started_at) {
+
+        return res.status(400).json({
+          error:
+            "Breakdown start time is required"
+        });
+
+      }
+
+
+      if (!restored_at) {
+
+        return res.status(400).json({
+          error:
+            "Restored time is required"
+        });
+
+      }
+
+
+      /* =====================
+         VALIDATE DATES
+      ===================== */
+
+      const startedDate =
+        new Date(started_at);
+
+      const restoredDate =
+        new Date(restored_at);
+
+
+      if (
+        Number.isNaN(
+          startedDate.getTime()
+        )
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Breakdown start time"
+        });
+
+      }
+
+
+      if (
+        Number.isNaN(
+          restoredDate.getTime()
+        )
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid restored time"
+        });
+
+      }
+
+
+      if (
+        restoredDate.getTime() <
+        startedDate.getTime()
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Restored time cannot be earlier than Breakdown start time"
+        });
+
+      }
+
+
+      /*
+        Historical Breakdown should not
+        contain future timestamps.
+      */
+
+      const now =
+        Date.now();
+
+
+      if (
+        startedDate.getTime() >
+        now
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Breakdown start time cannot be in the future"
+        });
+
+      }
+
+
+      if (
+        restoredDate.getTime() >
+        now
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Restored time cannot be in the future"
+        });
+
+      }
+
+
+      /* =====================
+         VERIFY ASSET
+      ===================== */
+
+      const assetResult =
+        await client.query(
+          `
+          SELECT id
+          FROM assets
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [asset_id]
+        );
+
+
+      if (
+        assetResult.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          error: "Asset not found"
+        });
+
+      }
+
+
+      /* =====================
+         START TRANSACTION
+      ===================== */
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         CREATE CLOSED BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          INSERT INTO breakdowns (
+            asset_id,
+            title,
+            description,
+            status,
+            started_at,
+            closed_at,
+            reported_by,
+            reported_by_id,
+            failure_cause,
+            root_cause,
+            corrective_action,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            'CLOSED',
+            $4::timestamptz,
+            $5::timestamptz,
+            $6,
+            $7,
+            $8,
+            $9,
+            $10,
+            NOW(),
+            NOW()
+          )
+          RETURNING *
+          `,
+          [
+            asset_id,
+
+            String(title).trim(),
+
+            description?.trim() ||
+              null,
+
+            started_at,
+
+            restored_at,
+
+            reported_by?.trim() ||
+              null,
+
+            reported_by_id ||
+              null,
+
+            failure_cause?.trim() ||
+              null,
+
+            root_cause?.trim() ||
+              null,
+
+            corrective_action?.trim() ||
+              null
+          ]
+        );
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================================================
+         CREATE HISTORICAL MACHINE STATE
+
+         Historical Breakdown gets exactly ONE state:
+
+         DOWN
+         actual failure → actual restoration
+
+         No open/current Machine State exists.
+      ===================================================== */
+
+      const machineStateResult =
+        await client.query(
+          `
+          INSERT INTO breakdown_state_history (
+            breakdown_id,
+            state,
+            started_at,
+            ended_at,
+            changed_by,
+            changed_by_id,
+            created_at
+          )
+          VALUES (
+            $1,
+            'DOWN',
+            $2,
+            $3,
+            $4,
+            $5,
+            NOW()
+          )
+          RETURNING *
+          `,
+          [
+            breakdown.id,
+
+            breakdown.started_at,
+
+            breakdown.closed_at,
+
+            reported_by?.trim() ||
+              null,
+
+            reported_by_id ||
+              null
+          ]
+        );
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res
+        .status(201)
+        .json({
+
+          message:
+            "Historical Breakdown created successfully",
+
+          breakdown,
+
+          machine_state:
+            machineStateResult.rows[0]
+
+        });
+
+
+    } catch (err) {
+
+      /* =====================
+         ROLLBACK
+      ===================== */
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {}
+
+
+      console.error(
+        "POST /breakdowns/historical error:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to create historical Breakdown"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
 /* =========================================================
    GET BREAKDOWNS
    GET /breakdowns
@@ -2961,6 +3364,8 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
   }
 
 });
+
+
 
 
 /* =====================================================
