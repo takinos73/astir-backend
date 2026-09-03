@@ -1134,6 +1134,316 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
 
 });
 
+// ============================================================
+// PATCH /breakdowns/:breakdownId/tasks/:taskId
+//
+// Edit an OPEN Restoration Task.
+//
+// Allowed:
+// - task
+// - section
+// - unit
+// - due_date
+// - duration_min (estimated duration)
+// - notes
+//
+// Rules:
+// - Task must belong to this Breakdown
+// - Task must be a Restoration Task
+// - Task must not be soft-deleted
+// - Completed / Done tasks cannot be edited
+// - Existing open follow-up tasks CAN be edited even when
+//   the parent Breakdown is already CLOSED
+// ============================================================
+
+app.patch('/breakdowns/:breakdownId/tasks/:taskId', async (req, res) => {
+
+    try {
+
+      const breakdownId =
+        Number(req.params.breakdownId);
+
+      const taskId =
+        Number(req.params.taskId);
+
+
+      /* =====================
+         VALIDATE IDs
+      ===================== */
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0 ||
+        !Number.isInteger(taskId) ||
+        taskId <= 0
+      ) {
+
+        return res.status(400).json({
+          error: 'Invalid Breakdown or Task id'
+        });
+
+      }
+
+
+      /* =====================
+         INPUT
+      ===================== */
+
+      const {
+        task,
+        section,
+        unit,
+        due_date,
+        duration_min,
+        notes
+      } = req.body;
+
+
+      const resolvedTask =
+        String(task || '').trim();
+
+      const resolvedSection =
+        String(section || '').trim();
+
+      const resolvedUnit =
+        String(unit || '').trim();
+
+
+      /* =====================
+         REQUIRED FIELDS
+      ===================== */
+
+      if (!resolvedTask) {
+
+        return res.status(400).json({
+          error: 'Task is required'
+        });
+
+      }
+
+
+      if (!resolvedSection) {
+
+        return res.status(400).json({
+          error: 'Section is required'
+        });
+
+      }
+
+
+      if (!resolvedUnit) {
+
+        return res.status(400).json({
+          error: 'Unit is required'
+        });
+
+      }
+
+
+      /* =====================
+         ESTIMATED DURATION
+      ===================== */
+
+      let resolvedDuration = null;
+
+
+      if (
+        duration_min !== undefined &&
+        duration_min !== null &&
+        duration_min !== ''
+      ) {
+
+        resolvedDuration =
+          Number(duration_min);
+
+
+        if (
+          !Number.isFinite(resolvedDuration) ||
+          resolvedDuration < 0
+        ) {
+
+          return res.status(400).json({
+            error: 'Invalid estimated duration'
+          });
+
+        }
+
+      }
+
+
+      /* =====================
+         FIND RESTORATION TASK
+      ===================== */
+
+      const taskResult =
+        await pool.query(
+          `
+          SELECT
+              id,
+              breakdown_id,
+              type,
+              status,
+              deleted_at
+          FROM maintenance_tasks
+          WHERE id = $1
+            AND breakdown_id = $2
+          LIMIT 1
+          `,
+          [
+            taskId,
+            breakdownId
+          ]
+        );
+
+
+      if (taskResult.rows.length === 0) {
+
+        return res.status(404).json({
+          error: 'Restoration Task not found'
+        });
+
+      }
+
+
+      const existingTask =
+        taskResult.rows[0];
+
+
+      /* =====================
+         SOFT-DELETED GUARD
+      ===================== */
+
+      if (existingTask.deleted_at) {
+
+        return res.status(409).json({
+          error: 'Deleted Restoration Task cannot be edited'
+        });
+
+      }
+
+
+      /* =====================
+         RESTORATION TYPE GUARD
+      ===================== */
+
+      if (
+        String(existingTask.type || '')
+          .toLowerCase() !== 'restoration'
+      ) {
+
+        return res.status(409).json({
+          error: 'Task is not a Restoration Task'
+        });
+
+      }
+
+
+      /* =====================
+         COMPLETED TASK GUARD
+      ===================== */
+
+      if (
+        String(existingTask.status || '')
+          .toUpperCase() === 'DONE'
+      ) {
+
+        return res.status(409).json({
+          error: 'Completed Restoration Task cannot be edited'
+        });
+
+      }
+
+
+      /* =====================
+         EXECUTION GUARD
+
+         Extra protection:
+         even if status is inconsistent,
+         a Task with an execution record
+         must not be edited.
+      ===================== */
+
+      const executionResult =
+        await pool.query(
+          `
+          SELECT id
+          FROM task_executions
+          WHERE task_id = $1
+          LIMIT 1
+          `,
+          [taskId]
+        );
+
+
+      if (executionResult.rows.length > 0) {
+
+        return res.status(409).json({
+          error: 'Executed Restoration Task cannot be edited. Undo the execution first.'
+        });
+
+      }
+
+
+      /* =====================
+         UPDATE TASK
+      ===================== */
+
+      const updateResult =
+        await pool.query(
+          `
+          UPDATE maintenance_tasks
+          SET
+              task = $1,
+              section = $2,
+              unit = $3,
+              due_date = $4,
+              duration_min = $5,
+              notes = $6,
+              updated_at = NOW()
+          WHERE id = $7
+            AND breakdown_id = $8
+            AND deleted_at IS NULL
+          RETURNING *
+          `,
+          [
+            resolvedTask,
+            resolvedSection,
+            resolvedUnit,
+            due_date || null,
+            resolvedDuration,
+            notes !== undefined
+              ? String(notes || '').trim()
+              : null,
+            taskId,
+            breakdownId
+          ]
+        );
+
+
+      return res.json({
+        message: 'Restoration Task updated successfully',
+        task: updateResult.rows[0]
+      });
+
+    }
+
+    catch (err) {
+
+      console.error(
+        'PATCH /breakdowns/:breakdownId/tasks/:taskId error:',
+        err
+      );
+
+
+      return res.status(500).json({
+        error: 'Failed to update Restoration Task'
+      });
+
+    }
+
+  }
+);
+
 /* =========================================================
    CHANGE MACHINE STATE
    PATCH /breakdowns/:id/machine-state
