@@ -22,6 +22,21 @@ let currentBreakdownId = null;
 let currentBreakdownTasks = [];
 let currentBreakdown = null;
 
+// ============================================================
+// RESTORATION LOCATION CATALOGUE
+//
+// Loaded fresh from:
+// GET /assets/:id/locations
+//
+// We intentionally reload it every time the
+// Add Restoration Task modal opens.
+// This ensures newly created Sections / Units
+// become immediately available.
+// ============================================================
+
+let currentRestorationLocations = [];
+let currentRestorationLocationsAssetId = null;
+
 
 /* =========================================================
    BREAKDOWN STATUS CLASS
@@ -4077,7 +4092,26 @@ document
    - Unit fields are reset whenever Sections reload
 ========================================================= */
 
-function populateRestorationSections(assetId) {
+/* =========================================================
+   POPULATE RESTORATION SECTIONS
+
+   Loads the historical Section / Unit catalogue
+   directly from the backend:
+
+   GET /assets/:id/locations
+
+   Source:
+   maintenance_tasks - all statuses
+   excluding soft-deleted tasks.
+
+   Behaviour:
+   - Existing Sections found → show dropdown
+   - No Sections found       → show manual input
+   - Unit fields reset whenever Sections reload
+   - Catalogue reloads fresh every modal opening
+========================================================= */
+
+async function populateRestorationSections(assetId) {
 
   /* =====================
      ELEMENTS
@@ -4113,6 +4147,14 @@ function populateRestorationSections(assetId) {
 
 
   /* =====================
+     RESET CATALOGUE
+  ===================== */
+
+  currentRestorationLocations = [];
+  currentRestorationLocationsAssetId = null;
+
+
+  /* =====================
      RESET SECTION
   ===================== */
 
@@ -4126,10 +4168,6 @@ function populateRestorationSections(assetId) {
 
   /* =====================
      RESET UNIT
-
-     Unit depends on Section,
-     so every Section reload
-     must also reset Unit.
   ===================== */
 
   if (unitSelect) {
@@ -4156,85 +4194,225 @@ function populateRestorationSections(assetId) {
 
 
   /* =====================
-     GET EXISTING SECTIONS
-
-     Same source used by
-     the normal Add Task modal.
+     VALIDATE ASSET
   ===================== */
 
-  const sections =
-    typeof getSectionsForAsset === "function"
-      ? getSectionsForAsset(assetId)
-      : [];
+  const resolvedAssetId =
+    Number(assetId);
 
 
-  /* =====================
-     EXISTING SECTIONS FOUND
-  ===================== */
+  if (
+    !Number.isInteger(resolvedAssetId) ||
+    resolvedAssetId <= 0
+  ) {
 
-  if (sections.length > 0) {
-
-    sectionSelect.innerHTML =
-      `<option value="">Select section</option>` +
-      sections
-        .map(
-          section =>
-            `<option value="${escapeBreakdownHtml(section)}">${escapeBreakdownHtml(section)}</option>`
-        )
-        .join("");
-
-
-    // Show dropdown
     sectionSelect.style.display =
-      "block";
-
-
-    // Hide manual Section
-    sectionInput.style.display =
       "none";
 
-    sectionInput.value = "";
-
+    sectionInput.style.display =
+      "block";
 
     return;
   }
 
 
   /* =====================
-     NO EXISTING SECTIONS
-
-     Allow operator to enter
-     a Section manually.
+     LOAD LOCATION CATALOGUE
+     FROM BACKEND
   ===================== */
 
-  sectionSelect.style.display =
-    "none";
+  try {
+
+    const response =
+      await fetch(
+        `/assets/${resolvedAssetId}/locations`
+      );
 
 
-  sectionInput.style.display =
-    "block";
+    if (!response.ok) {
 
-  sectionInput.value = "";
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    currentRestorationLocations =
+      Array.isArray(data.locations)
+        ? data.locations
+        : [];
+
+
+    currentRestorationLocationsAssetId =
+      resolvedAssetId;
+
+
+    /* =====================
+       BUILD UNIQUE SECTIONS
+
+       Endpoint already returns
+       normalized locations, but
+       we still protect the UI
+       from duplicate Sections.
+    ===================== */
+
+    const sectionMap =
+      new Map();
+
+
+    for (
+      const location
+      of currentRestorationLocations
+    ) {
+
+      const section =
+        String(
+          location?.section || ""
+        ).trim();
+
+
+      if (!section) continue;
+
+
+      const key =
+        section.toLocaleLowerCase(
+          "el-GR"
+        );
+
+
+      if (!sectionMap.has(key)) {
+
+        sectionMap.set(
+          key,
+          section
+        );
+
+      }
+
+    }
+
+
+    const sections =
+      Array.from(
+        sectionMap.values()
+      )
+      .sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "el",
+            {
+              sensitivity: "base"
+            }
+          )
+      );
+
+
+    /* =====================
+       EXISTING SECTIONS FOUND
+    ===================== */
+
+    if (sections.length > 0) {
+
+      sectionSelect.innerHTML =
+        `<option value="">Select section</option>` +
+
+        sections
+          .map(
+            section =>
+              `<option value="${escapeBreakdownHtml(section)}">${escapeBreakdownHtml(section)}</option>`
+          )
+          .join("");
+
+
+      sectionSelect.style.display =
+        "block";
+
+
+      sectionInput.style.display =
+        "none";
+
+      sectionInput.value = "";
+
+
+      return;
+    }
+
+
+    /* =====================
+       NO EXISTING SECTIONS
+    ===================== */
+
+    sectionSelect.style.display =
+      "none";
+
+
+    sectionInput.style.display =
+      "block";
+
+    sectionInput.value = "";
+
+  }
+
+  catch (err) {
+
+    console.error(
+      "RESTORATION LOCATIONS: Failed to load asset locations:",
+      err
+    );
+
+
+    /*
+      Safe fallback:
+
+      If catalogue cannot be loaded,
+      do not block task creation.
+      Allow manual Section entry.
+    */
+
+    currentRestorationLocations = [];
+    currentRestorationLocationsAssetId = null;
+
+
+    sectionSelect.style.display =
+      "none";
+
+
+    sectionInput.style.display =
+      "block";
+
+    sectionInput.value = "";
+
+  }
 
 }
 
 /* =========================================================
    POPULATE RESTORATION UNITS
 
-   Loads the existing Units for:
-   Breakdown Asset + selected Section
+   Uses the location catalogue already loaded by:
 
-   Uses the existing CMMS helper:
-   getUnitsForAssetSection(assetId, section)
+   GET /assets/:id/locations
+
+   Filters Units by:
+   Asset + selected Section
 
    Behaviour:
    - Existing Units found → show dropdown
-   - Dropdown also includes "➕ New unit"
+   - Dropdown includes "➕ New unit"
    - No Units found       → show manual input
    - No Section selected  → hide both Unit fields
 ========================================================= */
 
-function populateRestorationUnits(assetId, section) {
+function populateRestorationUnits(
+  assetId,
+  section
+) {
 
   /* =====================
      ELEMENTS
@@ -4273,9 +4451,6 @@ function populateRestorationUnits(assetId, section) {
 
   /* =====================
      NO SECTION SELECTED
-
-     Unit depends on Section,
-     so nothing should be shown yet.
   ===================== */
 
   if (
@@ -4293,20 +4468,122 @@ function populateRestorationUnits(assetId, section) {
   }
 
 
-  /* =====================
-     GET EXISTING UNITS
+  const resolvedAssetId =
+    Number(assetId);
 
-     Same source used by
-     the normal Add Task modal.
+  const resolvedSection =
+    String(section).trim();
+
+
+  /* =====================
+     SAFETY CHECK
+
+     Make sure the loaded catalogue
+     belongs to this Asset.
   ===================== */
 
+  if (
+    currentRestorationLocationsAssetId !==
+    resolvedAssetId
+  ) {
+
+    console.warn(
+      "RESTORATION UNITS: Location catalogue does not match Asset",
+      resolvedAssetId
+    );
+
+    unitSelect.style.display =
+      "none";
+
+    unitInput.style.display =
+      "block";
+
+    return;
+  }
+
+
+  /* =====================
+     FIND UNITS FOR SECTION
+  ===================== */
+
+  const normalizedSection =
+    resolvedSection
+      .toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+  const unitMap =
+    new Map();
+
+
+  for (
+    const location
+    of currentRestorationLocations
+  ) {
+
+    const locationSection =
+      String(
+        location?.section || ""
+      ).trim();
+
+
+    const unit =
+      String(
+        location?.unit || ""
+      ).trim();
+
+
+    if (
+      !locationSection ||
+      !unit
+    ) {
+      continue;
+    }
+
+
+    if (
+      locationSection
+        .toLocaleLowerCase(
+          "el-GR"
+        ) !== normalizedSection
+    ) {
+      continue;
+    }
+
+
+    const unitKey =
+      unit.toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+    if (!unitMap.has(unitKey)) {
+
+      unitMap.set(
+        unitKey,
+        unit
+      );
+
+    }
+
+  }
+
+
   const units =
-    typeof getUnitsForAssetSection === "function"
-      ? getUnitsForAssetSection(
-          assetId,
-          String(section).trim()
+    Array.from(
+      unitMap.values()
+    )
+    .sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          "el",
+          {
+            sensitivity: "base"
+          }
         )
-      : [];
+    );
 
 
   /* =====================
@@ -4328,13 +4605,10 @@ function populateRestorationUnits(assetId, section) {
       `<option value="__new__">➕ New unit</option>`;
 
 
-    // Show Unit dropdown
     unitSelect.style.display =
       "block";
 
 
-    // Manual Unit remains hidden
-    // until "➕ New unit" is selected.
     unitInput.style.display =
       "none";
 
@@ -4347,9 +4621,6 @@ function populateRestorationUnits(assetId, section) {
 
   /* =====================
      NO EXISTING UNITS
-
-     Allow operator to enter
-     a Unit manually.
   ===================== */
 
   unitSelect.style.display =
