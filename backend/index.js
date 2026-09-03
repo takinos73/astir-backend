@@ -2922,6 +2922,7 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
         ON l.id = a.line_id
 
       WHERE t.breakdown_id = $1
+      AND t.deleted_at IS NULL
 
       ORDER BY
         CASE t.status
