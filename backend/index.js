@@ -1074,15 +1074,12 @@ app.post( "/breakdowns/historical", async (req, res) => {
 
 /* =========================================================
    GET BREAKDOWNS
-   GET /breakdowns
 
-   Returns the list of breakdown incidents together with
-   basic Asset information.
+   Returns Breakdown incidents for the main Breakdown list.
 
-   Notes:
-   - Legacy breakdown tasks are NOT included here.
-   - This endpoint reads only from the new breakdowns table.
-   - Existing /tasks and /executions remain unchanged.
+   IMPORTANT:
+   - incident duration = started_at → closed_at / now
+   - down_seconds = actual Machine State DOWN time
 ========================================================= */
 
 app.get("/breakdowns", async (req, res) => {
@@ -1111,7 +1108,47 @@ app.get("/breakdowns", async (req, res) => {
         a.serial_number AS asset_serial,
         a.line_id,
 
-        l.name AS line_name
+        l.name AS line_name,
+
+        /* ===============================================
+           ACTUAL MACHINE DOWN TIME
+
+           Sum only Machine State = DOWN.
+
+           Closed interval:
+             started_at → ended_at
+
+           Active DOWN interval:
+             started_at → NOW()
+
+           For a closed Breakdown, closed_at is used as
+           an additional safe upper boundary.
+        =============================================== */
+
+        COALESCE(
+          (
+            SELECT
+              SUM(
+                EXTRACT(
+                  EPOCH FROM (
+                    COALESCE(
+                      bsh.ended_at,
+                      b.closed_at,
+                      NOW()
+                    )
+                    - bsh.started_at
+                  )
+                )
+              )
+
+            FROM breakdown_state_history bsh
+
+            WHERE
+              bsh.breakdown_id = b.id
+              AND bsh.state = 'DOWN'
+          ),
+          0
+        ) AS down_seconds
 
       FROM breakdowns b
 
@@ -1137,7 +1174,10 @@ app.get("/breakdowns", async (req, res) => {
        RESPONSE
     ===================== */
 
-    return res.json(result.rows);
+    return res.json(
+      result.rows
+    );
+
 
   } catch (err) {
 
@@ -1146,8 +1186,10 @@ app.get("/breakdowns", async (req, res) => {
       err
     );
 
+
     return res.status(500).json({
-      error: "Failed to load breakdowns"
+      error:
+        "Failed to load breakdowns"
     });
 
   }
