@@ -1444,6 +1444,213 @@ app.patch('/breakdowns/:breakdownId/tasks/:taskId', async (req, res) => {
   }
 );
 
+// ============================================================
+// DELETE /breakdowns/:breakdownId/tasks/:taskId
+//
+// Soft-delete an OPEN Restoration Task.
+//
+// Rules:
+// - Task must belong to this Breakdown
+// - Task must be a Restoration Task
+// - Task must not already be deleted
+// - Completed / executed tasks cannot be deleted
+// - Open follow-up tasks CAN be deleted even if
+//   the parent Breakdown is already CLOSED
+// ============================================================
+
+app.delete('/breakdowns/:breakdownId/tasks/:taskId', async (req, res) => {
+
+    try {
+
+      const breakdownId =
+        Number(req.params.breakdownId);
+
+      const taskId =
+        Number(req.params.taskId);
+
+
+      /* =====================
+         VALIDATE IDs
+      ===================== */
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0 ||
+        !Number.isInteger(taskId) ||
+        taskId <= 0
+      ) {
+
+        return res.status(400).json({
+          error: 'Invalid Breakdown or Task id'
+        });
+
+      }
+
+
+      /* =====================
+         FIND TASK
+      ===================== */
+
+      const taskResult =
+        await pool.query(
+          `
+          SELECT
+              id,
+              breakdown_id,
+              type,
+              status,
+              deleted_at
+          FROM maintenance_tasks
+          WHERE id = $1
+            AND breakdown_id = $2
+          LIMIT 1
+          `,
+          [
+            taskId,
+            breakdownId
+          ]
+        );
+
+
+      if (taskResult.rows.length === 0) {
+
+        return res.status(404).json({
+          error: 'Restoration Task not found'
+        });
+
+      }
+
+
+      const existingTask =
+        taskResult.rows[0];
+
+
+      /* =====================
+         ALREADY DELETED
+      ===================== */
+
+      if (existingTask.deleted_at) {
+
+        return res.status(409).json({
+          error: 'Restoration Task is already deleted'
+        });
+
+      }
+
+
+      /* =====================
+         RESTORATION TYPE GUARD
+      ===================== */
+
+      if (
+        String(existingTask.type || '')
+          .toLowerCase() !== 'restoration'
+      ) {
+
+        return res.status(409).json({
+          error: 'Task is not a Restoration Task'
+        });
+
+      }
+
+
+      /* =====================
+         COMPLETED TASK GUARD
+      ===================== */
+
+      if (
+        String(existingTask.status || '')
+          .toUpperCase() === 'DONE'
+      ) {
+
+        return res.status(409).json({
+          error: 'Completed Restoration Task cannot be deleted'
+        });
+
+      }
+
+
+      /* =====================
+         EXECUTION GUARD
+      ===================== */
+
+      const executionResult =
+        await pool.query(
+          `
+          SELECT id
+          FROM task_executions
+          WHERE task_id = $1
+          LIMIT 1
+          `,
+          [taskId]
+        );
+
+
+      if (executionResult.rows.length > 0) {
+
+        return res.status(409).json({
+          error: 'Executed Restoration Task cannot be deleted. Undo the execution first.'
+        });
+
+      }
+
+
+      /* =====================
+         SOFT DELETE
+      ===================== */
+
+      const deleteResult =
+        await pool.query(
+          `
+          UPDATE maintenance_tasks
+          SET
+              deleted_at = NOW(),
+              updated_at = NOW()
+          WHERE id = $1
+            AND breakdown_id = $2
+            AND deleted_at IS NULL
+          RETURNING *
+          `,
+          [
+            taskId,
+            breakdownId
+          ]
+        );
+
+
+      if (deleteResult.rows.length === 0) {
+
+        return res.status(409).json({
+          error: 'Restoration Task could not be deleted'
+        });
+
+      }
+
+
+      return res.json({
+        message: 'Restoration Task deleted successfully',
+        task: deleteResult.rows[0]
+      });
+
+    }
+
+    catch (err) {
+
+      console.error(
+        'DELETE /breakdowns/:breakdownId/tasks/:taskId error:',
+        err
+      );
+
+
+      return res.status(500).json({
+        error: 'Failed to delete Restoration Task'
+      });
+
+    }
+
+  }
+);
+
 /* =========================================================
    CHANGE MACHINE STATE
    PATCH /breakdowns/:id/machine-state
