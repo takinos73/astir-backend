@@ -1451,6 +1451,155 @@
 
       </div>
 
+      <!-- =====================
+    HISTORICAL / ALREADY RESTORED
+===================== -->
+
+<div class="field">
+
+  <label
+    for="bd-already-restored"
+    style="
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+    "
+  >
+
+    <input
+      id="bd-already-restored"
+      type="checkbox"
+    />
+
+    Already restored / Historical entry
+
+  </label>
+
+  <div class="section-subtitle">
+    Use this when the failure was already repaired
+    before being entered into the CMMS.
+  </div>
+
+</div>
+
+
+<!-- =====================
+    HISTORICAL FIELDS
+    Hidden during normal LIVE Breakdown creation
+===================== -->
+
+<div
+  id="bd-historical-fields"
+  style="display:none;"
+>
+
+  <!-- RESTORED AT -->
+
+  <div class="field">
+
+    <label for="bd-restored-at">
+      Restored At *
+    </label>
+
+    <input
+      id="bd-restored-at"
+      type="datetime-local"
+    />
+
+  </div>
+
+
+  <!-- FAILURE CAUSE -->
+
+  <div class="field">
+
+    <label for="bd-historical-failure-cause">
+      Failure Cause
+    </label>
+
+    <select id="bd-historical-failure-cause">
+
+      <option value="">
+        Select cause...
+      </option>
+
+      <option value="Mechanical">
+        Mechanical
+      </option>
+
+      <option value="Electrical">
+        Electrical
+      </option>
+
+      <option value="Automation">
+        Automation
+      </option>
+
+      <option value="Pneumatic">
+        Pneumatic
+      </option>
+
+      <option value="Hydraulic">
+        Hydraulic
+      </option>
+
+      <option value="Process">
+        Process
+      </option>
+
+      <option value="Utility">
+        Utility
+      </option>
+
+      <option value="Operator / Handling">
+        Operator / Handling
+      </option>
+
+      <option value="Other">
+        Other
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- ROOT CAUSE -->
+
+  <div class="field">
+
+    <label for="bd-historical-root-cause">
+      Root Cause
+    </label>
+
+    <textarea
+      id="bd-historical-root-cause"
+      rows="2"
+      placeholder="What caused the failure?"
+    ></textarea>
+
+  </div>
+
+
+    <!-- CORRECTIVE ACTION -->
+
+    <div class="field">
+
+      <label for="bd-historical-corrective-action">
+        Corrective Action
+      </label>
+
+      <textarea
+        id="bd-historical-corrective-action"
+        rows="2"
+        placeholder="What was done to restore the equipment?"
+      ></textarea>
+
+    </div>
+
+  </div>
+
 
       <!-- =====================
           ACTIONS

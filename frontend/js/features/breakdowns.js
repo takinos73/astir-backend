@@ -139,8 +139,6 @@ async function loadBreakdowns() {
 
 }
 
-
-
 /* =====================
    RENDER BREAKDOWNS TABLE
 ===================== */
@@ -448,6 +446,36 @@ async function openNewBreakdownModal() {
   const reportedByInput =
     document.getElementById("bd-reported-by");
 
+  const historicalCheckbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  const historicalFields =
+    document.getElementById(
+      "bd-historical-fields"
+    );
+
+  const restoredInput =
+    document.getElementById(
+      "bd-restored-at"
+    );
+
+  const failureCauseInput =
+    document.getElementById(
+      "bd-historical-failure-cause"
+    );
+
+  const rootCauseInput =
+    document.getElementById(
+      "bd-historical-root-cause"
+    );
+
+  const correctiveActionInput =
+    document.getElementById(
+      "bd-historical-corrective-action"
+    );
+
 
   if (titleInput) {
     titleInput.value = "";
@@ -455,6 +483,48 @@ async function openNewBreakdownModal() {
 
   if (descriptionInput) {
     descriptionInput.value = "";
+  }
+
+  /* =====================
+    RESET HISTORICAL MODE
+
+    Every new modal opening starts
+    as a normal LIVE Breakdown.
+  ===================== */
+
+  if (historicalCheckbox) {
+    historicalCheckbox.checked = false;
+  }
+
+  if (historicalFields) {
+    historicalFields.style.display = "none";
+  }
+
+  if (restoredInput) {
+    restoredInput.value = "";
+  }
+
+  if (failureCauseInput) {
+    failureCauseInput.value = "";
+  }
+
+  if (rootCauseInput) {
+    rootCauseInput.value = "";
+  }
+
+  if (correctiveActionInput) {
+    correctiveActionInput.value = "";
+  }
+
+
+  const saveBtn =
+    document.getElementById(
+      "saveBreakdownBtn"
+    );
+
+  if (saveBtn) {
+    saveBtn.textContent =
+      "Create Breakdown";
   }
 
 
@@ -512,8 +582,6 @@ async function openNewBreakdownModal() {
   }, 0);
 
 }
-
-
 
 /* =====================
    CLOSE NEW BREAKDOWN
@@ -2155,23 +2223,77 @@ document
 
 async function createBreakdown() {
 
+  /* =====================
+     ELEMENTS
+  ===================== */
+
   const saveBtn =
-    document.getElementById("saveBreakdownBtn");
+    document.getElementById(
+      "saveBreakdownBtn"
+    );
 
   const assetSelect =
-    document.getElementById("bd-asset");
+    document.getElementById(
+      "bd-asset"
+    );
 
   const titleInput =
-    document.getElementById("bd-title");
+    document.getElementById(
+      "bd-title"
+    );
 
   const descriptionInput =
-    document.getElementById("bd-description");
+    document.getElementById(
+      "bd-description"
+    );
 
   const startedInput =
-    document.getElementById("bd-started-at");
+    document.getElementById(
+      "bd-started-at"
+    );
 
   const reportedByInput =
-    document.getElementById("bd-reported-by");
+    document.getElementById(
+      "bd-reported-by"
+    );
+
+
+  /* =====================
+     HISTORICAL ELEMENTS
+  ===================== */
+
+  const historicalCheckbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  const restoredInput =
+    document.getElementById(
+      "bd-restored-at"
+    );
+
+  const failureCauseInput =
+    document.getElementById(
+      "bd-historical-failure-cause"
+    );
+
+  const rootCauseInput =
+    document.getElementById(
+      "bd-historical-root-cause"
+    );
+
+  const correctiveActionInput =
+    document.getElementById(
+      "bd-historical-corrective-action"
+    );
+
+
+  /* =====================
+     MODE
+  ===================== */
+
+  const isHistorical =
+    historicalCheckbox?.checked === true;
 
 
   /* =====================
@@ -2182,20 +2304,26 @@ async function createBreakdown() {
     Number(assetSelect?.value);
 
   const title =
-    String(titleInput?.value || "").trim();
+    String(
+      titleInput?.value || ""
+    ).trim();
 
   const description =
-    String(descriptionInput?.value || "").trim();
+    String(
+      descriptionInput?.value || ""
+    ).trim();
 
   const startedAt =
     startedInput?.value || "";
 
   const reportedBy =
-    String(reportedByInput?.value || "").trim();
+    String(
+      reportedByInput?.value || ""
+    ).trim();
 
 
   /* =====================
-     VALIDATION
+     BASIC VALIDATION
   ===================== */
 
   if (
@@ -2203,7 +2331,9 @@ async function createBreakdown() {
     assetId <= 0
   ) {
 
-    alert("Please select an Asset.");
+    alert(
+      "Please select an Asset."
+    );
 
     assetSelect?.focus();
 
@@ -2213,7 +2343,9 @@ async function createBreakdown() {
 
   if (!title) {
 
-    alert("Please enter the Fault / Title.");
+    alert(
+      "Please enter the Fault / Title."
+    );
 
     titleInput?.focus();
 
@@ -2223,7 +2355,9 @@ async function createBreakdown() {
 
   if (!startedAt) {
 
-    alert("Please enter the Breakdown start date and time.");
+    alert(
+      "Please enter the Breakdown start date and time."
+    );
 
     startedInput?.focus();
 
@@ -2232,11 +2366,12 @@ async function createBreakdown() {
 
 
   /* =====================
-     DATETIME VALIDATION
+     START DATETIME
   ===================== */
 
   const startedDate =
     new Date(startedAt);
+
 
   if (
     Number.isNaN(
@@ -2244,7 +2379,9 @@ async function createBreakdown() {
     )
   ) {
 
-    alert("Invalid Breakdown start date and time.");
+    alert(
+      "Invalid Breakdown start date and time."
+    );
 
     startedInput?.focus();
 
@@ -2253,12 +2390,15 @@ async function createBreakdown() {
 
 
   /* =====================
-     REQUEST BODY
+     BASE PAYLOAD
+
+     Used by BOTH modes.
   ===================== */
 
   const payload = {
 
-    asset_id: assetId,
+    asset_id:
+      assetId,
 
     title,
 
@@ -2274,6 +2414,154 @@ async function createBreakdown() {
   };
 
 
+  /* =====================================================
+     HISTORICAL MODE
+
+     Additional validation + fields.
+  ===================================================== */
+
+  if (isHistorical) {
+
+    const restoredAt =
+      restoredInput?.value || "";
+
+
+    if (!restoredAt) {
+
+      alert(
+        "Please enter the actual restoration date and time."
+      );
+
+      restoredInput?.focus();
+
+      return;
+    }
+
+
+    const restoredDate =
+      new Date(restoredAt);
+
+
+    if (
+      Number.isNaN(
+        restoredDate.getTime()
+      )
+    ) {
+
+      alert(
+        "Invalid restoration date and time."
+      );
+
+      restoredInput?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       DATE ORDER
+    ===================== */
+
+    if (
+      restoredDate.getTime() <
+      startedDate.getTime()
+    ) {
+
+      alert(
+        "Restored At cannot be earlier than Started At."
+      );
+
+      restoredInput?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       FUTURE DATE GUARD
+    ===================== */
+
+    if (
+      startedDate.getTime() >
+      Date.now()
+    ) {
+
+      alert(
+        "Started At cannot be in the future."
+      );
+
+      startedInput?.focus();
+
+      return;
+    }
+
+
+    if (
+      restoredDate.getTime() >
+      Date.now()
+    ) {
+
+      alert(
+        "Restored At cannot be in the future."
+      );
+
+      restoredInput?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       HISTORICAL VALUES
+    ===================== */
+
+    const failureCause =
+      String(
+        failureCauseInput?.value || ""
+      ).trim();
+
+    const rootCause =
+      String(
+        rootCauseInput?.value || ""
+      ).trim();
+
+    const correctiveAction =
+      String(
+        correctiveActionInput?.value || ""
+      ).trim();
+
+
+    payload.restored_at =
+      restoredDate.toISOString();
+
+    payload.failure_cause =
+      failureCause || null;
+
+    payload.root_cause =
+      rootCause || null;
+
+    payload.corrective_action =
+      correctiveAction || null;
+
+  }
+
+
+  /* =====================
+     ENDPOINT
+
+     LIVE
+       POST /breakdowns
+
+     HISTORICAL
+       POST /breakdowns/historical
+  ===================== */
+
+  const endpoint =
+    isHistorical
+      ? "/breakdowns/historical"
+      : "/breakdowns";
+
+
   /* =====================
      SAVE
   ===================== */
@@ -2285,13 +2573,16 @@ async function createBreakdown() {
       saveBtn.disabled = true;
 
       saveBtn.textContent =
-        "Creating...";
+        isHistorical
+          ? "Recording..."
+          : "Creating...";
 
     }
 
+
     const response =
       await fetch(
-        "/breakdowns",
+        endpoint,
         {
           method: "POST",
 
@@ -2314,7 +2605,11 @@ async function createBreakdown() {
 
       throw new Error(
         result?.error ||
-        "Failed to create Breakdown"
+        (
+          isHistorical
+            ? "Failed to record Historical Breakdown"
+            : "Failed to create Breakdown"
+        )
       );
 
     }
@@ -2328,9 +2623,7 @@ async function createBreakdown() {
 
 
     /*
-      Reload only the Breakdown list.
-
-      We do NOT reload the whole app.
+      Reload Breakdown list only.
     */
 
     await loadBreakdowns();
@@ -2339,14 +2632,20 @@ async function createBreakdown() {
   } catch (err) {
 
     console.error(
-      "CREATE BREAKDOWN ERROR:",
+      isHistorical
+        ? "CREATE HISTORICAL BREAKDOWN ERROR:"
+        : "CREATE BREAKDOWN ERROR:",
       err
     );
 
 
     alert(
       err.message ||
-      "Could not create Breakdown."
+      (
+        isHistorical
+          ? "Could not record Historical Breakdown."
+          : "Could not create Breakdown."
+      )
     );
 
 
@@ -2364,7 +2663,6 @@ async function createBreakdown() {
   }
 
 }
-
 
 /* =====================
    CREATE BUTTON
@@ -3793,6 +4091,82 @@ document.addEventListener(
 
   }
 );
+
+document
+  .getElementById(
+    "bd-already-restored"
+  )
+  ?.addEventListener(
+    "change",
+    toggleHistoricalBreakdownMode
+  );
+
+/* =========================================================
+   TOGGLE HISTORICAL BREAKDOWN MODE
+
+   LIVE:
+   - normal Breakdown creation
+   - initial Machine State = DOWN
+   - Breakdown remains OPEN
+
+   HISTORICAL:
+   - failure was already restored
+   - Restored At becomes required
+   - Breakdown is created CLOSED
+   - historical DOWN interval is created
+========================================================= */
+
+function toggleHistoricalBreakdownMode() {
+
+  const checkbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  const fields =
+    document.getElementById(
+      "bd-historical-fields"
+    );
+
+  const saveBtn =
+    document.getElementById(
+      "saveBreakdownBtn"
+    );
+
+
+  if (!checkbox || !fields) {
+    return;
+  }
+
+
+  const isHistorical =
+    checkbox.checked;
+
+
+  /* =====================
+     SHOW / HIDE FIELDS
+  ===================== */
+
+  fields.style.display =
+    isHistorical
+      ? "block"
+      : "none";
+
+
+  /* =====================
+     SAVE BUTTON TEXT
+  ===================== */
+
+  if (saveBtn) {
+
+    saveBtn.textContent =
+      isHistorical
+        ? "Record Historical Breakdown"
+        : "Create Breakdown";
+
+  }
+
+}
 
   /* =========================================================
    CLOSE BREAKDOWN MODAL
