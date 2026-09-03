@@ -36,6 +36,14 @@ let currentBreakdown = null;
 
 let currentRestorationLocations = [];
 let currentRestorationLocationsAssetId = null;
+// ============================================================
+// RESTORATION TASK EDIT MODE
+//
+// null  → creating a new Restoration Task
+// number → editing an existing Restoration Task
+// ============================================================
+
+let editingRestorationTaskId = null;
 
 
 /* =========================================================
@@ -2401,6 +2409,20 @@ function openRestorationTaskModal() {
   const breakdownId =
     Number(currentBreakdownId);
 
+    /* =====================
+   CREATE MODE
+===================== */
+
+editingRestorationTaskId = null;
+
+const saveBtn =
+  document.getElementById(
+    "saveRestorationTaskBtn"
+  );
+
+if (saveBtn) {
+  saveBtn.textContent = "Add Task";
+}
 
   if (
     !Number.isInteger(breakdownId) ||
@@ -2557,7 +2579,6 @@ if (
 }
 
 
-
 /* =====================
    CLOSE MODAL
 ===================== */
@@ -2572,6 +2593,7 @@ function closeRestorationTaskModal() {
   if (!overlay) return;
 
   overlay.style.display = "none";
+  editingRestorationTaskId = null;
 
 }
 /* =====================
@@ -2772,6 +2794,13 @@ function renderRestorationTasks(tasks) {
       const status =
         task.status || "-";
 
+      const normalizedStatus =
+        String(status).toUpperCase();
+
+      const isOpen =
+        normalizedStatus === "PLANNED" ||
+        normalizedStatus === "OVERDUE";
+
       const section =
         task.section || "";
 
@@ -2815,16 +2844,35 @@ function renderRestorationTasks(tasks) {
 
 
             ${
-              status === "Planned" ||
-              status === "Overdue"
+              isOpen
                 ? `
-                  <button
-                    class="btn-table restoration-complete-btn"
-                    type="button"
-                    data-task-id="${id}"
-                  >
-                    Complete
-                  </button>
+                  <div class="restoration-task-actions">
+
+                    <button
+                      class="btn-table restoration-edit-btn"
+                      type="button"
+                      data-task-id="${id}"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      class="btn-table restoration-delete-btn"
+                      type="button"
+                      data-task-id="${id}"
+                    >
+                      Delete
+                    </button>
+
+                    <button
+                      class="btn-table restoration-complete-btn"
+                      type="button"
+                      data-task-id="${id}"
+                    >
+                      Complete
+                    </button>
+
+                  </div>
                 `
                 : `
                   <span class="restoration-task-done">
@@ -2896,6 +2944,7 @@ function renderRestorationTasks(tasks) {
     }).join("");
 
 }
+
 /* =========================================================
    CREATE RESTORATION TASK
    POST /breakdowns/:id/tasks
@@ -3199,7 +3248,6 @@ async function createRestorationTask() {
 
   }
 
-
   /* =====================
      PAYLOAD
   ===================== */
@@ -3225,10 +3273,16 @@ async function createRestorationTask() {
 
   };
 
-
   /* =====================
-     CREATE
+    CREATE / UPDATE
   ===================== */
+
+  const isEditMode =
+    Number.isInteger(
+      editingRestorationTaskId
+    ) &&
+    editingRestorationTaskId > 0;
+
 
   try {
 
@@ -3237,16 +3291,42 @@ async function createRestorationTask() {
       saveBtn.disabled = true;
 
       saveBtn.textContent =
-        "Adding...";
+        isEditMode
+          ? "Saving..."
+          : "Adding...";
 
     }
 
 
+    /* =====================
+      ENDPOINT / METHOD
+
+      CREATE:
+      POST /breakdowns/:id/tasks
+
+      EDIT:
+      PATCH /breakdowns/:id/tasks/:taskId
+    ===================== */
+
+    const url =
+      isEditMode
+
+        ? `/breakdowns/${breakdownId}/tasks/${editingRestorationTaskId}`
+
+        : `/breakdowns/${breakdownId}/tasks`;
+
+
+    const method =
+      isEditMode
+        ? "PATCH"
+        : "POST";
+
+
     const response =
       await fetch(
-        `/breakdowns/${breakdownId}/tasks`,
+        url,
         {
-          method: "POST",
+          method,
 
           headers: {
             "Content-Type":
@@ -3266,18 +3346,34 @@ async function createRestorationTask() {
     if (!response.ok) {
 
       throw new Error(
+
         result?.error ||
-        "Failed to create Restoration Task"
+
+        (
+          isEditMode
+            ? "Failed to update Restoration Task"
+            : "Failed to create Restoration Task"
+        )
+
       );
 
     }
 
 
     /* =====================
-       SUCCESS
+      SUCCESS
     ===================== */
 
     closeRestorationTaskModal();
+
+
+    /*
+      Reset edit mode BEFORE
+      refreshing the list.
+    */
+
+    editingRestorationTaskId =
+      null;
 
 
     /*
@@ -3294,14 +3390,20 @@ async function createRestorationTask() {
   } catch (err) {
 
     console.error(
-      "CREATE RESTORATION TASK ERROR:",
+      isEditMode
+        ? "UPDATE RESTORATION TASK ERROR:"
+        : "CREATE RESTORATION TASK ERROR:",
       err
     );
 
 
     alert(
       err.message ||
-      "Could not create Restoration Task."
+      (
+        isEditMode
+          ? "Could not update Restoration Task."
+          : "Could not create Restoration Task."
+      )
     );
 
 
@@ -3312,7 +3414,9 @@ async function createRestorationTask() {
       saveBtn.disabled = false;
 
       saveBtn.textContent =
-        "Add Task";
+        editingRestorationTaskId
+          ? "Save Changes"
+          : "Add Task";
 
     }
 
@@ -3524,6 +3628,171 @@ document
 
     }
   );
+
+  /* =========================================================
+   DELETE RESTORATION TASK
+
+   Soft-delete through backend:
+
+   DELETE /breakdowns/:breakdownId/tasks/:taskId
+
+   Completed tasks are already protected by backend.
+========================================================= */
+
+async function deleteRestorationTask(taskId) {
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+  const resolvedTaskId =
+    Number(taskId);
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0 ||
+    !Number.isInteger(resolvedTaskId) ||
+    resolvedTaskId <= 0
+  ) {
+
+    console.error(
+      "DELETE RESTORATION TASK: Invalid IDs"
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     CONFIRMATION
+  ===================== */
+
+  const confirmed =
+    window.confirm(
+      "Delete this Restoration Task?\n\n" +
+      "The task will be removed from the active list."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}/tasks/${resolvedTaskId}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+
+    const data =
+      await response.json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Failed to delete Restoration Task"
+      );
+
+    }
+
+
+    /* =====================
+       RELOAD TASK LIST
+    ===================== */
+
+    await loadRestorationTasks(
+      breakdownId
+    );
+
+  }
+
+  catch (err) {
+
+    console.error(
+      "DELETE RESTORATION TASK:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Failed to delete Restoration Task."
+    );
+
+  }
+
+}
+
+/* =========================================================
+   RESTORATION TASK ACTIONS
+========================================================= */
+
+document.addEventListener(
+  "click",
+  async event => {
+
+    /* =====================
+       DELETE
+    ===================== */
+
+    const deleteButton =
+      event.target.closest(
+        ".restoration-delete-btn"
+      );
+
+
+    if (deleteButton) {
+
+      const taskId =
+        Number(
+          deleteButton.dataset.taskId
+        );
+
+
+      await deleteRestorationTask(
+        taskId
+      );
+
+      return;
+    }
+
+
+    /* =====================
+       EDIT
+    ===================== */
+
+    const editButton =
+      event.target.closest(
+        ".restoration-edit-btn"
+      );
+
+
+    if (editButton) {
+
+      const taskId =
+        Number(
+          editButton.dataset.taskId
+        );
+
+
+      openEditRestorationTaskModal(
+        taskId
+      );
+
+      return;
+    }
+
+  }
+);
 
   /* =========================================================
    CLOSE BREAKDOWN MODAL
@@ -4078,19 +4347,427 @@ document
   );
 
   /* =========================================================
-   POPULATE RESTORATION SECTIONS
+   OPEN EDIT RESTORATION TASK
 
-   Loads the existing Sections for the Asset
-   associated with the current Breakdown.
+   Uses the SAME modal as Add Restoration Task.
 
-   Uses the existing CMMS helper:
-   getSectionsForAsset(assetId)
+   Loads:
+   - Task
+   - Section
+   - Unit
+   - Due Date
+   - Estimated Duration
+   - Notes
 
-   Behaviour:
-   - Existing Sections found → show dropdown
-   - No Sections found       → show manual input
-   - Unit fields are reset whenever Sections reload
+   Section / Unit catalogue comes from:
+   GET /assets/:id/locations
 ========================================================= */
+
+async function openEditRestorationTaskModal(taskId) {
+
+  const resolvedTaskId =
+    Number(taskId);
+
+  const breakdownId =
+    Number(currentBreakdownId);
+
+
+  if (
+    !Number.isInteger(resolvedTaskId) ||
+    resolvedTaskId <= 0 ||
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+
+    console.error(
+      "EDIT RESTORATION TASK: Invalid IDs"
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     FIND TASK
+  ===================== */
+
+  const task =
+    currentBreakdownTasks.find(
+      item =>
+        Number(item.id) ===
+        resolvedTaskId
+    );
+
+
+  if (!task) {
+
+    alert(
+      "Restoration Task not found."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     COMPLETED GUARD
+  ===================== */
+
+  const status =
+    String(
+      task.status || ""
+    ).toUpperCase();
+
+
+  if (
+    status !== "PLANNED" &&
+    status !== "OVERDUE"
+  ) {
+
+    alert(
+      "Completed Restoration Tasks cannot be edited."
+    );
+
+    return;
+  }
+
+
+  const overlay =
+    document.getElementById(
+      "restorationTaskOverlay"
+    );
+
+  if (!overlay) return;
+
+
+  /* =====================
+     EDIT MODE
+  ===================== */
+
+  editingRestorationTaskId =
+    resolvedTaskId;
+
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const taskInput =
+    document.getElementById(
+      "restoration-task"
+    );
+
+  const sectionSelect =
+    document.getElementById(
+      "restoration-section"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "restoration-section-input"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "restoration-unit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "restoration-unit-input"
+    );
+
+  const dueDateInput =
+    document.getElementById(
+      "restoration-due-date"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "restoration-duration"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "restoration-notes"
+    );
+
+  const saveBtn =
+    document.getElementById(
+      "saveRestorationTaskBtn"
+    );
+
+
+  /* =====================
+     BREAKDOWN REFERENCE
+  ===================== */
+
+  const referenceEl =
+    document.getElementById(
+      "restorationTaskBreakdownRef"
+    );
+
+
+  if (referenceEl) {
+
+    referenceEl.textContent =
+      `BD-${String(
+        breakdownId
+      ).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     BASIC VALUES
+  ===================== */
+
+  if (taskInput) {
+    taskInput.value =
+      task.task || "";
+  }
+
+
+  if (durationInput) {
+
+    durationInput.value =
+      task.duration_min ??
+      "";
+
+  }
+
+
+  if (notesInput) {
+
+    notesInput.value =
+      task.notes || "";
+
+  }
+
+
+  /* =====================
+     DUE DATE
+     Convert ISO → datetime-local
+  ===================== */
+
+  if (dueDateInput) {
+
+    dueDateInput.value =
+      task.due_date
+        ? formatDateTimeLocalValue(
+            task.due_date
+          )
+        : "";
+
+  }
+
+
+  /* =====================
+     LOAD SECTION CATALOGUE
+  ===================== */
+
+  const assetId =
+    Number(
+      currentBreakdown?.asset_id
+    );
+
+
+  if (
+    Number.isInteger(assetId) &&
+    assetId > 0
+  ) {
+
+    await populateRestorationSections(
+      assetId
+    );
+
+
+    /* =====================
+       SELECT SECTION
+    ===================== */
+
+    const taskSection =
+      String(
+        task.section || ""
+      ).trim();
+
+
+    if (taskSection) {
+
+      /*
+        Normally the Section will exist
+        in the historical catalogue.
+      */
+
+      const sectionExists =
+        sectionSelect &&
+        Array.from(
+          sectionSelect.options
+        ).some(
+          option =>
+            option.value ===
+            taskSection
+        );
+
+
+      if (
+        sectionSelect &&
+        sectionExists
+      ) {
+
+        sectionSelect.style.display =
+          "block";
+
+        sectionInput.style.display =
+          "none";
+
+        sectionSelect.value =
+          taskSection;
+
+
+        /* =====================
+           LOAD UNITS
+        ===================== */
+
+        populateRestorationUnits(
+          assetId,
+          taskSection
+        );
+
+
+        const taskUnit =
+          String(
+            task.unit || ""
+          ).trim();
+
+
+        if (taskUnit) {
+
+          const unitExists =
+            unitSelect &&
+            Array.from(
+              unitSelect.options
+            ).some(
+              option =>
+                option.value ===
+                taskUnit
+            );
+
+
+          if (
+            unitSelect &&
+            unitExists
+          ) {
+
+            unitSelect.value =
+              taskUnit;
+
+          }
+
+          else {
+
+            /*
+              Safety fallback if the
+              historical Unit is no longer
+              available in the catalogue.
+            */
+
+            if (unitSelect) {
+
+              unitSelect.style.display =
+                "none";
+
+            }
+
+            if (unitInput) {
+
+              unitInput.style.display =
+                "block";
+
+              unitInput.value =
+                taskUnit;
+
+            }
+
+          }
+
+        }
+
+      }
+
+      else {
+
+        /*
+          Safety fallback for a historical
+          Section not found in catalogue.
+        */
+
+        if (sectionSelect) {
+
+          sectionSelect.style.display =
+            "none";
+
+        }
+
+        if (sectionInput) {
+
+          sectionInput.style.display =
+            "block";
+
+          sectionInput.value =
+            taskSection;
+
+        }
+
+
+        if (unitSelect) {
+
+          unitSelect.style.display =
+            "none";
+
+        }
+
+
+        if (unitInput) {
+
+          unitInput.style.display =
+            "block";
+
+          unitInput.value =
+            task.unit || "";
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  /* =====================
+     SAVE BUTTON
+  ===================== */
+
+  if (saveBtn) {
+    saveBtn.textContent =
+      "Save Changes";
+  }
+
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
+
+  overlay.style.display =
+    "flex";
+
+
+  setTimeout(() => {
+    taskInput?.focus();
+  }, 0);
+
+}
 
 /* =========================================================
    POPULATE RESTORATION SECTIONS
@@ -4756,3 +5433,42 @@ document
 
     }
   );
+  /* =========================================================
+   FORMAT DATETIME FOR <input type="datetime-local">
+
+   Keeps the displayed value in local browser time.
+========================================================= */
+
+function formatDateTimeLocalValue(value) {
+
+  if (!value) return "";
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  const pad =
+    number =>
+      String(number)
+        .padStart(2, "0");
+
+
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  );
+
+}
