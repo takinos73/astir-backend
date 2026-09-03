@@ -1456,9 +1456,15 @@ function populateBreakdownDetail(breakdown) {
 
   }
 
-
   /* =====================
-     DOWNTIME
+    INCIDENT DURATION
+
+    Total Breakdown incident time:
+    started_at → closed_at
+    or started_at → now if still open.
+
+    NOTE:
+    This is NOT Machine DOWN time.
   ===================== */
 
   if (downtimeEl) {
@@ -1469,7 +1475,6 @@ function populateBreakdownDetail(breakdown) {
       );
 
   }
-
 
   /* =====================
      RESTORED AT
