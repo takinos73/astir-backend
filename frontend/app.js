@@ -390,47 +390,147 @@ function populateHistoryTechnicianFilter() {
     });
 }
 
+/* ==========================
+   BUILD TASK ROW (FOR TABLE)
+============================ */
 
 function buildRow(task) {
-  const isIdle = !!task.asset_idle_since;
 
-  const tr = document.createElement("tr");
+  const isIdle =
+    !!task.asset_idle_since;
 
-  // 🔍 search query
-  const q = document.getElementById("taskSearch")?.value || "";
+  const tr =
+    document.createElement("tr");
+
+
+  // 🔍 Search query
+  const q =
+    document.getElementById("taskSearch")?.value || "";
+
 
   /* =====================================
-     TASK TYPE CLASSIFICATION (SAFE)
+     RESTORATION TASK
+
+     A Restoration Task belongs to a
+     parent Breakdown incident.
+  ===================================== */
+
+  const isRestoration =
+    Number(task.breakdown_id) > 0;
+
+
+  const breakdownCode =
+    isRestoration
+      ? `BD-${String(task.breakdown_id).padStart(5, "0")}`
+      : null;
+
+
+  /* =====================================
+     TASK TYPE CLASSIFICATION
   ===================================== */
 
   let rowClass = "";
 
+
+  // 🟪 Restoration Task
+  if (isRestoration) {
+
+    rowClass =
+      "task-restoration";
+
+  }
+
   // 🟦 Preventive (Excel master plan)
-  if (task.frequency_hours && Number(task.frequency_hours) > 0) {
-    rowClass = "task-preventive";
+  else if (
+    task.frequency_hours &&
+    Number(task.frequency_hours) > 0
+  ) {
+
+    rowClass =
+      "task-preventive";
+
   }
-  // 🟥 Unplanned (manual, finished immediately)
-  else if (task.is_planned === false || task.status === "Done") {
-    rowClass = "task-unplanned";
+
+  // 🟥 Unplanned / completed manual
+  else if (
+    task.is_planned === false ||
+    task.status === "Done"
+  ) {
+
+    rowClass =
+      "task-unplanned";
+
   }
+
   // 🟨 Planned manual
   else {
-    rowClass = "task-planned-manual";
+
+    rowClass =
+      "task-planned-manual";
+
   }
 
-  tr.classList.add(rowClass);
+
+  tr.classList.add(
+    rowClass
+  );
+
+
+  /* =====================================
+     TYPE DISPLAY
+  ===================================== */
+
+  const typeHtml =
+    isRestoration
+      ? `
+          <div class="task-restoration-type">
+            Restoration
+          </div>
+
+          <div class="task-breakdown-parent">
+            ${breakdownCode}
+          </div>
+        `
+      : (
+          task.type
+            ? highlight(task.type, q)
+            : "-"
+        );
+
+
+  /* =====================================
+     ROW HTML
+  ===================================== */
 
   tr.innerHTML = `
+
     <!-- MACHINE / ASSET -->
+
     <td class="machine-cell">
+
       <div
         class="machine-name clickable"
         onclick="openAssetViewBySerial('${task.serial_number}')"
         title="Open asset view"
       >
-        ${highlight(task.machine_name || "", q)}
-        ${isIdle ? `<span class="task-idle-badge">Idle</span>` : ""}     
+
+        ${highlight(
+          task.machine_name || "",
+          q
+        )}
+
+        ${
+          isIdle
+            ? `
+              <span class="task-idle-badge">
+                Idle
+              </span>
+            `
+            : ""
+        }
+
       </div>
+
 
       ${
         task.serial_number
@@ -440,71 +540,130 @@ function buildRow(task) {
               onclick="openAssetViewBySerial('${task.serial_number}')"
               title="Open asset view"
             >
-              <small>${highlight(task.serial_number, q)}</small>
+
+              <small>
+                ${highlight(
+                  task.serial_number,
+                  q
+                )}
+              </small>
+
             </div>
           `
           : ""
       }
+
     </td>
+
+
     <!-- SECTION -->
-    <td>${task.section ? highlight(task.section, q) : "-"}</td>
+
+    <td>
+      ${
+        task.section
+          ? highlight(task.section, q)
+          : "-"
+      }
+    </td>
+
+
     <!-- UNIT -->
-    <td>${task.unit ? highlight(task.unit, q) : "-"}</td>
+
+    <td>
+      ${
+        task.unit
+          ? highlight(task.unit, q)
+          : "-"
+      }
+    </td>
+
 
     <!-- TASK -->
+
     <td>
+
       <div>
-        ${highlight(task.task || "", q)}
+        ${highlight(
+          task.task || "",
+          q
+        )}
       </div>
 
-      ${renderImpactBadge(task.impact)}
+      ${renderImpactBadge(
+        task.impact
+      )}
+
     </td>
 
+
     <!-- TYPE -->
-    <td>${task.type ? highlight(task.type, q) : "-"}</td>
+
+    <td>
+      ${typeHtml}
+    </td>
+
 
     <!-- DATE -->
-    <td>${
-      task.status === "Done"
-        ? "Completed: " + formatDate(task.completed_at)
-        : formatDate(task.due_date)
-    }</td>
+
+    <td>
+      ${
+        task.status === "Done"
+          ? "Completed: " +
+            formatDate(task.completed_at)
+          : formatDate(task.due_date)
+      }
+    </td>
+
 
     <!-- STATUS -->
-    <td>${statusPill(task)}</td>
+
+    <td>
+      ${statusPill(task)}
+    </td>
+
 
     <!-- ACTIONS -->
-<td>
-  <div class="history-action-group">
-    
-    <!-- 👁 View task -->
-    <button
-      class="btn-icon btn-view"
-      title="View task details"
-      onclick="viewTask(${task.id})">
-      👁
-    </button>
 
-    <!-- ✔ Mark as Done (only if not Done) -->
-    ${
-      task.status !== "Done"
-        ? `
-          <button
-            class="btn-icon btn-done"
-            title="Mark task as completed"
-            onclick="askTechnician(${task.id})">
-            ✔
-          </button>
-        `
-        : ``
-    }
+    <td>
 
-  </div>
-</td>
+      <div class="history-action-group">
+
+        <!-- 👁 View task -->
+
+        <button
+          class="btn-icon btn-view"
+          title="View task details"
+          onclick="viewTask(${task.id})"
+        >
+          👁
+        </button>
+
+
+        <!-- ✔ Mark as Done -->
+
+        ${
+          task.status !== "Done"
+            ? `
+              <button
+                class="btn-icon btn-done"
+                title="Mark task as completed"
+                onclick="askTechnician(${task.id})"
+              >
+                ✔
+              </button>
+            `
+            : ""
+        }
+
+      </div>
+
+    </td>
 
   `;
 
+
   return tr;
+
 }
 
 /* =====================
