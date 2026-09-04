@@ -6492,15 +6492,25 @@ document
   );
 
 
-document
-  .getElementById("closeEditBreakdownBtn")
+/* =====================
+   CLOSE EDIT BREAKDOWN
+   Scoped to NEW incident modal
+===================== */
+
+const incidentEditOverlay =
+  document.getElementById("incidentEditOverlay");
+
+incidentEditOverlay
+  ?.querySelector("#closeEditBreakdownBtn")
   ?.addEventListener(
     "click",
     (event) => {
+
       event.preventDefault();
       event.stopPropagation();
 
       closeEditBreakdownModal();
+
     }
   );
 
