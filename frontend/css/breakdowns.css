@@ -1153,3 +1153,29 @@ input[type="checkbox"] {
 #editBreakdownModal .modal-header {
   width: 100%;
 }
+/* =========================================================
+   BREAKDOWNS TABLE - ACTION ICONS
+========================================================= */
+
+.breakdown-actions-cell {
+  white-space: nowrap;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.breakdown-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 30px;
+  padding: 0;
+
+  margin: 0 2px;
+
+  font-size: 15px;
+  line-height: 1;
+
+  vertical-align: middle;
+}

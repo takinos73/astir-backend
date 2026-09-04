@@ -300,31 +300,35 @@ function renderBreakdownsTable(breakdowns) {
             ${escapeBreakdownHtml(downTime)}
           </td>
 
-          <td>
+            <td class="breakdown-actions-cell">
 
-            <button
-              class="btn-table breakdown-view-btn"
-              type="button"
-              data-breakdown-id="${id}"
-            >
-              View
-            </button>
+              <button
+                class="btn-table breakdown-action-icon breakdown-view-btn"
+                type="button"
+                data-breakdown-id="${id}"
+                title="View Breakdown"
+                aria-label="View Breakdown"
+              >
+                👁
+              </button>
 
-            ${
-              canReopen
-                ? `
-                  <button
-                    class="btn-table breakdown-reopen-btn"
-                    type="button"
-                    data-breakdown-id="${id}"
-                  >
-                    ↻ Reopen
-                  </button>
-                `
-                : ""
-            }
+              ${
+                canReopen
+                  ? `
+                    <button
+                      class="btn-table breakdown-action-icon breakdown-reopen-btn"
+                      type="button"
+                      data-breakdown-id="${id}"
+                      title="Reopen Breakdown"
+                      aria-label="Reopen Breakdown"
+                    >
+                      ↻
+                    </button>
+                  `
+                  : ""
+              }
 
-          </td>
+            </td>
 
         </tr>
       `;
