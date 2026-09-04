@@ -302,31 +302,35 @@ function renderBreakdownsTable(breakdowns) {
 
             <td class="breakdown-actions-cell">
 
-              <button
-                class="btn-table breakdown-action-icon breakdown-view-btn"
-                type="button"
-                data-breakdown-id="${id}"
-                title="View Breakdown"
-                aria-label="View Breakdown"
-              >
-                👁
-              </button>
+              <div class="breakdown-actions-row">
 
-              ${
-                canReopen
-                  ? `
-                    <button
-                      class="btn-table breakdown-action-icon breakdown-reopen-btn"
-                      type="button"
-                      data-breakdown-id="${id}"
-                      title="Reopen Breakdown"
-                      aria-label="Reopen Breakdown"
-                    >
-                      ↻
-                    </button>
-                  `
-                  : ""
-              }
+                <button
+                  class="btn-table breakdown-action-icon breakdown-view-btn"
+                  type="button"
+                  data-breakdown-id="${id}"
+                  title="View Breakdown"
+                  aria-label="View Breakdown"
+                >
+                  👁
+                </button>
+
+                ${
+                  canReopen
+                    ? `
+                      <button
+                        class="btn-table breakdown-action-icon breakdown-reopen-btn"
+                        type="button"
+                        data-breakdown-id="${id}"
+                        title="Reopen Breakdown"
+                        aria-label="Reopen Breakdown"
+                      >
+                        ↻
+                      </button>
+                    `
+                    : ""
+                }
+
+              </div>
 
             </td>
 

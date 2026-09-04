@@ -1154,28 +1154,37 @@ input[type="checkbox"] {
   width: 100%;
 }
 /* =========================================================
-   BREAKDOWNS TABLE - ACTION ICONS
+   BREAKDOWNS TABLE - ACTIONS
 ========================================================= */
 
 .breakdown-actions-cell {
-  white-space: nowrap;
   vertical-align: middle;
-  text-align: center;
+  white-space: nowrap;
 }
 
-.breakdown-action-icon {
-  display: inline-flex;
+.breakdown-actions-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.breakdown-actions-row .breakdown-action-icon {
+  display: flex;
   align-items: center;
   justify-content: center;
 
+  flex: 0 0 34px;
+
   width: 34px;
   height: 30px;
-  padding: 0;
+  min-width: 34px;
 
-  margin: 0 2px;
+  padding: 0;
+  margin: 0;
 
   font-size: 15px;
   line-height: 1;
-
-  vertical-align: middle;
 }
