@@ -3386,9 +3386,11 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
 
 app.get("/tasks", async (req, res) => {
   try {
+
     const result = await pool.query(`
       SELECT
         mt.id,
+        mt.breakdown_id,
         mt.asset_id,
         mt.task,
         mt.status,
@@ -3410,21 +3412,35 @@ app.get("/tasks", async (req, res) => {
         l.code AS line_code
 
       FROM maintenance_tasks mt
-      JOIN assets a ON a.id = mt.asset_id
-      JOIN lines l ON l.id = a.line_id
 
-      WHERE mt.status IN ('Planned', 'Overdue')
+      JOIN assets a
+        ON a.id = mt.asset_id
+
+      JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE
+        mt.status IN ('Planned', 'Overdue')
         AND mt.deleted_at IS NULL
         AND a.active = true
 
       ORDER BY mt.due_date ASC
     `);
 
+
     res.json(result.rows);
 
   } catch (err) {
-    console.error("GET /tasks ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "GET /tasks ERROR:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
 });
 
