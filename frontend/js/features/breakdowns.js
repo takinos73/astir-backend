@@ -6496,7 +6496,12 @@ document
   .getElementById("closeEditBreakdownBtn")
   ?.addEventListener(
     "click",
-    closeEditBreakdownModal
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      closeEditBreakdownModal();
+    }
   );
 
 
