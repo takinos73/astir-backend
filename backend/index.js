@@ -1267,30 +1267,38 @@ app.get("/breakdowns/:id", async (req, res) => {
    UPDATE BREAKDOWN
    PATCH /breakdowns/:id
 
-   Updates the editable information of an existing
-   breakdown incident.
+   Editable incident information only.
 
    IMPORTANT:
-   - Does NOT close the breakdown.
-   - Does NOT change breakdown status.
-   - Does NOT create or modify maintenance tasks.
-   - Does NOT create task executions.
+   - Does NOT change Breakdown status.
+   - Does NOT change closed_at.
+   - Does NOT modify Machine State history.
+   - Does NOT create / modify Restoration Tasks.
+   - Does NOT create Task Executions.
 
-   Breakdown lifecycle actions are handled separately.
+   Lifecycle actions remain separate:
+   START / CLOSE / REOPEN.
 ========================================================= */
 
 app.patch("/breakdowns/:id", async (req, res) => {
 
+  const client = await pool.connect();
+
   try {
 
-    const breakdownId = Number(req.params.id);
+    const breakdownId =
+      Number(req.params.id);
+
 
     const {
       title,
       description,
       started_at,
       reported_by,
-      reported_by_id
+      reported_by_id,
+      failure_cause,
+      root_cause,
+      corrective_action
     } = req.body;
 
 
@@ -1298,34 +1306,50 @@ app.patch("/breakdowns/:id", async (req, res) => {
        VALIDATE ID
     ===================== */
 
-    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
       return res.status(400).json({
         error: "Invalid breakdown id"
       });
+
     }
+
+
+    await client.query("BEGIN");
 
 
     /* =====================
-       LOAD EXISTING BREAKDOWN
+       LOAD + LOCK BREAKDOWN
     ===================== */
 
-    const existingResult = await pool.query(
-      `
-      SELECT *
-      FROM breakdowns
-      WHERE id = $1
-      LIMIT 1
-      `,
-      [breakdownId]
-    );
+    const existingResult =
+      await client.query(
+        `
+        SELECT *
+        FROM breakdowns
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [breakdownId]
+      );
 
-    if (existingResult.rows.length === 0) {
+
+    if (!existingResult.rows.length) {
+
+      await client.query("ROLLBACK");
+
       return res.status(404).json({
         error: "Breakdown not found"
       });
+
     }
 
-    const existing = existingResult.rows[0];
+
+    const existing =
+      existingResult.rows[0];
 
 
     /* =====================
@@ -1336,59 +1360,182 @@ app.patch("/breakdowns/:id", async (req, res) => {
       title !== undefined &&
       !String(title).trim()
     ) {
+
+      await client.query("ROLLBACK");
+
       return res.status(400).json({
         error: "Breakdown title cannot be empty"
       });
+
+    }
+
+
+    /* =====================
+       RESOLVE STARTED AT
+    ===================== */
+
+    const resolvedStartedAt =
+      started_at !== undefined
+        ? new Date(started_at)
+        : new Date(existing.started_at);
+
+
+    if (
+      Number.isNaN(
+        resolvedStartedAt.getTime()
+      )
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(400).json({
+        error: "Invalid Started At"
+      });
+
+    }
+
+
+    /* =====================
+       CLOSED DATE VALIDATION
+
+       A Breakdown cannot start after
+       the time at which it was restored.
+    ===================== */
+
+    if (existing.closed_at) {
+
+      const closedAt =
+        new Date(existing.closed_at);
+
+
+      if (
+        resolvedStartedAt.getTime() >
+        closedAt.getTime()
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+          error:
+            "Started At cannot be later than Restored At"
+        });
+
+      }
+
+    }
+
+
+    /* =====================
+       MACHINE STATE VALIDATION
+
+       We do NOT automatically rewrite existing
+       Machine State history when Started At changes.
+
+       Therefore the Breakdown cannot be moved
+       after its earliest recorded Machine State.
+    ===================== */
+
+    const stateResult =
+      await client.query(
+        `
+        SELECT MIN(started_at) AS first_state_started_at
+        FROM breakdown_state_history
+        WHERE breakdown_id = $1
+        `,
+        [breakdownId]
+      );
+
+
+    const firstStateStartedAt =
+      stateResult.rows[0]
+        ?.first_state_started_at;
+
+
+    if (firstStateStartedAt) {
+
+      const firstStateDate =
+        new Date(firstStateStartedAt);
+
+
+      if (
+        resolvedStartedAt.getTime() >
+        firstStateDate.getTime()
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+          error:
+            "Started At cannot be later than the first recorded Machine State"
+        });
+
+      }
+
     }
 
 
     /* =====================
        UPDATE BREAKDOWN
-
-       Only explicitly editable fields are updated.
-       Missing fields keep their existing values.
     ===================== */
 
-    const result = await pool.query(
-      `
-      UPDATE breakdowns
+    const result =
+      await client.query(
+        `
+        UPDATE breakdowns
 
-      SET
-        title = $1,
-        description = $2,
-        started_at = $3,
-        reported_by = $4,
-        reported_by_id = $5,
-        updated_at = NOW()
+        SET
+          title = $1,
+          description = $2,
+          started_at = $3,
+          reported_by = $4,
+          reported_by_id = $5,
+          failure_cause = $6,
+          root_cause = $7,
+          corrective_action = $8,
+          updated_at = NOW()
 
-      WHERE id = $6
+        WHERE id = $9
 
-      RETURNING *
-      `,
-      [
-        title !== undefined
-          ? String(title).trim()
-          : existing.title,
+        RETURNING *
+        `,
+        [
 
-        description !== undefined
-          ? String(description || "").trim() || null
-          : existing.description,
+          title !== undefined
+            ? String(title).trim()
+            : existing.title,
 
-        started_at !== undefined
-          ? started_at
-          : existing.started_at,
+          description !== undefined
+            ? String(description || "").trim() || null
+            : existing.description,
 
-        reported_by !== undefined
-          ? String(reported_by || "").trim() || null
-          : existing.reported_by,
+          resolvedStartedAt,
 
-        reported_by_id !== undefined
-          ? reported_by_id || null
-          : existing.reported_by_id,
+          reported_by !== undefined
+            ? String(reported_by || "").trim() || null
+            : existing.reported_by,
 
-        breakdownId
-      ]
-    );
+          reported_by_id !== undefined
+            ? reported_by_id || null
+            : existing.reported_by_id,
+
+          failure_cause !== undefined
+            ? String(failure_cause || "").trim() || null
+            : existing.failure_cause,
+
+          root_cause !== undefined
+            ? String(root_cause || "").trim() || null
+            : existing.root_cause,
+
+          corrective_action !== undefined
+            ? String(corrective_action || "").trim() || null
+            : existing.corrective_action,
+
+          breakdownId
+        ]
+      );
+
+
+    await client.query("COMMIT");
 
 
     /* =====================
@@ -1396,20 +1543,37 @@ app.patch("/breakdowns/:id", async (req, res) => {
     ===================== */
 
     return res.json({
-      message: "Breakdown updated successfully",
-      breakdown: result.rows[0]
+
+      message:
+        "Breakdown updated successfully",
+
+      breakdown:
+        result.rows[0]
+
     });
 
+
   } catch (err) {
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
 
     console.error(
       "PATCH /breakdowns/:id error:",
       err
     );
 
+
     return res.status(500).json({
       error: "Failed to update breakdown"
     });
+
+
+  } finally {
+
+    client.release();
 
   }
 
