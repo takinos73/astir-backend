@@ -3206,57 +3206,100 @@ function resetSectionLockState() {
     state.techniciansData = await res.json();
   }
 
+/* =====================
+   OPEN CONFIRM DONE MODAL
+   SINGLE TASK
+===================== */
+
+function askTechnician(id) {
+
+  // 🔑 Force SINGLE mode
+  state.bulkDoneMode = false;
+
+  // 🔑 Store selected task
+  state.pendingTaskId = id;
+
+
   /* =====================
-    OPEN CONFIRM DONE MODAL
-    SINGLE TASK
+     FIND TASK
+
+     Normal task:
+     → state.tasksData
+
+     Restoration task:
+     → currentBreakdownTasks
   ===================== */
-  function askTechnician(id) {
 
-    // 🔑 Force SINGLE mode
-    state.bulkDoneMode = false;
-
-    // 🔑 Store selected task
-    state.pendingTaskId = id;
-
-    const task = state.tasksData.find(
-      t => t.id === id
+  const task =
+    state.tasksData.find(
+      t => Number(t.id) === Number(id)
+    )
+    ||
+    currentBreakdownTasks.find(
+      t => Number(t.id) === Number(id)
     );
 
-    if (!task) {
-      alert("Task not found");
-      return;
-    }
 
-    // Ensure technician dropdown is filled
-    populateTechnicianDropdown();
-
-    // Default completion date = today
-    const today =
-      new Date().toISOString().split("T")[0];
-
-    const dateInput =
-      getEl("completedDateInput");
-
-    if (dateInput) {
-      dateInput.value = today;
-    }
-
-    // Prefill existing notes
-    const notesInput =
-      getEl("doneNotesInput");
-
-    if (notesInput) {
-      notesInput.value =
-        task.notes || "";
-    }
-
-    const overlay =
-      getEl("modalOverlay");
-
-    if (overlay) {
-      overlay.style.display = "flex";
-    }
+  if (!task) {
+    alert("Task not found");
+    return;
   }
+
+
+  /* =====================
+     TECHNICIAN DROPDOWN
+  ===================== */
+
+  populateTechnicianDropdown();
+
+
+  /* =====================
+     DEFAULT COMPLETION DATE
+  ===================== */
+
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
+
+  const dateInput =
+    getEl("completedDateInput");
+
+
+  if (dateInput) {
+    dateInput.value = today;
+  }
+
+
+  /* =====================
+     NOTES
+  ===================== */
+
+  const notesInput =
+    getEl("doneNotesInput");
+
+
+  if (notesInput) {
+    notesInput.value =
+      task.notes || "";
+  }
+
+
+  /* =====================
+     OPEN MODAL
+  ===================== */
+
+  const overlay =
+    getEl("modalOverlay");
+
+
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
+
+}
+
 /* =====================
    CANCEL TASK COMPLETION
    - Closes modal
