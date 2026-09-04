@@ -154,6 +154,19 @@ function renderBreakdownsTable(breakdowns) {
 
 
   /* =====================
+     CURRENT USER ROLE
+  ===================== */
+
+  const currentRole =
+    String(
+      localStorage.getItem("cmmsRole") || ""
+    ).toLowerCase();
+
+  const isAdmin =
+    currentRole === "admin";
+
+
+  /* =====================
      EMPTY STATE
   ===================== */
 
@@ -199,6 +212,9 @@ function renderBreakdownsTable(breakdowns) {
       const status =
         b.status || "-";
 
+      const normalizedStatus =
+        String(status).toUpperCase();
+
       const started =
         formatBreakdownDate(
           b.started_at
@@ -221,6 +237,18 @@ function renderBreakdownsTable(breakdowns) {
         formatBreakdownSeconds(
           downSeconds
         );
+
+
+      /* =====================
+         REOPEN ACTION
+
+         Admin only.
+         Available only for CLOSED Breakdowns.
+      ===================== */
+
+      const canReopen =
+        isAdmin &&
+        normalizedStatus === "CLOSED";
 
 
       return `
@@ -273,6 +301,7 @@ function renderBreakdownsTable(breakdowns) {
           </td>
 
           <td>
+
             <button
               class="btn-table breakdown-view-btn"
               type="button"
@@ -280,6 +309,21 @@ function renderBreakdownsTable(breakdowns) {
             >
               View
             </button>
+
+            ${
+              canReopen
+                ? `
+                  <button
+                    class="btn-table breakdown-reopen-btn"
+                    type="button"
+                    data-breakdown-id="${id}"
+                  >
+                    ↻ Reopen
+                  </button>
+                `
+                : ""
+            }
+
           </td>
 
         </tr>
@@ -288,7 +332,6 @@ function renderBreakdownsTable(breakdowns) {
     }).join("");
 
 }
-
 
 /* =====================
    FORMAT BREAKDOWN DATE
@@ -317,7 +360,6 @@ function formatBreakdownDate(value) {
   );
 
 }
-
 
 /* =====================
    FORMAT DOWNTIME
@@ -1839,7 +1881,6 @@ function getBreakdownLocalDateTime() {
 }
 
 
-
 /* =========================================================
    EVENT LISTENERS
 ========================================================= */
@@ -1857,7 +1898,6 @@ document
   );
 
 
-
 /* =====================
    CLOSE X
 ===================== */
@@ -1870,7 +1910,6 @@ document
   );
 
 
-
 /* =====================
    CANCEL BUTTON
 ===================== */
@@ -1881,7 +1920,6 @@ document
     "click",
     closeNewBreakdownModal
   );
-
 
 
 /* =====================
@@ -6593,6 +6631,164 @@ document
 
     }
   );
+
+  /* =========================================================
+   BREAKDOWNS TABLE ACTIONS
+========================================================= */
+
+document.addEventListener(
+  "click",
+  async (event) => {
+
+    const reopenBtn =
+      event.target.closest(
+        ".breakdown-reopen-btn"
+      );
+
+
+    if (!reopenBtn) return;
+
+
+    event.preventDefault();
+    event.stopPropagation();
+
+
+    const breakdownId =
+      Number(
+        reopenBtn.dataset.breakdownId
+      );
+
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
+      alert("Invalid Breakdown ID");
+      return;
+
+    }
+
+
+    /* =====================
+       ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        localStorage.getItem("cmmsRole") || ""
+      ).toLowerCase();
+
+
+    if (role !== "admin") {
+
+      alert(
+        "Only Admin can reopen a Breakdown."
+      );
+
+      return;
+
+    }
+
+
+    /* =====================
+       CONFIRMATION
+    ===================== */
+
+    const confirmed =
+      window.confirm(
+        `Reopen BD-${String(
+          breakdownId
+        ).padStart(5, "0")}?\n\n` +
+        `The Breakdown will return to IN PROGRESS.\n` +
+        `Machine State will be NOT SET until selected manually.`
+      );
+
+
+    if (!confirmed) return;
+
+
+    /* =====================
+       REOPEN
+    ===================== */
+
+    const originalText =
+      reopenBtn.textContent;
+
+
+    try {
+
+      reopenBtn.disabled = true;
+      reopenBtn.textContent =
+        "Reopening...";
+
+
+      const response =
+        await fetch(
+          `/breakdowns/${breakdownId}/reopen`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "x-cmms-role": role
+            }
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          "Failed to reopen Breakdown"
+        );
+
+      }
+
+
+      /* =====================
+         REFRESH TABLE
+
+         loadBreakdowns() will reload the
+         latest Breakdown status from backend.
+      ===================== */
+
+      await loadBreakdowns();
+
+
+    } catch (err) {
+
+      console.error(
+        "REOPEN BREAKDOWN ERROR:",
+        err
+      );
+
+
+      alert(
+        err.message ||
+        "Failed to reopen Breakdown"
+      );
+
+
+      /*
+        Restore button only on failure.
+
+        On success the table is re-rendered,
+        so the CLOSED Reopen button disappears.
+      */
+
+      reopenBtn.disabled = false;
+      reopenBtn.textContent =
+        originalText;
+
+    }
+
+  }
+);
 
 /* =========================================================
    EDIT BREAKDOWN EVENTS
