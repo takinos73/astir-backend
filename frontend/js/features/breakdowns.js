@@ -440,6 +440,46 @@ function formatBreakdownSeconds(seconds) {
 
 }
 
+  /* =========================================================
+   FORMAT DATETIME FOR <input type="datetime-local">
+
+   Keeps the displayed value in local browser time.
+========================================================= */
+
+function formatDateTimeLocalValue(value) {
+
+  if (!value) return "";
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  const pad =
+    number =>
+      String(number)
+        .padStart(2, "0");
+
+
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  );
+
+}
+
 /* =====================
    BASIC HTML ESCAPE
 
@@ -669,6 +709,424 @@ function closeNewBreakdownModal() {
 
 }
 
+/* =========================================================
+   OPEN EDIT BREAKDOWN
+
+   Uses currentBreakdown already loaded by the Detail modal.
+
+   No additional API request is required.
+========================================================= */
+
+function openEditBreakdownModal() {
+
+  if (!currentBreakdown) {
+    alert("Breakdown data not available");
+    return;
+  }
+
+
+  const breakdown = currentBreakdown;
+
+
+  /* =====================
+     BREAKDOWN CODE
+  ===================== */
+
+  const codeEl =
+    document.getElementById("editBreakdownCode");
+
+  if (codeEl) {
+    codeEl.textContent =
+      `BD-${String(breakdown.id).padStart(5, "0")}`;
+  }
+
+
+  /* =====================
+     PRELOAD FIELDS
+  ===================== */
+
+  const titleEl =
+    document.getElementById("editBreakdownTitle");
+
+  const descriptionEl =
+    document.getElementById("editBreakdownDescription");
+
+  const startedAtEl =
+    document.getElementById("editBreakdownStartedAt");
+
+  const reportedByEl =
+    document.getElementById("editBreakdownReportedBy");
+
+  const failureCauseEl =
+    document.getElementById("editBreakdownFailureCause");
+
+  const rootCauseEl =
+    document.getElementById("editBreakdownRootCause");
+
+  const correctiveActionEl =
+    document.getElementById("editBreakdownCorrectiveAction");
+
+
+  if (titleEl) {
+    titleEl.value =
+      breakdown.title || "";
+  }
+
+  if (descriptionEl) {
+    descriptionEl.value =
+      breakdown.description || "";
+  }
+
+  if (startedAtEl) {
+    startedAtEl.value =
+      toBreakdownDateTimeLocal(
+        breakdown.started_at
+      );
+  }
+
+  if (reportedByEl) {
+    reportedByEl.value =
+      breakdown.reported_by || "";
+  }
+
+  if (failureCauseEl) {
+    failureCauseEl.value =
+      breakdown.failure_cause || "";
+  }
+
+  if (rootCauseEl) {
+    rootCauseEl.value =
+      breakdown.root_cause || "";
+  }
+
+  if (correctiveActionEl) {
+    correctiveActionEl.value =
+      breakdown.corrective_action || "";
+  }
+
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
+
+  const overlay =
+    document.getElementById("editBreakdownOverlay");
+
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
+
+}
+
+/* =========================================================
+   CLOSE EDIT BREAKDOWN
+========================================================= */
+
+function closeEditBreakdownModal() {
+
+  const overlay =
+    document.getElementById("editBreakdownOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+}
+
+/* =========================================================
+   SAVE EDIT BREAKDOWN
+
+   PATCH /breakdowns/:id
+
+   Updates incident information only.
+   Lifecycle status is NOT changed here.
+========================================================= */
+
+async function saveEditBreakdown() {
+
+  if (!currentBreakdown) {
+    alert("Breakdown data not available");
+    return;
+  }
+
+
+  const breakdownId =
+    Number(currentBreakdown.id);
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+    alert("Invalid Breakdown ID");
+    return;
+  }
+
+
+  /* =====================
+     READ FORM
+  ===================== */
+
+  const title =
+    document
+      .getElementById("editBreakdownTitle")
+      ?.value
+      .trim();
+
+  const description =
+    document
+      .getElementById("editBreakdownDescription")
+      ?.value
+      .trim() || "";
+
+  const startedAtValue =
+    document
+      .getElementById("editBreakdownStartedAt")
+      ?.value;
+
+  const reportedBy =
+    document
+      .getElementById("editBreakdownReportedBy")
+      ?.value
+      .trim() || "";
+
+  const failureCause =
+    document
+      .getElementById("editBreakdownFailureCause")
+      ?.value || "";
+
+  const rootCause =
+    document
+      .getElementById("editBreakdownRootCause")
+      ?.value
+      .trim() || "";
+
+  const correctiveAction =
+    document
+      .getElementById("editBreakdownCorrectiveAction")
+      ?.value
+      .trim() || "";
+
+
+  /* =====================
+     BASIC VALIDATION
+  ===================== */
+
+  if (!title) {
+    alert("Fault / Title is required");
+    return;
+  }
+
+
+  if (!startedAtValue) {
+    alert("Started At is required");
+    return;
+  }
+
+
+  const startedAt =
+    new Date(startedAtValue);
+
+
+  if (
+    Number.isNaN(
+      startedAt.getTime()
+    )
+  ) {
+    alert("Invalid Started At");
+    return;
+  }
+
+
+  /* =====================
+     REQUEST BODY
+  ===================== */
+
+  const payload = {
+
+    title,
+
+    description:
+      description || null,
+
+    started_at:
+      startedAt.toISOString(),
+
+    reported_by:
+      reportedBy || null,
+
+    /*
+      We are editing the reporter name only.
+
+      Do NOT accidentally replace an existing
+      reported_by_id here.
+    */
+
+    failure_cause:
+      failureCause || null,
+
+    root_cause:
+      rootCause || null,
+
+    corrective_action:
+      correctiveAction || null
+
+  };
+
+
+  /* =====================
+     SAVE
+  ===================== */
+
+  const saveBtn =
+    document.getElementById(
+      "saveEditBreakdownBtn"
+    );
+
+
+  try {
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+    }
+
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        "Failed to update Breakdown"
+      );
+    }
+
+
+    /* =====================
+       UPDATE LOCAL COPY
+
+       Backend returns the complete updated
+       Breakdown record.
+    ===================== */
+
+    currentBreakdown =
+      data.breakdown;
+
+
+    /* =====================
+       CLOSE EDIT MODAL
+    ===================== */
+
+    closeEditBreakdownModal();
+
+
+    /* =====================
+       REFRESH DETAIL
+
+       Reuse the existing renderer.
+    ===================== */
+
+    populateBreakdownDetail(
+      currentBreakdown
+    );
+
+
+    /* =====================
+       REFRESH MACHINE STATE
+
+       Editing incident data does not change
+       Machine State, but Detail should remain
+       fully synchronized.
+
+       Use your existing loader if available.
+    ===================== */
+
+    if (
+      typeof loadBreakdownMachineState ===
+      "function"
+    ) {
+
+      await loadBreakdownMachineState(
+        breakdownId
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH RESTORATION TASKS
+    ===================== */
+
+    if (
+      typeof loadRestorationTasks ===
+      "function"
+    ) {
+
+      await loadRestorationTasks(
+        breakdownId
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH MAIN
+       BREAKDOWNS TABLE
+    ===================== */
+
+    if (
+      typeof loadBreakdowns ===
+      "function"
+    ) {
+
+      await loadBreakdowns();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "SAVE BREAKDOWN EDIT ERROR:",
+      err
+    );
+
+    alert(
+      err.message ||
+      "Failed to update Breakdown"
+    );
+
+
+  } finally {
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent =
+        "Save Changes";
+    }
+
+  }
+
+}
 
 
 /* =====================
@@ -2204,6 +2662,44 @@ function setMachineStateButtonsDisabled(disabled) {
 
   });
 
+}
+
+/* =========================================================
+   DATETIME LOCAL HELPER
+
+   Converts an API timestamp into the format required by:
+   <input type="datetime-local">
+
+   Example:
+   2026-09-04T18:05:00.000Z
+   →
+   2026-09-04T21:05
+========================================================= */
+
+function toBreakdownDateTimeLocal(value) {
+
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const pad = n =>
+    String(n).padStart(2, "0");
+
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    "T" +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes())
+  );
 }
 
 
@@ -5796,42 +6292,39 @@ document
 
     }
   );
-  /* =========================================================
-   FORMAT DATETIME FOR <input type="datetime-local">
 
-   Keeps the displayed value in local browser time.
+/* =========================================================
+   EDIT BREAKDOWN EVENTS
 ========================================================= */
 
-function formatDateTimeLocalValue(value) {
-
-  if (!value) return "";
-
-
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
-  }
-
-
-  const pad =
-    number =>
-      String(number)
-        .padStart(2, "0");
-
-
-  return (
-    `${date.getFullYear()}-` +
-    `${pad(date.getMonth() + 1)}-` +
-    `${pad(date.getDate())}T` +
-    `${pad(date.getHours())}:` +
-    `${pad(date.getMinutes())}`
+document
+  .getElementById("editBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    openEditBreakdownModal
   );
 
-}
+
+document
+  .getElementById("closeEditBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    closeEditBreakdownModal
+  );
+
+
+document
+  .getElementById("cancelEditBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    closeEditBreakdownModal
+  );
+
+
+document
+  .getElementById("saveEditBreakdownBtn")
+  ?.addEventListener(
+    "click",
+    saveEditBreakdown
+  );
+
