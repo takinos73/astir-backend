@@ -1720,6 +1720,20 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
 ========================================================= */
 
 app.patch("/breakdowns/:id/reopen", async (req, res) => {
+   /* =====================
+       ADMIN ONLY
+    ===================== */
+
+    const role =
+      req.headers["x-cmms-role"];
+
+    if (role !== "admin") {
+
+      return res.status(403).json({
+        error: "Admin only"
+      });
+
+    }
 
     const breakdownId =
       Number(req.params.id);
