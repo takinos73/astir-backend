@@ -976,7 +976,7 @@ async function openEditBreakdownModal() {
 
     const overlay =
       document.getElementById(
-        "editBreakdownOverlay"
+        "incidentEditOverlay"
       );
 
 
@@ -1012,7 +1012,7 @@ async function openEditBreakdownModal() {
 function closeEditBreakdownModal() {
 
   const overlay =
-    document.getElementById("editBreakdownOverlay");
+    document.getElementById("incidentEditOverlay");
 
   if (overlay) {
     overlay.style.display = "none";

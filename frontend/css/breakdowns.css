@@ -1036,7 +1036,7 @@ input[type="checkbox"] {
    Must appear above the Breakdown Detail modal.
 ========================================================= */
 
-#editBreakdownOverlay {
+#incidentEditOverlay {
   z-index: 1200;
 }
 
