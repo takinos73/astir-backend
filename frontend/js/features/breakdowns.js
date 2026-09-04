@@ -715,6 +715,14 @@ function closeNewBreakdownModal() {
    Always loads the latest Breakdown record from backend
    before displaying the Edit modal.
 
+   STATUS LOGIC:
+   - OPEN / IN_PROGRESS:
+     Edit only active incident information.
+     Closure fields are hidden.
+
+   - CLOSED:
+     Closure fields are visible and editable.
+
    This prevents editing from stale / incomplete local data.
 ========================================================= */
 
@@ -752,7 +760,6 @@ async function openEditBreakdownModal() {
 
     const data =
       await response.json();
-      console.log("EDIT BREAKDOWN GET RESPONSE:", data);
 
 
     if (!response.ok) {
@@ -777,11 +784,6 @@ async function openEditBreakdownModal() {
 
     const breakdown =
       data.breakdown || data;
-      console.log("EDIT BREAKDOWN OBJECT:", breakdown);
-      console.log("EDIT BREAKDOWN ID:", breakdown?.id);
-      console.log("EDIT TITLE:", breakdown?.title);
-      console.log("EDIT DESCRIPTION:", breakdown?.description);
-      console.log("EDIT STARTED:", breakdown?.started_at);
 
 
     if (!breakdown?.id) {
@@ -799,6 +801,16 @@ async function openEditBreakdownModal() {
 
     currentBreakdown =
       breakdown;
+
+
+    /* =====================
+       STATUS
+    ===================== */
+
+    const isClosed =
+      String(
+        breakdown.status || ""
+      ).toUpperCase() === "CLOSED";
 
 
     /* =====================
@@ -830,6 +842,7 @@ async function openEditBreakdownModal() {
         "editBreakdownTitle"
       );
 
+
     if (titleEl) {
 
       titleEl.value =
@@ -847,6 +860,7 @@ async function openEditBreakdownModal() {
         "editBreakdownDescription"
       );
 
+
     if (descriptionEl) {
 
       descriptionEl.value =
@@ -863,6 +877,7 @@ async function openEditBreakdownModal() {
       document.getElementById(
         "editBreakdownStartedAt"
       );
+
 
     if (startedAtEl) {
 
@@ -883,10 +898,33 @@ async function openEditBreakdownModal() {
         "editBreakdownReportedBy"
       );
 
+
     if (reportedByEl) {
 
       reportedByEl.value =
         breakdown.reported_by || "";
+
+    }
+
+
+    /* =====================
+       CLOSURE FIELDS
+
+       Only visible when Breakdown is CLOSED.
+    ===================== */
+
+    const closureFields =
+      document.getElementById(
+        "editBreakdownClosureFields"
+      );
+
+
+    if (closureFields) {
+
+      closureFields.style.display =
+        isClosed
+          ? "block"
+          : "none";
 
     }
 
@@ -900,10 +938,13 @@ async function openEditBreakdownModal() {
         "editBreakdownFailureCause"
       );
 
+
     if (failureCauseEl) {
 
       failureCauseEl.value =
-        breakdown.failure_cause || "";
+        isClosed
+          ? breakdown.failure_cause || ""
+          : "";
 
     }
 
@@ -917,10 +958,13 @@ async function openEditBreakdownModal() {
         "editBreakdownRootCause"
       );
 
+
     if (rootCauseEl) {
 
       rootCauseEl.value =
-        breakdown.root_cause || "";
+        isClosed
+          ? breakdown.root_cause || ""
+          : "";
 
     }
 
@@ -934,44 +978,19 @@ async function openEditBreakdownModal() {
         "editBreakdownCorrectiveAction"
       );
 
+
     if (correctiveActionEl) {
 
       correctiveActionEl.value =
-        breakdown.corrective_action || "";
+        isClosed
+          ? breakdown.corrective_action || ""
+          : "";
 
     }
 
-    /* =====================
-      TEMP DEBUG
-    ===================== */
-
-    console.log(
-      "TITLE INPUT:",
-      document.getElementById("editBreakdownTitle")
-    );
-
-    console.log(
-      "TITLE INPUT VALUE:",
-      document.getElementById("editBreakdownTitle")?.value
-    );
-
-    console.log(
-      "DESCRIPTION INPUT VALUE:",
-      document.getElementById("editBreakdownDescription")?.value
-    );
-
-    console.log(
-      "STARTED INPUT VALUE:",
-      document.getElementById("editBreakdownStartedAt")?.value
-    );
-
 
     /* =====================
-       SHOW ONLY AFTER PRELOAD
-
-       Important:
-       The modal is displayed AFTER all fields
-       contain their current values.
+       SHOW AFTER PRELOAD
     ===================== */
 
     const overlay =
