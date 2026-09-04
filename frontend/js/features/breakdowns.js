@@ -752,6 +752,7 @@ async function openEditBreakdownModal() {
 
     const data =
       await response.json();
+      console.log("EDIT BREAKDOWN GET RESPONSE:", data);
 
 
     if (!response.ok) {
@@ -776,6 +777,11 @@ async function openEditBreakdownModal() {
 
     const breakdown =
       data.breakdown || data;
+      console.log("EDIT BREAKDOWN OBJECT:", breakdown);
+      console.log("EDIT BREAKDOWN ID:", breakdown?.id);
+      console.log("EDIT TITLE:", breakdown?.title);
+      console.log("EDIT DESCRIPTION:", breakdown?.description);
+      console.log("EDIT STARTED:", breakdown?.started_at);
 
 
     if (!breakdown?.id) {
