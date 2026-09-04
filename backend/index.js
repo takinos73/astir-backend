@@ -1707,6 +1707,192 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
 
 });
 
+/* =========================================================
+   REOPEN BREAKDOWN
+
+   CLOSED → IN_PROGRESS
+
+   IMPORTANT:
+   - closed_at becomes NULL
+   - no Machine State is created automatically
+   - previous Machine State history remains unchanged
+   - technician must manually select the current Machine State
+========================================================= */
+
+app.patch("/breakdowns/:id/reopen", async (req, res) => {
+
+    const breakdownId =
+      Number(req.params.id);
+
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid Breakdown ID"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOCK BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          SELECT *
+          FROM breakdowns
+          WHERE id = $1
+          FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        breakdownResult.rows.length === 0
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+
+      }
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         ONLY CLOSED CAN REOPEN
+      ===================== */
+
+      if (
+        String(
+          breakdown.status
+        ).toUpperCase() !== "CLOSED"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Only CLOSED Breakdowns can be reopened"
+        });
+
+      }
+
+
+      /* =====================
+         SAFETY CHECK
+
+         There should be no active Machine State
+         on a CLOSED Breakdown.
+
+         We do not create a new state here.
+      ===================== */
+
+      const activeStateResult =
+        await client.query(
+          `
+          SELECT id, state
+          FROM breakdown_state_history
+          WHERE breakdown_id = $1
+            AND ended_at IS NULL
+          LIMIT 1
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        activeStateResult.rows.length > 0
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Cannot reopen Breakdown while an active Machine State exists"
+        });
+
+      }
+
+
+      /* =====================
+         REOPEN BREAKDOWN
+      ===================== */
+
+      const updateResult =
+        await client.query(
+          `
+          UPDATE breakdowns
+          SET
+            status = 'IN_PROGRESS',
+            closed_at = NULL,
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING *
+          `,
+          [breakdownId]
+        );
+
+
+      await client.query("COMMIT");
+
+
+      return res.json({
+        message:
+          "Breakdown reopened successfully",
+        breakdown:
+          updateResult.rows[0],
+        machine_state:
+          null
+      });
+
+
+    } catch (err) {
+
+      await client.query("ROLLBACK");
+
+
+      console.error(
+        "REOPEN BREAKDOWN ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to reopen Breakdown"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  
+});
+
 // ============================================================
 // PATCH /breakdowns/:breakdownId/tasks/:taskId
 //
