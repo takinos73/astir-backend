@@ -3786,9 +3786,18 @@ async function createRestorationTask() {
       Breakdown status does not change.
     */
 
-    await loadRestorationTasks(
-      breakdownId
-    );
+    /* =====================
+   REFRESH AFTER CREATE / EDIT
+    ===================== */
+
+    if (currentBreakdownId) {
+      await loadRestorationTasks(
+        currentBreakdownId
+      );
+    }
+
+    // Refresh Main Tasks table as well
+    await loadTasks();
 
 
   } catch (err) {
