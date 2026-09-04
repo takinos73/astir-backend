@@ -3841,27 +3841,19 @@ document
     createRestorationTask
   );
 
-  /* =========================================================
+ /* =========================================================
    COMPLETE RESTORATION TASK
-   PATCH /tasks/:id
 
-   Uses the existing CMMS task completion engine.
-
-   RESULT:
-   - maintenance_task → Done
-   - task_execution is created
-   - execution appears in History
+   Uses the standard CMMS completion modal.
 
    IMPORTANT:
-   - Breakdown status is NOT changed
-   - Breakdown is NOT automatically closed
+   Completed By is selected explicitly by the user
+   and is NOT inherited from the Breakdown reporter.
 ========================================================= */
 
-async function completeRestorationTask(taskId) {
+function completeRestorationTask(taskId) {
 
-  const id =
-    Number(taskId);
-
+  const id = Number(taskId);
 
   if (
     !Number.isInteger(id) ||
@@ -3872,132 +3864,14 @@ async function completeRestorationTask(taskId) {
 
 
   /* =====================
-     CONFIRM
+     OPEN STANDARD
+     COMPLETION MODAL
   ===================== */
 
-  const confirmed =
-    confirm(
-      `Complete Restoration Task #${id}?`
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  /* =====================
-     CURRENT USER
-  ===================== */
-
-  const completedBy =
-    localStorage.getItem(
-      "cmmsTechnicianName"
-    ) || "Unknown";
-
-
-  const technicianIdRaw =
-    localStorage.getItem(
-      "cmmsTechnicianId"
-    );
-
-
-  const technicianId =
-    technicianIdRaw
-      ? Number(technicianIdRaw)
-      : null;
-
-
-  /* =====================
-     PAYLOAD
-  ===================== */
-
-  const payload = {
-
-    completed_by:
-      completedBy,
-
-    completed_at:
-      new Date().toISOString(),
-
-    notes:
-      "Completed from Breakdown Restoration Tasks",
-
-    technician_id:
-      Number.isInteger(technicianId) &&
-      technicianId > 0
-        ? technicianId
-        : null
-
-  };
-
-
-  /* =====================
-     COMPLETE
-  ===================== */
-
-  try {
-
-    const response =
-      await fetch(
-        `/tasks/${id}`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(payload)
-        }
-      );
-
-
-    const result =
-      await response.json();
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        result?.error ||
-        "Failed to complete Restoration Task"
-      );
-
-    }
-
-
-    /* =====================
-       REFRESH RESTORATION LIST
-    ===================== */
-
-    if (currentBreakdownId) {
-
-      await loadRestorationTasks(
-        currentBreakdownId
-      );
-
-    }
-
-
-  } catch (err) {
-
-    console.error(
-      "COMPLETE RESTORATION TASK ERROR:",
-      err
-    );
-
-
-    alert(
-      err.message ||
-      "Could not complete Restoration Task."
-    );
-
-  }
+  askTechnician(id);
 
 }
+
 /* =====================
    COMPLETE RESTORATION TASK BUTTON
 
