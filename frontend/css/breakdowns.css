@@ -1029,3 +1029,17 @@ input[type="checkbox"] {
   font-size: 12px;
   opacity: 0.60;
 }
+
+/* =========================================================
+   EDIT BREAKDOWN MODAL
+
+   Must appear above the Breakdown Detail modal.
+========================================================= */
+
+#editBreakdownOverlay {
+  z-index: 1200;
+}
+
+#breakdownDetailOverlay {
+  z-index: 1100;
+}

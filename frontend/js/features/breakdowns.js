@@ -712,108 +712,265 @@ function closeNewBreakdownModal() {
 /* =========================================================
    OPEN EDIT BREAKDOWN
 
-   Uses currentBreakdown already loaded by the Detail modal.
+   Always loads the latest Breakdown record from backend
+   before displaying the Edit modal.
 
-   No additional API request is required.
+   This prevents editing from stale / incomplete local data.
 ========================================================= */
 
-function openEditBreakdownModal() {
+async function openEditBreakdownModal() {
 
-  if (!currentBreakdown) {
-    alert("Breakdown data not available");
+  const breakdownId =
+    Number(
+      currentBreakdownId ||
+      currentBreakdown?.id
+    );
+
+
+  if (
+    !Number.isInteger(breakdownId) ||
+    breakdownId <= 0
+  ) {
+
+    alert("Breakdown ID not available");
     return;
+
   }
 
 
-  const breakdown = currentBreakdown;
+  try {
 
+    /* =====================
+       LOAD CURRENT RECORD
+    ===================== */
 
-  /* =====================
-     BREAKDOWN CODE
-  ===================== */
-
-  const codeEl =
-    document.getElementById("editBreakdownCode");
-
-  if (codeEl) {
-    codeEl.textContent =
-      `BD-${String(breakdown.id).padStart(5, "0")}`;
-  }
-
-
-  /* =====================
-     PRELOAD FIELDS
-  ===================== */
-
-  const titleEl =
-    document.getElementById("editBreakdownTitle");
-
-  const descriptionEl =
-    document.getElementById("editBreakdownDescription");
-
-  const startedAtEl =
-    document.getElementById("editBreakdownStartedAt");
-
-  const reportedByEl =
-    document.getElementById("editBreakdownReportedBy");
-
-  const failureCauseEl =
-    document.getElementById("editBreakdownFailureCause");
-
-  const rootCauseEl =
-    document.getElementById("editBreakdownRootCause");
-
-  const correctiveActionEl =
-    document.getElementById("editBreakdownCorrectiveAction");
-
-
-  if (titleEl) {
-    titleEl.value =
-      breakdown.title || "";
-  }
-
-  if (descriptionEl) {
-    descriptionEl.value =
-      breakdown.description || "";
-  }
-
-  if (startedAtEl) {
-    startedAtEl.value =
-      toBreakdownDateTimeLocal(
-        breakdown.started_at
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}`
       );
-  }
-
-  if (reportedByEl) {
-    reportedByEl.value =
-      breakdown.reported_by || "";
-  }
-
-  if (failureCauseEl) {
-    failureCauseEl.value =
-      breakdown.failure_cause || "";
-  }
-
-  if (rootCauseEl) {
-    rootCauseEl.value =
-      breakdown.root_cause || "";
-  }
-
-  if (correctiveActionEl) {
-    correctiveActionEl.value =
-      breakdown.corrective_action || "";
-  }
 
 
-  /* =====================
-     SHOW MODAL
-  ===================== */
+    const data =
+      await response.json();
 
-  const overlay =
-    document.getElementById("editBreakdownOverlay");
 
-  if (overlay) {
-    overlay.style.display = "flex";
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Failed to load Breakdown"
+      );
+
+    }
+
+
+    /*
+      Support either:
+
+      GET → { breakdown: {...} }
+
+      or:
+
+      GET → {...}
+    */
+
+    const breakdown =
+      data.breakdown || data;
+
+
+    if (!breakdown?.id) {
+
+      throw new Error(
+        "Invalid Breakdown data received"
+      );
+
+    }
+
+
+    /* =====================
+       KEEP LOCAL COPY CURRENT
+    ===================== */
+
+    currentBreakdown =
+      breakdown;
+
+
+    /* =====================
+       BREAKDOWN CODE
+    ===================== */
+
+    const codeEl =
+      document.getElementById(
+        "editBreakdownCode"
+      );
+
+
+    if (codeEl) {
+
+      codeEl.textContent =
+        `BD-${String(
+          breakdown.id
+        ).padStart(5, "0")}`;
+
+    }
+
+
+    /* =====================
+       PRELOAD TITLE
+    ===================== */
+
+    const titleEl =
+      document.getElementById(
+        "editBreakdownTitle"
+      );
+
+    if (titleEl) {
+
+      titleEl.value =
+        breakdown.title || "";
+
+    }
+
+
+    /* =====================
+       PRELOAD DESCRIPTION
+    ===================== */
+
+    const descriptionEl =
+      document.getElementById(
+        "editBreakdownDescription"
+      );
+
+    if (descriptionEl) {
+
+      descriptionEl.value =
+        breakdown.description || "";
+
+    }
+
+
+    /* =====================
+       PRELOAD STARTED AT
+    ===================== */
+
+    const startedAtEl =
+      document.getElementById(
+        "editBreakdownStartedAt"
+      );
+
+    if (startedAtEl) {
+
+      startedAtEl.value =
+        toBreakdownDateTimeLocal(
+          breakdown.started_at
+        );
+
+    }
+
+
+    /* =====================
+       PRELOAD REPORTED BY
+    ===================== */
+
+    const reportedByEl =
+      document.getElementById(
+        "editBreakdownReportedBy"
+      );
+
+    if (reportedByEl) {
+
+      reportedByEl.value =
+        breakdown.reported_by || "";
+
+    }
+
+
+    /* =====================
+       PRELOAD FAILURE CAUSE
+    ===================== */
+
+    const failureCauseEl =
+      document.getElementById(
+        "editBreakdownFailureCause"
+      );
+
+    if (failureCauseEl) {
+
+      failureCauseEl.value =
+        breakdown.failure_cause || "";
+
+    }
+
+
+    /* =====================
+       PRELOAD ROOT CAUSE
+    ===================== */
+
+    const rootCauseEl =
+      document.getElementById(
+        "editBreakdownRootCause"
+      );
+
+    if (rootCauseEl) {
+
+      rootCauseEl.value =
+        breakdown.root_cause || "";
+
+    }
+
+
+    /* =====================
+       PRELOAD CORRECTIVE ACTION
+    ===================== */
+
+    const correctiveActionEl =
+      document.getElementById(
+        "editBreakdownCorrectiveAction"
+      );
+
+    if (correctiveActionEl) {
+
+      correctiveActionEl.value =
+        breakdown.corrective_action || "";
+
+    }
+
+
+    /* =====================
+       SHOW ONLY AFTER PRELOAD
+
+       Important:
+       The modal is displayed AFTER all fields
+       contain their current values.
+    ===================== */
+
+    const overlay =
+      document.getElementById(
+        "editBreakdownOverlay"
+      );
+
+
+    if (overlay) {
+
+      overlay.style.display =
+        "flex";
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "OPEN EDIT BREAKDOWN ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Failed to load Breakdown"
+    );
+
   }
 
 }
