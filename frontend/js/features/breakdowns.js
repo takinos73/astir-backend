@@ -1644,10 +1644,15 @@ function renderBreakdownMachineState(data) {
     data.current_state || null;
 
 
+  /*
+    No active state means that the Machine State
+    has not yet been defined by the technician.
+  */
+
   const currentLabel =
     currentState
       ? formatMachineStateLabel(currentState)
-      : "No active state";
+      : "NOT SET";
 
 
   const history =
@@ -1670,7 +1675,10 @@ function renderBreakdownMachineState(data) {
           Machine State
         </div>
 
-        <div class="machine-state-current">
+        <div class="
+          machine-state-current
+          ${!currentState ? "machine-state-not-set" : ""}
+        ">
           ${currentLabel}
         </div>
 
@@ -1678,7 +1686,9 @@ function renderBreakdownMachineState(data) {
 
     </div>
 
+
     ${renderMachineStateControls(data)}
+
 
     <div class="machine-state-totals">
 
@@ -1714,7 +1724,7 @@ function renderBreakdownMachineState(data) {
               .join("")
           : `
             <div class="machine-state-empty">
-              No Machine State history yet
+              Machine State has not been set yet.
             </div>
           `
       }
@@ -1919,9 +1929,15 @@ function renderMachineStateControls(data) {
     ).toUpperCase();
 
 
-  /* CLOSED Breakdown:
-     no Machine State changes allowed
-  */
+  const hasCurrentState =
+    !!currentState;
+
+
+  /* =====================================================
+     CLOSED BREAKDOWN
+
+     Machine State history is locked after closure.
+  ===================================================== */
 
   if (breakdownStatus === "CLOSED") {
 
@@ -1959,8 +1975,24 @@ function renderMachineStateControls(data) {
     <div class="machine-state-controls">
 
       <div class="machine-state-controls-label">
-        Change Machine State
+        ${
+          hasCurrentState
+            ? "Change Machine State"
+            : "Select Machine State"
+        }
       </div>
+
+
+      ${
+        !hasCurrentState
+          ? `
+            <div class="machine-state-controls-hint">
+              Select the actual machine condition.
+            </div>
+          `
+          : ""
+      }
+
 
       <div class="machine-state-buttons">
 
@@ -2173,8 +2205,6 @@ function setMachineStateButtonsDisabled(disabled) {
   });
 
 }
-
-
 
 
 /* =====================

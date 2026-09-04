@@ -1015,3 +1015,17 @@ input[type="checkbox"] {
 
   opacity: 0.65;
 }
+
+/* Machine State has not yet been defined */
+
+.machine-state-not-set {
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.machine-state-controls-hint {
+  margin-top: 3px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  opacity: 0.60;
+}
