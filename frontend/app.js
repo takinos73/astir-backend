@@ -3422,27 +3422,65 @@ function resetDoneModal(
    REFRESH AFTER COMPLETION
 ===================== */
 
-function refreshAfterTaskCompletion() {
+async function refreshAfterTaskCompletion() {
 
-  // Preserved exactly as current common flow
-  loadTasks();
-  loadHistory();
+  /* =====================
+     MAIN TASKS + HISTORY
+  ===================== */
 
+  await loadTasks();
+
+  await loadHistory();
+
+
+  /* =====================
+     BREAKDOWN RESTORATION TASKS
+
+     If a Breakdown Detail is currently open,
+     reload its Restoration Tasks as well.
+
+     This prevents stale task status after
+     completing a Restoration Task.
+  ===================== */
+
+  if (
+    currentBreakdownId &&
+    typeof loadRestorationTasks === "function"
+  ) {
+
+    await loadRestorationTasks(
+      currentBreakdownId
+    );
+
+  }
+
+
+  /* =====================
+     ASSET CARDS
+  ===================== */
 
   if (
     typeof renderAssetsCards === "function"
   ) {
+
     renderAssetsCards();
+
   }
 
+
+  /* =====================
+     ASSET VIEW
+  ===================== */
 
   if (
     typeof refreshAssetView === "function"
   ) {
-    refreshAssetView();
-  }
-}
 
+    refreshAssetView();
+
+  }
+
+}
 
 /* =====================
    CONFIRM TASK DONE
@@ -3566,7 +3604,7 @@ getEl("confirmDone")
            COMMON REFRESH
         ===================== */
 
-        refreshAfterTaskCompletion();
+        await refreshAfterTaskCompletion();
 
       }
 
