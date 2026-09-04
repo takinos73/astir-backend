@@ -521,6 +521,14 @@ app.post("/breakdowns", async (req, res) => {
 
     /* =====================
        CREATE BREAKDOWN
+
+       IMPORTANT:
+       A new Breakdown does NOT automatically
+       define the Machine State.
+
+       The technician will explicitly select:
+       DOWN / TRIAL / DEGRADED / RUNNING
+       after the Breakdown has been created.
     ===================== */
 
     const result = await client.query(
@@ -564,53 +572,6 @@ app.post("/breakdowns", async (req, res) => {
       result.rows[0];
 
 
-    /* =====================================================
-       CREATE INITIAL MACHINE STATE
-
-       Every new Breakdown starts as DOWN.
-
-       IMPORTANT:
-       Machine State started_at uses the actual
-       Breakdown started_at returned by PostgreSQL.
-
-       Therefore:
-
-       breakdown.started_at
-             =
-       machine_state.started_at
-    ===================================================== */
-
-    const machineStateResult = await client.query(
-      `
-      INSERT INTO breakdown_state_history (
-        breakdown_id,
-        state,
-        started_at,
-        ended_at,
-        changed_by,
-        changed_by_id,
-        created_at
-      )
-      VALUES (
-        $1,
-        'DOWN',
-        $2,
-        NULL,
-        $3,
-        $4,
-        NOW()
-      )
-      RETURNING *
-      `,
-      [
-        breakdown.id,
-        breakdown.started_at,
-        reported_by?.trim() || null,
-        reported_by_id || null
-      ]
-    );
-
-
     /* =====================
        COMMIT TRANSACTION
     ===================== */
@@ -620,6 +581,10 @@ app.post("/breakdowns", async (req, res) => {
 
     /* =====================
        RESPONSE
+
+       machine_state = null
+       until explicitly selected
+       by the technician.
     ===================== */
 
     return res.status(201).json({
@@ -629,8 +594,7 @@ app.post("/breakdowns", async (req, res) => {
 
       breakdown,
 
-      machine_state:
-        machineStateResult.rows[0]
+      machine_state: null
 
     });
 
