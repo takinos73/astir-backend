@@ -4070,99 +4070,207 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
 
 /* =====================
    COMPLETE TASK
+
    - Preventive (frequency_hours > 0): ROTATE
-   - Planned without frequency: FINISH
+   - Planned / Restoration without frequency: FINISH
+
+   SAFETY:
+   - One-off tasks cannot be completed twice
+   - Row is locked during completion
 ===================== */
+
 app.patch("/tasks/:id", async (req, res) => {
-  const { completed_by, completed_at, notes, technician_id } = req.body; // 🔵 notes added
+
+  const {
+    completed_by,
+    completed_at,
+    notes,
+    technician_id
+  } = req.body;
+
   const { id } = req.params;
 
   const client = await pool.connect();
 
+
   try {
+
     await client.query("BEGIN");
 
-    // Normalize completed date
-    const completedAt =
-      completed_at ? new Date(completed_at) : new Date();
 
-    // 1️⃣ Fetch task
+    /* =====================
+       NORMALIZE DATE
+    ===================== */
+
+    const completedAt =
+      completed_at
+        ? new Date(completed_at)
+        : new Date();
+
+
+    /* =====================
+       1. FETCH + LOCK TASK
+
+       FOR UPDATE prevents two simultaneous
+       completion requests from processing
+       the same task at the same time.
+    ===================== */
+
     const taskRes = await client.query(
-      `SELECT * FROM maintenance_tasks WHERE id = $1`,
+      `
+      SELECT *
+      FROM maintenance_tasks
+      WHERE id = $1
+      FOR UPDATE
+      `,
       [id]
     );
 
+
     if (!taskRes.rows.length) {
+
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Task not found" });
+
+      return res.status(404).json({
+        error: "Task not found"
+      });
+
     }
 
-    const task = taskRes.rows[0];
+
+    const task =
+      taskRes.rows[0];
+
 
     const hasFrequency =
       task.frequency_hours &&
       Number(task.frequency_hours) > 0;
 
-    // 2️⃣ Log execution (HISTORY) — ALWAYS
-      await client.query(
-        `
-        INSERT INTO task_executions (
-          task_id,
-          asset_id,
-          executed_by,
-          technician_id,
-          prev_due_date,
-          executed_at,
-          duration_minutes,
-          notes
-        )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-        `,
-        [
-          task.id,
-          task.asset_id,
-          completed_by,
-          technician_id || null,
-          task.due_date,
-          completedAt,
-          Number.isFinite(Number(task.duration_min))
-            ? Math.round(Number(task.duration_min))
-            : null,
-          notes || task.notes || null
-        ]
-      );    
 
-    // 3️⃣ PREVENTIVE → ROTATE
-    if (hasFrequency) {
-    const freqHours = Number(task.frequency_hours);
-    const calendarDays =
-      Math.round(freqHours * 7 / WORKING_HOURS_PER_WEEK);
+    /* =====================
+       2. DUPLICATE COMPLETION GUARD
 
-    const nextDue = new Date(completedAt);
-    nextDue.setDate(nextDue.getDate() + calendarDays);
+       Preventive tasks are intentionally
+       excluded because they rotate and can
+       have multiple executions over time.
+
+       One-off tasks (including Restoration)
+       may only be completed once.
+    ===================== */
+
+    if (
+      !hasFrequency &&
+      String(task.status).toLowerCase() === "done"
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error: "Task is already completed"
+      });
+
+    }
+
+
+    /* =====================
+       3. LOG EXECUTION
+    ===================== */
 
     await client.query(
       `
-      UPDATE maintenance_tasks
-      SET
-        status = 'Planned',
-        due_date = $2,
-        completed_by = $3,
-        completed_at = $4,
-        notes = null,
-        updated_at = NOW()
-      WHERE id = $1
+      INSERT INTO task_executions (
+        task_id,
+        asset_id,
+        executed_by,
+        technician_id,
+        prev_due_date,
+        executed_at,
+        duration_minutes,
+        notes
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8
+      )
       `,
       [
-        id,
-        nextDue,
+        task.id,
+        task.asset_id,
         completed_by || null,
+        technician_id || null,
+        task.due_date,
         completedAt,
+
+        Number.isFinite(
+          Number(task.duration_min)
+        )
+          ? Math.round(
+              Number(task.duration_min)
+            )
+          : null,
+
+        notes || task.notes || null
       ]
     );
-  }
- else {
-      // 4️⃣ PLANNED (NO FREQUENCY) → FINISH
+
+
+    /* =====================
+       4. PREVENTIVE → ROTATE
+    ===================== */
+
+    if (hasFrequency) {
+
+      const freqHours =
+        Number(task.frequency_hours);
+
+
+      const calendarDays =
+        Math.round(
+          freqHours *
+          7 /
+          WORKING_HOURS_PER_WEEK
+        );
+
+
+      const nextDue =
+        new Date(completedAt);
+
+
+      nextDue.setDate(
+        nextDue.getDate() +
+        calendarDays
+      );
+
+
+      await client.query(
+        `
+        UPDATE maintenance_tasks
+        SET
+          status = 'Planned',
+          due_date = $2,
+          completed_by = $3,
+          completed_at = $4,
+          notes = NULL,
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [
+          id,
+          nextDue,
+          completed_by || null,
+          completedAt
+        ]
+      );
+
+    }
+
+
+    /* =====================
+       5. ONE-OFF / RESTORATION
+          → FINISH
+    ===================== */
+
+    else {
+
       await client.query(
         `
         UPDATE maintenance_tasks
@@ -4170,7 +4278,7 @@ app.patch("/tasks/:id", async (req, res) => {
           status = 'Done',
           completed_by = $2,
           completed_at = $3,
-          notes = COALESCE($4, notes),   -- 🔵 preserve existing notes
+          notes = COALESCE($4, notes),
           updated_at = NOW()
         WHERE id = $1
         `,
@@ -4178,21 +4286,50 @@ app.patch("/tasks/:id", async (req, res) => {
           id,
           completed_by || null,
           completedAt,
-          notes || null                  // 🔵
+          notes || null
         ]
       );
+
     }
 
+
+    /* =====================
+       COMMIT
+    ===================== */
+
     await client.query("COMMIT");
-    res.json({ success: true, rotated: hasFrequency });
+
+
+    return res.json({
+      success: true,
+      rotated: hasFrequency
+    });
+
 
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("PATCH /tasks/:id ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+
+    console.error(
+      "PATCH /tasks/:id ERROR:",
+      err.message
+    );
+
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+
   } finally {
+
     client.release();
+
   }
+
 });
 
 /* =====================
