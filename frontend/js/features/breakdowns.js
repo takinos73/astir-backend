@@ -941,6 +941,30 @@ async function openEditBreakdownModal() {
 
     }
 
+    /* =====================
+      TEMP DEBUG
+    ===================== */
+
+    console.log(
+      "TITLE INPUT:",
+      document.getElementById("editBreakdownTitle")
+    );
+
+    console.log(
+      "TITLE INPUT VALUE:",
+      document.getElementById("editBreakdownTitle")?.value
+    );
+
+    console.log(
+      "DESCRIPTION INPUT VALUE:",
+      document.getElementById("editBreakdownDescription")?.value
+    );
+
+    console.log(
+      "STARTED INPUT VALUE:",
+      document.getElementById("editBreakdownStartedAt")?.value
+    );
+
 
     /* =====================
        SHOW ONLY AFTER PRELOAD
