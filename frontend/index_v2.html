@@ -1676,9 +1676,6 @@
     class="modal"
   >
 
-    <!-- =====================
-         HEADER
-    ===================== -->
 
 <!-- =====================
      HEADER
@@ -1836,15 +1833,65 @@
 
   </div>
 
-    <!-- =====================================================
-        MACHINE STATE
-    ===================================================== -->
+    <!-- =========================================================
+      CLOSURE SUMMARY
+
+      Visible only when Breakdown status = CLOSED
+  ========================================================= -->
+
+  <div
+    id="bd-closure-summary"
+    class="breakdown-detail-section breakdown-closure-summary"
+    style="display:none;"
+  >
+
+    <div class="breakdown-detail-label">
+      Failure Cause
+    </div>
 
     <div
-      id="breakdownMachineStateContainer"
-      class="machine-state-panel"
+      id="bd-detail-failure-cause"
+      class="breakdown-detail-value"
     >
+      -
     </div>
+
+
+    <div class="breakdown-detail-label">
+      Root Cause
+    </div>
+
+    <div
+      id="bd-detail-root-cause"
+      class="breakdown-detail-value"
+    >
+      -
+    </div>
+
+
+    <div class="breakdown-detail-label">
+      Corrective Action
+    </div>
+
+    <div
+      id="bd-detail-corrective-action"
+      class="breakdown-detail-value"
+    >
+      -
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+      MACHINE STATE
+  ========================================================= -->
+
+  <div
+    id="breakdownMachineStateContainer"
+    class="machine-state-panel"
+  >
+  </div>
 
 
     <!-- =====================
@@ -1891,9 +1938,6 @@
 
     <!-- =====================
          BREAKDOWN ACTIONS
-
-         Buttons are intentionally inactive
-         until later frontend steps.
     ===================== -->
 
     <div class="modal-actions breakdown-detail-actions">

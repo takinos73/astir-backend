@@ -2007,8 +2007,6 @@ currentBreakdownId = id;
 
 }
 
-
-
 /* =====================
    POPULATE DETAIL MODAL
 ===================== */
@@ -2016,7 +2014,7 @@ currentBreakdownId = id;
 function populateBreakdownDetail(breakdown) {
 
   /* =====================
-    CURRENT BREAKDOWN
+     CURRENT BREAKDOWN
   ===================== */
 
   currentBreakdown = breakdown;
@@ -2075,6 +2073,31 @@ function populateBreakdownDetail(breakdown) {
 
 
   /* =====================
+     CLOSURE SUMMARY ELEMENTS
+  ===================== */
+
+  const closureSummaryEl =
+    document.getElementById(
+      "bd-closure-summary"
+    );
+
+  const failureCauseEl =
+    document.getElementById(
+      "bd-detail-failure-cause"
+    );
+
+  const rootCauseEl =
+    document.getElementById(
+      "bd-detail-root-cause"
+    );
+
+  const correctiveActionEl =
+    document.getElementById(
+      "bd-detail-corrective-action"
+    );
+
+
+  /* =====================
      BREAKDOWN CODE
   ===================== */
 
@@ -2100,6 +2123,12 @@ function populateBreakdownDetail(breakdown) {
   }
 
 
+  const isClosed =
+    String(
+      breakdown.status || ""
+    ).toUpperCase() === "CLOSED";
+
+
   /* =====================
      ASSET / SERIAL / LINE
   ===================== */
@@ -2110,9 +2139,11 @@ function populateBreakdownDetail(breakdown) {
 
 
     if (breakdown.asset_model) {
+
       parts.push(
         breakdown.asset_model
       );
+
     }
 
 
@@ -2191,15 +2222,16 @@ function populateBreakdownDetail(breakdown) {
 
   }
 
+
   /* =====================
-    INCIDENT DURATION
+     INCIDENT DURATION
 
-    Total Breakdown incident time:
-    started_at → closed_at
-    or started_at → now if still open.
+     Total Breakdown incident time:
+     started_at → closed_at
+     or started_at → now if still open.
 
-    NOTE:
-    This is NOT Machine DOWN time.
+     NOTE:
+     This is NOT Machine DOWN time.
   ===================== */
 
   if (downtimeEl) {
@@ -2210,6 +2242,7 @@ function populateBreakdownDetail(breakdown) {
       );
 
   }
+
 
   /* =====================
      RESTORED AT
@@ -2225,19 +2258,81 @@ function populateBreakdownDetail(breakdown) {
         : "-";
 
   }
+
+
+  /* =========================================================
+     CLOSURE SUMMARY
+
+     Closure information is shown only when
+     Breakdown status = CLOSED.
+
+     OPEN / IN_PROGRESS:
+     - Hidden
+
+     CLOSED:
+     - Failure Cause
+     - Root Cause
+     - Corrective Action
+  ========================================================= */
+
+  if (closureSummaryEl) {
+
+    closureSummaryEl.style.display =
+      isClosed
+        ? "block"
+        : "none";
+
+  }
+
+
+  if (failureCauseEl) {
+
+    failureCauseEl.textContent =
+      isClosed
+        ? breakdown.failure_cause || "-"
+        : "-";
+
+  }
+
+
+  if (rootCauseEl) {
+
+    rootCauseEl.textContent =
+      isClosed
+        ? breakdown.root_cause || "-"
+        : "-";
+
+  }
+
+
+  if (correctiveActionEl) {
+
+    correctiveActionEl.textContent =
+      isClosed
+        ? breakdown.corrective_action || "-"
+        : "-";
+
+  }
+
+
   /* =====================
-    STATUS-AWARE ACTIONS
+     STATUS-AWARE ACTIONS
   ===================== */
 
   updateBreakdownStatusUI(
     breakdown
   );
+
+
   /* =========================================================
-    MACHINE STATE
-    Load current Machine State + history
+     MACHINE STATE
+
+     Load current Machine State + history
   ========================================================= */
 
-  loadBreakdownMachineState(breakdown.id);
+  loadBreakdownMachineState(
+    breakdown.id
+  );
 
 }
 
