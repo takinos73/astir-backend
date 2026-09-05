@@ -982,6 +982,27 @@ tbody tr:hover { background: #131520; }
   font-weight: 700;
 }
 
+/* =========================================================
+   RESTORATION HISTORY
+
+   Completed maintenance work related to a Breakdown.
+========================================================= */
+
+#historyTable tbody tr.history-restoration {
+  border-left: 4px solid #dc3545;
+}
+
+.history-breakdown-reference {
+  margin-top: 3px;
+  margin-bottom: 2px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  color: #dc3545;
+  letter-spacing: 0.3px;
+}
+
 /* =====================
    HISTORY – EDIT (BREAKDOWN)
 ===================== */

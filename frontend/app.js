@@ -683,17 +683,41 @@ async function loadHistory() {
     updateCentralHistoryLegendCounts([]); // ✅ fail-safe (προαιρετικό αλλά safe)
   }
 }
+/* =====================
+    GET EXECUTION TYPE
+===================== */
 
 function getExecutionType(h) {
-  // 🔴 Unplanned (manual breakdowns)
-  if (h.is_planned === false) return "unplanned";
 
-  // 🟢 Preventive (Excel / frequency based)
-  if (h.frequency_hours && Number(h.frequency_hours) > 0) return "preventive";
+  // 🔴 Restoration Task related to new Breakdown system
+  if (
+    h.breakdown_id !== null &&
+    h.breakdown_id !== undefined
+  ) {
+    return "restoration";
+  }
 
-  // 🔵 Manual Planned (no frequency)
+
+  // 🔴 Legacy Unplanned / Breakdown
+  if (h.is_planned === false) {
+    return "unplanned";
+  }
+
+
+  // 🟢 Preventive (frequency based)
+  if (
+    h.frequency_hours &&
+    Number(h.frequency_hours) > 0
+  ) {
+    return "preventive";
+  }
+
+
+  // 🟡 Manual Planned (no frequency)
   return "planned";
+
 }
+
 /* =====================
     PRINT History TASK
 ===================== */
@@ -860,7 +884,7 @@ function renderHistoryTable(data) {
 
     let actionHtml = `<span class="muted">—</span>`;
 
-    if (execType === "planned" || execType === "preventive") {
+    if ( execType === "planned" || execType === "preventive" || execType === "restoration") { {
       actionHtml = `
         <div class="history-action-group">
           <button
@@ -930,6 +954,18 @@ function renderHistoryTable(data) {
 
       <td>
           <div class="task-title">
+            ${
+            execType === "restoration" && h.breakdown_id
+              ? `
+                <div class="history-breakdown-reference">
+                  RESTORATION · BD-${String(
+                    h.breakdown_id
+                  ).padStart(5, "0")}
+                </div>
+              `
+              : ""
+            }
+            
             <strong>${h.task}</strong>
 
             ${
