@@ -555,7 +555,10 @@ function renderAssetHistoryTable(history) {
     const execType =
       getExecutionType(e);
 
-    if (execType === "unplanned") {
+    if (execType === "restoration") {
+      tr.classList.add("history-restoration");
+    }
+    else if (execType === "unplanned") {
       tr.classList.add("history-unplanned");
     }
     else if (execType === "preventive") {
@@ -579,6 +582,16 @@ function renderAssetHistoryTable(history) {
         <div>
           ${highlightAssetHistorySearch(e.task || "-")}
         </div>
+
+        ${
+          execType === "restoration" && e.breakdown_id
+            ? `
+              <div class="history-breakdown-reference">
+                BD-${String(e.breakdown_id).padStart(5, "0")}
+              </div>
+            `
+            : ""
+        }
 
         ${
           (e.section || e.unit)

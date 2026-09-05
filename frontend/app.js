@@ -964,7 +964,7 @@ function renderHistoryTable(data) {
             execType === "restoration" && h.breakdown_id
               ? `
                 <div class="history-breakdown-reference">
-                  RESTORATION · BD-${String(
+                    BD-${String(
                     h.breakdown_id
                   ).padStart(5, "0")}
                 </div>
@@ -2650,7 +2650,7 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
       }
 
       if (!isPlanned) {
-        activateAssetTab("history");
+        asset("history");
       }
 
       requestAnimationFrame(() => {
