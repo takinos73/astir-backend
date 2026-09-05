@@ -5134,15 +5134,17 @@ app.patch("/tasks/:id/undo", async (req, res) => {
 /* =====================
    TASK EXECUTION HISTORY
 ===================== */
+
 app.get("/executions", async (req, res) => {
   try {
+
     const result = await pool.query(`
       SELECT
         e.id,
         e.executed_at,
         e.executed_by,
         e.technician_id,
-        e.notes as notes,
+        e.notes AS notes,
         e.updated_at,
         e.duration_minutes AS duration_min,
         e.prev_due_date,
@@ -5155,14 +5157,25 @@ app.get("/executions", async (req, res) => {
         t.is_planned,
         t.frequency_hours,
 
+        /* Breakdown relationship
+           NULL = normal maintenance execution
+           ID   = Restoration Task related to Breakdown
+        */
+        t.breakdown_id,
+
         a.model AS machine,
         a.serial_number,
         l.code AS line
 
       FROM task_executions e
-      JOIN maintenance_tasks t ON t.id = e.task_id
-      JOIN assets a ON a.id = e.asset_id
-      JOIN lines l ON l.id = a.line_id
+      JOIN maintenance_tasks t
+        ON t.id = e.task_id
+
+      JOIN assets a
+        ON a.id = e.asset_id
+
+      JOIN lines l
+        ON l.id = a.line_id
 
       ORDER BY e.executed_at DESC
     `);
@@ -5170,8 +5183,16 @@ app.get("/executions", async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
-    console.error("GET /executions ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "GET /executions ERROR:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
 });
 
