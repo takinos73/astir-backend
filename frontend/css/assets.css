@@ -1194,3 +1194,11 @@ tr.highlight-execution {
   font-size: .75em;
   color: #a0a0a0;
 }
+
+/* =========================================================
+   ASSET VIEW HISTORY - RESTORATION
+========================================================= */
+
+#assetHistoryTable tbody tr.history-restoration td:first-child {
+  border-left: 4px solid #dc3545 !important;
+}
