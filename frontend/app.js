@@ -884,7 +884,12 @@ function renderHistoryTable(data) {
 
     let actionHtml = `<span class="muted">—</span>`;
 
-    if ( execType === "planned" || execType === "preventive" || execType === "restoration") { {
+    // Planned / Preventive / Restoration
+    if (
+      execType === "planned" ||
+      execType === "preventive" ||
+      execType === "restoration"
+    ) {
       actionHtml = `
         <div class="history-action-group">
           <button
@@ -893,7 +898,7 @@ function renderHistoryTable(data) {
             onclick="viewHistoryEntry(${h.id})">
             👁
           </button>
-          
+
           <button
             class="btn-icon btn-restore"
             title="Restore task"
@@ -911,6 +916,7 @@ function renderHistoryTable(data) {
       `;
     }
 
+    // Legacy Breakdown / Unplanned
     else if (execType === "unplanned") {
       actionHtml = `
         <div class="history-action-group">
@@ -920,7 +926,7 @@ function renderHistoryTable(data) {
             onclick="viewHistoryEntry(${h.id})">
             👁
           </button>
-          
+
           <button
             class="btn-icon btn-edit"
             title="Edit breakdown details"
@@ -965,7 +971,7 @@ function renderHistoryTable(data) {
               `
               : ""
             }
-            
+
             <strong>${h.task}</strong>
 
             ${
