@@ -1114,7 +1114,12 @@ app.get("/breakdowns", async (req, res) => {
         COALESCE(
           b.verified_down_seconds,
           dt.recorded_down_seconds
-        ) AS effective_down_seconds
+        ) AS effective_down_seconds,
+          CASE
+            WHEN b.verified_down_seconds IS NOT NULL
+              THEN 'VERIFIED'
+            ELSE 'RECORDED'
+          END AS downtime_mode
 
       FROM breakdowns b
 
