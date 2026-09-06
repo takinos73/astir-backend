@@ -5849,6 +5849,146 @@ app.get("/kpis/overdue/top-assets", async (req, res) => {
   }
 });
 
+/*================================================
+ KPI – MAINTENANCE WORKLOAD MIX
+
+ New CMMS model:
+
+ - Preventive
+ - Planned
+ - Restoration
+ - Legacy Unplanned
+
+ IMPORTANT:
+ Legacy Unplanned remains visible during
+ the transition / migration period.
+=================================================*/
+
+app.get("/kpis/workload-mix", async (req, res) => {
+
+  try {
+
+    const { rows } =
+      await pool.query(`
+        SELECT
+
+          /* =========================
+             PREVENTIVE WORK
+          ========================= */
+
+          COALESCE(
+            SUM(
+              CASE
+                WHEN
+                  mt.breakdown_id IS NULL
+                  AND COALESCE(mt.frequency_hours, 0) > 0
+                THEN mt.duration_min
+                ELSE 0
+              END
+            ),
+            0
+          )::int AS preventive_minutes,
+
+
+          /* =========================
+             PLANNED ONE-OFF WORK
+          ========================= */
+
+          COALESCE(
+            SUM(
+              CASE
+                WHEN
+                  mt.breakdown_id IS NULL
+                  AND COALESCE(mt.frequency_hours, 0) = 0
+                  AND mt.is_planned = true
+                THEN mt.duration_min
+                ELSE 0
+              END
+            ),
+            0
+          )::int AS planned_minutes,
+
+
+          /* =========================
+             RESTORATION WORK
+
+             Any maintenance task linked
+             to a new Breakdown incident.
+          ========================= */
+
+          COALESCE(
+            SUM(
+              CASE
+                WHEN
+                  mt.breakdown_id IS NOT NULL
+                THEN mt.duration_min
+                ELSE 0
+              END
+            ),
+            0
+          )::int AS restoration_minutes,
+
+
+          /* =========================
+             LEGACY UNPLANNED
+
+             Old Breakdown-as-Task model.
+             Keep during migration only.
+          ========================= */
+
+          COALESCE(
+            SUM(
+              CASE
+                WHEN
+                  mt.breakdown_id IS NULL
+                  AND mt.is_planned = false
+                THEN mt.duration_min
+                ELSE 0
+              END
+            ),
+            0
+          )::int AS legacy_unplanned_minutes,
+
+
+          /* =========================
+             TOTAL OPEN WORKLOAD
+          ========================= */
+
+          COALESCE(
+            SUM(mt.duration_min),
+            0
+          )::int AS total_minutes
+
+
+        FROM maintenance_tasks mt
+
+        WHERE
+          mt.duration_min IS NOT NULL
+
+          AND mt.status != 'Done'
+
+          AND mt.deleted_at IS NULL
+      `);
+
+
+    res.json(rows[0]);
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /kpis/workload-mix ERROR:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */
