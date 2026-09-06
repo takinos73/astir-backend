@@ -7038,3 +7038,162 @@ document
     saveEditBreakdown
   );
 
+  /* =========================================================
+   OPEN VERIFIED DOWNTIME MODAL
+   Admin only
+   Read / preload only
+========================================================= */
+
+document
+  .getElementById("verifyDowntimeBtn")
+  ?.addEventListener("click", () => {
+
+    if (!currentBreakdown) {
+      return;
+    }
+
+    const overlay =
+      document.getElementById(
+        "verifiedDowntimeOverlay"
+      );
+
+    const refEl =
+      document.getElementById(
+        "verifiedDowntimeBreakdownRef"
+      );
+
+    const recordedEl =
+      document.getElementById(
+        "verifiedDowntimeRecorded"
+      );
+
+    const effectiveEl =
+      document.getElementById(
+        "verifiedDowntimeEffective"
+      );
+
+    const minutesInput =
+      document.getElementById(
+        "verifiedDowntimeMinutes"
+      );
+
+    const reasonInput =
+      document.getElementById(
+        "verifiedDowntimeReason"
+      );
+
+
+    const recordedSeconds =
+      Number(
+        currentBreakdown
+          .recorded_down_seconds || 0
+      );
+
+    const effectiveSeconds =
+      Number(
+        currentBreakdown
+          .effective_down_seconds || 0
+      );
+
+
+    if (refEl) {
+      refEl.textContent =
+        `BD-${String(
+          currentBreakdown.id
+        ).padStart(5, "0")}`;
+    }
+
+
+    if (recordedEl) {
+      recordedEl.textContent =
+        formatBreakdownSeconds(
+          recordedSeconds
+        );
+    }
+
+
+    if (effectiveEl) {
+      effectiveEl.textContent =
+        formatBreakdownSeconds(
+          effectiveSeconds
+        );
+    }
+
+
+    /*
+      If a verified value already exists,
+      preload it.
+
+      Otherwise preload current recorded
+      downtime as the starting value.
+    */
+
+    if (minutesInput) {
+
+      const secondsToUse =
+        currentBreakdown
+          .verified_down_seconds !== null &&
+        currentBreakdown
+          .verified_down_seconds !== undefined
+          ? Number(
+              currentBreakdown
+                .verified_down_seconds
+            )
+          : recordedSeconds;
+
+      minutesInput.value =
+        Math.round(
+          secondsToUse / 60
+        );
+
+    }
+
+
+    if (reasonInput) {
+
+      reasonInput.value =
+        currentBreakdown
+          .downtime_correction_reason || "";
+
+    }
+
+
+    if (overlay) {
+      overlay.style.display = "flex";
+    }
+
+  });
+
+  /* =========================================================
+   CLOSE VERIFIED DOWNTIME MODAL
+========================================================= */
+
+function closeVerifiedDowntimeModal() {
+
+  const overlay =
+    document.getElementById(
+      "verifiedDowntimeOverlay"
+    );
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+}
+
+
+document
+  .getElementById("closeVerifiedDowntimeBtn")
+  ?.addEventListener(
+    "click",
+    closeVerifiedDowntimeModal
+  );
+
+
+document
+  .getElementById("cancelVerifiedDowntimeBtn")
+  ?.addEventListener(
+    "click",
+    closeVerifiedDowntimeModal
+  );
+
