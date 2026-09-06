@@ -3334,6 +3334,18 @@ function askTechnician(id) {
     actualDurationInput.value = "";
   }
 
+  console.log(
+  "SINGLE DONE MODAL",
+  {
+    bulkDoneMode: state.bulkDoneMode,
+    actualDurationGroup:
+      getEl("actualDurationGroup"),
+    display:
+      getEl("actualDurationGroup")
+        ?.style.display
+  }
+);
+
   /* =====================
      OPEN MODAL
   ===================== */
