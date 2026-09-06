@@ -863,10 +863,29 @@
     ====================== -->
     <div class="addtask-block">
       <label>Work Order Type</label>
+
       <select id="taskPlannedType">
         <option value="planned">🟨 Planned Task</option>
-        <option value="unplanned">🟥 Breakdown / Unplanned</option>
+
+        <!--
+          LEGACY BREAKDOWN CREATION DISABLED
+
+          New breakdown incidents must now be created
+          through the dedicated New Breakdown workflow.
+
+          Keep legacy unplanned support in code/database
+          for historical records and controlled rollback.
+        -->
+        <!--
+        <option value="unplanned">
+          🟥 Breakdown / Unplanned
+        </option>
+        -->
       </select>
+
+      <small class="field-hint">
+        Machine failures are recorded through New Breakdown.
+      </small>
     </div>
 
     <!-- =====================

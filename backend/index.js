@@ -1579,6 +1579,7 @@ app.patch("/breakdowns/:id", async (req, res) => {
 
 });
 
+
 /* =========================================================
    START BREAKDOWN
    PATCH /breakdowns/:id/start
@@ -1905,6 +1906,199 @@ app.patch("/breakdowns/:id/reopen", async (req, res) => {
     }
 
   
+});
+
+// ============================================================
+// PATCH /breakdowns/:id/verified-downtime
+// Admin-only correction / verification of effective DOWN time
+// ============================================================
+app.patch("/breakdowns/:id/verified-downtime", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const breakdownId = Number(req.params.id);
+
+    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+      return res.status(400).json({
+        error: "Invalid breakdown id"
+      });
+    }
+
+    // --------------------------------------------------------
+    // ADMIN ONLY
+    // --------------------------------------------------------
+    const role = req.headers["x-cmms-role"];
+
+    if (role !== "admin") {
+      return res.status(403).json({
+        error: "Admin only"
+      });
+    }
+
+    const {
+      verified_down_seconds,
+      downtime_correction_reason,
+      downtime_corrected_by,
+      downtime_corrected_by_id
+    } = req.body;
+
+    // --------------------------------------------------------
+    // Validation
+    //
+    // null means: remove correction and return to recorded DOWN
+    // --------------------------------------------------------
+    const isClearing =
+      verified_down_seconds === null ||
+      verified_down_seconds === undefined ||
+      verified_down_seconds === "";
+
+    let verifiedSeconds = null;
+
+    if (!isClearing) {
+      verifiedSeconds = Number(verified_down_seconds);
+
+      if (
+        !Number.isFinite(verifiedSeconds) ||
+        verifiedSeconds < 0
+      ) {
+        return res.status(400).json({
+          error: "Verified DOWN time must be zero or greater"
+        });
+      }
+
+      verifiedSeconds = Math.round(verifiedSeconds);
+    }
+
+    await client.query("BEGIN");
+
+    // --------------------------------------------------------
+    // Lock Breakdown row
+    // --------------------------------------------------------
+    const breakdownResult = await client.query(
+      `
+      SELECT *
+      FROM breakdowns
+      WHERE id = $1
+      FOR UPDATE
+      `,
+      [breakdownId]
+    );
+
+    if (breakdownResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        error: "Breakdown not found"
+      });
+    }
+
+    // --------------------------------------------------------
+    // Optional safety rule:
+    // verified downtime should not exceed incident duration
+    // for CLOSED breakdowns.
+    //
+    // We do not apply this to OPEN / IN_PROGRESS because
+    // incident duration is still increasing.
+    // --------------------------------------------------------
+    const breakdown = breakdownResult.rows[0];
+
+    if (
+      breakdown.status === "CLOSED" &&
+      breakdown.closed_at &&
+      verifiedSeconds !== null
+    ) {
+      const startedAt = new Date(breakdown.started_at);
+      const closedAt = new Date(breakdown.closed_at);
+
+      const incidentSeconds = Math.floor(
+        (closedAt.getTime() - startedAt.getTime()) / 1000
+      );
+
+      if (verifiedSeconds > incidentSeconds) {
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+          error:
+            "Verified DOWN time cannot exceed incident duration"
+        });
+      }
+    }
+
+    // --------------------------------------------------------
+    // CLEAR correction
+    // --------------------------------------------------------
+    if (verifiedSeconds === null) {
+      const result = await client.query(
+        `
+        UPDATE breakdowns
+        SET
+          verified_down_seconds = NULL,
+          downtime_correction_reason = NULL,
+          downtime_corrected_by = NULL,
+          downtime_corrected_by_id = NULL,
+          downtime_corrected_at = NULL,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+        `,
+        [breakdownId]
+      );
+
+      await client.query("COMMIT");
+
+      return res.json({
+        ...result.rows[0],
+        downtime_mode: "RECORDED"
+      });
+    }
+
+    // --------------------------------------------------------
+    // SET / UPDATE verified downtime
+    // --------------------------------------------------------
+    const result = await client.query(
+      `
+      UPDATE breakdowns
+      SET
+        verified_down_seconds = $1,
+        downtime_correction_reason = $2,
+        downtime_corrected_by = $3,
+        downtime_corrected_by_id = $4,
+        downtime_corrected_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+      `,
+      [
+        verifiedSeconds,
+        downtime_correction_reason || null,
+        downtime_corrected_by || null,
+        downtime_corrected_by_id
+          ? Number(downtime_corrected_by_id)
+          : null,
+        breakdownId
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      ...result.rows[0],
+      downtime_mode: "VERIFIED"
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+
+    console.error(
+      "PATCH /breakdowns/:id/verified-downtime error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to update verified downtime"
+    });
+  } finally {
+    client.release();
+  }
 });
 
 // ============================================================
