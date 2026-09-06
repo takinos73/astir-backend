@@ -1213,27 +1213,32 @@ app.get("/breakdowns", async (req, res) => {
    GET BREAKDOWN BY ID
    GET /breakdowns/:id
 
-   Returns one breakdown incident together with
-   Asset and Line information.
-
-   This endpoint will be used by the future
-   Breakdown Detail View.
+   Returns one Breakdown incident together with:
+   - Asset / Line information
+   - DT Model v1 downtime fields
 ========================================================= */
 
 app.get("/breakdowns/:id", async (req, res) => {
 
   try {
 
-    const breakdownId = Number(req.params.id);
+    const breakdownId =
+      Number(req.params.id);
+
 
     /* =====================
        VALIDATION
     ===================== */
 
-    if (!Number.isInteger(breakdownId) || breakdownId <= 0) {
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
       return res.status(400).json({
         error: "Invalid breakdown id"
       });
+
     }
 
 
@@ -1259,11 +1264,52 @@ app.get("/breakdowns/:id", async (req, res) => {
         b.created_at,
         b.updated_at,
 
+        /* ===============================================
+           VERIFIED / CORRECTION DATA
+        =============================================== */
+
+        b.verified_down_seconds,
+        b.downtime_correction_reason,
+        b.downtime_corrected_by,
+        b.downtime_corrected_by_id,
+        b.downtime_corrected_at,
+
+        /* ===============================================
+           ASSET / LINE
+        =============================================== */
+
         a.model AS asset_model,
         a.serial_number AS asset_serial,
         a.line_id,
 
-        l.name AS line_name
+        l.name AS line_name,
+
+        /* ===============================================
+           DT MODEL v1
+
+           recorded_down_seconds:
+             raw Machine State DOWN intervals
+
+           effective_down_seconds:
+             verified value when available,
+             otherwise recorded value
+
+           downtime_mode:
+             VERIFIED or RECORDED
+        =============================================== */
+
+        dt.recorded_down_seconds,
+
+        COALESCE(
+          b.verified_down_seconds,
+          dt.recorded_down_seconds
+        ) AS effective_down_seconds,
+
+        CASE
+          WHEN b.verified_down_seconds IS NOT NULL
+            THEN 'VERIFIED'
+          ELSE 'RECORDED'
+        END AS downtime_mode
 
       FROM breakdowns b
 
@@ -1273,7 +1319,59 @@ app.get("/breakdowns/:id", async (req, res) => {
       LEFT JOIN lines l
         ON l.id = a.line_id
 
+
+      /* ===============================================
+         RECORDED MACHINE DOWN TIME
+
+         Closed interval:
+           started_at → ended_at
+
+         Active interval:
+           started_at → NOW()
+
+         CLOSED Breakdown safety:
+           never count beyond closed_at
+      =============================================== */
+
+      LEFT JOIN LATERAL (
+
+        SELECT
+          COALESCE(
+            SUM(
+              GREATEST(
+                EXTRACT(
+                  EPOCH FROM (
+                    LEAST(
+                      COALESCE(
+                        bsh.ended_at,
+                        NOW()
+                      ),
+                      COALESCE(
+                        b.closed_at,
+                        NOW()
+                      )
+                    )
+                    -
+                    bsh.started_at
+                  )
+                ),
+                0
+              )
+            ),
+            0
+          ) AS recorded_down_seconds
+
+        FROM breakdown_state_history bsh
+
+        WHERE
+          bsh.breakdown_id = b.id
+          AND bsh.state = 'DOWN'
+
+      ) dt ON TRUE
+
+
       WHERE b.id = $1
+
       LIMIT 1
       `,
       [breakdownId]
@@ -1285,9 +1383,11 @@ app.get("/breakdowns/:id", async (req, res) => {
     ===================== */
 
     if (result.rows.length === 0) {
+
       return res.status(404).json({
         error: "Breakdown not found"
       });
+
     }
 
 
@@ -1295,7 +1395,10 @@ app.get("/breakdowns/:id", async (req, res) => {
        RESPONSE
     ===================== */
 
-    return res.json(result.rows[0]);
+    return res.json(
+      result.rows[0]
+    );
+
 
   } catch (err) {
 
@@ -1305,7 +1408,8 @@ app.get("/breakdowns/:id", async (req, res) => {
     );
 
     return res.status(500).json({
-      error: "Failed to load breakdown"
+      error:
+        "Failed to load breakdown"
     });
 
   }
