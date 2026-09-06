@@ -7056,131 +7056,179 @@ document
     saveEditBreakdown
   );
 
-  /* =========================================================
+/* =========================================================
    OPEN VERIFIED DOWNTIME MODAL
    Admin only
    Read / preload only
 ========================================================= */
 
-document
-  .getElementById("verifyDowntimeBtn")
-  ?.addEventListener("click", () => {
+document.getElementById("verifyDowntimeBtn")?.addEventListener("click", () => {
 
-    if (!currentBreakdown) {
-      return;
-    }
+  if (!currentBreakdown) {
+    return;
+  }
 
-    const overlay =
-      document.getElementById(
-        "verifiedDowntimeOverlay"
+  const overlay =
+    document.getElementById(
+      "verifiedDowntimeOverlay"
+    );
+
+  const refEl =
+    document.getElementById(
+      "verifiedDowntimeBreakdownRef"
+    );
+
+  const recordedEl =
+    document.getElementById(
+      "verifiedDowntimeRecorded"
+    );
+
+  const effectiveEl =
+    document.getElementById(
+      "verifiedDowntimeEffective"
+    );
+
+  const minutesInput =
+    document.getElementById(
+      "verifiedDowntimeMinutes"
+    );
+
+  const reasonInput =
+    document.getElementById(
+      "verifiedDowntimeReason"
+    );
+
+  const clearBtn =
+    document.getElementById(
+      "clearVerifiedDowntimeBtn"
+    );
+
+
+  const recordedSeconds =
+    Number(
+      currentBreakdown
+        .recorded_down_seconds || 0
+    );
+
+  const effectiveSeconds =
+    Number(
+      currentBreakdown
+        .effective_down_seconds || 0
+    );
+
+
+  /* =====================
+     BREAKDOWN REFERENCE
+  ===================== */
+
+  if (refEl) {
+    refEl.textContent =
+      `BD-${String(
+        currentBreakdown.id
+      ).padStart(5, "0")}`;
+  }
+
+
+  /* =====================
+     RECORDED DOWN
+  ===================== */
+
+  if (recordedEl) {
+    recordedEl.textContent =
+      formatBreakdownSeconds(
+        recordedSeconds
+      );
+  }
+
+
+  /* =====================
+     CURRENT EFFECTIVE DOWN
+  ===================== */
+
+  if (effectiveEl) {
+    effectiveEl.textContent =
+      formatBreakdownSeconds(
+        effectiveSeconds
+      );
+  }
+
+
+  /* =====================
+     VERIFIED VALUE PRELOAD
+
+     Existing verification:
+     preload verified value.
+
+     No verification:
+     preload recorded downtime.
+  ===================== */
+
+  if (minutesInput) {
+
+    const secondsToUse =
+      currentBreakdown
+        .verified_down_seconds !== null &&
+      currentBreakdown
+        .verified_down_seconds !== undefined
+        ? Number(
+            currentBreakdown
+              .verified_down_seconds
+          )
+        : recordedSeconds;
+
+    minutesInput.value =
+      Math.round(
+        secondsToUse / 60
       );
 
-    const refEl =
-      document.getElementById(
-        "verifiedDowntimeBreakdownRef"
-      );
-
-    const recordedEl =
-      document.getElementById(
-        "verifiedDowntimeRecorded"
-      );
-
-    const effectiveEl =
-      document.getElementById(
-        "verifiedDowntimeEffective"
-      );
-
-    const minutesInput =
-      document.getElementById(
-        "verifiedDowntimeMinutes"
-      );
-
-    const reasonInput =
-      document.getElementById(
-        "verifiedDowntimeReason"
-      );
+  }
 
 
-    const recordedSeconds =
-      Number(
-        currentBreakdown
-          .recorded_down_seconds || 0
-      );
+  /* =====================
+     CORRECTION REASON
+  ===================== */
 
-    const effectiveSeconds =
-      Number(
-        currentBreakdown
-          .effective_down_seconds || 0
-      );
+  if (reasonInput) {
 
+    reasonInput.value =
+      currentBreakdown
+        .downtime_correction_reason || "";
 
-    if (refEl) {
-      refEl.textContent =
-        `BD-${String(
-          currentBreakdown.id
-        ).padStart(5, "0")}`;
-    }
+  }
 
 
-    if (recordedEl) {
-      recordedEl.textContent =
-        formatBreakdownSeconds(
-          recordedSeconds
-        );
-    }
+  /* =====================
+     CLEAR VERIFICATION BUTTON
+
+     Visible only when a verified
+     downtime correction already exists.
+  ===================== */
+
+  const hasVerification =
+    currentBreakdown
+      .verified_down_seconds !== null &&
+    currentBreakdown
+      .verified_down_seconds !== undefined;
+
+  if (clearBtn) {
+
+    clearBtn.style.display =
+      hasVerification
+        ? "inline-flex"
+        : "none";
+
+  }
 
 
-    if (effectiveEl) {
-      effectiveEl.textContent =
-        formatBreakdownSeconds(
-          effectiveSeconds
-        );
-    }
+  /* =====================
+     OPEN MODAL
+  ===================== */
 
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
 
-    /*
-      If a verified value already exists,
-      preload it.
-
-      Otherwise preload current recorded
-      downtime as the starting value.
-    */
-
-    if (minutesInput) {
-
-      const secondsToUse =
-        currentBreakdown
-          .verified_down_seconds !== null &&
-        currentBreakdown
-          .verified_down_seconds !== undefined
-          ? Number(
-              currentBreakdown
-                .verified_down_seconds
-            )
-          : recordedSeconds;
-
-      minutesInput.value =
-        Math.round(
-          secondsToUse / 60
-        );
-
-    }
-
-
-    if (reasonInput) {
-
-      reasonInput.value =
-        currentBreakdown
-          .downtime_correction_reason || "";
-
-    }
-
-
-    if (overlay) {
-      overlay.style.display = "flex";
-    }
-
-  });
+});
 
   /* =========================================================
    CLOSE VERIFIED DOWNTIME MODAL
