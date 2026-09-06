@@ -3251,11 +3251,27 @@ function resetSectionLockState() {
 
 function askTechnician(id) {
 
-  // 🔑 Force SINGLE mode
+  // Force SINGLE mode
   state.bulkDoneMode = false;
 
-  // 🔑 Store selected task
+  // SINGLE mode → always show Actual Duration
+  const actualDurationGroup =
+    getEl("actualDurationGroup");
+
+  if (actualDurationGroup) {
+    actualDurationGroup.style.display = "block";
+  }
+
+  const actualDurationInput =
+    getEl("actualDurationInput");
+
+  if (actualDurationInput) {
+    actualDurationInput.value = "";
+  }
+
+  // Store selected task
   state.pendingTaskId = id;
+
 
 
   /* =====================
@@ -3323,28 +3339,6 @@ function askTechnician(id) {
       task.notes || "";
   }
 
-  /* =====================
-     ACTUAL DURATION
-  ===================== */
-
-  const actualDurationInput =
-    getEl("actualDurationInput");
-
-  if (actualDurationInput) {
-    actualDurationInput.value = "";
-  }
-
-  console.log(
-  "SINGLE DONE MODAL",
-  {
-    bulkDoneMode: state.bulkDoneMode,
-    actualDurationGroup:
-      getEl("actualDurationGroup"),
-    display:
-      getEl("actualDurationGroup")
-        ?.style.display
-  }
-);
 
   /* =====================
      OPEN MODAL
