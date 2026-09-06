@@ -2326,6 +2326,153 @@ function populateBreakdownDetail(breakdown) {
 
   }
 
+    /* =========================================================
+      DOWNTIME MODEL v1
+      READ-ONLY SUMMARY
+
+      Recorded DOWN:
+      Raw Machine State DOWN intervals.
+
+      Effective DOWN:
+      Canonical CMMS downtime.
+
+      If verified_down_seconds exists:
+        Effective = Verified
+
+      Otherwise:
+        Effective = Recorded
+    ========================================================= */
+
+    const recordedDownEl =
+      document.getElementById(
+        "bd-detail-recorded-down"
+      );
+
+    const effectiveDownEl =
+      document.getElementById(
+        "bd-detail-effective-down"
+      );
+
+    const downtimeModeEl =
+      document.getElementById(
+        "bd-detail-downtime-mode"
+      );
+
+    const downtimeVerificationEl =
+      document.getElementById(
+        "bd-downtime-verification"
+      );
+
+    const downtimeReasonEl =
+      document.getElementById(
+        "bd-detail-downtime-reason"
+      );
+
+    const downtimeCorrectedByEl =
+      document.getElementById(
+        "bd-detail-downtime-corrected-by"
+      );
+
+    const downtimeCorrectedAtEl =
+      document.getElementById(
+        "bd-detail-downtime-corrected-at"
+      );
+
+
+    const recordedDownSeconds =
+      Number(
+        breakdown.recorded_down_seconds || 0
+      );
+
+    const effectiveDownSeconds =
+      Number(
+        breakdown.effective_down_seconds || 0
+      );
+
+    const isVerifiedDowntime =
+      breakdown.downtime_mode === "VERIFIED";
+
+
+    if (recordedDownEl) {
+
+      recordedDownEl.textContent =
+        formatBreakdownSeconds(
+          recordedDownSeconds
+        );
+
+    }
+
+
+    if (effectiveDownEl) {
+
+      effectiveDownEl.textContent =
+        formatBreakdownSeconds(
+          effectiveDownSeconds
+        );
+
+    }
+
+
+    if (downtimeModeEl) {
+
+      downtimeModeEl.style.display =
+        isVerifiedDowntime
+          ? "inline-flex"
+          : "none";
+
+    }
+
+
+    if (downtimeVerificationEl) {
+
+      downtimeVerificationEl.style.display =
+        isVerifiedDowntime
+          ? "block"
+          : "none";
+
+    }
+
+
+    if (downtimeReasonEl) {
+
+      downtimeReasonEl.textContent =
+        isVerifiedDowntime
+          ? (
+              breakdown
+                .downtime_correction_reason ||
+              "-"
+            )
+          : "-";
+
+    }
+
+
+    if (downtimeCorrectedByEl) {
+
+      downtimeCorrectedByEl.textContent =
+        isVerifiedDowntime
+          ? (
+              breakdown
+                .downtime_corrected_by ||
+              "-"
+            )
+          : "-";
+
+    }
+
+
+    if (downtimeCorrectedAtEl) {
+
+      downtimeCorrectedAtEl.textContent =
+        isVerifiedDowntime &&
+        breakdown.downtime_corrected_at
+          ? formatBreakdownDate(
+              breakdown.downtime_corrected_at
+            )
+          : "-";
+
+    }
+
 
   /* =========================================================
      CLOSURE SUMMARY

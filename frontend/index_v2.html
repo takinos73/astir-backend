@@ -1863,6 +1863,123 @@
     </div>
 
   </div>
+    <!-- =========================================================
+      DOWNTIME MODEL v1
+
+      Read-only summary.
+
+      Recorded DOWN:
+      Sum of Machine State = DOWN intervals.
+
+      Effective DOWN:
+      Canonical downtime used by CMMS.
+      Uses verified value when available,
+      otherwise recorded value.
+  ========================================================= -->
+
+  <div
+    id="bd-downtime-summary"
+    class="breakdown-detail-section breakdown-downtime-summary"
+  >
+
+    <div class="breakdown-downtime-grid">
+
+      <div>
+        <div class="breakdown-detail-label">
+          Recorded DOWN Time
+        </div>
+
+        <div
+          id="bd-detail-recorded-down"
+          class="breakdown-detail-value"
+        >
+          -
+        </div>
+      </div>
+
+
+      <div>
+        <div class="breakdown-detail-label">
+          Effective DOWN Time
+        </div>
+
+        <div class="breakdown-downtime-effective-row">
+
+          <div
+            id="bd-detail-effective-down"
+            class="breakdown-detail-value"
+          >
+            -
+          </div>
+
+          <span
+            id="bd-detail-downtime-mode"
+            class="breakdown-downtime-mode"
+            style="display:none;"
+          >
+            ✓ VERIFIED
+          </span>
+
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- Visible only when verified downtime exists -->
+
+    <div
+      id="bd-downtime-verification"
+      class="breakdown-downtime-verification"
+      style="display:none;"
+    >
+
+      <div class="breakdown-detail-label">
+        Correction Reason
+      </div>
+
+      <div
+        id="bd-detail-downtime-reason"
+        class="breakdown-detail-value"
+      >
+        -
+      </div>
+
+
+      <div class="breakdown-downtime-audit-grid">
+
+        <div>
+          <div class="breakdown-detail-label">
+            Corrected By
+          </div>
+
+          <div
+            id="bd-detail-downtime-corrected-by"
+            class="breakdown-detail-value"
+          >
+            -
+          </div>
+        </div>
+
+
+        <div>
+          <div class="breakdown-detail-label">
+            Corrected At
+          </div>
+
+          <div
+            id="bd-detail-downtime-corrected-at"
+            class="breakdown-detail-value"
+          >
+            -
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
     <!-- =========================================================
       CLOSURE SUMMARY
