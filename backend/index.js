@@ -5989,6 +5989,223 @@ app.get("/kpis/workload-mix", async (req, res) => {
 
 });
 
+/*================================================
+ KPI – BREAKDOWN SUMMARY
+ DT Model v1
+
+ Source:
+   breakdowns = Breakdown incidents
+   breakdown_state_history = raw Machine State history
+
+ Rules:
+   - Incident count comes from breakdowns
+   - Active = OPEN + IN_PROGRESS
+   - Effective DOWN =
+       Verified DOWN when available
+       otherwise Recorded DOWN
+   - Average DOWN uses CLOSED incidents only
+
+ Restoration Task duration is NOT downtime.
+=================================================*/
+
+app.get("/kpis/breakdowns/summary", async (req, res) => {
+
+  try {
+
+    const { rows } =
+      await pool.query(`
+        WITH breakdown_downtime AS (
+
+          SELECT
+            b.id,
+            b.status,
+
+            /* =========================
+               RECORDED DOWN
+
+               Sum raw DOWN intervals,
+               clipped to Breakdown end.
+            ========================= */
+
+            COALESCE(
+              (
+                SELECT
+                  SUM(
+                    GREATEST(
+                      EXTRACT(
+                        EPOCH FROM (
+                          LEAST(
+                            COALESCE(
+                              bsh.ended_at,
+                              NOW()
+                            ),
+                            COALESCE(
+                              b.closed_at,
+                              NOW()
+                            )
+                          )
+                          - bsh.started_at
+                        )
+                      ),
+                      0
+                    )
+                  )
+
+                FROM breakdown_state_history bsh
+
+                WHERE
+                  bsh.breakdown_id = b.id
+                  AND bsh.state = 'DOWN'
+              ),
+              0
+            ) AS recorded_down_seconds,
+
+
+            /* =========================
+               VERIFIED DOWN
+            ========================= */
+
+            b.verified_down_seconds
+
+          FROM breakdowns b
+        ),
+
+        effective_downtime AS (
+
+          SELECT
+            id,
+            status,
+
+            /* =========================
+               CANONICAL EFFECTIVE DOWN
+
+               NULL verified value:
+                 use Recorded
+
+               0 verified value:
+                 explicitly verified
+                 zero downtime
+            ========================= */
+
+            COALESCE(
+              verified_down_seconds,
+              recorded_down_seconds
+            ) AS effective_down_seconds
+
+          FROM breakdown_downtime
+        )
+
+
+        SELECT
+
+          /* =========================
+             ALL BREAKDOWN INCIDENTS
+          ========================= */
+
+          COUNT(*)::int
+            AS total_incidents,
+
+
+          /* =========================
+             ACTIVE INCIDENTS
+
+             OPEN + IN_PROGRESS
+          ========================= */
+
+          COUNT(*) FILTER (
+            WHERE status IN (
+              'OPEN',
+              'IN_PROGRESS'
+            )
+          )::int
+            AS active_incidents,
+
+
+          /* =========================
+             CLOSED INCIDENTS
+          ========================= */
+
+          COUNT(*) FILTER (
+            WHERE status = 'CLOSED'
+          )::int
+            AS closed_incidents,
+
+
+          /* =========================
+             TOTAL EFFECTIVE DOWN
+
+             All incidents, including
+             currently active ones.
+          ========================= */
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ),
+            0
+          )::bigint
+            AS total_effective_down_seconds,
+
+
+          /* =========================
+             CLOSED EFFECTIVE DOWN
+
+             Useful denominator/source
+             for closed-breakdown metrics.
+          ========================= */
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ) FILTER (
+              WHERE status = 'CLOSED'
+            ),
+            0
+          )::bigint
+            AS closed_effective_down_seconds,
+
+
+          /* =========================
+             AVG EFFECTIVE DOWN
+             PER CLOSED BREAKDOWN
+
+             Not called MTTR.
+          ========================= */
+
+          COALESCE(
+            ROUND(
+              AVG(
+                effective_down_seconds
+              ) FILTER (
+                WHERE status = 'CLOSED'
+              )
+            ),
+            0
+          )::bigint
+            AS avg_effective_down_seconds
+
+        FROM effective_downtime
+      `);
+
+
+    res.json(rows[0]);
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /kpis/breakdowns/summary ERROR:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */
