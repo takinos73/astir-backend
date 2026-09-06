@@ -1226,3 +1226,110 @@ input[type="checkbox"] {
   gap: 16px;
   margin-top: 12px;
 }
+
+/* =========================================================
+   VERIFIED DOWNTIME MODAL
+   DT Model v1
+========================================================= */
+
+#verifiedDowntimeModal {
+  width: min(560px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+
+/* =====================
+   CURRENT DOWNTIME VALUES
+===================== */
+
+#verifiedDowntimeModal .breakdown-detail-grid {
+  margin-top: 18px;
+  margin-bottom: 18px;
+  padding: 16px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.025);
+}
+
+
+/* =====================
+   FORM SECTION
+===================== */
+
+#verifiedDowntimeModal
+.breakdown-detail-section {
+  margin-top: 12px;
+}
+
+
+/* =====================
+   INPUTS
+===================== */
+
+#verifiedDowntimeMinutes,
+#verifiedDowntimeReason {
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-top: 6px;
+
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+
+  outline: none;
+}
+
+
+#verifiedDowntimeMinutes {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+
+#verifiedDowntimeReason {
+  min-height: 85px;
+  padding: 10px;
+
+  resize: vertical;
+}
+
+
+/* =====================
+   FOCUS
+===================== */
+
+#verifiedDowntimeMinutes:focus,
+#verifiedDowntimeReason:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+
+/* =====================
+   HELP TEXT
+===================== */
+
+#verifiedDowntimeModal .field-hint {
+  display: block;
+
+  margin-top: 6px;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  opacity: 0.65;
+}
+
+
+/* =====================
+   ACTIONS
+===================== */
+
+#verifiedDowntimeModal .modal-actions {
+  margin-top: 20px;
+}

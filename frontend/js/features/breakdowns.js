@@ -7197,3 +7197,300 @@ document
     closeVerifiedDowntimeModal
   );
 
+  /* =========================================================
+   SAVE VERIFIED DOWNTIME
+   DT Model v1
+
+   Admin only.
+
+   IMPORTANT:
+   - Does NOT modify Machine State History
+   - Stores only the verified/corrected DOWN time
+   - Backend remains the authority for validation
+========================================================= */
+
+document
+  .getElementById("saveVerifiedDowntimeBtn")
+  ?.addEventListener("click", async () => {
+
+    if (!currentBreakdown) {
+      alert("Breakdown not loaded.");
+      return;
+    }
+
+
+    /* =====================
+       ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        localStorage.getItem("cmmsRole") || ""
+      ).toLowerCase();
+
+    if (role !== "admin") {
+      alert("Admin only.");
+      return;
+    }
+
+
+    /* =====================
+       INPUTS
+    ===================== */
+
+    const minutesInput =
+      document.getElementById(
+        "verifiedDowntimeMinutes"
+      );
+
+    const reasonInput =
+      document.getElementById(
+        "verifiedDowntimeReason"
+      );
+
+    const minutesValue =
+      String(
+        minutesInput?.value || ""
+      ).trim();
+
+    const reason =
+      String(
+        reasonInput?.value || ""
+      ).trim();
+
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
+    if (minutesValue === "") {
+      alert(
+        "Please enter the verified DOWN time."
+      );
+      return;
+    }
+
+
+    const verifiedMinutes =
+      Number(minutesValue);
+
+    if (
+      !Number.isFinite(verifiedMinutes) ||
+      verifiedMinutes < 0
+    ) {
+      alert(
+        "Verified DOWN time must be zero or greater."
+      );
+      return;
+    }
+
+
+    if (!reason) {
+      alert(
+        "Correction reason is required."
+      );
+      return;
+    }
+
+
+    const verifiedSeconds =
+      Math.round(
+        verifiedMinutes * 60
+      );
+
+
+    /* =====================
+       INCIDENT DURATION CHECK
+
+       Frontend safety only.
+       Backend performs the authoritative
+       validation as well.
+    ===================== */
+
+    if (
+      currentBreakdown.status === "CLOSED" &&
+      currentBreakdown.started_at &&
+      currentBreakdown.closed_at
+    ) {
+
+      const startedAt =
+        new Date(
+          currentBreakdown.started_at
+        );
+
+      const closedAt =
+        new Date(
+          currentBreakdown.closed_at
+        );
+
+      const incidentSeconds =
+        Math.floor(
+          (
+            closedAt.getTime() -
+            startedAt.getTime()
+          ) / 1000
+        );
+
+
+      if (
+        verifiedSeconds >
+        incidentSeconds
+      ) {
+
+        alert(
+          "Verified DOWN time cannot exceed Incident Duration."
+        );
+
+        return;
+      }
+
+    }
+
+
+    /* =====================
+       CORRECTED BY
+
+       Use logged-in CMMS user.
+    ===================== */
+
+    const correctedBy =
+      localStorage.getItem(
+        "cmmsTechnicianName"
+      ) || "Admin";
+
+    const technicianIdRaw =
+      localStorage.getItem(
+        "cmmsTechnicianId"
+      );
+
+    const correctedById =
+      technicianIdRaw &&
+      Number.isInteger(
+        Number(technicianIdRaw)
+      )
+        ? Number(technicianIdRaw)
+        : null;
+
+
+    /* =====================
+       SAVE
+    ===================== */
+
+    try {
+
+      const response =
+        await fetch(
+          `/breakdowns/${currentBreakdown.id}/verified-downtime`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "x-cmms-role":
+                localStorage.getItem(
+                  "cmmsRole"
+                ) || ""
+            },
+
+            body: JSON.stringify({
+              verified_down_seconds:
+                verifiedSeconds,
+
+              downtime_correction_reason:
+                reason,
+
+              downtime_corrected_by:
+                correctedBy,
+
+              downtime_corrected_by_id:
+                correctedById
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        alert(
+          data.error ||
+          "Failed to save verified downtime."
+        );
+
+        return;
+      }
+
+
+      /* =====================
+         CLOSE EDIT MODAL
+      ===================== */
+
+      closeVerifiedDowntimeModal();
+
+
+      /* =====================
+         RELOAD BREAKDOWN
+
+         Do not manually patch local values.
+
+         Reload from backend so:
+         - Recorded DOWN
+         - Verified DOWN
+         - Effective DOWN
+         - audit metadata
+
+         all come from one authoritative source.
+      ===================== */
+
+      const detailResponse =
+        await fetch(
+          `/breakdowns/${currentBreakdown.id}`
+        );
+
+      if (!detailResponse.ok) {
+        throw new Error(
+          "Failed to reload Breakdown"
+        );
+      }
+
+
+      const freshBreakdown =
+        await detailResponse.json();
+
+
+      /* =====================
+         REFRESH DETAIL
+      ===================== */
+
+      populateBreakdownDetail(
+        freshBreakdown
+      );
+
+
+      /* =====================
+         REFRESH MAIN LIST
+      ===================== */
+
+      await loadBreakdowns();
+
+
+    } catch (err) {
+
+      console.error(
+        "Save verified downtime error:",
+        err
+      );
+
+      alert(
+        "Failed to save verified downtime."
+      );
+
+    }
+
+  });
+
