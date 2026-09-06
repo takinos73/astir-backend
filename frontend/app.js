@@ -3606,25 +3606,55 @@ getEl("confirmDone")?.addEventListener("click", async () => {
 
         /* =====================
           ACTUAL DURATION
-          Visible only in SINGLE mode
+          SINGLE mode only
+
+          Blank = null
+          Value = actual service duration in minutes
         ===================== */
-
-        const actualDurationGroup =
-          getEl("actualDurationGroup");
-
-        if (actualDurationGroup) {
-          actualDurationGroup.style.setProperty(
-            "display",
-            "block",
-            "important"
-          );
-        }
 
         const actualDurationInput =
           getEl("actualDurationInput");
 
-        if (actualDurationInput) {
-          actualDurationInput.value = "";
+        let actualDurationMin = null;
+
+
+        /*
+          Bulk completion does not use one common
+          Actual Duration.
+
+          Each task keeps its own estimated duration
+          as the existing bulk fallback.
+        */
+        if (
+          state.bulkDoneMode !== true &&
+          actualDurationInput
+        ) {
+
+          const rawActualDuration =
+            String(
+              actualDurationInput.value || ""
+            ).trim();
+
+
+          if (rawActualDuration !== "") {
+
+            const parsedDuration =
+              Number(rawActualDuration);
+
+
+            if (
+              !Number.isFinite(parsedDuration) ||
+              parsedDuration < 0
+            ) {
+              return alert(
+                "Actual Duration must be zero or greater."
+              );
+            }
+
+
+            actualDurationMin =
+              parsedDuration;
+          }
         }
 
       try {
