@@ -6206,6 +6206,138 @@ app.get("/kpis/breakdowns/summary", async (req, res) => {
 
 });
 
+/*================================================
+ KPI – MAINTENANCE EXECUTION MIX
+
+ Counts completed maintenance executions.
+
+ New CMMS model:
+   - Preventive
+   - Planned
+   - Restoration
+   - Legacy Unplanned
+
+ IMPORTANT:
+   Restoration is identified FIRST by
+   maintenance_tasks.breakdown_id.
+
+   Legacy Unplanned remains temporarily
+   until historical migration is complete.
+=================================================*/
+
+app.get("/kpis/execution-mix", async (req, res) => {
+
+  try {
+
+    const { rows } =
+      await pool.query(`
+        SELECT
+
+          /* =========================
+             TOTAL EXECUTIONS
+          ========================= */
+
+          COUNT(te.id)::int
+            AS total_executions,
+
+
+          /* =========================
+             PREVENTIVE
+
+             Recurring maintenance task
+             not linked to a Breakdown.
+          ========================= */
+
+          COUNT(te.id) FILTER (
+            WHERE
+              mt.breakdown_id IS NULL
+              AND COALESCE(
+                mt.frequency_hours,
+                0
+              ) > 0
+          )::int
+            AS preventive_executions,
+
+
+          /* =========================
+             PLANNED
+
+             One-off planned work,
+             not linked to a Breakdown.
+          ========================= */
+
+          COUNT(te.id) FILTER (
+            WHERE
+              mt.breakdown_id IS NULL
+              AND COALESCE(
+                mt.frequency_hours,
+                0
+              ) = 0
+              AND mt.is_planned = true
+          )::int
+            AS planned_executions,
+
+
+          /* =========================
+             RESTORATION
+
+             Any execution whose parent
+             maintenance task belongs to
+             a new Breakdown incident.
+
+             breakdown_id takes priority
+             over is_planned.
+          ========================= */
+
+          COUNT(te.id) FILTER (
+            WHERE
+              mt.breakdown_id IS NOT NULL
+          )::int
+            AS restoration_executions,
+
+
+          /* =========================
+             LEGACY UNPLANNED
+
+             Old Breakdown-as-Task model.
+
+             Temporary category until
+             legacy migration is complete.
+          ========================= */
+
+          COUNT(te.id) FILTER (
+            WHERE
+              mt.breakdown_id IS NULL
+              AND mt.is_planned = false
+          )::int
+            AS legacy_unplanned_executions
+
+
+        FROM task_executions te
+
+        JOIN maintenance_tasks mt
+          ON mt.id = te.task_id
+      `);
+
+
+    res.json(rows[0]);
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /kpis/execution-mix ERROR:",
+      err.message
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */
