@@ -1568,6 +1568,15 @@ function updateBreakdownStatusUI(breakdown) {
     ).toUpperCase();
 
 
+  const role =
+    String(
+      localStorage.getItem("cmmsRole") || ""
+    ).toLowerCase();
+
+  const isAdmin =
+    role === "admin";
+
+
   const statusEl =
     document.getElementById(
       "bd-detail-status"
@@ -1588,6 +1597,30 @@ function updateBreakdownStatusUI(breakdown) {
       "addRestorationTaskBtn"
     );
 
+  const editBreakdownBtn =
+    document.getElementById(
+      "editBreakdownBtn"
+    );
+
+  const verifyDowntimeBtn =
+    document.getElementById(
+      "verifyDowntimeBtn"
+    );
+
+
+  /* =====================
+     EDIT BREAKDOWN
+
+     Admin only
+  ===================== */
+
+  if (editBreakdownBtn) {
+    editBreakdownBtn.style.display =
+      isAdmin
+        ? "inline-flex"
+        : "none";
+  }
+
 
   /* =====================
      STATUS LABEL
@@ -1598,12 +1631,6 @@ function updateBreakdownStatusUI(breakdown) {
     statusEl.textContent =
       status || "-";
 
-    /*
-      Status-specific class.
-
-      Used for Breakdown status badges.
-    */
-
     statusEl.classList.remove(
       "status-open",
       "status-in-progress",
@@ -1612,29 +1639,23 @@ function updateBreakdownStatusUI(breakdown) {
 
 
     if (status === "OPEN") {
-
       statusEl.classList.add(
         "status-open"
       );
-
     }
 
 
     if (status === "IN_PROGRESS") {
-
       statusEl.classList.add(
         "status-in-progress"
       );
-
     }
 
 
     if (status === "CLOSED") {
-
       statusEl.classList.add(
         "status-closed"
       );
-
     }
 
   }
@@ -1682,11 +1703,6 @@ function updateBreakdownStatusUI(breakdown) {
 
      New Restoration Tasks are allowed
      only while the Breakdown is active.
-
-     CLOSED Breakdown:
-     - Existing tasks remain visible
-     - Existing open tasks may still be completed
-     - New Restoration Tasks cannot be created
   ===================== */
 
   if (addTaskBtn) {
@@ -1698,19 +1714,15 @@ function updateBreakdownStatusUI(breakdown) {
 
   }
 
-    const verifyDowntimeBtn =
-    document.getElementById(
-      "verifyDowntimeBtn"
-    );
 
-    const role =
-      String(
-        localStorage.getItem("cmmsRole") || ""
-      ).toLowerCase();
+  /* =====================
+     VERIFY DOWNTIME
 
-    const isAdmin =
-      role === "admin";
+     Admin only
+     Closed Breakdowns only
+  ===================== */
 
+  if (verifyDowntimeBtn) {
 
     verifyDowntimeBtn.style.display =
       (
@@ -1719,6 +1731,8 @@ function updateBreakdownStatusUI(breakdown) {
       )
         ? "inline-flex"
         : "none";
+
+  }
 
 }
 
@@ -7209,9 +7223,7 @@ document
    - Backend remains the authority for validation
 ========================================================= */
 
-document
-  .getElementById("saveVerifiedDowntimeBtn")
-  ?.addEventListener("click", async () => {
+document.getElementById("saveVerifiedDowntimeBtn")?.addEventListener("click", async () => {
 
     if (!currentBreakdown) {
       alert("Breakdown not loaded.");

@@ -1355,3 +1355,25 @@ input[type="checkbox"] {
 #verifiedDowntimeModal .modal-actions {
   margin-top: 20px;
 }
+
+/* =========================================================
+   BREAKDOWN DETAIL ACTIONS
+========================================================= */
+
+/* Edit = secondary action */
+.btn-breakdown-edit {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d1d5db;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-breakdown-edit:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+
+/* Restored = primary lifecycle action */
+.btn-breakdown-restored {
+  font-weight: 700;
+}
