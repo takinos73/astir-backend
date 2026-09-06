@@ -4571,7 +4571,15 @@ app.patch("/tasks/:id", async (req, res) => {
           ? Math.round(
               Number(actual_duration_min)
             )
-          : null,
+          : (
+              Number.isFinite(
+                Number(task.duration_min)
+              )
+                ? Math.round(
+                    Number(task.duration_min)
+                  )
+                : null
+              ),
 
         notes || task.notes || null
       ]

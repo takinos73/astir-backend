@@ -3837,12 +3837,8 @@ async function loadReports() {
 /* =====================
    REPORT LINES - MULTI SELECT
 ===================== */
-function populateReportLines() {
 
-  console.log(
-    "REPORT LINES assetsData =",
-    state.assetsData
-  );
+function populateReportLines() {
 
   const container =
     document.getElementById("reportLineOptions");
@@ -3893,6 +3889,7 @@ function populateReportLines() {
 
   updateReportLineButton();
 }
+
 function getSelectedReportLines() {
 
   const all =
@@ -3931,9 +3928,8 @@ function updateReportLineButton() {
       ? selected.join(", ")
       : `${selected.length} Lines`;
 }
-document
-  .getElementById("reportLineBtn")
-  ?.addEventListener("click", () => {
+
+document.getElementById("reportLineBtn")?.addEventListener("click", () => {
 
     const menu =
       document.getElementById("reportLineMenu");
@@ -3946,8 +3942,7 @@ document
         : "block";
   });
 
-document
-  .getElementById("reportLineAll")
+document.getElementById("reportLineAll")
   ?.addEventListener("change", e => {
 
     const checked =
