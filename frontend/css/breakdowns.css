@@ -1357,23 +1357,29 @@ input[type="checkbox"] {
 }
 
 /* =========================================================
-   BREAKDOWN DETAIL ACTIONS
+   RESTORE BREAKDOWN
+   Subtle Primary
 ========================================================= */
 
-/* Edit = secondary action */
-.btn-breakdown-edit {
-  background: rgba(255, 255, 255, 0.06);
-  color: #d1d5db;
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.btn-breakdown-edit:hover {
-  background: rgba(255, 255, 255, 0.10);
-}
-
-
-/* Restored = primary lifecycle action */
 .btn-breakdown-restored {
+  background: #2f6f8f;
+  color: #f7fbff;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+
   font-weight: 700;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.btn-breakdown-restored:hover {
+  background: #377fa3;
+
+  border-color:
+    rgba(255, 255, 255, 0.16);
+}
+
+.btn-breakdown-restored:active {
+  transform: translateY(1px);
 }
