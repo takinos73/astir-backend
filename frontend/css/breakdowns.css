@@ -1236,6 +1236,7 @@ input[type="checkbox"] {
   width: min(560px, 92vw);
   max-height: 90vh;
   overflow-y: auto;
+  color:#2b2b2c
 }
 
 
