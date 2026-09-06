@@ -1341,9 +1341,7 @@ function updateCentralHistoryLegendCounts(filtered, all = state.executionsData) 
 /* =====================
 TASK VIEW DONE BUTTON HANDLER
 =====================*/
-document
-  .getElementById("taskViewDoneBtn")
-  ?.addEventListener("click", () => {
+document.getElementById("taskViewDoneBtn")?.addEventListener("click", () => {
 
     if (!state.currentViewedTask) return;
 
@@ -1353,8 +1351,6 @@ document
     // Χρησιμοποίησε ΥΠΑΡΧΟΝ flow
     askTechnician(state.currentViewedTask.id);
   });
-
-
 
 /* =====================
    KPIs
@@ -3327,6 +3323,16 @@ function askTechnician(id) {
       task.notes || "";
   }
 
+  /* =====================
+     ACTUAL DURATION
+  ===================== */
+
+  const actualDurationInput =
+    getEl("actualDurationInput");
+
+  if (actualDurationInput) {
+    actualDurationInput.value = "";
+  }
 
   /* =====================
      OPEN MODAL
@@ -3364,7 +3370,6 @@ getEl("cancelDone")?.addEventListener("click", () => {
 ===================================================== */
 
 
-
 /* =====================
    COMPLETE SINGLE TASK
 ===================== */
@@ -3373,7 +3378,8 @@ async function completeSingleTask({
   technicianId,
   technicianName,
   completedAt,
-  notes
+  notes,
+  actualDurationMin
 }) {
 
   const res = await fetch(
@@ -3395,6 +3401,11 @@ async function completeSingleTask({
 
         completed_at:
           completedAt,
+
+        // Actual execution / service time
+        // Separate from task estimated duration
+        actual_duration_min:
+          actualDurationMin,
 
         notes
       })
@@ -3420,7 +3431,6 @@ async function completeSingleTask({
 
   return true;
 }
-
 
 /* =====================
    RESET DONE MODAL
@@ -3529,10 +3539,7 @@ async function refreshAfterTaskCompletion() {
    SINGLE + BULK ORCHESTRATOR
 ===================== */
 
-getEl("confirmDone")
-  ?.addEventListener(
-    "click",
-    async () => {
+getEl("confirmDone")?.addEventListener("click", async () => {
 
       /* =====================
          TECHNICIAN
@@ -3591,6 +3598,22 @@ getEl("confirmDone")
           : new Date()
               .toISOString();
 
+      /* =====================
+        ACTUAL DURATION
+        SINGLE TASK ONLY
+      ===================== */
+
+      const actualDurationInput =
+        getEl("actualDurationInput");
+
+      const actualDurationValue =
+        actualDurationInput?.value;
+
+      const actualDurationMin =
+        actualDurationValue !== "" &&
+        actualDurationValue !== undefined
+          ? Number(actualDurationValue)
+          : null;
 
       try {
 
@@ -3628,10 +3651,10 @@ getEl("confirmDone")
             technicianId,
             technicianName,
             completedAt,
-            notes
+            notes,
+            actualDurationMin
           });
         }
-
 
         /* =====================
            COMMON CLEANUP
@@ -3790,6 +3813,7 @@ getEl("saveAssetBtn")?.addEventListener("click", async () => {
 /* =====================
    LOAD REPORTS TAB
 ===================== */
+
 async function loadReports() {
   // 🔴 αν δεν έχουμε assets, φόρτωσέ τα πρώτα
   if (!Array.isArray(state.assetsData) || state.assetsData.length === 0) {

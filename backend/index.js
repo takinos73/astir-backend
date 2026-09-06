@@ -4446,11 +4446,12 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
 app.patch("/tasks/:id", async (req, res) => {
 
   const {
-    completed_by,
-    completed_at,
-    notes,
-    technician_id
-  } = req.body;
+  completed_by,
+  completed_at,
+  notes,
+  technician_id,
+  actual_duration_min
+} = req.body;
 
   const { id } = req.params;
 
@@ -4565,10 +4566,10 @@ app.patch("/tasks/:id", async (req, res) => {
         completedAt,
 
         Number.isFinite(
-          Number(task.duration_min)
+          Number(actual_duration_min)
         )
           ? Math.round(
-              Number(task.duration_min)
+              Number(actual_duration_min)
             )
           : null,
 

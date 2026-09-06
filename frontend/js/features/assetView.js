@@ -586,7 +586,9 @@ function renderAssetHistoryTable(history) {
         ${
           execType === "restoration" && e.breakdown_id
             ? `
-              
+              <div class="history-breakdown-reference">
+                BD-${String(e.breakdown_id).padStart(5, "0")}
+              </div>
             `
             : ""
         }
@@ -604,9 +606,6 @@ function renderAssetHistoryTable(history) {
                 }
 
                 ${highlightAssetHistorySearch(e.unit || "")}
-                <div class="history-breakdown-reference">
-                  BD-${String(e.breakdown_id).padStart(5, "0")}
-                </div>
               </small>
             `
             : ""
