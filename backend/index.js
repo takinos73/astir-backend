@@ -1938,11 +1938,16 @@ app.patch("/breakdowns/:id/start", async (req, res) => {
    REOPEN BREAKDOWN
 
    CLOSED → IN_PROGRESS
+   Admin only
 
    IMPORTANT:
    - closed_at becomes NULL
+   - verified downtime correction is cleared
+   - correction audit fields are cleared
    - no Machine State is created automatically
    - previous Machine State history remains unchanged
+   - Restoration Tasks / Executions remain unchanged
+   - diagnosis fields remain unchanged
    - technician must manually select the current Machine State
 ========================================================= */
 
@@ -2087,13 +2092,23 @@ app.patch("/breakdowns/:id/reopen", async (req, res) => {
           SET
             status = 'IN_PROGRESS',
             closed_at = NULL,
+
+            /* Previous verification belongs
+              to the previous closed incident window */
+            verified_down_seconds = NULL,
+            downtime_correction_reason = NULL,
+            downtime_corrected_by = NULL,
+            downtime_corrected_by_id = NULL,
+            downtime_corrected_at = NULL,
+
             updated_at = NOW()
+
           WHERE id = $1
+
           RETURNING *
           `,
           [breakdownId]
         );
-
 
       await client.query("COMMIT");
 
