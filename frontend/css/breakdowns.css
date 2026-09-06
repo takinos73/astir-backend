@@ -566,8 +566,6 @@
 #startBreakdownBtn,
 #closeBreakdownBtn,
 #saveRestorationTaskBtn {
-  min-height: 34px;
-  border-radius: 8px;
   font-size: 12px;
   font-weight: 650;
   transition: transform .14s ease, filter .14s ease, box-shadow .14s ease;
