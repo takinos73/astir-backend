@@ -1236,7 +1236,28 @@ input[type="checkbox"] {
   width: min(560px, 92vw);
   max-height: 90vh;
   overflow-y: auto;
-  color:#2b2b2c
+
+  /* Solid background - must stand above Breakdown Detail */
+  background: #f7f8fa;
+  color: #2b2b2c;
+
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 10px;
+
+  /* Strong separation from modal underneath */
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    0 4px 14px rgba(0, 0, 0, 0.20);
+}
+
+#verifiedDowntimeOverlay {
+  background: rgba(0, 0, 0, 0.58);
+  z-index: 1200;
+}
+
+#verifiedDowntimeModal {
+  position: relative;
+  z-index: 1201;
 }
 
 
