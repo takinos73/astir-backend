@@ -3607,8 +3607,11 @@ getEl("confirmDone")?.addEventListener("click", async () => {
           getEl("actualDurationGroup");
 
         if (actualDurationGroup) {
-          actualDurationGroup.style.display =
-            "block";
+          actualDurationGroup.style.setProperty(
+            "display",
+            "block",
+            "important"
+          );
         }
 
         const actualDurationInput =

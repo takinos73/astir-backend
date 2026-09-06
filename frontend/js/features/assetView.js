@@ -979,7 +979,11 @@ function openBulkDoneModal() {
     getEl("actualDurationGroup");
 
   if (actualDurationGroup) {
-    actualDurationGroup.style.display = "none";
+    actualDurationGroup.style.setProperty(
+      "display",
+      "none",
+      "important"
+    );
   }
 
   const actualDurationInput =
