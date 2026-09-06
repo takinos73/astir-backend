@@ -3598,22 +3598,25 @@ getEl("confirmDone")?.addEventListener("click", async () => {
           : new Date()
               .toISOString();
 
-      /* =====================
-        ACTUAL DURATION
-        SINGLE TASK ONLY
-      ===================== */
+        /* =====================
+          ACTUAL DURATION
+          Visible only in SINGLE mode
+        ===================== */
 
-      const actualDurationInput =
-        getEl("actualDurationInput");
+        const actualDurationGroup =
+          getEl("actualDurationGroup");
 
-      const actualDurationValue =
-        actualDurationInput?.value;
+        if (actualDurationGroup) {
+          actualDurationGroup.style.display =
+            "block";
+        }
 
-      const actualDurationMin =
-        actualDurationValue !== "" &&
-        actualDurationValue !== undefined
-          ? Number(actualDurationValue)
-          : null;
+        const actualDurationInput =
+          getEl("actualDurationInput");
+
+        if (actualDurationInput) {
+          actualDurationInput.value = "";
+        }
 
       try {
 
