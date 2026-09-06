@@ -1068,6 +1068,20 @@ app.get("/breakdowns", async (req, res) => {
         b.created_at,
         b.updated_at,
 
+        /* ===============================================
+           VERIFIED / CORRECTED DOWNTIME
+        =============================================== */
+
+        b.verified_down_seconds,
+        b.downtime_correction_reason,
+        b.downtime_corrected_by,
+        b.downtime_corrected_by_id,
+        b.downtime_corrected_at,
+
+        /* ===============================================
+           ASSET
+        =============================================== */
+
         a.model AS asset_model,
         a.serial_number AS asset_serial,
         a.line_id,
@@ -1075,44 +1089,32 @@ app.get("/breakdowns", async (req, res) => {
         l.name AS line_name,
 
         /* ===============================================
-           ACTUAL MACHINE DOWN TIME
+           DOWNTIME MODEL v1
 
-           Sum only Machine State = DOWN.
+           recorded_down_seconds
+             = raw Machine State DOWN intervals
 
-           Closed interval:
-             started_at → ended_at
+           verified_down_seconds
+             = optional Admin correction
 
-           Active DOWN interval:
-             started_at → NOW()
+           effective_down_seconds
+             = verified value when available
+               otherwise recorded value
 
-           For a closed Breakdown, closed_at is used as
-           an additional safe upper boundary.
+           down_seconds
+             = legacy compatibility alias for frontend
+               until frontend cutover is completed
         =============================================== */
 
+        dt.recorded_down_seconds
+          AS down_seconds,
+
+        dt.recorded_down_seconds,
+
         COALESCE(
-          (
-            SELECT
-              SUM(
-                EXTRACT(
-                  EPOCH FROM (
-                    COALESCE(
-                      bsh.ended_at,
-                      b.closed_at,
-                      NOW()
-                    )
-                    - bsh.started_at
-                  )
-                )
-              )
-
-            FROM breakdown_state_history bsh
-
-            WHERE
-              bsh.breakdown_id = b.id
-              AND bsh.state = 'DOWN'
-          ),
-          0
-        ) AS down_seconds
+          b.verified_down_seconds,
+          dt.recorded_down_seconds
+        ) AS effective_down_seconds
 
       FROM breakdowns b
 
@@ -1121,6 +1123,48 @@ app.get("/breakdowns", async (req, res) => {
 
       LEFT JOIN lines l
         ON l.id = a.line_id
+
+
+      /* ===============================================
+         CALCULATE RECORDED MACHINE DOWN TIME ONCE
+      =============================================== */
+
+      LEFT JOIN LATERAL (
+
+        SELECT
+          COALESCE(
+            SUM(
+              GREATEST(
+                EXTRACT(
+                  EPOCH FROM (
+                    LEAST(
+                      COALESCE(
+                        bsh.ended_at,
+                        NOW()
+                      ),
+                      COALESCE(
+                        b.closed_at,
+                        NOW()
+                      )
+                    )
+                    -
+                    bsh.started_at
+                  )
+                ),
+                0
+              )
+            ),
+            0
+          ) AS recorded_down_seconds
+
+        FROM breakdown_state_history bsh
+
+        WHERE
+          bsh.breakdown_id = b.id
+          AND bsh.state = 'DOWN'
+
+      ) dt ON TRUE
+
 
       ORDER BY
         CASE b.status
