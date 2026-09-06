@@ -1698,6 +1698,28 @@ function updateBreakdownStatusUI(breakdown) {
 
   }
 
+    const verifyDowntimeBtn =
+    document.getElementById(
+      "verifyDowntimeBtn"
+    );
+
+    const role =
+      String(
+        localStorage.getItem("cmmsRole") || ""
+      ).toLowerCase();
+
+    const isAdmin =
+      role === "admin";
+
+
+    verifyDowntimeBtn.style.display =
+      (
+        isAdmin &&
+        status === "CLOSED"
+      )
+        ? "inline-flex"
+        : "none";
+
 }
 
 /* =========================================================
