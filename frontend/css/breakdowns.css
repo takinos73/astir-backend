@@ -1188,3 +1188,10 @@ input[type="checkbox"] {
   font-size: 15px;
   line-height: 1;
 }
+.breakdown-downtime-verified {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  opacity: 0.75;
+}

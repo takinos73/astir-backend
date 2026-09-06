@@ -222,21 +222,32 @@ function renderBreakdownsTable(breakdowns) {
 
 
       /* =====================
-         ACTUAL DOWN TIME
+        EFFECTIVE DOWN TIME
 
-         Source:
-         breakdown_state_history
+        DT Model v1
 
-         This is NOT Incident Duration.
+        Priority:
+        1. Verified DOWN Time
+        2. Recorded Machine State DOWN Time
+
+        This is the canonical downtime value
+        used by the CMMS.
+
+        This is NOT Incident Duration.
       ===================== */
 
       const downSeconds =
-        Number(b.down_seconds || 0);
+        Number(
+          b.effective_down_seconds || 0
+        );
 
       const downTime =
         formatBreakdownSeconds(
           downSeconds
         );
+
+      const isVerifiedDowntime =
+        b.downtime_mode === "VERIFIED";
 
 
       /* =====================
@@ -298,6 +309,16 @@ function renderBreakdownsTable(breakdowns) {
 
           <td>
             ${escapeBreakdownHtml(downTime)}
+
+            ${
+              isVerifiedDowntime
+                ? `
+                  <div class="breakdown-downtime-verified">
+                    ✓ VERIFIED
+                  </div>
+                `
+                : ""
+            }
           </td>
 
             <td class="breakdown-actions-cell">
