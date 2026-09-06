@@ -1269,6 +1269,10 @@ async function saveEditBreakdown() {
     }
 
 
+    /* =====================
+       PATCH BREAKDOWN
+    ===================== */
+
     const response =
       await fetch(
         `/breakdowns/${breakdownId}`,
@@ -1301,31 +1305,67 @@ async function saveEditBreakdown() {
 
 
     /* =====================
-       UPDATE LOCAL COPY
-
-       Backend returns the complete updated
-       Breakdown record.
-    ===================== */
-
-    currentBreakdown =
-      data.breakdown;
-
-
-    /* =====================
        CLOSE EDIT MODAL
     ===================== */
 
     closeEditBreakdownModal();
 
 
+    /* =====================================================
+       FRESH BREAKDOWN RELOAD
+
+       IMPORTANT:
+       PATCH returns the updated DB record,
+       but it does not necessarily include
+       calculated downtime fields such as:
+
+       - recorded_down_seconds
+       - effective_down_seconds
+       - downtime_mode
+
+       Therefore we immediately reload the
+       full Breakdown detail route.
+    ===================================================== */
+
+    const detailResponse =
+      await fetch(
+        `/breakdowns/${breakdownId}`
+      );
+
+
+    if (!detailResponse.ok) {
+
+      throw new Error(
+        "Breakdown updated, but detail reload failed."
+      );
+
+    }
+
+
+    const freshBreakdown =
+      await detailResponse.json();
+
+
+    /* =====================
+       UPDATE LOCAL COPY
+
+       Use the fresh GET result as the
+       authoritative current Breakdown.
+    ===================== */
+
+    currentBreakdown =
+      freshBreakdown;
+
+
     /* =====================
        REFRESH DETAIL
 
-       Reuse the existing renderer.
+       Now Recorded / Effective DOWN
+       values are immediately correct.
     ===================== */
 
     populateBreakdownDetail(
-      currentBreakdown
+      freshBreakdown
     );
 
 
@@ -1335,8 +1375,6 @@ async function saveEditBreakdown() {
        Editing incident data does not change
        Machine State, but Detail should remain
        fully synchronized.
-
-       Use your existing loader if available.
     ===================== */
 
     if (
@@ -1406,7 +1444,6 @@ async function saveEditBreakdown() {
   }
 
 }
-
 
 /* =====================
    POPULATE ASSET DROPDOWN
