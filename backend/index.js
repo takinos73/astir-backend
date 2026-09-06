@@ -1435,7 +1435,30 @@ app.get("/breakdowns/:id", async (req, res) => {
 
 app.patch("/breakdowns/:id", async (req, res) => {
 
-  const client = await pool.connect();
+  /* =====================
+    AUTHORIZATION
+
+    Edit Breakdown:
+    Admin + Planner only
+  ===================== */
+
+  const role =
+    String(
+      req.headers["x-cmms-role"] || ""
+    ).toLowerCase();
+
+  const canEditBreakdown =
+    role === "admin" ||
+    role === "planner";
+
+  if (!canEditBreakdown) {
+    return res.status(403).json({
+      error:
+        "Admin or Planner access required"
+    });
+  }
+
+    const client = await pool.connect();
 
   try {
 
@@ -1577,6 +1600,56 @@ app.patch("/breakdowns/:id", async (req, res) => {
 
     }
 
+    /* =====================
+    VERIFIED DOWNTIME VALIDATION
+
+    If a CLOSED Breakdown has an Admin
+    verified downtime correction, editing
+    Started At must not make:
+
+    Verified DOWN Time
+    >
+    Incident Duration
+  ===================== */
+
+  if (
+    existing.closed_at &&
+    existing.verified_down_seconds !== null &&
+    existing.verified_down_seconds !== undefined
+  ) {
+
+    const closedAt =
+      new Date(existing.closed_at);
+
+    const incidentSeconds =
+      Math.floor(
+        (
+          closedAt.getTime() -
+          resolvedStartedAt.getTime()
+        ) / 1000
+      );
+
+    const verifiedDownSeconds =
+      Number(
+        existing.verified_down_seconds
+      );
+
+
+    if (
+      Number.isFinite(verifiedDownSeconds) &&
+      verifiedDownSeconds > incidentSeconds
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(400).json({
+        error:
+          "Started At cannot make Incident Duration shorter than Verified DOWN Time"
+      });
+
+    }
+
+  }
 
     /* =====================
        MACHINE STATE VALIDATION

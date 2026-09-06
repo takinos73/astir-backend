@@ -1276,8 +1276,10 @@ async function saveEditBreakdown() {
           method: "PATCH",
 
           headers: {
-            "Content-Type":
-              "application/json"
+            "Content-Type": "application/json",
+
+            "x-cmms-role":
+              localStorage.getItem("cmmsRole") || ""
           },
 
           body:
@@ -1575,7 +1577,10 @@ function updateBreakdownStatusUI(breakdown) {
 
   const isAdmin =
     role === "admin";
-
+  
+  const canEditBreakdown =
+    role === "admin" ||
+    role === "planner";
 
   const statusEl =
     document.getElementById(
@@ -1609,18 +1614,17 @@ function updateBreakdownStatusUI(breakdown) {
 
 
   /* =====================
-     EDIT BREAKDOWN
+    EDIT BREAKDOWN
 
-     Admin only
+    Admin + Planner only
   ===================== */
 
   if (editBreakdownBtn) {
     editBreakdownBtn.style.display =
-      isAdmin
+      canEditBreakdown
         ? "inline-flex"
         : "none";
   }
-
 
   /* =====================
      STATUS LABEL
