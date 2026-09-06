@@ -7275,7 +7275,7 @@ document
    - Backend remains the authority for validation
 ========================================================= */
 
-document.getElementById("saveVerifiedDowntimeBtn")?.addEventListener("click", async () => {
+document.getElementById("saveVerifiedDowntimeBtn") ?.addEventListener("click", async () => {
 
     if (!currentBreakdown) {
       alert("Breakdown not loaded.");
@@ -7552,6 +7552,193 @@ document.getElementById("saveVerifiedDowntimeBtn")?.addEventListener("click", as
 
       alert(
         "Failed to save verified downtime."
+      );
+
+    }
+
+  });
+
+  /* =========================================================
+   CLEAR VERIFIED DOWNTIME
+   DT Model v1
+
+   Admin only.
+
+   IMPORTANT:
+   - Clears only the Admin downtime verification
+   - Does NOT modify Machine State History
+   - Effective DOWN returns to Recorded DOWN
+========================================================= */
+
+document.getElementById("clearVerifiedDowntimeBtn") ?.addEventListener("click", async () => {
+
+    if (!currentBreakdown) {
+      alert("Breakdown not loaded.");
+      return;
+    }
+
+
+    /* =====================
+       ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        localStorage.getItem("cmmsRole") || ""
+      ).toLowerCase();
+
+    if (role !== "admin") {
+      alert("Admin only.");
+      return;
+    }
+
+
+    /* =====================
+       SAFETY CHECK
+
+       Nothing to clear if the Breakdown
+       is already using Recorded downtime.
+    ===================== */
+
+    const hasVerification =
+      currentBreakdown
+        .verified_down_seconds !== null &&
+      currentBreakdown
+        .verified_down_seconds !== undefined;
+
+    if (!hasVerification) {
+      alert(
+        "This Breakdown has no verified downtime correction."
+      );
+      return;
+    }
+
+
+    /* =====================
+       CONFIRM
+    ===================== */
+
+    const confirmed =
+      window.confirm(
+        "Clear the verified downtime correction?\n\n" +
+        "Effective DOWN Time will return to the recorded Machine State downtime."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    const breakdownId =
+      Number(currentBreakdown.id);
+
+
+    try {
+
+      /* =====================
+         CLEAR VERIFICATION
+
+         Backend interprets NULL as:
+         remove verified correction + audit fields.
+      ===================== */
+
+      const response =
+        await fetch(
+          `/breakdowns/${breakdownId}/verified-downtime`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "x-cmms-role":
+                localStorage.getItem(
+                  "cmmsRole"
+                ) || ""
+            },
+
+            body: JSON.stringify({
+              verified_down_seconds: null
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Failed to clear verified downtime."
+        );
+      }
+
+
+      /* =====================
+         CLOSE VERIFICATION MODAL
+      ===================== */
+
+      closeVerifiedDowntimeModal();
+
+
+      /* =====================
+         RELOAD BREAKDOWN
+
+         Backend remains the authority.
+         Do not manually modify local values.
+      ===================== */
+
+      const detailResponse =
+        await fetch(
+          `/breakdowns/${breakdownId}`
+        );
+
+
+      if (!detailResponse.ok) {
+        throw new Error(
+          "Verification cleared, but Breakdown reload failed."
+        );
+      }
+
+
+      const freshBreakdown =
+        await detailResponse.json();
+
+
+      /* =====================
+         REFRESH DETAIL
+      ===================== */
+
+      populateBreakdownDetail(
+        freshBreakdown
+      );
+
+
+      /* =====================
+         REFRESH MAIN TABLE
+      ===================== */
+
+      if (
+        typeof loadBreakdowns ===
+        "function"
+      ) {
+        await loadBreakdowns();
+      }
+
+
+    } catch (err) {
+
+      console.error(
+        "CLEAR VERIFIED DOWNTIME ERROR:",
+        err
+      );
+
+      alert(
+        err.message ||
+        "Failed to clear verified downtime."
       );
 
     }
