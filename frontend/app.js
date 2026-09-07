@@ -820,8 +820,23 @@ function renderHistoryTable(data) {
     })
 
     .filter(h => {
-      if (state.historyTypeFilter === "all") return true;
+
+      if (state.historyTypeFilter === "all") {
+        return true;
+      }
+
       const execType = getExecutionType(h);
+
+      // Breakdown filter:
+      // new Breakdown model -> Restoration executions
+      // legacy fallback -> old unplanned executions
+      if (state.historyTypeFilter === "unplanned") {
+        return (
+          execType === "restoration" ||
+          execType === "unplanned"
+        );
+      }
+
       return execType === state.historyTypeFilter;
     })
 
