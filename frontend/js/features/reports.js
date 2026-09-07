@@ -1997,25 +1997,28 @@ const avgEffectiveDownSeconds =
 
 
     // =========================
-    // BREAKDOWN DOWNTIME
+    // TOTAL EFFECTIVE DOWN
+    //
+    // New Breakdown model.
+    //
+    // Source:
+    // /kpis/breakdowns/report-summary
+    //
+    // Includes:
+    // - Recorded DOWN
+    // - or Verified DOWN when available
+    //
+    // Unit from backend = seconds
+    //
+    // IMPORTANT:
+    // This is real Breakdown downtime,
+    // not Restoration Task duration.
     // =========================
-    const totalBreakdownMinutes =
-      sorted
 
-        .filter(
-          e =>
-            e.is_planned === false &&
-            e.duration_min
-        )
-
-        .reduce(
-          (sum, e) =>
-            sum +
-            Number(
-              e.duration_min
-            ),
-          0
-        );
+    const totalEffectiveDownDisplay =
+      formatDowntimeSeconds(
+        totalEffectiveDownSeconds
+      );
 
 
     const totalBreakdownHours =
@@ -2595,10 +2598,8 @@ const avgEffectiveDownSeconds =
       )
 
       .replace(
-        "{{BREAKDOWN_HOURS}}",
-        String(
-          totalBreakdownHours
-        )
+        "{{TOTAL_EFFECTIVE_DOWN}}",
+        totalEffectiveDownDisplay
       )
 
       .replace(
