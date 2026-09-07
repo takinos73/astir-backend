@@ -5091,6 +5091,23 @@ async function generateKpiReportPdf() {
         3
       );
 
+    const insightsHtml =
+    finalInsights.length
+      ? finalInsights
+          .map(
+            text => `
+              <div class="kpi-insight">
+                ${text}
+              </div>
+            `
+          )
+          .join("")
+      : `
+          <div class="kpi-insight">
+            No major KPI issues detected.
+          </div>
+        `;
+
 
     // =========================
     // LABELS
@@ -5549,7 +5566,7 @@ async function generateKpiReportPdf() {
         .toLocaleDateString(
           "el-GR"
         );
-        
+
     // =========================
     // FILL TEMPLATE
     // =========================
