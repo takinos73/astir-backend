@@ -1563,10 +1563,22 @@ function updateAssetHistoryLegendCounts(history) {
   let planned = 0;
 
   list.forEach(e => {
+
     const t = getExecutionType(e);
-    if (t === "unplanned") unplanned++;
-    else if (t === "preventive") preventive++;
-    else if (t === "planned") planned++;
+
+    if (
+      t === "restoration" ||
+      t === "unplanned"
+    ) {
+      unplanned++;
+    }
+    else if (t === "preventive") {
+      preventive++;
+    }
+    else if (t === "planned") {
+      planned++;
+    }
+
   });
 
   allEl.textContent = list.length;

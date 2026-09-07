@@ -50,6 +50,13 @@ function getFilteredAssetHistory(list) {
 
       const type = getExecutionType(e);
 
+      if (state.assetHistoryTypeFilter === "unplanned") {
+        return (
+          type === "unplanned" ||
+          type === "restoration"
+        );
+      }
+
       return type === state.assetHistoryTypeFilter;
     });
   }
