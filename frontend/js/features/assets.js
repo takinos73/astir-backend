@@ -290,8 +290,12 @@ function getLastActivityForAsset(serial) {
     ? formatRelativeDate(last.executed_at)
     : new Date(last.executed_at).toLocaleDateString("el-GR");
 
+  const execType = getExecutionType(last);
+
   return {
-    is_breakdown: last.is_planned === false,
+    is_breakdown:
+      execType === "restoration" ||
+      execType === "unplanned",
     when
   };
 }
