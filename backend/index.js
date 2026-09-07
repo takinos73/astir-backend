@@ -6359,9 +6359,7 @@ app.get("/kpis/execution-mix", async (req, res) => {
    CLOSED incidents only.
 ========================================================= */
 
-app.get(
-  "/kpis/breakdowns/report-summary",
-  async (req, res) => {
+app.get("/kpis/breakdowns/report-summary", async (req, res) => {
 
     try {
 
@@ -6703,6 +6701,294 @@ app.get(
       res.status(500).json({
         error:
           "Failed to calculate breakdown report summary"
+      });
+
+    }
+
+  }
+);
+
+/* =========================================================
+   REPORT - BREAKDOWN PERFORMANCE BY LINE
+
+   Used by Completed Maintenance Report.
+
+   Filters:
+   - from
+   - to
+   - optional line
+
+   Effective DOWN:
+   verified_down_seconds if available,
+   otherwise Recorded DOWN.
+
+   IMPORTANT:
+   This is NOT MTTR.
+========================================================= */
+
+app.get(
+  "/kpis/breakdowns/report-by-line",
+  async (req, res) => {
+
+    try {
+
+      const {
+        from,
+        to,
+        line
+      } = req.query;
+
+
+      const params = [];
+      const conditions = [];
+
+
+      /* =========================
+         DATE FROM
+      ========================= */
+
+      if (from) {
+
+        params.push(from);
+
+        conditions.push(
+          `b.started_at >= $${params.length}::date`
+        );
+
+      }
+
+
+      /* =========================
+         DATE TO
+      ========================= */
+
+      if (to) {
+
+        params.push(to);
+
+        conditions.push(
+          `b.started_at < ` +
+          `($${params.length}::date + INTERVAL '1 day')`
+        );
+
+      }
+
+
+      /* =========================
+         LINE FILTER
+      ========================= */
+
+      if (
+        line &&
+        String(line).trim() !== "" &&
+        String(line).toLowerCase() !== "all"
+      ) {
+
+        params.push(
+          String(line).trim()
+        );
+
+        conditions.push(
+          `l.name = $${params.length}`
+        );
+
+      }
+
+
+      const whereSql =
+        conditions.length
+          ? `WHERE ${conditions.join(" AND ")}`
+          : "";
+
+
+      const sql = `
+        WITH breakdown_dt AS (
+
+          SELECT
+
+            b.id,
+            b.status,
+            b.closed_at,
+
+            l.name AS line,
+
+            COALESCE(
+              SUM(
+                CASE
+
+                  WHEN bsh.state = 'DOWN'
+                  THEN
+                    GREATEST(
+                      0,
+                      EXTRACT(
+                        EPOCH FROM (
+                          LEAST(
+                            COALESCE(
+                              bsh.ended_at,
+                              b.closed_at,
+                              NOW()
+                            ),
+                            COALESCE(
+                              b.closed_at,
+                              NOW()
+                            )
+                          )
+                          -
+                          bsh.started_at
+                        )
+                      )
+                    )
+
+                  ELSE 0
+
+                END
+              ),
+              0
+            )::bigint
+              AS recorded_down_seconds,
+
+
+            b.verified_down_seconds
+
+
+          FROM breakdowns b
+
+
+          JOIN assets a
+            ON a.id = b.asset_id
+
+
+          LEFT JOIN lines l
+            ON l.id = a.line_id
+
+
+          LEFT JOIN breakdown_state_history bsh
+            ON bsh.breakdown_id = b.id
+
+
+          ${whereSql}
+
+
+          GROUP BY
+            b.id,
+            b.status,
+            b.closed_at,
+            l.name,
+            b.verified_down_seconds
+
+        ),
+
+
+        effective_dt AS (
+
+          SELECT
+
+            id,
+            status,
+            line,
+
+            COALESCE(
+              verified_down_seconds,
+              recorded_down_seconds
+            )::bigint
+              AS effective_down_seconds
+
+          FROM breakdown_dt
+
+        )
+
+
+        SELECT
+
+          COALESCE(
+            line,
+            '—'
+          ) AS line,
+
+
+          COUNT(*)::int
+            AS total_incidents,
+
+
+          COUNT(*) FILTER (
+            WHERE status = 'CLOSED'
+          )::int
+            AS closed_incidents,
+
+
+          COUNT(*) FILTER (
+            WHERE status IN (
+              'OPEN',
+              'IN_PROGRESS'
+            )
+          )::int
+            AS active_incidents,
+
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ),
+            0
+          )::bigint
+            AS total_effective_down_seconds,
+
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ) FILTER (
+              WHERE status = 'CLOSED'
+            ),
+            0
+          )::bigint
+            AS closed_effective_down_seconds,
+
+
+          COALESCE(
+            ROUND(
+              AVG(
+                effective_down_seconds
+              ) FILTER (
+                WHERE status = 'CLOSED'
+              )
+            ),
+            0
+          )::bigint
+            AS avg_effective_down_seconds
+
+
+        FROM effective_dt
+
+
+        GROUP BY
+          line
+
+
+        ORDER BY
+          line
+      `;
+
+
+      const { rows } =
+        await pool.query(
+          sql,
+          params
+        );
+
+
+      res.json(rows);
+
+    } catch (err) {
+
+      console.error(
+        "GET /kpis/breakdowns/report-by-line error:",
+        err
+      );
+
+      res.status(500).json({
+        error:
+          "Failed to calculate breakdown performance by line"
       });
 
     }

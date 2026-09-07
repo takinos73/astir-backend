@@ -2092,14 +2092,6 @@ const avgEffectiveDownSeconds =
       the next step.
     */
 
-    const maintenanceProfile =
-      "Activity Mix";
-
-
-    const maintenanceProfileText =
-      `${proactiveMaintenanceRate}% Preventive / Planned · ` +
-      `${reactiveMaintenanceRateForProfile}% Restoration / Legacy Unplanned`;
-
 
     // =========================
     // WORKLOAD RISK
@@ -2624,7 +2616,7 @@ const avgEffectiveDownSeconds =
       )
 
       .replace(
-        "{{BREAKDOWN_RATE}}",
+        "{{REACTIVE_MAINTENANCE_RATE}}",
         String(
           reactiveMaintenanceRate
         )
@@ -2643,8 +2635,17 @@ const avgEffectiveDownSeconds =
       )
 
       .replace(
-        "{{MAINTENANCE_PROFILE}}",
-        maintenanceProfileText
+        "{{PROACTIVE_MAINTENANCE_RATE}}",
+        String(
+          proactiveMaintenanceRate
+        )
+      )
+
+      .replace(
+        "{{REACTIVE_PROFILE_RATE}}",
+        String(
+          reactiveMaintenanceRateForProfile
+        )
       )
 
       .replace(

@@ -141,15 +141,15 @@
     <div class="report-kpi">
 
       <div class="report-kpi-label">
-        Breakdown Rate
+        Reactive Maintenance
       </div>
 
       <div class="report-kpi-value">
-        {{BREAKDOWN_RATE}}%
+        {{REACTIVE_MAINTENANCE_RATE}}%
       </div>
 
       <div class="report-kpi-sub">
-        Share of reactive work
+        Share of maintenance executions
       </div>
 
     </div>
@@ -202,13 +202,15 @@
 
   </div>
 
-
   <!-- =====================================================
-       MAINTENANCE PROFILE
+      MAINTENANCE ACTIVITY PROFILE
+
+      Descriptive execution profile.
+      Not a performance rating.
   ====================================================== -->
 
   <h3>
-    Maintenance Profile
+    Maintenance Activity Profile
   </h3>
 
   <table>
@@ -216,16 +218,43 @@
     <tbody>
 
       <tr>
+
         <td>
-          <strong>Maintenance Profile</strong>
+          <strong>
+            Preventive / Planned Activity
+          </strong>
         </td>
 
         <td style="text-align:right;">
-          {{MAINTENANCE_PROFILE}}
+
+          <strong>
+            {{PROACTIVE_MAINTENANCE_RATE}}%
+          </strong>
+
         </td>
+
       </tr>
 
+
       <tr>
+
+        <td>
+          Restoration / Legacy Unplanned Activity
+        </td>
+
+        <td style="text-align:right;">
+
+          <strong>
+            {{REACTIVE_PROFILE_RATE}}%
+          </strong>
+
+        </td>
+
+      </tr>
+
+
+      <tr>
+
         <td>
           Workload Distribution
         </td>
@@ -233,9 +262,12 @@
         <td style="text-align:right;">
           {{WORKLOAD_RISK}}
         </td>
+
       </tr>
 
+
       <tr>
+
         <td>
           Technicians Involved
         </td>
@@ -243,9 +275,12 @@
         <td style="text-align:right;">
           {{TOTAL_TECHS}}
         </td>
+
       </tr>
 
+
       <tr>
+
         <td>
           Lines Covered
         </td>
@@ -253,9 +288,12 @@
         <td style="text-align:right;">
           {{TOTAL_LINES}}
         </td>
+
       </tr>
 
+
       <tr>
+
         <td>
           Top Technician
         </td>
@@ -263,12 +301,12 @@
         <td style="text-align:right;">
           {{TOP_TECH}}
         </td>
+
       </tr>
 
     </tbody>
 
   </table>
-
 
   <!-- =====================================================
        TECHNICIAN SUMMARY
