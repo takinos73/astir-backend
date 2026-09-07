@@ -1540,6 +1540,14 @@ tr.history-unplanned {
   margin-top: 2px;
 }
 
+.history-breakdown-id {
+  font-size: 15px;
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+
 
 .history-view-grid {
   display: grid;

@@ -1096,12 +1096,25 @@ function viewHistoryEntry(executionId) {
          ASSET HEADER
     ====================== -->
     <div class="history-asset-header ${typeClass}">
+
+      ${
+        execType === "restoration" && h.breakdown_id
+          ? `
+            <div class="history-breakdown-id">
+              BD-${String(h.breakdown_id).padStart(5, "0")}
+            </div>
+          `
+          : ""
+      }
+
       <div class="history-asset-main">
         ${h.machine}
       </div>
+
       <div class="history-asset-sub">
         SN: ${h.serial_number} • Line ${h.line}
       </div>
+
     </div>
 
     <!-- =====================
