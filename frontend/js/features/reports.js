@@ -5177,28 +5177,26 @@ async function generateKpiReportPdf() {
 
 
   if (
-    from &&
-    from !== "—"
+    fromVal &&
+    fromVal !== "—"
   ) {
 
     breakdownByLineParams.set(
       "from",
-      from
+      fromVal
     );
-
   }
 
 
   if (
-    to &&
-    to !== "—"
+    toVal &&
+    toVal !== "—"
   ) {
 
     breakdownByLineParams.set(
       "to",
-      to
+      toVal
     );
-
   }
 
 
