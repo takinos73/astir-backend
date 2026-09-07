@@ -1072,10 +1072,17 @@ function viewHistoryEntry(executionId) {
   const el = document.getElementById("historyViewContent");
 
   // 🎨 TYPE CLASS
+  const execType = getExecutionType(h);
+
   let typeClass = "history-type-planned";
-  if (h.is_planned === false) {
+
+  if (
+    execType === "restoration" ||
+    execType === "unplanned"
+  ) {
     typeClass = "history-type-breakdown";
-  } else if (h.frequency_hours) {
+  }
+  else if (execType === "preventive") {
     typeClass = "history-type-preventive";
   }
 
