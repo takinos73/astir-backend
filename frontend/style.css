@@ -1425,7 +1425,7 @@ tr.history-unplanned {
 
 
 .modal-wide {
-  width: 640px;
+  width: 680px;
   max-width: 96%;  
   max-height: 100%;     /* 👈 όριο: μόνο όταν ξεπεραστεί */
   overflow-y: auto;     /* 👈 scroll εμφανίζεται ΜΟΝΟ τότε */  
