@@ -6749,9 +6749,7 @@ app.get("/kpis/breakdowns/report-summary", async (req, res) => {
    This is NOT MTTR.
 ========================================================= */
 
-app.get(
-  "/kpis/breakdowns/report-by-line",
-  async (req, res) => {
+app.get("/kpis/breakdowns/report-by-line", async (req, res) => {
 
     try {
 

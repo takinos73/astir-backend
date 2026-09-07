@@ -5544,7 +5544,12 @@ async function generateKpiReportPdf() {
     `;
 
   }
-
+    const generatedDate =
+      new Date()
+        .toLocaleDateString(
+          "el-GR"
+        );
+        
     // =========================
     // FILL TEMPLATE
     // =========================
