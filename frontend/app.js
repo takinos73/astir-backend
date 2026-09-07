@@ -826,13 +826,6 @@ function renderHistoryTable(data) {
       }
 
       const execType = getExecutionType(h);
-      console.log("HISTORY VIEW:", {
-        id: h.id,
-        execType: execType,
-        breakdown_id: h.breakdown_id,
-        is_planned: h.is_planned,
-        task: h.task
-      });
 
       // Breakdown filter:
       // new Breakdown model -> Restoration executions
@@ -1080,6 +1073,13 @@ function viewHistoryEntry(executionId) {
 
   // 🎨 TYPE CLASS
   const execType = getExecutionType(h);
+    console.log("HISTORY VIEW:", {
+    id: h.id,
+    execType: execType,
+    breakdown_id: h.breakdown_id,
+    is_planned: h.is_planned,
+    task: h.task
+  });
 
   let typeClass = "history-type-planned";
 
