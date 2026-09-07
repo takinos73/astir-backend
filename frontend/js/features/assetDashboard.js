@@ -292,8 +292,15 @@ function aggregateDashboardExecutions(
       return;
     }
 
-    // Breakdown only
-    if (e.is_planned !== false) {
+    // Breakdown history:
+    // - Restoration executions from new Breakdown model
+    // - Legacy Unplanned / Breakdown executions
+    const execType = getExecutionType(e);
+
+    if (
+      execType !== "restoration" &&
+      execType !== "unplanned"
+    ) {
       return;
     }
 
