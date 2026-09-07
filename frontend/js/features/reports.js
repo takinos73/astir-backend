@@ -2582,7 +2582,9 @@ const avgEffectiveDownSeconds =
 
       .replace(
         "{{BREAKDOWN_RATE}}",
-        String(breakdownRate)
+        String(
+          reactiveMaintenanceRate
+        )
       )
 
       .replace(
@@ -2601,7 +2603,7 @@ const avgEffectiveDownSeconds =
 
       .replace(
         "{{MAINTENANCE_PROFILE}}",
-        `${maintenanceIcon} ${maintenanceProfile}`
+        maintenanceProfileText
       )
 
       .replace(
