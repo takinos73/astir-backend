@@ -1296,62 +1296,88 @@ function updateCentralHistoryLegendCounts(filtered, all = state.executionsData) 
 
   if (!Array.isArray(filtered) || !Array.isArray(all)) return;
 
-  let fb = 0, fp = 0, fm = 0;
-  let tb = 0, tp = 0, tm = 0;
+  const totalCounts = {
+    breakdown: 0,
+    preventive: 0,
+    planned: 0
+  };
 
-  // 🔹 TOTAL COUNTS
+  const filteredCounts = {
+    breakdown: 0,
+    preventive: 0,
+    planned: 0
+  };
+
+
+  // =====================
+  // COUNT HELPER
+  // =====================
+  function countExecution(e, counts) {
+
+    const execType = getExecutionType(e);
+
+    // 🔴 Breakdown
+    // New model = Restoration execution
+    // Legacy fallback = Unplanned execution
+    if (
+      execType === "restoration" ||
+      execType === "unplanned"
+    ) {
+      counts.breakdown++;
+      return;
+    }
+
+    // 🟢 Preventive
+    if (execType === "preventive") {
+      counts.preventive++;
+      return;
+    }
+
+    // 🟡 Planned Manual
+    if (execType === "planned") {
+      counts.planned++;
+    }
+  }
+
+
+  // =====================
+  // TOTAL COUNTS
+  // =====================
   all.forEach(e => {
-
-    if (e.is_planned === false) {
-      tb++;
-      return;
-    }
-
-    if (
-      e.is_planned === true &&
-      e.frequency_hours != null &&
-      Number(e.frequency_hours) > 0
-    ) {
-      tp++;
-      return;
-    }
-
-    if (e.is_planned === true) {
-      tm++;
-    }
+    countExecution(e, totalCounts);
   });
 
-  // 🔹 FILTERED COUNTS
+
+  // =====================
+  // FILTERED COUNTS
+  // =====================
   filtered.forEach(e => {
-
-    if (e.is_planned === false) {
-      fb++;
-      return;
-    }
-
-    if (
-      e.is_planned === true &&
-      e.frequency_hours != null &&
-      Number(e.frequency_hours) > 0
-    ) {
-      fp++;
-      return;
-    }
-
-    if (e.is_planned === true) {
-      fm++;
-    }
+    countExecution(e, filteredCounts);
   });
 
+
+  // =====================
+  // UPDATE UI
+  // =====================
   const b = document.getElementById("centralHistoryBreakdownCount");
   const p = document.getElementById("centralHistoryPreventiveCount");
   const m = document.getElementById("centralHistoryPlannedCount");
 
-  if (b) b.textContent = `${fb} / ${tb}`;
-  if (p) p.textContent = `${fp} / ${tp}`;
-  if (m) m.textContent = `${fm} / ${tm}`;
-}
+  if (b) {
+    b.textContent =
+      `${filteredCounts.breakdown} / ${totalCounts.breakdown}`;
+  }
 
+  if (p) {
+    p.textContent =
+      `${filteredCounts.preventive} / ${totalCounts.preventive}`;
+  }
+
+  if (m) {
+    m.textContent =
+      `${filteredCounts.planned} / ${totalCounts.planned}`;
+  }
+}
 
 /* =====================
 TASK VIEW DONE BUTTON HANDLER
