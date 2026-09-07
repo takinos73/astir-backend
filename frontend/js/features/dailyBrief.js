@@ -591,10 +591,14 @@ function buildDailyBriefReliability() {
 
     if (!e.executed_at) return false;
 
-    // Non-planned only
-    if (e.is_planned !== false) {
-      return false;
-    }
+  const execType = getExecutionType(e);
+
+  if (
+    execType !== "restoration" &&
+    execType !== "unplanned"
+  ) {
+    return false;
+  }
 
     const executedAt =
       new Date(e.executed_at);
@@ -983,9 +987,15 @@ function buildDailyBriefPulse() {
   // =====================
 
   const breakdowns30 =
-    executions30.filter(
-      e => e.is_planned === false
-    ).length;
+    executions30.filter(e => {
+
+      const execType = getExecutionType(e);
+
+      return (
+        execType === "restoration" ||
+        execType === "unplanned"
+      );
+    }).length;
 
 
   // =====================
