@@ -2021,13 +2021,6 @@ const avgEffectiveDownSeconds =
       );
 
 
-    const totalBreakdownHours =
-      Math.round(
-        totalBreakdownMinutes /
-        60
-      );
-
-
     // =========================
     // MAINTENANCE ACTIVITY PROFILE
     //
