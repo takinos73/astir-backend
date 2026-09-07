@@ -1202,3 +1202,10 @@ tr.highlight-execution {
 #assetHistoryTable tbody tr.history-restoration td:first-child {
   border-left: 4px solid #dc3545 !important;
 }
+.asset-history-breakdown-ref {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
+  letter-spacing: 0.02em;
+}
