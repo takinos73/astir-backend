@@ -1425,69 +1425,7 @@ async function generateCompletedReportPdf() {
           .filter(Boolean)
       ).size;
 
-
-    // =========================
-    // MTTR BY LINE
-    // BREAKDOWNS ONLY
-    // =========================
-    const mttrByLine = {};
-
-
-    sorted.forEach(e => {
-
-      if (
-        e.is_planned === false &&
-        e.duration_min != null
-      ) {
-
-        const line =
-          e.line || "—";
-
-
-        if (!mttrByLine[line]) {
-
-          mttrByLine[line] = {
-            total: 0,
-            count: 0
-          };
-        }
-
-
-        mttrByLine[line].total +=
-          Number(e.duration_min);
-
-
-        mttrByLine[line].count += 1;
-      }
-
-    });
-
-
-    const mttrLineRows =
-      Object.entries(
-        mttrByLine
-      )
-
-        .map(([line, v]) => ({
-
-          line,
-
-          avg:
-            Math.round(
-              v.total /
-              v.count
-            ),
-
-          count:
-            v.count
-
-        }))
-
-        .sort(
-          (a, b) =>
-            b.avg - a.avg
-        );
-
+    
 // =========================
 // MAINTENANCE EXECUTION MIX
 //
@@ -5025,85 +4963,7 @@ async function generateKpiReportPdf() {
         breakdownCount,
         execTotal
       );
-
-
-    // =========================
-    // MTTR TOP ASSETS
-    // =========================
-    const mttrByAssetMap =
-      new Map();
-
-
-    breakdownExec.forEach(
-      e => {
-
-        const key =
-          `${e.machine}||${e.serial_number || "—"}||${e.line || "—"}`;
-
-
-        const curr =
-          mttrByAssetMap.get(key) ||
-          {
-            machine: e.machine,
-            serial:
-              e.serial_number || "—",
-            line:
-              e.line || "—",
-            totalMin: 0,
-            count: 0
-          };
-
-
-        curr.totalMin +=
-          safeNum(
-            e.duration_min
-          );
-
-
-        curr.count += 1;
-
-
-        mttrByAssetMap.set(
-          key,
-          curr
-        );
-      }
-    );
-
-
-    const mttrTopAssets =
-      [...mttrByAssetMap.values()]
-
-        .map(
-          a => ({
-            ...a,
-
-            mttr:
-              a.count
-                ? Math.round(
-                    a.totalMin /
-                    a.count
-                  )
-                : 0
-          })
-        )
-
-        .filter(
-          a =>
-            a.mttr > 0
-        )
-
-        .sort(
-          (a, b) =>
-            b.mttr - a.mttr
-        )
-
-        .slice(
-          0,
-          5
-        );
-
-
+    
     // =========================
     // INSIGHTS
     // =========================
@@ -5809,29 +5669,6 @@ async function generateKpiReportPdf() {
   }
 }
 
-function generateMttrBarChart(mttrLineRows) {
-  const max = Math.max(...mttrLineRows.map(r => r.avg), 1);
-
-  return `
-    <svg width="500" height="250">
-      ${mttrLineRows.map((r, i) => {
-        const barHeight = (r.avg / max) * 150;
-        const x = 80 + i * 120;
-        const y = 200 - barHeight;
-
-        return `
-          <rect x="${x}" y="${y}" width="60" height="${barHeight}" fill="#1976d2" />
-          <text x="${x + 30}" y="220" text-anchor="middle" font-size="12">
-            ${r.line}
-          </text>
-          <text x="${x + 30}" y="${y - 5}" text-anchor="middle" font-size="12">
-            ${r.avg}m
-          </text>
-        `;
-      }).join("")}
-    </svg>
-  `;
-}
 async function loadReportTemplate(templateName) {
 
   const response =

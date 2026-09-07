@@ -5551,30 +5551,6 @@ app.post("/executions/:id/undo", async (req, res) => {
 
 });
 
-// Undo to planned
-app.patch("/tasks/:id/undo", async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-      UPDATE maintenance_tasks
-      SET status='Planned',
-          completed_by=NULL,
-          completed_at=NULL,
-          updated_at=NOW()
-      WHERE id=$1
-      RETURNING *
-      `,
-      [req.params.id]
-    );
-
-    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("PATCH /tasks/:id/undo ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 /* =====================
    TASK EXECUTION HISTORY
 ===================== */
@@ -5612,6 +5588,7 @@ app.get("/executions", async (req, res) => {
         l.code AS line
 
       FROM task_executions e
+
       JOIN maintenance_tasks t
         ON t.id = e.task_id
 
@@ -5620,6 +5597,26 @@ app.get("/executions", async (req, res) => {
 
       JOIN lines l
         ON l.id = a.line_id
+
+      /* =====================================================
+         HISTORY CUTOVER
+
+         Hide old legacy Breakdown executions ONLY when
+         the legacy task has already been migrated into
+         the new Breakdown / Restoration model.
+
+         No legacy data is deleted.
+         Restoration executions remain visible.
+      ===================================================== */
+      WHERE NOT (
+        t.is_planned = FALSE
+        AND t.breakdown_id IS NULL
+        AND EXISTS (
+          SELECT 1
+          FROM breakdowns b_migrated
+          WHERE b_migrated.legacy_task_id = t.id
+        )
+      )
 
       ORDER BY e.executed_at DESC
     `);
@@ -5637,6 +5634,30 @@ app.get("/executions", async (req, res) => {
       error: err.message
     });
 
+  }
+});
+
+// Undo to planned
+app.patch("/tasks/:id/undo", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      UPDATE maintenance_tasks
+      SET status='Planned',
+          completed_by=NULL,
+          completed_at=NULL,
+          updated_at=NOW()
+      WHERE id=$1
+      RETURNING *
+      `,
+      [req.params.id]
+    );
+
+    if (!result.rows.length) return res.status(404).json({ error: "Task not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("PATCH /tasks/:id/undo ERROR:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
