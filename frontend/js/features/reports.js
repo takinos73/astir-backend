@@ -1664,43 +1664,307 @@ const execTotal =
       : 0;
 
     // =========================
-    // OVERALL MTTR
-    // WEIGHTED BY BREAKDOWN COUNT
+// BREAKDOWN PERFORMANCE
+//
+// Replaces legacy Overall MTTR.
+//
+// Source:
+// /kpis/breakdowns/report-summary
+//
+// Avg Effective DOWN:
+// Closed Effective DOWN
+// ---------------------
+// Closed Incidents
+//
+// IMPORTANT:
+// This is NOT MTTR.
+// =========================
+
+const buildBreakdownSummaryUrl =
+  lineName => {
+
+    const params =
+      new URLSearchParams();
+
+
+    if (
+      from &&
+      from !== "—"
+    ) {
+      params.set(
+        "from",
+        from
+      );
+    }
+
+
+    if (
+      to &&
+      to !== "—"
+    ) {
+      params.set(
+        "to",
+        to
+      );
+    }
+
+
+    if (
+      lineName &&
+      lineName !== "all"
+    ) {
+      params.set(
+        "line",
+        lineName
+      );
+    }
+
+
+    const query =
+      params.toString();
+
+
+    return query
+      ? `/kpis/breakdowns/report-summary?${query}`
+      : "/kpis/breakdowns/report-summary";
+  };
+
+
+// ---------------------------------------------------------
+// Load Breakdown Performance
+//
+// ALL lines:
+// one global request.
+//
+// Selected lines:
+// one request per line, then aggregate.
+// This keeps multi-line report filters correct.
+// ---------------------------------------------------------
+
+let breakdownPerformance;
+
+
+if (
+  selectedLines.includes("all")
+) {
+
+  const response =
+    await fetch(
+      buildBreakdownSummaryUrl(null)
+    );
+
+
+  if (!response.ok) {
+    throw new Error(
+      "Failed to load Breakdown Performance"
+    );
+  }
+
+
+  breakdownPerformance =
+    await response.json();
+
+} else {
+
+  const responses =
+    await Promise.all(
+
+      selectedLines.map(
+        async lineName => {
+
+          const response =
+            await fetch(
+              buildBreakdownSummaryUrl(
+                lineName
+              )
+            );
+
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to load Breakdown Performance for ${lineName}`
+            );
+          }
+
+
+          return response.json();
+        }
+      )
+
+    );
+
+
+  /* -----------------------------------------
+     Aggregate multiple selected lines
+  ----------------------------------------- */
+
+  breakdownPerformance =
+    responses.reduce(
+      (acc, item) => {
+
+        acc.total_incidents +=
+          Number(
+            item.total_incidents || 0
+          );
+
+        acc.closed_incidents +=
+          Number(
+            item.closed_incidents || 0
+          );
+
+        acc.active_incidents +=
+          Number(
+            item.active_incidents || 0
+          );
+
+        acc.total_effective_down_seconds +=
+          Number(
+            item.total_effective_down_seconds || 0
+          );
+
+        acc.closed_effective_down_seconds +=
+          Number(
+            item.closed_effective_down_seconds || 0
+          );
+
+        return acc;
+
+      },
+      {
+        total_incidents: 0,
+        closed_incidents: 0,
+        active_incidents: 0,
+        total_effective_down_seconds: 0,
+        closed_effective_down_seconds: 0
+      }
+    );
+
+
+  /* -----------------------------------------
+     Weighted average across selected lines
+  ----------------------------------------- */
+
+  breakdownPerformance.avg_effective_down_seconds =
+
+    breakdownPerformance.closed_incidents > 0
+
+      ? Math.round(
+          breakdownPerformance
+            .closed_effective_down_seconds
+          /
+          breakdownPerformance
+            .closed_incidents
+        )
+
+      : 0;
+}
+
+
+// =========================
+// NORMALIZED VALUES
+// =========================
+
+const breakdownIncidents =
+  Number(
+    breakdownPerformance
+      .total_incidents || 0
+  );
+
+
+const closedBreakdownIncidents =
+  Number(
+    breakdownPerformance
+      .closed_incidents || 0
+  );
+
+
+const activeBreakdownIncidents =
+  Number(
+    breakdownPerformance
+      .active_incidents || 0
+  );
+
+
+const totalEffectiveDownSeconds =
+  Number(
+    breakdownPerformance
+      .total_effective_down_seconds || 0
+  );
+
+
+const closedEffectiveDownSeconds =
+  Number(
+    breakdownPerformance
+      .closed_effective_down_seconds || 0
+  );
+
+
+const avgEffectiveDownSeconds =
+  Number(
+    breakdownPerformance
+      .avg_effective_down_seconds || 0
+  );
+
+
     // =========================
-    const mttrTotals =
-      Object.values(
-        mttrByLine
-      ).reduce(
+    // FORMAT SECONDS
+    //
+    // Backend downtime unit = seconds.
+    // Do NOT use old formatDuration(),
+    // because legacy execution duration
+    // was stored/calculated in minutes.
+    // =========================
 
-        (acc, v) => {
+    const formatDowntimeSeconds =
+      value => {
 
-          acc.totalMin +=
-            v.total;
+        const totalSeconds =
+          Math.max(
+            0,
+            Math.round(
+              Number(value) || 0
+            )
+          );
 
-          acc.count +=
-            v.count;
 
-          return acc;
-        },
+        const hours =
+          Math.floor(
+            totalSeconds / 3600
+          );
 
-        {
-          totalMin: 0,
-          count: 0
+
+        const minutes =
+          Math.floor(
+            (totalSeconds % 3600) / 60
+          );
+
+
+        const seconds =
+          totalSeconds % 60;
+
+
+        if (hours > 0) {
+
+          return (
+            `${hours}h ` +
+            `${minutes}m`
+          );
+
         }
 
-      );
+
+        if (minutes > 0) {
+
+          return (
+            `${minutes}m ` +
+            `${seconds}s`
+          );
+
+        }
 
 
-    const avgMttrAll =
-      mttrTotals.count > 0
-
-        ? Math.round(
-            mttrTotals.totalMin /
-            mttrTotals.count
-          )
-
-        : 0;
-
+        return `${seconds}s`;
+      };
 
     // =========================
     // TECHNICIAN DISTRIBUTION
@@ -2322,9 +2586,9 @@ const execTotal =
       )
 
       .replace(
-        "{{AVG_MTTR}}",
-        formatDuration(
-          avgMttrAll
+        "{{AVG_EFFECTIVE_DOWN}}",
+        formatDowntimeSeconds(
+          avgEffectiveDownSeconds
         )
       )
 

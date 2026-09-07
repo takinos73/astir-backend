@@ -155,18 +155,31 @@
     </div>
 
 
+    <!-- =================================================
+         NEW BREAKDOWN MODEL
+
+         Replaces legacy Average MTTR.
+
+         Value:
+         Effective DOWN of CLOSED incidents
+         ----------------------------------
+         Number of CLOSED incidents
+
+         This is intentionally NOT labelled MTTR.
+    ================================================== -->
+
     <div class="report-kpi">
 
       <div class="report-kpi-label">
-        Average MTTR
+        Avg Effective DOWN
       </div>
 
       <div class="report-kpi-value">
-        {{AVG_MTTR}}
+        {{AVG_EFFECTIVE_DOWN}}
       </div>
 
       <div class="report-kpi-sub">
-        Breakdown recovery time
+        Per closed incident
       </div>
 
     </div>
@@ -281,7 +294,10 @@
 
 
   <!-- =====================================================
-       MTTR BY LINE
+       LEGACY MTTR BY LINE
+
+       Temporary.
+       Will be replaced by Breakdown Performance by Line.
   ====================================================== -->
 
   {{MTTR_SECTION}}
