@@ -2329,94 +2329,351 @@ const avgEffectiveDownSeconds =
       </table>
     `;
 
+  // =========================
+  // BREAKDOWN PERFORMANCE
+  // BY LINE
+  //
+  // Replaces legacy MTTR by Line.
+  //
+  // Uses real Breakdown incidents
+  // and Effective DOWN.
+  //
+  // IMPORTANT:
+  // This is NOT MTTR.
+  // =========================
 
-    // =========================
-    // MTTR SECTION HTML
-    // =========================
-    let mttrSection = "";
-
-
-    if (
-      mttrLineRows.length
-    ) {
-
-      mttrSection = `
-
-        <h3>
-          MTTR by Line (Breakdowns)
-        </h3>
+  let breakdownByLineSection = "";
 
 
-        ${generateMttrBarChart(
-          mttrLineRows
-        )}
+  // ---------------------------------------------------------
+  // Build query
+  // ---------------------------------------------------------
+
+  const breakdownByLineParams =
+    new URLSearchParams();
 
 
-        <table>
+  if (
+    from &&
+    from !== "—"
+  ) {
 
-          <thead>
+    breakdownByLineParams.set(
+      "from",
+      from
+    );
 
-            <tr>
-
-              <th>
-                Line
-              </th>
-
-              <th class="report-table-center">
-                Breakdowns
-              </th>
-
-              <th class="report-table-right">
-                Avg MTTR
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              mttrLineRows
-
-                .map(
-                  r => `
-
-                    <tr>
-
-                      <td>
-                        ${r.line}
-                      </td>
-
-                      <td class="report-table-center">
-                        ${r.count}
-                      </td>
-
-                      <td class="report-table-right">
-
-                        <strong>
-                          ${formatDuration(
-                            r.avg
-                          )}
-                        </strong>
-
-                      </td>
-
-                    </tr>
-
-                  `
-                )
-
-                .join("")
-            }
-
-          </tbody>
-
-        </table>
-      `;
-    }
+  }
 
 
+  if (
+    to &&
+    to !== "—"
+  ) {
+
+    breakdownByLineParams.set(
+      "to",
+      to
+    );
+
+  }
+
+
+  /*
+    If exactly one line is selected,
+    let backend filter directly.
+
+    For ALL or multiple selected lines,
+    load all lines and filter below.
+  */
+
+  if (
+    !selectedLines.includes("all") &&
+    selectedLines.length === 1
+  ) {
+
+    breakdownByLineParams.set(
+      "line",
+      selectedLines[0]
+    );
+
+  }
+
+
+  const breakdownByLineQuery =
+    breakdownByLineParams.toString();
+
+
+  const breakdownByLineUrl =
+    breakdownByLineQuery
+      ? `/kpis/breakdowns/report-by-line?${breakdownByLineQuery}`
+      : "/kpis/breakdowns/report-by-line";
+
+
+  // ---------------------------------------------------------
+  // Load Breakdown Performance by Line
+  // ---------------------------------------------------------
+
+  const breakdownByLineResponse =
+    await fetch(
+      breakdownByLineUrl
+    );
+
+
+  if (
+    !breakdownByLineResponse.ok
+  ) {
+
+    throw new Error(
+      "Failed to load Breakdown Performance by Line"
+    );
+
+  }
+
+
+  let breakdownByLine =
+    await breakdownByLineResponse.json();
+
+
+  if (
+    !Array.isArray(
+      breakdownByLine
+    )
+  ) {
+
+    breakdownByLine = [];
+
+  }
+
+
+  // ---------------------------------------------------------
+  // Multiple line selection
+  //
+  // Backend currently accepts one line.
+  // If report has multiple selected lines,
+  // filter returned rows here.
+  // ---------------------------------------------------------
+
+  if (
+    !selectedLines.includes("all") &&
+    selectedLines.length > 1
+  ) {
+
+    const selectedLineSet =
+      new Set(
+        selectedLines.map(
+          line =>
+            String(line)
+              .trim()
+              .toLowerCase()
+        )
+      );
+
+
+    breakdownByLine =
+      breakdownByLine.filter(
+        row =>
+          selectedLineSet.has(
+            String(
+              row.line || ""
+            )
+              .trim()
+              .toLowerCase()
+          )
+      );
+
+  }
+
+
+  // ---------------------------------------------------------
+  // Normalize values
+  // ---------------------------------------------------------
+
+  breakdownByLine =
+    breakdownByLine.map(
+      row => ({
+
+        line:
+          row.line || "—",
+
+        totalIncidents:
+          Number(
+            row.total_incidents || 0
+          ),
+
+        closedIncidents:
+          Number(
+            row.closed_incidents || 0
+          ),
+
+        activeIncidents:
+          Number(
+            row.active_incidents || 0
+          ),
+
+        totalEffectiveDownSeconds:
+          Number(
+            row.total_effective_down_seconds || 0
+          ),
+
+        avgEffectiveDownSeconds:
+          Number(
+            row.avg_effective_down_seconds || 0
+          )
+
+      })
+    );
+
+
+  // ---------------------------------------------------------
+  // Sort lines naturally
+  //
+  // L1, L2, L3...
+  // ---------------------------------------------------------
+
+  breakdownByLine.sort(
+    (a, b) =>
+      String(a.line).localeCompare(
+        String(b.line),
+        "el",
+        {
+          numeric: true
+        }
+      )
+  );
+
+
+  // ---------------------------------------------------------
+  // Build HTML
+  // ---------------------------------------------------------
+
+  if (
+    breakdownByLine.length > 0
+  ) {
+
+    breakdownByLineSection = `
+
+      <h3>
+        Breakdown Performance by Line
+      </h3>
+
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Line
+            </th>
+
+            <th class="report-table-center">
+              Incidents
+            </th>
+
+            <th class="report-table-center">
+              Closed
+            </th>
+
+            <th class="report-table-center">
+              Active
+            </th>
+
+            <th class="report-table-right">
+              Effective DOWN
+            </th>
+
+            <th class="report-table-right">
+              Avg Effective DOWN
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          ${
+            breakdownByLine
+              .map(
+                row => `
+
+                  <tr>
+
+                    <td>
+                      <strong>
+                        ${row.line}
+                      </strong>
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.totalIncidents}
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.closedIncidents}
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.activeIncidents}
+                    </td>
+
+
+                    <td class="report-table-right">
+
+                      <strong>
+                        ${
+                          formatDowntimeSeconds(
+                            row.totalEffectiveDownSeconds
+                          )
+                        }
+                      </strong>
+
+                    </td>
+
+
+                    <td class="report-table-right">
+
+                      ${
+                        row.closedIncidents > 0
+
+                          ? formatDowntimeSeconds(
+                              row.avgEffectiveDownSeconds
+                            )
+
+                          : "—"
+                      }
+
+                    </td>
+
+                  </tr>
+
+                `
+              )
+              .join("")
+          }
+
+        </tbody>
+
+      </table>
+
+
+      <div class="small">
+
+        Effective DOWN uses Admin Verified downtime
+        when available; otherwise Recorded DOWN.
+
+      </div>
+
+    `;
+
+  }
+      
     // =========================
     // OPTIONAL DETAILS
     // =========================
@@ -2679,8 +2936,8 @@ const avgEffectiveDownSeconds =
       )
 
       .replace(
-        "{{MTTR_SECTION}}",
-        mttrSection
+        "{{BREAKDOWN_BY_LINE_SECTION}}",
+        breakdownByLineSection
       )
 
       .replace(
@@ -5028,150 +5285,350 @@ async function generateKpiReportPdf() {
         : "";
 
 
-    // =========================
-    // MTTR SECTION
-    // =========================
-    let mttrSection = "";
+  // =========================
+  // BREAKDOWN PERFORMANCE
+  // BY LINE
+  //
+  // Replaces legacy MTTR by Line.
+  //
+  // Uses real Breakdown incidents
+  // and Effective DOWN.
+  //
+  // IMPORTANT:
+  // This is NOT MTTR.
+  // =========================
+
+  let breakdownByLineSection = "";
 
 
-    if (
-      mttrTopAssets.length
-    ) {
+  // ---------------------------------------------------------
+  // Build query
+  // ---------------------------------------------------------
 
-      mttrSection = `
-
-        <h3>
-          Top 5 Assets by MTTR
-        </h3>
+  const breakdownByLineParams =
+    new URLSearchParams();
 
 
-        <table class="kpi-mttr-table">
+  if (
+    from &&
+    from !== "—"
+  ) {
 
-          <thead>
+    breakdownByLineParams.set(
+      "from",
+      from
+    );
 
-            <tr>
-
-              <th>
-                Asset
-              </th>
-
-              <th>
-                Line
-              </th>
-
-              <th class="report-table-center">
-                Breakdowns
-              </th>
-
-              <th class="report-table-right">
-                MTTR
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${
-              mttrTopAssets
-
-                .map(
-                  a => `
-
-                    <tr>
-
-                      <td>
-
-                        <strong>
-                          ${a.machine || "-"}
-                        </strong>
-
-                        <br>
-
-                        <span class="small">
-                          SN: ${a.serial}
-                        </span>
-
-                      </td>
+  }
 
 
-                      <td>
-                        ${a.line}
-                      </td>
+  if (
+    to &&
+    to !== "—"
+  ) {
+
+    breakdownByLineParams.set(
+      "to",
+      to
+    );
+
+  }
 
 
-                      <td class="report-table-center">
-                        ${a.count}
-                      </td>
+  /*
+    If exactly one line is selected,
+    let backend filter directly.
+
+    For ALL or multiple selected lines,
+    load all lines and filter below.
+  */
+
+  if (
+    !selectedLines.includes("all") &&
+    selectedLines.length === 1
+  ) {
+
+    breakdownByLineParams.set(
+      "line",
+      selectedLines[0]
+    );
+
+  }
 
 
-                      <td class="report-table-right">
-
-                        <strong>
-                          ${formatDuration(
-                            a.mttr
-                          )}
-                        </strong>
-
-                      </td>
-
-                    </tr>
-
-                  `
-                )
-
-                .join("")
-            }
-
-          </tbody>
-
-        </table>
-      `;
-    }
+  const breakdownByLineQuery =
+    breakdownByLineParams.toString();
 
 
-    // =========================
-    // INSIGHTS HTML
-    // =========================
-    const insightsHtml =
-      finalInsights.length
-
-        ? `
-
-          <ul>
-
-            ${
-              finalInsights
-                .map(
-                  x =>
-                    `<li>${x}</li>`
-                )
-                .join("")
-            }
-
-          </ul>
-
-        `
-
-        : `
-
-          <div>
-            No notable exceptions detected for the selected scope.
-          </div>
-
-        `;
+  const breakdownByLineUrl =
+    breakdownByLineQuery
+      ? `/kpis/breakdowns/report-by-line?${breakdownByLineQuery}`
+      : "/kpis/breakdowns/report-by-line";
 
 
-    // =========================
-    // GENERATED DATE
-    // =========================
-    const generatedDate =
-      new Date()
-        .toLocaleDateString(
-          "el-GR"
-        );
+  // ---------------------------------------------------------
+  // Load Breakdown Performance by Line
+  // ---------------------------------------------------------
 
+  const breakdownByLineResponse =
+    await fetch(
+      breakdownByLineUrl
+    );
+
+
+  if (
+    !breakdownByLineResponse.ok
+  ) {
+
+    throw new Error(
+      "Failed to load Breakdown Performance by Line"
+    );
+
+  }
+
+
+  let breakdownByLine =
+    await breakdownByLineResponse.json();
+
+
+  if (
+    !Array.isArray(
+      breakdownByLine
+    )
+  ) {
+
+    breakdownByLine = [];
+
+  }
+
+
+  // ---------------------------------------------------------
+  // Multiple line selection
+  //
+  // Backend currently accepts one line.
+  // If report has multiple selected lines,
+  // filter returned rows here.
+  // ---------------------------------------------------------
+
+  if (
+    !selectedLines.includes("all") &&
+    selectedLines.length > 1
+  ) {
+
+    const selectedLineSet =
+      new Set(
+        selectedLines.map(
+          line =>
+            String(line)
+              .trim()
+              .toLowerCase()
+        )
+      );
+
+
+    breakdownByLine =
+      breakdownByLine.filter(
+        row =>
+          selectedLineSet.has(
+            String(
+              row.line || ""
+            )
+              .trim()
+              .toLowerCase()
+          )
+      );
+
+  }
+
+
+  // ---------------------------------------------------------
+  // Normalize values
+  // ---------------------------------------------------------
+
+  breakdownByLine =
+    breakdownByLine.map(
+      row => ({
+
+        line:
+          row.line || "—",
+
+        totalIncidents:
+          Number(
+            row.total_incidents || 0
+          ),
+
+        closedIncidents:
+          Number(
+            row.closed_incidents || 0
+          ),
+
+        activeIncidents:
+          Number(
+            row.active_incidents || 0
+          ),
+
+        totalEffectiveDownSeconds:
+          Number(
+            row.total_effective_down_seconds || 0
+          ),
+
+        avgEffectiveDownSeconds:
+          Number(
+            row.avg_effective_down_seconds || 0
+          )
+
+      })
+    );
+
+
+  // ---------------------------------------------------------
+  // Sort lines naturally
+  //
+  // L1, L2, L3...
+  // ---------------------------------------------------------
+
+  breakdownByLine.sort(
+    (a, b) =>
+      String(a.line).localeCompare(
+        String(b.line),
+        "el",
+        {
+          numeric: true
+        }
+      )
+  );
+
+
+  // ---------------------------------------------------------
+  // Build HTML
+  // ---------------------------------------------------------
+
+  if (
+    breakdownByLine.length > 0
+  ) {
+
+    breakdownByLineSection = `
+
+      <h3>
+        Breakdown Performance by Line
+      </h3>
+
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Line
+            </th>
+
+            <th class="report-table-center">
+              Incidents
+            </th>
+
+            <th class="report-table-center">
+              Closed
+            </th>
+
+            <th class="report-table-center">
+              Active
+            </th>
+
+            <th class="report-table-right">
+              Effective DOWN
+            </th>
+
+            <th class="report-table-right">
+              Avg Effective DOWN
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          ${
+            breakdownByLine
+              .map(
+                row => `
+
+                  <tr>
+
+                    <td>
+                      <strong>
+                        ${row.line}
+                      </strong>
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.totalIncidents}
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.closedIncidents}
+                    </td>
+
+
+                    <td class="report-table-center">
+                      ${row.activeIncidents}
+                    </td>
+
+
+                    <td class="report-table-right">
+
+                      <strong>
+                        ${
+                          formatDowntimeSeconds(
+                            row.totalEffectiveDownSeconds
+                          )
+                        }
+                      </strong>
+
+                    </td>
+
+
+                    <td class="report-table-right">
+
+                      ${
+                        row.closedIncidents > 0
+
+                          ? formatDowntimeSeconds(
+                              row.avgEffectiveDownSeconds
+                            )
+
+                          : "—"
+                      }
+
+                    </td>
+
+                  </tr>
+
+                `
+              )
+              .join("")
+          }
+
+        </tbody>
+
+      </table>
+
+
+      <div class="small">
+
+        Effective DOWN uses Admin Verified downtime
+        when available; otherwise Recorded DOWN.
+
+      </div>
+
+    `;
+
+  }
 
     // =========================
     // FILL TEMPLATE
@@ -5320,8 +5777,8 @@ async function generateKpiReportPdf() {
       )
 
       .replace(
-        "{{MTTR_SECTION}}",
-        mttrSection
+        "{{BREAKDOWN_BY_LINE_SECTION}}",
+        breakdownByLineSection
       )
 
       .replace(
