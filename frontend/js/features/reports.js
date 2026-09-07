@@ -1201,9 +1201,27 @@ function generateExecutionMixPie(execPct) {
   const circumference = 2 * Math.PI * radius;
 
   const segments = [
-    { pct: execPct.preventive, color: "#2e7d32" },
-    { pct: execPct.planned, color: "#f57c00" },
-    { pct: execPct.breakdown, color: "#c62828" }
+
+    {
+      pct: execPct.preventive,
+      color: "#2e7d32"
+    },
+
+    {
+      pct: execPct.planned,
+      color: "#f57c00"
+    },
+
+    {
+      pct: execPct.restoration,
+      color: "#1565c0"
+    },
+
+    {
+      pct: execPct.legacyUnplanned,
+      color: "#c62828"
+    }
+
   ];
 
   let offset = 0;
@@ -2196,10 +2214,18 @@ const avgEffectiveDownSeconds =
 
           <p>
             <strong>
-              Breakdown:
+              Restoration:
             </strong>
 
-            ${execPct.breakdown}%
+            ${execPct.restoration}%
+          </p>
+
+          <p>
+            <strong>
+              Legacy Unplanned:
+            </strong>
+
+            ${execPct.legacyUnplanned}%
           </p>
 
         </div>
@@ -2265,25 +2291,46 @@ const avgEffectiveDownSeconds =
           </tr>
 
 
-          <tr>
+<tr>
 
-            <td>
-              Breakdown
-            </td>
+  <td>
+    Restoration
+  </td>
 
-            <td class="report-table-center">
-              ${execMix.breakdown}
-            </td>
+  <td class="report-table-center">
+    ${execMix.restoration}
+  </td>
 
-            <td class="report-table-right">
+  <td class="report-table-right">
 
-              <strong>
-                ${execPct.breakdown}%
-              </strong>
+    <strong>
+      ${execPct.restoration}%
+    </strong>
 
-            </td>
+  </td>
 
-          </tr>
+  </tr>
+
+
+  <tr>
+
+    <td>
+      Legacy Unplanned
+    </td>
+
+    <td class="report-table-center">
+      ${execMix.legacyUnplanned}
+    </td>
+
+    <td class="report-table-right">
+
+      <strong>
+        ${execPct.legacyUnplanned}%
+      </strong>
+
+    </td>
+
+  </tr>
 
         </tbody>
 
