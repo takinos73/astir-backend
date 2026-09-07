@@ -6338,6 +6338,378 @@ app.get("/kpis/execution-mix", async (req, res) => {
 
 });
 
+/* =========================================================
+   REPORT - BREAKDOWN PERFORMANCE
+
+   Used by Completed Maintenance Report.
+
+   Filters:
+   - from : Breakdown started_at >= from
+   - to   : Breakdown started_at < to + 1 day
+   - line : Asset line
+
+   IMPORTANT:
+   Technician is intentionally NOT a filter here.
+
+   Effective DOWN:
+   Verified DOWN if available,
+   otherwise Recorded DOWN.
+
+   Average Effective DOWN:
+   CLOSED incidents only.
+========================================================= */
+
+app.get(
+  "/kpis/breakdowns/report-summary",
+  async (req, res) => {
+
+    try {
+
+      const {
+        from,
+        to,
+        line
+      } = req.query;
+
+
+      const params = [];
+      const conditions = [];
+
+
+      /* =========================
+         DATE FROM
+      ========================= */
+
+      if (from) {
+
+        params.push(from);
+
+        conditions.push(
+          `b.started_at >= $${params.length}::date`
+        );
+
+      }
+
+
+      /* =========================
+         DATE TO
+
+         Exclusive next-day boundary
+         so the complete "to" date
+         is included.
+      ========================= */
+
+      if (to) {
+
+        params.push(to);
+
+        conditions.push(
+          `b.started_at < ` +
+          `($${params.length}::date + INTERVAL '1 day')`
+        );
+
+      }
+
+          /* =========================
+          LINE FILTER
+
+          Breakdown
+          → Asset
+          → Line
+        ========================= */
+
+        if (
+          line &&
+          String(line).trim() !== "" &&
+          String(line).toLowerCase() !== "all"
+        ) {
+
+          params.push(
+            String(line).trim()
+          );
+
+          conditions.push(
+            `l.name = $${params.length}`
+          );
+
+        }
+
+
+      const whereSql =
+        conditions.length
+          ? `WHERE ${conditions.join(" AND ")}`
+          : "";
+
+
+      const sql = `
+        WITH breakdown_dt AS (
+
+          SELECT
+            b.id,
+            b.status,
+            b.started_at,
+            b.closed_at,
+
+            /* =====================================================
+              RECORDED DOWN
+
+              Sum all raw Machine State intervals where state=DOWN.
+
+              For an interval that is still open:
+              - CLOSED Breakdown → clip at closed_at
+              - Active Breakdown → clip at NOW()
+
+              Raw Machine State History is never modified here.
+            ===================================================== */
+
+            COALESCE(
+              SUM(
+                CASE
+
+                  WHEN bsh.state = 'DOWN'
+                  THEN
+                    GREATEST(
+                      0,
+                      EXTRACT(
+                        EPOCH FROM (
+                          LEAST(
+                            COALESCE(
+                              bsh.ended_at,
+                              b.closed_at,
+                              NOW()
+                            ),
+                            COALESCE(
+                              b.closed_at,
+                              NOW()
+                            )
+                          )
+                          -
+                          bsh.started_at
+                        )
+                      )
+                    )
+
+                  ELSE 0
+
+                END
+              ),
+              0
+            )::bigint
+              AS recorded_down_seconds,
+
+
+            /* =====================================================
+              VERIFIED DOWN
+
+              NULL = no Admin verification/correction.
+              When present it overrides Recorded DOWN
+              for Effective DOWN calculations.
+            ===================================================== */
+
+            b.verified_down_seconds
+
+
+          FROM breakdowns b
+
+
+          /* -----------------------------------------------------
+            Breakdown -> Asset
+          ----------------------------------------------------- */
+
+          JOIN assets a
+            ON a.id = b.asset_id
+
+
+          /* -----------------------------------------------------
+            Asset -> Production Line
+
+            assets.line_id references lines.id
+          ----------------------------------------------------- */
+
+          LEFT JOIN lines l
+            ON l.id = a.line_id
+
+
+          /* -----------------------------------------------------
+            Breakdown -> Machine State History
+          ----------------------------------------------------- */
+
+          LEFT JOIN breakdown_state_history bsh
+            ON bsh.breakdown_id = b.id
+
+
+          /* -----------------------------------------------------
+            Dynamic report filters:
+
+            Date From
+            Date To
+            Line
+          ----------------------------------------------------- */
+
+          ${whereSql}
+
+
+          GROUP BY
+            b.id,
+            b.status,
+            b.started_at,
+            b.closed_at,
+            b.verified_down_seconds
+
+        ),
+
+
+        /* =======================================================
+          EFFECTIVE DOWN
+
+          Admin Verified DOWN has priority.
+
+          If there is no verification:
+          Effective DOWN = Recorded DOWN
+        ======================================================= */
+
+        effective_dt AS (
+
+          SELECT
+            id,
+            status,
+
+            COALESCE(
+              verified_down_seconds,
+              recorded_down_seconds
+            )::bigint
+              AS effective_down_seconds
+
+          FROM breakdown_dt
+
+        )
+
+
+        /* =======================================================
+          BREAKDOWN PERFORMANCE SUMMARY
+        ======================================================= */
+
+        SELECT
+
+
+          /* -----------------------------------------------------
+            All Breakdown incidents in selected report period
+          ----------------------------------------------------- */
+
+          COUNT(*)::int
+            AS total_incidents,
+
+
+          /* -----------------------------------------------------
+            Closed incidents
+          ----------------------------------------------------- */
+
+          COUNT(*) FILTER (
+            WHERE status = 'CLOSED'
+          )::int
+            AS closed_incidents,
+
+
+          /* -----------------------------------------------------
+            Currently active incidents
+          ----------------------------------------------------- */
+
+          COUNT(*) FILTER (
+            WHERE status IN (
+              'OPEN',
+              'IN_PROGRESS'
+            )
+          )::int
+            AS active_incidents,
+
+
+          /* -----------------------------------------------------
+            Effective DOWN for ALL incidents.
+
+            Includes currently active incidents.
+          ----------------------------------------------------- */
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ),
+            0
+          )::bigint
+            AS total_effective_down_seconds,
+
+
+          /* -----------------------------------------------------
+            Effective DOWN from CLOSED incidents only
+          ----------------------------------------------------- */
+
+          COALESCE(
+            SUM(
+              effective_down_seconds
+            ) FILTER (
+              WHERE status = 'CLOSED'
+            ),
+            0
+          )::bigint
+            AS closed_effective_down_seconds,
+
+
+          /* -----------------------------------------------------
+            AVG EFFECTIVE DOWN / CLOSED INCIDENT
+
+            IMPORTANT:
+            This is NOT labelled MTTR.
+
+            It represents:
+            Closed Effective DOWN
+            ---------------------
+            Closed Incidents
+          ----------------------------------------------------- */
+
+          COALESCE(
+            ROUND(
+              AVG(
+                effective_down_seconds
+              ) FILTER (
+                WHERE status = 'CLOSED'
+              )
+            ),
+            0
+          )::bigint
+            AS avg_effective_down_seconds
+
+
+        FROM effective_dt
+      `;
+
+
+      const { rows } =
+        await pool.query(
+          sql,
+          params
+        );
+
+
+      res.json(
+        rows[0]
+      );
+
+    } catch (err) {
+
+      console.error(
+        "GET /kpis/breakdowns/report-summary error:",
+        err
+      );
+
+      res.status(500).json({
+        error:
+          "Failed to calculate breakdown report summary"
+      });
+
+    }
+
+  }
+);
+
 /* =====================
    EDIT TASK (PLANNED / UNPLANNED – METADATA ONLY)
 ===================== */

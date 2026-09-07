@@ -1470,85 +1470,198 @@ async function generateCompletedReportPdf() {
             b.avg - a.avg
         );
 
+// =========================
+// MAINTENANCE EXECUTION MIX
+//
+// New CMMS model:
+//
+// 1. Restoration
+//    Task linked to Breakdown incident
+//
+// 2. Preventive
+//    Recurring maintenance task
+//
+// 3. Legacy Unplanned
+//    Old Breakdown-as-Task model
+//
+// 4. Planned
+//    Normal one-off planned task
+//
+// IMPORTANT:
+// breakdown_id has priority over
+// is_planned / frequency_hours.
+// =========================
 
-    // =========================
-    // EXECUTION MIX
-    // =========================
-    const execMix = {
+const execMix = {
 
-      preventive: 0,
-      planned: 0,
-      breakdown: 0
+  preventive: 0,
+  planned: 0,
+  restoration: 0,
+  legacyUnplanned: 0
 
-    };
-
-
-    sorted.forEach(e => {
-
-      if (
-        e.is_planned === false
-      ) {
-
-        execMix.breakdown++;
-
-      } else if (
-        e.frequency_hours != null &&
-        Number(
-          e.frequency_hours
-        ) > 0
-      ) {
-
-        execMix.preventive++;
-
-      } else {
-
-        execMix.planned++;
-      }
-
-    });
+};
 
 
-    const execTotal =
-      execMix.preventive +
-      execMix.planned +
-      execMix.breakdown;
+sorted.forEach(e => {
+
+  /* =====================
+     RESTORATION
+
+     New Breakdown model.
+     Always classify first.
+  ===================== */
+
+  if (
+    e.breakdown_id !== null &&
+    e.breakdown_id !== undefined
+  ) {
+
+    execMix.restoration++;
+
+  }
 
 
-    const execPct = {
+  /* =====================
+     PREVENTIVE
+  ===================== */
 
-      preventive:
-        execTotal
-          ? Math.round(
-              execMix.preventive *
-              100 /
-              execTotal
-            )
-          : 0,
+  else if (
+    e.frequency_hours != null &&
+    Number(
+      e.frequency_hours
+    ) > 0
+  ) {
 
-      planned:
-        execTotal
-          ? Math.round(
-              execMix.planned *
-              100 /
-              execTotal
-            )
-          : 0,
+    execMix.preventive++;
 
-      breakdown:
-        execTotal
-          ? Math.round(
-              execMix.breakdown *
-              100 /
-              execTotal
-            )
-          : 0
-
-    };
+  }
 
 
-    const breakdownRate =
-      execPct.breakdown;
+  /* =====================
+     LEGACY UNPLANNED
 
+     Old Breakdown-as-Task.
+     Temporary until migration.
+  ===================== */
+
+  else if (
+    e.is_planned === false
+  ) {
+
+    execMix.legacyUnplanned++;
+
+  }
+
+
+  /* =====================
+     PLANNED
+  ===================== */
+
+  else {
+
+    execMix.planned++;
+
+  }
+
+});
+
+
+/* =====================
+   TOTAL EXECUTIONS
+===================== */
+
+const execTotal =
+
+  execMix.preventive +
+  execMix.planned +
+  execMix.restoration +
+  execMix.legacyUnplanned;
+
+
+  /* =====================
+    EXECUTION MIX %
+  ===================== */
+
+  const execPct = {
+
+    preventive:
+      execTotal
+        ? Math.round(
+            execMix.preventive *
+            100 /
+            execTotal
+          )
+        : 0,
+
+
+    planned:
+      execTotal
+        ? Math.round(
+            execMix.planned *
+            100 /
+            execTotal
+          )
+        : 0,
+
+
+    restoration:
+      execTotal
+        ? Math.round(
+            execMix.restoration *
+            100 /
+            execTotal
+          )
+        : 0,
+
+
+    legacyUnplanned:
+      execTotal
+        ? Math.round(
+            execMix.legacyUnplanned *
+            100 /
+            execTotal
+          )
+        : 0
+
+  };   
+
+
+  // =========================
+  // REACTIVE MAINTENANCE RATE
+  //
+  // Share of completed maintenance
+  // executions related to corrective /
+  // restoration work.
+  //
+  // During transition:
+  //
+  // Restoration
+  // + Legacy Unplanned
+  // -------------------- × 100
+  // Total Executions
+  //
+  // IMPORTANT:
+  // This is NOT machine Breakdown Rate
+  // and NOT production downtime rate.
+  // =========================
+
+  const reactiveExecutions =
+
+    execMix.restoration +
+    execMix.legacyUnplanned;
+
+
+  const reactiveMaintenanceRate =
+
+    execTotal > 0
+
+      ? Math.round(
+          reactiveExecutions *
+          100 /
+          execTotal
+        )
+
+      : 0;
 
     // =========================
     // OVERALL MTTR
@@ -1649,35 +1762,65 @@ async function generateCompletedReportPdf() {
 
 
     // =========================
-    // MAINTENANCE PROFILE
+    // MAINTENANCE ACTIVITY PROFILE
+    //
+    // Descriptive indicator only.
+    //
+    // It shows the composition of completed
+    // maintenance executions.
+    //
+    // It is NOT a maintenance performance
+    // rating and does not use arbitrary
+    // Proactive / Reactive thresholds.
     // =========================
-    let maintenanceProfile =
-      "Balanced";
 
-    let maintenanceIcon =
-      "🟠";
+    const proactiveExecutions =
+      execMix.preventive +
+      execMix.planned;
 
 
-    if (
-      breakdownRate < 15
-    ) {
+    const reactiveExecutionsForProfile =
+      execMix.restoration +
+      execMix.legacyUnplanned;
 
-      maintenanceProfile =
-        "Preventive-Driven";
 
-      maintenanceIcon =
-        "🟢";
+    const proactiveMaintenanceRate =
+      execTotal > 0
+        ? Math.round(
+            proactiveExecutions *
+            100 /
+            execTotal
+          )
+        : 0;
 
-    } else if (
-      breakdownRate > 30
-    ) {
 
-      maintenanceProfile =
-        "Reactive / Breakdown-Heavy";
+    const reactiveMaintenanceRateForProfile =
+      execTotal > 0
+        ? Math.round(
+            reactiveExecutionsForProfile *
+            100 /
+            execTotal
+          )
+        : 0;
 
-      maintenanceIcon =
-        "🔴";
-    }
+
+    /*
+      Keep these variables because the
+      existing HTML/template below may still
+      reference the old Maintenance Profile
+      variables.
+
+      We will replace the visual section in
+      the next step.
+    */
+
+    const maintenanceProfile =
+      "Activity Mix";
+
+
+    const maintenanceProfileText =
+      `${proactiveMaintenanceRate}% Preventive / Planned · ` +
+      `${reactiveMaintenanceRateForProfile}% Restoration / Legacy Unplanned`;
 
 
     // =========================
