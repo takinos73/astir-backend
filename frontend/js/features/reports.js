@@ -3425,15 +3425,6 @@ async function generateNonPlannedReportPdf() {
       : 0;
 
 
-    const avgServiceMinutes =
-      totalBreakdowns > 0
-        ? Math.round(
-            totalServiceMinutes /
-            totalBreakdowns
-          )
-        : 0;
-
-
     // =========================
     // BREAKDOWNS BY LINE
     // =========================
