@@ -3824,15 +3824,15 @@ async function generateNonPlannedReportPdf() {
       .replaceAll(
         "{{TOTAL_SERVICE_TIME}}",
         formatDuration(
-          totalServiceMinutes
+          totalEffectiveDownMinutes
         )
       )
 
       .replaceAll(
         "{{AVG_SERVICE_TIME}}",
-        avgServiceMinutes
+        avgEffectiveDownMinutes
           ? formatDuration(
-              avgServiceMinutes
+              avgEffectiveDownMinutes
             )
           : "—"
       )
