@@ -6594,6 +6594,8 @@ app.get("/kpis/breakdowns/report-summary", async (req, res) => {
           SELECT
             id,
             status,
+            started_at,
+            closed_at,
 
             COALESCE(
               verified_down_seconds,
@@ -6696,7 +6698,36 @@ app.get("/kpis/breakdowns/report-summary", async (req, res) => {
             ),
             0
           )::bigint
-            AS avg_effective_down_seconds
+            AS avg_effective_down_seconds,
+
+
+          /* -----------------------------------------------------
+            MTTR
+
+            Mean Time To Restore
+
+            Average elapsed time:
+            started_at -> closed_at
+
+            CLOSED incidents only.
+          ----------------------------------------------------- */
+
+          COALESCE(
+            ROUND(
+              AVG(
+                EXTRACT(
+                  EPOCH FROM (
+                    closed_at - started_at
+                  )
+                )
+              ) FILTER (
+                WHERE status = 'CLOSED'
+                  AND closed_at IS NOT NULL
+              )
+            ),
+            0
+          )::bigint
+            AS mttr_seconds
 
 
         FROM effective_dt
