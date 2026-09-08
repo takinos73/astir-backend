@@ -4574,23 +4574,23 @@ async function generateKpiReportPdf() {
       return `${seconds}s`;
     };
 
-    const pct =
-      (num, den) =>
-        den > 0
-          ? Math.round(
-              num /
-              den *
-              100
-            )
-          : 0;
+        const pct =
+          (num, den) =>
+            den > 0
+              ? Math.round(
+                  num /
+                  den *
+                  100
+                )
+              : 0;
 
 
-    const inRange =
-      d => {
+        const inRange =
+          d => {
 
-        if (!d) {
-          return false;
-        }
+            if (!d) {
+              return false;
+            }
 
 
         const x =
@@ -4616,19 +4616,17 @@ async function generateKpiReportPdf() {
         return true;
       };
 
+      const sameLine =
+        row => {
 
-    const sameLine =
-      row => {
-
-        if (!row) {
-          return false;
-        }
+          if (!row) {
+            return false;
+          }
 
 
-        if (isAllLines) {
-          return true;
-        }
-
+          if (isAllLines) {
+            return true;
+          }
 
         const line =
           String(
@@ -4643,42 +4641,42 @@ async function generateKpiReportPdf() {
         );
       };
 
-
-    const isPreventiveRow =
-      row =>
-        row &&
-        row.frequency_hours != null &&
-        safeNum(
-          row.frequency_hours
-        ) > 0;
-
-
-    const isBreakdownExec =
-      row =>
-        row &&
-        row.is_planned === false;
+        const isPreventiveRow =
+          row =>
+            row &&
+            row.frequency_hours != null &&
+            safeNum(
+              row.frequency_hours
+            ) > 0;
 
 
-    const getExecType =
-      e => {
-
-        if (
-          isBreakdownExec(e)
-        ) {
-          return "breakdown";
-        }
+        const isRestorationExec =
+          row =>
+            row &&
+            row.breakdown_id !== null &&
+            row.breakdown_id !== undefined;
 
 
-        if (
-          isPreventiveRow(e)
-        ) {
-          return "preventive";
-        }
+        const getExecType =
+          e => {
+
+            // New Breakdown model:
+            // Restoration has priority
+            if (
+              isRestorationExec(e)
+            ) {
+              return "restoration";
+            }
 
 
-        return "planned";
-      };
+            if (
+              isPreventiveRow(e)
+            ) {
+              return "preventive";
+            }
 
+            return "planned";
+          };
 
     // =========================
     // DATASETS
@@ -4689,7 +4687,6 @@ async function generateKpiReportPdf() {
       )
         ? state.tasksData
         : [];
-
 
     const allExec =
       Array.isArray(
@@ -4835,7 +4832,7 @@ async function generateKpiReportPdf() {
       scopedExecPeriod.filter(
         e =>
           getExecType(e) ===
-          "breakdown"
+          "restoration"
       );
 
 
@@ -4845,7 +4842,6 @@ async function generateKpiReportPdf() {
           getExecType(e) ===
           "planned"
       );
-
 
     // =========================
     // SERVICE TIME
@@ -4861,7 +4857,6 @@ async function generateKpiReportPdf() {
 
         0
       );
-
 
     const avgServiceMin =
       scopedExecPeriod.length
