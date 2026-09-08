@@ -1381,3 +1381,123 @@ input[type="checkbox"] {
 .btn-breakdown-restored:active {
   transform: translateY(1px);
 }
+
+/* =========================================================
+   BREAKDOWN FILTERS
+========================================================= */
+
+.breakdown-filters {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  margin: 14px 0 18px 0;
+  padding: 14px 16px;
+
+  background: #111722;
+  border: 1px solid #273142;
+  border-radius: 12px;
+}
+
+
+.breakdown-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  min-width: 150px;
+}
+
+
+.breakdown-filter-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca8ba;
+  letter-spacing: 0.3px;
+}
+
+
+.breakdown-filter-item select,
+.breakdown-filter-item input {
+  height: 36px;
+
+  padding: 0 10px;
+
+  background: #171e2a;
+  color: #f3f4f6;
+
+  border: 1px solid #303b4d;
+  border-radius: 8px;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+
+.breakdown-filter-item select:hover,
+.breakdown-filter-item input:hover {
+  border-color: #4c5d75;
+}
+
+
+.breakdown-filter-item select:focus,
+.breakdown-filter-item input:focus {
+  border-color: #4aa3ff;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(74, 163, 255, 0.15);
+
+  background: #1b2432;
+}
+
+
+/* =====================
+   DATE INPUT
+===================== */
+
+.breakdown-filter-item
+input[type="date"] {
+  min-width: 155px;
+}
+
+
+/* =====================
+   SELECT
+===================== */
+
+.breakdown-filter-item select {
+  min-width: 160px;
+  cursor: pointer;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 900px) {
+
+  .breakdown-filters {
+    align-items: stretch;
+  }
+
+
+  .breakdown-filter-item {
+    flex: 1 1 180px;
+  }
+
+
+  .breakdown-filter-item select,
+  .breakdown-filter-item input {
+    width: 100%;
+  }
+
+}
