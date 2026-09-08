@@ -3366,22 +3366,63 @@ async function generateNonPlannedReportPdf() {
       ).size;
 
 
-    // =========================
-    // TOTAL SERVICE TIME
-    // =========================
-    const totalServiceMinutes =
-      rows.reduce(
+  // =========================
+  // EFFECTIVE DOWN
+  // =========================
+  const totalEffectiveDownMinutes =
+    rows.reduce(
 
-        (sum, r) => {
+      (sum, r) => {
 
-          return r.duration_min != null
-            ? sum + Number(r.duration_min)
-            : sum;
+        return r.effective_down_seconds != null
+          ? sum +
+              (
+                Number(
+                  r.effective_down_seconds
+                ) / 60
+              )
+          : sum;
 
-        },
+      },
 
-        0
-      );
+      0
+    );
+
+
+  const closedBreakdowns =
+    rows.filter(
+      r =>
+        r.status === "CLOSED"
+    );
+
+
+  const closedEffectiveDownMinutes =
+    closedBreakdowns.reduce(
+
+      (sum, r) => {
+
+        return r.effective_down_seconds != null
+          ? sum +
+              (
+                Number(
+                  r.effective_down_seconds
+                ) / 60
+              )
+          : sum;
+
+      },
+
+      0
+    );
+
+
+  const avgEffectiveDownMinutes =
+    closedBreakdowns.length > 0
+      ? Math.round(
+          closedEffectiveDownMinutes /
+          closedBreakdowns.length
+        )
+      : 0;
 
 
     const avgServiceMinutes =
