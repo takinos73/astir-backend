@@ -5213,6 +5213,174 @@ async function generateKpiReportPdf() {
 
         : "";
 
+      // =========================
+      // MTTR
+      // Mean Time To Restore
+      // =========================
+
+      const loadBreakdownSummary =
+        async line => {
+
+          const params =
+            new URLSearchParams();
+
+          if (fromVal) {
+            params.set(
+              "from",
+              fromVal
+            );
+          }
+
+          if (toVal) {
+            params.set(
+              "to",
+              toVal
+            );
+          }
+
+          if (line) {
+            params.set(
+              "line",
+              line
+            );
+          }
+
+          const query =
+            params.toString();
+
+          const url =
+            query
+              ? `/kpis/breakdowns/report-summary?${query}`
+              : "/kpis/breakdowns/report-summary";
+
+          const response =
+            await fetch(url);
+
+          if (!response.ok) {
+            throw new Error(
+              "Failed to load Breakdown MTTR summary"
+            );
+          }
+
+          return response.json();
+        };
+
+
+      let mttrSeconds = 0;
+      let mttrClosedIncidents = 0;
+
+
+      if (isAllLines) {
+
+        const summary =
+          await loadBreakdownSummary();
+
+        mttrSeconds =
+          Number(
+            summary.mttr_seconds || 0
+          );
+
+        mttrClosedIncidents =
+          Number(
+            summary.closed_incidents || 0
+          );
+
+      } else {
+
+        const summaries =
+          await Promise.all(
+            selectedLines.map(
+              line =>
+                loadBreakdownSummary(line)
+            )
+          );
+
+
+        let weightedMttrSeconds = 0;
+
+
+        summaries.forEach(
+          summary => {
+
+            const closed =
+              Number(
+                summary.closed_incidents || 0
+              );
+
+            const mttr =
+              Number(
+                summary.mttr_seconds || 0
+              );
+
+
+            mttrClosedIncidents +=
+              closed;
+
+            weightedMttrSeconds +=
+              mttr * closed;
+          }
+        );
+
+
+        mttrSeconds =
+          mttrClosedIncidents > 0
+            ? Math.round(
+                weightedMttrSeconds /
+                mttrClosedIncidents
+              )
+            : 0;
+      }
+
+
+      const mttrSection =
+        mttrClosedIncidents > 0
+          ? `
+              <h3>
+                MTTR
+              </h3>
+
+              <div class="kpi-detail-row">
+
+                <span>
+                  Mean Time To Restore
+                </span>
+
+                <strong>
+                  ${formatDowntimeSeconds(
+                    mttrSeconds
+                  )}
+                </strong>
+
+              </div>
+
+              <div class="kpi-detail-row">
+
+                <span>
+                  Closed Breakdown Incidents
+                </span>
+
+                <strong>
+                  ${mttrClosedIncidents}
+                </strong>
+
+              </div>
+
+              <div class="small">
+                Average elapsed time from Breakdown start
+                to closure. Closed incidents only.
+              </div>
+            `
+          : `
+              <h3>
+                MTTR
+              </h3>
+
+              <div class="small">
+                No closed Breakdown incidents
+                in selected period.
+              </div>
+            `;
+
 
   // =========================
   // BREAKDOWN PERFORMANCE
@@ -5706,6 +5874,11 @@ async function generateKpiReportPdf() {
           execTotal -
           breakdownCount
         )
+      )
+
+      .replace(
+        "{{MTTR_SECTION}}",
+        mttrSection
       )
 
       .replace(
