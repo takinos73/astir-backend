@@ -23,6 +23,15 @@ let currentBreakdownTasks = [];
 let currentBreakdown = null;
 
 // ============================================================
+// BREAKDOWN LIST DATA
+//
+// Full list loaded from GET /breakdowns.
+// Filters operate locally on this array.
+// ============================================================
+
+let breakdownsData = [];
+
+// ============================================================
 // RESTORATION LOCATION CATALOGUE
 //
 // Loaded fresh from:
@@ -112,11 +121,16 @@ async function loadBreakdowns() {
       await response.json();
 
 
-    renderBreakdownsTable(
+    breakdownsData =
       Array.isArray(breakdowns)
         ? breakdowns
-        : []
-    );
+        : [];
+
+
+    populateBreakdownLineFilter();
+
+
+    applyBreakdownFilters();
 
 
   } catch (err) {
@@ -135,6 +149,230 @@ async function loadBreakdowns() {
       </tr>
     `;
 
+  }
+
+}
+
+/* =========================================================
+   BREAKDOWN FILTERS
+========================================================= */
+
+function applyBreakdownFilters() {
+
+  const lineValue =
+    document
+      .getElementById("breakdownLineFilter")
+      ?.value || "ALL";
+
+
+  const fromValue =
+    document
+      .getElementById("breakdownFromFilter")
+      ?.value || "";
+
+
+  const toValue =
+    document
+      .getElementById("breakdownToFilter")
+      ?.value || "";
+
+
+  const statusValue =
+    document
+      .getElementById("breakdownStatusFilter")
+      ?.value || "ALL";
+
+
+  const filtered =
+    breakdownsData.filter(b => {
+
+      /* =====================
+         LINE
+      ===================== */
+
+      if (
+        lineValue !== "ALL" &&
+        String(b.line_name || "") !== lineValue
+      ) {
+        return false;
+      }
+
+
+      /* =====================
+         STATUS
+      ===================== */
+
+      if (
+        statusValue !== "ALL" &&
+        String(
+          b.status || ""
+        ).toUpperCase() !== statusValue
+      ) {
+        return false;
+      }
+
+
+      /* =====================
+         STARTED DATE
+      ===================== */
+
+      if (
+        (fromValue || toValue) &&
+        !b.started_at
+      ) {
+        return false;
+      }
+
+
+      if (b.started_at) {
+
+        const startedAt =
+          new Date(b.started_at);
+
+
+        if (
+          Number.isNaN(
+            startedAt.getTime()
+          )
+        ) {
+          return false;
+        }
+
+
+        /* =====================
+           FROM
+        ===================== */
+
+        if (fromValue) {
+
+          const fromDate =
+            new Date(
+              `${fromValue}T00:00:00`
+            );
+
+
+          if (
+            startedAt < fromDate
+          ) {
+            return false;
+          }
+
+        }
+
+
+        /* =====================
+           TO
+           Inclusive selected date
+        ===================== */
+
+        if (toValue) {
+
+          const toExclusive =
+            new Date(
+              `${toValue}T00:00:00`
+            );
+
+
+          toExclusive.setDate(
+            toExclusive.getDate() + 1
+          );
+
+
+          if (
+            startedAt >= toExclusive
+          ) {
+            return false;
+          }
+
+        }
+
+      }
+
+
+      return true;
+
+    });
+
+
+  renderBreakdownsTable(filtered);
+
+}
+
+
+/* =========================================================
+   POPULATE BREAKDOWN LINE FILTER
+========================================================= */
+
+function populateBreakdownLineFilter() {
+
+  const select =
+    document.getElementById(
+      "breakdownLineFilter"
+    );
+
+
+  if (!select) return;
+
+
+  const currentValue =
+    select.value || "ALL";
+
+
+  const lines =
+    [
+      ...new Set(
+        breakdownsData
+          .map(
+            b =>
+              String(
+                b.line_name || ""
+              ).trim()
+          )
+          .filter(Boolean)
+      )
+    ]
+      .sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            undefined,
+            {
+              numeric: true
+            }
+          )
+      );
+
+
+  select.innerHTML = `
+    <option value="ALL">
+      All Lines
+    </option>
+  `;
+
+
+  lines.forEach(line => {
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+
+    option.value = line;
+    option.textContent = line;
+
+
+    select.appendChild(option);
+
+  });
+
+
+  if (
+    currentValue === "ALL" ||
+    lines.includes(currentValue)
+  ) {
+    select.value =
+      currentValue;
   }
 
 }
@@ -1990,6 +2228,41 @@ function getBreakdownLocalDateTime() {
 /* =========================================================
    EVENT LISTENERS
 ========================================================= */
+
+/* =========================================================
+   BREAKDOWN FILTER EVENTS
+========================================================= */
+
+document
+  .getElementById("breakdownLineFilter")
+  ?.addEventListener(
+    "change",
+    applyBreakdownFilters
+  );
+
+
+document
+  .getElementById("breakdownFromFilter")
+  ?.addEventListener(
+    "change",
+    applyBreakdownFilters
+  );
+
+
+document
+  .getElementById("breakdownToFilter")
+  ?.addEventListener(
+    "change",
+    applyBreakdownFilters
+  );
+
+
+document
+  .getElementById("breakdownStatusFilter")
+  ?.addEventListener(
+    "change",
+    applyBreakdownFilters
+  );
 
 
 /* =====================

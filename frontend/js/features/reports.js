@@ -3815,7 +3815,9 @@ async function generateNonPlannedReportPdf() {
       .replaceAll(
         "{{TOTAL_SERVICE_TIME}}",
         formatDuration(
-          totalEffectiveDownMinutes
+          Math.round(
+            totalEffectiveDownMinutes
+          )
         )
       )
 
