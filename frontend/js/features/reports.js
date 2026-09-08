@@ -3038,11 +3038,200 @@ async function generateNonPlannedReportPdf() {
       );
 
 
-    // =========================
-    // GET FILTERED DATA
-    // =========================
-    const rows =
-      getFilteredNonPlannedExecutionsForReport();
+  // =========================
+  // GET FILTERED BREAKDOWNS
+  // New Breakdown Model
+  // =========================
+
+  const breakdownResponse =
+    await fetch(
+      "/breakdowns"
+    );
+
+
+  if (
+    !breakdownResponse.ok
+  ) {
+
+    throw new Error(
+      "Failed to load Breakdown incidents"
+    );
+  }
+
+
+  const breakdownRows =
+    await breakdownResponse.json();
+
+
+  const reportFromVal =
+    document.getElementById(
+      "dateFrom"
+    )?.value || "";
+
+
+  const reportToVal =
+    document.getElementById(
+      "dateTo"
+    )?.value || "";
+
+
+  const reportSelectedLines =
+    getSelectedReportLines();
+
+
+  const rows =
+    (
+      Array.isArray(
+        breakdownRows
+      )
+        ? breakdownRows
+        : []
+    )
+
+      .filter(
+        b => {
+
+          if (
+            !b.started_at
+          ) {
+            return false;
+          }
+
+
+          const startedAt =
+            new Date(
+              b.started_at
+            );
+
+
+          if (
+            Number.isNaN(
+              startedAt.getTime()
+            )
+          ) {
+            return false;
+          }
+
+
+          // =========================
+          // FROM
+          // =========================
+
+          if (
+            reportFromVal
+          ) {
+
+            const fromDate =
+              new Date(
+                `${reportFromVal}T00:00:00`
+              );
+
+
+            if (
+              startedAt <
+              fromDate
+            ) {
+              return false;
+            }
+          }
+
+
+          // =========================
+          // TO
+          // Inclusive selected date
+          // =========================
+
+          if (
+            reportToVal
+          ) {
+
+            const toExclusive =
+              new Date(
+                `${reportToVal}T00:00:00`
+              );
+
+
+            toExclusive.setDate(
+              toExclusive.getDate() + 1
+            );
+
+
+            if (
+              startedAt >=
+              toExclusive
+            ) {
+              return false;
+            }
+          }
+
+
+          // =========================
+          // LINE
+          // =========================
+
+          if (
+            !reportSelectedLines.includes(
+              "all"
+            ) &&
+            !reportSelectedLines.includes(
+              b.line_name
+            )
+          ) {
+            return false;
+          }
+
+
+          return true;
+        }
+      )
+
+
+      // =========================
+      // NORMALIZE
+      //
+      // Keep old report structure
+      // temporarily so downstream
+      // rendering still works.
+      // =========================
+
+      .map(
+        b => ({
+
+          ...b,
+
+          line:
+            b.line_name || "—",
+
+          machine:
+            b.asset_model || "-",
+
+          serial_number:
+            b.asset_serial || "",
+
+          executed_at:
+            b.started_at,
+
+          task:
+            b.title || "-",
+
+          executed_by:
+            b.reported_by || "-",
+
+          duration_min:
+            Math.round(
+              Number(
+                b.effective_down_seconds || 0
+              ) / 60
+            ),
+
+          section:
+            "",
+
+          unit:
+            ""
+
+        })
+      );
 
 
     if (
