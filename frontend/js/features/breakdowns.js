@@ -4262,16 +4262,20 @@ body {
   gap: 5px;
 
   margin-bottom: 5px;
+
+  align-items: start;
 }
 
 
 .card {
-  padding: 7px 9px;
+  padding: 6px 8px;
 
   border: 1px solid #d5dde8;
   border-radius: 5px;
 
   background: #fbfcfe;
+
+  align-self: start;
 
   break-inside: avoid;
   page-break-inside: avoid;
@@ -4311,7 +4315,8 @@ body {
 
   line-height: 1.25;
 
-  white-space: pre-wrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 
@@ -4336,7 +4341,7 @@ body {
 ===================== */
 
 .closure-card {
-  padding: 8px 9px;
+  padding: 7px 8px;
 }
 
 
@@ -4344,9 +4349,11 @@ body {
   display: grid;
 
   grid-template-columns:
-    1fr 1fr 1.5fr;
+    0.9fr 1.5fr 2fr;
 
   gap: 0;
+
+  align-items: start;
 }
 
 
