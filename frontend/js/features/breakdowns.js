@@ -4106,316 +4106,377 @@ function printBreakdownDetail() {
 
 <style>
 
-  @page {
-    size: A4;
-    margin: 12mm;
-  }
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm;
+}
 
 
-  * {
-    box-sizing: border-box;
-  }
+* {
+  box-sizing: border-box;
+}
 
+
+body {
+  margin: 0;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: #172033;
+  background: #ffffff;
+
+  font-size: 10px;
+}
+
+
+.report {
+  width: 100%;
+}
+
+
+/* =====================
+   HEADER
+===================== */
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+
+  border-bottom: 2px solid #d6dde8;
+}
+
+
+.brand {
+  font-size: 21px;
+  font-weight: 800;
+
+  color: #17233c;
+}
+
+
+.brand span {
+  color: #2588e8;
+}
+
+
+.brand-sub {
+  margin-top: 2px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.7px;
+
+  color: #65738a;
+}
+
+
+.report-meta {
+  text-align: right;
+
+  font-size: 8px;
+  line-height: 1.4;
+
+  color: #59677d;
+}
+
+
+.report-meta strong {
+  display: block;
+
+  margin-bottom: 1px;
+
+  font-size: 11px;
+
+  color: #21304c;
+}
+
+
+/* =====================
+   BREAKDOWN HEADER
+===================== */
+
+.breakdown-heading {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-bottom: 2px;
+}
+
+
+.breakdown-code {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+
+.status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 12px;
+
+  border-radius: 20px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: #ffffff;
+
+  background:
+    ${isClosed
+      ? "#169c55"
+      : "#d99b16"};
+}
+
+
+.asset-line {
+  margin-bottom: 9px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #28354c;
+}
+
+
+/* =====================
+   GRID
+===================== */
+
+.grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(6, 1fr);
+
+  gap: 5px;
+
+  margin-bottom: 5px;
+}
+
+
+.card {
+  padding: 7px 9px;
+
+  border: 1px solid #d5dde8;
+  border-radius: 5px;
+
+  background: #fbfcfe;
+
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+
+.span-2 {
+  grid-column: span 2;
+}
+
+
+.span-3 {
+  grid-column: span 3;
+}
+
+
+.span-6 {
+  grid-column: span 6;
+}
+
+
+.label {
+  margin-bottom: 3px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  color: #63728b;
+}
+
+
+.value {
+  font-size: 10px;
+  font-weight: 600;
+
+  line-height: 1.25;
+
+  white-space: pre-wrap;
+}
+
+
+.value-large {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+.verified {
+  margin-left: 6px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  color: #137848;
+}
+
+
+/* =====================
+   CLOSURE SUMMARY
+===================== */
+
+.closure-card {
+  padding: 8px 9px;
+}
+
+
+.closure-grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr 1.5fr;
+
+  gap: 0;
+}
+
+
+.closure-item {
+  min-width: 0;
+
+  padding: 0 10px;
+}
+
+
+.closure-item:first-child {
+  padding-left: 0;
+}
+
+
+.closure-item:last-child {
+  padding-right: 0;
+}
+
+
+.closure-item + .closure-item {
+  border-left: 1px solid #d8e0ea;
+}
+
+
+/* =====================
+   SECTION
+===================== */
+
+.section-title {
+  margin: 9px 0 5px 0;
+
+  padding-bottom: 4px;
+
+  border-bottom: 1px solid #d8e0ea;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  color: #263651;
+}
+
+
+/* =====================
+   RESTORATION TABLE
+===================== */
+
+table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 8px;
+
+  break-inside: avoid;
+}
+
+
+th {
+  padding: 5px 6px;
+
+  text-align: left;
+
+  background: #eef2f7;
+
+  border: 1px solid #d6dee9;
+
+  color: #34425a;
+}
+
+
+td {
+  padding: 5px 6px;
+
+  border: 1px solid #dfe5ed;
+
+  vertical-align: top;
+}
+
+
+.empty {
+  text-align: center;
+
+  color: #748197;
+}
+
+
+/* =====================
+   FOOTER
+===================== */
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 10px;
+  padding-top: 5px;
+
+  border-top: 1px solid #cbd4df;
+
+  font-size: 7px;
+
+  color: #67758a;
+}
+
+
+/* =====================
+   PRINT
+===================== */
+
+@media print {
 
   body {
-    margin: 0;
-
-    font-family:
-      Arial,
-      Helvetica,
-      sans-serif;
-
-    color: #172033;
-
-    background: #ffffff;
-
-    font-size: 11px;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
 
-  .report {
-    width: 100%;
-  }
-
-
-  /* =====================
-     HEADER
-  ===================== */
-
-  .report-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-
-    padding-bottom: 12px;
-    margin-bottom: 16px;
-
-    border-bottom: 2px solid #d6dde8;
-  }
-
-
-  .brand {
-    font-size: 23px;
-    font-weight: 800;
-
-    color: #17233c;
-  }
-
-
-  .brand span {
-    color: #2588e8;
-  }
-
-
-  .brand-sub {
-    margin-top: 3px;
-
-    font-size: 9px;
-    font-weight: 700;
-
-    letter-spacing: 0.8px;
-
-    color: #65738a;
-  }
-
-
-  .report-meta {
-    text-align: right;
-
-    line-height: 1.5;
-
-    color: #59677d;
-  }
-
-
-  .report-meta strong {
-    display: block;
-
-    font-size: 14px;
-
-    color: #21304c;
-  }
-
-
-  /* =====================
-     BREAKDOWN TITLE
-  ===================== */
-
-  .breakdown-heading {
-    display: flex;
-    align-items: center;
-
-    gap: 12px;
-
-    margin-bottom: 3px;
-  }
-
-
-  .breakdown-code {
-    font-size: 23px;
-    font-weight: 800;
-  }
-
-
-  .status {
-    display: inline-flex;
-    align-items: center;
-
-    padding: 5px 16px;
-
-    border-radius: 20px;
-
-    font-weight: 700;
-
-    color: #ffffff;
-
-    background:
-      ${isClosed
-        ? "#169c55"
-        : "#d99b16"};
-  }
-
-
-  .asset-line {
-    margin-bottom: 14px;
-
-    font-size: 16px;
-
-    color: #28354c;
-  }
-
-
-  /* =====================
-     GRID
-  ===================== */
-
-  .grid {
-    display: grid;
-
-    grid-template-columns:
-      repeat(6, 1fr);
-
-    gap: 7px;
-
-    margin-bottom: 8px;
-  }
-
-
-  .card {
-    padding: 10px 12px;
-
-    border: 1px solid #d5dde8;
-    border-radius: 6px;
-
-    background: #fbfcfe;
-
-    break-inside: avoid;
-  }
-
-
-  .span-2 {
-    grid-column: span 2;
-  }
-
-
-  .span-3 {
-    grid-column: span 3;
-  }
-
-
-  .span-6 {
-    grid-column: span 6;
-  }
-
-
-  .label {
-    margin-bottom: 5px;
-
-    font-size: 9px;
-    font-weight: 700;
-
-    text-transform: uppercase;
-
-    color: #63728b;
-  }
-
-
-  .value {
-    font-size: 12px;
-    font-weight: 600;
-
-    line-height: 1.4;
-
-    white-space: pre-wrap;
-  }
-
-
-  .value-large {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-
-  .verified {
-    margin-left: 8px;
-
-    font-size: 9px;
-    font-weight: 700;
-
-    color: #137848;
-  }
-
-
-  /* =====================
-     SECTION
-  ===================== */
-
+  .report-header,
+  .breakdown-heading,
+  .card,
+  .closure-card,
   .section-title {
-    margin:
-      15px 0 7px 0;
-
-    padding-bottom: 5px;
-
-    border-bottom: 1px solid #d8e0ea;
-
-    font-size: 12px;
-    font-weight: 800;
-
-    text-transform: uppercase;
-
-    color: #263651;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-
-  /* =====================
-     TABLE
-  ===================== */
-
-  table {
-    width: 100%;
-
-    border-collapse: collapse;
-
-    font-size: 9px;
-  }
-
-
-  th {
-    padding: 7px;
-
-    text-align: left;
-
-    background: #eef2f7;
-
-    border: 1px solid #d6dee9;
-
-    color: #34425a;
-  }
-
-
-  td {
-    padding: 7px;
-
-    border: 1px solid #dfe5ed;
-
-    vertical-align: top;
-  }
-
-
-  .empty {
-    text-align: center;
-
-    color: #748197;
-  }
-
-
-  /* =====================
-     FOOTER
-  ===================== */
-
-  .footer {
-    display: flex;
-    justify-content: space-between;
-
-    margin-top: 18px;
-    padding-top: 8px;
-
-    border-top: 1px solid #cbd4df;
-
-    font-size: 8px;
-
-    color: #67758a;
-  }
-
-
-  @media print {
-
-    body {
-      print-color-adjust: exact;
-      -webkit-print-color-adjust: exact;
-    }
-
-  }
+}
 
 </style>
 
@@ -4763,57 +4824,67 @@ function printBreakdownDetail() {
          CLOSURE
     ===================== -->
 
-    ${
-      isClosed
-        ? `
+      ${
+        isClosed
+          ? `
 
-          <div class="card span-2">
+            <div class="card span-6 closure-card">
 
-            <div class="label">
-              Failure Cause
+              <div class="closure-grid">
+
+
+                <div class="closure-item">
+
+                  <div class="label">
+                    Failure Cause
+                  </div>
+
+                  <div class="value">
+                    ${escapeBreakdownHtml(
+                      b.failure_cause || "-"
+                    )}
+                  </div>
+
+                </div>
+
+
+                <div class="closure-item">
+
+                  <div class="label">
+                    Root Cause
+                  </div>
+
+                  <div class="value">
+                    ${escapeBreakdownHtml(
+                      b.root_cause || "-"
+                    )}
+                  </div>
+
+                </div>
+
+
+                <div class="closure-item">
+
+                  <div class="label">
+                    Corrective Action
+                  </div>
+
+                  <div class="value">
+                    ${escapeBreakdownHtml(
+                      b.corrective_action || "-"
+                    )}
+                  </div>
+
+                </div>
+
+
+              </div>
+
             </div>
 
-            <div class="value">
-              ${escapeBreakdownHtml(
-                b.failure_cause || "-"
-              )}
-            </div>
-
-          </div>
-
-
-          <div class="card span-2">
-
-            <div class="label">
-              Root Cause
-            </div>
-
-            <div class="value">
-              ${escapeBreakdownHtml(
-                b.root_cause || "-"
-              )}
-            </div>
-
-          </div>
-
-
-          <div class="card span-2">
-
-            <div class="label">
-              Corrective Action
-            </div>
-
-            <div class="value">
-              ${escapeBreakdownHtml(
-                b.corrective_action || "-"
-              )}
-            </div>
-
-          </div>
-
-        `
-        : ""
-    }
+          `
+          : ""
+      }
 
   </div>
 
