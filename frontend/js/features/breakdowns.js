@@ -4074,26 +4074,47 @@ function printBreakdownDetail() {
      PRINT WINDOW
   ===================== */
 
-  const printWindow =
-    window.open(
-      "",
-      "_blank",
-      "width=1200,height=900"
-    );
+const printFrame =
+  document.createElement(
+    "iframe"
+  );
 
 
-  if (!printWindow) {
+printFrame.style.position =
+  "fixed";
 
-    alert(
-      "Print window was blocked by the browser."
-    );
+printFrame.style.right =
+  "0";
 
-    return;
+printFrame.style.bottom =
+  "0";
 
-  }
+printFrame.style.width =
+  "1px";
+
+printFrame.style.height =
+  "1px";
+
+printFrame.style.border =
+  "0";
+
+printFrame.style.opacity =
+  "0";
+
+printFrame.style.pointerEvents =
+  "none";
 
 
-  printWindow.document.write(`
+document.body.appendChild(
+  printFrame
+);
+
+
+const printDocument =
+  printFrame.contentDocument ||
+  printFrame.contentWindow.document;
+
+  printDocument.write(`
 <!DOCTYPE html>
 
 <html>
@@ -4993,7 +5014,15 @@ td {
   `);
 
 
-  printWindow.document.close();
+  printDocument.close();
+
+
+  printFrame.contentWindow.onafterprint =
+    () => {
+
+      printFrame.remove();
+
+    };
 
 }
 
@@ -5586,7 +5615,7 @@ document
 
 
 /* =====================
-   OPEN MODAL
+   OPEN MODAL 
 ===================== */
 
 function openRestorationTaskModal() {
