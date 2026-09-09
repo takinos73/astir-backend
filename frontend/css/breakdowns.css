@@ -1700,3 +1700,20 @@ input[type="date"] {
   }
 
 }
+
+/* =====================
+   BREAKDOWN SEARCH
+===================== */
+
+.breakdown-filter-search {
+  flex: 1;
+  min-width: 260px;
+}
+
+#breakdownSearchFilter {
+  width: 100%;
+}
+
+#breakdownSearchFilter::placeholder {
+  color: #7f8ca1;
+}

@@ -45,7 +45,7 @@ let breakdownsData = [];
 
 let breakdownCurrentPage = 1;
 
-const breakdownPageSize = 20;
+const breakdownPageSize = 10;
 
 let currentRestorationLocations = [];
 let currentRestorationLocationsAssetId = null;
@@ -292,6 +292,53 @@ function applyBreakdownFilters() {
 
       }
 
+      /* =====================
+        SEARCH
+      ===================== */
+
+      const searchQuery =
+        (
+          document
+            .getElementById("breakdownSearchFilter")
+            ?.value || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (searchQuery) {
+
+        const breakdownCode =
+          `bd-${String(b.id || "")
+            .padStart(5, "0")
+            .toLowerCase()}`;
+
+        const searchableText = [
+
+          breakdownCode,
+          String(b.id || ""),
+
+          b.title,
+          b.description,
+
+          b.asset_model,
+          b.asset_serial,
+
+          b.line_name,
+
+          b.reported_by,
+          b.failure_cause,
+          b.root_cause
+
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchableText.includes(searchQuery)) {
+          return false;
+        }
+
+    }
 
       return true;
 
@@ -2423,9 +2470,7 @@ document
   );
 
 document
-  .getElementById(
-    "breakdownPrevPageBtn"
-  )
+  .getElementById("breakdownPrevPageBtn")
   ?.addEventListener(
     "click",
     () => {
@@ -2460,6 +2505,13 @@ document
       applyBreakdownFilters();
 
     }
+  );
+
+document
+  .getElementById("breakdownSearchFilter")
+  ?.addEventListener(
+    "input",
+    handleBreakdownFilterChange
   );
 
 
