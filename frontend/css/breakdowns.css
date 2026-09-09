@@ -1563,3 +1563,140 @@ input[type="date"] {
   }
 
 }
+
+/* =========================================================
+   BREAKDOWN PAGINATION
+========================================================= */
+
+.breakdown-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-top: 14px;
+  padding: 10px 14px;
+
+  background: #111722;
+  border: 1px solid #273142;
+  border-radius: 10px;
+}
+
+
+/* =====================
+   SHOWING X–Y OF Z
+===================== */
+
+.breakdown-pagination-info {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8f9bad;
+}
+
+
+/* =====================
+   CONTROLS
+===================== */
+
+.breakdown-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* =====================
+   PAGE INDICATOR
+===================== */
+
+.breakdown-page-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 62px;
+  height: 32px;
+
+  padding: 0 10px;
+
+  background: #171e2a;
+  border: 1px solid #303b4d;
+  border-radius: 7px;
+
+  color: #d7deea;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* =====================
+   PREVIOUS / NEXT
+===================== */
+
+#breakdownPrevPageBtn,
+#breakdownNextPageBtn {
+  height: 32px;
+
+  padding: 0 13px;
+
+  background: #171e2a;
+  color: #cbd5e1;
+
+  border: 1px solid #303b4d;
+  border-radius: 7px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+
+#breakdownPrevPageBtn:hover:not(:disabled),
+#breakdownNextPageBtn:hover:not(:disabled) {
+  background: #202a39;
+  border-color: #4c5d75;
+  color: #ffffff;
+}
+
+
+/* =====================
+   DISABLED
+===================== */
+
+#breakdownPrevPageBtn:disabled,
+#breakdownNextPageBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 700px) {
+
+  .breakdown-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+
+  .breakdown-pagination-info {
+    text-align: center;
+  }
+
+
+  .breakdown-pagination-controls {
+    justify-content: center;
+  }
+
+}
