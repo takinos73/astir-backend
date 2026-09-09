@@ -43,6 +43,10 @@ let breakdownsData = [];
 // become immediately available.
 // ============================================================
 
+let breakdownCurrentPage = 1;
+
+const breakdownPageSize = 50;
+
 let currentRestorationLocations = [];
 let currentRestorationLocationsAssetId = null;
 // ============================================================
@@ -293,8 +297,153 @@ function applyBreakdownFilters() {
 
     });
 
+    const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filtered.length /
+        breakdownPageSize
+      )
+    );
 
-  renderBreakdownsTable(filtered);
+
+  if (
+    breakdownCurrentPage >
+    totalPages
+  ) {
+    breakdownCurrentPage =
+      totalPages;
+  }
+
+
+  const startIndex =
+    (
+      breakdownCurrentPage - 1
+    ) * breakdownPageSize;
+
+
+  const endIndex =
+    startIndex +
+    breakdownPageSize;
+
+
+  const pageRows =
+    filtered.slice(
+      startIndex,
+      endIndex
+    );
+
+
+  renderBreakdownsTable(
+    pageRows
+  );
+
+
+  updateBreakdownPagination(
+    filtered.length,
+    totalPages
+  );
+
+}
+
+/* =========================================================
+   UPDATE BREAKDOWN PAGINATION
+========================================================= */
+
+function updateBreakdownPagination(
+  totalRows,
+  totalPages
+) {
+
+  const info =
+    document.getElementById(
+      "breakdownPaginationInfo"
+    );
+
+
+  const indicator =
+    document.getElementById(
+      "breakdownPageIndicator"
+    );
+
+
+  const prevBtn =
+    document.getElementById(
+      "breakdownPrevPageBtn"
+    );
+
+
+  const nextBtn =
+    document.getElementById(
+      "breakdownNextPageBtn"
+    );
+
+
+  /* =====================
+     INFO
+  ===================== */
+
+  if (info) {
+
+    if (totalRows === 0) {
+
+      info.textContent =
+        "Showing 0–0 of 0";
+
+    } else {
+
+      const from =
+        (
+          breakdownCurrentPage - 1
+        ) * breakdownPageSize + 1;
+
+
+      const to =
+        Math.min(
+          breakdownCurrentPage *
+            breakdownPageSize,
+          totalRows
+        );
+
+
+      info.textContent =
+        `Showing ${from}–${to} of ${totalRows}`;
+
+    }
+
+  }
+
+
+  /* =====================
+     PAGE INDICATOR
+  ===================== */
+
+  if (indicator) {
+
+    indicator.textContent =
+      `${breakdownCurrentPage} / ${totalPages}`;
+
+  }
+
+
+  /* =====================
+     BUTTON STATES
+  ===================== */
+
+  if (prevBtn) {
+
+    prevBtn.disabled =
+      breakdownCurrentPage <= 1;
+
+  }
+
+
+  if (nextBtn) {
+
+    nextBtn.disabled =
+      breakdownCurrentPage >= totalPages;
+
+  }
 
 }
 
@@ -2233,11 +2382,20 @@ function getBreakdownLocalDateTime() {
    BREAKDOWN FILTER EVENTS
 ========================================================= */
 
+function handleBreakdownFilterChange() {
+
+  breakdownCurrentPage = 1;
+
+  applyBreakdownFilters();
+
+}
+
+
 document
   .getElementById("breakdownLineFilter")
   ?.addEventListener(
     "change",
-    applyBreakdownFilters
+    handleBreakdownFilterChange
   );
 
 
@@ -2245,7 +2403,7 @@ document
   .getElementById("breakdownFromFilter")
   ?.addEventListener(
     "change",
-    applyBreakdownFilters
+    handleBreakdownFilterChange
   );
 
 
@@ -2253,7 +2411,7 @@ document
   .getElementById("breakdownToFilter")
   ?.addEventListener(
     "change",
-    applyBreakdownFilters
+    handleBreakdownFilterChange
   );
 
 
@@ -2261,7 +2419,47 @@ document
   .getElementById("breakdownStatusFilter")
   ?.addEventListener(
     "change",
-    applyBreakdownFilters
+    handleBreakdownFilterChange
+  );
+
+document
+  .getElementById(
+    "breakdownPrevPageBtn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        breakdownCurrentPage <= 1
+      ) {
+        return;
+      }
+
+
+      breakdownCurrentPage--;
+
+
+      applyBreakdownFilters();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "breakdownNextPageBtn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      breakdownCurrentPage++;
+
+
+      applyBreakdownFilters();
+
+    }
   );
 
 
