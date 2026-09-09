@@ -3836,7 +3836,1088 @@ function closeBreakdownDetailModal() {
 
 }
 
+/* =========================================================
+   PRINT BREAKDOWN DETAIL
+========================================================= */
 
+function printBreakdownDetail() {
+
+  if (!currentBreakdown) {
+
+    alert("Breakdown not loaded.");
+    return;
+
+  }
+
+
+  const b =
+    currentBreakdown;
+
+
+  const code =
+    `BD-${String(
+      b.id || ""
+    ).padStart(5, "0")}`;
+
+
+  const status =
+    String(
+      b.status || "-"
+    ).toUpperCase();
+
+
+  const isClosed =
+    status === "CLOSED";
+
+
+  const isVerified =
+    b.verified_down_seconds !== null &&
+    b.verified_down_seconds !== undefined;
+
+
+  /* =====================
+     DATES
+  ===================== */
+
+  const started =
+    b.started_at
+      ? formatBreakdownDate(
+          b.started_at
+        )
+      : "-";
+
+
+  const restored =
+    b.closed_at
+      ? formatBreakdownDate(
+          b.closed_at
+        )
+      : "-";
+
+
+  const correctedAt =
+    b.downtime_corrected_at
+      ? formatBreakdownDate(
+          b.downtime_corrected_at
+        )
+      : "-";
+
+
+  /* =====================
+     INCIDENT DURATION
+  ===================== */
+
+  let incidentSeconds = 0;
+
+
+  if (b.started_at) {
+
+    const startDate =
+      new Date(
+        b.started_at
+      );
+
+
+    const endDate =
+      b.closed_at
+        ? new Date(
+            b.closed_at
+          )
+        : new Date();
+
+
+    if (
+      !Number.isNaN(
+        startDate.getTime()
+      ) &&
+      !Number.isNaN(
+        endDate.getTime()
+      )
+    ) {
+
+      incidentSeconds =
+        Math.max(
+          0,
+          Math.round(
+            (
+              endDate -
+              startDate
+            ) / 1000
+          )
+        );
+
+    }
+
+  }
+
+
+  const incidentDuration =
+    formatBreakdownSeconds(
+      incidentSeconds
+    );
+
+
+  const recordedDown =
+    formatBreakdownSeconds(
+      Number(
+        b.recorded_down_seconds || 0
+      )
+    );
+
+
+  const effectiveDown =
+    formatBreakdownSeconds(
+      Number(
+        b.effective_down_seconds || 0
+      )
+    );
+
+
+  /* =====================
+     RESTORATION TASKS
+  ===================== */
+
+  const restorationRows =
+    Array.isArray(
+      currentBreakdownTasks
+    ) &&
+    currentBreakdownTasks.length
+      ? currentBreakdownTasks
+          .map(task => {
+
+            const duration =
+              task.duration_min != null
+                ? formatBreakdownSeconds(
+                    Number(
+                      task.duration_min
+                    ) * 60
+                  )
+                : "-";
+
+
+            const due =
+              task.due_date
+                ? formatBreakdownDate(
+                    task.due_date
+                  )
+                : "-";
+
+
+            return `
+              <tr>
+
+                <td>
+                  #${escapeBreakdownHtml(
+                    task.id ?? ""
+                  )}
+                </td>
+
+                <td>
+                  ${escapeBreakdownHtml(
+                    task.task || "-"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeBreakdownHtml(
+                    task.status || "-"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeBreakdownHtml(
+                    task.section || "-"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeBreakdownHtml(
+                    due
+                  )}
+                </td>
+
+                <td>
+                  ${escapeBreakdownHtml(
+                    duration
+                  )}
+                </td>
+
+              </tr>
+            `;
+
+          })
+          .join("")
+      : `
+          <tr>
+            <td
+              colspan="6"
+              class="empty"
+            >
+              No Restoration Tasks recorded.
+            </td>
+          </tr>
+        `;
+
+
+  /* =====================
+     PRINTED DATE
+  ===================== */
+
+  const printedAt =
+    new Date()
+      .toLocaleString(
+        "en-GB"
+      );
+
+
+  /* =====================
+     PRINT WINDOW
+  ===================== */
+
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1200,height=900"
+    );
+
+
+  if (!printWindow) {
+
+    alert(
+      "Print window was blocked by the browser."
+    );
+
+    return;
+
+  }
+
+
+  printWindow.document.write(`
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>${code} - Breakdown Report</title>
+
+<style>
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+
+  * {
+    box-sizing: border-box;
+  }
+
+
+  body {
+    margin: 0;
+
+    font-family:
+      Arial,
+      Helvetica,
+      sans-serif;
+
+    color: #172033;
+
+    background: #ffffff;
+
+    font-size: 11px;
+  }
+
+
+  .report {
+    width: 100%;
+  }
+
+
+  /* =====================
+     HEADER
+  ===================== */
+
+  .report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+
+    border-bottom: 2px solid #d6dde8;
+  }
+
+
+  .brand {
+    font-size: 23px;
+    font-weight: 800;
+
+    color: #17233c;
+  }
+
+
+  .brand span {
+    color: #2588e8;
+  }
+
+
+  .brand-sub {
+    margin-top: 3px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.8px;
+
+    color: #65738a;
+  }
+
+
+  .report-meta {
+    text-align: right;
+
+    line-height: 1.5;
+
+    color: #59677d;
+  }
+
+
+  .report-meta strong {
+    display: block;
+
+    font-size: 14px;
+
+    color: #21304c;
+  }
+
+
+  /* =====================
+     BREAKDOWN TITLE
+  ===================== */
+
+  .breakdown-heading {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 3px;
+  }
+
+
+  .breakdown-code {
+    font-size: 23px;
+    font-weight: 800;
+  }
+
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 5px 16px;
+
+    border-radius: 20px;
+
+    font-weight: 700;
+
+    color: #ffffff;
+
+    background:
+      ${isClosed
+        ? "#169c55"
+        : "#d99b16"};
+  }
+
+
+  .asset-line {
+    margin-bottom: 14px;
+
+    font-size: 16px;
+
+    color: #28354c;
+  }
+
+
+  /* =====================
+     GRID
+  ===================== */
+
+  .grid {
+    display: grid;
+
+    grid-template-columns:
+      repeat(6, 1fr);
+
+    gap: 7px;
+
+    margin-bottom: 8px;
+  }
+
+
+  .card {
+    padding: 10px 12px;
+
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+
+    background: #fbfcfe;
+
+    break-inside: avoid;
+  }
+
+
+  .span-2 {
+    grid-column: span 2;
+  }
+
+
+  .span-3 {
+    grid-column: span 3;
+  }
+
+
+  .span-6 {
+    grid-column: span 6;
+  }
+
+
+  .label {
+    margin-bottom: 5px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    color: #63728b;
+  }
+
+
+  .value {
+    font-size: 12px;
+    font-weight: 600;
+
+    line-height: 1.4;
+
+    white-space: pre-wrap;
+  }
+
+
+  .value-large {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+
+  .verified {
+    margin-left: 8px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    color: #137848;
+  }
+
+
+  /* =====================
+     SECTION
+  ===================== */
+
+  .section-title {
+    margin:
+      15px 0 7px 0;
+
+    padding-bottom: 5px;
+
+    border-bottom: 1px solid #d8e0ea;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    color: #263651;
+  }
+
+
+  /* =====================
+     TABLE
+  ===================== */
+
+  table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 9px;
+  }
+
+
+  th {
+    padding: 7px;
+
+    text-align: left;
+
+    background: #eef2f7;
+
+    border: 1px solid #d6dee9;
+
+    color: #34425a;
+  }
+
+
+  td {
+    padding: 7px;
+
+    border: 1px solid #dfe5ed;
+
+    vertical-align: top;
+  }
+
+
+  .empty {
+    text-align: center;
+
+    color: #748197;
+  }
+
+
+  /* =====================
+     FOOTER
+  ===================== */
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+
+    margin-top: 18px;
+    padding-top: 8px;
+
+    border-top: 1px solid #cbd4df;
+
+    font-size: 8px;
+
+    color: #67758a;
+  }
+
+
+  @media print {
+
+    body {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+  }
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="report">
+
+
+  <!-- =====================
+       HEADER
+  ===================== -->
+
+  <div class="report-header">
+
+    <div>
+
+      <div class="brand">
+        ASTIR <span>CMMS</span>
+      </div>
+
+      <div class="brand-sub">
+        MAINTENANCE MANAGEMENT SYSTEM
+      </div>
+
+    </div>
+
+
+    <div class="report-meta">
+
+      <strong>
+        BREAKDOWN REPORT
+      </strong>
+
+      Breakdown Detail<br>
+
+      Printed:
+      ${escapeBreakdownHtml(
+        printedAt
+      )}
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================
+       BREAKDOWN HEADER
+  ===================== -->
+
+  <div class="breakdown-heading">
+
+    <div class="breakdown-code">
+      ${escapeBreakdownHtml(
+        code
+      )}
+    </div>
+
+    <div class="status">
+      ${escapeBreakdownHtml(
+        status
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="asset-line">
+
+    ${escapeBreakdownHtml(
+      b.asset_model || "-"
+    )}
+
+    • S/N
+
+    ${escapeBreakdownHtml(
+      b.asset_serial || "-"
+    )}
+
+    •
+
+    ${escapeBreakdownHtml(
+      b.line_name || "-"
+    )}
+
+  </div>
+
+
+  <!-- =====================
+       FAULT
+  ===================== -->
+
+  <div class="grid">
+
+    <div class="card span-6">
+
+      <div class="label">
+        Fault
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          b.title || "-"
+        )}
+      </div>
+
+
+      <div
+        class="label"
+        style="margin-top:12px;"
+      >
+        Description
+      </div>
+
+      <div class="value">
+        ${escapeBreakdownHtml(
+          b.description || "-"
+        )}
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         ASSET
+    ===================== -->
+
+    <div class="card span-2">
+
+      <div class="label">
+        Line
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          b.line_name || "-"
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card span-2">
+
+      <div class="label">
+        Machine
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          b.asset_model || "-"
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card span-2">
+
+      <div class="label">
+        Serial Number
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          b.asset_serial || "-"
+        )}
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         TIME
+    ===================== -->
+
+    <div class="card span-2">
+
+      <div class="label">
+        Started At
+      </div>
+
+      <div class="value">
+        ${escapeBreakdownHtml(
+          started
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card span-2">
+
+      <div class="label">
+        Restored At
+      </div>
+
+      <div class="value">
+        ${escapeBreakdownHtml(
+          restored
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card span-2">
+
+      <div class="label">
+        Incident Duration
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          incidentDuration
+        )}
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         DOWNTIME
+    ===================== -->
+
+    <div class="card span-3">
+
+      <div class="label">
+        Recorded Down Time
+      </div>
+
+      <div class="value value-large">
+        ${escapeBreakdownHtml(
+          recordedDown
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card span-3">
+
+      <div class="label">
+        Effective Down Time
+      </div>
+
+      <div class="value value-large">
+
+        ${escapeBreakdownHtml(
+          effectiveDown
+        )}
+
+        ${
+          isVerified
+            ? `
+              <span class="verified">
+                ✓ VERIFIED
+              </span>
+            `
+            : ""
+        }
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         PEOPLE
+    ===================== -->
+
+    <div class="card span-3">
+
+      <div class="label">
+        Reported By
+      </div>
+
+      <div class="value">
+        ${escapeBreakdownHtml(
+          b.reported_by || "-"
+        )}
+      </div>
+
+    </div>
+
+
+    ${
+      isVerified
+        ? `
+
+          <div class="card span-3">
+
+            <div class="label">
+              Corrected By
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                b.downtime_corrected_by ||
+                "-"
+              )}
+            </div>
+
+          </div>
+
+
+          <div class="card span-3">
+
+            <div class="label">
+              Correction Reason
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                b.downtime_correction_reason ||
+                "-"
+              )}
+            </div>
+
+          </div>
+
+
+          <div class="card span-3">
+
+            <div class="label">
+              Corrected At
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                correctedAt
+              )}
+            </div>
+
+          </div>
+
+        `
+        : ""
+    }
+
+
+    <!-- =====================
+         CLOSURE
+    ===================== -->
+
+    ${
+      isClosed
+        ? `
+
+          <div class="card span-2">
+
+            <div class="label">
+              Failure Cause
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                b.failure_cause || "-"
+              )}
+            </div>
+
+          </div>
+
+
+          <div class="card span-2">
+
+            <div class="label">
+              Root Cause
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                b.root_cause || "-"
+              )}
+            </div>
+
+          </div>
+
+
+          <div class="card span-2">
+
+            <div class="label">
+              Corrective Action
+            </div>
+
+            <div class="value">
+              ${escapeBreakdownHtml(
+                b.corrective_action || "-"
+              )}
+            </div>
+
+          </div>
+
+        `
+        : ""
+    }
+
+  </div>
+
+
+  <!-- =====================
+       RESTORATION TASKS
+  ===================== -->
+
+  <div class="section-title">
+    Restoration Work
+  </div>
+
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th style="width:7%;">
+          ID
+        </th>
+
+        <th style="width:30%;">
+          Task
+        </th>
+
+        <th style="width:13%;">
+          Status
+        </th>
+
+        <th style="width:20%;">
+          Section
+        </th>
+
+        <th style="width:17%;">
+          Due
+        </th>
+
+        <th style="width:13%;">
+          Service Time
+        </th>
+
+      </tr>
+
+    </thead>
+
+
+    <tbody>
+
+      ${restorationRows}
+
+    </tbody>
+
+  </table>
+
+
+  <!-- =====================
+       FOOTER
+  ===================== -->
+
+  <div class="footer">
+
+    <div>
+      ASTIR VIANEX S.A. | CMMS
+    </div>
+
+    <div>
+      ${escapeBreakdownHtml(
+        code
+      )}
+    </div>
+
+  </div>
+
+
+</div>
+
+
+<script>
+
+  window.addEventListener(
+    "load",
+    () => {
+
+      setTimeout(
+        () => window.print(),
+        250
+      );
+
+    }
+  );
+
+<\/script>
+
+</body>
+
+</html>
+  `);
+
+
+  printWindow.document.close();
+
+}
 
 /* =========================================================
    DETAIL EVENT LISTENERS
@@ -3876,7 +4957,18 @@ document
     }
   );
 
+  /* =====================
+    PRINT BREAKDOWN
+  ===================== */
 
+  document
+    .getElementById(
+      "printBreakdownBtn"
+    )
+    ?.addEventListener(
+      "click",
+      printBreakdownDetail
+    );
 
 /* =====================
    CLOSE X
