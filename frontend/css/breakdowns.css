@@ -1717,3 +1717,27 @@ input[type="date"] {
 #breakdownSearchFilter::placeholder {
   color: #7f8ca1;
 }
+
+#printBreakdownBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 9px 15px;
+
+  border: 1px solid #3a4a60;
+  border-radius: 8px;
+
+  background: #16202d;
+  color: #e8eef7;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+#printBreakdownBtn:hover {
+  background: #1d2a3a;
+  border-color: #58708f;
+}
