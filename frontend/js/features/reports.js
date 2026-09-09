@@ -3332,10 +3332,10 @@ async function generateNonPlannedReportPdf() {
 
         return (
           new Date(
-            a.executed_at || 0
+            b.executed_at || 0
           ) -
           new Date(
-            b.executed_at || 0
+            a.executed_at || 0
           )
         );
 
