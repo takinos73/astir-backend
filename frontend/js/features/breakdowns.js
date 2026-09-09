@@ -45,7 +45,7 @@ let breakdownsData = [];
 
 let breakdownCurrentPage = 1;
 
-const breakdownPageSize = 50;
+const breakdownPageSize = 20;
 
 let currentRestorationLocations = [];
 let currentRestorationLocationsAssetId = null;
