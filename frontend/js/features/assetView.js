@@ -120,15 +120,19 @@ async function openAssetViewBySerial(serial) {
     const allBreakdowns =
       await breakdownRes.json();
 
+    const currentAsset =
+      Array.isArray(state.assetsData)
+        ? state.assetsData.find(a =>
+            String(a.serial_number || "").trim() === serial
+          )
+        : null;
+
+
     const assetBreakdowns =
-      Array.isArray(allBreakdowns)
+      Array.isArray(allBreakdowns) && currentAsset
         ? allBreakdowns.filter(b =>
-            String(
-              b.asset_serial ||
-              b.serial_number ||
-              b.assetSerial ||
-              ""
-            ).trim() === serial
+            Number(b.asset_id) ===
+            Number(currentAsset.id)
           )
         : [];
 
