@@ -1523,24 +1523,26 @@ function getAssetMttrBySerial(serial) {
 // Uses shared breakdown helper
 // =====================
 function renderAssetMtbf(serial) {
-  const mtbfEl = document.getElementById("assetMtbfValue");
-  const lastEl = document.getElementById("assetLastBreakdown");
 
-  if (!mtbfEl || !lastEl) return;
+  const mtbfEl =
+    document.getElementById(
+      "assetMtbfValue"
+    );
 
-  const breakdowns = getAssetBreakdowns(serial);
+  if (!mtbfEl) return;
 
-  const mtbfMin = calculateMtbfMinutes(breakdowns);
+  const breakdowns =
+    getAssetBreakdowns(serial);
+
+  const mtbfMin =
+    calculateMtbfMinutes(
+      breakdowns
+    );
 
   mtbfEl.textContent =
-    mtbfMin == null ? "—" : formatDuration(mtbfMin);
-
-  const lastDate = getLastBreakdownDate(breakdowns);
-
-  lastEl.textContent =
-    !lastDate
-      ? "No breakdowns recorded"
-      : `Last breakdown: ${formatDate(lastDate)}`;
+    mtbfMin == null
+      ? "—"
+      : formatDuration(mtbfMin);
 }
 
 /* =====================
