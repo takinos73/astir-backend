@@ -1550,20 +1550,25 @@ function renderAssetMtbf(serial) {
 
 function getLastBreakdownInfo(serial) {
 
-  const breakdowns = getAssetBreakdowns(serial);
-
-  if (breakdowns.length === 0) {
+  if (
+    !Array.isArray(state.assetBreakdowns) ||
+    state.assetBreakdowns.length === 0
+  ) {
     return null;
   }
 
-  const latest = [...breakdowns].sort(
+  const latest = [...state.assetBreakdowns].sort(
     (a, b) =>
-      new Date(b.executed_at) -
-      new Date(a.executed_at)
+      new Date(b.started_at || 0) -
+      new Date(a.started_at || 0)
   )[0];
 
+  if (!latest?.started_at) {
+    return null;
+  }
+
   return {
-    executed_at: latest.executed_at
+    started_at: latest.started_at
   };
 }
 
@@ -1596,13 +1601,13 @@ function renderAssetMttrKpis(serial) {
   }
 
   // Last breakdown info
-  if (last && last.executed_at && typeof formatRelativeDate === "function") {
-    lastLabel = `
-      <div class="kpi-sub">
-        Last breakdown: ${formatRelativeDate(last.executed_at)}
-      </div>
-    `;
-  }
+  if (last && last.started_at && typeof formatRelativeDate === "function") {
+  lastLabel = `
+    <div class="kpi-sub">
+      Last breakdown: ${formatRelativeDate(last.started_at)}
+    </div>
+  `;
+}
 
   mttrEl.innerHTML = `
     ${mttrLabel}
