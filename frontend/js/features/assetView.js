@@ -187,7 +187,7 @@ async function openAssetViewBySerial(serial) {
     activateAssetTab("active");
 
     renderAssetMtbf(state.currentAssetSerial);
-    
+
     renderAssetDown30Days();
 
   } catch (err) {
@@ -1796,29 +1796,84 @@ function updateAssetHistoryLegendCounts(history) {
 // =====================
 // REFRESH ASSET VIEW DATA (FROM STATE)
 // =====================
+
 async function refreshAssetView() {
   if (!state.currentAssetSerial) return;
 
-  // 🔄 1️⃣ reload GLOBAL data (θα γεμίσουν state.tasksData / state.executionsData)
+  // 🔄 reload GLOBAL data
   await loadTasks();
   await loadHistory();
 
-  const serial = String(state.currentAssetSerial).trim();
+  const serial =
+    String(state.currentAssetSerial).trim();
 
   buildAssetViewData(serial);
 
+  // =====================
+  // RELOAD NEW BREAKDOWNS
+  // =====================
+
+  const breakdownRes =
+    await fetch(`${API}/breakdowns`);
+
+  if (!breakdownRes.ok) {
+    throw new Error(
+      "Failed to load breakdowns"
+    );
+  }
+
+  const allBreakdowns =
+    await breakdownRes.json();
+
+  const currentAsset =
+    Array.isArray(state.assetsData)
+      ? state.assetsData.find(a =>
+          String(a.serial_number || "").trim() === serial
+        )
+      : null;
+
+  state.assetBreakdowns =
+    Array.isArray(allBreakdowns) && currentAsset
+      ? allBreakdowns.filter(b =>
+          Number(b.asset_id) ===
+          Number(currentAsset.id)
+        )
+      : [];
+
   // reset history legend filter to "all" on refresh
-  state.assetHistoryTypeFilter = "all"; // ⚠ αν υπάρχει στο state, αλλιώς πρόσθεσέ το
-  updateAssetHistoryLegendCounts(state.assetHistoryTasks);
+  state.assetHistoryTypeFilter = "all";
+
+  updateAssetHistoryLegendCounts(
+    state.assetHistoryTasks
+  );
+
   highlightActiveHistoryLegend();
 
-  // 🔄 3️⃣ re-render active tab
+  // =====================
+  // REFRESH ASSET KPIs
+  // =====================
+
+  renderAssetMttrKpis(
+    state.currentAssetSerial
+  );
+
+  renderAssetMtbf(
+    state.currentAssetSerial
+  );
+
+  renderAssetDown30Days();
+
+  // =====================
+  // RE-RENDER ACTIVE TAB
+  // =====================
+
   const activeTab =
-    document.querySelector(".asset-tab.active")?.dataset.tab || "active";
+    document.querySelector(
+      ".asset-tab.active"
+    )?.dataset.tab || "active";
 
   activateAssetTab(activeTab);
 }
-
 // =====================
 // ASSET HISTORY LEGEND – CLICK HANDLER (DELEGATED)
 // =====================
