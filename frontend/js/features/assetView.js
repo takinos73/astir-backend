@@ -104,6 +104,40 @@ async function openAssetViewBySerial(serial) {
     // 🔢 History legend counts
     updateAssetHistoryLegendCounts(state.assetHistoryTasks);
 
+    // =====================
+    // LOAD NEW BREAKDOWNS
+    // =====================
+
+    const breakdownRes =
+      await fetch(`${API}/breakdowns`);
+
+    if (!breakdownRes.ok) {
+      throw new Error(
+        "Failed to load breakdowns"
+      );
+    }
+
+    const allBreakdowns =
+      await breakdownRes.json();
+
+    const assetBreakdowns =
+      Array.isArray(allBreakdowns)
+        ? allBreakdowns.filter(b =>
+            String(
+              b.asset_serial ||
+              b.serial_number ||
+              b.assetSerial ||
+              ""
+            ).trim() === serial
+          )
+        : [];
+
+    console.log(
+      "🧪 ASSET NEW BREAKDOWNS:",
+      serial,
+      assetBreakdowns
+    );
+
     if (
       state.assetAllTasks.length === 0 &&
       state.assetHistoryTasks.length === 0
