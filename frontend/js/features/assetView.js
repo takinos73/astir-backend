@@ -1603,13 +1603,13 @@ function renderAssetMttrKpis(serial) {
   }
 
   // Last breakdown info
-  if (last && last.started_at && typeof formatRelativeDate === "function") {
-  lastLabel = `
-    <div class="kpi-sub">
-      Last breakdown: ${formatRelativeDate(last.started_at)}
-    </div>
-  `;
-}
+  if (last && last.started_at) {
+    lastLabel = `
+      <div class="kpi-sub">
+        Last breakdown: ${formatDate(last.started_at)}
+      </div>
+    `;
+  }
 
   mttrEl.innerHTML = `
     ${mttrLabel}
