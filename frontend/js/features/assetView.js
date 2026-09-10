@@ -187,9 +187,8 @@ async function openAssetViewBySerial(serial) {
     activateAssetTab("active");
 
     renderAssetMtbf(state.currentAssetSerial);
-
-    console.log("✅ Asset view opened");
-    console.groupEnd();
+    
+    renderAssetDown30Days();
 
   } catch (err) {
     console.error("💥 openAssetViewBySerial crashed:", err);
@@ -1596,6 +1595,86 @@ function renderAssetMtbf(serial) {
 
   mtbfEl.textContent =
     formatDuration(mtbfMinutes);
+}
+
+// =====================
+// ASSET DOWN - LAST 30 DAYS
+// =====================
+
+function renderAssetDown30Days() {
+
+  const downEl =
+    document.getElementById(
+      "assetDown30Value"
+    );
+
+  if (!downEl) return;
+
+  const breakdowns =
+    Array.isArray(state.assetBreakdowns)
+      ? state.assetBreakdowns
+      : [];
+
+  const now =
+    new Date();
+
+  const fromDate =
+    new Date(
+      now.getTime() -
+      30 * 24 * 60 * 60 * 1000
+    );
+
+  const totalSeconds =
+    breakdowns
+      .filter(b => {
+
+        if (!b.started_at) {
+          return false;
+        }
+
+        const startedAt =
+          new Date(b.started_at);
+
+        return (
+          !Number.isNaN(startedAt.getTime()) &&
+          startedAt >= fromDate &&
+          startedAt <= now
+        );
+
+      })
+      .reduce(
+        (sum, b) => {
+
+          const seconds =
+            Number(
+              b.effective_down_seconds
+            );
+
+          return (
+            sum +
+            (
+              Number.isFinite(seconds) &&
+              seconds > 0
+                ? seconds
+                : 0
+            )
+          );
+
+        },
+        0
+      );
+
+  if (totalSeconds <= 0) {
+    downEl.textContent = "0m";
+    return;
+  }
+
+  downEl.textContent =
+    formatDuration(
+      Math.round(
+        totalSeconds / 60
+      )
+    );
 }
 
 /* =====================
