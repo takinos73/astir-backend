@@ -7,13 +7,22 @@ function printCurrentTask() {
 
   const t = currentViewedTask;
 
-  const safe = (v) => (v == null || v === "" ? "-" : String(v));
+  const safe = (v) => {
+    if (v == null || v === "") return "-";
+
+    return String(v)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  };
   const fmtDate = (d) => (d ? formatDate(d) : "-");
 
   const maintenanceType =
     isPreventive(t) ? "Preventive (Scheduled)" :
     isPlannedManual(t) ? "Planned (Manual)" :
-    "Unplanned / Breakdown";
+    "Unplanned / Restoration";
 
   // NOTE: Αν θες να τυπώνεται Ο,ΤΙ βλέπει ο χρήστης, μπορείς να πάρεις και innerHTML από taskViewContent,
   // αλλά αυτό είναι πιο "clean" / professional template (stable).
@@ -149,7 +158,7 @@ function printCurrentTask() {
       <div class="k">Unit</div><div class="v">${safe(t.unit)}</div>
       <div class="k">Task Type</div><div class="v">${safe(t.type || "Maintenance Task")}</div>
       <div class="k">Frequency</div><div class="v">${t.frequency_hours ? safe(t.frequency_hours) + " h" : "-"}</div>
-      <div class="k">Duration</div><div class="v">${t.duration_min ? safe(t.duration_min) + " min" : "-"}</div>
+      <div class="k">Duration</div><div class="v">${t.duration_min != null ? safe(t.duration_min) + " min" : "-"}</div>
       <div class="k">Technician</div><div class="v">${safe(t.technician || t.completed_by)}</div>
     </div>
 
@@ -185,27 +194,39 @@ function printCurrentTask() {
 
   </div>
 
-  <script>
-    window.addEventListener('load', () => {
-      window.focus();
-      window.print();
-      setTimeout(() => window.close(), 250);
-    });
-  </script>
 </body>
 </html>
 `;
 
-  const w = window.open(`/api/tasks/${currentViewedTask.id}/print`, "_blank");
+// =====================
+// HIDDEN IFRAME PRINT
+// =====================
 
-  if (!w) {
-    alert("Popup blocked. Please allow popups to print.");
-    return;
-  }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+const iframe = document.createElement("iframe");
+
+iframe.style.position = "fixed";
+iframe.style.width = "0";
+iframe.style.height = "0";
+iframe.style.border = "0";
+
+document.body.appendChild(iframe);
+
+const doc = iframe.contentWindow.document;
+
+doc.open();
+doc.write(html);
+doc.close();
+
+iframe.onload = () => {
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+};
 }
+
 // =====================
 // PRINT TASK SCHEDULE (GROUPED BY LINE)
 // =====================
@@ -321,23 +342,81 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
   let isFirstLine = true;
   let currentMachine = null;
   let lineMinutes = 0;
+
   // =====================
   // MTBF PRE-CALCULATION (BY ASSET)
+  // NEW BREAKDOWN MODEL
   // =====================
 
   const mtbfMap = {}; // serial -> mtbf minutes
 
   sortedTasks.forEach(t => {
-    const serial = t.serial_number;
-    if (!serial || mtbfMap[serial] !== undefined) return;
+    const serial =
+      String(t.serial_number || "").trim();
 
-    const breakdowns = (state.executionsData || []).filter(e =>
-      e.serial_number === serial &&
-      e.is_planned === false
-    );
+    if (
+      !serial ||
+      mtbfMap[serial] !== undefined
+    ) {
+      return;
+    }
 
-    const mtbfMin = calculateMtbfMinutes(breakdowns);
-    mtbfMap[serial] = mtbfMin;
+    const asset =
+      Array.isArray(state.assetsData)
+        ? state.assetsData.find(a =>
+            String(a.serial_number || "").trim() === serial
+          )
+        : null;
+
+    const breakdowns =
+      Array.isArray(state.assetBreakdowns)
+        ? state.assetBreakdowns
+            .filter(b =>
+              asset &&
+              Number(b.asset_id) === Number(asset.id) &&
+              b.started_at
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.started_at) -
+                new Date(b.started_at)
+            )
+        : [];
+
+    if (breakdowns.length < 2) {
+      mtbfMap[serial] = null;
+      return;
+    }
+
+    const intervals = [];
+
+    for (let i = 1; i < breakdowns.length; i++) {
+      const previous =
+        new Date(breakdowns[i - 1].started_at);
+
+      const current =
+        new Date(breakdowns[i].started_at);
+
+      const minutes =
+        (current - previous) / 60000;
+
+      if (
+        Number.isFinite(minutes) &&
+        minutes > 0
+      ) {
+        intervals.push(minutes);
+      }
+    }
+
+    mtbfMap[serial] =
+      intervals.length > 0
+        ? Math.round(
+            intervals.reduce(
+              (sum, min) => sum + min,
+              0
+            ) / intervals.length
+          )
+        : null;
   });
 
   sortedTasks.forEach(t => {
@@ -460,24 +539,25 @@ window.printTaskSchedule = function ({ tasks, meta, helpers }) {
     </html>
   `;
 
-  // 🔹 HIDDEN IFRAME PRINT
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
+const iframe = document.createElement("iframe");
 
-  document.body.appendChild(iframe);
+iframe.style.position = "fixed";
+iframe.style.width = "0";
+iframe.style.height = "0";
+iframe.style.border = "0";
 
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
+iframe.onload = () => {
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
 
   setTimeout(() => {
-    document.body.removeChild(iframe);
+    if (iframe.parentNode) {
+      document.body.removeChild(iframe);
+    }
   }, 1000);
+};
+
+document.body.appendChild(iframe);
+
+iframe.srcdoc = html;
 };

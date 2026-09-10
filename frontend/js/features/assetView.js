@@ -64,6 +64,12 @@ function buildAssetViewData(serial) {
     );
 }
 
+/* =====================
+   OPEN ASSET VIEW BY SERIAL
+   -----------------------------------------------------
+   Main entry point for opening the Asset View modal.
+===================== */
+
 async function openAssetViewBySerial(serial) {
   try {
     console.group("ASSET VIEW DEBUG");
@@ -904,6 +910,7 @@ function closeAssetView() {
   state.assetActiveTasks = [];
   state.assetHistoryTasks = [];
   state.currentAssetSerial = null;
+  state.assetBreakdowns = [];
 
   // =====================
   // RESET SELECTION / FILTERS
@@ -1376,42 +1383,6 @@ function renderAssetViewHeader(src) {
     src.line_code || "-";
 
   document.getElementById("assetViewStatus").textContent = "Active";
-}
-
-/* =====================================================
-   GET ASSET BREAKDOWNS
-   -----------------------------------------------------
-   Returns all unplanned executions for a specific asset.
-
-   Purpose:
-   - Single source of truth for asset breakdown history
-   - Reused by MTTR
-   - Reused by Last Breakdown
-   - Reused by MTBF
-
-   Source:
-   state.executionsData
-
-   Breakdown definition:
-   is_planned === false
-===================================================== */
-
-function getAssetBreakdowns(serial) {
-
-  if (
-    !serial ||
-    !Array.isArray(state.executionsData)
-  ) {
-    return [];
-  }
-
-  const serialKey =
-    String(serial).trim();
-
-  return state.executionsData.filter(e =>
-    String(e.serial_number || "").trim() === serialKey &&
-    e.is_planned === false
-  );
 }
 
 // =====================
