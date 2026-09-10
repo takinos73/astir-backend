@@ -135,12 +135,8 @@ async function openAssetViewBySerial(serial) {
             Number(currentAsset.id)
           )
         : [];
-
-    console.log(
-      "🧪 ASSET NEW BREAKDOWNS:",
-      serial,
-      assetBreakdowns
-    );
+      state.assetBreakdowns =
+        assetBreakdowns;
 
     if (
       state.assetAllTasks.length === 0 &&
@@ -1463,30 +1459,62 @@ function renderAssetKpis(tasks, history) {
 
 function getAssetMttrBySerial(serial) {
 
-  // Get all breakdowns for this asset
-  const breakdowns = getAssetBreakdowns(serial);
-
-  // MTTR requires a valid repair duration
-  const breakdownsWithDuration = breakdowns.filter(e =>
-    Number.isFinite(Number(e.duration_min)) &&
-    Number(e.duration_min) > 0
-  );
-
-  if (breakdownsWithDuration.length === 0) {
+  if (
+    !Array.isArray(state.assetBreakdowns)
+  ) {
     return null;
   }
 
-  const totalMin = breakdownsWithDuration.reduce(
-    (sum, e) => sum + Number(e.duration_min),
-    0
-  );
+  const closedBreakdowns =
+    state.assetBreakdowns.filter(b =>
+      String(b.status || "").toUpperCase() === "CLOSED" &&
+      b.started_at &&
+      b.closed_at
+    );
+
+  if (closedBreakdowns.length === 0) {
+    return null;
+  }
+
+  const durations =
+    closedBreakdowns
+      .map(b => {
+
+        const start =
+          new Date(b.started_at);
+
+        const end =
+          new Date(b.closed_at);
+
+        const minutes =
+          (end - start) / 60000;
+
+        return minutes;
+
+      })
+      .filter(min =>
+        Number.isFinite(min) &&
+        min >= 0
+      );
+
+  if (durations.length === 0) {
+    return null;
+  }
+
+  const totalMin =
+    durations.reduce(
+      (sum, min) => sum + min,
+      0
+    );
 
   return {
     mttrMinutes:
-      Math.round(totalMin / breakdownsWithDuration.length),
+      Math.round(
+        totalMin / durations.length
+      ),
 
     breakdownCount:
-      breakdownsWithDuration.length
+      durations.length
   };
 }
 
