@@ -1522,6 +1522,7 @@ function getAssetMttrBySerial(serial) {
 // RENDER ASSET MTBF + LAST BREAKDOWN
 // Uses shared breakdown helper
 // =====================
+
 function renderAssetMtbf(serial) {
 
   const mtbfEl =
@@ -1532,17 +1533,69 @@ function renderAssetMtbf(serial) {
   if (!mtbfEl) return;
 
   const breakdowns =
-    getAssetBreakdowns(serial);
+    Array.isArray(state.assetBreakdowns)
+      ? state.assetBreakdowns
+          .filter(b => b.started_at)
+          .sort(
+            (a, b) =>
+              new Date(a.started_at) -
+              new Date(b.started_at)
+          )
+      : [];
 
-  const mtbfMin =
-    calculateMtbfMinutes(
-      breakdowns
+  if (breakdowns.length < 2) {
+    mtbfEl.textContent = "—";
+    return;
+  }
+
+  const intervals = [];
+
+  for (
+    let i = 1;
+    i < breakdowns.length;
+    i++
+  ) {
+
+    const previous =
+      new Date(
+        breakdowns[i - 1].started_at
+      );
+
+    const current =
+      new Date(
+        breakdowns[i].started_at
+      );
+
+    const minutes =
+      (current - previous) / 60000;
+
+    if (
+      Number.isFinite(minutes) &&
+      minutes > 0
+    ) {
+      intervals.push(minutes);
+    }
+  }
+
+  if (intervals.length === 0) {
+    mtbfEl.textContent = "—";
+    return;
+  }
+
+  const totalMinutes =
+    intervals.reduce(
+      (sum, min) => sum + min,
+      0
+    );
+
+  const mtbfMinutes =
+    Math.round(
+      totalMinutes /
+      intervals.length
     );
 
   mtbfEl.textContent =
-    mtbfMin == null
-      ? "—"
-      : formatDuration(mtbfMin);
+    formatDuration(mtbfMinutes);
 }
 
 /* =====================
