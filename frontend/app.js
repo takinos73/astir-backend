@@ -2353,21 +2353,6 @@ const filtered = source
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
 
-
-function getAssetFilterLabel() {
-  if (state.activeAssetFilter === "all" || !state.activeAssetFilter) {
-    return "ALL MACHINES";
-  }
-
-  // expected format: "PMC250||437063"
-  const [machine, serial] = state.activeAssetFilter.split("||");
-
-  if (!machine) return "ALL MACHINES";
-
-  return serial
-    ? `${machine} (${serial})`
-    : machine;
-}
 function getCurrentPeriodLabel() {
   // 🟢 αν υπάρχει custom date range
   if (state.taskDateFrom || state.taskDateTo) {
