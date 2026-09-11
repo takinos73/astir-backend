@@ -492,3 +492,26 @@ function updateKpis() {
   getEl("kpiSoon").textContent = soon;
   getEl("kpiDone").textContent = done;
 }
+
+/* =====================
+   POPULATE ADD TASK LINES
+===================== */
+function populateAddTaskLines() {
+  const sel = document.getElementById("nt-line");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Select Line</option>`;
+
+  if (!Array.isArray(state.assetsData)) return;
+
+  const lines = [...new Set(
+    state.assetsData.map(a => a.line).filter(Boolean)
+  )];
+
+  lines.sort().forEach(line => {
+    const opt = document.createElement("option");
+    opt.value = line;
+    opt.textContent = line;
+    sel.appendChild(opt);
+  });
+}
