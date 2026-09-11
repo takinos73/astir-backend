@@ -515,3 +515,29 @@ function populateAddTaskLines() {
     sel.appendChild(opt);
   });
 }
+
+function populateUnitsForSection(assetId, section) {
+
+const unitSelect = document.getElementById("nt-unit");
+const unitInput = document.getElementById("nt-unit-input");
+
+if (!unitSelect || !unitInput) return;
+
+unitSelect.innerHTML = "";
+
+const units = getUnitsForAssetSection(assetId, section);
+
+if (units.length > 0) {
+    unitSelect.innerHTML =
+    `<option value="">Select unit</option>` +
+    units.map(u => `<option value="${u}">${u}</option>`).join("") +
+    `<option value="__new__">➕ New unit</option>`;
+    unitSelect.style.display = "block";
+    unitInput.style.display = "none";
+    unitInput.value = "";
+    } else {
+    unitSelect.style.display = "none";
+    unitInput.style.display = "block";
+    unitInput.value = "";
+    }
+  }
