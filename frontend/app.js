@@ -2199,20 +2199,6 @@ document.getElementById("saveTaskBtn")?.addEventListener("click", async () => {
   }
 });
 
-function resetAddTaskAssetContext() {
-  const lineSel = document.getElementById("nt-line");
-  const assetSel = document.getElementById("nt-asset");
-
-  if (!lineSel || !assetSel) return;
-
-  // Enable dropdowns
-  lineSel.disabled = false;
-  assetSel.disabled = false;
-
-  // Remove visual lock (if used)
-  lineSel.classList.remove("locked");
-  assetSel.classList.remove("locked");
-}
 /* =====================
    RESET ADD TASK FORM TO DEFAULT STATE
 ===================== */
