@@ -89,16 +89,6 @@ function statusPill(task) {
   return `<span class="${cls}">${txt}</span>`;
 }
 
-//----------------------
-// TASK TYPE HELPER
-//----------------------
-
-function getStatusFilterLabel() {
-  if (state.activeTaskTypeFilter === "planned") return "Planned (Manual)";
-  if (state.activeTaskTypeFilter === "preventive") return "Preventive";
-  return "ALL";
-}
-
 // =====================
 // TASK TYPE FILTER UI
 // - 2 active → ALL
