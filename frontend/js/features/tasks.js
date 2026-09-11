@@ -808,3 +808,182 @@ async function confirmDeleteTask() {
     alert(err.message);
   }
 }
+
+/* =====================
+   VIEW TASK MODAL
+===================== */
+
+function viewTask(taskId) {
+  const task = state.tasksData.find(t => t.id === taskId);
+  if (!task) return;
+
+  const el = document.getElementById("taskViewContent");
+
+  // =====================
+  // PRINT BUTTON
+  // =====================
+  const printBtn = document.getElementById("printTaskBtn");
+  if (printBtn) {
+    printBtn.style.display = "inline-flex";
+    printBtn.onclick = () => printTask(task.id);
+  }
+
+  el.innerHTML = `
+
+<!-- =====================
+     TECHNICAL TASK VIEW
+===================== -->
+
+  <!-- ASSET CONTEXT -->
+  <div class="task-view-asset tech">
+    <div class="asset-main">
+      🏭 ${task.machine_name}
+    </div>
+    <div class="asset-sub">
+      ${task.serial_number ? `SN: ${task.serial_number}` : ""}
+      • Line ${task.line_code}
+    </div>
+  </div>
+
+  <!-- WORK ORDER TITLE -->
+  <div class="task-view-title tech">
+    ${task.task}
+  </div>
+
+  <!-- STATUS / TYPE / IMPACT -->
+  <div class="task-view-meta tech">
+
+    <span class="badge badge-type">
+      ${task.type || "Maintenance Task"}
+    </span>
+
+    <span class="badge badge-status">
+      ${task.status}
+    </span>
+
+    ${renderImpactBadge(task.impact)}
+
+    ${
+      task.due_date
+        ? `
+          <span class="badge badge-date">
+            Due: ${formatDate(task.due_date)}
+          </span>
+        `
+        : ""
+    }
+
+  </div>
+
+<!-- TECHNICAL DETAILS -->
+<div class="task-view-details tech">
+
+  <div>
+    <label>Section</label>
+    <div>${task.section || "-"}</div>
+  </div>
+
+  <div>
+    <label>Unit</label>
+    <div>${task.unit || "-"}</div>
+  </div>
+
+  <div>
+    <label>Maintenance Type</label>
+    <div>
+      ${getMaintenanceTypeLabel(task)}
+    </div>
+  </div>
+
+  <div>
+    <label>Frequency</label>
+    <div>
+      ${task.frequency_hours ? task.frequency_hours + " h" : "-"}
+    </div>
+  </div>
+
+  <div>
+    <label>Estimated Duration</label>
+    <div>
+      ${task.duration_min ? task.duration_min + " min" : "-"}
+    </div>
+  </div>
+
+</div>
+    <!-- NOTES -->
+  ${
+    task.notes
+      ? `
+  <div class="task-view-notes tech">
+    <label>Notes</label>
+    <div>${task.notes}</div>
+  </div>
+  `
+      : ""
+  }
+  <!-- COMPLETION INFO -->
+  ${
+    task.status === "Done"
+      ? `
+  <div class="task-view-completed tech">
+    ✔ Completed<br>
+    <span>
+      Executed by <strong>${task.completed_by || "-"}</strong>
+    </span>
+    <span>
+      • ${task.completed_at ? formatDate(task.completed_at) : ""}
+    </span>
+  </div>
+  `
+      : ""
+  }
+
+`;
+  document.getElementById("taskViewOverlay").style.display = "flex";
+
+  // =====================
+  // EDIT / DONE/ DELETE VISIBILITY
+  // =====================
+  state.currentViewedTask = task;
+
+  const doneBtn = document.getElementById("taskViewDoneBtn");
+
+    if (
+      doneBtn &&
+      task.status !== "Done"
+    ) {
+      doneBtn.style.display = "inline-flex";
+    } else if (doneBtn) {
+      doneBtn.style.display = "none";}
+
+
+  const editBtn = document.getElementById("editTaskBtn");
+  const deleteBtn = document.getElementById("deleteTaskBtn");
+  const editArea = document.getElementById("taskEditArea");
+
+  if (canEditTask(task)) {
+    editBtn.style.display = "inline-flex";
+    deleteBtn.style.display = "inline-flex";
+    editArea.style.display = "none";
+  } else {
+    editBtn.style.display = "none";
+    deleteBtn.style.display = "none";
+    editArea.style.display = "none";
+  }
+
+  // =====================
+  // FOLLOW-UP BUTTON IN ACTION BAR (ALIGN WITH OTHER ACTIONS)
+  // =====================
+  const followupBtn = document.getElementById("createFollowupTaskBtn");
+
+  if (
+    followupBtn &&
+    hasRole("planner", "admin") &&
+    task.status !== "Done" &&
+    (isPreventive(task) || isPlannedManual(task))
+  ) {
+    followupBtn.style.display = "inline-flex";
+  } else if (followupBtn) {
+    followupBtn.style.display = "none";
+  }
+}
