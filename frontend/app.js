@@ -1143,25 +1143,6 @@ document.getElementById("taskViewDoneBtn")?.addEventListener("click", () => {
   });
 
 /* =====================
-   KPIs
-===================== */
-
-function updateKpis() {
-  let overdue = 0, soon = 0, done = 0;
-
-  state.tasksData.forEach(t => {
-    if (t.status === "Done") return done++;
-    const st = getDueState(t);
-    if (st === "overdue") overdue++;
-    if (st === "soon") soon++;
-  });
-
-  getEl("kpiTotal").textContent = state.tasksData.length;
-  getEl("kpiOverdue").textContent = overdue;
-  getEl("kpiSoon").textContent = soon;
-  getEl("kpiDone").textContent = done;
-}
-/* =====================
    POPULATE ADD TASK LINES
 ===================== */
 function populateAddTaskLines() {
