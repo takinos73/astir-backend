@@ -28,3 +28,19 @@ function getAssetFilterLabel() {
     ? `${machine} (${serial})`
     : machine;
 }
+
+function getCurrentPeriodLabel() {
+  // 🟢 αν υπάρχει custom date range
+  if (state.taskDateFrom || state.taskDateTo) {
+    const from = state.taskDateFrom ? formatDate(state.taskDateFrom) : "—";
+    const to = state.taskDateTo ? formatDate(state.taskDateTo) : "—";
+    return `${from} → ${to}`;
+  }
+
+  // 🟢 αλλιώς quick filter
+  if (state.activeDateFilter && state.activeDateFilter !== "all") {
+    return state.activeDateFilter.toUpperCase();
+  }
+
+  return "ALL";
+}
