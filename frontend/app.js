@@ -1509,16 +1509,6 @@ function enableTaskEdit() {
   if (editBtn) editBtn.style.display = "none";
 }
 
-function cancelTaskEdit() {
-  const editArea = document.getElementById("taskEditArea");
-  if (editArea) editArea.style.display = "none";
-
-  // Show Edit button again (only if allowed)
-  const editBtn = document.getElementById("editTaskBtn");
-  if (editBtn && state.currentViewedTask && canEditTask(state.currentViewedTask)) {
-    editBtn.style.display = "inline-flex";
-  }
-}
 
 // =====================
 // CONFIRM + SOFT DELETE TASK
