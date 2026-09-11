@@ -124,3 +124,58 @@ function canEditTask(task) {
     !!task.due_date            // planned manual
   );
 }
+
+/* =====================
+   TASK TABLE – STATUS PILL (FIXED)
+===================== */
+
+function statusPill(task) {
+  const st = getDueState(task);
+
+  let cls = "status-pill";
+  let txt = "";
+
+  // 1️⃣ DONE
+  if (task.status === "Done") {
+    cls += " status-done";
+    txt = "Done";
+  }
+
+  // 2️⃣ OVERDUE
+  else if (st === "overdue") {
+    cls += " status-overdue";
+    txt = "Overdue";
+  }
+
+  // 3️⃣ TODAY
+  else if (st === "today") {
+    cls += " status-today";
+    txt = "Today";
+  }
+
+  // 4️⃣ DUE SOON
+  else if (st === "soon") {
+    cls += " status-soon";
+    txt = "Due Soon";
+  }
+
+  // 5️⃣ PREVENTIVE
+  else if (isPreventive(task)) {
+    cls += " status-preventive";
+    txt = "Preventive";
+  }
+
+  // 6️⃣ PLANNED MANUAL
+  else if (isPlannedManual(task)) {
+    cls += " status-planned";
+    txt = "Planned";
+  }
+
+  // FALLBACK (safety)
+  else {
+    cls += " status-unknown";
+    txt = task.status || "—";
+  }
+
+  return `<span class="${cls}">${txt}</span>`;
+}
