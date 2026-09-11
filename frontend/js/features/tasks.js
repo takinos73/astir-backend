@@ -339,3 +339,42 @@ function initAssetDropdown() {
     options: menu.querySelectorAll(".asset-option").length
   });
 }
+
+/* =====================
+   REUSE PREVIOUS TASK – HELPERS
+===================== */
+
+function getSelectedAddTaskAssetModel() {
+  const assetId = document.getElementById("nt-asset")?.value;
+  if (!assetId || !Array.isArray(state.assetsData)) return null;
+
+  const asset = state.assetsData.find(a =>
+    String(a.id) === String(assetId)
+  );
+
+  return asset?.model || null;
+}
+
+function getCurrentAddTaskSection() {
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput = document.getElementById("nt-section-input");
+
+  if (sectionSelect && sectionSelect.style.display !== "none") {
+    return sectionSelect.value?.trim() || "";
+  }
+
+  return sectionInput?.value?.trim() || "";
+}
+
+function getCurrentAddTaskUnit() {
+  const unitSelect = document.getElementById("nt-unit");
+  const unitInput = document.getElementById("nt-unit-input");
+
+  if (unitSelect && unitSelect.style.display !== "none") {
+    if (unitSelect.value && unitSelect.value !== "__new__") {
+      return unitSelect.value.trim();
+    }
+  }
+
+  return unitInput?.value?.trim() || "";
+}
