@@ -26,14 +26,6 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("el-GR");
 }
 
-function canEditTask(task) {
-  return (
-    task.status === "Planned" &&
-    !task.frequency_hours &&   // όχι preventive
-    !!task.due_date            // planned manual
-  );
-}
-
 /* =====================
    TASK TABLE – STATUS PILL (FIXED)
 ===================== */

@@ -116,3 +116,11 @@ function getFilteredTasksForPrint() {
       return true;
     });
 }
+
+function canEditTask(task) {
+  return (
+    task.status === "Planned" &&
+    !task.frequency_hours &&   // όχι preventive
+    !!task.due_date            // planned manual
+  );
+}
