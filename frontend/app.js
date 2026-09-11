@@ -69,54 +69,6 @@ document.addEventListener("click", e => {
   renderTable();
 });
 
-/* ===========================
-GET ASSET SECTIONS (FOR FILTERING)
-=============================*/
-
-function getSectionsForAsset(assetId) {
-  if (!assetId || !Array.isArray(state.tasksData)) return [];
-
-  const id = Number(assetId);
-  const set = new Set();
-
-  state.tasksData.forEach(t => {
-    if (
-      Number(t.asset_id) === id &&
-      t.section &&
-      String(t.section).trim() !== ""
-    ) {
-      set.add(String(t.section).trim());
-    }
-  });
-
-  return Array.from(set).sort();
-}
-/* ===========================
-GET ASSET UNITS FOR SECTION (FOR FILTERING)
-=============================*/
-
-function getUnitsForAssetSection(assetId, section) {
-  if (!assetId || !section || !Array.isArray(state.tasksData)) return [];
-
-  const id = Number(assetId);
-  const sec = String(section).trim();
-  const set = new Set();
-
-  state.tasksData.forEach(t => {
-    if (
-      Number(t.asset_id) === id &&
-      String(t.section || "").trim() === sec &&
-      t.unit &&
-      String(t.unit).trim() !== ""
-    ) {
-      set.add(String(t.unit).trim());
-    }
-  });
-
-  return Array.from(set).sort((a, b) =>
-    a.localeCompare(b, "el", { sensitivity: "base" })
-  );
-}
 /* =====================
    REUSE PREVIOUS TASK – HELPERS
 ===================== */
