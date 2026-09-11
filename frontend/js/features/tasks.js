@@ -617,3 +617,22 @@ function resetAddTaskForm() {
     addOverlay.style.zIndex = "";
   }
 }
+
+function resetSectionLockState() {
+  const sectionSelect = document.getElementById("nt-section");
+  const sectionInput  = document.getElementById("nt-section-input");
+
+  if (sectionSelect) {
+    sectionSelect.disabled = false;
+    sectionSelect.classList.remove("locked");
+  }
+
+  if (sectionInput) {
+    sectionInput.disabled = false;
+    sectionInput.classList.remove("locked");
+  }
+
+  // reset follow-up flags
+  state.lockSectionOnce = false;
+  state.followUpSectionValue = null;
+}
