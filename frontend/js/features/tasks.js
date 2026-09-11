@@ -286,3 +286,56 @@ function buildAssetDropdown() {
     menu.appendChild(div);
   });
 }
+
+/* =====================
+   ASSET DROPDOWN (INIT)
+===================== */
+function initAssetDropdown() {
+  const btn = document.getElementById("assetDropdownBtn");
+  const menu = document.getElementById("assetDropdownMenu");
+
+  if (!btn || !menu) return;
+
+  // 🔒 reset state κάθε φορά
+  menu.classList.remove("open");
+
+  // ❗ καθάρισε παλιούς handlers
+  btn.onclick = null;
+  menu.onclick = null;
+  document.onclick = null;
+
+  // Toggle dropdown
+  btn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    menu.classList.toggle("open");
+  };
+
+  // Options (event delegation)
+  menu.onclick = (e) => {
+    const opt = e.target.closest(".asset-option");
+    if (!opt) return;
+
+    menu.querySelectorAll(".asset-option")
+      .forEach(o => o.classList.remove("active"));
+
+    opt.classList.add("active");
+
+    state.activeAssetFilter = opt.dataset.value;
+
+    // αν το label έχει HTML (line | machine | small SN)
+    btn.innerHTML = opt.innerHTML;
+
+    menu.classList.remove("open");
+    renderTable();
+  };
+
+  // Close on outside click (ΜΟΝΟ ΕΝΑΣ)
+  document.onclick = () => {
+    menu.classList.remove("open");
+  };
+
+  console.log("INIT DROPDOWN ✅", {
+    options: menu.querySelectorAll(".asset-option").length
+  });
+}
