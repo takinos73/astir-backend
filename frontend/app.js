@@ -2454,7 +2454,10 @@ state.lockSectionOnce = !!state.followUpSectionValue;
     // ⏳ Final set (defensive against any late resets)
     requestAnimationFrame(() => {
       lineEl.value = line;
-      triggerChange(lineEl);   // 🔑 ΑΥΤΟ ΛΕΙΠΕ
+      triggerChange(lineEl);
+
+      lineEl.disabled = true;
+      lineEl.classList.add("locked");
     });
   }
 
@@ -2476,15 +2479,16 @@ state.lockSectionOnce = !!state.followUpSectionValue;
       normStr(a.serial_number) === normStr(t.serial_number)
     );
 
-  const assetEl = document.getElementById("nt-asset");
   if (assetEl && match) {
-      // ⏳ Final asset select (defensive)
-      requestAnimationFrame(() => {
+    // ⏳ Final asset select (defensive)
+    requestAnimationFrame(() => {
       assetEl.value = match.id;
-      triggerChange(assetEl);   // 🔑 ΤΟ ΚΡΙΣΙΜΟ
+      triggerChange(assetEl);
+
+      assetEl.disabled = true;
+      assetEl.classList.add("locked");
     });
   }
-
   // 🔹 Open Add Task modal
   document.getElementById("addTaskOverlay").style.display = "flex";
 
