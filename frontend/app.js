@@ -1565,10 +1565,6 @@ async function confirmDeleteTask() {
   }
 }
 
-// Close modal
-function closeTaskView() {
-  document.getElementById("taskViewOverlay").style.display = "none";
-}
 /* =====================
    HISTORY MODAL (GLOBAL)
 ===================== */

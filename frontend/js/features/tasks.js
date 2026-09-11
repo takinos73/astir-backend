@@ -636,3 +636,8 @@ function resetSectionLockState() {
   state.lockSectionOnce = false;
   state.followUpSectionValue = null;
 }
+
+// Close modal
+function closeTaskView() {
+  document.getElementById("taskViewOverlay").style.display = "none";
+}
