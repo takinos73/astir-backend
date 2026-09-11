@@ -561,7 +561,7 @@ iframe.onload = () => {
   }, 1000);
 };
 
+iframe.srcdoc = html;
 document.body.appendChild(iframe);
 
-iframe.srcdoc = html;
 };
