@@ -378,3 +378,60 @@ function getCurrentAddTaskUnit() {
 
   return unitInput?.value?.trim() || "";
 }
+
+function getReusableTasksForContext() {
+  const machineModel = getSelectedAddTaskAssetModel();
+  const section = getCurrentAddTaskSection();
+  const unit = getCurrentAddTaskUnit();
+
+  if (!machineModel || !section || !unit) return [];
+  if (!Array.isArray(state.executionsData)) return [];
+
+  const map = new Map();
+
+  state.executionsData.forEach(e => {
+    const sameMachine =
+      String(e.machine || "").trim() === String(machineModel).trim();
+
+    const sameSection =
+      String(e.section || "").trim() === String(section).trim();
+
+    const sameUnit =
+      String(e.unit || "").trim() === String(unit).trim();
+
+    if (!sameMachine || !sameSection || !sameUnit) return;
+    if (!e.task || !String(e.task).trim()) return;
+
+    const key = [
+      e.task,
+      e.type || "",
+      e.section || "",
+      e.unit || ""
+    ].join("||");
+
+    if (!map.has(key)) {
+      map.set(key, {
+        task: e.task,
+        type: e.type || "",
+        notes: e.notes || "",
+        duration_min: e.duration_min || "",
+        last_used: e.executed_at || null
+      });
+      return;
+    }
+
+    const existing = map.get(key);
+
+    if (
+      e.executed_at &&
+      (!existing.last_used || new Date(e.executed_at) > new Date(existing.last_used))
+    ) {
+      existing.last_used = e.executed_at;
+      existing.notes = e.notes || existing.notes;
+      existing.duration_min = e.duration_min || existing.duration_min;
+    }
+  });
+
+  return Array.from(map.values())
+    .sort((a, b) => new Date(b.last_used || 0) - new Date(a.last_used || 0));
+}
