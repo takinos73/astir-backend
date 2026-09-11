@@ -699,3 +699,48 @@ function cancelTaskEdit() {
     editBtn.style.display = "inline-flex";
   }
 }
+
+// =====================
+// CONFIRM + SOFT DELETE TASK
+// =====================
+
+async function confirmDeleteTask() {
+  if (!state.currentViewedTask) return;
+
+  const ok = confirm(
+    "Are you sure you want to cancel this planned task?\nThis action cannot be undone."
+  );
+
+  if (!ok) return;
+
+  try {
+    const res = await fetch(
+      `${API}/tasks/${state.currentViewedTask.id}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Delete failed");
+    }
+
+    state.currentViewedTask = null;
+
+    closeTaskView();
+
+    if (
+      state.currentAssetSerial &&
+      typeof refreshAssetView === "function"
+    ) {
+      // Asset View open → refreshAssetView handles task/history reload
+      await refreshAssetView();
+    } else {
+      // Normal Tasks view → only tasks need refresh
+      await loadTasks();
+    }
+
+  } catch (err) {
+    console.error("DELETE TASK ERROR:", err);
+    alert(err.message);
+  }
+}
