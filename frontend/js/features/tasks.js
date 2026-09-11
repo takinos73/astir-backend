@@ -435,3 +435,40 @@ function getReusableTasksForContext() {
   return Array.from(map.values())
     .sort((a, b) => new Date(b.last_used || 0) - new Date(a.last_used || 0));
 }
+
+/* =====================
+    REFRESH REUSE TASK DROPDOWN BASED ON CURRENT CONTEXT
+===================== */
+
+function refreshReuseTaskDropdown() {
+  const block = document.getElementById("reuseTaskBlock");
+  const select = document.getElementById("nt-reuse-task");
+
+  if (!block || !select) return;
+
+  const reusable = getReusableTasksForContext();
+
+  select.innerHTML = `<option value="">Select previous task...</option>`;
+
+  if (reusable.length === 0) {
+    block.style.display = "none";
+    return;
+  }
+
+  reusable.forEach((r, index) => {
+    const opt = document.createElement("option");
+    opt.value = String(index);
+    opt.textContent = r.type
+      ? `${r.task} — ${r.type}`
+      : r.task;
+
+    opt.dataset.task = r.task || "";
+    opt.dataset.type = r.type || "";
+    opt.dataset.notes = r.notes || "";
+    opt.dataset.duration = r.duration_min || "";
+
+    select.appendChild(opt);
+  });
+
+  block.style.display = "block";
+}
