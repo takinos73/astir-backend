@@ -2479,6 +2479,8 @@ state.lockSectionOnce = !!state.followUpSectionValue;
       normStr(a.serial_number) === normStr(t.serial_number)
     );
 
+  const assetEl = document.getElementById("nt-asset");  
+
   if (assetEl && match) {
     // ⏳ Final asset select (defensive)
     requestAnimationFrame(() => {
