@@ -338,26 +338,6 @@ document.getElementById("nt-reuse-task")?.addEventListener("change", e => {
 });
 
 // =====================
-// TASK TYPE FILTER
-// =====================
-function filterByTaskType(tasks) {
-  
-
-  if (!Array.isArray(tasks)) return [];
-
-  if (state.activeTaskTypeFilter === "planned") {
-    return tasks.filter(t => isPlannedManual(t));
-  }
-
-  if (state.activeTaskTypeFilter === "preventive") {
-    return tasks.filter(t => isPreventive(t));
-  }
-console.log("filterByTaskType():", state.activeTaskTypeFilter, "sample:", tasks?.[0]);
-  // implicit ALL
-  return tasks;
-}
-
-// =====================
 // POPULATE HISTORY TECHNICIAN FILTER
 // =====================
 function populateHistoryTechnicianFilter() {
