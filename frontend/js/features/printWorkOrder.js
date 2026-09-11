@@ -547,6 +547,10 @@ iframe.style.height = "0";
 iframe.style.border = "0";
 
 iframe.onload = () => {
+   console.log(
+    "PRINT IFRAME LOADED:",
+    iframe.contentDocument?.body?.innerHTML?.length
+  );
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
 
