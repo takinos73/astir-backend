@@ -1462,53 +1462,6 @@ function viewTask(taskId) {
   }
 }
 
-// =====================
-// TASK EDITING (COLLAPSE / EXPAND) — SAFE
-// =====================
-
-function enableTaskEdit() {
-  if (!state.currentViewedTask) return;
-
-  const t = state.currentViewedTask;
-
-  // Fill edit fields (guarded)
-  const descEl = document.getElementById("edit-task-desc");
-  if (descEl) descEl.value = t.task || "";
-
-  const typeEl = document.getElementById("edit-task-type");
-  if (typeEl) typeEl.value = t.type || "";
-
-  const impactEl = document.getElementById("edit-task-impact");
-  if (impactEl) {
-    impactEl.value = t.impact || "normal";
-  }
-
-  const secEl = document.getElementById("edit-task-section");
-  if (secEl) secEl.value = t.section || "";
-
-  const unitEl = document.getElementById("edit-task-unit");
-  if (unitEl) unitEl.value = t.unit || "";
-
-  const dueEl = document.getElementById("edit-task-due");
-  if (dueEl) dueEl.value = t.due_date ? String(t.due_date).split("T")[0] : "";
-
-  const notesEl = document.getElementById("edit-task-notes");
-  if (notesEl) notesEl.value = t.notes || "";
-
-  // Show edit area
-  const editArea = document.getElementById("taskEditArea");
-  if (editArea) editArea.style.display = "block";
-
-  // (Optional) scroll into view (safe)
-  if (editArea && editArea.scrollIntoView) {
-    editArea.scrollIntoView({ block: "start" });
-  }
-
-  // Hide edit button while editing
-  const editBtn = document.getElementById("editTaskBtn");
-  if (editBtn) editBtn.style.display = "none";
-}
-
 
 // =====================
 // CONFIRM + SOFT DELETE TASK
