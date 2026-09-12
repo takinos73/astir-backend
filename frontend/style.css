@@ -1616,6 +1616,46 @@ tr.history-unplanned {
   font-weight: 600;
 }
 
+/* =========================================================
+   HISTORY VIEW – EXECUTION DETAILS
+========================================================= */
+
+.history-view-box {
+  width: 90%;
+  max-width: 1050px;
+  padding: 24px 28px 20px;
+  border-radius: 14px;
+}
+
+.history-view-box h3 {
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.history-view-box .history-view-grid {
+  min-height: 210px;
+}
+
+.history-view-box .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: 20px;
+  padding-top: 14px;
+
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.history-view-box .modal-actions .btn-secondary {
+  min-width: 90px;
+  height: 34px;
+}
+
 
 /* =====================
    TASK DATE FILTER – STACKED LABELS
