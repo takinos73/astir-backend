@@ -9,7 +9,7 @@ console.log("TASKS.JS LOADED");
 // =====================
 
 const TASKS_DEFAULT_PAGE_SIZE = 20;
-const TASKS_MIN_PAGE_SIZE = 6;
+const TASKS_MIN_PAGE_SIZE = 5;
 const TASKS_MAX_PAGE_SIZE = 25;
 
 let tasksCurrentPage = 1;
@@ -34,9 +34,9 @@ function getTasksPageSize() {
     table.querySelector("tbody tr");
 
   const rowHeight =
-    sampleRow?.getBoundingClientRect().height || 56;
+    sampleRow?.getBoundingClientRect().height || 58;
 
-  const bottomMargin = 50;
+  const bottomMargin = 32;
 
   const availableHeight =
     window.innerHeight
