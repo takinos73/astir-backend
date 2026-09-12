@@ -261,6 +261,8 @@ select,
 
   background: #151515;
   padding: 10px 0;
+  
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .main-tab {
