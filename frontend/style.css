@@ -261,7 +261,7 @@ select,
 
   background: #151515;
   padding: 10px 0;
-  
+
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -2604,4 +2604,21 @@ tr.history-unplanned {
   #tab-tasks .tasks-pagination-controls {
     justify-content: center;
   }
+}
+
+/* =========================================================
+   TASKS – SCROLLABLE TABLE
+========================================================= */
+
+#tab-tasks .table-card {
+  max-height: calc(100vh - 430px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+#tab-tasks #tasksTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #171e2a;
 }
