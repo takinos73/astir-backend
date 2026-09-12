@@ -9,13 +9,14 @@ console.log("TASKS.JS LOADED");
 // =====================
 
 const TASKS_DEFAULT_PAGE_SIZE = 20;
-const TASKS_MIN_PAGE_SIZE = 8;
+const TASKS_MIN_PAGE_SIZE = 7;
 const TASKS_MAX_PAGE_SIZE = 25;
 
 let tasksCurrentPage = 1;
 
 function getTasksPageSize() {
   const table = document.getElementById("tasksTable");
+  const pagination = document.getElementById("tasksPagination");
 
   if (!table || table.offsetParent === null) {
     return TASKS_DEFAULT_PAGE_SIZE;
@@ -23,14 +24,26 @@ function getTasksPageSize() {
 
   const tableTop = table.getBoundingClientRect().top;
 
-  // Space reserved for table header, pagination and bottom margin
-  const reservedBottom = 130;
+  const paginationHeight =
+    pagination?.getBoundingClientRect().height || 54;
+
+  const tableHeadHeight =
+    table.querySelector("thead")?.getBoundingClientRect().height || 40;
+
+  const sampleRow =
+    table.querySelector("tbody tr");
+
+  const rowHeight =
+    sampleRow?.getBoundingClientRect().height || 44;
+
+  const bottomMargin = 24;
 
   const availableHeight =
-    window.innerHeight - tableTop - reservedBottom;
-
-  // Approximate height of one task row
-  const rowHeight = 44;
+    window.innerHeight
+    - tableTop
+    - tableHeadHeight
+    - paginationHeight
+    - bottomMargin;
 
   const calculated =
     Math.floor(availableHeight / rowHeight);
