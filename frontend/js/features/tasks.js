@@ -8,8 +8,38 @@ console.log("TASKS.JS LOADED");
 // TASKS PAGINATION
 // =====================
 
-const TASKS_PAGE_SIZE = 10;
+const TASKS_DEFAULT_PAGE_SIZE = 20;
+const TASKS_MIN_PAGE_SIZE = 8;
+const TASKS_MAX_PAGE_SIZE = 25;
+
 let tasksCurrentPage = 1;
+
+function getTasksPageSize() {
+  const table = document.getElementById("tasksTable");
+
+  if (!table || table.offsetParent === null) {
+    return TASKS_DEFAULT_PAGE_SIZE;
+  }
+
+  const tableTop = table.getBoundingClientRect().top;
+
+  // Space reserved for table header, pagination and bottom margin
+  const reservedBottom = 130;
+
+  const availableHeight =
+    window.innerHeight - tableTop - reservedBottom;
+
+  // Approximate height of one task row
+  const rowHeight = 44;
+
+  const calculated =
+    Math.floor(availableHeight / rowHeight);
+
+  return Math.min(
+    TASKS_MAX_PAGE_SIZE,
+    Math.max(TASKS_MIN_PAGE_SIZE, calculated)
+  );
+}
 
 /* =====================
    LOAD TASKS
@@ -1312,6 +1342,7 @@ function buildRow(task) {
 // =====================
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
+
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
@@ -1466,28 +1497,30 @@ const filtered = source
   // =====================
 
   const totalTasks = filtered.length;
+  const pageSize = getTasksPageSize();
+
   const totalPages = Math.max(
     1,
-    Math.ceil(totalTasks / TASKS_PAGE_SIZE)
+    Math.ceil(totalTasks / pageSize)
   );
 
-  // Safety: if filters reduce the number of pages
-  if (tasksCurrentPage > totalPages) {
-    tasksCurrentPage = totalPages;
-  }
+    // Safety: if filters reduce the number of pages
+    if (tasksCurrentPage > totalPages) {
+      tasksCurrentPage = totalPages;
+    }
 
-  if (tasksCurrentPage < 1) {
-    tasksCurrentPage = 1;
-  }
+    if (tasksCurrentPage < 1) {
+      tasksCurrentPage = 1;
+    }
 
   const startIndex =
-    (tasksCurrentPage - 1) * TASKS_PAGE_SIZE;
+    (tasksCurrentPage - 1) * pageSize;
 
   const endIndex =
     Math.min(
-      startIndex + TASKS_PAGE_SIZE,
+      startIndex + pageSize,
       totalTasks
-    );
+  );
 
   const pageTasks =
     filtered.slice(startIndex, endIndex);
@@ -1675,3 +1708,18 @@ document
     tasksCurrentPage++;
     renderTable();
   });
+
+// =====================
+// TASKS AUTO PAGE SIZE
+// =====================
+
+let tasksResizeTimer = null;
+
+window.addEventListener("resize", () => {
+  clearTimeout(tasksResizeTimer);
+
+  tasksResizeTimer = setTimeout(() => {
+    tasksCurrentPage = 1;
+    renderTable();
+  }, 150);
+});
