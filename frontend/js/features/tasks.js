@@ -1532,3 +1532,46 @@ document
     console.log("SEARCH INPUT:", e.target.value);
     renderTable();
   });
+
+/* =====================
+   ADD TASK TYPE LOGIC
+   Planned vs Unplanned (SAFE TOGGLE)
+===================== */
+
+function applyAddTaskTypeUI(isPlanned) {
+
+  // 🔹 Title
+  const title = document.getElementById("addTaskTitle");
+  if (title) {
+    title.textContent = isPlanned
+      ? "New Planned Task"
+      : "New Unplanned Task (Breakdown)";
+  }
+
+  // 🔹 HARD RESET (hide everything first)
+  document.querySelectorAll(".planned-only, .unplanned-only")
+    .forEach(el => el.style.display = "none");
+
+  // 🔹 Show correct mode
+  if (isPlanned) {
+    document.querySelectorAll(".planned-only")
+      .forEach(el => el.style.display = "block");
+  } else {
+    document.querySelectorAll(".unplanned-only")
+      .forEach(el => el.style.display = "block");
+      // 🔥 NEW — Populate technicians when breakdown mode
+      populateBreakdownTechnicians();
+  }
+
+  // 🔹 Visual cue on modal
+  const modal = document.getElementById("addTaskModal");
+  if (modal) {
+    modal.classList.toggle("unplanned-mode", !isPlanned);
+  }
+}
+
+// 🔁 Change handler
+document.getElementById("taskPlannedType")
+  ?.addEventListener("change", e => {
+    applyAddTaskTypeUI(e.target.value === "planned");
+  });
