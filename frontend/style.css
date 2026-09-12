@@ -1569,9 +1569,8 @@ tr.history-unplanned {
 
 .history-view-grid {
   display: grid;
-
-  grid-template-columns: 31% 65%;
-  gap: 14px 24px;
+  grid-template-columns: 30% 70%;
+  gap: 12px;
 }
 
 
@@ -1584,26 +1583,21 @@ tr.history-unplanned {
   border-right: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-
-/* =====================
-   DETAIL SECTIONS
-===================== */
-
 .history-view-section {
-  padding: 10px 12px 14px;
+  padding: 14px 16px;
 
   font-size: 13px;
   line-height: 1.5;
 
-  color: #e5e7eb;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.38);
+  border: 1px solid rgba(148, 163, 184, 0.10);
+  border-radius: 9px;
 }
 
 .history-view-section strong {
   display: block;
 
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 
   font-size: 10px;
   font-weight: 700;
@@ -1618,19 +1612,10 @@ tr.history-unplanned {
   color: #f3f4f6;
 }
 
-
-/* =====================
-   FULL WIDTH ROWS
-===================== */
-
-.history-view-grid .full-width,
 .history-view-section.full-width {
   grid-column: 1 / -1;
-}
 
-.history-view-section.full-width {
-  padding-top: 13px;
-  padding-bottom: 15px;
+  padding: 14px 16px;
 }
 
 
