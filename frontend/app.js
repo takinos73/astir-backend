@@ -1216,12 +1216,6 @@ document.getElementById("taskPlannedType")
     applyAddTaskTypeUI(e.target.value === "planned");
   });
 
-
-document
-  .getElementById("printAssetHistoryBtn")
-  ?.addEventListener("click", printAssetHistory);
-
-
 /* =====================
    SAVE TASK (PLANNED / UNPLANNED)
 ===================== */

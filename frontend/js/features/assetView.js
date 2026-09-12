@@ -1763,7 +1763,6 @@ function updateAssetHistoryLegendCounts(history) {
   mEl.textContent = planned;       // 🟡 Planned (manual)
 }
 
-
 // =====================
 // REFRESH ASSET VIEW DATA (FROM STATE)
 // =====================
@@ -1950,7 +1949,7 @@ document
     });
   }
 
-  // =====================
+// =====================
 // ASSET ACTIVE TASKS – FREE TEXT SEARCH
 // =====================
 
@@ -1968,4 +1967,11 @@ document
     );
   });
 
+// =====================
+// PRINT ASSET HISTORY
+// =====================
+
+document
+  .getElementById("printAssetHistoryBtn")
+  ?.addEventListener("click", printAssetHistory);
   
