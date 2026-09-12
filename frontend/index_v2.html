@@ -1387,43 +1387,47 @@
         BREAKDOWNS TABLE
     ===================== -->
 
-    <table
-      id="breakdownsTable"
-      class="data-table"
-    >
+    <div class="breakdowns-table-scroll">
+        <table
+          id="breakdownsTable"
+          class="data-table"
+        >
 
-      <thead>
+          <thead>
 
-        <tr>
-          <th>ID</th>
-          <th>Asset</th>
-          <th>Line</th>
-          <th>Fault</th>
-          <th>Status</th>
-          <th>Started</th>
-          <th>Downtime</th>
-          <th></th>
-        </tr>
+            <tr>
+              <th>ID</th>
+              <th>Asset</th>
+              <th>Line</th>
+              <th>Fault</th>
+              <th>Status</th>
+              <th>Started</th>
+              <th>Downtime</th>
+              <th></th>
+            </tr>
 
-      </thead>
+          </thead>
 
 
-      <tbody id="breakdownsTableBody">
+          <tbody id="breakdownsTableBody">
 
-        <!--
-          Populated later by:
-          js/features/breakdowns.js
-        -->
+            <!--
+              Populated later by:
+              js/features/breakdowns.js
+            -->
 
-        <tr>
-          <td colspan="8">
-            No breakdowns recorded.
-          </td>
-        </tr>
+            <tr>
+              <td colspan="8">
+                No breakdowns recorded.
+              </td>
+            </tr>
 
-      </tbody>
+          </tbody>
 
-    </table>
+        </table>
+
+    </div>
+   
 
       <!-- ====================
         BREAKDOWN PAGINATION

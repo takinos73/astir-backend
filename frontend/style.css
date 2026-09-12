@@ -2627,13 +2627,17 @@ tr.history-unplanned {
    BREAKDOWNS – SCROLLABLE TABLE
 ========================================================= */
 
-#tab-breakdowns .table-card {
+/* =========================================================
+   BREAKDOWNS – SCROLLABLE TABLE
+========================================================= */
+
+#tab-breakdowns .breakdowns-table-scroll {
   max-height: calc(100vh - 480px);
   overflow-y: auto;
   overflow-x: auto;
 }
 
-#tab-breakdowns table thead th {
+#tab-breakdowns #breakdownsTable thead th {
   position: sticky;
   top: 0;
   z-index: 5;
