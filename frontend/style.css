@@ -1441,11 +1441,6 @@ tr.history-unplanned {
   overflow-y: auto;     /* 👈 scroll εμφανίζεται ΜΟΝΟ τότε */  
 }
 
-.modal-history {
-  width: 96%;
-  max-width: 1200px;
-  max-height: 95vh;     /* 👈όριο */
-}
 .modal-history h3 {
   margin: 2px 2px;
   padding: 0 4px;
@@ -1485,9 +1480,9 @@ tr.history-unplanned {
 .modal-history {
   display: flex;
   flex-direction: column;
-  max-height: 92vh;
+  height: 95vh;
   width: 95%;
-  max-width: 1200px;
+  max-width: 1300px;
 }
 
 /* Filters stay fixed */
