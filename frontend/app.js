@@ -1141,48 +1141,6 @@ function closeEditBreakdown() {
   document.getElementById("editBreakdownOverlay").style.display = "none";
 }
 
-// =====================
-// PRINT TASK (FRONTEND)
-// =====================
-function printTask(taskId) {
-  if (!taskId) return;
-  window.open(`${API}/api/tasks/${taskId}/print`, "_blank");
-}
-function printTasks() {
-  const tasks = getFilteredTasksForPrint();
-  console.log("PRINT DEBUG:", {
-  activeAssetFilter: state.activeAssetFilter,
-  tasksLength: state.tasksData.length,
-  filtered: getFilteredTasksForPrint()
-});
-
-  if (!Array.isArray(tasks) || tasks.length === 0) {
-    alert("No tasks to print");
-    return;
-  }
-
-  const totalMinutes = tasks.reduce(
-    (sum, t) => t.duration_min != null ? sum + Number(t.duration_min) : sum,
-    0
-  );
-
-  window.printTaskSchedule({
-    tasks,
-    meta: {
-      date: new Date().toLocaleDateString("el-GR"),
-      period: getCurrentPeriodLabel(),
-      asset: getAssetFilterLabel(),
-      status: getStatusFilterLabel(),
-      totalDuration: totalMinutes > 0 ? formatDuration(totalMinutes) : ""
-    },
-    helpers: {
-      formatDate,
-      formatDuration,
-      getDueState
-    }
-  });
-}
-
 /* =====================
    LOAD TASKS
 ===================== */
