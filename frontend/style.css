@@ -1495,6 +1495,8 @@ tr.history-unplanned {
   flex: 1;
   overflow: auto;
   margin-top: 10px;
+  height:72vh;
+  max-height: 920px;
 }
 
 .legend-item {
@@ -1555,7 +1557,6 @@ tr.history-unplanned {
   letter-spacing: 0.05em;
 }
 
-
 /* =====================
    DETAILS GRID
 ===================== */
@@ -1563,9 +1564,8 @@ tr.history-unplanned {
 .history-view-grid {
   display: grid;
   grid-template-columns: 28% 72%;
-  gap: 12px;
+  gap: 10px;
 }
-
 
 /* Vertical separator between
    asset summary and details */
@@ -1652,7 +1652,7 @@ tr.history-unplanned {
 ========================================================= */
 
 .history-view-box {
-  width: 82%;
+  width: 80%;
   max-width: 960px;
   padding: 24px 28px 20px;
   border-radius: 14px;
