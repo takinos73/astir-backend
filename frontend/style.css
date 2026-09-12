@@ -31,7 +31,7 @@ body {
 
 .app-shell {
   width: 92%;
-  max-width: 1500px;
+  max-width: 1490px;
   margin: auto;
 }
 .docs-subtitle {
@@ -1482,7 +1482,7 @@ tr.history-unplanned {
   flex-direction: column;
   height: 96vh;
   width: 95%;
-  max-width: 1400px;
+  max-width: 1492px;
 }
 
 /* Filters stay fixed */
