@@ -1560,6 +1560,11 @@ tr.history-unplanned {
   gap: 12px 18px;
 }
 
+.history-view-grid > :first-child {
+  padding-right: 24px;
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+}
+
 /* Full width rows (π.χ. Notes) */
 .history-view-grid .full-width {
   grid-column: 1 / -1;
@@ -1567,27 +1572,44 @@ tr.history-unplanned {
 
 
 .history-view-section {
+  padding: 10px 12px 14px;
   font-size: 13px;
+  line-height: 1.45;
   color: #fcfcfc;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .history-view-section strong {
   display: block;
-  font-size: 11px;
-  color: #6b7280;
-  margin-bottom: 2px;
+
+  margin-bottom: 5px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  color: #7f8a9d;
+
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+}
+
+.history-view-section > div {
+  color: #e5e7eb;
 }
 
 .history-view-section.full-width {
   grid-column: 1 / -1;
+
+  padding-top: 12px;
+  padding-bottom: 14px;
 }
 
 .history-emphasis {
   font-size: 16px;
-  font-weight: 600;
-  color: #1e88e5;
+  font-weight: 700;
+
+  color: #4ea8ff !important;
 }
 /* =====================
    HISTORY VIEW – TYPE COLORS
