@@ -82,7 +82,6 @@ function getBreakdownStatusClass(status) {
 
 }
 
-
 /* =====================
    LOAD BREAKDOWNS
 ===================== */
@@ -193,7 +192,7 @@ function getBreakdownPageSize() {
     tbody.querySelector("tr");
 
   const rowHeight =
-    sampleRow?.getBoundingClientRect().height || 58;
+    sampleRow?.getBoundingClientRect().height || 62;
 
   const bottomMargin = 50;
 
@@ -211,7 +210,7 @@ function getBreakdownPageSize() {
 
   return Math.min(
     25,
-    Math.max(6, calculated)
+    Math.max(5, calculated)
   );
 }
 
