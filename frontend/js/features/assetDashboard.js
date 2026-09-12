@@ -772,7 +772,7 @@ window.renderAssetDashboard = function () {
 
   // Limit only when NO filters
   if (!hasActiveFilter) {
-    assets = assets.slice(0, 9);
+    assets = assets.slice(0, 12);
   }
 
   if (assets.length === 0) {
