@@ -34,7 +34,7 @@ function getTasksPageSize() {
     table.querySelector("tbody tr");
 
   const rowHeight =
-    sampleRow?.getBoundingClientRect().height || 44;
+    sampleRow?.getBoundingClientRect().height || 56;
 
   const bottomMargin = 50;
 
