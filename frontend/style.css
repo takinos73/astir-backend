@@ -1628,6 +1628,7 @@ tr.history-unplanned {
 .history-asset-header {
   padding: 10px 12px;
   margin-bottom: 14px;
+  border-left: 6px solid #9ca3af; /* fallback */
      
 }
 
