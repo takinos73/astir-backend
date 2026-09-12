@@ -2431,46 +2431,122 @@ tr.history-unplanned {
 
 
 /* =========================================================
-   PAGINATION
+   TASKS PAGINATION
 ========================================================= */
 
 #tab-tasks .tasks-pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 10px 4px 2px;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #111722;
+  border: 1px solid #273142;
+  border-radius: 10px;
 }
 
+
+/* =====================
+   SHOWING X–Y OF Z
+===================== */
+
 #tab-tasks .tasks-pagination-info {
-  font-size: 0.88rem;
-  opacity: 0.72;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8f9bad;
 }
+
+
+/* =====================
+   CONTROLS
+===================== */
 
 #tab-tasks .tasks-pagination-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
+
+/* =====================
+   PAGE INDICATOR
+===================== */
+
 #tab-tasks .tasks-page-label {
-  min-width: 58px;
-  text-align: center;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  height: 32px;
+  padding: 0 10px;
+  background: #171e2a;
+  border: 1px solid #303b4d;
+  border-radius: 7px;
+  color: #d7deea;
+  font-size: 12px;
   font-weight: 600;
 }
 
-#tab-tasks .tasks-pagination-controls .btn-secondary {
-  min-height: 34px;
-  padding: 6px 11px;
+
+/* =====================
+   PREVIOUS / NEXT
+===================== */
+
+#tasksPrevPage,
+#tasksNextPage {
+  height: 32px;
+  padding: 0 13px;
+  background: #171e2a;
+  color: #cbd5e1;
+  border: 1px solid #303b4d;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-#tab-tasks .tasks-pagination-controls .btn-secondary:disabled {
-  opacity: 0.42;
+#tasksPrevPage:hover:not(:disabled),
+#tasksNextPage:hover:not(:disabled) {
+  background: #202a39;
+  border-color: #4c5d75;
+  color: #ffffff;
+}
+
+
+/* =====================
+   DISABLED
+===================== */
+
+#tasksPrevPage:disabled,
+#tasksNextPage:disabled {
+  opacity: 0.35;
   cursor: default;
 }
 
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 700px) {
+  #tab-tasks .tasks-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #tab-tasks .tasks-pagination-info {
+    text-align: center;
+  }
+
+  #tab-tasks .tasks-pagination-controls {
+    justify-content: center;
+  }
+}
 
 /* =========================================================
    RESPONSIVE

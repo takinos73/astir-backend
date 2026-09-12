@@ -8,7 +8,7 @@ console.log("TASKS.JS LOADED");
 // TASKS PAGINATION
 // =====================
 
-const TASKS_PAGE_SIZE = 20;
+const TASKS_PAGE_SIZE = 10;
 let tasksCurrentPage = 1;
 
 /* =====================
