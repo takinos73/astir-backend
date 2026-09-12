@@ -210,7 +210,7 @@ function getBreakdownPageSize() {
 
   return Math.min(
     25,
-    Math.max(5, calculated)
+    Math.max(10, calculated)
   );
 }
 
