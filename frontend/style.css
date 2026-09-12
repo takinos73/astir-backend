@@ -1562,7 +1562,7 @@ tr.history-unplanned {
 
 .history-view-grid {
   display: grid;
-  grid-template-columns: 30% 70%;
+  grid-template-columns: 28% 72%;
   gap: 12px;
 }
 
@@ -1609,7 +1609,6 @@ tr.history-unplanned {
   padding: 14px 16px;
 }
 
-
 /* =====================
    EMPHASIS
 ===================== */
@@ -1653,8 +1652,8 @@ tr.history-unplanned {
 ========================================================= */
 
 .history-view-box {
-  width: 88%;
-  max-width: 1020px;
+  width: 82%;
+  max-width: 960px;
   padding: 24px 28px 20px;
   border-radius: 14px;
 }
