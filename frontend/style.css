@@ -1480,9 +1480,9 @@ tr.history-unplanned {
 .modal-history {
   display: flex;
   flex-direction: column;
-  height: 95vh;
+  height: 96vh;
   width: 95%;
-  max-width: 1300px;
+  max-width: 1400px;
 }
 
 /* Filters stay fixed */

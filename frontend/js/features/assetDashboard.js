@@ -774,6 +774,7 @@ window.renderAssetDashboard = function () {
   if (!hasActiveFilter) {
     assets = assets.slice(0, 12);
   }
+  console.log("DASHBOARD ASSETS:", assets.length);
 
   if (assets.length === 0) {
     container.innerHTML = `<div class="empty">No assets match filters</div>`;
