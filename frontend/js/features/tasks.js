@@ -9,7 +9,7 @@ console.log("TASKS.JS LOADED");
 // =====================
 
 const TASKS_DEFAULT_PAGE_SIZE = 20;
-const TASKS_MIN_PAGE_SIZE = 5;
+const TASKS_MIN_PAGE_SIZE = 10;
 const TASKS_MAX_PAGE_SIZE = 25;
 
 let tasksCurrentPage = 1;
