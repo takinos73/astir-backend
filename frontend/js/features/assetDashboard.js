@@ -597,7 +597,7 @@ function calculateAssetDashboardScore(
 ===================================================== */
 
 function getTopWorstAssetsDashboard(
-  limit = 9
+  limit = 12
 ) {
 
   const today =
