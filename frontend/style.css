@@ -1531,13 +1531,6 @@ tr.history-unplanned {
    ASSET HEADER
 ===================== */
 
-.history-asset-header {
-  padding-bottom: 14px;
-  margin-bottom: 18px;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-}
-
 .history-asset-main {
   font-size: 19px;
   font-weight: 700;
@@ -1579,8 +1572,6 @@ tr.history-unplanned {
 
 .history-view-grid > :first-child {
   padding-right: 24px;
-
-  border-right: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .history-view-section {
@@ -1637,8 +1628,7 @@ tr.history-unplanned {
 .history-asset-header {
   padding: 10px 12px;
   margin-bottom: 14px;
-  border-left: 6px solid #9ca3af; /* fallback */
-  width:50%;    
+     
 }
 
 .history-type-breakdown {
@@ -1662,8 +1652,8 @@ tr.history-unplanned {
 ========================================================= */
 
 .history-view-box {
-  width: 90%;
-  max-width: 1050px;
+  width: 88%;
+  max-width: 1020px;
   padding: 24px 28px 20px;
   border-radius: 14px;
 }
