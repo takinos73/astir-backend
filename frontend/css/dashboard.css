@@ -669,7 +669,7 @@
 .daily-brief-modal {
   width: min(820px, 92vw);
   max-width: 820px;
-  max-height: 84vh;
+  max-height: 88vh;
 
   overflow-y: auto;
 

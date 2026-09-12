@@ -1169,23 +1169,49 @@ input[type="checkbox"] {
   gap: 6px;
 }
 
-.breakdown-actions-row .breakdown-action-icon {
-  display: flex;
+.breakdown-actions-row .breakdown-action-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 
-  flex: 0 0 34px;
-
-  width: 34px;
   height: 30px;
-  min-width: 34px;
-
-  padding: 0;
+  padding: 0 10px;
   margin: 0;
 
-  font-size: 15px;
+  border-radius: 7px;
+
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1;
+
+  white-space: nowrap;
 }
+
+.breakdown-view-btn {
+  background: #171e2a;
+  color: #cbd5e1;
+  border: 1px solid #303b4d;
+}
+
+.breakdown-view-btn:hover {
+  background: #202a39;
+  border-color: #4c5d75;
+  color: #ffffff;
+}
+
+.breakdown-reopen-btn {
+  background: rgba(245, 158, 11, 0.10);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.breakdown-reopen-btn:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.55);
+  color: #fde68a;
+}
+
 .breakdown-downtime-verified {
   margin-top: 3px;
   font-size: 10px;

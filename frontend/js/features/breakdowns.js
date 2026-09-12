@@ -822,27 +822,27 @@ function renderBreakdownsTable(breakdowns) {
               <div class="breakdown-actions-row">
 
                 <button
-                  class="btn-table breakdown-action-icon breakdown-view-btn"
+                  class="btn-table breakdown-action-btn breakdown-view-btn"
                   type="button"
                   data-breakdown-id="${id}"
                   title="View Breakdown"
                   aria-label="View Breakdown"
                 >
-                  👁
+                  👁 View
                 </button>
 
                 ${
                   canReopen
                     ? `
-                      <button
-                        class="btn-table breakdown-action-icon breakdown-reopen-btn"
-                        type="button"
-                        data-breakdown-id="${id}"
-                        title="Reopen Breakdown"
-                        aria-label="Reopen Breakdown"
-                      >
-                        ↻
-                      </button>
+                  <button
+                    class="btn-table breakdown-action-btn breakdown-reopen-btn"
+                    type="button"
+                    data-breakdown-id="${id}"
+                    title="Reopen Breakdown"
+                    aria-label="Reopen Breakdown"
+                  >
+                    ↻ Reopen
+                  </button>
                     `
                     : ""
                 }
