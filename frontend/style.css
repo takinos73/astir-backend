@@ -1522,60 +1522,80 @@ tr.history-unplanned {
 .legend-item.yellow .dot {
   background: #facc15;
 }
+
 /* =====================
    HISTORY VIEW – LAYOUT
 ===================== */
 
-/* HISTORY VIEW – ASSET HEADER */
+/* =====================
+   ASSET HEADER
+===================== */
 
 .history-asset-header {
-  padding-bottom: 10px;
-  margin-bottom: 14px;  
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .history-asset-main {
-  font-size: 18px;
-  font-weight: 600;
-  color: #6f7070;
+  font-size: 19px;
+  font-weight: 700;
+  color: #f3f4f6;
 }
 
 .history-asset-sub {
+  margin-top: 4px;
+
   font-size: 12px;
-  color: #d7dde8;
-  margin-top: 2px;
+  color: #9ca3af;
 }
 
 .history-breakdown-id {
-  font-size: 15px;
+  margin-bottom: 7px;
+
+  font-size: 14px;
   font-weight: 700;
-  color: #dc2626;
-  margin-bottom: 6px;
-  letter-spacing: 0.04em;
+
+  color: #ef4444;
+
+  letter-spacing: 0.05em;
 }
 
+
+/* =====================
+   DETAILS GRID
+===================== */
 
 .history-view-grid {
   display: grid;
+
   grid-template-columns: 31% 65%;
-  gap: 12px 18px;
+  gap: 14px 24px;
 }
+
+
+/* Vertical separator between
+   asset summary and details */
 
 .history-view-grid > :first-child {
   padding-right: 24px;
+
   border-right: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-/* Full width rows (π.χ. Notes) */
-.history-view-grid .full-width {
-  grid-column: 1 / -1;
-}
 
+/* =====================
+   DETAIL SECTIONS
+===================== */
 
 .history-view-section {
   padding: 10px 12px 14px;
+
   font-size: 13px;
-  line-height: 1.45;
-  color: #fcfcfc;
+  line-height: 1.5;
+
+  color: #e5e7eb;
 
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
@@ -1583,7 +1603,7 @@ tr.history-unplanned {
 .history-view-section strong {
   display: block;
 
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 
   font-size: 10px;
   font-weight: 700;
@@ -1591,19 +1611,32 @@ tr.history-unplanned {
   color: #7f8a9d;
 
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
 }
 
 .history-view-section > div {
-  color: #e5e7eb;
+  color: #f3f4f6;
+}
+
+
+/* =====================
+   FULL WIDTH ROWS
+===================== */
+
+.history-view-grid .full-width,
+.history-view-section.full-width {
+  grid-column: 1 / -1;
 }
 
 .history-view-section.full-width {
-  grid-column: 1 / -1;
-
-  padding-top: 12px;
-  padding-bottom: 14px;
+  padding-top: 13px;
+  padding-bottom: 15px;
 }
+
+
+/* =====================
+   EMPHASIS
+===================== */
 
 .history-emphasis {
   font-size: 16px;
@@ -1611,6 +1644,7 @@ tr.history-unplanned {
 
   color: #4ea8ff !important;
 }
+
 /* =====================
    HISTORY VIEW – TYPE COLORS
 ===================== */
