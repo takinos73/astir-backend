@@ -2622,3 +2622,20 @@ tr.history-unplanned {
   z-index: 5;
   background: #171e2a;
 }
+
+/* =========================================================
+   BREAKDOWNS – SCROLLABLE TABLE
+========================================================= */
+
+#tab-breakdowns .table-card {
+  max-height: calc(100vh - 480px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+#tab-breakdowns table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #171e2a;
+}
