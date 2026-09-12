@@ -1750,25 +1750,6 @@ document.getElementById("nt-line")?.addEventListener("change", e => {
       });
   }
 
-  /* ===================================
-    TECHNICIANS DROPDOWN (BREAKDOWN TASK)
-  ===================================== */
-  function populateBreakdownTechnicians() {
-  const sel = document.getElementById("nt-technician");
-  if (!sel || !Array.isArray(state.techniciansData)) return;
-
-  sel.innerHTML = `<option value="">Select Technician</option>`;
-
-  state.techniciansData
-    .filter(t => t.active !== false)
-    .sort((a, b) => a.name.localeCompare(b.name, "el"))
-    .forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t.id;         // 👈 FK
-      opt.textContent = t.name; // 👈 visible
-      sel.appendChild(opt);
-    });
-}
   /* =============================================
     TECHNICIANS DROPDOWN (EDIT TASK + PRESELECTION)
   ================================================*/
