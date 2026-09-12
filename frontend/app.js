@@ -1184,20 +1184,6 @@ function printTasks() {
 }
 
 /* =====================
-   FILTER EVENTS
-===================== */
-
-getEl("machineFilter")?.addEventListener("change", () => {
-  renderTable();
-});
-document
-  .getElementById("taskSearch")
-  ?.addEventListener("input", (e) => {
-    console.log("SEARCH INPUT:", e.target.value);
-    renderTable();
-  });
-
-/* =====================
    LOAD TASKS
 ===================== */
 

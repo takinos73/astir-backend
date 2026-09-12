@@ -1418,3 +1418,17 @@ const filtered = source
 
   filtered.forEach(t => tbody.appendChild(buildRow(t)));
 }
+
+/* =====================
+   FILTER EVENTS
+===================== */
+
+getEl("machineFilter")?.addEventListener("change", () => {
+  renderTable();
+});
+document
+  .getElementById("taskSearch")
+  ?.addEventListener("input", (e) => {
+    console.log("SEARCH INPUT:", e.target.value);
+    renderTable();
+  });
