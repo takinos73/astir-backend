@@ -1263,3 +1263,158 @@ function buildRow(task) {
   return tr;
 
 }
+
+// =====================
+// RENDER TASKS TABLE (WITH FILTERS)
+// =====================
+function renderTable() {
+  const tbody = document.querySelector("#tasksTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const q = document.getElementById("taskSearch")?.value || "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const source = filterByTaskType(state.tasksData);
+console.log("renderTable(): tasksData =", state.tasksData.length, "source(after type) =", source.length, "type =", state.activeTaskTypeFilter);
+
+const filtered = source
+
+
+  // 🔍 SEARCH
+  .filter(t => matchesSearch(t, q))
+
+  // 🟨🔵 TASK TYPE FILTER (MASTER)
+.filter(t => {
+
+  const plannedOn =
+    document.querySelector('[data-type="planned"]')?.classList.contains("active");
+
+  const preventiveOn =
+    document.querySelector('[data-type="preventive"]')?.classList.contains("active");
+
+  // 🔵 και τα 2 ON → όλα
+  if (plannedOn && preventiveOn) {
+    return true;
+  }
+
+  // 🟢 μόνο preventive
+  if (preventiveOn) {
+    return isPreventive(t);
+  }
+
+  // 🟡 μόνο planned
+  if (plannedOn) {
+    return isPlannedManual(t);
+  }
+
+  // ⚠ safety (αν κατά λάθος είναι και τα 2 OFF → δείξε όλα)
+  return true;
+})
+
+
+    // MACHINE FILTER
+    .filter(t => {
+      if (state.activeAssetFilter === "all") return true;
+      return `${t.machine_name}||${t.serial_number}` === state.activeAssetFilter;
+    })
+
+    // =====================
+    // DATE FILTER (UNIFIED – FIXED)
+    // =====================
+    .filter(t => {
+      const hasDue = !!t.due_date;
+
+      // 🔴 Custom date range (priority)
+      if (state.taskDateFrom || state.taskDateTo) {
+        if (!hasDue) return false;
+
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+
+        if (state.taskDateFrom && due < state.taskDateFrom) return false;
+        if (state.taskDateTo && due > state.taskDateTo) return false;
+        return true;
+      }
+
+      // 🟢 Quick date filters
+      if (state.activeDateFilter === "today") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === today.getTime();
+      }
+
+      if (state.activeDateFilter === "week") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due >= today && due <= weekEnd;
+      }
+
+      if (state.activeDateFilter === "overdue") {
+        if (!hasDue) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due < today;
+      }
+
+      // ⚪ ALL → ΔΕΝ φιλτράρουμε τίποτα
+      return true;
+    })
+
+    // =====================
+    // SORT (STABLE & CORRECT)
+    // =====================
+    .sort((a, b) => {
+      const order = {
+        overdue: 0,
+        today: 1,
+        soon: 2,
+        ok: 3,
+        unknown: 4,
+        done: 5
+      };
+
+      const da = order[getDueState(a)] ?? 99;
+      const db = order[getDueState(b)] ?? 99;
+
+      if (da !== db) return da - db;
+
+      // secondary sort by due_date
+      if (!a.due_date && b.due_date) return 1;
+      if (!b.due_date && a.due_date) return -1;
+      if (!a.due_date && !b.due_date) return 0;
+
+      return new Date(a.due_date) - new Date(b.due_date);
+    });
+
+  // =====================
+  // UPDATE TASKS COUNT + DURATION
+  // =====================
+  const countEl = document.getElementById("tasksCountLabel");
+  if (countEl) {
+    const n = filtered.length;
+
+    const totalMinutes = filtered.reduce((sum, t) => {
+      return t.duration_min != null ? sum + Number(t.duration_min) : sum;
+    }, 0);
+
+    let label = `${n} task${n === 1 ? "" : "s"}`;
+
+    if (totalMinutes > 0) {
+      label += ` • ${formatDuration(totalMinutes)}`;
+    }
+
+    countEl.textContent = label;
+    countEl.classList.toggle("zero", n === 0);
+  }
+
+  filtered.forEach(t => tbody.appendChild(buildRow(t)));
+}
