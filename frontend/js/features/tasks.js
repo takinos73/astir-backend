@@ -36,7 +36,7 @@ function getTasksPageSize() {
   const rowHeight =
     sampleRow?.getBoundingClientRect().height || 44;
 
-  const bottomMargin = 40;
+  const bottomMargin = 50;
 
   const availableHeight =
     window.innerHeight
