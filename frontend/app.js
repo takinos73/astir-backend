@@ -1142,38 +1142,6 @@ function closeEditBreakdown() {
 }
 
 /* =====================
-   LOAD TASKS
-===================== */
-
-async function loadTasks() {
-  // 🔒 force-close asset dropdown before rebuild
-  const menu = document.getElementById("assetDropdownMenu");
-  if (menu) menu.classList.remove("open");
-
-  const res = await fetch(`${API}/tasks`);
-  state.tasksData = await res.json(); // ✅ ΜΟΝΟ ΑΥΤΟ
-
-  console.log("SAMPLE TASK:", state.tasksData[0]);
-
-  updateKpis();
-  loadCompletedKpi();
-
-  buildAssetDropdown();
-  initAssetDropdown();
-
-  renderTable();
-
-  if (typeof renderAssetDashboard === "function") {
-    renderAssetDashboard();
-  }
-
-  const assetsTab = document.getElementById("tab-assets");
-  if (assetsTab?.classList.contains("active")) {
-    renderAssetsCards();
-  }
-}
-
-/* =====================
    ADD TASK TYPE LOGIC
    Planned vs Unplanned (SAFE TOGGLE)
 ===================== */
