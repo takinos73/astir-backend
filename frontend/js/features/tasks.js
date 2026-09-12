@@ -3,6 +3,14 @@
 // =====================
 
 console.log("TASKS.JS LOADED");
+
+// =====================
+// TASKS PAGINATION
+// =====================
+
+const TASKS_PAGE_SIZE = 20;
+let tasksCurrentPage = 1;
+
 /* =====================
    LOAD TASKS
 ===================== */
@@ -1453,7 +1461,79 @@ const filtered = source
     countEl.classList.toggle("zero", n === 0);
   }
 
-  filtered.forEach(t => tbody.appendChild(buildRow(t)));
+  // =====================
+  // PAGINATION
+  // =====================
+
+  const totalTasks = filtered.length;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalTasks / TASKS_PAGE_SIZE)
+  );
+
+  // Safety: if filters reduce the number of pages
+  if (tasksCurrentPage > totalPages) {
+    tasksCurrentPage = totalPages;
+  }
+
+  if (tasksCurrentPage < 1) {
+    tasksCurrentPage = 1;
+  }
+
+  const startIndex =
+    (tasksCurrentPage - 1) * TASKS_PAGE_SIZE;
+
+  const endIndex =
+    Math.min(
+      startIndex + TASKS_PAGE_SIZE,
+      totalTasks
+    );
+
+  const pageTasks =
+    filtered.slice(startIndex, endIndex);
+
+  // Render only current page
+  pageTasks.forEach(t =>
+    tbody.appendChild(buildRow(t))
+  );
+
+  // =====================
+  // PAGINATION UI
+  // =====================
+
+  const infoEl =
+    document.getElementById("tasksPaginationInfo");
+
+  const pageLabel =
+    document.getElementById("tasksPageLabel");
+
+  const prevBtn =
+    document.getElementById("tasksPrevPage");
+
+  const nextBtn =
+    document.getElementById("tasksNextPage");
+
+  if (infoEl) {
+    infoEl.textContent =
+      totalTasks === 0
+        ? "Showing 0–0 of 0"
+        : `Showing ${startIndex + 1}–${endIndex} of ${totalTasks}`;
+  }
+
+  if (pageLabel) {
+    pageLabel.textContent =
+      `${tasksCurrentPage} / ${totalPages}`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled =
+      tasksCurrentPage <= 1;
+  }
+
+  if (nextBtn) {
+    nextBtn.disabled =
+      tasksCurrentPage >= totalPages;
+  }
 }
 
 // =====================
@@ -1499,9 +1579,9 @@ function printTasks() {
   });
 }
 
-  /* ===================================
-    TECHNICIANS DROPDOWN (BREAKDOWN TASK)
-  ===================================== */
+/* ===================================
+   TECHNICIANS DROPDOWN (BREAKDOWN TASK)
+ ===================================== */
   function populateBreakdownTechnicians() {
   const sel = document.getElementById("nt-technician");
   if (!sel || !Array.isArray(state.techniciansData)) return;
@@ -1574,4 +1654,24 @@ function applyAddTaskTypeUI(isPlanned) {
 document.getElementById("taskPlannedType")
   ?.addEventListener("change", e => {
     applyAddTaskTypeUI(e.target.value === "planned");
+  });
+
+// =====================
+// TASKS PAGINATION EVENTS
+// =====================
+
+document
+  .getElementById("tasksPrevPage")
+  ?.addEventListener("click", () => {
+    if (tasksCurrentPage <= 1) return;
+
+    tasksCurrentPage--;
+    renderTable();
+  });
+
+document
+  .getElementById("tasksNextPage")
+  ?.addEventListener("click", () => {
+    tasksCurrentPage++;
+    renderTable();
   });

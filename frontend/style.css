@@ -2286,3 +2286,236 @@ tr.history-unplanned {
   border-radius: 5px;
   margin-left: 4px;
 }
+
+/* =========================================================
+   TASKS TAB – TOOLBAR / FILTERS
+========================================================= */
+
+#tab-tasks .tasks-toolbar-panel {
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+#tab-tasks .tasks-toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+#tab-tasks .tasks-toolbar-primary {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+#tab-tasks .tasks-toolbar-secondary {
+  gap: 10px;
+}
+
+
+/* =========================================================
+   FILTER BUTTONS
+========================================================= */
+
+#tab-tasks .tasks-toolbar-panel .btn-secondary,
+#tab-tasks .tasks-toolbar-panel .asset-dropdown-btn {
+  min-height: 36px;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+#tab-tasks .task-type-btn {
+  font-weight: 600;
+}
+
+#tab-tasks .date-filter-btn {
+  min-width: 66px;
+}
+
+#tab-tasks .date-filter-btn.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+
+/* =========================================================
+   MACHINE DROPDOWN
+========================================================= */
+
+#tab-tasks .asset-dropdown {
+  min-width: 190px;
+}
+
+#tab-tasks .asset-dropdown-btn {
+  width: 100%;
+  text-align: left;
+}
+
+
+/* =========================================================
+   DATE RANGE
+========================================================= */
+
+#tab-tasks .date-range-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 4px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+#tab-tasks .date-range-pill input[type="date"] {
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+}
+
+#tab-tasks .date-range-label,
+#tab-tasks .date-range-sep {
+  opacity: 0.72;
+}
+
+
+/* =========================================================
+   TASK COUNT
+========================================================= */
+
+#tab-tasks .tasks-count-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+#tab-tasks .tasks-count-label.zero {
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+#tab-tasks .task-search {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 420px;
+  min-height: 36px;
+  border-radius: 9px;
+}
+
+
+/* =========================================================
+   TASK TABLE
+========================================================= */
+
+#tab-tasks .table-card {
+  margin-top: 4px;
+}
+
+#tab-tasks #tasksTable {
+  width: 100%;
+}
+
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+
+#tab-tasks .tasks-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 4px 2px;
+}
+
+#tab-tasks .tasks-pagination-info {
+  font-size: 0.88rem;
+  opacity: 0.72;
+}
+
+#tab-tasks .tasks-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#tab-tasks .tasks-page-label {
+  min-width: 58px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#tab-tasks .tasks-pagination-controls .btn-secondary {
+  min-height: 34px;
+  padding: 6px 11px;
+}
+
+#tab-tasks .tasks-pagination-controls .btn-secondary:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  #tab-tasks .tasks-toolbar-secondary {
+    align-items: stretch;
+  }
+
+  #tab-tasks .task-search {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  #tab-tasks .tasks-toolbar-panel {
+    padding: 10px;
+  }
+
+  #tab-tasks .tasks-toolbar-row {
+    align-items: stretch;
+  }
+
+  #tab-tasks .asset-dropdown,
+  #tab-tasks .task-search {
+    width: 100%;
+    max-width: none;
+  }
+
+  #tab-tasks .date-range-pill {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  #tab-tasks .tasks-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #tab-tasks .tasks-pagination-info {
+    text-align: center;
+  }
+
+  #tab-tasks .tasks-pagination-controls {
+    justify-content: center;
+  }
+}

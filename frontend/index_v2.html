@@ -3735,131 +3735,296 @@
   
 </div>
     
+  <!-- ===================== -->
+  <!-- TAB: TASKS -->
+  <!-- ===================== -->
+  <div id="tab-tasks">
+
+    <!-- KPIs -->
+    <section class="kpi-strip">
+      <article class="kpi-card">
+        <span class="kpi-label">Total</span>
+        <span id="kpiTotal" class="kpi-value">0</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Overdue</span>
+        <span id="kpiOverdue" class="kpi-value">0</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Due ≤ 7 days</span>
+        <span id="kpiSoon" class="kpi-value">0</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Completed</span>
+        <span id="kpiDone" class="kpi-value">0</span>
+      </article>
+    </section>
+
+
     <!-- ===================== -->
-    <!-- TAB: TASKS -->
+    <!-- TASKS TOOLBAR -->
     <!-- ===================== -->
-    <div id="tab-tasks">
+    <section class="tasks-toolbar-panel">
 
-      <!-- KPIs -->
-      <section class="kpi-strip">
-        <article class="kpi-card">
-          <span class="kpi-label">Total</span>
-          <span id="kpiTotal" class="kpi-value">0</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Overdue</span>
-          <span id="kpiOverdue" class="kpi-value">0</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Due ≤ 7 days</span>
-          <span id="kpiSoon" class="kpi-value">0</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Completed</span>
-          <span id="kpiDone" class="kpi-value">0</span>
-        </article>
-      </section>     
+      <!-- TYPE / DATE QUICK FILTERS -->
+      <div class="controls-row tasks-toolbar-row tasks-toolbar-primary">
 
-      <!-- FILTERS -->
+        <button
+          class="btn-secondary task-type-btn planned"
+          data-type="planned"
+          type="button"
+        >
+          🟨 Planned
+        </button>
 
-  <div class="controls-row">
-    <button class="btn-secondary task-type-btn planned" data-type="planned">
-            🟨 Planned
-    </button>
+        <button
+          class="btn-secondary task-type-btn preventive"
+          data-type="preventive"
+          type="button"
+        >
+          🔵 Preventive
+        </button>
 
-    <button class="btn-secondary task-type-btn preventive" data-type="preventive">
-            🔵 Preventive
-      </button>
-    <button class="btn-secondary date-filter-btn active" data-filter="all">All</button>
-    <button class="btn-secondary date-filter-btn" data-filter="today">Today</button>
-    <button class="btn-secondary date-filter-btn" data-filter="week">This Week</button>
-    <button class="btn-secondary date-filter-btn" data-filter="overdue">Overdue</button>                
+        <button
+          class="btn-secondary date-filter-btn active"
+          data-filter="all"
+          type="button"
+        >
+          All
+        </button>
 
-    <button class="btn-secondary" id="openHistoryBtn">📋 History</button>
-    <button class="btn-secondary" id="openAnalyticsBtn">📊 KPI / Analytics
-</button>
-    
-  </div>    
+        <button
+          class="btn-secondary date-filter-btn"
+          data-filter="today"
+          type="button"
+        >
+          Today
+        </button>
 
-<section class="controls-row">
-  <div class="asset-dropdown" id="assetDropdown">
-    <button class="asset-dropdown-btn" id="assetDropdownBtn">
-     All Machines
-    </button>
-    <div class="asset-dropdown-menu" id="assetDropdownMenu"></div>
-  </div>
+        <button
+          class="btn-secondary date-filter-btn"
+          data-filter="week"
+          type="button"
+        >
+          This Week
+        </button>
 
-  <button class="btn-secondary admin-only" id="addTaskBtn">➕ New Task</button>  
-  
-<div class="date-range-pill">
-  <span class="date-range-label">📅</span>
+        <button
+          class="btn-secondary date-filter-btn"
+          data-filter="overdue"
+          type="button"
+        >
+          Overdue
+        </button>
 
-  <input
-    id="taskDateFrom"
-    type="date"
-    onchange="onTaskDateRangeChange()"
-  />
+        <button
+          class="btn-secondary"
+          id="openHistoryBtn"
+          type="button"
+        >
+          📋 History
+        </button>
 
-  <span class="date-range-sep">→</span>
+        <button
+          class="btn-secondary"
+          id="openAnalyticsBtn"
+          type="button"
+        >
+          📊 KPI / Analytics
+        </button>
 
-  <input
-    id="taskDateTo"
-    type="date"
-    onchange="onTaskDateRangeChange()"
-  />
-</div>
-<span id="tasksCountLabel" class="tasks-count-label">
-  0 tasks
-</span>
-
-  <!-- 🔍 GLOBAL SEARCH -->
-  <input
-    type="text"
-    id="taskSearch"
-    placeholder="🔍 Search task / machine / serial"
-    class="task-search"
-  />
-  <button class="btn-secondary" id="printTasksBtn">🖨️ Print Tasks</button>
-</section>
-
-  <!-- =====================
-     GROUP DONE ACTION BAR (MOCK)
-     εμφανίζεται όταν υπάρχουν selected tasks (στο JS)
-===================== -->
-<section id="bulkActionsBar" class="bulk-actions" style="display:none;">
-  <div class="bulk-actions-left">
-    <strong id="bulkSelectedCount">0</strong>
-    <span>selected</span>
-    <button class="btn-secondary" id="bulkClearBtn" type="button">Clear</button>
-  </div>
-
-  <div class="bulk-actions-right">
-    <button class="btn-table" id="bulkDoneBtn" type="button">
-      ✔ Mark Selected as Done
-    </button>
-  </div>
-</section>
-
-      <!-- TASK TABLE -->
-      <div class="table-card">
-        <table id="tasksTable">
-          <thead>
-            <tr>
-              <th>Machine</th>
-              <th>Section</th>
-              <th>Unit</th>
-              <th style="width: 25%;">Task</th>
-              <th>Type</th>
-              <th>Due Date</th>
-              <th style="width: 7%;">Status</th>
-              <th style="width: 7%;">Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
       </div>
+
+
+      <!-- MACHINE / RANGE / SEARCH / ACTIONS -->
+      <div class="controls-row tasks-toolbar-row tasks-toolbar-secondary">
+
+        <div class="asset-dropdown" id="assetDropdown">
+          <button
+            class="asset-dropdown-btn"
+            id="assetDropdownBtn"
+            type="button"
+          >
+            All Machines
+          </button>
+
+          <div
+            class="asset-dropdown-menu"
+            id="assetDropdownMenu"
+          ></div>
+        </div>
+
+
+        <button
+          class="btn-secondary admin-only"
+          id="addTaskBtn"
+          type="button"
+        >
+          ➕ New Task
+        </button>
+
+
+        <div class="date-range-pill">
+          <span class="date-range-label">📅</span>
+
+          <input
+            id="taskDateFrom"
+            type="date"
+            onchange="onTaskDateRangeChange()"
+          />
+
+          <span class="date-range-sep">→</span>
+
+          <input
+            id="taskDateTo"
+            type="date"
+            onchange="onTaskDateRangeChange()"
+          />
+        </div>
+
+
+        <span
+          id="tasksCountLabel"
+          class="tasks-count-label"
+        >
+          0 tasks
+        </span>
+
+
+        <!-- GLOBAL SEARCH -->
+        <input
+          type="text"
+          id="taskSearch"
+          placeholder="🔍 Search task / machine / serial"
+          class="task-search"
+        />
+
+
+        <button
+          class="btn-secondary"
+          id="printTasksBtn"
+          type="button"
+        >
+          🖨️ Print Tasks
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================== -->
+    <!-- GROUP DONE ACTION BAR -->
+    <!-- ===================== -->
+    <section
+      id="bulkActionsBar"
+      class="bulk-actions"
+      style="display:none;"
+    >
+
+      <div class="bulk-actions-left">
+        <strong id="bulkSelectedCount">0</strong>
+        <span>selected</span>
+
+        <button
+          class="btn-secondary"
+          id="bulkClearBtn"
+          type="button"
+        >
+          Clear
+        </button>
+      </div>
+
+      <div class="bulk-actions-right">
+        <button
+          class="btn-table"
+          id="bulkDoneBtn"
+          type="button"
+        >
+          ✔ Mark Selected as Done
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- ===================== -->
+    <!-- TASK TABLE -->
+    <!-- ===================== -->
+    <div class="table-card">
+
+      <table id="tasksTable">
+
+        <thead>
+          <tr>
+            <th>Machine</th>
+            <th>Section</th>
+            <th>Unit</th>
+            <th style="width: 25%;">Task</th>
+            <th>Type</th>
+            <th>Due Date</th>
+            <th style="width: 7%;">Status</th>
+            <th style="width: 7%;">Action</th>
+          </tr>
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+
     </div>
 
+
+    <!-- ===================== -->
+    <!-- TASKS PAGINATION -->
+    <!-- ===================== -->
+    <div
+      id="tasksPagination"
+      class="tasks-pagination"
+    >
+
+      <div
+        id="tasksPaginationInfo"
+        class="tasks-pagination-info"
+      >
+        Showing 0–0 of 0
+      </div>
+
+      <div class="tasks-pagination-controls">
+
+        <button
+          id="tasksPrevPage"
+          type="button"
+          class="btn-secondary"
+          disabled
+        >
+          ‹ Previous
+        </button>
+
+        <span
+          id="tasksPageLabel"
+          class="tasks-page-label"
+        >
+          1 / 1
+        </span>
+
+        <button
+          id="tasksNextPage"
+          type="button"
+          class="btn-secondary"
+          disabled
+        >
+          Next ›
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
     
     <!-- ===================== -->
     <!-- TAB: DOCUMENTATION -->
@@ -4386,7 +4551,7 @@
 
   <!-- =====================
      ADD ASSET MODAL
-===================== -->
+  ===================== -->
   <div id="addAssetOverlay" class="modal-overlay" style="display:none;">
     <div class="modal-box modal-small">
     <h3>➕ Add Asset</h3>
