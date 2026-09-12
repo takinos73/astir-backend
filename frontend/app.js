@@ -2753,8 +2753,14 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     if (sel === "assets") {
       loadAssets();
     }
+
     if (sel === "technicians") {
       loadTechnicians();
+    }
+
+    if (sel === "tasks") {
+      tasksCurrentPage = 1;
+      renderTable();
     }
 
     if (sel === "reports") {
@@ -2765,7 +2771,9 @@ document.querySelectorAll(".main-tab").forEach(tab => {
     if (sel === "dashboard" && typeof renderAssetDashboard === "function") {
       renderAssetDashboard();
     }
+
     if (sel === "breakdowns") {
+      breakdownCurrentPage = 1;
       loadBreakdowns();
     }
 
