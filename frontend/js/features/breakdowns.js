@@ -157,6 +157,64 @@ async function loadBreakdowns() {
 
 }
 
+// =========================================================
+// BREAKDOWN AUTO PAGE SIZE
+// =========================================================
+
+function getBreakdownPageSize() {
+
+  const tbody =
+    document.getElementById("breakdownsTableBody");
+
+  const table =
+    tbody?.closest("table");
+
+  const pagination =
+    document.querySelector(".breakdown-pagination");
+
+  if (
+    !table ||
+    table.offsetParent === null
+  ) {
+    return breakdownPageSize;
+  }
+
+  const tableTop =
+    table.getBoundingClientRect().top;
+
+  const paginationHeight =
+    pagination?.getBoundingClientRect().height || 54;
+
+  const tableHeadHeight =
+    table.querySelector("thead")
+      ?.getBoundingClientRect().height || 40;
+
+  const sampleRow =
+    tbody.querySelector("tr");
+
+  const rowHeight =
+    sampleRow?.getBoundingClientRect().height || 58;
+
+  const bottomMargin = 50;
+
+  const availableHeight =
+    window.innerHeight
+    - tableTop
+    - tableHeadHeight
+    - paginationHeight
+    - bottomMargin;
+
+  const calculated =
+    Math.floor(
+      availableHeight / rowHeight
+    );
+
+  return Math.min(
+    25,
+    Math.max(6, calculated)
+  );
+}
+
 /* =========================================================
    BREAKDOWN FILTERS
 ========================================================= */
@@ -344,14 +402,17 @@ function applyBreakdownFilters() {
 
     });
 
-    const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filtered.length /
-        breakdownPageSize
-      )
-    );
+      const pageSize =
+        getBreakdownPageSize();
+
+      const totalPages =
+        Math.max(
+          1,
+          Math.ceil(
+            filtered.length /
+            pageSize
+          )
+        );
 
 
   if (
@@ -366,12 +427,12 @@ function applyBreakdownFilters() {
   const startIndex =
     (
       breakdownCurrentPage - 1
-    ) * breakdownPageSize;
+    ) * pageSize;
 
 
   const endIndex =
     startIndex +
-    breakdownPageSize;
+    pageSize;
 
 
   const pageRows =
@@ -388,7 +449,8 @@ function applyBreakdownFilters() {
 
   updateBreakdownPagination(
     filtered.length,
-    totalPages
+    totalPages,
+    pageSize
   );
 
 }
@@ -398,8 +460,10 @@ function applyBreakdownFilters() {
 ========================================================= */
 
 function updateBreakdownPagination(
+
   totalRows,
-  totalPages
+  totalPages,
+  pageSize
 ) {
 
   const info =
@@ -442,16 +506,15 @@ function updateBreakdownPagination(
       const from =
         (
           breakdownCurrentPage - 1
-        ) * breakdownPageSize + 1;
+        ) * pageSize + 1;
 
 
       const to =
         Math.min(
           breakdownCurrentPage *
-            breakdownPageSize,
+            pageSize,
           totalRows
         );
-
 
       info.textContent =
         `Showing ${from}–${to} of ${totalRows}`;
@@ -9501,6 +9564,36 @@ document.getElementById("clearVerifiedDowntimeBtn") ?.addEventListener("click", 
       );
 
     }
+
+  });
+
+  // =========================================================
+  // BREAKDOWN AUTO PAGE SIZE – RESIZE
+  // =========================================================
+
+  let breakdownResizeTimer = null;
+
+  window.addEventListener("resize", () => {
+
+    clearTimeout(
+      breakdownResizeTimer
+    );
+
+    breakdownResizeTimer =
+      setTimeout(() => {
+
+        const tab =
+          document.getElementById("tab-breakdowns");
+
+        if (
+          tab &&
+          tab.offsetParent !== null
+        ) {
+          breakdownCurrentPage = 1;
+          applyBreakdownFilters();
+        }
+
+      }, 150);
 
   });
 
