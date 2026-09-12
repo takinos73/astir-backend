@@ -25,7 +25,7 @@ function getTasksPageSize() {
   const tableTop = table.getBoundingClientRect().top;
 
   const paginationHeight =
-    pagination?.getBoundingClientRect().height || 54;
+    pagination?.getBoundingClientRect().height || 52;
 
   const tableHeadHeight =
     table.querySelector("thead")?.getBoundingClientRect().height || 40;
