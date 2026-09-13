@@ -478,20 +478,29 @@ function buildDailyBriefCritical() {
       "Asset";
 
     itemsHtml += `
-      <div class="daily-brief-critical-item">
+      <div class="daily-brief-critical-main">
 
-        <span class="daily-brief-critical-days">
-          ${t.overdueDays}d
-        </span>
+        <button
+          type="button"
+          class="daily-brief-focus-asset-link"
+          onclick="openAssetViewBySerial('${t.serial_number || ""}')"
+          title="Open Asset View"
+        >
+          ${line} · ${machine}
 
-        <div>
-          <strong>
-            ${line} · ${machine}
-          </strong>
+          ${
+            t.section
+              ? `
+                <span class="daily-brief-item-location">
+                  ${t.section}
+                </span>
+              `
+              : ""
+          }
+        </button>
 
-          <div class="daily-brief-item-text">
-            ${t.task || "Maintenance task"}
-          </div>
+        <div class="daily-brief-item-text">
+          ${t.task || "Maintenance task"}
         </div>
 
       </div>
