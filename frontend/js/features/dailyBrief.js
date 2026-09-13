@@ -477,8 +477,7 @@ function buildDailyBriefCritical() {
       t.machine ||
       "Asset";
 
-    itemsHtml += `
-      <div class="daily-brief-critical-main">
+    itemsHtml += `      
 
         <button
           type="button"
@@ -503,7 +502,7 @@ function buildDailyBriefCritical() {
           ${t.task || "Maintenance task"}
         </div>
 
-      </div>
+      
     `;
   });
 
