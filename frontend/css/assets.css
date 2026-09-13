@@ -565,7 +565,7 @@ tr.highlight-execution {
 
 /* Asset View (base layer) */
 #assetViewOverlay {
-  z-index: 1100;
+  z-index: 1101;
 }
 /* ⛔ ΜΗΝ κάνει scroll όλο το modal */
 #assetViewOverlay .modal-box {
