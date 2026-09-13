@@ -565,7 +565,7 @@ tr.highlight-execution {
 
 /* Asset View (base layer) */
 #assetViewOverlay {
-  z-index: 1000;
+  z-index: 1100;
 }
 /* ⛔ ΜΗΝ κάνει scroll όλο το modal */
 #assetViewOverlay .modal-box {
@@ -585,7 +585,7 @@ tr.highlight-execution {
 }
 /* History / Execution modal (above Asset View) */
 #historyViewOverlay {
-  z-index: 1100;
+  z-index: 1102;
 }
 .asset-view-footer {
   display: flex;
