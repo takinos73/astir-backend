@@ -1352,21 +1352,21 @@ function buildDailyBriefSafetyQuality() {
             title="Open Asset View"
           >
             ${line} · ${machine}
-          </button>
+                ${
+                  t.section
+                    ? `
+                      <div class="daily-brief-item-location">
+                        ${t.section}${t.unit ? ` / ${t.unit}` : ""}
+                      </div>
+                    `
+                    : ""
+                }
+            </button>
 
         <div class="daily-brief-item-text">
           ${t.task || "Maintenance task"}
         </div>
 
-        ${
-          t.section
-            ? `
-              <div class="daily-brief-item-location">
-                ${t.section}${t.unit ? ` / ${t.unit}` : ""}
-              </div>
-            `
-            : ""
-        }
 
         </div>
 
