@@ -1367,7 +1367,7 @@
 
   color: #f3f4f6;
 
-  font: inherit;
+  /*font: inherit;*/
   font-weight: 700;
 
   cursor: pointer;
