@@ -1358,14 +1358,12 @@ function buildDailyBriefSafetyQuality() {
                 t.section
                   ? `
                     <span class="daily-brief-item-location">
-                      ${t.section}${t.unit ? ` / ${t.unit}` : ""}
+                      ${t.section}
                     </span>
                   `
                   : ""
               }
-            </button>
-
-            
+            </button>            
 
           </div>
 
