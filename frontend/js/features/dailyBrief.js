@@ -1345,13 +1345,28 @@ function buildDailyBriefSafetyQuality() {
 
         <div>
 
-          <strong>
+          <button
+            type="button"
+            class="daily-brief-focus-asset-link"
+            onclick="openAssetViewBySerial('${t.serial_number || ""}')"
+            title="Open Asset View"
+          >
             ${line} · ${machine}
-          </strong>
+          </button>
 
-          <div class="daily-brief-item-text">
-            ${t.task || "Maintenance task"}
-          </div>
+        <div class="daily-brief-item-text">
+          ${t.task || "Maintenance task"}
+        </div>
+
+        ${
+          t.section
+            ? `
+              <div class="daily-brief-item-location">
+                ${t.section}${t.unit ? ` / ${t.unit}` : ""}
+              </div>
+            `
+            : ""
+        }
 
         </div>
 
