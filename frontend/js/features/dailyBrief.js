@@ -1343,32 +1343,36 @@ function buildDailyBriefSafetyQuality() {
           ${timingLabel}
         </span>
 
-        <div>
+        <div class="daily-brief-safety-main">
 
-          <button
-            type="button"
-            class="daily-brief-focus-asset-link"
-            onclick="openAssetViewBySerial('${t.serial_number || ""}')"
-            title="Open Asset View"
-          >
-            ${line} · ${machine}
-                ${
-                  t.section
-                    ? `
-                      <div class="daily-brief-item-location">
-                        ${t.section}${t.unit ? ` / ${t.unit}` : ""}
-                      </div>
-                    `
-                    : ""
-                }
+          <div class="daily-brief-safety-top">
+
+            <button
+              type="button"
+              class="daily-brief-focus-asset-link"
+              onclick="openAssetViewBySerial('${t.serial_number || ""}')"
+              title="Open Asset View"
+            >
+              ${line} · ${machine}
             </button>
 
-        <div class="daily-brief-item-text">
-          ${t.task || "Maintenance task"}
-        </div>
+            ${
+              t.section
+                ? `
+                  <span class="daily-brief-item-location">
+                    ${t.section}${t.unit ? ` / ${t.unit}` : ""}
+                  </span>
+                `
+                : ""
+            }
 
+          </div>
 
-        </div>
+          <div class="daily-brief-item-text">
+            ${t.task || "Maintenance task"}
+          </div>
+
+        </div>        
 
       </div>
 
