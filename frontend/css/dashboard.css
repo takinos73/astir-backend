@@ -1325,3 +1325,30 @@
 .daily-brief-focus-risk.watch {
   color: #f6c343;
 }
+
+.daily-brief-focus-asset-link {
+  padding: 0;
+  margin: 0;
+
+  background: none;
+  border: 0;
+
+  color: #f3f4f6;
+
+  font: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  text-align: left;
+
+  transition:
+    color 0.15s ease,
+    text-decoration-color 0.15s ease;
+}
+
+.daily-brief-focus-asset-link:hover {
+  color: #4ea8ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

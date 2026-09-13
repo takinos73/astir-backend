@@ -1723,9 +1723,14 @@ function buildDailyBriefFocus() {
 
           <div class="daily-brief-focus-top">
 
-            <strong>
+            <button
+              type="button"
+              class="daily-brief-focus-asset-link"
+              onclick="closeDailyBrief(); openAssetViewBySerial('${a.serial}')"
+              title="Open Asset View"
+            >
               ${a.line} · ${a.machine}
-            </strong>
+            </button>
 
             <span class="daily-brief-focus-risk ${a._risk.level}">
               ${a._risk.icon} ${a._risk.label}
