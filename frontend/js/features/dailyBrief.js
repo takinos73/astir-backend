@@ -1726,7 +1726,7 @@ function buildDailyBriefFocus() {
             <button
               type="button"
               class="daily-brief-focus-asset-link"
-              onclick="closeDailyBrief(); openAssetViewBySerial('${a.serial}')"
+              onclick="openAssetViewBySerial('${a.serial}')"
               title="Open Asset View"
             >
               ${a.line} · ${a.machine}
