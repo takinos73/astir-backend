@@ -141,8 +141,8 @@ async function openAssetViewBySerial(serial) {
             Number(currentAsset.id)
           )
         : [];
-      state.assetBreakdowns =
-        assetBreakdowns;
+      state.assetBreakdowns = assetBreakdowns;
+      renderAssetBreakdowns();
 
     if (
       state.assetAllTasks.length === 0 &&
@@ -482,6 +482,133 @@ function renderAssetTasksTable(tasks) {
   // 🔥 force reflow
   tasksWrap.offsetHeight;
   tbody.offsetHeight;
+}
+
+//================================
+//    ASSET BREAKDOWN TABLE
+//================================
+
+function renderAssetBreakdowns() {
+
+  const tbody =
+    document.querySelector(
+      "#assetBreakdownsTable tbody"
+    );
+
+  if (!tbody) return;
+
+
+  const breakdowns =
+    Array.isArray(state.assetBreakdowns)
+      ? state.assetBreakdowns
+      : [];
+
+
+  // =====================
+  // EMPTY STATE
+  // =====================
+
+  if (breakdowns.length === 0) {
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6">
+          No breakdowns recorded.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  // =====================
+  // SORT
+  // Latest first
+  // =====================
+
+  const rows =
+    [...breakdowns]
+      .sort((a, b) =>
+        new Date(b.started_at) -
+        new Date(a.started_at)
+      );
+
+
+  // =====================
+  // RENDER
+  // =====================
+
+  tbody.innerHTML =
+    rows.map(b => {
+
+      const id =
+        b.id ?? "";
+
+      const started =
+        typeof formatBreakdownDate === "function"
+          ? formatBreakdownDate(b.started_at)
+          : (
+              b.started_at
+                ? new Date(
+                    b.started_at
+                  ).toLocaleString()
+                : "—"
+            );
+
+      const status =
+        b.status || "—";
+
+      const title =
+        b.title || "—";
+
+      const downSeconds =
+        Number(
+          b.effective_down_seconds || 0
+        );
+
+      const downtime =
+        typeof formatBreakdownSeconds === "function"
+          ? formatBreakdownSeconds(
+              downSeconds
+            )
+          : `${Math.round(
+              downSeconds / 60
+            )}m`;
+
+
+      return `
+        <tr>
+
+          <td>
+            BD-${String(id).padStart(5, "0")}
+          </td>
+
+          <td>
+            ${started}
+          </td>
+
+          <td>
+            ${title}
+          </td>
+
+          <td>
+            ${status}
+          </td>
+
+          <td>
+            ${downtime}
+          </td>
+
+          <td>
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
 }
 
 // =====================

@@ -4262,6 +4262,7 @@
     <div class="asset-tabs">
       <button class="asset-tab active" data-tab="overview">Overview</button>
       <button class="asset-tab" data-tab="active">Active Tasks</button>
+      <button class="asset-tab" data-tab="breakdowns">Breakdowns</button>
       <button class="asset-tab" data-tab="history">History</button>
     </div>
 
@@ -4391,6 +4392,53 @@
         </div>
       </div>
     </div>
+
+    <!-- =====================
+        TAB: BREAKDOWNS
+    ===================== -->
+
+    <div class="asset-tab-panel" data-panel="breakdowns">
+
+      <div class="asset-breakdowns-header">
+
+        <div>
+          <h4>Breakdowns</h4>
+
+          <p class="docs-subtitle">
+            Breakdown incidents recorded for this asset
+          </p>
+        </div>
+
+      </div>
+
+      <div class="table-card asset-breakdowns-table">
+
+        <table id="assetBreakdownsTable">
+
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Started</th>
+              <th>Fault</th>
+              <th>Status</th>
+              <th>Effective DOWN</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td colspan="6">
+                No breakdowns recorded.
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>    
 
 <!-- =====================
      TAB: HISTORY
