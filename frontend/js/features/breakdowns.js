@@ -5039,7 +5039,7 @@ td {
   <div class="footer">
 
     <div>
-      ASTIR VIANEX S.A. | CMMS
+      ASTIR S.A. | CMMS
     </div>
 
     <div>
