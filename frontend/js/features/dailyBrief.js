@@ -564,7 +564,7 @@ function buildDailyBriefCritical() {
    RELIABILITY WATCH
 ===================================================== */
 
-function buildDailyBriefReliability() {
+async function buildDailyBriefReliability() {
 
   const content =
     document.getElementById("dailyBriefReliabilityContent");
@@ -574,279 +574,407 @@ function buildDailyBriefReliability() {
 
   if (!content || !countEl) return;
 
-  const executions =
-    Array.isArray(state.executionsData)
-      ? state.executionsData
-      : [];
-
 
   // =====================
-  // LAST 30 DAYS
+  // LOADING
   // =====================
 
-  const now = new Date();
+  content.innerHTML = `
+    <span class="daily-brief-muted">
+      Checking recent breakdown activity...
+    </span>
+  `;
 
-  const fromDate = new Date(now);
-  fromDate.setDate(fromDate.getDate() - 30);
-  fromDate.setHours(0, 0, 0, 0);
+  countEl.textContent = "—";
 
 
-  // =====================
-  // BREAKDOWNS ONLY
-  // =====================
+  try {
 
-  const breakdowns = executions.filter(e => {
+    // =====================
+    // LOAD REAL BREAKDOWN INCIDENTS
+    // =====================
 
-    if (!e.executed_at) return false;
+    const response =
+      await fetch("/breakdowns");
 
-  const execType = getExecutionType(e);
-
-  if (
-    execType !== "restoration" &&
-    execType !== "unplanned"
-  ) {
-    return false;
-  }
-
-    const executedAt =
-      new Date(e.executed_at);
-
-    if (Number.isNaN(executedAt.getTime())) {
-      return false;
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load breakdowns (${response.status})`
+      );
     }
 
-    return executedAt >= fromDate &&
-           executedAt <= now;
-  });
+    const data =
+      await response.json();
+
+    const allBreakdowns =
+      Array.isArray(data)
+        ? data
+        : [];
 
 
-  // =====================
-  // GROUP BY ASSET
-  // =====================
+    // =====================
+    // LAST 30 DAYS
+    // Based on incident started_at
+    // =====================
 
-  const assetStats = {};
+    const now =
+      new Date();
 
-  breakdowns.forEach(e => {
+    const fromDate =
+      new Date(now);
 
-    const machine =
-      e.machine ||
-      e.machine_name ||
-      "Asset";
+    fromDate.setDate(
+      fromDate.getDate() - 30
+    );
 
-    const serial =
-      e.serial_number ||
-      "";
-
-    const line =
-      e.line ||
-      e.line_code ||
-      "—";
-
-    /*
-      Serial is normally unique.
-      Machine is included as fallback.
-    */
-    const key =
-      `${machine}||${serial}`;
-
-    if (!assetStats[key]) {
-
-      assetStats[key] = {
-        machine,
-        serial,
-        line,
-        breakdowns: 0,
-        totalMinutes: 0,
-        lastBreakdown: null
-      };
-
-    }
+    fromDate.setHours(
+      0, 0, 0, 0
+    );
 
 
-    const stat =
-      assetStats[key];
+    const breakdowns =
+      allBreakdowns.filter(b => {
 
-    stat.breakdowns++;
-
-    stat.totalMinutes +=
-      Number(e.duration_min) || 0;
-
-
-    const executedAt =
-      new Date(e.executed_at);
-
-    if (
-      !stat.lastBreakdown ||
-      executedAt > stat.lastBreakdown
-    ) {
-      stat.lastBreakdown =
-        executedAt;
-    }
-
-  });
-
-
-  // =====================
-  // RELIABILITY WATCH
-  // >= 2 breakdowns / 30d
-  // =====================
-
-  const watchAssets =
-    Object.values(assetStats)
-      .filter(stat =>
-        stat.breakdowns >= 2
-      )
-      .sort((a, b) => {
-
-        // More breakdowns first
-        if (
-          b.breakdowns !==
-          a.breakdowns
-        ) {
-          return (
-            b.breakdowns -
-            a.breakdowns
-          );
+        if (!b.started_at) {
+          return false;
         }
 
-        // Then highest service time
+        const startedAt =
+          new Date(b.started_at);
+
+        if (
+          Number.isNaN(
+            startedAt.getTime()
+          )
+        ) {
+          return false;
+        }
+
         return (
-          b.totalMinutes -
-          a.totalMinutes
+          startedAt >= fromDate &&
+          startedAt <= now
         );
+
       });
 
 
-  // Count = affected assets
-  countEl.textContent =
-    watchAssets.length;
+    // =====================
+    // GROUP BY ASSET
+    //
+    // IMPORTANT:
+    // 1 Breakdown record = 1 incident
+    // Restoration Tasks / Executions
+    // are NOT counted here.
+    // =====================
+
+    const assetStats = {};
 
 
-  // =====================
-  // NO RELIABILITY ALERT
-  // =====================
+    breakdowns.forEach(b => {
 
-  if (watchAssets.length === 0) {
+      const assetId =
+        b.asset_id;
 
-    content.innerHTML = `
-      <span class="daily-brief-good">
-        ✓ No repeated breakdown pattern detected
-        in the last 30 days.
-      </span>
-    `;
+      const machine =
+        b.asset_model ||
+        "Asset";
 
-    return;
-  }
+      const serial =
+        b.asset_serial ||
+        "";
 
+      const line =
+        b.line_name ||
+        "—";
 
-  // =====================
-  // TOTAL BREAKDOWNS
-  // for watched assets
-  // =====================
-
-  const watchedBreakdowns =
-    watchAssets.reduce(
-      (sum, stat) =>
-        sum + stat.breakdowns,
-      0
-    );
-
- 
-  // =====================
-  // TOP 3 ASSETS
-  // =====================
-
-  const topAssets =
-    watchAssets.slice(0, 3);
-
-  let itemsHtml = "";
+      const key =
+        String(assetId);
 
 
-  topAssets.forEach(stat => {
+      if (!assetStats[key]) {
 
-    itemsHtml += `
-      <div class="daily-brief-reliability-item">
+        assetStats[key] = {
+          assetId,
+          machine,
+          serial,
+          line,
 
-        <span class="daily-brief-breakdown-count">
-          ${stat.breakdowns}×
-        </span>
+          breakdowns: 0,
 
-        <div class="daily-brief-reliability-info">
+          totalDownSeconds: 0,
 
-          <strong>
-            ${stat.line} · ${stat.machine}
-          </strong>
+          lastBreakdown: null
+        };
 
-          ${
-            stat.serial
-              ? `
-                <span class="daily-brief-reliability-sn">
-                  SN: ${stat.serial}
-                </span>
-              `
-              : ""
+      }
+
+
+      const stat =
+        assetStats[key];
+
+
+      // One database Breakdown row
+      // equals one Breakdown incident
+      stat.breakdowns++;
+
+
+      // Canonical DT Model v1 value
+      stat.totalDownSeconds +=
+        Number(
+          b.effective_down_seconds
+        ) || 0;
+
+
+      const startedAt =
+        new Date(b.started_at);
+
+
+      if (
+        !stat.lastBreakdown ||
+        startedAt > stat.lastBreakdown
+      ) {
+
+        stat.lastBreakdown =
+          startedAt;
+
+      }
+
+    });
+
+
+    // =====================
+    // RELIABILITY WATCH
+    // >= 2 incidents / 30d
+    //
+    // Sort:
+    // 1. Most Breakdown incidents
+    // 2. Highest Effective DOWN time
+    // =====================
+
+    const watchAssets =
+      Object.values(assetStats)
+        .filter(stat =>
+          stat.breakdowns >= 2
+        )
+        .sort((a, b) => {
+
+          if (
+            b.breakdowns !==
+            a.breakdowns
+          ) {
+
+            return (
+              b.breakdowns -
+              a.breakdowns
+            );
+
           }
 
-          <div class="daily-brief-item-text">
+          return (
+            b.totalDownSeconds -
+            a.totalDownSeconds
+          );
+
+        });
+
+
+    // Count = affected assets
+    countEl.textContent =
+      watchAssets.length;
+
+
+    // =====================
+    // NO RELIABILITY ALERT
+    // =====================
+
+    if (
+      watchAssets.length === 0
+    ) {
+
+      content.innerHTML = `
+        <span class="daily-brief-good">
+          ✓ No repeated breakdown pattern detected
+          in the last 30 days.
+        </span>
+      `;
+
+      return;
+
+    }
+
+
+    // =====================
+    // TOTAL BREAKDOWNS
+    // for watched assets
+    // =====================
+
+    const watchedBreakdowns =
+      watchAssets.reduce(
+        (sum, stat) =>
+          sum + stat.breakdowns,
+        0
+      );
+
+
+    // =====================
+    // FORMAT DOWN TIME
+    // =====================
+
+    const formatDownSeconds =
+      seconds => {
+
+        const total =
+          Math.max(
+            0,
+            Math.round(
+              Number(seconds) || 0
+            )
+          );
+
+        if (total <= 0) {
+          return "0m";
+        }
+
+        const hours =
+          Math.floor(
+            total / 3600
+          );
+
+        const minutes =
+          Math.floor(
+            (total % 3600) / 60
+          );
+
+        if (
+          hours > 0 &&
+          minutes > 0
+        ) {
+          return `${hours}h ${minutes}m`;
+        }
+
+        if (hours > 0) {
+          return `${hours}h`;
+        }
+
+        return `${minutes}m`;
+
+      };
+
+
+    // =====================
+    // TOP 3 ASSETS
+    // =====================
+
+    const topAssets =
+      watchAssets.slice(0, 3);
+
+    let itemsHtml = "";
+
+
+    topAssets.forEach(stat => {
+
+      itemsHtml += `
+        <div class="daily-brief-reliability-item">
+
+          <span class="daily-brief-breakdown-count">
+            ${stat.breakdowns}×
+          </span>
+
+          <div class="daily-brief-reliability-info">
+
+            <button
+              type="button"
+              class="daily-brief-focus-asset-link"
+              onclick="openAssetViewBySerial('${stat.serial || ""}')"
+              title="Open Asset View"
+            >
+              ${stat.line} · ${stat.machine}
+            </button>
 
             ${
-              stat.totalMinutes > 0
+              stat.serial
                 ? `
-                  Service time:
-                  ${formatDurationMinutes(stat.totalMinutes
-                  )}
+                  <span class="daily-brief-reliability-sn">
+                    SN: ${stat.serial}
+                  </span>
                 `
-                : "Repeated breakdown activity"
+                : ""
             }
+
+            <div class="daily-brief-item-text">
+              Effective DOWN:
+              ${formatDownSeconds(
+                stat.totalDownSeconds
+              )}
+            </div>
 
           </div>
 
         </div>
+      `;
+
+    });
+
+
+    // =====================
+    // BUILD CONTENT
+    // =====================
+
+    content.innerHTML = `
+
+      <div class="daily-brief-main-message">
+
+        <strong>${watchAssets.length}</strong>
+        asset${watchAssets.length !== 1 ? "s" : ""}
+        showing repeated breakdown activity
+
+        in the last 30 days
+
+        (<strong>${watchedBreakdowns}</strong>
+        breakdown${watchedBreakdowns !== 1 ? "s" : ""}).
 
       </div>
+
+
+      <div class="daily-brief-reliability-list">
+        ${itemsHtml}
+      </div>
+
+
+      ${
+        watchAssets.length > 3
+          ? `
+            <div class="daily-brief-more">
+              + ${watchAssets.length - 3}
+              more asset${watchAssets.length - 3 !== 1 ? "s" : ""}
+              requiring attention
+            </div>
+          `
+          : ""
+      }
+
     `;
-  });
 
 
-  // =====================
-  // BUILD CONTENT
-  // =====================
+  } catch (err) {
 
-  content.innerHTML = `
+    console.error(
+      "DAILY BRIEF RELIABILITY ERROR:",
+      err
+    );
 
-    <div class="daily-brief-main-message">
+    countEl.textContent = "—";
 
-      <strong>${watchAssets.length}</strong>
-      asset${watchAssets.length !== 1 ? "s" : ""}
-      showing repeated breakdown activity
+    content.innerHTML = `
+      <span class="daily-brief-warning">
+        Unable to load reliability data.
+      </span>
+    `;
 
-      in the last 30 days
+  }
 
-      (<strong>${watchedBreakdowns}</strong>
-      breakdown${watchedBreakdowns !== 1 ? "s" : ""}).
-
-    </div>
-
-
-    <div class="daily-brief-reliability-list">
-      ${itemsHtml}
-    </div>
-
-
-    ${
-      watchAssets.length > 3
-        ? `
-          <div class="daily-brief-more">
-            + ${watchAssets.length - 3}
-            more asset${watchAssets.length - 3 !== 1 ? "s" : ""}
-            requiring attention
-          </div>
-        `
-        : ""
-    }
-
-  `;
 }
+
 /* =====================================================
    DAILY BRIEF
    MAINTENANCE PULSE
