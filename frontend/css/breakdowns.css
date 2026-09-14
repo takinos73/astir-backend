@@ -24,6 +24,10 @@
   --bd-shadow: 0 18px 55px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
+#breakdownDetailOverlay {
+  z-index: 1190;
+}
+
 /* =====================
    SHARED MODAL SURFACE
 ===================== */
