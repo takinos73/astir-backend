@@ -985,7 +985,7 @@ async function buildDailyBriefReliability() {
    MAINTENANCE PULSE
 ===================================================== */
 
-function buildDailyBriefPulse() {
+async function buildDailyBriefPulse() {
 
   const content =
     document.getElementById("dailyBriefPulseContent");
@@ -1123,21 +1123,70 @@ function buildDailyBriefPulse() {
   });
 
 
-  // =====================
-  // BREAKDOWNS LAST 30D
-  // =====================
+// =====================
+// BREAKDOWNS LAST 30D
+// New Breakdown Incident Model
+//
+// 1 Breakdown row = 1 incident
+// Restoration executions are NOT
+// counted as Breakdowns.
+// =====================
 
-  const breakdowns30 =
-    executions30.filter(e => {
+let breakdowns30 = null;
 
-      const execType = getExecutionType(e);
+try {
+
+  const response =
+    await fetch("/breakdowns");
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load breakdowns (${response.status})`
+    );
+  }
+
+  const data =
+    await response.json();
+
+  const breakdowns =
+    Array.isArray(data)
+      ? data
+      : [];
+
+
+  breakdowns30 =
+    breakdowns.filter(b => {
+
+      if (!b.started_at) {
+        return false;
+      }
+
+      const startedAt =
+        new Date(b.started_at);
+
+      if (
+        Number.isNaN(
+          startedAt.getTime()
+        )
+      ) {
+        return false;
+      }
 
       return (
-        execType === "restoration" ||
-        execType === "unplanned"
+        startedAt >= last30 &&
+        startedAt <= new Date()
       );
+
     }).length;
 
+} catch (err) {
+
+  console.error(
+    "DAILY BRIEF PULSE BREAKDOWNS ERROR:",
+    err
+  );
+
+}
 
   // =====================
   // PREVENTIVE SHARE
@@ -1189,7 +1238,7 @@ function buildDailyBriefPulse() {
         <span class="daily-brief-pulse-label">
           Breakdowns 30d
         </span>
-        <strong>${breakdowns30}</strong>
+        <strong>${breakdowns30 ?? "—"}</strong>
       </div>
 
       <div class="daily-brief-pulse-item">
