@@ -762,7 +762,9 @@ function renderBreakdownsTable(breakdowns) {
         <tr>
 
           <td>
-            BD-${String(id).padStart(5, "0")}
+            <span class="breakdown-id">
+              BD-${String(b.id || "").padStart(5, "0")}
+            </span>
           </td>
 
           <td>
