@@ -876,9 +876,14 @@ async function buildDailyBriefReliability() {
       itemsHtml += `
         <div class="daily-brief-reliability-item">
 
-          <span class="daily-brief-breakdown-count">
+          <button
+            type="button"
+            class="daily-brief-breakdown-count daily-brief-breakdown-link"
+            onclick="openAssetBreakdowns('${stat.serial || ""}')"
+            title="View ${stat.breakdowns} breakdowns for this asset"
+          >
             ${stat.breakdowns}×
-          </span>
+          </button>
 
           <div class="daily-brief-reliability-info">
 

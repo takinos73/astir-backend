@@ -3515,7 +3515,6 @@ function formatMachineStateDuration(seconds) {
 
 }
 
-
 /* =========================================================
    FORMAT MACHINE STATE DATETIME
 ========================================================= */
@@ -3663,7 +3662,6 @@ function renderMachineStateControls(data) {
   `;
 
 }
-
 
 /* =========================================================
    CHANGE BREAKDOWN MACHINE STATE
@@ -3818,7 +3816,6 @@ async function changeBreakdownMachineState(newState) {
   }
 
 }
-
 
 /* =========================================================
    DISABLE / ENABLE MACHINE STATE BUTTONS
@@ -9595,4 +9592,53 @@ document.getElementById("clearVerifiedDowntimeBtn") ?.addEventListener("click", 
       }, 150);
 
   });
+
+/* =========================================================
+   OPEN BREAKDOWNS TAB WITH ASSET SEARCH
+    Used by:
+    - Asset Details → Breakdowns
+========================================================= */
+
+async function openAssetBreakdowns(serial) {
+
+  if (!serial) return;
+
+  // Close Daily Brief
+  closeDailyBrief();
+
+
+  // Activate Breakdowns main tab
+  const breakdownTab =
+    document.querySelector(
+      '.main-tab[data-tab="breakdowns"]'
+    );
+
+  if (breakdownTab) {
+    breakdownTab.click();
+  }
+
+
+  // Fill existing Breakdown search
+  const searchInput =
+    document.getElementById(
+      "breakdownSearchFilter"
+    );
+
+  if (searchInput) {
+    searchInput.value = serial;
+  }
+
+
+  // Reset pagination
+  breakdownCurrentPage = 1;
+
+
+  // Ensure fresh Breakdown data
+  await loadBreakdowns();
+
+
+  // Apply asset search
+  applyBreakdownFilters();
+
+}
 

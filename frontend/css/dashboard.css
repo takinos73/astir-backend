@@ -1096,6 +1096,17 @@
   font-weight: 700;
 }
 
+.daily-brief-breakdown-link {
+  cursor: pointer;
+  border: 0;
+  font: inherit;
+}
+
+.daily-brief-breakdown-link:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
 .daily-brief-reliability-info {
   min-width: 0;
 }
