@@ -577,12 +577,13 @@ function renderAssetBreakdowns() {
               downSeconds / 60
             )}m`;
 
-
       return `
         <tr>
 
           <td>
-            BD-${String(id).padStart(5, "0")}
+            <span class="asset-breakdown-id">
+              BD-${String(id).padStart(5, "0")}
+            </span>
           </td>
 
           <td>

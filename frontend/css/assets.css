@@ -1209,3 +1209,36 @@ tr.highlight-execution {
   color: #ff5555;
   letter-spacing: 0.02em;
 }
+
+/* ========================
+  ASSET VIEW BREAKBOWN TAB
+========================= */
+
+.asset-breakdowns-table {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.asset-breakdowns-table table {
+  width: 100%;
+}
+
+.asset-breakdowns-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #111827;
+}
+
+.asset-breakdown-id {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: rgba(239, 83, 80, 0.10);
+  border: 1px solid rgba(239, 83, 80, 0.22);
+  color: #ef5350;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
