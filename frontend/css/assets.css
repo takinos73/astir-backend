@@ -1242,3 +1242,13 @@ tr.highlight-execution {
   letter-spacing: .03em;
   white-space: nowrap;
 }
+
+.asset-breakdown-link {
+  cursor: pointer;
+}
+
+.asset-breakdown-link:hover {
+  background: rgba(239, 83, 80, 0.18);
+  border-color: rgba(239, 83, 80, 0.38);
+  color: #ff6b67;
+}

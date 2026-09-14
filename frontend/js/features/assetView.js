@@ -581,9 +581,14 @@ function renderAssetBreakdowns() {
         <tr>
 
           <td>
-            <span class="asset-breakdown-id">
+            <button
+              type="button"
+              class="asset-breakdown-id asset-breakdown-link"
+              onclick="openBreakdownDetail(${id})"
+              title="Open Breakdown"
+            >
               BD-${String(id).padStart(5, "0")}
-            </span>
+            </button>
           </td>
 
           <td>
