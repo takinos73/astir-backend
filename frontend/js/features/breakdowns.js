@@ -9594,7 +9594,7 @@ document.getElementById("clearVerifiedDowntimeBtn") ?.addEventListener("click", 
   });
 
 /* =========================================================
-   OPEN BREAKDOWNS TAB WITH ASSET SEARCH
+   OPEN ASSET BREAKDOWN TAB 
     Used by:
     - Asset Details → Breakdowns
 ========================================================= */
@@ -9603,42 +9603,11 @@ async function openAssetBreakdowns(serial) {
 
   if (!serial) return;
 
-  // Close Daily Brief
-  closeDailyBrief();
+  // Open Asset View
+  await openAssetViewBySerial(serial);
 
-
-  // Activate Breakdowns main tab
-  const breakdownTab =
-    document.querySelector(
-      '.main-tab[data-tab="breakdowns"]'
-    );
-
-  if (breakdownTab) {
-    breakdownTab.click();
-  }
-
-
-  // Fill existing Breakdown search
-  const searchInput =
-    document.getElementById(
-      "breakdownSearchFilter"
-    );
-
-  if (searchInput) {
-    searchInput.value = serial;
-  }
-
-
-  // Reset pagination
-  breakdownCurrentPage = 1;
-
-
-  // Ensure fresh Breakdown data
-  await loadBreakdowns();
-
-
-  // Apply asset search
-  applyBreakdownFilters();
+  // Open directly on Breakdowns tab
+  activateAssetTab("breakdowns");
 
 }
 
