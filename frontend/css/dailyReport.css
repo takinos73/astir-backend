@@ -367,10 +367,10 @@ body {
 }
 
 .daily-report-donut-chart {
-  width: 180px;
-  height: 180px;
+  width: 230px;
+  height: 230px;
 
-  flex: 0 0 180px;
+  flex: 0 0 230px;
 }
 
 .daily-report-donut-legend {
@@ -378,7 +378,7 @@ body {
 
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .daily-report-legend-row {
@@ -386,9 +386,9 @@ body {
   grid-template-columns: 9px 1fr auto;
   align-items: center;
 
-  gap: 7px;
+  gap: 8px;
 
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .daily-report-legend-dot {
