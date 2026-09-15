@@ -341,10 +341,10 @@ body {
 }
 
 .daily-report-donut-chart {
-  width: 150px;
-  height: 150px;
+  width: 180px;
+  height: 180px;
 
-  flex: 0 0 150px;
+  flex: 0 0 180px;
 }
 
 .daily-report-donut-legend {
@@ -727,6 +727,10 @@ body {
     page-break-before: always;
   }
 
+    .daily-report-print-toolbar {
+    display: none !important;
+  }
+
 }
 
 .daily-report-chart-placeholder {
@@ -758,4 +762,43 @@ body {
 
   font-size: 10px;
   color: #94a3b8;
+}
+
+/* =====================================================
+   PRINT TOOLBAR
+===================================================== */
+
+.daily-report-print-toolbar {
+  position: fixed;
+
+  top: 14px;
+  right: 18px;
+
+  z-index: 9999;
+
+  display: flex;
+  justify-content: flex-end;
+}
+
+.daily-report-print-btn {
+  padding: 9px 14px;
+
+  border: 1px solid #1f4e78;
+  border-radius: 6px;
+
+  background: #1f4e78;
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 3px 10px
+    rgba(15, 23, 42, 0.15);
+}
+
+.daily-report-print-btn:hover {
+  background: #173c5d;
 }
