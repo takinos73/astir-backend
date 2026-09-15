@@ -2498,11 +2498,10 @@ const avgEffectiveDownSeconds =
 
     breakdownByLineSection = `
 
-      <div class="report-keep-together">
+      <h3>
+        Breakdown Performance by Line
+      </h3>
 
-        <h3>
-          Breakdown Performance by Line
-        </h3>
 
       <table>
 
@@ -2616,9 +2615,7 @@ const avgEffectiveDownSeconds =
 
       </div>
 
-      </div>
-
-      `;
+    `;
 
   }
       
