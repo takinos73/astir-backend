@@ -283,12 +283,38 @@ body {
    DONUT AREA
 ===================================================== */
 
-.daily-report-donut-area {
-  min-height: 88mm;
+/* =====================
+   DONUT CHARTS
+===================== */
 
+.daily-report-donut-area {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 240px;
+}
+
+.daily-report-donut {
+  width: 220px;
+  height: 220px;
+  flex: 0 0 220px;
+}
+
+.daily-report-donut svg {
+  width: 220px;
+  height: 220px;
+  display: block;
+}
+
+.daily-report-donut-center {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.daily-report-donut-sub {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 
@@ -774,6 +800,29 @@ body {
 
   .daily-report-kpi-grid {
     margin-bottom: 8px;
+  }
+
+    .daily-report-donut-area {
+    min-height: 66mm;
+  }
+
+  .daily-report-donut {
+    width: 190px;
+    height: 190px;
+    flex: 0 0 190px;
+  }
+
+  .daily-report-donut svg {
+    width: 190px;
+    height: 190px;
+  }
+
+  .daily-report-donut-center {
+    font-size: 21px;
+  }
+
+  .daily-report-donut-sub {
+    font-size: 10px;
   }
 
 }
