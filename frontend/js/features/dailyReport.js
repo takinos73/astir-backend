@@ -660,14 +660,12 @@ async function buildDailyReportHtml() {
         )
     )
 
-      .replace(
-        "{{BREAKDOWN_OUTCOME_CHART}}",
-        `
-          <div class="daily-report-chart-placeholder">
-            Breakdown Outcome chart
-          </div>
-        `
-      )
+    .replace(
+    "{{BREAKDOWN_OUTCOME_CHART}}",
+    renderDailyReportBreakdownOutcomeChart(
+        data.breakdownOutcome
+    )
+    )
 
       .replace(
         "{{RELIABILITY_IMPACT_CHART}}",
