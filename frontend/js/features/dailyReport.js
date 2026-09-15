@@ -1308,6 +1308,290 @@ async function buildDailyReportData() {
   };
 }
 
+function buildDailyReportPage1Summary(data) {
+
+  const completed =
+    Number(
+      data.kpis?.completed || 0
+    );
+
+  const newBreakdowns =
+    Number(
+      data.kpis?.newBreakdowns || 0
+    );
+
+  const closed =
+    Number(
+      data.breakdownOutcome?.closed || 0
+    );
+
+  const stillActive =
+    Number(
+      data.breakdownOutcome?.active || 0
+    );
+
+  const effectiveDown =
+    formatDailyReportSeconds(
+      data.kpis?.effectiveDownSeconds || 0
+    );
+
+
+  return `
+    <strong>${completed}</strong>
+    maintenance executions completed
+    &nbsp;·&nbsp;
+
+    <strong>${newBreakdowns}</strong>
+    new Breakdown incidents
+    &nbsp;·&nbsp;
+
+    <strong>${closed}</strong>
+    closed
+    &nbsp;·&nbsp;
+
+    <strong>${stillActive}</strong>
+    still active from this period
+    &nbsp;·&nbsp;
+
+    <strong>${effectiveDown}</strong>
+    Effective DOWN
+  `;
+}
+
+function buildDailyReportInsights(data) {
+
+  const rows = [];
+
+
+  /* =====================
+     TOP RELIABILITY IMPACT
+  ====================== */
+
+  const topAsset =
+    Array.isArray(
+      data.reliabilityImpact
+    )
+      ? data.reliabilityImpact[0]
+      : null;
+
+
+  if (
+    topAsset &&
+    Number(
+      topAsset.effectiveDownSeconds
+    ) > 0
+  ) {
+
+    rows.push(`
+      <div class="daily-report-insight-row">
+
+        <span
+          class="daily-report-insight-mark"
+          style="background:#d64545;"
+        ></span>
+
+        <div>
+          <strong>
+            Highest reliability impact:
+          </strong>
+
+          ${topAsset.line} · ${topAsset.asset}
+          with
+
+          <strong>
+            ${formatDailyReportSeconds(
+              topAsset.effectiveDownSeconds
+            )}
+          </strong>
+
+          Effective DOWN across
+
+          <strong>
+            ${topAsset.incidents}
+          </strong>
+
+          Breakdown
+          ${topAsset.incidents === 1 ? "incident" : "incidents"}.
+        </div>
+
+      </div>
+    `);
+
+  } else {
+
+    rows.push(`
+      <div class="daily-report-insight-row">
+
+        <span
+          class="daily-report-insight-mark"
+          style="background:#27ae60;"
+        ></span>
+
+        <div>
+          No Breakdown Effective DOWN was recorded
+          from incidents opened during this reporting period.
+        </div>
+
+      </div>
+    `);
+  }
+
+
+  /* =====================
+     BUSIEST LINE
+  ====================== */
+
+  const busiestLine =
+    Array.isArray(
+      data.lineActivity
+    ) &&
+    data.lineActivity.length > 0
+
+      ? [...data.lineActivity]
+          .sort(
+            (a, b) =>
+              Number(b.total || 0) -
+              Number(a.total || 0)
+          )[0]
+
+      : null;
+
+
+  if (
+    busiestLine &&
+    Number(
+      busiestLine.total
+    ) > 0
+  ) {
+
+    rows.push(`
+      <div class="daily-report-insight-row">
+
+        <span
+          class="daily-report-insight-mark"
+          style="background:#2f80ed;"
+        ></span>
+
+        <div>
+          <strong>
+            Highest maintenance activity:
+          </strong>
+
+          ${busiestLine.line}
+
+          with
+
+          <strong>
+            ${busiestLine.total}
+          </strong>
+
+          completed
+          ${busiestLine.total === 1 ? "execution" : "executions"}.
+        </div>
+
+      </div>
+    `);
+  }
+
+
+  /* =====================
+     CURRENT ACTIVE BD
+  ====================== */
+
+  const activeNow =
+    Number(
+      data.kpis?.activeBreakdowns || 0
+    );
+
+
+  rows.push(`
+    <div class="daily-report-insight-row">
+
+      <span
+        class="daily-report-insight-mark"
+        style="background:${
+          activeNow > 0
+            ? "#e67e22"
+            : "#27ae60"
+        };"
+      ></span>
+
+      <div>
+
+        ${
+          activeNow > 0
+            ? `
+              <strong>
+                ${activeNow}
+              </strong>
+
+              Breakdown
+              ${activeNow === 1 ? "incident is" : "incidents are"}
+              currently still open.
+            `
+            : `
+              No Breakdown incidents are currently open.
+            `
+        }
+
+      </div>
+
+    </div>
+  `);
+
+
+  /* =====================
+     RESTORATION ACTIVITY
+  ====================== */
+
+  const restorations =
+    Number(
+      data.executionMix?.restoration || 0
+    );
+
+
+  rows.push(`
+    <div class="daily-report-insight-row">
+
+      <span
+        class="daily-report-insight-mark"
+        style="background:${
+          restorations > 0
+            ? "#e67e22"
+            : "#7b8da6"
+        };"
+      ></span>
+
+      <div>
+
+        ${
+          restorations > 0
+            ? `
+              <strong>
+                ${restorations}
+              </strong>
+
+              Restoration
+              ${restorations === 1 ? "execution was" : "executions were"}
+              completed during the last 24 hours.
+            `
+            : `
+              No Restoration executions were completed
+              during the reporting period.
+            `
+        }
+
+      </div>
+
+    </div>
+  `);
+
+
+  return rows.join("");
+}
+
+
+
 /* =====================================================
    BUILD HTML
    Phase 1:
@@ -1417,27 +1701,19 @@ async function buildDailyReportHtml() {
     )
     )
 
-      .replace(
-        "{{PAGE1_SUMMARY}}",
-        `
-          ${data.kpis.completed}
-          maintenance tasks completed ·
-          ${data.kpis.newBreakdowns}
-          new Breakdown incidents ·
-          ${formatDailyReportSeconds(
-            data.kpis.effectiveDownSeconds
-          )}
-          Effective DOWN.
-        `
-      )
+    .replace(
+    "{{PAGE1_SUMMARY}}",
+    buildDailyReportPage1Summary(
+        data
+    )
+    )
 
-      .replace(
-        "{{REPORT_INSIGHTS}}",
-        `
-          Daily reliability insights
-          will be added after chart implementation.
-        `
-      );
+    .replace(
+    "{{REPORT_INSIGHTS}}",
+    buildDailyReportInsights(
+        data
+    )
+    )
 
 
   return template;
