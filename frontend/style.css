@@ -1414,6 +1414,9 @@ tr.history-unplanned {
 #dailyBriefOverlay{
   z-index: 1090;
 }
+.modal-box modal-wide history-view-box{
+  z-index: 3000;
+}
 /* =====================
    CONFIRM DONE MODAL – ALWAYS ON TOP
 ===================== */
