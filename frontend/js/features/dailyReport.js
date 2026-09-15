@@ -623,6 +623,195 @@ function renderDailyReportBreakdownOutcomeChart(
   `;
 }
 
+function buildDailyReportReliabilityImpact(breakdowns) {
+
+  const byAsset =
+    new Map();
+
+
+  breakdowns.forEach(b => {
+
+    const assetId =
+      b.asset_id ?? "unknown";
+
+
+    if (!byAsset.has(assetId)) {
+
+      byAsset.set(
+        assetId,
+        {
+          assetId,
+
+          line:
+            b.line_name ||
+            b.line_code ||
+            "—",
+
+          asset:
+            b.asset_model ||
+            b.machine_name ||
+            b.asset_name ||
+            b.asset_serial ||
+            `Asset ${assetId}`,
+
+          incidents: 0,
+
+          effectiveDownSeconds: 0
+        }
+      );
+    }
+
+
+    const item =
+      byAsset.get(assetId);
+
+
+    item.incidents++;
+
+
+    item.effectiveDownSeconds +=
+      Number(
+        b.effective_down_seconds || 0
+      );
+
+  });
+
+
+  return Array.from(
+    byAsset.values()
+  )
+    .sort(
+      (a, b) => {
+
+        if (
+          b.effectiveDownSeconds !==
+          a.effectiveDownSeconds
+        ) {
+
+          return (
+            b.effectiveDownSeconds -
+            a.effectiveDownSeconds
+          );
+        }
+
+        return (
+          b.incidents -
+          a.incidents
+        );
+      }
+    )
+    .slice(0, 5);
+}
+
+function renderDailyReportReliabilityImpactChart(items) {
+
+  if (
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No Breakdown reliability impact
+        during the reporting period.
+      </div>
+    `;
+  }
+
+
+  const maxDown =
+    Math.max(
+      ...items.map(
+        item =>
+          Number(
+            item.effectiveDownSeconds || 0
+          )
+      ),
+      0
+    );
+
+
+  const rows =
+    items
+      .map(item => {
+
+        const downSeconds =
+          Number(
+            item.effectiveDownSeconds || 0
+          );
+
+
+        const widthPct =
+          maxDown > 0
+            ? Math.max(
+                0,
+                Math.min(
+                  100,
+                  downSeconds *
+                  100 /
+                  maxDown
+                )
+              )
+            : 0;
+
+
+        const label =
+          `${item.line} · ${item.asset}`;
+
+
+        const incidentLabel =
+          item.incidents === 1
+            ? "1 BD"
+            : `${item.incidents} BD`;
+
+
+        return `
+          <div class="daily-report-bar-row">
+
+            <div
+              class="daily-report-bar-label"
+              title="${label}"
+            >
+              ${label}
+            </div>
+
+
+            <div class="daily-report-bar-track">
+
+              <div
+                class="daily-report-bar-fill"
+                style="width:${widthPct}%;"
+              ></div>
+
+            </div>
+
+
+            <div class="daily-report-bar-value">
+
+              ${formatDailyReportSeconds(
+                downSeconds
+              )}
+
+              ·
+
+              ${incidentLabel}
+
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  return `
+    <div class="daily-report-bars">
+      ${rows}
+    </div>
+  `;
+}
+
 /* =====================================================
    BUILD DAILY REPORT DATA
 ===================================================== */
@@ -716,9 +905,14 @@ async function buildDailyReportData() {
     });
 
 
-  const breakdownOutcome =
-    buildDailyReportBreakdownOutcome(
-      newBreakdowns24h
+    const breakdownOutcome =
+        buildDailyReportBreakdownOutcome(
+        newBreakdowns24h
+        );
+
+    const reliabilityImpact =
+    buildDailyReportReliabilityImpact(
+        newBreakdowns24h
     );
 
 
@@ -776,6 +970,8 @@ async function buildDailyReportData() {
 
     breakdownOutcome,
 
+    reliabilityImpact,
+
     activeBreakdowns,
 
     kpis: {
@@ -794,7 +990,6 @@ async function buildDailyReportData() {
 
   };
 }
-
 
 /* =====================================================
    BUILD HTML
@@ -891,14 +1086,12 @@ async function buildDailyReportHtml() {
     )
     )
 
-      .replace(
-        "{{RELIABILITY_IMPACT_CHART}}",
-        `
-          <div class="daily-report-chart-placeholder">
-            Reliability Impact chart
-          </div>
-        `
-      )
+    .replace(
+    "{{RELIABILITY_IMPACT_CHART}}",
+    renderDailyReportReliabilityImpactChart(
+        data.reliabilityImpact
+    )
+    )
 
       .replace(
         "{{LINE_ACTIVITY_CHART}}",
@@ -934,7 +1127,6 @@ async function buildDailyReportHtml() {
 
   return template;
 }
-
 
 /* =====================================================
    PREVIEW
