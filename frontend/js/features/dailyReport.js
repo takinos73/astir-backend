@@ -812,6 +812,316 @@ function renderDailyReportReliabilityImpactChart(items) {
   `;
 }
 
+function buildDailyReportLineActivity(executions) {
+
+  const byLine =
+    new Map();
+
+
+  executions.forEach(e => {
+
+    const line =
+      String(
+        e.line ||
+        e.line_code ||
+        e.line_name ||
+        "Unassigned"
+      ).trim();
+
+
+    if (!byLine.has(line)) {
+
+      byLine.set(
+        line,
+        {
+          line,
+          preventive: 0,
+          planned: 0,
+          restoration: 0,
+          legacyUnplanned: 0,
+          total: 0
+        }
+      );
+    }
+
+
+    const item =
+      byLine.get(line);
+
+
+    /* =====================
+       RESTORATION
+       Highest priority
+    ====================== */
+
+    if (
+      e.breakdown_id !== null &&
+      e.breakdown_id !== undefined
+    ) {
+
+      item.restoration++;
+
+    }
+
+
+    /* =====================
+       PREVENTIVE
+    ====================== */
+
+    else if (
+      e.frequency_hours != null &&
+      Number(
+        e.frequency_hours
+      ) > 0
+    ) {
+
+      item.preventive++;
+
+    }
+
+
+    /* =====================
+       LEGACY UNPLANNED
+    ====================== */
+
+    else if (
+      e.is_planned === false
+    ) {
+
+      item.legacyUnplanned++;
+
+    }
+
+
+    /* =====================
+       PLANNED
+    ====================== */
+
+    else {
+
+      item.planned++;
+
+    }
+
+
+    item.total++;
+
+  });
+
+
+  return Array.from(
+    byLine.values()
+  )
+    .sort(
+      (a, b) =>
+        String(a.line).localeCompare(
+          String(b.line),
+          "el",
+          {
+            numeric: true
+          }
+        )
+    );
+}
+
+function renderDailyReportLineActivityChart(
+  items
+) {
+
+  if (
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No maintenance executions
+        during the reporting period.
+      </div>
+    `;
+  }
+
+
+  const maxTotal =
+    Math.max(
+      ...items.map(
+        item =>
+          Number(
+            item.total || 0
+          )
+      ),
+      1
+    );
+
+
+  const rows =
+    items
+      .map(item => {
+
+        const preventiveWidth =
+          item.preventive *
+          100 /
+          maxTotal;
+
+
+        const plannedWidth =
+          item.planned *
+          100 /
+          maxTotal;
+
+
+        const restorationWidth =
+          item.restoration *
+          100 /
+          maxTotal;
+
+
+        const legacyWidth =
+          item.legacyUnplanned *
+          100 /
+          maxTotal;
+
+
+        return `
+          <div class="daily-report-stacked-row">
+
+            <div class="daily-report-stacked-label">
+              ${item.line}
+            </div>
+
+
+            <div
+              class="daily-report-stacked-track"
+              title="${item.total} completed executions"
+            >
+
+              ${
+                item.preventive > 0
+                  ? `
+                    <div
+                      class="daily-report-stacked-segment"
+                      style="
+                        width:${preventiveWidth}%;
+                        background:#2f80ed;
+                      "
+                      title="Preventive: ${item.preventive}"
+                    ></div>
+                  `
+                  : ""
+              }
+
+
+              ${
+                item.planned > 0
+                  ? `
+                    <div
+                      class="daily-report-stacked-segment"
+                      style="
+                        width:${plannedWidth}%;
+                        background:#7b8da6;
+                      "
+                      title="Planned: ${item.planned}"
+                    ></div>
+                  `
+                  : ""
+              }
+
+
+              ${
+                item.restoration > 0
+                  ? `
+                    <div
+                      class="daily-report-stacked-segment"
+                      style="
+                        width:${restorationWidth}%;
+                        background:#e67e22;
+                      "
+                      title="Restoration: ${item.restoration}"
+                    ></div>
+                  `
+                  : ""
+              }
+
+
+              ${
+                item.legacyUnplanned > 0
+                  ? `
+                    <div
+                      class="daily-report-stacked-segment"
+                      style="
+                        width:${legacyWidth}%;
+                        background:#c0392b;
+                      "
+                      title="Legacy Unplanned: ${item.legacyUnplanned}"
+                    ></div>
+                  `
+                  : ""
+              }
+
+            </div>
+
+
+            <div class="daily-report-stacked-total">
+              ${item.total}
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  return `
+
+    <div class="daily-report-stacked-bars">
+
+      ${rows}
+
+    </div>
+
+
+    <div class="daily-report-chart-legend">
+
+      <div class="daily-report-chart-legend-item">
+        <span
+          class="daily-report-chart-legend-swatch"
+          style="background:#2f80ed;"
+        ></span>
+        Preventive
+      </div>
+
+
+      <div class="daily-report-chart-legend-item">
+        <span
+          class="daily-report-chart-legend-swatch"
+          style="background:#7b8da6;"
+        ></span>
+        Planned
+      </div>
+
+
+      <div class="daily-report-chart-legend-item">
+        <span
+          class="daily-report-chart-legend-swatch"
+          style="background:#e67e22;"
+        ></span>
+        Restoration
+      </div>
+
+
+      <div class="daily-report-chart-legend-item">
+        <span
+          class="daily-report-chart-legend-swatch"
+          style="background:#c0392b;"
+        ></span>
+        Legacy Unplanned
+      </div>
+
+    </div>
+  `;
+}
+
 /* =====================================================
    BUILD DAILY REPORT DATA
 ===================================================== */
@@ -867,6 +1177,11 @@ async function buildDailyReportData() {
   const executionMix =
     buildDailyReportExecutionMix(
       executions24h
+    );
+
+    const lineActivity =
+    buildDailyReportLineActivity(
+        executions24h
     );
 
 
@@ -963,6 +1278,8 @@ async function buildDailyReportData() {
     executions24h,
 
     executionMix,
+
+    lineActivity,
 
     breakdowns,
 
@@ -1093,14 +1410,12 @@ async function buildDailyReportHtml() {
     )
     )
 
-      .replace(
-        "{{LINE_ACTIVITY_CHART}}",
-        `
-          <div class="daily-report-chart-placeholder">
-            Maintenance Activity by Line chart
-          </div>
-        `
-      )
+    .replace(
+    "{{LINE_ACTIVITY_CHART}}",
+    renderDailyReportLineActivityChart(
+        data.lineActivity
+    )
+    )
 
       .replace(
         "{{PAGE1_SUMMARY}}",
