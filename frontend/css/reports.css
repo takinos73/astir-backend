@@ -619,3 +619,19 @@ tbody tr:nth-child(even) {
 .kpi-mttr-table {
   margin-top: 6px;
 }
+
+.report-section-compact {
+  margin-bottom: 6px;
+}
+
+.report-breakdown-by-line {
+  margin-top: 0;
+  break-before: avoid;
+  page-break-before: avoid;
+}
+
+.report-breakdown-by-line h3 {
+  margin-top: 6px;
+  break-after: avoid;
+  page-break-after: avoid;
+}
