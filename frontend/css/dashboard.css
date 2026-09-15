@@ -1398,3 +1398,29 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.dashboard-brief-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-daily-report {
+  padding: 8px 12px;
+
+  border: 1px solid #cfd8e3;
+  border-radius: 6px;
+
+  background: #ffffff;
+  color: #1f4e78;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.btn-daily-report:hover {
+  background: #f4f7fb;
+  border-color: #9fb4cc;
+}

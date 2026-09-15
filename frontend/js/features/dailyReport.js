@@ -1772,7 +1772,25 @@ async function openDailyReportPreview() {
   }
 }
 
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
+    const btn =
+      document.getElementById(
+        "openDailyReportBtn"
+      );
 
+    if (!btn) return;
+
+    btn.addEventListener(
+      "click",
+      () => {
+        openDailyReportPreview();
+      }
+    );
+
+  }
+);
 
 
