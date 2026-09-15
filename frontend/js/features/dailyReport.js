@@ -156,6 +156,259 @@ async function loadDailyReportBreakdowns() {
     : [];
 }
 
+function buildDailyReportExecutionMix(executions) {
+
+  const mix = {
+    preventive: 0,
+    planned: 0,
+    restoration: 0,
+    legacyUnplanned: 0
+  };
+
+
+  executions.forEach(e => {
+
+    // Restoration has priority
+    if (
+      e.breakdown_id !== null &&
+      e.breakdown_id !== undefined
+    ) {
+
+      mix.restoration++;
+
+    }
+
+    // Preventive
+    else if (
+      e.frequency_hours != null &&
+      Number(e.frequency_hours) > 0
+    ) {
+
+      mix.preventive++;
+
+    }
+
+    // Legacy Unplanned
+    else if (
+      e.is_planned === false
+    ) {
+
+      mix.legacyUnplanned++;
+
+    }
+
+    // Planned
+    else {
+
+      mix.planned++;
+
+    }
+
+  });
+
+
+  mix.total =
+    mix.preventive +
+    mix.planned +
+    mix.restoration +
+    mix.legacyUnplanned;
+
+
+  return mix;
+}
+
+function renderDailyReportExecutionMixChart(mix) {
+
+    const total =
+    Number(mix.total) || 0;
+
+
+  if (total === 0) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No completed maintenance executions
+        during the reporting period.
+      </div>
+    `;
+  }
+
+
+  const items = [
+
+    {
+      label: "Preventive",
+      value: mix.preventive,
+      color: "#2f80ed"
+    },
+
+    {
+      label: "Planned",
+      value: mix.planned,
+      color: "#7b8da6"
+    },
+
+    {
+      label: "Restoration",
+      value: mix.restoration,
+      color: "#e67e22"
+    },
+
+    {
+      label: "Legacy Unplanned",
+      value: mix.legacyUnplanned,
+      color: "#c0392b"
+    }
+
+  ];
+
+
+  const radius = 52;
+
+  const circumference =
+    2 * Math.PI * radius;
+
+
+  let cumulative = 0;
+
+
+  const circles =
+    items
+      .filter(item =>
+        item.value > 0
+      )
+      .map(item => {
+
+        const percent =
+          item.value / total;
+
+        const dash =
+          circumference *
+          percent;
+
+        const offset =
+          -circumference *
+          cumulative;
+
+        cumulative += percent;
+
+
+        return `
+          <circle
+            cx="80"
+            cy="80"
+            r="${radius}"
+            fill="none"
+            stroke="${item.color}"
+            stroke-width="22"
+            stroke-dasharray="${dash} ${circumference - dash}"
+            stroke-dashoffset="${offset}"
+            transform="rotate(-90 80 80)"
+          />
+        `;
+
+      })
+      .join("");
+
+
+  const legend =
+    items
+      .map(item => {
+
+        const pct =
+          total > 0
+            ? Math.round(
+                item.value *
+                100 /
+                total
+              )
+            : 0;
+
+
+        return `
+          <div class="daily-report-legend-row">
+
+            <span
+              class="daily-report-legend-dot"
+              style="background:${item.color};"
+            ></span>
+
+            <span class="daily-report-legend-label">
+              ${item.label}
+            </span>
+
+            <span class="daily-report-legend-value">
+              ${item.value}
+              ·
+              ${pct}%
+            </span>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  return `
+
+    <div class="daily-report-donut-layout">
+
+
+      <div class="daily-report-donut-chart">
+
+        <svg
+          viewBox="0 0 160 160"
+          role="img"
+          aria-label="Maintenance Execution Mix"
+        >
+
+          <circle
+            cx="80"
+            cy="80"
+            r="${radius}"
+            fill="none"
+            stroke="#edf1f5"
+            stroke-width="22"
+          />
+
+          ${circles}
+
+
+          <text
+            x="80"
+            y="76"
+            text-anchor="middle"
+            class="daily-report-donut-center-value"
+          >
+            ${total}
+          </text>
+
+
+          <text
+            x="80"
+            y="94"
+            text-anchor="middle"
+            class="daily-report-donut-center-label"
+          >
+            COMPLETED
+          </text>
+
+        </svg>
+
+      </div>
+
+
+      <div class="daily-report-donut-legend">
+
+        ${legend}
+
+      </div>
+
+
+    </div>
+  `;
+}
 
 /* =====================================================
    BUILD DAILY REPORT DATA
@@ -207,6 +460,11 @@ async function buildDailyReportData() {
         executedAt <= to
       );
     });
+
+    const executionMix =
+        buildDailyReportExecutionMix(
+            executions24h
+        );
 
 
   /* =====================
@@ -287,6 +545,8 @@ async function buildDailyReportData() {
     },
 
     executions24h,
+
+    executionMix,
 
     breakdowns,
 
@@ -393,14 +653,12 @@ async function buildDailyReportHtml() {
   template =
     template
 
-      .replace(
+    .replace(
         "{{EXECUTION_MIX_CHART}}",
-        `
-          <div class="daily-report-chart-placeholder">
-            Execution Mix chart
-          </div>
-        `
-      )
+        renderDailyReportExecutionMixChart(
+            data.executionMix
+        )
+    )
 
       .replace(
         "{{BREAKDOWN_OUTCOME_CHART}}",
@@ -508,3 +766,8 @@ async function openDailyReportPreview() {
     );
   }
 }
+
+
+
+
+
