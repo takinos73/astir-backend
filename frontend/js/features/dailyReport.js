@@ -410,6 +410,219 @@ function renderDailyReportExecutionMixChart(mix) {
   `;
 }
 
+function buildDailyReportBreakdownOutcome(breakdowns) {
+
+  const outcome = {
+    closed: 0,
+    active: 0,
+    total: 0
+  };
+
+
+  breakdowns.forEach(b => {
+
+    const status =
+      String(
+        b.status || ""
+      )
+        .trim()
+        .toUpperCase();
+
+
+    if (status === "CLOSED") {
+
+      outcome.closed++;
+
+    } else {
+
+      outcome.active++;
+
+    }
+
+  });
+
+
+  outcome.total =
+    outcome.closed +
+    outcome.active;
+
+
+  return outcome;
+}
+
+function renderDailyReportBreakdownOutcomeChart(
+  outcome
+) {
+
+  const total =
+    Number(outcome.total) || 0;
+
+
+  if (total === 0) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No Breakdown incidents opened
+        during the reporting period.
+      </div>
+    `;
+  }
+
+
+  const items = [
+
+    {
+      label: "Closed",
+      value: outcome.closed,
+      color: "#27ae60"
+    },
+
+    {
+      label: "Still Active",
+      value: outcome.active,
+      color: "#d64545"
+    }
+
+  ];
+
+
+  const radius = 52;
+
+  const circumference =
+    2 * Math.PI * radius;
+
+
+  let cumulative = 0;
+
+
+  const circles =
+    items
+      .filter(item =>
+        item.value > 0
+      )
+      .map(item => {
+
+        const percent =
+          item.value / total;
+
+        const dash =
+          circumference *
+          percent;
+
+        const offset =
+          -circumference *
+          cumulative;
+
+        cumulative += percent;
+
+
+        return `
+          <circle
+            cx="80"
+            cy="80"
+            r="${radius}"
+            fill="none"
+            stroke="${item.color}"
+            stroke-width="22"
+            stroke-dasharray="${dash} ${circumference - dash}"
+            stroke-dashoffset="${offset}"
+            transform="rotate(-90 80 80)"
+          />
+        `;
+
+      })
+      .join("");
+
+
+  const legend =
+    items
+      .map(item => {
+
+        const pct =
+          total > 0
+            ? Math.round(
+                item.value *
+                100 /
+                total
+              )
+            : 0;
+
+
+        return `
+          <div class="daily-report-legend-row">
+
+            <span
+              class="daily-report-legend-dot"
+              style="background:${item.color};"
+            ></span>
+
+            <span class="daily-report-legend-label">
+              ${item.label}
+            </span>
+
+            <span class="daily-report-legend-value">
+              ${item.value} · ${pct}%
+            </span>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  return `
+    <div class="daily-report-donut-layout">
+
+      <div class="daily-report-donut-chart">
+
+        <svg
+          viewBox="0 0 160 160"
+          role="img"
+          aria-label="Breakdown Outcome"
+        >
+
+          <circle
+            cx="80"
+            cy="80"
+            r="${radius}"
+            fill="none"
+            stroke="#edf1f5"
+            stroke-width="22"
+          />
+
+          ${circles}
+
+          <text
+            x="80"
+            y="76"
+            text-anchor="middle"
+            class="daily-report-donut-center-value"
+          >
+            ${total}
+          </text>
+
+          <text
+            x="80"
+            y="94"
+            text-anchor="middle"
+            class="daily-report-donut-center-label"
+          >
+            INCIDENTS
+          </text>
+
+        </svg>
+
+      </div>
+
+      <div class="daily-report-donut-legend">
+        ${legend}
+      </div>
+
+    </div>
+  `;
+}
+
 /* =====================================================
    BUILD DAILY REPORT DATA
 ===================================================== */
@@ -461,10 +674,11 @@ async function buildDailyReportData() {
       );
     });
 
-    const executionMix =
-        buildDailyReportExecutionMix(
-            executions24h
-        );
+
+  const executionMix =
+    buildDailyReportExecutionMix(
+      executions24h
+    );
 
 
   /* =====================
@@ -502,6 +716,12 @@ async function buildDailyReportData() {
     });
 
 
+  const breakdownOutcome =
+    buildDailyReportBreakdownOutcome(
+      newBreakdowns24h
+    );
+
+
   /* =====================
      ACTIVE BREAKDOWNS
      Current plant status
@@ -513,7 +733,9 @@ async function buildDailyReportData() {
       return (
         String(
           b.status || ""
-        ).toUpperCase() !==
+        )
+          .trim()
+          .toUpperCase() !==
         "CLOSED"
       );
     });
@@ -551,6 +773,8 @@ async function buildDailyReportData() {
     breakdowns,
 
     newBreakdowns24h,
+
+    breakdownOutcome,
 
     activeBreakdowns,
 
