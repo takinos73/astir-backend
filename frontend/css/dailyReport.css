@@ -1,0 +1,748 @@
+/* =====================================================
+   DAILY MAINTENANCE REPORT
+   Isolated stylesheet
+===================================================== */
+
+
+/* =====================================================
+   PAGE SETUP
+===================================================== */
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 11px;
+  color: #172033;
+  background: #ffffff;
+
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+
+/* =====================================================
+   REPORT PAGE
+===================================================== */
+
+.daily-report-page {
+  box-sizing: border-box;
+
+  width: 100%;
+  min-height: 185mm;
+
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+}
+
+.daily-report-page-break {
+  break-before: page;
+  page-break-before: always;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.daily-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-bottom: 7px;
+  margin-bottom: 12px;
+
+  border-bottom: 2px solid #1f4e78;
+}
+
+.daily-report-header-small {
+  margin-bottom: 10px;
+}
+
+.daily-report-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.daily-report-company {
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #1f4e78;
+}
+
+.daily-report-system {
+  font-size: 9px;
+  color: #6b7280;
+}
+
+.daily-report-header-meta {
+  text-align: right;
+
+  font-size: 10px;
+  line-height: 1.4;
+
+  font-weight: 700;
+  color: #334155;
+}
+
+.daily-report-header-date {
+  margin-top: 2px;
+
+  font-size: 9px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+
+/* =====================================================
+   TITLE
+===================================================== */
+
+.daily-report-title-block {
+  margin-bottom: 11px;
+}
+
+.daily-report-title {
+  margin: 0;
+
+  font-size: 22px;
+  line-height: 1.05;
+
+  color: #111827;
+}
+
+.daily-report-subtitle {
+  margin-top: 4px;
+
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.daily-report-period {
+  display: inline-block;
+
+  margin-top: 7px;
+  padding: 4px 9px;
+
+  border: 1px solid #d6dde8;
+  border-radius: 5px;
+
+  background: #f7f9fc;
+
+  font-size: 9px;
+  font-weight: 700;
+  color: #334155;
+}
+
+
+/* =====================================================
+   KPI GRID
+===================================================== */
+
+.daily-report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+
+  margin-bottom: 11px;
+}
+
+.daily-report-kpi {
+  box-sizing: border-box;
+
+  min-height: 62px;
+
+  padding: 9px 11px;
+
+  border: 1px solid #dce3ec;
+  border-radius: 7px;
+
+  background: #f8fafc;
+
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.daily-report-kpi-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  color: #64748b;
+}
+
+.daily-report-kpi-value {
+  margin-top: 4px;
+
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 800;
+
+  color: #1f4e78;
+}
+
+.daily-report-kpi-sub {
+  margin-top: 5px;
+
+  font-size: 8.5px;
+  color: #7b8798;
+}
+
+
+/* =====================================================
+   CHART GRID
+===================================================== */
+
+.daily-report-chart-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-report-chart-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+
+/* =====================================================
+   CHART CARDS
+===================================================== */
+
+.daily-report-chart-card {
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+
+  border: 1px solid #dce3ec;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.daily-report-chart-card-wide {
+  margin-bottom: 10px;
+}
+
+.daily-report-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 8px;
+}
+
+.daily-report-chart-title {
+  margin: 0;
+
+  font-size: 13px;
+  line-height: 1.1;
+
+  color: #172033;
+}
+
+.daily-report-chart-subtitle {
+  margin-top: 3px;
+
+  font-size: 8.5px;
+  line-height: 1.3;
+
+  color: #7b8798;
+}
+
+.daily-report-chart-body {
+  width: 100%;
+  overflow: hidden;
+}
+
+
+/* =====================================================
+   DONUT AREA
+===================================================== */
+
+.daily-report-donut-area {
+  min-height: 88mm;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =====================================================
+   BAR CHART AREAS
+===================================================== */
+
+.daily-report-bar-area {
+  min-height: 67mm;
+}
+
+.daily-report-stacked-bar-area {
+  min-height: 58mm;
+}
+
+
+/* =====================================================
+   SVG SUPPORT
+===================================================== */
+
+.daily-report-chart-body svg {
+  display: block;
+
+  width: 100%;
+  height: auto;
+
+  overflow: visible;
+}
+
+.daily-report-chart-body text {
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+
+/* =====================================================
+   DONUT LEGEND
+===================================================== */
+
+.daily-report-donut-layout {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 26px;
+}
+
+.daily-report-donut-chart {
+  width: 150px;
+  height: 150px;
+
+  flex: 0 0 150px;
+}
+
+.daily-report-donut-legend {
+  min-width: 140px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.daily-report-legend-row {
+  display: grid;
+  grid-template-columns: 9px 1fr auto;
+  align-items: center;
+
+  gap: 7px;
+
+  font-size: 9px;
+}
+
+.daily-report-legend-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+}
+
+.daily-report-legend-label {
+  color: #475569;
+}
+
+.daily-report-legend-value {
+  font-weight: 800;
+  color: #172033;
+}
+
+
+/* =====================================================
+   DONUT CENTER
+===================================================== */
+
+.daily-report-donut-center-value {
+  font-size: 22px;
+  font-weight: 800;
+
+  fill: #172033;
+}
+
+.daily-report-donut-center-label {
+  font-size: 8px;
+  font-weight: 700;
+
+  letter-spacing: 0.06em;
+
+  fill: #7b8798;
+}
+
+
+/* =====================================================
+   HORIZONTAL BAR CHART
+===================================================== */
+
+.daily-report-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.daily-report-bar-row {
+  display: grid;
+
+  grid-template-columns:
+    120px
+    1fr
+    80px;
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+.daily-report-bar-label {
+  overflow: hidden;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  color: #334155;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.daily-report-bar-track {
+  height: 12px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  border-radius: 4px;
+
+  background: #edf1f5;
+}
+
+.daily-report-bar-fill {
+  height: 100%;
+
+  border-radius: 4px;
+
+  background: #4f81bd;
+}
+
+.daily-report-bar-value {
+  font-size: 9px;
+  font-weight: 700;
+
+  text-align: right;
+
+  color: #334155;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   STACKED BAR CHART
+===================================================== */
+
+.daily-report-stacked-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.daily-report-stacked-row {
+  display: grid;
+
+  grid-template-columns:
+    38px
+    1fr
+    42px;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.daily-report-stacked-label {
+  font-size: 9px;
+  font-weight: 800;
+
+  color: #334155;
+}
+
+.daily-report-stacked-track {
+  height: 15px;
+
+  display: flex;
+
+  overflow: hidden;
+
+  border-radius: 4px;
+
+  background: #edf1f5;
+}
+
+.daily-report-stacked-segment {
+  height: 100%;
+}
+
+.daily-report-stacked-total {
+  font-size: 9px;
+  font-weight: 700;
+
+  text-align: right;
+
+  color: #334155;
+}
+
+
+/* =====================================================
+   CHART LEGEND
+===================================================== */
+
+.daily-report-chart-legend {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  margin-top: 8px;
+}
+
+.daily-report-chart-legend-item {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  font-size: 8px;
+  color: #64748b;
+}
+
+.daily-report-chart-legend-swatch {
+  width: 9px;
+  height: 9px;
+
+  border-radius: 2px;
+}
+
+
+/* =====================================================
+   PAGE 1 SUMMARY
+===================================================== */
+
+.daily-report-summary-card {
+  margin-top: 10px;
+
+  padding: 9px 12px;
+
+  border-left: 4px solid #1f4e78;
+  border-radius: 5px;
+
+  background: #f5f8fc;
+
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.daily-report-summary-title {
+  margin-bottom: 5px;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #1f4e78;
+}
+
+.daily-report-summary-content {
+  font-size: 9px;
+  line-height: 1.45;
+
+  color: #475569;
+}
+
+
+/* =====================================================
+   KEY INSIGHTS
+===================================================== */
+
+.daily-report-insights {
+  margin-top: 2px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #dce3ec;
+  border-radius: 7px;
+
+  background: #f8fafc;
+
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.daily-report-insights-title {
+  margin-bottom: 6px;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #1f4e78;
+}
+
+.daily-report-insights-content {
+  font-size: 9px;
+  line-height: 1.5;
+
+  color: #475569;
+}
+
+
+/* =====================================================
+   INSIGHT ROWS
+===================================================== */
+
+.daily-report-insight-row {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 7px;
+
+  margin-bottom: 4px;
+}
+
+.daily-report-insight-row:last-child {
+  margin-bottom: 0;
+}
+
+.daily-report-insight-mark {
+  width: 7px;
+  height: 7px;
+
+  margin-top: 3px;
+
+  flex: 0 0 7px;
+
+  border-radius: 50%;
+
+  background: #4f81bd;
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.daily-report-footer {
+  margin-top: auto;
+  padding-top: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-top: 1px solid #dce3ec;
+
+  font-size: 8px;
+  color: #7b8798;
+}
+
+
+/* =====================================================
+   PRINT SAFETY
+===================================================== */
+
+.daily-report-header,
+.daily-report-kpi-grid,
+.daily-report-summary-card,
+.daily-report-insights,
+.daily-report-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print {
+
+  html,
+  body {
+    width: auto;
+    height: auto;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .daily-report-page {
+    min-height: 185mm;
+  }
+
+  .daily-report-page-break {
+    display: block;
+
+    height: 0;
+
+    break-before: page;
+    page-break-before: always;
+  }
+
+}
+
+.daily-report-chart-placeholder {
+  width: 100%;
+  min-height: 60mm;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+
+  background: #f8fafc;
+
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+}
