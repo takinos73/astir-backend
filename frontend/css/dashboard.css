@@ -850,6 +850,9 @@
 /* =========================
    DAILY BRIEF COLLAPSE FIX
 ========================= */
+#dailybriefOverlay{
+  z-index: 1202;
+}
 
 .daily-brief-section .daily-brief-section-body {
   display: block;

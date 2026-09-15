@@ -1407,7 +1407,7 @@ tr.history-unplanned {
   justify-content: center;   /* οριζόντια */
   align-items: flex-start;   /* 👈 ΤΟ ΚΛΕΙΔΙ */
 
-  z-index: 1090;
+  z-index: 1192;
   padding-top: 16px;         /* αντί για margin-top */
   pointer-events: auto;
 }
