@@ -1412,7 +1412,7 @@ tr.history-unplanned {
   pointer-events: auto;
 }
 #dailyBriefOverlay{
-  z-index: 1189;
+  z-index: 1090;
 }
 /* =====================
    CONFIRM DONE MODAL – ALWAYS ON TOP
