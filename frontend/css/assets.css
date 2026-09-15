@@ -585,7 +585,7 @@ tr.highlight-execution {
 }
 /* History / Execution modal (above Asset View) */
 #historyViewOverlay {
-  z-index: 1102;
+  z-index: 2100;
 }
 .asset-view-footer {
   display: flex;
