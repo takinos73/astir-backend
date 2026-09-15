@@ -579,7 +579,7 @@ body {
 .daily-report-summary-title {
   margin-bottom: 5px;
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -589,7 +589,7 @@ body {
 }
 
 .daily-report-summary-content {
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 
   color: #475569;
