@@ -730,6 +730,51 @@ body {
     .daily-report-print-toolbar {
     display: none !important;
   }
+    .daily-report-page {
+    min-height: 0;
+  }
+
+  .daily-report-donut-area {
+    min-height: 60mm;
+  }
+
+  .daily-report-bar-area {
+    min-height: 52mm;
+  }
+
+  .daily-report-stacked-bar-area {
+    min-height: 46mm;
+  }
+
+  .daily-report-chart-card {
+    padding: 8px 10px;
+  }
+
+  .daily-report-chart-card-wide {
+    margin-bottom: 7px;
+  }
+
+  .daily-report-summary-card {
+    margin-top: 7px;
+    padding: 7px 10px;
+  }
+
+  .daily-report-insights {
+    padding: 8px 10px;
+  }
+
+  .daily-report-header {
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+  }
+
+  .daily-report-title-block {
+    margin-bottom: 8px;
+  }
+
+  .daily-report-kpi-grid {
+    margin-bottom: 8px;
+  }
 
 }
 
