@@ -388,7 +388,7 @@ body {
 
   gap: 8px;
 
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .daily-report-legend-dot {
@@ -399,7 +399,7 @@ body {
 }
 
 .daily-report-legend-label {
-  color: #475569;
+  color: #ffbe31;
 }
 
 .daily-report-legend-value {
