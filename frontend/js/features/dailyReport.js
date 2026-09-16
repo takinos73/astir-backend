@@ -245,13 +245,13 @@ function renderDailyReportExecutionMixChart(mix) {
     {
       label: "Planned",
       value: mix.planned,
-      color: "#7b8da6"
+      color: "#ffc156"
     },
 
     {
       label: "Restoration",
       value: mix.restoration,
-      color: "#d64545"
+      color: "#ff4848"
     },
 
     {
