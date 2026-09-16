@@ -251,7 +251,7 @@ function renderDailyReportExecutionMixChart(mix) {
     {
       label: "Restoration",
       value: mix.restoration,
-      color: "#e67e22"
+      color: "#d64545"
     },
 
     {
@@ -1557,7 +1557,7 @@ function buildDailyReportInsights(data) {
         class="daily-report-insight-mark"
         style="background:${
           restorations > 0
-            ? "#e67e22"
+            ? "#d64545"
             : "#7b8da6"
         };"
       ></span>
