@@ -106,6 +106,38 @@ function formatDailyReportSeconds(value) {
   return `${seconds}s`;
 }
 
+function formatDailyReportMinutes(value) {
+
+  const totalMinutes =
+    Math.max(
+      0,
+      Math.round(
+        Number(value) || 0
+      )
+    );
+
+
+  const hours =
+    Math.floor(
+      totalMinutes / 60
+    );
+
+
+  const minutes =
+    totalMinutes % 60;
+
+
+  if (hours > 0) {
+
+    return (
+      `${hours}h ` +
+      `${minutes}m`
+    );
+  }
+
+
+  return `${minutes}m`;
+}
 
 /* =====================================================
    LOAD HTML TEMPLATE
@@ -1122,6 +1154,47 @@ function renderDailyReportLineActivityChart(
   `;
 }
 
+function buildDailyReportWorkload(executions) {
+
+  const totalExecutions =
+    Array.isArray(executions)
+      ? executions.length
+      : 0;
+
+
+  const totalMinutes =
+    Array.isArray(executions)
+
+      ? executions.reduce(
+          (sum, e) =>
+            sum +
+            Number(
+              e.duration_min || 0
+            ),
+          0
+        )
+
+      : 0;
+
+
+  const avgMinutes =
+    totalExecutions > 0
+
+      ? Math.round(
+          totalMinutes /
+          totalExecutions
+        )
+
+      : 0;
+
+
+  return {
+    totalExecutions,
+    totalMinutes,
+    avgMinutes
+  };
+}
+
 /* =====================================================
    BUILD DAILY REPORT DATA
 ===================================================== */
@@ -1178,6 +1251,11 @@ async function buildDailyReportData() {
     buildDailyReportExecutionMix(
       executions24h
     );
+  
+  const workload =
+  buildDailyReportWorkload(
+    executions24h
+  );
 
     const lineActivity =
     buildDailyReportLineActivity(
@@ -1278,6 +1356,8 @@ async function buildDailyReportData() {
     executions24h,
 
     executionMix,
+
+    workload,
 
     lineActivity,
 
@@ -1590,7 +1670,58 @@ function buildDailyReportInsights(data) {
   return rows.join("");
 }
 
+function buildDailyReportWorkloadHtml(
+  workload
+) {
 
+  return `
+    <div class="daily-report-workload">
+
+      <div class="daily-report-workload-item">
+
+        <div class="daily-report-workload-label">
+          Recorded Work Time
+        </div>
+
+        <div class="daily-report-workload-value">
+          ${formatDailyReportMinutes(
+            workload.totalMinutes
+          )}
+        </div>
+
+      </div>
+
+
+      <div class="daily-report-workload-item">
+
+        <div class="daily-report-workload-label">
+          Completed Executions
+        </div>
+
+        <div class="daily-report-workload-value">
+          ${workload.totalExecutions}
+        </div>
+
+      </div>
+
+
+      <div class="daily-report-workload-item">
+
+        <div class="daily-report-workload-label">
+          Avg / Execution
+        </div>
+
+        <div class="daily-report-workload-value">
+          ${formatDailyReportMinutes(
+            workload.avgMinutes
+          )}
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
 
 /* =====================================================
    BUILD HTML
@@ -1661,7 +1792,15 @@ async function buildDailyReportHtml() {
         String(
           data.kpis.activeBreakdowns
         )
-      );
+      )
+
+      .replace(
+        "{{MAINTENANCE_WORKLOAD}}",
+        buildDailyReportWorkloadHtml(
+          data.workload
+        )
+      )
+;
 
 
   /* =====================
