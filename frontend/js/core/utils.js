@@ -401,6 +401,45 @@ function matchesSearch(task, q) {
     (task.unit || "").toLowerCase().includes(s)
   );
 }
+
+/* =====================
+   LOCAL DATETIME INPUT
+===================== */
+
+function toLocalDateTimeInputValue(
+  value = new Date()
+) {
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  const pad =
+    value =>
+      String(value)
+        .padStart(2, "0");
+
+
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  );
+}
+
 /* =====================
    GLOBAL ERROR HANDLING
 ===================== */
