@@ -4907,6 +4907,19 @@ app.patch("/tasks/:id", async (req, res) => {
         ? new Date(completed_at)
         : new Date();
 
+    if (
+        Number.isNaN(
+          completedAt.getTime()
+        )
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+          error: "Invalid completion date / time"
+        });
+
+      }
 
     /* =====================
        1. FETCH + LOCK TASK
@@ -5160,9 +5173,24 @@ app.post("/tasks/bulk-done", async (req, res) => {
       return res.status(400).json({ error: "completed_by is required" });
     }
 
-    const completedAt = completed_at
-      ? new Date(completed_at)
-      : new Date();
+    const completedAt =
+      completed_at
+        ? new Date(completed_at)
+        : new Date();
+
+
+    if (
+      Number.isNaN(
+        completedAt.getTime()
+      )
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid completion date / time"
+      });
+
+    }
+
 
     await client.query("BEGIN");
 

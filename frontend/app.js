@@ -1810,21 +1810,16 @@ function askTechnician(id) {
 
 
   /* =====================
-     DEFAULT COMPLETION DATE
+    DEFAULT COMPLETION
+    LOCAL DATE + TIME
   ===================== */
-
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
-
 
   const dateInput =
     getEl("completedDateInput");
 
-
   if (dateInput) {
-    dateInput.value = today;
+    dateInput.value =
+      toLocalDateTimeInputValue();
   }
 
 
@@ -2087,24 +2082,54 @@ getEl("confirmDone")?.addEventListener("click", async () => {
           .trim() ||
         null;
 
+    /* =====================
+      COMPLETION DATE + TIME
 
-      /* =====================
-         COMPLETION DATE
-      ===================== */
+      datetime-local gives:
+      YYYY-MM-DDTHH:mm
 
-      const dateValue =
-        getEl("completedDateInput")
-          ?.value;
+      JavaScript interprets it
+      as LOCAL browser time.
+
+      We convert to ISO UTC
+      only for storage / API.
+    ===================== */
+
+    const dateValue =
+      getEl("completedDateInput")
+        ?.value;
 
 
-      const completedAt =
-        dateValue
-          ? new Date(
-              dateValue +
-              "T12:00:00"
-            ).toISOString()
-          : new Date()
-              .toISOString();
+    let completedAt;
+
+
+    if (dateValue) {
+
+      const localCompletedDate =
+        new Date(dateValue);
+
+
+      if (
+        Number.isNaN(
+          localCompletedDate.getTime()
+        )
+      ) {
+
+        return alert(
+          "Invalid completion date / time."
+        );
+      }
+
+
+      completedAt =
+        localCompletedDate.toISOString();
+
+    } else {
+
+      completedAt =
+        new Date().toISOString();
+
+    }
 
         /* =====================
           ACTUAL DURATION
@@ -2152,7 +2177,6 @@ getEl("confirmDone")?.addEventListener("click", async () => {
                 "Actual Duration must be zero or greater."
               );
             }
-
 
             actualDurationMin =
               parsedDuration;

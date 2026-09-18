@@ -27,6 +27,70 @@ function isPlannedManual(task) {
     !!task.due_date &&
     task.status !== "Done"
   );
+
+  function toLocalDateTimeInputValue(value = new Date()) {
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  const pad =
+    n =>
+      String(n).padStart(2, "0");
+
+
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  );
+}
+
+function formatLocalDateTime(value) {
+
+  if (!value) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+
+  return date.toLocaleString(
+    "el-GR",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+}
+
 }
 /* =====================
    ASSET TASK STATS
