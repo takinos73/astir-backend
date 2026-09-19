@@ -1424,3 +1424,36 @@
   background: #f4f7fb;
   border-color: #9fb4cc;
 }
+
+/* =====================
+   DAILY REPORT - 7 DAYS OPTION
+===================== */
+
+#dailyReport7DaysLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  margin: 0;
+
+  color: #aeb6c2;
+  font-size: 12px;
+  font-weight: 400;
+
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#dailyReport7DaysLabel input {
+  width: 14px;
+  height: 14px;
+
+  margin: 0;
+
+  accent-color: #6b9bc5;
+  cursor: pointer;
+}
+
+#dailyReport7DaysLabel:hover {
+  color: #e0e5ec;
+}
