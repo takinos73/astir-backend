@@ -4171,6 +4171,369 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
 });
 
 /* =========================================================
+   LINK EXISTING COMPLETED TASK
+   POST /breakdowns/:id/link-existing-task
+
+   Admin-only retrospective assignment of an existing
+   completed maintenance task to a CLOSED Breakdown.
+
+   The selected task must:
+   - Belong to the same asset as the Breakdown.
+   - Not be linked to another Breakdown.
+   - Not be soft-deleted.
+   - Be completed and belong to the planned-task model.
+   - Not be Preventive or recurring.
+   - Have exactly ONE execution.
+   - Have its actual execution completion time within
+     the Breakdown started_at → closed_at window.
+
+   IMPORTANT:
+   - Validates eligibility again at the time of linking.
+   - Updates only the task's breakdown_id and updated_at.
+   - Does NOT create another task or execution.
+   - Does NOT modify task completion details or duration.
+   - Does NOT reopen the Breakdown.
+   - Does NOT modify Breakdown status, diagnosis or downtime.
+   - Does NOT modify Machine State history.
+   - Existing task completion and Undo routes remain unchanged.
+========================================================= */
+
+app.post("/breakdowns/:id/link-existing-task", async (req, res) => {
+
+    /* =====================
+       ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        req.headers["x-cmms-role"] || ""
+      ).trim().toLowerCase();
+
+    if (role !== "admin") {
+      return res.status(403).json({
+        error: "Admin only"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE IDs
+    ===================== */
+
+    const breakdownId =
+      Number(req.params.id);
+
+    const taskId =
+      Number(req.body?.task_id);
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0 ||
+      !Number.isInteger(taskId) ||
+      taskId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid Breakdown or Task ID"
+      });
+    }
+
+
+    const client =
+      await pool.connect();
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOAD + LOCK BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            status,
+            started_at,
+            closed_at
+          FROM breakdowns
+          WHERE id = $1
+          FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+      if (!breakdownResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+      }
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         CLOSED BREAKDOWN GUARD
+      ===================== */
+
+      if (
+        String(
+          breakdown.status || ""
+        ).toUpperCase() !== "CLOSED" ||
+        !breakdown.closed_at
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task assignment requires a CLOSED Breakdown"
+        });
+      }
+
+
+      /* =====================
+         LOAD + LOCK TASK
+      ===================== */
+
+      const taskResult =
+        await client.query(
+          `
+          SELECT *
+          FROM maintenance_tasks
+          WHERE id = $1
+          FOR UPDATE
+          `,
+          [taskId]
+        );
+
+      if (!taskResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Task not found"
+        });
+      }
+
+      const task =
+        taskResult.rows[0];
+
+
+      /* =====================
+         TASK ELIGIBILITY
+
+         Match the rules used by the
+         assignable-tasks candidate endpoint.
+      ===================== */
+
+      const isEligibleTask =
+        Number(task.asset_id) ===
+          Number(breakdown.asset_id) &&
+
+        task.breakdown_id == null &&
+
+        task.deleted_at == null &&
+
+        String(
+          task.status || ""
+        ).toLowerCase() === "done" &&
+
+        task.is_planned === true &&
+
+        Number(
+          task.frequency_hours ?? 0
+        ) === 0 &&
+
+        !String(
+          task.type || ""
+        ).toLowerCase().startsWith(
+          "preventive"
+        );
+
+      if (!isEligibleTask) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task is not eligible for this Breakdown"
+        });
+      }
+
+
+      /* =====================
+         VERIFY EXECUTION
+
+         Exactly ONE execution is required.
+
+         Use the actual execution timestamp,
+         not task.created_at or task.due_date.
+      ===================== */
+
+      const executionResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            executed_at
+          FROM task_executions
+          WHERE task_id = $1
+          ORDER BY id
+          `,
+          [taskId]
+        );
+
+      if (executionResult.rows.length !== 1) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task must have exactly one execution"
+        });
+      }
+
+      const executedAt =
+        new Date(
+          executionResult.rows[0].executed_at
+        ).getTime();
+
+      const startedAt =
+        new Date(
+          breakdown.started_at
+        ).getTime();
+
+      const closedAt =
+        new Date(
+          breakdown.closed_at
+        ).getTime();
+
+
+      /* =====================
+         INCIDENT WINDOW VALIDATION
+
+         Actual execution completion must
+         belong to the Breakdown period.
+
+         Historical data entry may happen
+         later; created_at is not restricted.
+      ===================== */
+
+      if (
+        !Number.isFinite(executedAt) ||
+        !Number.isFinite(startedAt) ||
+        !Number.isFinite(closedAt) ||
+        executedAt < startedAt ||
+        executedAt > closedAt
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task execution time is outside the Breakdown period"
+        });
+      }
+
+
+      /* =====================
+         LINK EXISTING TASK
+
+         Preserve the original execution,
+         technician, completion time,
+         duration and task details.
+      ===================== */
+
+      const linkResult =
+        await client.query(
+          `
+          UPDATE maintenance_tasks
+          SET
+            breakdown_id = $1,
+            updated_at = NOW()
+          WHERE id = $2
+            AND breakdown_id IS NULL
+          RETURNING *
+          `,
+          [
+            breakdownId,
+            taskId
+          ]
+        );
+
+      if (!linkResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task is no longer available for assignment"
+        });
+      }
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        success: true,
+
+        message:
+          "Existing task linked to Breakdown successfully",
+
+        breakdown_id:
+          breakdownId,
+
+        task:
+          linkResult.rows[0]
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+      console.error(
+        "LINK EXISTING TASK ERROR:",
+        err
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to link existing task"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    GET ASSIGNABLE EXISTING TASKS
    GET /breakdowns/:id/assignable-tasks
 
