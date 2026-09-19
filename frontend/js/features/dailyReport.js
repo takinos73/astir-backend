@@ -1668,6 +1668,257 @@ function buildDailyReportWorkloadHtml(
 }
 
 /* =====================================================
+   NEXT 24H PREVENTIVE ASSET WORKLOAD
+
+   Read-only:
+   - Uses existing Asset Dashboard risk ranking
+   - Shows up to 3 candidate assets
+   - Includes open Preventive Tasks due by next 24H
+   - Displays estimated workload separately per asset
+
+   No task assignment or status changes.
+===================================================== */
+
+function buildDailyReportNext24HAssetsHtml(reportTime) {
+
+  const now = new Date(reportTime);
+
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const end = new Date(
+    now.getTime() + 24 * 60 * 60 * 1000
+  );
+
+  const tasks = Array.isArray(state.tasksData)
+    ? state.tasksData
+    : [];
+
+  // Same risk ranking as the existing Asset Dashboard.
+  // Do not limit the search to the 12 displayed cards.
+
+  const rankedAssets =
+    getTopWorstAssetsDashboard(Number.MAX_SAFE_INTEGER);
+
+  const escapeHtml = value =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]
+    );
+
+  const candidates = rankedAssets
+    .map(asset => {
+
+      const assetTasks = tasks.filter(t => {
+
+        // Match the asset by serial number and line.
+
+        if (
+          String(t.serial_number || "").trim() !==
+          String(asset.serial || "").trim() ||
+          String(t.line_code || "").trim() !==
+          String(asset.line || "").trim()
+        ) {
+          return false;
+        }
+
+        // Only open Preventive Tasks.
+
+        if (
+          t.status === "Done" ||
+          t.breakdown_id != null ||
+          Number(t.frequency_hours) <= 0 ||
+          !t.due_date
+        ) {
+          return false;
+        }
+
+        // Due dates are calendar dates, not confirmed
+        // maintenance execution times.
+
+        const datePart =
+          String(t.due_date).slice(0, 10);
+
+        const due =
+          new Date(`${datePart}T00:00:00`);
+
+        return (
+          !Number.isNaN(due.getTime()) &&
+          due <= end
+        );
+
+      });
+
+      const overdue = assetTasks.filter(t => {
+
+        const datePart =
+          String(t.due_date).slice(0, 10);
+
+        const due =
+          new Date(`${datePart}T00:00:00`);
+
+        return due < today;
+
+      }).length;
+
+      const estimatedMinutes = assetTasks.reduce(
+        (sum, t) => {
+
+          const minutes = Number(t.duration_min);
+
+          return sum + (
+            Number.isFinite(minutes) && minutes > 0
+              ? minutes
+              : 0
+          );
+
+        },
+        0
+      );
+
+      const withoutEstimate = assetTasks.filter(t => {
+
+        const minutes = Number(t.duration_min);
+
+        return (
+          t.duration_min == null ||
+          t.duration_min === "" ||
+          !Number.isFinite(minutes) ||
+          minutes <= 0
+        );
+
+      }).length;
+
+      return {
+        ...asset,
+        overdueTasks: overdue,
+        dueTasks: assetTasks.length - overdue,
+        totalTasks: assetTasks.length,
+        estimatedMinutes,
+        withoutEstimate
+      };
+
+    })
+    .filter(asset => asset.totalTasks > 0)
+    .slice(0, 3);
+
+
+  if (candidates.length === 0) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No open Preventive Tasks found for the next 24H
+        candidate assets.
+      </div>
+    `;
+
+  }
+
+
+  const cards = candidates.map((asset, index) => {
+
+    const workload =
+      asset.estimatedMinutes > 0
+        ? formatDailyReportMinutes(
+            asset.estimatedMinutes
+          )
+        : "—";
+
+    return `
+      <div class="daily-report-workload-item">
+
+        <div class="daily-report-workload-label">
+          CANDIDATE ${index + 1}
+        </div>
+
+        <h3>
+          ${escapeHtml(asset.line)}
+          ·
+          ${escapeHtml(asset.machine)}
+        </h3>
+
+        <div>
+          SN ${escapeHtml(asset.serial)}
+        </div>
+
+        <p>
+          <strong>
+            ${escapeHtml(asset.riskLabel)}
+          </strong>
+          ·
+          Score ${escapeHtml(asset.score)}
+        </p>
+
+        <p>
+          Overdue:
+          <strong>${asset.overdueTasks}</strong>
+
+          <br>
+
+          Due in next 24H:
+          <strong>${asset.dueTasks}</strong>
+
+          <br>
+
+          Total Preventive Tasks:
+          <strong>${asset.totalTasks}</strong>
+        </p>
+
+        <div class="daily-report-workload-label">
+          ESTIMATED WORKLOAD
+        </div>
+
+        <div class="daily-report-workload-value">
+          ${workload}
+        </div>
+
+        ${
+          asset.withoutEstimate > 0
+            ? `
+              <p>
+                ${asset.withoutEstimate}
+                task(s) without estimated duration
+              </p>
+            `
+            : ""
+        }
+
+      </div>
+    `;
+
+  }).join("");
+
+
+  return `
+
+    <div class="daily-report-period">
+      ${formatDailyReportDateTime(now)}
+      →
+      ${formatDailyReportDateTime(end)}
+    </div>
+
+    <div class="daily-report-workload">
+      ${cards}
+    </div>
+
+    <p>
+      Three risk-based candidates for Planner review.
+      Preventive maintenance may be performed on up to
+      two assets, subject to machine availability.
+      Estimated workload is not a committed schedule.
+    </p>
+
+  `;
+
+}
+
+/* =====================================================
    BUILD HTML
    Phase 1:
    KPIs only
@@ -1799,7 +2050,21 @@ async function buildDailyReportHtml() {
     )
 
 
-  return template;
+    /* =====================
+      NEXT 24H WORKLOAD OUTLOOK
+
+      Populate Page 3 using current task data.
+      Historical report period remains unchanged.
+    ====================== */
+
+    template = template.replace(
+      "Workload data not connected yet.",
+      buildDailyReportNext24HAssetsHtml(
+        data.period.to
+      )
+    );
+
+    return template;
 }
 
 /* =====================================================
