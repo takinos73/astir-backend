@@ -1665,11 +1665,31 @@
       </div>
 
 
-      <!-- =====================
-           SECTION / UNIT
-      ===================== -->
+      <!-- =====================================================
+          SECTION / UNIT
+
+          Uses the existing asset location catalogue:
+          GET /assets/:id/locations
+
+          Behaviour:
+          - Existing Sections → dropdown
+          - No Sections → manual input
+          - Existing Units for selected Section → dropdown
+          - New Unit → manual input
+
+          IMPORTANT:
+          These controls belong only to the Admin
+          Historical Restoration modal.
+
+          The normal Restoration modal and its
+          Section / Unit functions remain unchanged.
+      ===================================================== -->
 
       <div class="restoration-form-grid">
+
+        <!-- =====================
+            SECTION
+        ===================== -->
 
         <div class="field">
 
@@ -1677,15 +1697,29 @@
             Section
           </label>
 
-          <input
+          <select
             id="assignRestorationSection"
+            style="display:none;"
+          >
+            <option value="">
+              Select section
+            </option>
+          </select>
+
+          <input
+            id="assignRestorationSectionInput"
             type="text"
-            placeholder="Section"
+            placeholder="Enter section"
             autocomplete="off"
+            style="display:none;"
           />
 
         </div>
 
+
+        <!-- =====================
+            UNIT
+        ===================== -->
 
         <div class="field">
 
@@ -1693,17 +1727,26 @@
             Unit
           </label>
 
-          <input
+          <select
             id="assignRestorationUnit"
+            style="display:none;"
+          >
+            <option value="">
+              Select unit
+            </option>
+          </select>
+
+          <input
+            id="assignRestorationUnitInput"
             type="text"
-            placeholder="Unit"
+            placeholder="Enter new unit"
             autocomplete="off"
+            style="display:none;"
           />
 
         </div>
 
       </div>
-
 
       <!-- =====================
            REAL EXECUTION DETAILS

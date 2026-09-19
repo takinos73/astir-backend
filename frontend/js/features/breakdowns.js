@@ -8732,6 +8732,277 @@ function populateAssignRestorationTechnicians() {
 
 }
 
+/* =========================================================
+   ASSIGN RESTORATION — SECTION CATALOGUE
+
+   Loads Sections for the asset of the selected
+   CLOSED Breakdown.
+
+   Source:
+   GET /assets/:id/locations
+
+   Behaviour:
+   - Existing Sections → dropdown
+   - No Sections → manual Section input
+   - Resets Section and Unit fields on every opening
+   - Keeps an independent catalogue for the
+     Admin assignment modal
+
+   IMPORTANT:
+   - Does NOT modify the normal Restoration modal.
+   - Does NOT modify its location catalogue.
+   - Does NOT create or update maintenance tasks.
+========================================================= */
+
+let assignRestorationLocations = [];
+
+let assignRestorationLocationsAssetId = null;
+
+
+async function populateAssignRestorationSections(assetId) {
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const sectionSelect =
+    document.getElementById(
+      "assignRestorationSection"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "assignRestorationSectionInput"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "assignRestorationUnit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "assignRestorationUnitInput"
+    );
+
+
+  if (
+    !sectionSelect ||
+    !sectionInput ||
+    !unitSelect ||
+    !unitInput
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET CATALOGUE
+     AND FORM FIELDS
+  ===================== */
+
+  assignRestorationLocations = [];
+
+  assignRestorationLocationsAssetId = null;
+
+
+  sectionSelect.replaceChildren(
+    new Option("Select section", "")
+  );
+
+  sectionSelect.value = "";
+
+  sectionInput.value = "";
+
+
+  unitSelect.replaceChildren(
+    new Option("Select unit", "")
+  );
+
+  unitSelect.style.display = "none";
+
+  unitSelect.value = "";
+
+  unitInput.style.display = "none";
+
+  unitInput.value = "";
+
+
+  /* =====================
+     VALIDATE ASSET
+  ===================== */
+
+  const resolvedAssetId =
+    Number(assetId);
+
+
+  if (
+    !Number.isInteger(resolvedAssetId) ||
+    resolvedAssetId <= 0
+  ) {
+
+    sectionSelect.style.display = "none";
+
+    sectionInput.style.display = "block";
+
+    return;
+  }
+
+
+  /* =====================
+     LOAD ASSET LOCATIONS
+  ===================== */
+
+  try {
+
+    const response =
+      await fetch(
+        `/assets/${resolvedAssetId}/locations`
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    assignRestorationLocations =
+      Array.isArray(data.locations)
+        ? data.locations
+        : [];
+
+
+    assignRestorationLocationsAssetId =
+      resolvedAssetId;
+
+
+    /* =====================
+       BUILD UNIQUE SECTIONS
+
+       Same normalization and sorting
+       as the normal Restoration modal.
+    ===================== */
+
+    const sectionMap =
+      new Map();
+
+
+    for (
+      const location
+      of assignRestorationLocations
+    ) {
+
+      const section =
+        String(
+          location?.section || ""
+        ).trim();
+
+
+      if (!section) continue;
+
+
+      const key =
+        section.toLocaleLowerCase(
+          "el-GR"
+        );
+
+
+      if (!sectionMap.has(key)) {
+
+        sectionMap.set(
+          key,
+          section
+        );
+
+      }
+
+    }
+
+
+    const sections =
+      Array.from(
+        sectionMap.values()
+      ).sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "el",
+            {
+              sensitivity: "base"
+            }
+          )
+      );
+
+
+    /* =====================
+       EXISTING SECTIONS
+    ===================== */
+
+    if (sections.length > 0) {
+
+      for (const section of sections) {
+
+        sectionSelect.add(
+          new Option(
+            section,
+            section
+          )
+        );
+
+      }
+
+
+      sectionSelect.style.display = "block";
+
+      sectionInput.style.display = "none";
+
+      return;
+    }
+
+
+    /* =====================
+       NO EXISTING SECTIONS
+    ===================== */
+
+    sectionSelect.style.display = "none";
+
+    sectionInput.style.display = "block";
+
+  } catch (err) {
+
+    /* =====================
+       SAFE MANUAL FALLBACK
+
+       Failure to load the catalogue
+       must not affect other modals.
+    ===================== */
+
+    console.error(
+      "ASSIGN RESTORATION SECTIONS ERROR:",
+      err
+    );
+
+
+    assignRestorationLocations = [];
+
+    assignRestorationLocationsAssetId = null;
+
+
+    sectionSelect.style.display = "none";
+
+    sectionInput.style.display = "block";
+
+  }
+
+}
 
 /* =====================
    ASSIGNMENT MODE CHANGED
