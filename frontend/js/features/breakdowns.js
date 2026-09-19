@@ -8668,10 +8668,23 @@ if (isExisting) {
   return;
 }
 
-
   /* =====================
     HISTORICAL COMPLETION
     REQUIRED FIELDS
+
+    Required:
+    - Work performed
+    - Section (existing or manual)
+    - Unit (existing or manual)
+    - Technician
+    - Actual completion date/time
+    - Actual duration
+
+    IMPORTANT:
+    - "➕ New unit" is not a valid Unit value.
+    - The Admin must enter the new Unit name.
+    - This function only controls Save availability.
+    - No maintenance data is modified here.
   ===================== */
 
   const taskName =
@@ -8679,15 +8692,53 @@ if (isExisting) {
       "assignRestorationTask"
     )?.value.trim() || "";
 
+
+  const sectionSelect =
+    document.getElementById(
+      "assignRestorationSection"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "assignRestorationSectionInput"
+    );
+
+
+  const section =
+    sectionSelect?.style.display !== "none"
+      ? String(sectionSelect?.value || "").trim()
+      : String(sectionInput?.value || "").trim();
+
+
+  const unitSelect =
+    document.getElementById(
+      "assignRestorationUnit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "assignRestorationUnitInput"
+    );
+
+
+  const unit =
+    unitSelect?.style.display !== "none" &&
+    unitSelect?.value !== "__new__"
+      ? String(unitSelect?.value || "").trim()
+      : String(unitInput?.value || "").trim();
+
+
   const technicianId =
     document.getElementById(
       "assignRestorationTechnician"
     )?.value || "";
 
+
   const completedAt =
     document.getElementById(
       "assignRestorationCompletedAt"
     )?.value || "";
+
 
   const durationValue =
     document.getElementById(
@@ -8701,12 +8752,15 @@ if (isExisting) {
 
   saveBtn.disabled =
     !taskName ||
+    !section ||
+    !unit ||
     !technicianId ||
     !completedAt ||
     durationValue === "" ||
     !Number.isInteger(actualDuration) ||
     actualDuration < 0;
 
+  
 }
 
 /* =========================================================
@@ -9428,6 +9482,10 @@ document
 
   [
     "assignRestorationTask",
+    "assignRestorationSection",
+    "assignRestorationSectionInput",
+    "assignRestorationUnit",
+    "assignRestorationUnitInput",
     "assignRestorationTechnician",
     "assignRestorationCompletedAt",
     "assignRestorationActualDuration"
@@ -10376,6 +10434,37 @@ document
       if (saveBtn) {
         saveBtn.disabled = true;
       }
+
+    /* =====================
+      RESET HISTORICAL WORK FIELDS
+
+      Every new opening of the Admin
+      assignment modal starts with
+      an empty Historical Restoration form.
+
+      Section and Unit are reset separately
+      by populateAssignRestorationSections().
+
+      IMPORTANT:
+      - Does NOT modify existing tasks.
+      - Does NOT affect the normal Restoration modal.
+    ===================== */
+
+    [
+      "assignRestorationTask",
+      "assignRestorationCompletedAt",
+      "assignRestorationActualDuration",
+      "assignRestorationNotes"
+    ].forEach(fieldId => {
+
+      const field =
+        document.getElementById(fieldId);
+
+      if (field) {
+        field.value = "";
+      }
+
+    });      
 
     /* =====================
       POPULATE TECHNICIANS
