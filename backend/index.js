@@ -4443,13 +4443,28 @@ app.post("/breakdowns/:id/link-existing-task", async (req, res) => {
         });
       }
 
-
       /* =====================
-         LINK EXISTING TASK
+        LINK EXISTING TASK
 
-         Preserve the original execution,
-         technician, completion time,
-         duration and task details.
+        The selected completed task becomes
+        Restoration work for this Breakdown.
+
+        Update:
+        - breakdown_id = selected Breakdown
+        - type = Restoration
+
+        Preserve:
+        - Original task description
+        - Completed status
+        - Technician
+        - Completion date/time
+        - Actual execution duration
+        - Existing execution history
+
+        IMPORTANT:
+        - Does NOT reopen the Breakdown.
+        - Does NOT modify Breakdown downtime.
+        - Does NOT create another execution.
       ===================== */
 
       const linkResult =
@@ -4458,6 +4473,7 @@ app.post("/breakdowns/:id/link-existing-task", async (req, res) => {
           UPDATE maintenance_tasks
           SET
             breakdown_id = $1,
+            type = 'Restoration',
             updated_at = NOW()
           WHERE id = $2
             AND breakdown_id IS NULL
