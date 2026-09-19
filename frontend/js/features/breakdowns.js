@@ -8980,21 +8980,136 @@ document
         }
 
 
-        /* =====================
-           ASSIGN WORKFLOW TEST
+      /* =====================
+        OPEN ADMIN ASSIGNMENT MODAL
 
-           Temporary confirmation only.
+        The selected CLOSED Breakdown
+        is stored on this modal only.
 
-           The Admin assignment modal
-           will be connected here next.
-        ===================== */
+        Does NOT use or modify
+        currentBreakdownId.
 
-        alert(
-          `Assign Restoration Task\n\n` +
-          `BD-${String(breakdownId).padStart(5, "0")}\n` +
-          `Status: CLOSED\n\n` +
-          `Ready for historical task assignment.`
+        Does NOT reopen the Breakdown
+        or modify any maintenance data.
+      ===================== */
+
+      const overlay =
+        document.getElementById(
+          "assignRestorationOverlay"
         );
+
+      if (!overlay) {
+
+        throw new Error(
+          "Assign Restoration modal not found."
+        );
+
+      }
+
+
+      /* =====================
+        STORE SELECTED BREAKDOWN
+      ===================== */
+
+      overlay.dataset.breakdownId =
+        String(breakdownId);
+
+
+      /* =====================
+        BREAKDOWN REFERENCE
+      ===================== */
+
+      const referenceEl =
+        document.getElementById(
+          "assignRestorationBreakdownRef"
+        );
+
+      if (referenceEl) {
+
+        referenceEl.textContent =
+          `BD-${String(breakdownId).padStart(5, "0")}`;
+
+      }
+
+
+      /* =====================
+        ACTUAL BREAKDOWN PERIOD
+
+        Display the real incident window.
+
+        The backend will enforce this
+        period when assigning tasks.
+      ===================== */
+
+      const periodEl =
+        document.getElementById(
+          "assignRestorationPeriod"
+        );
+
+      if (periodEl) {
+
+        periodEl.textContent =
+          `${formatBreakdownDate(breakdown.started_at)}` +
+          ` → ` +
+          `${formatBreakdownDate(breakdown.closed_at)}`;
+
+      }
+
+
+      /* =====================
+        RESET ASSIGNMENT MODE
+      ===================== */
+
+      const modeSelect =
+        document.getElementById(
+          "assignRestorationMode"
+        );
+
+      const existingFields =
+        document.getElementById(
+          "assignRestorationExistingFields"
+        );
+
+      const newFields =
+        document.getElementById(
+          "assignRestorationNewFields"
+        );
+
+      if (modeSelect) {
+        modeSelect.value = "existing";
+      }
+
+      if (existingFields) {
+        existingFields.style.display = "";
+      }
+
+      if (newFields) {
+        newFields.style.display = "none";
+      }
+
+
+      /* =====================
+        KEEP SAVE DISABLED
+
+        No task may be assigned until
+        the backend flow is connected.
+      ===================== */
+
+      const saveBtn =
+        document.getElementById(
+          "saveAssignRestorationBtn"
+        );
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+      }
+
+
+      /* =====================
+        SHOW MODAL
+      ===================== */
+
+      overlay.style.display = "flex";
 
 
       } catch (err) {
@@ -9752,6 +9867,108 @@ document.getElementById("clearVerifiedDowntimeBtn") ?.addEventListener("click", 
     }
 
   });
+
+/* =========================================================
+   ASSIGN RESTORATION MODAL — UI CONTROLS
+
+   Handles:
+   - Assignment mode selection
+   - Close button
+   - Cancel button
+
+   IMPORTANT:
+   - Does NOT create or link maintenance tasks.
+   - Does NOT modify the Breakdown.
+   - Save remains disabled until the backend
+     assignment flows are connected.
+========================================================= */
+
+
+/* =====================
+   ASSIGNMENT MODE
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationMode"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const isExisting =
+        event.target.value === "existing";
+
+      const existingFields =
+        document.getElementById(
+          "assignRestorationExistingFields"
+        );
+
+      const newFields =
+        document.getElementById(
+          "assignRestorationNewFields"
+        );
+
+      if (existingFields) {
+
+        existingFields.style.display =
+          isExisting ? "" : "none";
+
+      }
+
+      if (newFields) {
+
+        newFields.style.display =
+          isExisting ? "none" : "";
+
+      }
+
+    }
+  );
+
+
+/* =====================
+   CLOSE ASSIGNMENT MODAL
+
+   Clears the selected Breakdown
+   reference from the modal.
+
+   Does NOT change Breakdown data.
+===================== */
+
+function closeAssignRestorationModal() {
+
+  const overlay =
+    document.getElementById(
+      "assignRestorationOverlay"
+    );
+
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+
+  delete overlay.dataset.breakdownId;
+
+}
+
+
+/* =====================
+   CLOSE / CANCEL BUTTONS
+===================== */
+
+[
+  "closeAssignRestorationBtn",
+  "cancelAssignRestorationBtn"
+].forEach(buttonId => {
+
+  document
+    .getElementById(buttonId)
+    ?.addEventListener(
+      "click",
+      closeAssignRestorationModal
+    );
+
+});
 
   // =========================================================
   // BREAKDOWN AUTO PAGE SIZE – RESIZE
