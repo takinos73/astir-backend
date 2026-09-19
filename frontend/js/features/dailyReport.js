@@ -7,27 +7,32 @@
 /* =====================================================
    DAILY MAINTENANCE REPORT PERIOD
 
-   Monday: rolling last 72 hours
-   All other days: rolling last 24 hours
+   Default:
+     Monday: rolling last 72 hours
+     All other days: rolling last 24 hours
+
+   Optional:
+     Last 7 Days checkbox: rolling last 168 hours
+
+   Report period always ends at the time of generation.
 ===================================================== */
 
 function getDailyReportPeriod() {
 
   const to = new Date();
 
-  // JavaScript: Sunday = 0, Monday = 1, Tuesday = 2 ...
-  const isMonday = to.getDay() === 1;
+  const last7Days =
+    document.getElementById("dailyReport7Days")?.checked === true;
 
-  const hours = isMonday ? 72 : 24;
+  const hours = last7Days
+    ? 168
+    : (to.getDay() === 1 ? 72 : 24);
 
   const from = new Date(
     to.getTime() - hours * 60 * 60 * 1000
   );
 
-  return {
-    from,
-    to
-  };
+  return { from, to };
 }
 
 
