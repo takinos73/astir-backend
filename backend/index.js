@@ -9601,7 +9601,6 @@ app.get("/api/tasks/:id/print", async (req, res) => {
   }
 });
 
-
 function buildWorkOrderHTML(task) {
   return `
 <!DOCTYPE html>
@@ -9763,6 +9762,7 @@ app.get("/api/executions/:id/print", async (req, res) => {
   }
 });
 function buildExecutionReportHTML(e) {
+
   return `
 <!DOCTYPE html>
 <html>
@@ -9896,7 +9896,6 @@ app.get("/kpis/mttr", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 /* =====================================================
    SPA fallback

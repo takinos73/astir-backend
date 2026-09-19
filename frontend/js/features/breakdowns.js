@@ -6158,9 +6158,20 @@ function renderRestorationTasks(tasks) {
             )
           : null;
 
+      /* =====================
+        ACTUAL RESTORATION EXECUTION
+
+        These values come from the recorded
+        task execution, not from planned data.
+
+        Missing values remain hidden.
+      ===================== */
+
       const actualDuration =
         task.actual_duration_min;
 
+      const completedBy =
+        task.completed_by || "";
 
       return `
         <div
@@ -6182,7 +6193,6 @@ function renderRestorationTasks(tasks) {
               </div>
 
             </div>
-
 
             ${
               isOpen
@@ -6223,7 +6233,6 @@ function renderRestorationTasks(tasks) {
             }
 
           </div>
-
 
           <div class="restoration-task-meta">
 
@@ -6270,6 +6279,17 @@ function renderRestorationTasks(tasks) {
                       </div>
                     `
                     : ""
+                                }
+
+                ${
+                  completedBy
+                    ? `
+                      <div>
+                        <strong>Completed By:</strong>
+                        ${escapeBreakdownHtml(completedBy)}
+                      </div>
+                    `
+                    : ""
                 }
 
                 ${
@@ -6277,7 +6297,7 @@ function renderRestorationTasks(tasks) {
                   actualDuration !== undefined
                     ? `
                       <div>
-                        <strong>Actual:</strong>
+                        <strong>Actual Service Time:</strong>
                         ${escapeBreakdownHtml(actualDuration)} min
                       </div>
                     `
@@ -6315,7 +6335,6 @@ function renderRestorationTasks(tasks) {
           }
 
           </div>
-
 
           ${
             notes
