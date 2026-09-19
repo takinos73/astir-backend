@@ -9004,6 +9004,325 @@ async function populateAssignRestorationSections(assetId) {
 
 }
 
+/* =========================================================
+   ASSIGN RESTORATION — POPULATE UNITS
+
+   Uses the location catalogue already loaded by:
+   populateAssignRestorationSections()
+
+   Filters Units by the selected Section
+   of the CLOSED Breakdown asset.
+
+   Behaviour:
+   - Existing Units found → show dropdown
+   - Dropdown includes "➕ New unit"
+   - No Units found → show manual input
+   - No Section selected → hide both Unit fields
+
+   IMPORTANT:
+   - Does NOT modify the normal Restoration modal.
+   - Does NOT modify its location catalogue.
+   - Does NOT create or update maintenance tasks.
+========================================================= */
+
+function populateAssignRestorationUnits(section) {
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const unitSelect =
+    document.getElementById(
+      "assignRestorationUnit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "assignRestorationUnitInput"
+    );
+
+  if (
+    !unitSelect ||
+    !unitInput
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET UNIT
+  ===================== */
+
+  unitSelect.replaceChildren(
+    new Option("Select unit", "")
+  );
+
+  unitSelect.value = "";
+
+  unitInput.value = "";
+
+
+  /* =====================
+     NO SECTION SELECTED
+  ===================== */
+
+  const resolvedSection =
+    String(section || "").trim();
+
+  if (!resolvedSection) {
+
+    unitSelect.style.display = "none";
+    unitInput.style.display = "none";
+
+    return;
+  }
+
+
+  /* =====================
+     NO LOADED CATALOGUE
+
+     Allow manual Unit entry when
+     asset locations are unavailable.
+  ===================== */
+
+  if (
+    assignRestorationLocationsAssetId === null ||
+    !Array.isArray(assignRestorationLocations)
+  ) {
+
+    unitSelect.style.display = "none";
+    unitInput.style.display = "block";
+
+    return;
+  }
+
+
+  /* =====================
+     FIND UNITS FOR SECTION
+  ===================== */
+
+  const normalizedSection =
+    resolvedSection.toLocaleLowerCase(
+      "el-GR"
+    );
+
+  const unitMap =
+    new Map();
+
+
+  for (
+    const location
+    of assignRestorationLocations
+  ) {
+
+    const locationSection =
+      String(
+        location?.section || ""
+      ).trim();
+
+    const unit =
+      String(
+        location?.unit || ""
+      ).trim();
+
+
+    if (
+      !locationSection ||
+      !unit
+    ) {
+      continue;
+    }
+
+
+    if (
+      locationSection.toLocaleLowerCase(
+        "el-GR"
+      ) !== normalizedSection
+    ) {
+      continue;
+    }
+
+
+    const key =
+      unit.toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+    if (!unitMap.has(key)) {
+
+      unitMap.set(
+        key,
+        unit
+      );
+
+    }
+
+  }
+
+
+  /* =====================
+     SORT UNIQUE UNITS
+  ===================== */
+
+  const units =
+    Array.from(
+      unitMap.values()
+    ).sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          "el",
+          {
+            sensitivity: "base"
+          }
+        )
+    );
+
+
+  /* =====================
+     EXISTING UNITS FOUND
+  ===================== */
+
+  if (units.length > 0) {
+
+    for (const unit of units) {
+
+      unitSelect.add(
+        new Option(
+          unit,
+          unit
+        )
+      );
+
+    }
+
+
+    unitSelect.add(
+      new Option(
+        "➕ New unit",
+        "__new__"
+      )
+    );
+
+
+    unitSelect.style.display = "block";
+    unitInput.style.display = "none";
+
+    return;
+  }
+
+
+  /* =====================
+     NO EXISTING UNITS
+
+     Allow manual Unit entry.
+  ===================== */
+
+  unitSelect.style.display = "none";
+  unitInput.style.display = "block";
+
+}
+
+/* =========================================================
+   ASSIGN RESTORATION — SECTION / UNIT EVENTS
+
+   Handles:
+   - Existing Section → load matching Units
+   - Manual Section → load matching Units
+   - New Unit selection → show manual Unit input
+
+   IMPORTANT:
+   - Uses only Admin assignment modal fields.
+   - Does NOT modify existing Restoration listeners.
+   - Does NOT create or update maintenance tasks.
+========================================================= */
+
+
+/* =====================
+   EXISTING SECTION → UNITS
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationSection"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      populateAssignRestorationUnits(
+        event.target.value
+      );
+
+    }
+  );
+
+
+/* =====================
+   MANUAL SECTION → UNITS
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationSectionInput"
+  )
+  ?.addEventListener(
+    "input",
+    event => {
+
+      populateAssignRestorationUnits(
+        event.target.value.trim()
+      );
+
+    }
+  );
+
+
+/* =====================
+   UNIT → NEW UNIT
+
+   Selecting "➕ New unit" shows
+   the manual Unit input.
+
+   Selecting an existing Unit
+   hides and clears manual input.
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationUnit"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const unitInput =
+        document.getElementById(
+          "assignRestorationUnitInput"
+        );
+
+      if (!unitInput) return;
+
+
+      if (
+        event.target.value === "__new__"
+      ) {
+
+        unitInput.style.display = "block";
+        unitInput.value = "";
+        unitInput.focus();
+
+      } else {
+
+        unitInput.style.display = "none";
+        unitInput.value = "";
+
+      }
+
+    }
+  );
+
 /* =====================
    ASSIGNMENT MODE CHANGED
 ===================== */
