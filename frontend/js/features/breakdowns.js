@@ -8581,6 +8581,345 @@ function populateRestorationUnits(
 }
 
 /* =========================================================
+   ASSIGN RESTORATION — LINK EXISTING TASK
+
+   Admin-only assignment of an existing completed task
+   to the selected CLOSED Breakdown.
+
+   SAVE AVAILABILITY:
+   - Link Existing: enabled only when a task is selected.
+   - Create New & Complete: remains disabled until
+     its separate backend flow is connected.
+
+   IMPORTANT:
+   - The backend validates task eligibility again.
+   - The selected task becomes type = Restoration.
+   - Its original execution details are preserved.
+   - Does NOT reopen or modify the Breakdown.
+   - Does NOT modify the existing Undo mechanism.
+========================================================= */
+
+
+/* =====================
+   UPDATE SAVE BUTTON STATE
+===================== */
+
+function updateAssignRestorationSaveState() {
+
+  const modeSelect =
+    document.getElementById(
+      "assignRestorationMode"
+    );
+
+  const taskSelect =
+    document.getElementById(
+      "assignRestorationExistingTask"
+    );
+
+  const saveBtn =
+    document.getElementById(
+      "saveAssignRestorationBtn"
+    );
+
+  if (
+    !modeSelect ||
+    !taskSelect ||
+    !saveBtn
+  ) {
+    return;
+  }
+
+
+  const isExisting =
+    modeSelect.value === "existing";
+
+
+  saveBtn.textContent =
+    isExisting
+      ? "Link Task"
+      : "Create & Complete";
+
+
+  saveBtn.disabled =
+    !isExisting ||
+    taskSelect.disabled ||
+    !taskSelect.value;
+
+}
+
+
+/* =====================
+   ASSIGNMENT MODE CHANGED
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationMode"
+  )
+  ?.addEventListener(
+    "change",
+    updateAssignRestorationSaveState
+  );
+
+
+/* =====================
+   EXISTING TASK SELECTION
+===================== */
+
+document
+  .getElementById(
+    "assignRestorationExistingTask"
+  )
+  ?.addEventListener(
+    "change",
+    updateAssignRestorationSaveState
+  );
+
+
+/* =====================
+   SAVE — LINK EXISTING TASK
+===================== */
+
+document
+  .getElementById(
+    "saveAssignRestorationBtn"
+  )
+  ?.addEventListener(
+    "click",
+    async () => {
+
+      const overlay =
+        document.getElementById(
+          "assignRestorationOverlay"
+        );
+
+      const modeSelect =
+        document.getElementById(
+          "assignRestorationMode"
+        );
+
+      const taskSelect =
+        document.getElementById(
+          "assignRestorationExistingTask"
+        );
+
+      const saveBtn =
+        document.getElementById(
+          "saveAssignRestorationBtn"
+        );
+
+
+      if (
+        !overlay ||
+        !modeSelect ||
+        !taskSelect ||
+        !saveBtn
+      ) {
+        return;
+      }
+
+
+      /* =====================
+         EXISTING TASK MODE ONLY
+
+         Historical task creation will
+         be connected separately.
+      ===================== */
+
+      if (
+        modeSelect.value !== "existing" ||
+        saveBtn.disabled
+      ) {
+        return;
+      }
+
+
+      /* =====================
+         ADMIN CHECK
+      ===================== */
+
+      const role =
+        String(
+          localStorage.getItem(
+            "cmmsRole"
+          ) || ""
+        ).toLowerCase();
+
+
+      if (role !== "admin") {
+
+        alert(
+          "Only Admin can assign Restoration Tasks."
+        );
+
+        return;
+      }
+
+
+      /* =====================
+         VALIDATE SELECTED IDS
+      ===================== */
+
+      const breakdownId =
+        Number(
+          overlay.dataset.breakdownId
+        );
+
+      const taskId =
+        Number(
+          taskSelect.value
+        );
+
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0 ||
+        !Number.isInteger(taskId) ||
+        taskId <= 0
+      ) {
+
+        alert(
+          "Invalid Breakdown or Task ID."
+        );
+
+        return;
+      }
+
+
+      /* =====================
+         CONFIRM ASSIGNMENT
+
+         This action changes the selected
+         completed task to Restoration and
+         links it to the CLOSED Breakdown.
+      ===================== */
+
+      const confirmed =
+        window.confirm(
+          `Link Task #${taskId} to ` +
+          `BD-${String(breakdownId).padStart(5, "0")}?\n\n` +
+          `The task will become Restoration.\n` +
+          `Its existing execution will be preserved.\n` +
+          `The Breakdown will remain CLOSED.`
+        );
+
+
+      if (!confirmed) return;
+
+
+      /* =====================
+         LINK EXISTING TASK
+      ===================== */
+
+      try {
+
+        saveBtn.disabled = true;
+
+        saveBtn.textContent =
+          "Linking...";
+
+
+        const response =
+          await fetch(
+            `/breakdowns/${breakdownId}/link-existing-task`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "x-cmms-role":
+                  role
+              },
+
+              body:
+                JSON.stringify({
+                  task_id: taskId
+                })
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.error ||
+            "Failed to link existing task"
+          );
+
+        }
+
+
+        /* =====================
+           SUCCESS
+
+           The backend has linked the task.
+           Close the assignment modal.
+        ===================== */
+
+        closeAssignRestorationModal();
+
+
+        /* =====================
+           REFRESH TASK DATA
+
+           The linked task is now classified
+           as Restoration.
+        ===================== */
+
+        try {
+
+          await loadTasks();
+
+        } catch (refreshError) {
+
+          console.error(
+            "TASK REFRESH AFTER ASSIGN ERROR:",
+            refreshError
+          );
+
+        }
+
+
+        alert(
+          `Task #${taskId} was linked to ` +
+          `BD-${String(breakdownId).padStart(5, "0")}.\n\n` +
+          `The Breakdown remains CLOSED.`
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          "LINK EXISTING RESTORATION ERROR:",
+          err
+        );
+
+
+        alert(
+          err.message ||
+          "Could not link existing task."
+        );
+
+
+        /* =====================
+           RESTORE SAVE BUTTON
+           AFTER FAILED REQUEST
+        ===================== */
+
+        updateAssignRestorationSaveState();
+
+      }
+
+    }
+  );
+
+/* =========================================================
    RESTORATION SECTION → UNITS
 
    Existing Section dropdown:
@@ -10177,4 +10516,3 @@ async function openAssetBreakdowns(serial) {
   activateAssetTab("breakdowns");
 
 }
-
