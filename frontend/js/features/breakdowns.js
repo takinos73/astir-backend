@@ -8647,6 +8647,91 @@ function updateAssignRestorationSaveState() {
 
 }
 
+/* =========================================================
+   ASSIGN RESTORATION — TECHNICIAN DROPDOWN
+
+   Populates the Admin Historical Restoration form
+   using the existing CMMS techniciansData.
+
+   IMPORTANT:
+   - Uses the same active-technician list as the
+     standard Task completion modal.
+   - Stores technician ID, not technician name.
+   - Does NOT modify the standard technicianSelect
+     or populateTechnicianDropdown().
+========================================================= */
+
+function populateAssignRestorationTechnicians() {
+
+  const select =
+    document.getElementById(
+      "assignRestorationTechnician"
+    );
+
+  if (!select) return;
+
+
+  /* =====================
+     RESET DROPDOWN
+  ===================== */
+
+  select.replaceChildren();
+
+  const defaultOption =
+    document.createElement("option");
+
+  defaultOption.value = "";
+  defaultOption.textContent =
+    "Select technician";
+
+  select.appendChild(defaultOption);
+
+
+  /* =====================
+     EXISTING TECHNICIAN DATA
+  ===================== */
+
+  if (
+    !Array.isArray(state.techniciansData)
+  ) {
+
+    console.warn(
+      "ASSIGN RESTORATION: Technician data not loaded."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     ACTIVE TECHNICIANS
+
+     Same eligibility and sorting
+     as the standard completion modal.
+  ===================== */
+
+  state.techniciansData
+    .filter(t => t.active !== false)
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, "el")
+    )
+    .forEach(t => {
+
+      const option =
+        document.createElement("option");
+
+      option.value =
+        String(t.id);
+
+      option.textContent =
+        t.name;
+
+      select.appendChild(option);
+
+    });
+
+}
+
 
 /* =====================
    ASSIGNMENT MODE CHANGED
@@ -9603,12 +9688,24 @@ document
         saveBtn.disabled = true;
       }
 
-
       /* =====================
-        SHOW MODAL
+        POPULATE TECHNICIANS
+
+        Uses the existing CMMS
+        technician data.
+
+        Does NOT open or modify the
+        standard Task completion modal.
       ===================== */
 
-      overlay.style.display = "flex";
+      populateAssignRestorationTechnicians();
+
+
+    /* =====================
+      SHOW MODAL
+    ===================== */
+
+    overlay.style.display = "flex";
 
 
       } catch (err) {
