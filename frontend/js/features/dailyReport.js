@@ -229,14 +229,6 @@ function buildDailyReportExecutionMix(executions) {
 
     }
 
-    // Legacy Unplanned
-    else if (
-      e.is_planned === false
-    ) {
-
-      mix.legacyUnplanned++;
-
-    }
 
     // Planned
     else {
@@ -251,9 +243,7 @@ function buildDailyReportExecutionMix(executions) {
   mix.total =
     mix.preventive +
     mix.planned +
-    mix.restoration +
-    mix.legacyUnplanned;
-
+    mix.restoration;
 
   return mix;
 }
@@ -294,12 +284,6 @@ function renderDailyReportExecutionMixChart(mix) {
       value: mix.restoration,
       color: "#ff4848"
     },
-
-    {
-      label: "Legacy Unplanned",
-      value: mix.legacyUnplanned,
-      color: "#c0392b"
-    }
 
   ];
 
@@ -491,9 +475,7 @@ function buildDailyReportBreakdownOutcome(breakdowns) {
   return outcome;
 }
 
-function renderDailyReportBreakdownOutcomeChart(
-  outcome
-) {
+function renderDailyReportBreakdownOutcomeChart(outcome) {
 
   const total =
     Number(outcome.total) || 0;
@@ -920,20 +902,6 @@ function buildDailyReportLineActivity(executions) {
 
     }
 
-
-    /* =====================
-       LEGACY UNPLANNED
-    ====================== */
-
-    else if (
-      e.is_planned === false
-    ) {
-
-      item.legacyUnplanned++;
-
-    }
-
-
     /* =====================
        PLANNED
     ====================== */
@@ -1016,13 +984,6 @@ function renderDailyReportLineActivityChart(
           100 /
           maxTotal;
 
-
-        const legacyWidth =
-          item.legacyUnplanned *
-          100 /
-          maxTotal;
-
-
         return `
           <div class="daily-report-stacked-row">
 
@@ -1083,24 +1044,7 @@ function renderDailyReportLineActivityChart(
                   : ""
               }
 
-
-              ${
-                item.legacyUnplanned > 0
-                  ? `
-                    <div
-                      class="daily-report-stacked-segment"
-                      style="
-                        width:${legacyWidth}%;
-                        background:#c0392b;
-                      "
-                      title="Legacy Unplanned: ${item.legacyUnplanned}"
-                    ></div>
-                  `
-                  : ""
-              }
-
             </div>
-
 
             <div class="daily-report-stacked-total">
               ${item.total}
@@ -1148,15 +1092,6 @@ function renderDailyReportLineActivityChart(
           style="background:#e67e22;"
         ></span>
         Restoration
-      </div>
-
-
-      <div class="daily-report-chart-legend-item">
-        <span
-          class="daily-report-chart-legend-swatch"
-          style="background:#c0392b;"
-        ></span>
-        Legacy Unplanned
       </div>
 
     </div>
