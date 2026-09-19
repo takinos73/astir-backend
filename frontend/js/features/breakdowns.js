@@ -9551,19 +9551,391 @@ document
       }
 
 
-      /* =====================
-         EXISTING TASK MODE ONLY
+  /* =====================================================
+    ASSIGNMENT MODE
 
-         Historical task creation will
-         be connected separately.
+    EXISTING:
+    - Continue to the existing Link Task flow below.
+
+    NEW:
+    - Record work already performed during the Breakdown.
+    - Create the Restoration Task directly as Done.
+    - Create its historical execution in the same
+      backend transaction.
+
+    IMPORTANT:
+    - Admin only.
+    - Does NOT reopen or modify the Breakdown.
+    - Does NOT change the existing Link Task flow.
+  ===================================================== */
+
+  if (saveBtn.disabled) {
+    return;
+  }
+
+
+  /* =====================
+    CREATE NEW & COMPLETE
+  ===================== */
+
+  if (modeSelect.value === "new") {
+
+    /* =====================
+      ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        localStorage.getItem("cmmsRole") || ""
+      ).toLowerCase();
+
+    if (role !== "admin") {
+
+      alert(
+        "Only Admin can record Historical Restoration."
+      );
+
+      return;
+    }
+
+
+    /* =====================
+      SELECTED BREAKDOWN
+    ===================== */
+
+    const breakdownId =
+      Number(
+        overlay.dataset.breakdownId
+      );
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
+      alert("Invalid Breakdown ID.");
+
+      return;
+    }
+
+
+    /* =====================
+      WORK PERFORMED
+    ===================== */
+
+    const task =
+      String(
+        document.getElementById(
+          "assignRestorationTask"
+        )?.value || ""
+      ).trim();
+
+
+    /* =====================
+      SECTION
+
+      Existing dropdown or
+      manual Section input.
+    ===================== */
+
+    const sectionSelect =
+      document.getElementById(
+        "assignRestorationSection"
+      );
+
+    const sectionInput =
+      document.getElementById(
+        "assignRestorationSectionInput"
+      );
+
+    const section =
+      sectionSelect?.style.display !== "none"
+        ? String(sectionSelect?.value || "").trim()
+        : String(sectionInput?.value || "").trim();
+
+
+    /* =====================
+      UNIT
+
+      Existing dropdown or
+      manual / New Unit input.
+    ===================== */
+
+    const unitSelect =
+      document.getElementById(
+        "assignRestorationUnit"
+      );
+
+    const unitInput =
+      document.getElementById(
+        "assignRestorationUnitInput"
+      );
+
+    const unit =
+      unitSelect?.style.display !== "none" &&
+      unitSelect?.value !== "__new__"
+        ? String(unitSelect?.value || "").trim()
+        : String(unitInput?.value || "").trim();
+
+
+    /* =====================
+      ACTUAL EXECUTION DETAILS
+    ===================== */
+
+    const technicianId =
+      Number(
+        document.getElementById(
+          "assignRestorationTechnician"
+        )?.value
+      );
+
+    const completedValue =
+      document.getElementById(
+        "assignRestorationCompletedAt"
+      )?.value || "";
+
+    const durationValue =
+      document.getElementById(
+        "assignRestorationActualDuration"
+      )?.value ?? "";
+
+    const actualDuration =
+      Number(durationValue);
+
+    const notes =
+      String(
+        document.getElementById(
+          "assignRestorationNotes"
+        )?.value || ""
+      ).trim();
+
+
+    /* =====================
+      VALIDATE REQUIRED FIELDS
+
+      The button state is a UI aid.
+      Validate again before submitting.
+    ===================== */
+
+    if (
+      !task ||
+      !section ||
+      !unit ||
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0 ||
+      !completedValue ||
+      durationValue === "" ||
+      !Number.isInteger(actualDuration) ||
+      actualDuration < 0
+    ) {
+
+      alert(
+        "Please complete all required Restoration fields."
+      );
+
+      return;
+    }
+
+
+    /* =====================
+      LOCAL DATE/TIME → UTC
+
+      datetime-local contains the actual
+      local completion date and time.
+
+      Send its ISO timestamp to the backend.
+      Do NOT use the current recording time.
+    ===================== */
+
+    const completedDate =
+      new Date(completedValue);
+
+    if (
+      Number.isNaN(
+        completedDate.getTime()
+      )
+    ) {
+
+      alert("Invalid completion date/time.");
+
+      return;
+    }
+
+
+    /* =====================
+      CONFIRM HISTORICAL RECORDING
+
+      The backend will verify that the
+      actual completion time belongs to
+      the CLOSED Breakdown period.
+    ===================== */
+
+    const confirmed =
+      window.confirm(
+        `Record completed Restoration for ` +
+        `BD-${String(breakdownId).padStart(5, "0")}?\n\n` +
+        `Work: ${task}\n` +
+        `Completed: ${completedValue.replace("T", " ")}\n` +
+        `Actual Duration: ${actualDuration} min\n\n` +
+        `The Breakdown will remain CLOSED.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    /* =====================
+      CREATE TASK + EXECUTION
+
+      Both records are created together
+      by the historical-restoration endpoint.
+    ===================== */
+
+    try {
+
+      saveBtn.disabled = true;
+
+      saveBtn.textContent =
+        "Recording...";
+
+
+      const response =
+        await fetch(
+          `/breakdowns/${breakdownId}/historical-restoration`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "x-cmms-role":
+                role
+            },
+
+            body:
+              JSON.stringify({
+
+                task,
+
+                section,
+
+                unit,
+
+                technician_id:
+                  technicianId,
+
+                executed_at:
+                  completedDate.toISOString(),
+
+                actual_duration_min:
+                  actualDuration,
+
+                notes:
+                  notes || null
+
+              })
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          result.error ||
+          "Failed to record Historical Restoration"
+        );
+
+      }
+
+
+      /* =====================
+        SUCCESS
+
+        The backend has created both
+        the completed Restoration Task
+        and its historical execution.
       ===================== */
 
-      if (
-        modeSelect.value !== "existing" ||
-        saveBtn.disabled
-      ) {
-        return;
+      closeAssignRestorationModal();
+
+
+      /* =====================
+        REFRESH TASK DATA
+
+        Refresh failures must not be
+        reported as recording failures.
+      ===================== */
+
+      try {
+
+        await loadTasks();
+
+      } catch (refreshError) {
+
+        console.error(
+          "TASK REFRESH AFTER HISTORICAL RESTORATION:",
+          refreshError
+        );
+
       }
+
+
+      alert(
+        `Historical Restoration recorded successfully.\n\n` +
+        `Task #${result.task?.id ?? "-"}\n` +
+        `Breakdown: BD-${String(breakdownId).padStart(5, "0")}\n\n` +
+        `The Breakdown remains CLOSED.`
+      );
+
+
+    } catch (err) {
+
+      console.error(
+        "CREATE HISTORICAL RESTORATION ERROR:",
+        err
+      );
+
+
+      alert(
+        err.message ||
+        "Could not record Historical Restoration."
+      );
+
+    } finally {
+
+      updateAssignRestorationSaveState();
+
+    }
+
+
+    /* =====================
+      END NEW MODE
+
+      Do not continue to the
+      existing-task assignment flow.
+    ===================== */
+
+    return;
+
+  }
+
+
+  /* =====================
+    LINK EXISTING TASK
+
+    Existing assignment logic
+    continues unchanged below.
+  ===================== */
+
+  if (modeSelect.value !== "existing") {
+    return;
+  }
 
 
       /* =====================
