@@ -5,20 +5,39 @@
 
 
 /* =====================================================
-   REPORT PERIOD
-   Rolling last 24 hours
+   DAILY MAINTENANCE REPORT PERIOD
+
+   Monday:
+     Friday 09:00 → Monday 09:00
+
+   Tuesday–Friday:
+     Previous day 09:00 → Today 09:00
+
+   Before 09:00:
+     Show the most recently completed reporting period
 ===================================================== */
 
 function getDailyReportPeriod() {
 
-  const to =
-    new Date();
+  const now = new Date();
 
-  const from =
-    new Date(
-      to.getTime() -
-      24 * 60 * 60 * 1000
-    );
+  // End of the most recently completed reporting period
+  const to = new Date(now);
+  to.setHours(9, 0, 0, 0);
+
+  // If it is before 09:00, today's period is not complete yet
+  if (now < to) {
+    to.setDate(to.getDate() - 1);
+  }
+
+  const from = new Date(to);
+
+  // Monday's report includes the weekend
+  if (to.getDay() === 1) {
+    from.setDate(from.getDate() - 3);
+  } else {
+    from.setDate(from.getDate() - 1);
+  }
 
   return {
     from,
