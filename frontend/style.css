@@ -1430,7 +1430,10 @@ tr.history-unplanned {
   background: var(--bg-card-alt);
   padding: 2px 8px;
   border-radius: 10px;
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-subtle);
+  box-shadow:
+    0 0 0 1px rgba(130, 155, 185, 0.08),
+    0 16px 45px rgba(0, 0, 0, 0.35);
   text-align: left;
   pointer-events: auto;
   /* 🔑 default: fit content */
