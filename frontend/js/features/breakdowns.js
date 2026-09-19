@@ -8703,7 +8703,7 @@ document
     }
   );
 
-  /* =========================================================
+/* =========================================================
    BREAKDOWNS TABLE ACTIONS
 ========================================================= */
 
@@ -8860,6 +8860,159 @@ document.addEventListener(
 
   }
 );
+
+/* =========================================================
+   BREAKDOWNS TABLE — ASSIGN RESTORATION TASK
+
+   Admin only.
+   Available only for CLOSED Breakdowns.
+
+   Supports retrospective assignment of maintenance
+   work without reopening the Breakdown.
+
+   Planned modes:
+   - Link an existing completed task.
+   - Create and complete a historical Restoration Task.
+
+   CURRENT STEP:
+   - Validate Admin role and Breakdown ID.
+   - Verify that the Breakdown is still CLOSED.
+   - Confirm that the correct Breakdown was selected.
+
+   IMPORTANT:
+   - Does NOT modify Breakdown status or downtime.
+   - Does NOT create or update maintenance tasks yet.
+   - Existing View / Reopen actions remain unchanged.
+========================================================= */
+
+document
+  .getElementById("breakdownsTableBody")
+  ?.addEventListener(
+    "click",
+    async event => {
+
+      const assignBtn =
+        event.target.closest(
+          ".breakdown-assign-restoration-btn"
+        );
+
+      if (!assignBtn) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+
+      /* =====================
+         ADMIN CHECK
+      ===================== */
+
+      const role =
+        String(
+          localStorage.getItem("cmmsRole") || ""
+        ).toLowerCase();
+
+      if (role !== "admin") {
+
+        alert(
+          "Only Admin can assign Restoration Tasks."
+        );
+
+        return;
+      }
+
+
+      /* =====================
+         BREAKDOWN ID
+      ===================== */
+
+      const breakdownId =
+        Number(
+          assignBtn.dataset.breakdownId
+        );
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0
+      ) {
+
+        alert("Invalid Breakdown ID");
+        return;
+      }
+
+
+      /* =====================
+         VERIFY CURRENT STATUS
+
+         Read the current Breakdown status
+         from the backend before opening
+         the assignment workflow.
+      ===================== */
+
+      try {
+
+        const response =
+          await fetch(
+            `/breakdowns/${breakdownId}`
+          );
+
+        const breakdown =
+          await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            breakdown.error ||
+            "Failed to load Breakdown"
+          );
+        }
+
+        if (
+          String(
+            breakdown.status || ""
+          ).toUpperCase() !== "CLOSED"
+        ) {
+
+          alert(
+            "This Breakdown is no longer CLOSED."
+          );
+
+          return;
+        }
+
+
+        /* =====================
+           ASSIGN WORKFLOW TEST
+
+           Temporary confirmation only.
+
+           The Admin assignment modal
+           will be connected here next.
+        ===================== */
+
+        alert(
+          `Assign Restoration Task\n\n` +
+          `BD-${String(breakdownId).padStart(5, "0")}\n` +
+          `Status: CLOSED\n\n` +
+          `Ready for historical task assignment.`
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          "ASSIGN RESTORATION ERROR:",
+          err
+        );
+
+        alert(
+          err.message ||
+          "Could not open Restoration assignment."
+        );
+
+      }
+
+    }
+  );
 
 /* =========================================================
    EDIT BREAKDOWN EVENTS
