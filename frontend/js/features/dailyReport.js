@@ -1668,6 +1668,219 @@ function buildDailyReportWorkloadHtml(
 }
 
 /* =====================================================
+   NEXT 24H OTHER WORK
+
+   Read-only summary from existing task data:
+   - Other Planned Tasks due in next 24H
+   - All open BD-linked Restoration Tasks
+   - Total open Overdue Backlog
+
+   Overdue Backlog is informational and may overlap
+   with the categories shown elsewhere on Page 3.
+   It must not be added to the next-24H workload.
+===================================================== */
+
+function buildDailyReportOtherWorkHtml(now, end) {
+
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const tasks = Array.isArray(state.tasksData)
+    ? state.tasksData
+    : [];
+
+  const isOpen = t =>
+    String(t.status || "").trim().toLowerCase() !== "done";
+
+  // due_date represents a calendar date,
+  // not a confirmed maintenance execution time.
+
+  const getDue = t => {
+
+    if (!t.due_date) return null;
+
+    const datePart =
+      String(t.due_date).slice(0, 10);
+
+    const due =
+      new Date(`${datePart}T00:00:00`);
+
+    return Number.isNaN(due.getTime())
+      ? null
+      : due;
+  };
+
+  const getEstimate = t => {
+
+    const minutes =
+      Number(t.duration_min);
+
+    return (
+      t.duration_min != null &&
+      t.duration_min !== "" &&
+      Number.isFinite(minutes) &&
+      minutes > 0
+    )
+      ? minutes
+      : null;
+  };
+
+  const summarize = selectedTasks => ({
+
+    count: selectedTasks.length,
+
+    minutes: selectedTasks.reduce(
+      (sum, t) =>
+        sum + (getEstimate(t) ?? 0),
+      0
+    ),
+
+    withoutEstimate: selectedTasks.filter(
+      t => getEstimate(t) === null
+    ).length
+
+  });
+
+
+  // Open manual Planned Tasks due today or tomorrow.
+  // Exclude Preventive and BD-linked Restoration Tasks.
+
+  const planned = tasks.filter(t => {
+
+    const due = getDue(t);
+
+    return (
+      isOpen(t) &&
+      t.breakdown_id == null &&
+      Number(t.frequency_hours) <= 0 &&
+      isPlannedManual(t) &&
+      due !== null &&
+      due >= today &&
+      due <= end
+    );
+
+  });
+
+
+  // All open tasks linked to a Breakdown.
+
+  const restoration = tasks.filter(t =>
+    isOpen(t) &&
+    t.breakdown_id != null
+  );
+
+
+  // Overall overdue backlog.
+  // Informational only: may include Preventive,
+  // Planned or Restoration tasks shown elsewhere.
+
+  const overdueBacklog = tasks.filter(t => {
+
+    const due = getDue(t);
+
+    return (
+      isOpen(t) &&
+      due !== null &&
+      due < today
+    );
+
+  });
+
+
+  const items = [
+
+    {
+      label: "OTHER PLANNED",
+      data: summarize(planned),
+      note: "Due in next 24H"
+    },
+
+    {
+      label: "OPEN RESTORATION",
+      data: summarize(restoration),
+      note: "All open BD-linked tasks"
+    },
+
+    {
+      label: "OVERDUE BACKLOG",
+      data: summarize(overdueBacklog),
+      note: "Total overdue · informational"
+    }
+
+  ];
+
+
+  const cards = items.map(item => `
+
+    <div class="daily-report-workload-item">
+
+      <div class="daily-report-workload-label">
+        ${item.label}
+      </div>
+
+      <div class="daily-report-workload-value">
+        ${item.data.count} tasks
+      </div>
+
+      <p>
+        Estimated workload:
+        <strong>
+          ${formatDailyReportMinutes(item.data.minutes)}
+        </strong>
+      </p>
+
+      <p>
+        ${item.note}
+      </p>
+
+      ${
+        item.data.withoutEstimate > 0
+          ? `
+            <p>
+              ${item.data.withoutEstimate}
+              task(s) without estimated duration
+            </p>
+          `
+          : ""
+      }
+
+    </div>
+
+  `).join("");
+
+
+  return `
+
+    <div class="daily-report-chart-card daily-report-chart-card-wide">
+
+      <div class="daily-report-chart-header">
+
+        <div>
+
+          <h2 class="daily-report-chart-title">
+            Other Work
+          </h2>
+
+          <div class="daily-report-chart-subtitle">
+            Planned work, open Restoration and overall
+            Overdue Backlog
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="daily-report-workload">
+        ${cards}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+/* =====================================================
    NEXT 24H PREVENTIVE ASSET WORKLOAD
 
    Read-only:
@@ -1907,12 +2120,12 @@ function buildDailyReportNext24HAssetsHtml(reportTime) {
       ${cards}
     </div>
 
-    <p>
-      Three risk-based candidates for Planner review.
-      Preventive maintenance may be performed on up to
-      two assets, subject to machine availability.
-      Estimated workload is not a committed schedule.
-    </p>
+    <!-- =====================
+         NEXT 24H OTHER WORK
+         Read-only information from existing tasks.
+    ====================== -->
+
+    ${buildDailyReportOtherWorkHtml(now, end)}
 
   `;
 
