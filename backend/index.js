@@ -4170,7 +4170,248 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET ASSIGNABLE EXISTING TASKS
+   GET /breakdowns/:id/assignable-tasks
 
+   Admin-only candidate list for linking existing
+   completed maintenance work to a CLOSED Breakdown.
+
+   A candidate task must:
+   - Belong to the same asset as the Breakdown.
+   - Be completed and not soft-deleted.
+   - Have no existing breakdown_id.
+   - Not be Preventive or recurring.
+   - Belong to the planned-task completion model.
+   - Have exactly ONE execution.
+   - Have its REAL execution completion time within
+     the Breakdown started_at → closed_at window.
+
+   IMPORTANT:
+   - Task created_at is NOT used for time validation.
+   - The task may have been entered into CMMS later.
+   - The Breakdown is NOT reopened or modified.
+   - This endpoint only RETURNS eligible candidates.
+   - All conditions must be checked again by the
+     future assignment endpoint before linking.
+========================================================= */
+
+app.get("/breakdowns/:id/assignable-tasks", async (req, res) => {
+
+    /* =====================
+       ADMIN CHECK
+    ===================== */
+
+    const role =
+      String(
+        req.headers["x-cmms-role"] || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    if (role !== "admin") {
+
+      return res.status(403).json({
+        error: "Admin only"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE BREAKDOWN ID
+    ===================== */
+
+    const breakdownId =
+      Number(req.params.id);
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid Breakdown ID"
+      });
+
+    }
+
+
+    try {
+
+      /* =====================
+         LOAD BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            status,
+            started_at,
+            closed_at
+          FROM breakdowns
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [breakdownId]
+        );
+
+      if (!breakdownResult.rows.length) {
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+
+      }
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         CLOSED BREAKDOWN GUARD
+      ===================== */
+
+      if (
+        String(
+          breakdown.status || ""
+        ).toUpperCase() !== "CLOSED" ||
+        !breakdown.closed_at
+      ) {
+
+        return res.status(409).json({
+          error:
+            "Task assignment requires a CLOSED Breakdown"
+        });
+
+      }
+
+
+      /* =====================================================
+         LOAD ELIGIBLE EXISTING TASKS
+
+         The execution timestamp, NOT the task creation
+         timestamp, determines whether the actual work
+         belongs to the Breakdown incident window.
+
+         Exactly one execution is required to avoid
+         linking an entire recurring execution history
+         to a single Breakdown.
+      ===================================================== */
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            t.id,
+            t.asset_id,
+            t.task,
+            t.section,
+            t.unit,
+            t.type,
+            t.status,
+            t.completed_by,
+            t.completed_at,
+
+            e.id AS execution_id,
+            e.executed_by,
+            e.technician_id,
+            e.executed_at,
+            e.duration_minutes
+
+          FROM maintenance_tasks t
+
+          JOIN task_executions e
+            ON e.task_id = t.id
+
+          WHERE t.asset_id = $1
+
+            AND t.breakdown_id IS NULL
+
+            AND t.deleted_at IS NULL
+
+            AND LOWER(t.status) = 'done'
+
+            AND t.is_planned IS TRUE
+
+            AND COALESCE(
+              t.frequency_hours,
+              0
+            ) = 0
+
+            AND COALESCE(
+              LOWER(t.type),
+              ''
+            ) NOT LIKE 'preventive%'
+
+            AND e.executed_at >= $2::timestamptz
+
+            AND e.executed_at <= $3::timestamptz
+
+            AND NOT EXISTS (
+              SELECT 1
+              FROM task_executions e2
+              WHERE e2.task_id = t.id
+                AND e2.id <> e.id
+            )
+
+          ORDER BY
+            e.executed_at DESC,
+            t.id DESC
+          `,
+          [
+            breakdown.asset_id,
+            breakdown.started_at,
+            breakdown.closed_at
+          ]
+        );
+
+
+      /* =====================
+         RESPONSE
+
+         No database changes.
+      ===================== */
+
+      return res.json({
+
+        breakdown_id:
+          breakdown.id,
+
+        asset_id:
+          breakdown.asset_id,
+
+        started_at:
+          breakdown.started_at,
+
+        closed_at:
+          breakdown.closed_at,
+
+        tasks:
+          result.rows
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /breakdowns/:id/assignable-tasks ERROR:",
+        err
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to load assignable tasks"
+      });
+
+    }
+
+  }
+);
 
 
 /* =====================================================
