@@ -933,3 +933,14 @@ body {
 
   color: #1f4e78;
 }
+
+/* =====================================================
+   PAGE 3 — WORKLOAD CARDS
+
+   Left-align Preventive Candidates and Other Work.
+   Does not affect workload cards on other report pages.
+===================================================== */
+
+.daily-report-page-3 .daily-report-workload-item {
+  text-align: left;
+}
