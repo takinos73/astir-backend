@@ -4115,6 +4115,20 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
         t.is_planned,
         t.breakdown_id,
 
+        /* ===============================================
+          ACTUAL RESTORATION EXECUTION
+
+          For completed tasks, display actual recorded
+          execution data instead of planned values.
+
+          If no execution exists, these fields are NULL.
+          Estimated duration is never used as actual time.
+        =============================================== */
+
+        e.executed_at AS completed_at,
+        e.executed_by AS completed_by,
+        e.duration_minutes AS actual_duration_min,
+
         a.model AS asset_model,
         a.serial_number AS asset_serial,
         a.line_id,
@@ -4128,6 +4142,41 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
 
       LEFT JOIN lines l
         ON l.id = a.line_id
+
+
+      /* ===============================================
+        LOAD ACTUAL TASK EXECUTION
+
+        Read the latest recorded execution for each task.
+
+        LEFT JOIN LATERAL preserves Restoration Tasks
+        that have not been completed yet.
+
+        IMPORTANT:
+        - Does NOT create or modify executions.
+        - Does NOT use estimated duration as actual time.
+        - Does NOT change Breakdown status or downtime.
+      =============================================== */
+
+      LEFT JOIN LATERAL (
+
+        SELECT
+          te.executed_at,
+          te.executed_by,
+          te.duration_minutes
+
+        FROM task_executions te
+
+        WHERE te.task_id = t.id
+
+        ORDER BY
+          te.executed_at DESC,
+          te.id DESC
+
+        LIMIT 1
+
+      ) e ON TRUE
+
 
       WHERE t.breakdown_id = $1
       AND t.deleted_at IS NULL
