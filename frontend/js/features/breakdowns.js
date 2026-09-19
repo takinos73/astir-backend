@@ -9055,6 +9055,166 @@ document
 
       }
 
+      /* =====================================================
+        LOAD ASSIGNABLE EXISTING TASKS
+
+        Loads eligible completed tasks for the selected
+        CLOSED Breakdown.
+
+        Eligibility is checked by the backend:
+        - Same asset
+        - Not linked to another Breakdown
+        - Not Preventive or recurring
+        - Completed, with exactly one execution
+        - Execution time within the Breakdown period
+
+        IMPORTANT:
+        - Read-only operation.
+        - Does NOT link or modify any task.
+        - An empty candidate list is valid.
+      ===================================================== */
+
+      const existingTaskSelect =
+        document.getElementById(
+          "assignRestorationExistingTask"
+        );
+
+      if (!existingTaskSelect) {
+
+        throw new Error(
+          "Existing Task dropdown not found."
+        );
+
+      }
+
+
+      /* =====================
+        RESET PREVIOUS SELECTION
+      ===================== */
+
+      existingTaskSelect.replaceChildren();
+
+      const defaultOption =
+        document.createElement("option");
+
+      defaultOption.value = "";
+      defaultOption.textContent =
+        "Select completed task";
+
+      existingTaskSelect.appendChild(
+        defaultOption
+      );
+
+
+      /* =====================
+        FETCH ELIGIBLE TASKS
+      ===================== */
+
+      const tasksResponse =
+        await fetch(
+          `/breakdowns/${breakdownId}/assignable-tasks`,
+          {
+            headers: {
+              "x-cmms-role": role
+            }
+          }
+        );
+
+      const tasksData =
+        await tasksResponse.json();
+
+      if (!tasksResponse.ok) {
+
+        throw new Error(
+          tasksData.error ||
+          "Failed to load assignable tasks"
+        );
+
+      }
+
+
+      /* =====================
+        POPULATE DROPDOWN
+
+        Display the actual execution time,
+        not the task creation time.
+      ===================== */
+
+      const eligibleTasks =
+        Array.isArray(tasksData.tasks)
+          ? tasksData.tasks
+          : [];
+
+      for (const task of eligibleTasks) {
+
+        const option =
+          document.createElement("option");
+
+        option.value =
+          String(task.id);
+
+        const executionTime =
+          formatBreakdownDate(
+            task.executed_at
+          );
+
+        const duration =
+          task.duration_minutes != null
+            ? `${task.duration_minutes} min`
+            : "Duration not recorded";
+
+        option.textContent =
+          `#${task.id} · ${task.task} · ` +
+          `${executionTime} · ${duration}`;
+
+        existingTaskSelect.appendChild(
+          option
+        );
+
+      }
+
+
+      /* =====================
+        EMPTY CANDIDATE LIST
+
+        No matching task is not an error.
+        Admin may use Create New & Complete
+        once that workflow is connected.
+      ===================== */
+
+      const existingInfo =
+        document.getElementById(
+          "assignRestorationExistingInfo"
+        );
+
+      if (eligibleTasks.length === 0) {
+
+        existingTaskSelect.disabled = true;
+
+        defaultOption.textContent =
+          "No eligible completed tasks found";
+
+        if (existingInfo) {
+
+          existingInfo.textContent =
+            "No completed tasks match this Breakdown's " +
+            "asset and incident period.";
+
+        }
+
+      } else {
+
+        existingTaskSelect.disabled = false;
+
+        if (existingInfo) {
+
+          existingInfo.textContent =
+            `${eligibleTasks.length} eligible completed ` +
+            `task(s) found for this Breakdown.`;
+
+        }
+
+      }
 
       /* =====================
         RESET ASSIGNMENT MODE
