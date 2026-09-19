@@ -1436,8 +1436,8 @@ input[type="checkbox"] {
   gap: 14px;
   flex-wrap: wrap;
 
-  margin: 10px 0 18px 0;
-  padding: 12px 14px;
+  margin: 10px 0 16px 0;
+  padding: 10px 12px;
 
   background: #111722;
   border: 1px solid #273142;
@@ -1617,8 +1617,8 @@ input[type="date"] {
 
   gap: 16px;
 
-  margin-top: 14px;
-  padding: 10px 14px;
+  margin-top: 12px;
+  padding: 8px 12px;
 
   background: #111722;
   border: 1px solid #273142;
