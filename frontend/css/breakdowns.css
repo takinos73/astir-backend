@@ -1860,6 +1860,37 @@ input[type="date"] {
   margin: 0 0 6px;
 }
 
+/* =====================
+   BREAKDOWN REFERENCE & PERIOD
+===================== */
+
+#assignRestorationModal .assign-restoration-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 6px 16px;
+  margin-top: 10px;
+}
+
+#assignRestorationModal #assignRestorationBreakdownRef {
+  color: #e58b8b;
+
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  white-space: nowrap;
+}
+
+#assignRestorationModal #assignRestorationPeriod {
+  color: var(--text-primary);
+
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
 
 /* =====================
    FORM FIELDS
