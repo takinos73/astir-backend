@@ -1929,8 +1929,36 @@ document.addEventListener(
         "openDailyReportBtn"
       );
 
+    const checkbox =
+      document.getElementById(
+        "dailyReport7Days"
+      );
+
     if (!btn) return;
 
+    // Update button title based on selected period
+    function updateReportButtonTitle() {
+
+      btn.textContent =
+        checkbox?.checked
+          ? "7 Days Report"
+          : "24H Report";
+
+    }
+
+    if (checkbox) {
+
+      checkbox.addEventListener(
+        "change",
+        updateReportButtonTitle
+      );
+
+    }
+
+    // Set the correct title on page load
+    updateReportButtonTitle();
+
+    // Open report
     btn.addEventListener(
       "click",
       () => {
