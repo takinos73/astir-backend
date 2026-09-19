@@ -9959,17 +9959,41 @@ document
         saveBtn.disabled = true;
       }
 
-      /* =====================
-        POPULATE TECHNICIANS
+    /* =====================
+      POPULATE TECHNICIANS
 
-        Uses the existing CMMS
-        technician data.
+      Uses the existing CMMS
+      technician data.
 
-        Does NOT open or modify the
-        standard Task completion modal.
-      ===================== */
+      Does NOT open or modify the
+      standard Task completion modal.
+    ===================== */
 
-      populateAssignRestorationTechnicians();
+    populateAssignRestorationTechnicians();
+
+
+    /* =====================
+      LOAD ASSET SECTIONS
+
+      Uses the selected Breakdown asset.
+
+      The Admin assignment modal has
+      its own independent location catalogue.
+
+      Unit selection will be connected
+      in the next step.
+    ===================== */
+
+    await populateAssignRestorationSections(
+      breakdown.asset_id
+    );
+
+
+    /* =====================
+      SHOW MODAL
+    ===================== */
+
+    overlay.style.display = "flex";
 
 
     /* =====================
