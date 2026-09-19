@@ -747,16 +747,35 @@ function renderBreakdownsTable(breakdowns) {
 
 
       /* =====================
-         REOPEN ACTION
+        REOPEN ACTION
 
-         Admin only.
-         Available only for CLOSED Breakdowns.
+        Admin only.
+        Available only for CLOSED Breakdowns.
       ===================== */
 
       const canReopen =
         isAdmin &&
         normalizedStatus === "CLOSED";
 
+
+      /* =====================
+        ASSIGN RESTORATION ACTION
+
+        Admin only.
+        Available only for CLOSED Breakdowns.
+
+        Allows the Admin to:
+        - Link an existing completed task.
+        - Create and complete a historical
+          Restoration Task.
+
+        Does NOT reopen the Breakdown
+        or modify its downtime.
+      ===================== */
+
+      const canAssignRestoration =
+        isAdmin &&
+        normalizedStatus === "CLOSED";
 
       return `
         <tr>
@@ -845,6 +864,22 @@ function renderBreakdownsTable(breakdowns) {
                   >
                     ↻ Reopen
                   </button>
+                    `
+                    : ""
+                }
+
+                ${
+                  canAssignRestoration
+                    ? `
+                      <button
+                        class="btn-table breakdown-action-btn breakdown-assign-restoration-btn"
+                        type="button"
+                        data-breakdown-id="${id}"
+                        title="Assign Restoration Task"
+                        aria-label="Assign Restoration Task"
+                      >
+                        🔗 Assign Task
+                      </button>
                     `
                     : ""
                 }

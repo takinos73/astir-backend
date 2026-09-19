@@ -4873,6 +4873,16 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
    - Preventive (frequency_hours > 0): ROTATE
    - Planned / Restoration without frequency: FINISH
 
+   HISTORICAL COMPLETION:
+   - completed_at may represent the REAL time at which
+     the maintenance work was previously performed.
+   - Therefore completed_at may be earlier than the
+     task created_at timestamp.
+   - This supports Restoration work recorded later
+     for an already restored / historical Breakdown.
+   - task_executions.executed_at keeps the REAL
+     maintenance execution time.
+
    SAFETY:
    - One-off tasks cannot be completed twice
    - Row is locked during completion
