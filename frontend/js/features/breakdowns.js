@@ -6120,7 +6120,28 @@ function renderRestorationTasks(tasks) {
       const notes =
         task.notes || "";
 
-      const duration =
+      /* =====================
+        RESTORATION TASK TIME DATA
+
+        OPEN TASK:
+        - Show planned Due Date.
+        - Show estimated duration.
+
+        COMPLETED TASK:
+        - Show actual completion date/time.
+        - Show actual execution duration,
+          only when available.
+
+        IMPORTANT:
+        - Estimated duration is NOT actual duration.
+        - Due Date is NOT completion date.
+        - No task or execution data is modified.
+      ===================== */
+
+      const isDone =
+        normalizedStatus === "DONE";
+
+      const estimatedDuration =
         task.duration_min;
 
       const due =
@@ -6129,6 +6150,16 @@ function renderRestorationTasks(tasks) {
               task.due_date
             )
           : "-";
+
+      const completed =
+        task.completed_at
+          ? formatBreakdownDate(
+              task.completed_at
+            )
+          : null;
+
+      const actualDuration =
+        task.actual_duration_min;
 
 
       return `
@@ -6218,22 +6249,70 @@ function renderRestorationTasks(tasks) {
                 : ""
             }
 
-            <div>
-              <strong>Due:</strong>
-              ${escapeBreakdownHtml(due)}
-            </div>
+          ${
+            isDone
+              ? `
 
-            ${
-              duration !== null &&
-              duration !== undefined
-                ? `
-                  <div>
-                    <strong>Est.:</strong>
-                    ${escapeBreakdownHtml(duration)} min
-                  </div>
-                `
-                : ""
-            }
+                <!-- =====================
+                    COMPLETED RESTORATION
+
+                    Display actual completion details.
+                    Never display Due / Estimated time
+                    as completed execution values.
+                ===================== -->
+
+                ${
+                  completed
+                    ? `
+                      <div>
+                        <strong>Completed:</strong>
+                        ${escapeBreakdownHtml(completed)}
+                      </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  actualDuration !== null &&
+                  actualDuration !== undefined
+                    ? `
+                      <div>
+                        <strong>Actual:</strong>
+                        ${escapeBreakdownHtml(actualDuration)} min
+                      </div>
+                    `
+                    : ""
+                }
+
+              `
+              : `
+
+                <!-- =====================
+                    OPEN RESTORATION
+
+                    Display planned schedule
+                    and estimated work duration.
+                ===================== -->
+
+                <div>
+                  <strong>Due:</strong>
+                  ${escapeBreakdownHtml(due)}
+                </div>
+
+                ${
+                  estimatedDuration !== null &&
+                  estimatedDuration !== undefined
+                    ? `
+                      <div>
+                        <strong>Est.:</strong>
+                        ${escapeBreakdownHtml(estimatedDuration)} min
+                      </div>
+                    `
+                    : ""
+                }
+
+              `
+          }
 
           </div>
 
