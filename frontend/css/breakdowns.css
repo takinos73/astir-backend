@@ -53,7 +53,7 @@
 #restorationTaskModal h3,
 #closeBreakdownModal h2,
 #closeBreakdownModal h3 {
-  color: var(--bd-text);
+  color: rgb(255, 60, 60);
 }
 
 #newBreakdownModal .section-subtitle,
