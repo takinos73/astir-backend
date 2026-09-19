@@ -8640,10 +8640,72 @@ function updateAssignRestorationSaveState() {
       : "Create & Complete";
 
 
+/* =====================
+   SAVE AVAILABILITY
+
+   LINK EXISTING:
+   - Requires an eligible selected task.
+
+   CREATE NEW & COMPLETE:
+   - Requires work description.
+   - Requires technician.
+   - Requires actual completion date/time.
+   - Requires actual duration.
+
+   Section, Unit and Notes remain optional.
+
+   IMPORTANT:
+   This function only controls the button state.
+   It does NOT save or modify maintenance data.
+===================== */
+
+if (isExisting) {
+
   saveBtn.disabled =
-    !isExisting ||
     taskSelect.disabled ||
     !taskSelect.value;
+
+  return;
+}
+
+
+  /* =====================
+    HISTORICAL COMPLETION
+    REQUIRED FIELDS
+  ===================== */
+
+  const taskName =
+    document.getElementById(
+      "assignRestorationTask"
+    )?.value.trim() || "";
+
+  const technicianId =
+    document.getElementById(
+      "assignRestorationTechnician"
+    )?.value || "";
+
+  const completedAt =
+    document.getElementById(
+      "assignRestorationCompletedAt"
+    )?.value || "";
+
+  const durationValue =
+    document.getElementById(
+      "assignRestorationActualDuration"
+    )?.value ?? "";
+
+
+  const actualDuration =
+    Number(durationValue);
+
+
+  saveBtn.disabled =
+    !taskName ||
+    !technicianId ||
+    !completedAt ||
+    durationValue === "" ||
+    !Number.isInteger(actualDuration) ||
+    actualDuration < 0;
 
 }
 
@@ -9350,6 +9412,43 @@ document
     updateAssignRestorationSaveState
   );
 
+  /* =========================================================
+    ASSIGN RESTORATION — HISTORICAL FORM VALIDATION
+
+    Updates Save availability when the Admin changes
+    the required Historical Restoration fields.
+
+    IMPORTANT:
+    - Does NOT submit the form.
+    - Does NOT create a task or execution.
+    - Does NOT modify the Breakdown.
+    - Backend date/time validation will still apply
+      when the Save action is connected.
+  ========================================================= */
+
+  [
+    "assignRestorationTask",
+    "assignRestorationTechnician",
+    "assignRestorationCompletedAt",
+    "assignRestorationActualDuration"
+  ].forEach(fieldId => {
+
+    const field =
+      document.getElementById(fieldId);
+
+    if (!field) return;
+
+    field.addEventListener(
+      "input",
+      updateAssignRestorationSaveState
+    );
+
+    field.addEventListener(
+      "change",
+      updateAssignRestorationSaveState
+    );
+
+  });
 
 /* =====================
    SAVE — LINK EXISTING TASK
