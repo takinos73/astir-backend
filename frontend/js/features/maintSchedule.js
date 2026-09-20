@@ -1129,7 +1129,7 @@ window.openNewIncidentChooser = function () {
    Asset selection and Save will be connected next.
 ========================================================= */
 
-function openNewScheduledMaintenanceModal() {
+async function openNewScheduledMaintenanceModal() {
 
   let overlay =
     document.getElementById("newScheduledMaintenanceOverlay");
@@ -1333,11 +1333,198 @@ function openNewScheduledMaintenanceModal() {
 
 
   /* =====================
+     LOAD ASSETS
+
+     Uses the existing CMMS asset data.
+     No independent SM asset API is needed.
+  ===================== */
+
+  const assetSelect =
+    document.getElementById("new-sm-asset");
+
+  if (assetSelect) {
+    assetSelect.disabled = true;
+  }
+
+  try {
+
+    if (
+      !Array.isArray(state.assetsData) ||
+      state.assetsData.length === 0
+    ) {
+      await loadAssets();
+    }
+
+    populateScheduledMaintenanceAssetDropdown();
+
+    if (assetSelect) {
+      assetSelect.value = "";
+    }
+
+  } catch (err) {
+
+    console.error(
+      "SM ASSET LOADING ERROR:",
+      err
+    );
+
+    alert("Could not load Assets. Please try again.");
+
+    return;
+  }
+
+
+  /* =====================
      SHOW MODAL
   ===================== */
 
   overlay.style.display = "flex";
 
-  document.getElementById("new-sm-title")?.focus();
+  assetSelect?.focus();
+
+}
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — POPULATE ASSET DROPDOWN
+
+   Uses the SAME asset data, sorting and labels
+   as the existing New Breakdown form.
+
+   Populates ONLY #new-sm-asset.
+   Does not modify the Breakdown dropdown.
+========================================================= */
+
+function populateScheduledMaintenanceAssetDropdown() {
+
+  const select =
+    document.getElementById("new-sm-asset");
+
+  if (!select) return;
+
+
+  const assets =
+    Array.isArray(state.assetsData)
+      ? state.assetsData
+      : [];
+
+
+  /* =====================
+     DEFAULT OPTION
+  ===================== */
+
+  select.innerHTML = `
+    <option value="">
+      Select asset...
+    </option>
+  `;
+
+
+  /* =====================
+     SORT ASSETS
+     Line → Model → Serial
+  ===================== */
+
+  const sortedAssets =
+    [...assets].sort((a, b) => {
+
+      const lineA =
+        String(
+          a.line_name ||
+          a.line_code ||
+          a.line ||
+          ""
+        );
+
+      const lineB =
+        String(
+          b.line_name ||
+          b.line_code ||
+          b.line ||
+          ""
+        );
+
+
+      const lineCompare =
+        lineA.localeCompare(
+          lineB,
+          undefined,
+          { numeric: true }
+        );
+
+
+      if (lineCompare !== 0) {
+        return lineCompare;
+      }
+
+
+      const modelCompare =
+        String(a.model || "")
+          .localeCompare(
+            String(b.model || "")
+          );
+
+
+      if (modelCompare !== 0) {
+        return modelCompare;
+      }
+
+
+      return String(
+        a.serial_number || ""
+      ).localeCompare(
+        String(
+          b.serial_number || ""
+        )
+      );
+
+    });
+
+
+  /* =====================
+     CREATE OPTIONS
+  ===================== */
+
+  sortedAssets.forEach(asset => {
+
+    if (!asset?.id) return;
+
+
+    const option =
+      document.createElement("option");
+
+    option.value = asset.id;
+
+
+    const line =
+      asset.line_name ||
+      asset.line_code ||
+      asset.line ||
+      "-";
+
+
+    const model =
+      asset.model ||
+      "Unknown Asset";
+
+
+    const serial =
+      asset.serial_number ||
+      "-";
+
+
+    option.textContent =
+      `${line} — ${model} — S/N ${serial}`;
+
+
+    select.appendChild(option);
+
+  });
+
+
+  /* =====================
+     ENABLE DROPDOWN
+  ===================== */
+
+  select.disabled = false;
 
 }
