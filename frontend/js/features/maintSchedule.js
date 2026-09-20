@@ -337,6 +337,15 @@ function openSmTaskModal() {
 
 
   /* =====================
+     LOAD SECTION / UNIT
+
+     Read-only options from the selected SM Asset.
+  ===================== */
+
+  populateSmTaskSections(sm.asset_id);
+
+
+  /* =====================
      OPEN MODAL
   ===================== */
 
@@ -391,6 +400,202 @@ document.addEventListener("click", event => {
     target.id === "smTaskOverlay"
   ) {
     closeSmTaskModal();
+  }
+
+});
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — SECTION / UNIT
+
+   Read-only options from existing CMMS Tasks.
+
+   - Uses the selected SM Asset.
+   - Supports existing or new Section / Unit.
+   - Does NOT create or modify Tasks.
+   - Independent from BD Section / Unit controls.
+========================================================= */
+
+function populateSmTaskSections(assetId) {
+
+  const sectionSelect =
+    document.getElementById("sm-section");
+
+  const sectionInput =
+    document.getElementById("sm-section-input");
+
+  if (!sectionSelect || !sectionInput) return;
+
+  const assetTasks =
+    (Array.isArray(state.tasksData) ? state.tasksData : [])
+      .filter(t =>
+        Number(t.asset_id) === Number(assetId) &&
+        t.deleted_at == null
+      );
+
+  const sections = [
+    ...new Set(
+      assetTasks
+        .map(t => String(t.section || "").trim())
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "el", { numeric: true })
+  );
+
+  sectionSelect.replaceChildren(
+    new Option("Select section", "")
+  );
+
+  sections.forEach(section => {
+    sectionSelect.add(new Option(section, section));
+  });
+
+  if (sections.length > 0) {
+
+    sectionSelect.add(
+      new Option("➕ New section", "__new__")
+    );
+
+    sectionSelect.style.display = "";
+    sectionInput.style.display = "none";
+
+  } else {
+
+    sectionSelect.style.display = "none";
+    sectionInput.style.display = "";
+  }
+
+  sectionInput.value = "";
+
+  updateSmTaskUnits();
+
+}
+
+
+/* =====================
+   UPDATE UNIT OPTIONS
+
+   Uses the selected Section of the SM Asset.
+===================== */
+
+function updateSmTaskUnits() {
+
+  const sectionSelect =
+    document.getElementById("sm-section");
+
+  const sectionInput =
+    document.getElementById("sm-section-input");
+
+  const unitSelect =
+    document.getElementById("sm-unit");
+
+  const unitInput =
+    document.getElementById("sm-unit-input");
+
+  if (
+    !sectionSelect ||
+    !sectionInput ||
+    !unitSelect ||
+    !unitInput
+  ) return;
+
+  unitSelect.replaceChildren(
+    new Option("Select unit", "")
+  );
+
+  unitSelect.style.display = "none";
+  unitInput.style.display = "none";
+  unitInput.value = "";
+
+  const manualSection =
+    sectionSelect.style.display === "none" ||
+    sectionSelect.value === "__new__";
+
+  if (manualSection) {
+    unitInput.style.display = "";
+    return;
+  }
+
+  const section = sectionSelect.value;
+
+  if (!section) return;
+
+  const assetId =
+    currentScheduledMaintenance?.asset_id;
+
+  const units = [
+    ...new Set(
+      (Array.isArray(state.tasksData) ? state.tasksData : [])
+        .filter(t =>
+          Number(t.asset_id) === Number(assetId) &&
+          t.deleted_at == null &&
+          String(t.section || "").trim() === section
+        )
+        .map(t => String(t.unit || "").trim())
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "el", { numeric: true })
+  );
+
+  if (units.length === 0) {
+    unitInput.style.display = "";
+    return;
+  }
+
+  units.forEach(unit => {
+    unitSelect.add(new Option(unit, unit));
+  });
+
+  unitSelect.add(
+    new Option("➕ New unit", "__new__")
+  );
+
+  unitSelect.style.display = "";
+
+}
+
+
+/* =====================
+   SM SECTION / UNIT CHANGES
+
+   Event delegation; listeners are registered once.
+===================== */
+
+document.addEventListener("change", event => {
+
+  if (event.target?.id === "sm-section") {
+
+    const sectionInput =
+      document.getElementById("sm-section-input");
+
+    if (sectionInput) {
+
+      sectionInput.value = "";
+
+      sectionInput.style.display =
+        event.target.value === "__new__"
+          ? ""
+          : "none";
+    }
+
+    updateSmTaskUnits();
+  }
+
+  if (event.target?.id === "sm-unit") {
+
+    const unitInput =
+      document.getElementById("sm-unit-input");
+
+    if (unitInput) {
+
+      unitInput.value = "";
+
+      unitInput.style.display =
+        event.target.value === "__new__"
+          ? ""
+          : "none";
+    }
   }
 
 });
