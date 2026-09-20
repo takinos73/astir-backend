@@ -2375,7 +2375,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-tasks .tasks-toolbar-panel {
-  margin: 12px 0 12px;
+  margin: 10px 0 10px;
   padding: 14px;
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 14px;
@@ -2684,7 +2684,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-tasks .table-card {
-  max-height: calc(100vh - 480px);
+  max-height: calc(100vh - 465px);
   overflow-y: auto;
   overflow-x: auto;
 }
