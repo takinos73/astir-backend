@@ -1272,7 +1272,6 @@ async function openNewScheduledMaintenanceModal() {
             id="saveNewSmBtn"
             class="btn-table"
             type="button"
-            disabled
           >
             Create Scheduled Maintenance
           </button>
@@ -1528,3 +1527,332 @@ function populateScheduledMaintenanceAssetDropdown() {
   select.disabled = false;
 
 }
+
+/* =========================================================
+   NEW SCHEDULED MAINTENANCE — SAVE
+
+   Creates ONE Scheduled Maintenance incident.
+
+   - Uses POST /scheduled-maintenance.
+   - Scheduled dates are optional.
+   - Does NOT create Tasks or Task Executions.
+   - Does NOT use or modify Breakdown routes.
+   - Opens SM Detail after successful creation.
+========================================================= */
+
+let newSmCreateInProgress = false;
+
+
+async function createScheduledMaintenance() {
+
+  /* =====================
+     PREVENT DOUBLE SAVE
+  ===================== */
+
+  if (newSmCreateInProgress) return;
+
+
+  /* =====================
+     FORM FIELDS
+  ===================== */
+
+  const assetSelect =
+    document.getElementById("new-sm-asset");
+
+  const titleInput =
+    document.getElementById("new-sm-title");
+
+  const descriptionInput =
+    document.getElementById("new-sm-description");
+
+  const scheduledStartInput =
+    document.getElementById("new-sm-scheduled-start");
+
+  const scheduledEndInput =
+    document.getElementById("new-sm-scheduled-end");
+
+  const saveBtn =
+    document.getElementById("saveNewSmBtn");
+
+  const overlay =
+    document.getElementById(
+      "newScheduledMaintenanceOverlay"
+    );
+
+
+  /* =====================
+     VALIDATE ASSET
+  ===================== */
+
+  const assetId =
+    Number(assetSelect?.value);
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+    alert("Please select an Asset.");
+    assetSelect?.focus();
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE TITLE
+  ===================== */
+
+  const title =
+    String(titleInput?.value || "").trim();
+
+  if (!title) {
+    alert("Please enter a Maintenance Title.");
+    titleInput?.focus();
+    return;
+  }
+
+
+  /* =====================
+     OPTIONAL SCHEDULED DATES
+
+     datetime-local is interpreted as
+     the browser's LOCAL date/time.
+
+     ISO conversion provides the timezone
+     information required by the API.
+  ===================== */
+
+  const startValue =
+    scheduledStartInput?.value || "";
+
+  const endValue =
+    scheduledEndInput?.value || "";
+
+  let scheduledStartAt = null;
+  let scheduledEndAt = null;
+
+
+  if (startValue) {
+
+    const startDate =
+      new Date(startValue);
+
+    if (
+      Number.isNaN(startDate.getTime())
+    ) {
+      alert("Invalid Scheduled Start.");
+      scheduledStartInput?.focus();
+      return;
+    }
+
+    scheduledStartAt =
+      startDate.toISOString();
+
+  }
+
+
+  if (endValue) {
+
+    const endDate =
+      new Date(endValue);
+
+    if (
+      Number.isNaN(endDate.getTime())
+    ) {
+      alert("Invalid Scheduled End.");
+      scheduledEndInput?.focus();
+      return;
+    }
+
+    scheduledEndAt =
+      endDate.toISOString();
+
+  }
+
+
+  /* =====================
+     CHECK DATE ORDER
+  ===================== */
+
+  if (
+    scheduledStartAt &&
+    scheduledEndAt &&
+    new Date(scheduledEndAt) <
+      new Date(scheduledStartAt)
+  ) {
+    alert(
+      "Scheduled End cannot be earlier than Scheduled Start."
+    );
+
+    scheduledEndInput?.focus();
+    return;
+  }
+
+
+  /* =====================
+     PAYLOAD
+
+     No actual dates or status are supplied.
+     Backend creates the incident as PLANNED.
+  ===================== */
+
+  const payload = {
+
+    asset_id: assetId,
+
+    title,
+
+    description:
+      String(
+        descriptionInput?.value || ""
+      ).trim() || null,
+
+    scheduled_start_at:
+      scheduledStartAt,
+
+    scheduled_end_at:
+      scheduledEndAt
+
+  };
+
+
+  /* =====================
+     CREATE INCIDENT
+  ===================== */
+
+  newSmCreateInProgress = true;
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Creating...";
+  }
+
+  let incidentCreated = false;
+
+
+  try {
+
+    const response = await fetch(
+      "/scheduled-maintenance",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(payload)
+      }
+    );
+
+
+    const result =
+      await response.json().catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        result?.message ||
+        "Could not create Scheduled Maintenance."
+      );
+
+    }
+
+
+    /* =====================
+       SUCCESS
+
+       Do not repeat POST if opening
+       the Detail fails afterwards.
+    ===================== */
+
+    incidentCreated = true;
+
+
+    const createdSmId = Number(
+      result?.id ??
+      result?.scheduled_maintenance?.id ??
+      result?.maintenance?.id ??
+      result?.sm?.id
+    );
+
+
+    if (overlay) {
+      overlay.style.display = "none";
+    }
+
+
+    if (
+      Number.isInteger(createdSmId) &&
+      createdSmId > 0
+    ) {
+
+      await openScheduledMaintenanceDetail(
+        createdSmId
+      );
+
+    } else {
+
+      console.warn(
+        "SM created, but response did not include a recognized ID:",
+        result
+      );
+
+      alert(
+        "Scheduled Maintenance created successfully, " +
+        "but its Detail could not be opened automatically. " +
+        "Do not press Create again."
+      );
+
+    }
+
+  } catch (err) {
+
+    console.error(
+      "CREATE SCHEDULED MAINTENANCE ERROR:",
+      err
+    );
+
+
+    alert(
+      incidentCreated
+        ? "Scheduled Maintenance was created, but its Detail could not be opened. Do not create it again."
+        : err.message ||
+          "Could not create Scheduled Maintenance."
+    );
+
+  } finally {
+
+    newSmCreateInProgress = false;
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent =
+        "Create Scheduled Maintenance";
+    }
+
+  }
+
+}
+
+
+/* =====================
+   NEW SM — SAVE BUTTON
+
+   Event delegation because the modal
+   is created dynamically.
+===================== */
+
+document.addEventListener("click", event => {
+
+  if (
+    event.target instanceof Element &&
+    event.target.closest("#saveNewSmBtn")
+  ) {
+
+    createScheduledMaintenance();
+
+  }
+
+});
