@@ -1057,3 +1057,27 @@
   }
 
 }
+
+/* =====================================================
+   SCHEDULED MAINTENANCE — HISTORY REFERENCE
+
+   Amber SM reference, independent from BD.
+===================================================== */
+
+#historyTable .history-sm-reference {
+  display: inline-block;
+
+  width: fit-content;
+  margin-bottom: 5px;
+  padding: 4px 8px;
+
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}

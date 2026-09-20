@@ -175,3 +175,28 @@
 tr.task-restoration {
   position: relative;
 }
+
+/* =====================================================
+   SCHEDULED MAINTENANCE — TASKS TABLE REFERENCE
+
+   Identifies Planned Tasks linked to an SM.
+   Does not affect Breakdown references.
+===================================================== */
+
+#tasksTable .task-sm-parent {
+  display: inline-block;
+
+  width: fit-content;
+  margin-top: 5px;
+  padding: 4px 8px;
+
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}

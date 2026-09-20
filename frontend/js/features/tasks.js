@@ -1110,6 +1110,25 @@ function buildRow(task) {
       ? `BD-${String(task.breakdown_id).padStart(5, "0")}`
       : null;
 
+  /* =====================================
+    SCHEDULED MAINTENANCE TASK
+
+    An SM Task remains a normal Planned Task.
+    The SM code identifies its parent incident.
+  ===================================== */
+
+  const smId =
+    Number(task.scheduled_maintenance_id);
+
+  const isSmTask =
+    Number.isInteger(smId) &&
+    smId > 0;
+
+  const smCode =
+    isSmTask
+      ? `SM-${String(smId).padStart(5, "0")}`
+      : null;
+
 
   /* =====================================
      TASK TYPE CLASSIFICATION
@@ -1117,12 +1136,19 @@ function buildRow(task) {
 
   let rowClass = "";
 
-
   // 🟪 Restoration Task
   if (isRestoration) {
 
     rowClass =
       "task-restoration";
+
+  }
+
+  // 🟨 Scheduled Maintenance — Planned Task
+  else if (isSmTask) {
+
+    rowClass =
+      "task-planned-manual";
 
   }
 
@@ -1162,19 +1188,33 @@ function buildRow(task) {
   );
 
 
-  /* =====================================
-     TYPE DISPLAY
-  ===================================== */
+/* =====================================
+   TYPE DISPLAY
 
-  const typeHtml =
-    isRestoration
+   BD: Restoration + BD reference.
+   SM: Planned + SM reference.
+   Other Tasks: existing type display.
+===================================== */
+
+const typeHtml =
+  isRestoration
+    ? `
+        <div class="task-restoration-type">
+          Restoration
+        </div>
+
+        <div class="task-breakdown-parent">
+          ${breakdownCode}
+        </div>
+      `
+    : isSmTask
       ? `
-          <div class="task-restoration-type">
-            Restoration
+          <div>
+            Planned
           </div>
 
-          <div class="task-breakdown-parent">
-            ${breakdownCode}
+          <div class="task-sm-parent">
+            ${smCode}
           </div>
         `
       : (

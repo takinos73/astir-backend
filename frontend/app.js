@@ -428,15 +428,28 @@ function renderHistoryTable(data) {
       <td>
           <div class="task-title">
             ${
-            execType === "restoration" && h.breakdown_id
-              ? `
-                <div class="history-breakdown-reference">
+              execType === "restoration" && h.breakdown_id
+                ? `
+                  <div class="history-breakdown-reference">
                     BD-${String(
-                    h.breakdown_id
-                  ).padStart(5, "0")}
-                </div>
-              `
-              : ""
+                      h.breakdown_id
+                    ).padStart(5, "0")}
+                  </div>
+                `
+                : ""
+            }
+
+            ${
+              Number.isInteger(Number(h.scheduled_maintenance_id)) &&
+              Number(h.scheduled_maintenance_id) > 0
+                ? `
+                  <div class="history-sm-reference">
+                    SM-${String(
+                      h.scheduled_maintenance_id
+                    ).padStart(5, "0")}
+                  </div>
+                `
+                : ""
             }
 
             <strong>${h.task}</strong>
