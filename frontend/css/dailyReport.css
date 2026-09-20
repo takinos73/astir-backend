@@ -50,7 +50,7 @@ body {
   flex-direction: column;
 
   background: #ffffff;
-  
+
 }
 
 .daily-report-page-break {
@@ -956,7 +956,7 @@ body {
 @media screen {
 
   .daily-report-page {
-    width: calc(100% - 64px);
+    width: calc(100% - 36px);
     margin-left: auto;
     margin-right: auto;
   }
