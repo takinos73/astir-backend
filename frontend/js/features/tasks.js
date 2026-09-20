@@ -1076,11 +1076,52 @@ function viewTask(taskId) {
   }
 }
 
-/* ==========================
-   BUILD TASK ROW (FOR TABLE)
-============================ */
+/* =========================================================
+   BUILD TASK ROW — MAIN TASKS TABLE
+
+   Creates one row in the central Tasks table.
+
+   RESPONSIBILITIES
+   ---------------------------------------------------------
+   1. Display Asset, Section, Unit and Task information.
+   2. Identify the parent maintenance incident:
+      - BD-xxxxx → Breakdown / Restoration Task
+      - SM-xxxxx → Scheduled Maintenance / Planned Task
+   3. Apply the appropriate task row styling.
+   4. Display task type, due/completion date and status.
+   5. Provide the existing View and Complete actions.
+
+   TASK CLASSIFICATION
+   ---------------------------------------------------------
+   Restoration:
+     Linked to a Breakdown through breakdown_id.
+     Displays "Restoration" and its BD reference.
+
+   Scheduled Maintenance:
+     Linked to an SM through scheduled_maintenance_id.
+     Remains a normal Planned Task.
+     Displays "Planned" and its SM reference.
+
+   Preventive:
+     Recurring task with frequency_hours > 0.
+
+   Other Tasks:
+     Follow the existing Planned / Unplanned classification.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   - This function only renders the task row.
+   - It does not create, update or complete Tasks.
+   - BD and SM references are independent.
+   - SM Tasks do not create Breakdown downtime.
+   - Completion uses the existing askTechnician() flow.
+========================================================= */
 
 function buildRow(task) {
+
+  /* =====================
+     ROW + SEARCH CONTEXT
+  ===================== */
 
   const isIdle =
     !!task.asset_idle_since;
@@ -1088,34 +1129,34 @@ function buildRow(task) {
   const tr =
     document.createElement("tr");
 
-
-  // 🔍 Search query
   const q =
     document.getElementById("taskSearch")?.value || "";
 
 
-  /* =====================================
-     RESTORATION TASK
+  /* =====================
+     BREAKDOWN / RESTORATION
 
-     A Restoration Task belongs to a
-     parent Breakdown incident.
-  ===================================== */
+     A Restoration Task is linked to
+     its parent Breakdown incident.
+  ===================== */
 
   const isRestoration =
     Number(task.breakdown_id) > 0;
-
 
   const breakdownCode =
     isRestoration
       ? `BD-${String(task.breakdown_id).padStart(5, "0")}`
       : null;
 
-  /* =====================================
-    SCHEDULED MAINTENANCE TASK
 
-    An SM Task remains a normal Planned Task.
-    The SM code identifies its parent incident.
-  ===================================== */
+  /* =====================
+     SCHEDULED MAINTENANCE
+
+     An SM Task remains a normal Planned Task.
+
+     Its scheduled_maintenance_id identifies
+     the parent maintenance incident.
+  ===================== */
 
   const smId =
     Number(task.scheduled_maintenance_id);
@@ -1130,13 +1171,23 @@ function buildRow(task) {
       : null;
 
 
-  /* =====================================
-     TASK TYPE CLASSIFICATION
-  ===================================== */
+  /* =====================
+     TASK ROW CLASSIFICATION
+
+     Priority:
+     1. Breakdown / Restoration
+     2. Scheduled Maintenance
+     3. Recurring Preventive
+     4. Existing manual Task classification
+
+     SM Tasks retain Planned styling
+     even after completion.
+  ===================== */
 
   let rowClass = "";
 
-  // 🟪 Restoration Task
+
+  // Breakdown / Restoration
   if (isRestoration) {
 
     rowClass =
@@ -1144,7 +1195,8 @@ function buildRow(task) {
 
   }
 
-  // 🟨 Scheduled Maintenance — Planned Task
+
+  // Scheduled Maintenance / Planned
   else if (isSmTask) {
 
     rowClass =
@@ -1152,7 +1204,8 @@ function buildRow(task) {
 
   }
 
-  // 🟦 Preventive (Excel master plan)
+
+  // Recurring Preventive
   else if (
     task.frequency_hours &&
     Number(task.frequency_hours) > 0
@@ -1163,7 +1216,8 @@ function buildRow(task) {
 
   }
 
-  // 🟥 Unplanned / completed manual
+
+  // Existing Unplanned / completed manual classification
   else if (
     task.is_planned === false ||
     task.status === "Done"
@@ -1174,7 +1228,8 @@ function buildRow(task) {
 
   }
 
-  // 🟨 Planned manual
+
+  // Planned manual
   else {
 
     rowClass =
@@ -1188,49 +1243,56 @@ function buildRow(task) {
   );
 
 
-/* =====================================
-   TYPE DISPLAY
+  /* =====================
+     TASK TYPE DISPLAY
 
-   BD: Restoration + BD reference.
-   SM: Planned + SM reference.
-   Other Tasks: existing type display.
-===================================== */
+     Breakdown:
+       Restoration + BD-xxxxx
 
-const typeHtml =
-  isRestoration
-    ? `
-        <div class="task-restoration-type">
-          Restoration
-        </div>
+     Scheduled Maintenance:
+       Planned + SM-xxxxx
 
-        <div class="task-breakdown-parent">
-          ${breakdownCode}
-        </div>
-      `
-    : isSmTask
+     Other Tasks:
+       Existing Task type
+  ===================== */
+
+  const typeHtml =
+    isRestoration
       ? `
-          <div>
-            Planned
+          <div class="task-restoration-type">
+            Restoration
           </div>
 
-          <div class="task-sm-parent">
-            ${smCode}
+          <div class="task-breakdown-parent">
+            ${breakdownCode}
           </div>
         `
-      : (
-          task.type
-            ? highlight(task.type, q)
-            : "-"
-        );
+      : isSmTask
+        ? `
+            <div>
+              Planned
+            </div>
+
+            <div class="task-sm-parent">
+              ${smCode}
+            </div>
+          `
+        : (
+            task.type
+              ? highlight(task.type, q)
+              : "-"
+          );
 
 
-  /* =====================================
-     ROW HTML
-  ===================================== */
+  /* =====================
+     TASK ROW HTML
+  ===================== */
 
   tr.innerHTML = `
 
-    <!-- MACHINE / ASSET -->
+    <!-- =====================
+         MACHINE / ASSET
+    ===================== -->
 
     <td class="machine-cell">
 
@@ -1282,7 +1344,9 @@ const typeHtml =
     </td>
 
 
-    <!-- SECTION -->
+    <!-- =====================
+         SECTION
+    ===================== -->
 
     <td>
       ${
@@ -1293,7 +1357,9 @@ const typeHtml =
     </td>
 
 
-    <!-- UNIT -->
+    <!-- =====================
+         UNIT
+    ===================== -->
 
     <td>
       ${
@@ -1304,7 +1370,12 @@ const typeHtml =
     </td>
 
 
-    <!-- TASK -->
+    <!-- =====================
+         TASK DESCRIPTION
+
+         Also displays the existing
+         Safety / Quality impact badge.
+    ===================== -->
 
     <td>
 
@@ -1322,14 +1393,27 @@ const typeHtml =
     </td>
 
 
-    <!-- TYPE -->
+    <!-- =====================
+         TASK TYPE + PARENT INCIDENT
+
+         BD → Restoration + BD reference
+         SM → Planned + SM reference
+    ===================== -->
 
     <td>
       ${typeHtml}
     </td>
 
 
-    <!-- DATE -->
+    <!-- =====================
+         DATE
+
+         Done Tasks:
+           Actual completion date
+
+         Open Tasks:
+           Planned due date
+    ===================== -->
 
     <td>
       ${
@@ -1341,20 +1425,33 @@ const typeHtml =
     </td>
 
 
-    <!-- STATUS -->
+    <!-- =====================
+         TASK STATUS
+    ===================== -->
 
     <td>
       ${statusPill(task)}
     </td>
 
 
-    <!-- ACTIONS -->
+    <!-- =====================
+         TASK ACTIONS
+
+         View:
+           Existing Task Detail
+
+         Complete:
+           Existing technician / completion flow
+
+         No incident-specific completion
+         mechanism is introduced here.
+    ===================== -->
 
     <td>
 
       <div class="history-action-group">
 
-        <!-- 👁 View task -->
+        <!-- VIEW TASK -->
 
         <button
           class="btn-icon btn-view"
@@ -1365,7 +1462,7 @@ const typeHtml =
         </button>
 
 
-        <!-- ✔ Mark as Done -->
+        <!-- COMPLETE TASK -->
 
         ${
           task.status !== "Done"
