@@ -5663,6 +5663,277 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
 });
 
+/* =========================================================
+   CREATE SCHEDULED MAINTENANCE TASK
+   POST /scheduled-maintenance/:id/tasks
+
+   Creates one Planned Task linked to an SM incident.
+
+   TASK SEMANTICS:
+   - scheduled_maintenance_id = selected SM ID
+   - breakdown_id             = NULL
+   - type                     = 'Planned'
+   - is_planned               = true
+   - status                   = 'Planned'
+   - frequency_hours          = 0
+
+   IMPORTANT:
+   - Asset is taken from the SM incident.
+   - Tasks can be added only while SM is not CLOSED.
+   - Does NOT create a task execution.
+   - Does NOT modify SM status or dates.
+   - Does NOT modify Breakdowns or Machine States.
+========================================================= */
+
+app.post("/scheduled-maintenance/:id/tasks", async (req, res) => {
+
+  const smId = Number(req.params.id);
+
+  const {
+    task,
+    section,
+    unit,
+    due_date,
+    duration_min,
+    notes,
+    impact
+  } = req.body || {};
+
+
+  /* =====================
+     VALIDATE INPUT
+  ===================== */
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Invalid Scheduled Maintenance ID"
+    });
+  }
+
+  const taskTitle = String(task ?? "").trim();
+
+  if (!taskTitle) {
+    return res.status(400).json({
+      error: "Maintenance task is required"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE DURATION
+  ===================== */
+
+  let estimatedDuration = null;
+
+  if (
+    duration_min !== undefined &&
+    duration_min !== null &&
+    duration_min !== ""
+  ) {
+
+    estimatedDuration = Number(duration_min);
+
+    if (
+      !Number.isFinite(estimatedDuration) ||
+      estimatedDuration < 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid estimated duration"
+      });
+    }
+  }
+
+
+  /* =====================
+     VALIDATE DUE DATE
+  ===================== */
+
+  let resolvedDueDate = null;
+
+  if (
+    due_date !== undefined &&
+    due_date !== null &&
+    due_date !== ""
+  ) {
+
+    resolvedDueDate = new Date(due_date);
+
+    if (
+      Number.isNaN(resolvedDueDate.getTime())
+    ) {
+      return res.status(400).json({
+        error: "Invalid Due Date"
+      });
+    }
+  }
+
+
+  const client = await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+
+    /* =====================
+       LOAD + LOCK SM
+
+       The Asset is determined by the SM incident.
+       No other Asset can be selected for this Task.
+    ===================== */
+
+    const smResult = await client.query(
+      `
+      SELECT
+        id,
+        asset_id,
+        status
+      FROM scheduled_maintenance
+      WHERE id = $1
+      FOR UPDATE
+      `,
+      [smId]
+    );
+
+    if (!smResult.rows.length) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        error: "Scheduled Maintenance not found"
+      });
+    }
+
+    const sm = smResult.rows[0];
+
+
+    /* =====================
+       CLOSED SM GUARD
+    ===================== */
+
+    if (sm.status === "CLOSED") {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Cannot add Tasks to a CLOSED Scheduled Maintenance"
+      });
+    }
+
+
+    /* =====================
+       CREATE PLANNED TASK
+
+       Uses the existing maintenance_tasks table
+       and normal CMMS completion flow.
+
+       No task execution is created here.
+    ===================== */
+
+    const result = await client.query(
+      `
+      INSERT INTO maintenance_tasks (
+        asset_id,
+        task,
+        section,
+        unit,
+        type,
+        impact,
+        status,
+        due_date,
+        frequency_hours,
+        duration_min,
+        notes,
+        is_planned,
+        breakdown_id,
+        scheduled_maintenance_id
+      )
+
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        'Planned',
+        $5,
+        'Planned',
+        $6,
+        0,
+        $7,
+        $8,
+        true,
+        NULL,
+        $9
+      )
+
+      RETURNING *
+      `,
+      [
+        sm.asset_id,
+        taskTitle,
+
+        String(section ?? "").trim() || null,
+        String(unit ?? "").trim() || null,
+
+        String(impact ?? "").trim() || "normal",
+
+        resolvedDueDate,
+
+        estimatedDuration,
+
+        String(notes ?? "").trim() || null,
+
+        smId
+      ]
+    );
+
+
+    /* =====================
+       COMMIT
+    ===================== */
+
+    await client.query("COMMIT");
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.status(201).json({
+      message:
+        "Scheduled Maintenance Task created successfully",
+
+      task: result.rows[0]
+    });
+
+
+  } catch (err) {
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+    console.error(
+      "POST /scheduled-maintenance/:id/tasks error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to create Scheduled Maintenance Task"
+    });
+
+
+  } finally {
+
+    client.release();
+
+  }
+
+});
 
 /* =====================================================
    TASKS
