@@ -2009,6 +2009,37 @@ async function refreshAfterTaskCompletion() {
 
   }
 
+  /* =====================
+     SCHEDULED MAINTENANCE TASKS
+
+     If an SM Detail is currently open,
+     refresh it after successful Task completion.
+
+     - Uses the independent SM Detail function.
+     - Does not change BD or Task completion logic.
+     - Does not create or modify Tasks.
+  ===================== */
+
+  const smOverlay =
+    document.getElementById(
+      "scheduledMaintenanceDetailOverlay"
+    );
+
+  const smId =
+    typeof currentScheduledMaintenance !== "undefined"
+      ? Number(currentScheduledMaintenance?.id)
+      : 0;
+
+  if (
+    smOverlay?.style.display === "flex" &&
+    Number.isInteger(smId) &&
+    smId > 0 &&
+    typeof openScheduledMaintenanceDetail === "function"
+  ) {
+
+    await openScheduledMaintenanceDetail(smId);
+
+  }  
 
   /* =====================
      ASSET CARDS
