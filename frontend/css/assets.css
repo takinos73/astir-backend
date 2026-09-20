@@ -1278,3 +1278,32 @@ tr.highlight-execution {
   line-height: 1.2;
   white-space: nowrap;
 }
+
+/* =====================================================
+   SCHEDULED MAINTENANCE — ASSET HISTORY REFERENCE
+
+   Identifies completed Tasks linked to an SM.
+
+   - Amber/yellow SM code.
+   - Independent from Breakdown styling.
+   - Does not affect History filters or actions.
+===================================================== */
+
+#assetHistoryTable .asset-history-sm-ref {
+  display: inline-block;
+
+  width: fit-content;
+  margin-top: 6px;
+  padding: 4px 8px;
+
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}

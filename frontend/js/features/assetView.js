@@ -807,11 +807,35 @@ function renderAssetHistoryTable(history) {
             : ""
         }
 
+        <!-- =====================
+             PARENT MAINTENANCE INCIDENT
+
+             BD → Restoration Task
+             SM → Planned Task
+
+             Display-only references.
+             Task type and History filters
+             remain unchanged.
+        ===================== -->
+
         ${
           execType === "restoration" && e.breakdown_id
             ? `
               <div class="asset-history-breakdown-ref">
                 BD-${String(e.breakdown_id).padStart(5, "0")}
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          Number.isInteger(Number(e.scheduled_maintenance_id)) &&
+          Number(e.scheduled_maintenance_id) > 0
+            ? `
+              <div class="asset-history-sm-ref">
+                SM-${String(
+                  e.scheduled_maintenance_id
+                ).padStart(5, "0")}
               </div>
             `
             : ""
