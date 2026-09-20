@@ -145,6 +145,14 @@ async function openScheduledMaintenanceDetail(smId) {
     // Keep the loaded SM for its own Task modal.
     currentScheduledMaintenance = sm;
 
+    /* =====================
+      REFRESH SM START ACTION
+
+      Shows Start only for PLANNED maintenance.
+    ===================== */
+
+    refreshSmStartButton();
+
     // CLOSED SM incidents cannot receive new Tasks.
     if (addTaskBtn) {
       const isClosed =
@@ -1856,3 +1864,295 @@ document.addEventListener("click", event => {
 
 });
 
+/* =========================================================
+   SCHEDULED MAINTENANCE — START ACTION
+
+   - Adds Start Maintenance to the SM Detail header.
+   - Available only when SM status is PLANNED.
+   - Asks for the REAL start date/time.
+   - Uses the independent SM Start endpoint.
+   - Refreshes SM Detail after successful start.
+
+   No Breakdown or Task actions are modified.
+========================================================= */
+
+let smStartInProgress = false;
+
+
+/* =====================
+   SHOW / HIDE START BUTTON
+
+   Called after SM Detail has loaded.
+===================== */
+
+function refreshSmStartButton() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+  const assetEl =
+    document.getElementById("sm-detail-asset");
+
+  if (!assetEl) return;
+
+
+  let startBtn =
+    document.getElementById("startSmBtn");
+
+
+  /* =====================
+     CREATE BUTTON ONCE
+  ===================== */
+
+  if (!startBtn) {
+
+    startBtn =
+      document.createElement("button");
+
+    startBtn.id = "startSmBtn";
+    startBtn.type = "button";
+    startBtn.className = "btn-table";
+
+    startBtn.textContent =
+      "▶ Start Maintenance";
+
+    startBtn.style.marginTop = "14px";
+    startBtn.style.marginBottom = "18px";
+    startBtn.style.padding = "10px 16px";
+
+    startBtn.style.background = "#61d69a";
+    startBtn.style.color = "#12251b";
+    startBtn.style.border = "none";
+    startBtn.style.borderRadius = "9px";
+
+    assetEl.insertAdjacentElement(
+      "afterend",
+      startBtn
+    );
+
+  }
+
+
+  /* =====================
+     AVAILABLE ONLY FOR PLANNED SM
+  ===================== */
+
+  startBtn.hidden =
+    !sm ||
+    String(sm.status || "").toUpperCase() !== "PLANNED";
+
+  startBtn.disabled =
+    smStartInProgress;
+
+}
+
+
+/* =====================
+   START MAINTENANCE
+===================== */
+
+async function startScheduledMaintenance() {
+
+  if (smStartInProgress) return;
+
+  const sm =
+    currentScheduledMaintenance;
+
+  const smId =
+    Number(sm?.id);
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+    alert("No Scheduled Maintenance selected.");
+    return;
+  }
+
+  if (
+    String(sm.status || "").toUpperCase() !== "PLANNED"
+  ) {
+    alert("This Scheduled Maintenance is not PLANNED.");
+    return;
+  }
+
+
+  /* =====================
+     ACTUAL START DATE/TIME
+
+     Prefill current LOCAL date/time.
+     User may change it to the real start.
+  ===================== */
+
+  const now =
+    new Date();
+
+  const localNow =
+    new Date(
+      now.getTime() -
+      now.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .slice(0, 16);
+
+
+  const dateValue =
+    window.prompt(
+      "Actual Start — πραγματική ημερομηνία και ώρα έναρξης\n" +
+      "Μορφή: YYYY-MM-DDTHH:mm\n\n" +
+      "Άλλαξε την προτεινόμενη ώρα εάν η συντήρηση έχει ήδη ξεκινήσει.",
+      localNow
+    );
+
+
+  // Cancel: no changes.
+  if (dateValue === null) return;
+
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateValue)
+  ) {
+    alert("Invalid date format. Use YYYY-MM-DDTHH:mm.");
+    return;
+  }
+
+
+  const actualStart =
+    new Date(dateValue);
+
+  if (
+    Number.isNaN(actualStart.getTime())
+  ) {
+    alert("Invalid Actual Start.");
+    return;
+  }
+
+
+  /* =====================
+     CONFIRM START
+  ===================== */
+
+  const confirmed =
+    window.confirm(
+      `Start SM-${String(smId).padStart(5, "0")}?\n\n` +
+      `Actual Start: ${actualStart.toLocaleString("el-GR")}\n\n` +
+      "Το SM θα αλλάξει σε IN_PROGRESS."
+    );
+
+  if (!confirmed) return;
+
+
+  /* =====================
+     SEND START REQUEST
+  ===================== */
+
+  const startBtn =
+    document.getElementById("startSmBtn");
+
+  smStartInProgress = true;
+
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "Starting...";
+  }
+
+  let startedSuccessfully = false;
+
+
+  try {
+
+    const response = await fetch(
+      `/scheduled-maintenance/${smId}/start`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          actual_start_at:
+            actualStart.toISOString()
+        })
+      }
+    );
+
+
+    const result =
+      await response.json().catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.error ||
+        "Could not start Scheduled Maintenance."
+      );
+
+    }
+
+
+    startedSuccessfully = true;
+
+
+    /* =====================
+       REFRESH SM DETAIL
+
+       Do not repeat PATCH if the
+       Detail refresh fails.
+    ===================== */
+
+    await openScheduledMaintenanceDetail(smId);
+
+    if (
+      typeof loadBreakdowns === "function"
+    ) {
+      await loadBreakdowns();
+    }
+
+  } catch (err) {
+
+    console.error(
+      "START SM ERROR:",
+      err
+    );
+
+    alert(
+      startedSuccessfully
+        ? "Maintenance started, but the screen could not refresh. Reload the page; do not press Start again."
+        : err.message ||
+          "Could not start Scheduled Maintenance. Check its status before trying again."
+    );
+
+  } finally {
+
+    smStartInProgress = false;
+
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.textContent = "▶ Start Maintenance";
+
+      if (startedSuccessfully) {
+        startBtn.hidden = true;
+      }
+    }
+
+  }
+
+}
+
+
+/* =====================
+   START BUTTON EVENT
+===================== */
+
+document.addEventListener("click", event => {
+
+  if (
+    event.target instanceof Element &&
+    event.target.closest("#startSmBtn")
+  ) {
+    startScheduledMaintenance();
+  }
+
+});

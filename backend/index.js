@@ -6047,6 +6047,140 @@ app.post("/scheduled-maintenance/:id/tasks", async (req, res) => {
 });
 
 /* =========================================================
+   PATCH /scheduled-maintenance/:id/start
+
+   START SCHEDULED MAINTENANCE
+   ---------------------------------------------------------
+   - Only a PLANNED SM can be started.
+   - Records the user-selected actual start time.
+   - Changes status to IN_PROGRESS.
+   - Does not modify Tasks, Breakdowns or downtime.
+   - Does not close the maintenance.
+========================================================= */
+
+app.patch("/scheduled-maintenance/:id/start", async (req, res) => {
+
+  try {
+
+    const smId =
+      Number(req.params.id);
+
+    if (
+      !Number.isInteger(smId) ||
+      smId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid Scheduled Maintenance ID."
+      });
+    }
+
+
+    /* =====================
+       VALIDATE ACTUAL START
+    ===================== */
+
+    const actualStartValue =
+      req.body?.actual_start_at;
+
+    if (
+      typeof actualStartValue !== "string" ||
+      !/(Z|[+-]\d{2}:\d{2})$/i.test(actualStartValue)
+    ) {
+      return res.status(400).json({
+        error: "Actual Start must include timezone information."
+      });
+    }
+
+    const actualStart =
+      new Date(actualStartValue);
+
+    if (
+      Number.isNaN(actualStart.getTime())
+    ) {
+      return res.status(400).json({
+        error: "Invalid Actual Start date."
+      });
+    }
+
+    if (
+      actualStart.getTime() > Date.now() + 60000
+    ) {
+      return res.status(400).json({
+        error: "Actual Start cannot be in the future."
+      });
+    }
+
+
+    /* =====================
+       START — ATOMIC UPDATE
+
+       PLANNED → IN_PROGRESS
+
+       The status condition prevents
+       accidentally starting an SM twice.
+    ===================== */
+
+    const result = await pool.query(
+      `
+        UPDATE public.scheduled_maintenance
+        SET
+          status = 'IN_PROGRESS',
+          actual_started_at = $2,
+          updated_at = NOW()
+        WHERE id = $1
+          AND status = 'PLANNED'
+          AND actual_started_at IS NULL
+        RETURNING *
+      `,
+      [
+        smId,
+        actualStart.toISOString()
+      ]
+    );
+
+
+    if (result.rowCount === 0) {
+
+      const existing = await pool.query(
+        `
+          SELECT id, status
+          FROM public.scheduled_maintenance
+          WHERE id = $1
+        `,
+        [smId]
+      );
+
+      if (existing.rowCount === 0) {
+        return res.status(404).json({
+          error: "Scheduled Maintenance not found."
+        });
+      }
+
+      return res.status(409).json({
+        error: "This Scheduled Maintenance is not in PLANNED status."
+      });
+
+    }
+
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+
+    console.error(
+      "START SCHEDULED MAINTENANCE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: "Could not start Scheduled Maintenance."
+    });
+
+  }
+
+});
+
+/* =========================================================
    GET /tasks — ACTIVE MAINTENANCE TASKS
 
    Returns active Planned / Overdue Tasks for active Assets.
