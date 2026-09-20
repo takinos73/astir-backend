@@ -203,7 +203,7 @@
 
 #newBreakdownModal {
   width: min(680px, 92vw);
-  max-height: 92vh;
+  max-height: 94vh;
   overflow-y: auto;
   padding: 24px;
 }
