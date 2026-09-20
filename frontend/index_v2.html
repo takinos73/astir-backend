@@ -2237,9 +2237,9 @@
   >
 
 
-<!-- =====================
-     HEADER
-===================== -->
+  <!-- =====================
+      HEADER
+  ===================== -->
 
   <div class="modal-header">
 
@@ -3529,6 +3529,231 @@
   </div>
 
 </div>
+
+<!-- =========================================================
+     SCHEDULED MAINTENANCE DETAIL MODAL
+
+     Independent from Breakdown Detail.
+
+     - Displays one Scheduled Maintenance incident.
+     - Displays its linked Planned Tasks.
+     - Does NOT show Breakdown downtime or Machine State.
+     - Does NOT modify any incident or task.
+
+     Initial step: HTML structure only.
+     Data loading and actions will be connected separately.
+========================================================= -->
+
+<div
+  id="scheduledMaintenanceDetailOverlay"
+  class="modal-overlay"
+  style="display:none;"
+>
+
+  <div
+    id="scheduledMaintenanceDetailModal"
+    class="modal"
+  >
+
+    <!-- =====================
+         HEADER
+    ===================== -->
+
+    <div class="modal-header">
+
+      <div>
+
+        <div class="breakdown-detail-heading">
+
+          <h2 id="sm-detail-code">
+            SM-00000
+          </h2>
+
+          <span
+            id="sm-detail-status"
+            class="breakdown-status"
+          >
+            -
+          </span>
+
+        </div>
+
+        <div
+          id="sm-detail-asset"
+          class="section-subtitle"
+        >
+          -
+        </div>
+
+      </div>
+
+      <button
+        id="closeScheduledMaintenanceDetailBtn"
+        class="modal-close"
+        type="button"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <!-- =====================
+         MAINTENANCE DETAILS
+    ===================== -->
+
+    <div class="breakdown-detail-section">
+
+      <div class="breakdown-detail-label">
+        Maintenance Title
+      </div>
+
+      <div
+        id="sm-detail-title"
+        class="breakdown-detail-value breakdown-detail-fault"
+      >
+        -
+      </div>
+
+
+      <div class="breakdown-detail-label">
+        Description
+      </div>
+
+      <div
+        id="sm-detail-description"
+        class="breakdown-detail-value"
+      >
+        -
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         SCHEDULED / ACTUAL TIMING
+
+         Scheduled dates are the agreed maintenance
+         window, not actual machine downtime.
+    ===================== -->
+
+    <div class="breakdown-detail-grid">
+
+      <div>
+
+        <div class="breakdown-detail-label">
+          Scheduled Start
+        </div>
+
+        <div
+          id="sm-detail-scheduled-start"
+          class="breakdown-detail-value"
+        >
+          -
+        </div>
+
+      </div>
+
+
+      <div>
+
+        <div class="breakdown-detail-label">
+          Scheduled End
+        </div>
+
+        <div
+          id="sm-detail-scheduled-end"
+          class="breakdown-detail-value"
+        >
+          -
+        </div>
+
+      </div>
+
+
+      <div>
+
+        <div class="breakdown-detail-label">
+          Actual Start
+        </div>
+
+        <div
+          id="sm-detail-actual-start"
+          class="breakdown-detail-value"
+        >
+          -
+        </div>
+
+      </div>
+
+
+      <div>
+
+        <div class="breakdown-detail-label">
+          Actual Completion
+        </div>
+
+        <div
+          id="sm-detail-actual-closed"
+          class="breakdown-detail-value"
+        >
+          -
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         SCHEDULED MAINTENANCE TASKS
+
+         Linked Planned Tasks will be loaded
+         from the existing SM Tasks endpoint.
+    ===================== -->
+
+    <div class="breakdown-restoration-section">
+
+      <div class="breakdown-restoration-header">
+
+        <div>
+
+          <h3>
+            Maintenance Tasks
+          </h3>
+
+          <div class="section-subtitle">
+            Work and inspections included in this maintenance
+          </div>
+
+        </div>
+
+        <!-- Add Task action will be added separately. -->
+
+      </div>
+
+
+      <div
+        id="sm-maintenance-tasks"
+        class="breakdown-restoration-list"
+      >
+
+        <div class="breakdown-empty-state">
+          Maintenance tasks not loaded yet.
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Start, Close and Add Task actions
+         will be added in separate steps. -->
+
+  </div>
+
+</div>
+
 
 <!-- =====================
      TECHNICIANS TAB
