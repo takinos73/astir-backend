@@ -5263,6 +5263,89 @@ app.post("/breakdowns/:id/historical-restoration", async (req, res) => {
   }
 );
 
+/* =========================================================
+   GET SCHEDULED MAINTENANCE
+
+   Returns Scheduled Maintenance incidents.
+
+   READ-ONLY:
+   - Uses the independent scheduled_maintenance table.
+   - Includes Asset and Line information.
+   - Does NOT read or modify Breakdown records.
+   - Does NOT calculate Breakdown downtime.
+   - Does NOT create or modify Tasks.
+========================================================= */
+
+app.get("/scheduled-maintenance", async (req, res) => {
+
+  try {
+
+    const result = await pool.query(
+      `
+      SELECT
+        sm.id,
+        sm.asset_id,
+        sm.title,
+        sm.description,
+        sm.status,
+
+        sm.scheduled_start_at,
+        sm.scheduled_end_at,
+
+        sm.actual_started_at,
+        sm.actual_closed_at,
+
+        sm.created_at,
+        sm.updated_at,
+
+        a.model AS asset_model,
+        a.serial_number AS asset_serial,
+        a.line_id,
+
+        l.name AS line_name
+
+      FROM scheduled_maintenance sm
+
+      JOIN assets a
+        ON a.id = sm.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      ORDER BY
+        CASE sm.status
+          WHEN 'IN_PROGRESS' THEN 1
+          WHEN 'PLANNED' THEN 2
+          WHEN 'CLOSED' THEN 3
+          ELSE 4
+        END,
+
+        sm.scheduled_start_at ASC NULLS LAST,
+
+        sm.id DESC
+      `
+    );
+
+    return res.json(
+      result.rows
+    );
+
+  } catch (err) {
+
+    console.error(
+      "GET /scheduled-maintenance error:",
+      err
+    );
+
+    return res.status(500).json({
+      error:
+        "Failed to load Scheduled Maintenance"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
