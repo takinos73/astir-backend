@@ -319,10 +319,54 @@ function getMaintenanceIncidentRows() {
     }));
 
 
-  return [
+  /* =====================
+     COMMON INCIDENT ORDER
+
+     Combine BD and SM, then sort together
+     by incident date (newest first).
+
+     BD: Breakdown started date.
+     SM: Scheduled start date.
+         If not scheduled yet, use creation date
+         for sorting only.
+
+     Does not modify source data or downtime.
+  ===================== */
+
+  const incidentRows = [
     ...bdRows,
     ...smRows
   ];
+
+  const getIncidentSortTime = incident => {
+
+    const dateValue =
+      incident.incident_type === "SM"
+        ? (
+            incident.scheduled_start_at ||
+            incident.created_at
+          )
+        : (
+            incident.started_at ||
+            incident.created_at
+          );
+
+    if (!dateValue) return 0;
+
+    const timestamp =
+      new Date(dateValue).getTime();
+
+    return Number.isFinite(timestamp)
+      ? timestamp
+      : 0;
+
+  };
+
+  return incidentRows.sort(
+    (a, b) =>
+      getIncidentSortTime(b) -
+      getIncidentSortTime(a)
+  );
 
 }
 
