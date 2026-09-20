@@ -936,3 +936,157 @@ document.addEventListener("click", event => {
   }
 
 });
+
+/* =========================================================
+   NEW MAINTENANCE INCIDENT — TYPE SELECTOR
+
+   Common entry point for BD and SM.
+
+   - Breakdown opens the EXISTING BD creation modal.
+   - Scheduled Maintenance will be connected separately.
+   - Does NOT create or modify any incident or task.
+   - Does NOT modify existing BD modal functions.
+========================================================= */
+
+window.openNewIncidentChooser = function () {
+
+  let overlay =
+    document.getElementById("newIncidentChooserOverlay");
+
+
+  /* =====================
+     CREATE SELECTOR ONCE
+  ===================== */
+
+  if (!overlay) {
+
+    overlay = document.createElement("div");
+
+    overlay.id = "newIncidentChooserOverlay";
+    overlay.className = "modal-overlay";
+
+    overlay.style.zIndex = "1200";
+
+    overlay.innerHTML = `
+      <div
+        class="modal"
+        style="
+          box-sizing: border-box;
+          width: min(440px, calc(100vw - 32px));
+          padding: 20px 24px;
+          background: #181b22;
+          color: #f5f7fa;
+          border: 1px solid rgba(255,255,255,.13);
+          border-radius: 14px;
+        "
+      >
+
+        <div
+          class="modal-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+
+          <h2 style="margin: 0;">
+            New Maintenance Incident
+          </h2>
+
+          <button
+            id="closeNewIncidentChooserBtn"
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+        </div>
+
+        <p class="section-subtitle">
+          Select incident type
+        </p>
+
+        <div
+          class="modal-actions"
+          style="
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+          "
+        >
+
+          <button
+            id="chooseNewBreakdownBtn"
+            class="btn-table"
+            type="button"
+          >
+            + Breakdown
+          </button>
+
+          <button
+            id="chooseNewSmBtn"
+            class="btn-table"
+            type="button"
+            disabled
+            title="Scheduled Maintenance creation will be connected next"
+          >
+            + Scheduled Maintenance
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+
+    /* =====================
+       CLOSE SELECTOR
+    ===================== */
+
+    const closeChooser = () => {
+      overlay.style.display = "none";
+    };
+
+    overlay
+      .querySelector("#closeNewIncidentChooserBtn")
+      ?.addEventListener("click", closeChooser);
+
+    overlay.addEventListener("click", event => {
+
+      if (event.target === overlay) {
+        closeChooser();
+      }
+
+    });
+
+
+    /* =====================
+       BREAKDOWN — EXISTING FLOW
+    ===================== */
+
+    overlay
+      .querySelector("#chooseNewBreakdownBtn")
+      ?.addEventListener("click", () => {
+
+        closeChooser();
+
+        openNewBreakdownModal();
+
+      });
+
+  }
+
+
+  /* =====================
+     SHOW SELECTOR
+  ===================== */
+
+  overlay.style.display = "flex";
+
+};

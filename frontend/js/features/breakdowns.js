@@ -2615,15 +2615,27 @@ document
 
 
 /* =====================
-   OPEN BUTTON
+   NEW INCIDENT BUTTON
+
+   Opens the common BD / SM type selector.
+
+   If the SM frontend is not loaded, preserve
+   the existing New Breakdown functionality.
 ===================== */
 
 document
   .getElementById("newBreakdownBtn")
-  ?.addEventListener(
-    "click",
-    openNewBreakdownModal
-  );
+  ?.addEventListener("click", () => {
+
+    if (
+      typeof window.openNewIncidentChooser === "function"
+    ) {
+      window.openNewIncidentChooser();
+    } else {
+      openNewBreakdownModal();
+    }
+
+  });
 
 
 /* =====================
