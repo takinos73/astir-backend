@@ -2867,6 +2867,23 @@ document
     handleBreakdownFilterChange
   );
 
+/* =====================
+   MAINTENANCE INCIDENT — TYPE FILTER
+
+   Reuses the existing common table filtering.
+   Does not modify BD or SM data.
+===================== */
+
+document
+  .getElementById("incidentTypeFilter")
+  ?.addEventListener("change", () => {
+
+    breakdownCurrentPage = 1;
+
+    applyBreakdownFilters();
+
+  });
+
 
 /* =====================
    NEW INCIDENT BUTTON
