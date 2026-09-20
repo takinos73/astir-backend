@@ -7261,9 +7261,17 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-/* =====================
-   TASK EXECUTION HISTORY
-===================== */
+/* =========================================================
+   GET /executions — TASK EXECUTION HISTORY
+
+   Returns completed Task executions for the central History.
+
+   - Preserves the existing execution details and filters.
+   - Returns Breakdown and Scheduled Maintenance references.
+   - SM executions remain normal Planned executions.
+   - Existing legacy Breakdown cutover remains unchanged.
+   - Does not create, update or delete executions.
+========================================================= */
 
 app.get("/executions", async (req, res) => {
   try {
@@ -7287,11 +7295,24 @@ app.get("/executions", async (req, res) => {
         t.is_planned,
         t.frequency_hours,
 
-        /* Breakdown relationship
-           NULL = normal maintenance execution
-           ID   = Restoration Task related to Breakdown
-        */
+        /* =====================================================
+           MAINTENANCE INCIDENT REFERENCES
+
+           breakdown_id:
+             Parent Breakdown for Restoration Tasks.
+
+           scheduled_maintenance_id:
+             Parent Scheduled Maintenance for Planned Tasks.
+
+           Both references are returned to History so the
+           frontend can display BD-xxxxx or SM-xxxxx.
+
+           Neither reference changes the execution type,
+           task completion or Breakdown downtime.
+        ===================================================== */
+
         t.breakdown_id,
+        t.scheduled_maintenance_id,
 
         a.model AS machine,
         a.serial_number,
