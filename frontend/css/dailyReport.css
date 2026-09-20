@@ -50,6 +50,8 @@ body {
   flex-direction: column;
 
   background: #ffffff;
+
+  margin-inline: 1%;
 }
 
 .daily-report-page-break {
