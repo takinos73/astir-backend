@@ -253,7 +253,7 @@ select,
 .main-tabs {
   display: flex;
   gap: 10px;
-  margin: 12px 0 18px;
+  margin: 12px 0 14px;
 
   position: sticky;
   top: 0;
@@ -2684,7 +2684,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-tasks .table-card {
-  max-height: calc(100vh - 465px);
+  max-height: calc(100vh - 472px);
   overflow-y: auto;
   overflow-x: auto;
 }
