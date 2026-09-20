@@ -1178,13 +1178,21 @@ input[type="checkbox"] {
   white-space: nowrap;
 }
 
+/* =========================================================
+   MAINTENANCE INCIDENTS — COMMON ACTION ALIGNMENT
+
+   BD and SM actions share the same right alignment.
+   A single View button stays at the right edge.
+========================================================= */
+
 .breakdown-actions-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex-wrap: nowrap;
   gap: 6px;
+  width: 100%;
 }
 
 .breakdown-actions-row .breakdown-action-btn {
