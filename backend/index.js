@@ -5568,6 +5568,101 @@ app.post("/scheduled-maintenance", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET SCHEDULED MAINTENANCE TASKS
+   GET /scheduled-maintenance/:id/tasks
+
+   READ-ONLY:
+   - Loads tasks linked to one Scheduled Maintenance.
+   - Excludes soft-deleted tasks.
+   - Does NOT read or modify Breakdown tasks.
+   - Does NOT modify task status or execution history.
+========================================================= */
+
+app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
+
+  try {
+
+    /* =====================
+       VALIDATE SM ID
+    ===================== */
+
+    const smId = Number(req.params.id);
+
+    if (
+      !Number.isInteger(smId) ||
+      smId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid Scheduled Maintenance ID"
+      });
+    }
+
+
+    /* =====================
+       VERIFY SM EXISTS
+    ===================== */
+
+    const smResult = await pool.query(
+      `
+      SELECT id
+      FROM scheduled_maintenance
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [smId]
+    );
+
+    if (smResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Scheduled Maintenance not found"
+      });
+    }
+
+
+    /* =====================
+       LOAD LINKED TASKS
+
+       No task or execution is created or modified.
+    ===================== */
+
+    const result = await pool.query(
+      `
+      SELECT t.*
+      FROM maintenance_tasks t
+      WHERE t.scheduled_maintenance_id = $1
+        AND t.deleted_at IS NULL
+      ORDER BY t.id ASC
+      `,
+      [smId]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      scheduled_maintenance_id: smId,
+      tasks: result.rows
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /scheduled-maintenance/:id/tasks error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to load Scheduled Maintenance Tasks"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
