@@ -356,6 +356,31 @@ function renderAssetTasksTable(tasks) {
         ? formatDuration(t.duration_min)
         : "—";
 
+        /* =====================
+        SCHEDULED MAINTENANCE REFERENCE
+
+        An SM Task remains a normal Planned Task.
+
+        The badge identifies its parent incident
+        without changing Task type or status.
+      ===================== */
+
+      const smId =
+        Number(t.scheduled_maintenance_id);
+
+      const isSmTask =
+        Number.isInteger(smId) &&
+        smId > 0;
+
+      const smReferenceHtml =
+        isSmTask
+          ? `
+              <div class="task-sm-parent">
+                SM-${String(smId).padStart(5, "0")}
+              </div>
+            `
+          : "";
+
     // =====================
     // STATUS (TYPE + DUE STATE)
     // =====================
@@ -456,7 +481,16 @@ function renderAssetTasksTable(tasks) {
         ${renderImpactBadge(t.impact)}
       </td>
 
-      <td>${highlightAssetTaskSearch(t.type || "-")}</td>
+      <!-- TASK TYPE + SCHEDULED MAINTENANCE REFERENCE -->
+
+      <td>
+        <div>
+          ${highlightAssetTaskSearch(t.type || "-")}
+        </div>
+
+        ${smReferenceHtml}
+      </td>
+
       <td>${formatDate(t.due_date)}</td>
       <td>${dur}</td>
       `

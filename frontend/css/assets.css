@@ -1252,3 +1252,29 @@ tr.highlight-execution {
   border-color: rgba(239, 83, 80, 0.38);
   color: #ff6b67;
 }
+
+/* =====================================================
+   SCHEDULED MAINTENANCE — ASSET VIEW TASK REFERENCE
+
+   Amber SM badge in the Asset Active Tasks table.
+   Matches the central Tasks table appearance.
+===================================================== */
+
+#assetTasksTable .task-sm-parent {
+  display: inline-block;
+
+  width: fit-content;
+  margin-top: 5px;
+  padding: 4px 8px;
+
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
