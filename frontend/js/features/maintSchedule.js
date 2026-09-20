@@ -1,4 +1,13 @@
 /* =========================================================
+   SCHEDULED MAINTENANCE — CURRENT DETAIL
+
+   Keeps the currently loaded SM separate from
+   currentBreakdown and currentBreakdownId.
+========================================================= */
+
+let currentScheduledMaintenance = null;
+
+/* =========================================================
    SCHEDULED MAINTENANCE DETAIL — READ ONLY
 
    Displays one SM incident and its linked Planned Tasks.
@@ -17,6 +26,16 @@ async function openScheduledMaintenanceDetail(smId) {
 
   if (!Number.isInteger(id) || id <= 0) {
     return;
+  }
+
+  // Clear the previously selected SM before loading another.
+  currentScheduledMaintenance = null;
+
+  const addTaskBtn =
+    document.getElementById("addSmTaskBtn");
+
+  if (addTaskBtn) {
+    addTaskBtn.disabled = true;
   }
 
   const overlay = document.getElementById(
@@ -121,6 +140,20 @@ async function openScheduledMaintenanceDetail(smId) {
 
     if (!sm) {
       throw new Error("Scheduled Maintenance not found");
+    }
+
+    // Keep the loaded SM for its own Task modal.
+    currentScheduledMaintenance = sm;
+
+    // CLOSED SM incidents cannot receive new Tasks.
+    if (addTaskBtn) {
+      const isClosed =
+        String(sm.status || "").toUpperCase() === "CLOSED";
+
+      addTaskBtn.style.display =
+        isClosed ? "none" : "";
+
+      addTaskBtn.disabled = isClosed;
     }
 
 
@@ -229,3 +262,135 @@ async function openScheduledMaintenanceDetail(smId) {
   }
 
 }
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — ADD TASK MODAL
+
+   OPEN / CLOSE ONLY.
+
+   - Uses the selected Scheduled Maintenance incident.
+   - Does NOT use currentBreakdownId.
+   - Does NOT create or modify Tasks.
+   - Save will be connected in a separate step.
+========================================================= */
+
+function openSmTaskModal() {
+
+  const sm = currentScheduledMaintenance;
+
+  if (!sm || !Number.isInteger(Number(sm.id))) {
+    console.error("ADD SM TASK: No SM incident selected");
+    return;
+  }
+
+  if (
+    String(sm.status || "").toUpperCase() === "CLOSED"
+  ) {
+    alert("This Scheduled Maintenance is closed.");
+    return;
+  }
+
+  const overlay =
+    document.getElementById("smTaskOverlay");
+
+  if (!overlay) {
+    console.error("SM Task modal HTML not found");
+    return;
+  }
+
+  /* =====================
+     RESET FIELDS
+  ===================== */
+
+  [
+    "sm-task",
+    "sm-section",
+    "sm-section-input",
+    "sm-unit",
+    "sm-unit-input",
+    "sm-due-date",
+    "sm-duration",
+    "sm-notes"
+  ].forEach(elementId => {
+
+    const element =
+      document.getElementById(elementId);
+
+    if (element) {
+      element.value = "";
+    }
+
+  });
+
+
+  /* =====================
+     SHOW SELECTED SM
+  ===================== */
+
+  const reference =
+    document.getElementById("smTaskIncidentRef");
+
+  if (reference) {
+    reference.textContent =
+      `SM-${String(sm.id).padStart(5, "0")}`;
+  }
+
+
+  /* =====================
+     OPEN MODAL
+  ===================== */
+
+  overlay.style.display = "flex";
+
+  document.getElementById("sm-task")?.focus();
+
+}
+
+
+function closeSmTaskModal() {
+
+  const overlay =
+    document.getElementById("smTaskOverlay");
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+}
+
+
+/* =====================
+   SM TASK MODAL BUTTONS
+
+   Event delegation allows the buttons to work
+   independently of script loading order.
+===================== */
+
+document.addEventListener("click", event => {
+
+  const target = event.target;
+
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  if (target.closest("#addSmTaskBtn")) {
+    openSmTaskModal();
+    return;
+  }
+
+  if (
+    target.closest("#closeSmTaskBtn") ||
+    target.closest("#cancelSmTaskBtn")
+  ) {
+    closeSmTaskModal();
+    return;
+  }
+
+  if (
+    target.id === "smTaskOverlay"
+  ) {
+    closeSmTaskModal();
+  }
+
+});
