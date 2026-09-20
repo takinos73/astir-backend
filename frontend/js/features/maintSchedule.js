@@ -599,3 +599,286 @@ document.addEventListener("change", event => {
   }
 
 });
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — CREATE TASK
+
+   Creates one Planned Task in the selected SM.
+
+   - Uses the existing SM Task form.
+   - Uses POST /scheduled-maintenance/:id/tasks.
+   - Does NOT use Breakdown routes.
+   - Does NOT create a task execution.
+   - Refreshes SM Detail and the main Tasks list.
+========================================================= */
+
+async function createSmTask() {
+
+  const sm = currentScheduledMaintenance;
+
+  const saveBtn =
+    document.getElementById("saveSmTaskBtn");
+
+  const taskInput =
+    document.getElementById("sm-task");
+
+  const sectionSelect =
+    document.getElementById("sm-section");
+
+  const sectionInput =
+    document.getElementById("sm-section-input");
+
+  const unitSelect =
+    document.getElementById("sm-unit");
+
+  const unitInput =
+    document.getElementById("sm-unit-input");
+
+  const dueDateInput =
+    document.getElementById("sm-due-date");
+
+  const durationInput =
+    document.getElementById("sm-duration");
+
+  const notesInput =
+    document.getElementById("sm-notes");
+
+
+  /* =====================
+     VALIDATE SELECTED SM
+  ===================== */
+
+  const smId = Number(sm?.id);
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+    alert("No Scheduled Maintenance selected.");
+    return;
+  }
+
+  if (
+    String(sm.status || "").toUpperCase() === "CLOSED"
+  ) {
+    alert("This Scheduled Maintenance is closed.");
+    return;
+  }
+
+
+  /* =====================
+     READ TASK
+  ===================== */
+
+  const task =
+    String(taskInput?.value || "").trim();
+
+  if (!task) {
+    alert("Please enter the Maintenance Task.");
+    taskInput?.focus();
+    return;
+  }
+
+
+  /* =====================
+     READ SECTION / UNIT
+
+     Existing dropdown or manual input.
+  ===================== */
+
+  const section =
+    sectionSelect?.style.display !== "none" &&
+    sectionSelect?.value !== "__new__"
+
+      ? String(sectionSelect?.value || "").trim()
+
+      : String(sectionInput?.value || "").trim();
+
+
+  const unit =
+    unitSelect?.style.display !== "none" &&
+    unitSelect?.value !== "__new__"
+
+      ? String(unitSelect?.value || "").trim()
+
+      : String(unitInput?.value || "").trim();
+
+
+  if (
+    sectionSelect?.value === "__new__" &&
+    !section
+  ) {
+    alert("Please enter the new Section.");
+    sectionInput?.focus();
+    return;
+  }
+
+  if (
+    unitSelect?.value === "__new__" &&
+    !unit
+  ) {
+    alert("Please enter the new Unit.");
+    unitInput?.focus();
+    return;
+  }
+
+
+  /* =====================
+     DUE DATE
+  ===================== */
+
+  let dueDate = null;
+
+  if (dueDateInput?.value) {
+
+    const parsedDueDate =
+      new Date(dueDateInput.value);
+
+    if (
+      Number.isNaN(parsedDueDate.getTime())
+    ) {
+      alert("Invalid Due Date.");
+      dueDateInput.focus();
+      return;
+    }
+
+    dueDate =
+      parsedDueDate.toISOString();
+  }
+
+
+  /* =====================
+     ESTIMATED DURATION
+  ===================== */
+
+  let durationMin = null;
+
+  if (durationInput?.value !== "") {
+
+    durationMin =
+      Number(durationInput.value);
+
+    if (
+      !Number.isFinite(durationMin) ||
+      durationMin < 0
+    ) {
+      alert("Invalid Estimated Duration.");
+      durationInput.focus();
+      return;
+    }
+  }
+
+
+  /* =====================
+     PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    task,
+
+    section: section || null,
+
+    unit: unit || null,
+
+    due_date: dueDate,
+
+    duration_min: durationMin,
+
+    notes:
+      String(notesInput?.value || "").trim() || null
+
+  };
+
+
+  /* =====================
+     CREATE TASK
+  ===================== */
+
+  if (saveBtn?.disabled) return;
+
+  let taskCreated = false;
+
+  try {
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Adding...";
+    }
+
+    const response = await fetch(
+      `/scheduled-maintenance/${smId}/tasks`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(payload)
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error ||
+        "Failed to create Maintenance Task"
+      );
+    }
+
+    taskCreated = true;
+
+    closeSmTaskModal();
+
+    /* =====================
+       REFRESH
+
+       Task was created successfully.
+       Refresh failures must NOT trigger
+       another task creation.
+    ===================== */
+
+    await openScheduledMaintenanceDetail(smId);
+
+    await loadTasks();
+
+  } catch (err) {
+
+    console.error(
+      "CREATE SM TASK ERROR:",
+      err
+    );
+
+    alert(
+      taskCreated
+        ? "Task created, but refresh failed. Please reload the page. Do not save it again."
+        : err.message || "Could not create Maintenance Task."
+    );
+
+  } finally {
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Add Task";
+    }
+  }
+
+}
+
+
+/* =====================
+   SM TASK SAVE BUTTON
+===================== */
+
+document.addEventListener("click", event => {
+
+  if (
+    event.target instanceof Element &&
+    event.target.closest("#saveSmTaskBtn")
+  ) {
+    createSmTask();
+  }
+
+});
