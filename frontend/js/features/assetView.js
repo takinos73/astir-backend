@@ -651,9 +651,33 @@ function renderAssetBreakdowns() {
 
 }
 
-// =====================
-// ASSET HISTORY TABLE (EXECUTIONS)
-// =====================
+/* =========================================================
+   ASSET HISTORY TABLE — TASK EXECUTIONS
+
+   Displays the execution history of the selected Asset.
+
+   RESPONSIBILITIES
+   ---------------------------------------------------------
+   - Switch between Active Tasks and History.
+   - Apply the existing Asset History filters.
+   - Sort executions by date DESC, then Section ASC.
+   - Display Task, Type, Technician and Notes.
+   - Show parent BD / SM reference below the Task Type.
+   - Preserve the exact Task Timeline filter.
+   - Open the existing execution detail through View.
+
+   PARENT INCIDENT REFERENCES
+   ---------------------------------------------------------
+   BD-xxxxx:
+     Restoration Task linked to a Breakdown.
+
+   SM-xxxxx:
+     Planned Task linked to Scheduled Maintenance.
+
+   References are display-only.
+   They do not change Task type, execution or History filters.
+========================================================= */
+
 function renderAssetHistoryTable(history) {
 
   renderAssetHistoryActiveFilter();
@@ -776,6 +800,9 @@ function renderAssetHistoryTable(history) {
 
     // =====================
     // ROW CONTENT
+    //
+    // BD / SM references appear below
+    // the Type, not inside the Task cell.
     // =====================
 
     tr.innerHTML = `
@@ -807,16 +834,24 @@ function renderAssetHistoryTable(history) {
             : ""
         }
 
-        <!-- =====================
-             PARENT MAINTENANCE INCIDENT
+        ${renderImpactBadge(e.impact)}
 
-             BD → Restoration Task
-             SM → Planned Task
+      </td>
 
-             Display-only references.
-             Task type and History filters
-             remain unchanged.
-        ===================== -->
+      <!-- =====================
+           TYPE + PARENT INCIDENT
+
+           BD → Restoration + BD reference
+           SM → Planned + SM reference
+
+           Display-only references.
+      ===================== -->
+
+      <td class="asset-history-type-cell">
+
+        <div class="asset-history-type-label">
+          ${highlightAssetHistorySearch(e.type || "-")}
+        </div>
 
         ${
           execType === "restoration" && e.breakdown_id
@@ -841,12 +876,6 @@ function renderAssetHistoryTable(history) {
             : ""
         }
 
-        ${renderImpactBadge(e.impact)}
-
-      </td>
-
-      <td>
-        ${highlightAssetHistorySearch(e.type || "-")}
       </td>
 
       <td>
