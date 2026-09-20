@@ -724,3 +724,336 @@
   white-space: nowrap;
   cursor: pointer;
 }
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — HEADER ID COLOR
+
+   Consistent amber/yellow SM code in:
+   - SM Detail header
+   - Add SM Task header
+========================================================= */
+
+#scheduledMaintenanceDetailModal #sm-detail-code,
+#smTaskModal #smTaskIncidentRef {
+  color: #fbbf24 !important;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   ADD SCHEDULED MAINTENANCE TASK — MODAL
+
+   Clean, dark layout aligned with New Breakdown.
+   Scoped ONLY to #smTaskModal.
+========================================================= */
+
+
+/* =====================
+   OVERLAY
+===================== */
+
+#smTaskOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1210;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px 16px;
+  box-sizing: border-box;
+
+  overflow-y: auto;
+}
+
+
+/* =====================
+   MODAL CONTAINER
+===================== */
+
+#smTaskModal {
+  position: relative;
+
+  box-sizing: border-box;
+
+  width: min(820px, 100%) !important;
+  max-width: 820px !important;
+
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+
+  margin: auto;
+  padding: 28px 26px !important;
+
+  background: #202329 !important;
+  color: #f5f7fa !important;
+
+  border: 1px solid #363b45 !important;
+  border-radius: 14px !important;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+
+/* =====================
+   HEADER
+===================== */
+
+#smTaskModal .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+#smTaskModal .modal-header h2 {
+  margin: 0;
+
+  color: #f5f7fa;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+#smTaskModal #smTaskIncidentRef {
+  display: block;
+
+  margin: 4px 0 26px;
+
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+
+/* =====================
+   CLOSE BUTTON
+===================== */
+
+#smTaskModal #closeSmTaskBtn {
+  position: absolute !important;
+
+  top: 22px !important;
+  right: 22px !important;
+  left: auto !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  background: transparent !important;
+  color: #aeb5c1 !important;
+
+  border: none !important;
+  border-radius: 6px;
+
+  font-size: 26px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+#smTaskModal #closeSmTaskBtn:hover {
+  background: #303640 !important;
+  color: #ffffff !important;
+}
+
+
+/* =====================
+   FORM GRID
+
+   Task and Notes: full width.
+   Section / Unit: two columns.
+   Due Date / Duration: two columns.
+===================== */
+
+#smTaskModal .restoration-form-grid {
+  display: grid !important;
+
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  ) !important;
+
+  gap: 22px 18px !important;
+
+  width: 100%;
+}
+
+#smTaskModal .field:has(#sm-task),
+#smTaskModal .field:has(#sm-notes) {
+  grid-column: 1 / -1 !important;
+}
+
+
+/* =====================
+   FIELD LABELS
+===================== */
+
+#smTaskModal .field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  gap: 9px;
+
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+}
+
+#smTaskModal .field label {
+  display: block;
+
+  margin: 0;
+
+  color: #adb5c2;
+
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+
+/* =====================
+   INPUTS / DROPDOWNS / NOTES
+
+   Do not override display: none;
+   the Section / Unit JS uses it
+   to switch between select and input.
+===================== */
+
+#smTaskModal input,
+#smTaskModal select,
+#smTaskModal textarea {
+  box-sizing: border-box;
+
+  width: 100% !important;
+  min-width: 0;
+
+  margin: 0;
+  padding: 12px 14px;
+
+  background: #191f28 !important;
+  color: #f5f7fa !important;
+
+  border: 1px solid #39414d !important;
+  border-radius: 10px !important;
+
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+
+  color-scheme: dark;
+}
+
+#smTaskModal input,
+#smTaskModal select {
+  min-height: 46px;
+}
+
+#smTaskModal textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+#smTaskModal input::placeholder,
+#smTaskModal textarea::placeholder {
+  color: #7e8795;
+}
+
+
+/* =====================
+   FOCUS
+===================== */
+
+#smTaskModal input:focus,
+#smTaskModal select:focus,
+#smTaskModal textarea:focus {
+  outline: none;
+
+  border-color: #5c91cf !important;
+
+  box-shadow:
+    0 0 0 2px rgba(92, 145, 207, 0.16);
+}
+
+
+/* =====================
+   FOOTER BUTTONS
+===================== */
+
+#smTaskModal .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  flex-wrap: wrap;
+  gap: 12px;
+
+  margin-top: 28px;
+  padding-top: 20px;
+
+  border-top: 1px solid #363b45;
+}
+
+#smTaskModal #saveSmTaskBtn,
+#smTaskModal #cancelSmTaskBtn {
+  min-height: 40px;
+
+  padding: 9px 16px;
+
+  border: none;
+  border-radius: 10px;
+
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#smTaskModal #saveSmTaskBtn {
+  background: #61d69a;
+  color: #12251b;
+}
+
+#smTaskModal #cancelSmTaskBtn {
+  background: #42444a;
+  color: #ffffff;
+}
+
+
+/* =====================
+   SMALL SCREENS
+===================== */
+
+@media (max-width: 600px) {
+
+  #smTaskOverlay {
+    padding: 12px;
+  }
+
+  #smTaskModal {
+    max-height: calc(100vh - 24px);
+    padding: 22px 18px !important;
+  }
+
+  #smTaskModal .modal-header h2 {
+    font-size: 22px;
+  }
+
+  #smTaskModal .restoration-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+}
