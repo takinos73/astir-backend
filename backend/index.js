@@ -5346,6 +5346,228 @@ app.get("/scheduled-maintenance", async (req, res) => {
 
 });
 
+/* =========================================================
+   CREATE SCHEDULED MAINTENANCE
+   POST /scheduled-maintenance
+
+   Creates the central Scheduled Maintenance incident.
+
+   IMPORTANT:
+   - Independent from Breakdown incidents.
+   - Asset is required.
+   - Title is required.
+   - Scheduled dates are optional because the maintenance
+     window may not have been agreed with Production yet.
+   - Status starts as PLANNED.
+
+   This route does NOT:
+   - Create maintenance tasks or task executions.
+   - Create Machine State or downtime records.
+   - Modify existing Breakdowns or Tasks.
+   - Start or close the maintenance incident.
+========================================================= */
+
+app.post("/scheduled-maintenance", async (req, res) => {
+
+  try {
+
+    const {
+      asset_id,
+      title,
+      description,
+      scheduled_start_at,
+      scheduled_end_at
+    } = req.body || {};
+
+
+    /* =====================
+       VALIDATE ASSET ID
+    ===================== */
+
+    const assetId = Number(asset_id);
+
+    if (
+      !Number.isInteger(assetId) ||
+      assetId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Asset is required"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE TITLE
+    ===================== */
+
+    const resolvedTitle =
+      String(title ?? "").trim();
+
+    if (!resolvedTitle) {
+      return res.status(400).json({
+        error: "Scheduled Maintenance title is required"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE SCHEDULED DATES
+
+       Dates are optional.
+
+       When provided, they must be valid ISO 8601
+       date/time values with an explicit timezone.
+
+       Scheduled dates do NOT represent actual
+       machine shutdown or maintenance start.
+    ===================== */
+
+    const parseScheduledDate = value => {
+
+      if (
+        value === undefined ||
+        value === null ||
+        value === ""
+      ) {
+        return null;
+      }
+
+      if (
+        typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(value)
+      ) {
+        return "INVALID";
+      }
+
+      const date = new Date(value);
+
+      return Number.isNaN(date.getTime())
+        ? "INVALID"
+        : date;
+    };
+
+
+    const scheduledStart =
+      parseScheduledDate(scheduled_start_at);
+
+    const scheduledEnd =
+      parseScheduledDate(scheduled_end_at);
+
+
+    if (
+      scheduledStart === "INVALID" ||
+      scheduledEnd === "INVALID"
+    ) {
+      return res.status(400).json({
+        error: "Invalid scheduled date/time"
+      });
+    }
+
+
+    if (
+      scheduledStart &&
+      scheduledEnd &&
+      scheduledEnd < scheduledStart
+    ) {
+      return res.status(400).json({
+        error:
+          "Scheduled end cannot be earlier than scheduled start"
+      });
+    }
+
+
+    /* =====================
+       VERIFY ASSET
+    ===================== */
+
+    const assetResult = await pool.query(
+      `
+      SELECT id
+      FROM assets
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [assetId]
+    );
+
+    if (assetResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Asset not found"
+      });
+    }
+
+
+    /* =====================
+       CREATE SM INCIDENT
+
+       Single INSERT:
+       - status = PLANNED
+       - actual start/end remain NULL
+       - no Breakdown or Task is created
+    ===================== */
+
+    const result = await pool.query(
+      `
+      INSERT INTO scheduled_maintenance (
+        asset_id,
+        title,
+        description,
+        status,
+        scheduled_start_at,
+        scheduled_end_at
+      )
+
+      VALUES (
+        $1,
+        $2,
+        $3,
+        'PLANNED',
+        $4,
+        $5
+      )
+
+      RETURNING *
+      `,
+      [
+        assetId,
+        resolvedTitle,
+        String(description ?? "").trim() || null,
+        scheduledStart,
+        scheduledEnd
+      ]
+    );
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.status(201).json({
+
+      message:
+        "Scheduled Maintenance created successfully",
+
+      scheduled_maintenance:
+        result.rows[0]
+
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "POST /scheduled-maintenance error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to create Scheduled Maintenance"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    TASKS
