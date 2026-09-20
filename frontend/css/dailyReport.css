@@ -766,12 +766,17 @@ body {
     min-height: 60mm;
   }
 
-  .daily-report-bar-area {
-    min-height: 52mm;
-  }
+  /* =====================
+     PAGE 2 — PRINT CHART HEIGHT
 
-  .daily-report-stacked-bar-area {
-    min-height: 46mm;
+     Allow chart areas to use only the height
+     required by their content when printing.
+     Other report pages remain unchanged.
+  ====================== */
+
+  .daily-report-page-2 .daily-report-bar-area,
+  .daily-report-page-2 .daily-report-stacked-bar-area {
+    min-height: 0;
   }
 
   .daily-report-chart-card {
