@@ -5135,42 +5135,77 @@ td {
 }
 
 /* =========================================================
-   DETAIL EVENT LISTENERS
+   MAINTENANCE INCIDENTS — VIEW BUTTON
+
+   Shared table for Breakdown and Scheduled Maintenance.
+
+   - BD rows use .breakdown-view-btn / data-breakdown-id.
+   - SM rows use .sm-view-btn / data-sm-id.
+   - Each incident opens its OWN Detail modal.
+   - No BD actions are used for SM.
 ========================================================= */
-
-
-/* =====================
-   VIEW BUTTON
-
-   Event delegation is used because
-   Breakdown rows are rendered dynamically.
-===================== */
 
 document
   .getElementById("breakdownsTableBody")
-  ?.addEventListener(
-    "click",
-    event => {
+  ?.addEventListener("click", event => {
 
-      const button =
-        event.target.closest(
-          ".breakdown-view-btn"
-        );
-
-
-      if (!button) return;
-
-
-      const breakdownId =
-        button.dataset.breakdownId;
-
-
-      openBreakdownDetail(
-        breakdownId
-      );
-
+    if (!(event.target instanceof Element)) {
+      return;
     }
-  );
+
+    /* =====================
+       SCHEDULED MAINTENANCE VIEW
+    ===================== */
+
+    const smButton =
+      event.target.closest(".sm-view-btn");
+
+    if (smButton) {
+
+      const smId =
+        Number(smButton.dataset.smId);
+
+      if (
+        !Number.isInteger(smId) ||
+        smId <= 0
+      ) {
+        console.error(
+          "Invalid Scheduled Maintenance ID:",
+          smButton.dataset.smId
+        );
+        return;
+      }
+
+      if (
+        typeof openScheduledMaintenanceDetail !== "function"
+      ) {
+        console.error(
+          "Scheduled Maintenance Detail is unavailable."
+        );
+        return;
+      }
+
+      openScheduledMaintenanceDetail(smId);
+
+      return;
+    }
+
+    /* =====================
+       BREAKDOWN VIEW
+       Existing functionality
+    ===================== */
+
+    const breakdownButton =
+      event.target.closest(".breakdown-view-btn");
+
+    if (!breakdownButton) return;
+
+    const breakdownId =
+      breakdownButton.dataset.breakdownId;
+
+    openBreakdownDetail(breakdownId);
+
+  });
 
   /* =====================
     PRINT BREAKDOWN
