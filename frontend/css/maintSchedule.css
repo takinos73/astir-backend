@@ -697,3 +697,58 @@
   background: rgba(245, 158, 11, 0.12) !important;
   border: 1px solid rgba(245, 158, 11, 0.38) !important;
 }
+
+/* =====================================================
+   SCHEDULED MAINTENANCE — TABLE ACTIONS
+
+   - SM View has the same appearance as BD View.
+   - Actions are right-aligned, even with one button.
+   - Scoped ONLY to SM rows.
+===================================================== */
+
+/* ACTIONS ALIGNMENT */
+
+#breakdownsTableBody
+.sm-incident-row
+.breakdown-actions-cell {
+  text-align: right;
+}
+
+#breakdownsTableBody
+.sm-incident-row
+.breakdown-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  width: 100%;
+  gap: 8px;
+}
+
+
+/* SM VIEW — SAME APPEARANCE AS BD VIEW */
+
+#breakdownsTableBody
+.sm-incident-row
+.sm-view-btn {
+  background: #1b2430;
+  color: #d4dfed;
+
+  border: 1px solid #3b4656;
+  border-radius: 9px;
+
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#breakdownsTableBody
+.sm-incident-row
+.sm-view-btn:hover {
+  background: #29364a;
+  border-color: #62748d;
+  color: #ffffff;
+}
