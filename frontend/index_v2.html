@@ -1299,6 +1299,24 @@
 
     <div class="breakdown-filters">
 
+      <!-- =====================
+          MAINTENANCE INCIDENT TYPE
+      ===================== -->
+
+      <div class="breakdown-filter-item">
+
+        <label for="incidentTypeFilter">
+          Type
+        </label>
+
+        <select id="incidentTypeFilter">
+          <option value="ALL">All Types</option>
+          <option value="BD">Breakdown</option>
+          <option value="SM">Scheduled Maintenance</option>
+        </select>
+
+      </div>
+
       <div class="breakdown-filter-item">
 
         <label for="breakdownLineFilter">
@@ -1354,6 +1372,10 @@
             All Status
           </option>
 
+          <option value="PLANNED">
+            Planned
+          </option>
+
           <option value="OPEN">
             Open
           </option>
@@ -1379,7 +1401,7 @@
         <input
           id="breakdownSearchFilter"
           type="text"
-          placeholder="BD ID, fault, machine, serial..."
+          placeholder="BD / SM ID, title, machine, serial..."
           autocomplete="off"
         >
 
@@ -1395,7 +1417,7 @@
         <table
           id="breakdownsTable"
           class="data-table"
-        >
+    >
 
           <thead>
 
@@ -1403,9 +1425,9 @@
               <th>ID</th>
               <th>Asset</th>
               <th>Line</th>
-              <th>Fault</th>
+              <th>Fault / Maintenance</th>
               <th>Status</th>
-              <th>Started</th>
+              <th>Started / Scheduled</th>
               <th>Downtime</th>
               <th></th>
             </tr>
@@ -1430,7 +1452,7 @@
 
         </table>
 
-    </div>
+      </div>
    
 
       <!-- ====================
@@ -1481,7 +1503,7 @@
 
       </div>
 
-  </div>
+    </div>
   
   <!-- =========================================================
      ASSIGN RESTORATION TASK MODAL

@@ -83,6 +83,14 @@ function getBreakdownStatusClass(status) {
 }
 
 /* =====================
+   SCHEDULED MAINTENANCE DATA
+
+   Independent from breakdownsData.
+===================== */
+
+let scheduledMaintenanceData = [];
+
+/* =====================
    LOAD BREAKDOWNS
 ===================== */
 
@@ -130,8 +138,49 @@ async function loadBreakdowns() {
         : [];
 
 
-    populateBreakdownLineFilter();
+    /* =====================
+       LOAD SCHEDULED MAINTENANCE
 
+       A failure to load SM must not prevent
+       existing Breakdowns from being displayed.
+    ===================== */
+
+    scheduledMaintenanceData = [];
+
+    try {
+
+      const smResponse =
+        await fetch("/scheduled-maintenance");
+
+      if (!smResponse.ok) {
+        throw new Error(
+          `Failed to load SM (${smResponse.status})`
+        );
+      }
+
+      const smResult =
+        await smResponse.json();
+
+      scheduledMaintenanceData =
+        Array.isArray(smResult)
+          ? smResult
+          : [];
+
+    } catch (smError) {
+
+      console.error(
+        "LOAD SCHEDULED MAINTENANCE ERROR:",
+        smError
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH COMMON INCIDENT TABLE
+    ===================== */
+
+    populateBreakdownLineFilter();
 
     applyBreakdownFilters();
 
@@ -215,6 +264,69 @@ function getBreakdownPageSize() {
 }
 
 /* =========================================================
+   MAINTENANCE INCIDENTS — COMMON DISPLAY DATA
+
+   BD and SM remain separate in memory.
+
+   This function creates display-only rows
+   for the common table, filters and pagination.
+
+   Scheduled Start is used as the SM date.
+   SM does NOT acquire BD downtime or BD actions.
+========================================================= */
+
+function getMaintenanceIncidentRows() {
+
+  const bdRows =
+    breakdownsData.map(b => ({
+
+      ...b,
+
+      incident_type: "BD"
+
+    }));
+
+
+  const smRows =
+    scheduledMaintenanceData.map(sm => ({
+
+      ...sm,
+
+      incident_type: "SM",
+
+      asset_model:
+        sm.asset_model ||
+        sm.model ||
+        sm.asset_name ||
+        "-",
+
+      asset_serial:
+        sm.asset_serial ||
+        sm.serial_number ||
+        "",
+
+      line_name:
+        sm.line_name ||
+        sm.line_code ||
+        sm.line ||
+        "-",
+
+      // Common date field used by existing filters.
+      // This does NOT represent a Breakdown start.
+      started_at:
+        sm.scheduled_start_at || null
+
+    }));
+
+
+  return [
+    ...bdRows,
+    ...smRows
+  ];
+
+}
+
+/* =========================================================
    BREAKDOWN FILTERS
 ========================================================= */
 
@@ -244,8 +356,25 @@ function applyBreakdownFilters() {
       ?.value || "ALL";
 
 
+  const incidentTypeValue =
+    document
+      .getElementById("incidentTypeFilter")
+      ?.value || "ALL";
+
+
   const filtered =
-    breakdownsData.filter(b => {
+    getMaintenanceIncidentRows().filter(b => {
+
+      /* =====================
+         INCIDENT TYPE
+      ===================== */
+
+      if (
+        incidentTypeValue !== "ALL" &&
+        b.incident_type !== incidentTypeValue
+      ) {
+        return false;
+      }
 
       /* =====================
          LINE
@@ -365,7 +494,9 @@ function applyBreakdownFilters() {
       if (searchQuery) {
 
         const breakdownCode =
-          `bd-${String(b.id || "")
+          `${b.incident_type === "SM" ? "sm" : "bd"}-${String(
+            b.id || ""
+          )
             .padStart(5, "0")
             .toLowerCase()}`;
 
@@ -579,7 +710,7 @@ function populateBreakdownLineFilter() {
   const lines =
     [
       ...new Set(
-        breakdownsData
+        getMaintenanceIncidentRows()
           .map(
             b =>
               String(
@@ -674,7 +805,7 @@ function renderBreakdownsTable(breakdowns) {
     tbody.innerHTML = `
       <tr>
         <td colspan="8">
-          No breakdowns recorded.
+          No maintenance incidents recorded.
         </td>
       </tr>
     `;
@@ -689,6 +820,129 @@ function renderBreakdownsTable(breakdowns) {
 
   tbody.innerHTML =
     breakdowns.map(b => {
+            /* =====================
+              SCHEDULED MAINTENANCE ROW
+
+              Independent View and status.
+
+              No Breakdown downtime.
+              No Reopen / Assign Restoration.
+            ===================== */
+
+            if (b.incident_type === "SM") {
+
+              const smId = Number(b.id);
+
+              if (
+                !Number.isInteger(smId) ||
+                smId <= 0
+              ) {
+                return "";
+              }
+
+              const smCode =
+                `SM-${String(smId).padStart(5, "0")}`;
+
+              const smAsset =
+                b.asset_model || "-";
+
+              const smSerial =
+                b.asset_serial || "";
+
+              const smLine =
+                b.line_name || "-";
+
+              const smTitle =
+                b.title || "-";
+
+              const smStatus =
+                String(b.status || "-");
+
+              const smDate =
+                formatBreakdownDate(
+                  b.scheduled_start_at
+                );
+
+
+              return `
+                <tr class="sm-incident-row">
+
+                  <td>
+                    <span class="breakdown-id">
+                      ${smCode}
+                    </span>
+                  </td>
+
+                  <td>
+                    <strong>
+                      ${escapeBreakdownHtml(smAsset)}
+                    </strong>
+
+                    ${
+                      smSerial
+                        ? `
+                          <div class="task-meta">
+                            ${escapeBreakdownHtml(smSerial)}
+                          </div>
+                        `
+                        : ""
+                    }
+                  </td>
+
+                  <td>
+                    ${escapeBreakdownHtml(smLine)}
+                  </td>
+
+                  <td>
+                    ${escapeBreakdownHtml(smTitle)}
+                  </td>
+
+                  <td>
+                    <span class="breakdown-status">
+                      ${escapeBreakdownHtml(
+                        smStatus.replace("_", " ")
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    ${escapeBreakdownHtml(smDate)}
+                  </td>
+
+                  <td>
+                    —
+                  </td>
+
+                  <td class="breakdown-actions-cell">
+
+                    <div class="breakdown-actions-row">
+
+                      <button
+                        class="btn-table breakdown-action-btn sm-view-btn"
+                        type="button"
+                        data-sm-id="${smId}"
+                        title="View Scheduled Maintenance"
+                        aria-label="View Scheduled Maintenance"
+                      >
+                        👁 View
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+              `;
+
+            }
+
+
+            /* =====================
+              BREAKDOWN ROW
+
+              Existing BD rendering continues below.
+              No changes to BD actions or downtime.
+            ===================== */
 
       const id =
         b.id ?? "";
