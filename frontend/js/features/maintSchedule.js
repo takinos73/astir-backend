@@ -224,6 +224,15 @@ async function openScheduledMaintenanceDetail(smId) {
       return;
     }
 
+    /* =====================
+       RENDER SM TASK CARDS
+
+       - Open Tasks: show Complete action.
+       - Done Tasks: show completion status.
+       - Completion uses the existing CMMS engine.
+       - No Breakdown functions or routes are modified.
+    ===================== */
+
     tasks.forEach(task => {
 
       const card = document.createElement("div");
@@ -246,6 +255,51 @@ async function openScheduledMaintenanceDetail(smId) {
         ` · Est. ${estimated}`;
 
       card.append(title, meta);
+
+      const status =
+        String(task.status || "").trim().toUpperCase();
+
+      const isOpen =
+        status === "PLANNED" ||
+        status === "OVERDUE";
+
+      if (isOpen) {
+
+        const completeBtn =
+          document.createElement("button");
+
+        completeBtn.type = "button";
+        completeBtn.className = "btn-table sm-task-complete-btn";
+        completeBtn.textContent = "Complete";
+
+        completeBtn.addEventListener("click", () => {
+
+          // Use the existing Task completion modal.
+          // No SM-specific completion route is created.
+
+          if (typeof askTechnician !== "function") {
+            console.error(
+              "SM TASK: Standard completion modal unavailable"
+            );
+            return;
+          }
+
+          askTechnician(task.id);
+
+        });
+
+        card.appendChild(completeBtn);
+
+      } else if (status === "DONE") {
+
+        const doneLabel =
+          document.createElement("div");
+
+        doneLabel.className = "restoration-task-done";
+        doneLabel.textContent = "✓ Done";
+
+        card.appendChild(doneLabel);
+      }
 
       taskContainer.appendChild(card);
 
