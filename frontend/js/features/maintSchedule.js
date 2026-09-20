@@ -943,7 +943,7 @@ document.addEventListener("click", event => {
    Common entry point for BD and SM.
 
    - Breakdown opens the EXISTING BD creation modal.
-   - Scheduled Maintenance will be connected separately.
+   - Scheduled Maintenance opens its independent SM form.
    - Does NOT create or modify any incident or task.
    - Does NOT modify existing BD modal functions.
 ========================================================= */
@@ -1031,8 +1031,6 @@ window.openNewIncidentChooser = function () {
             id="chooseNewSmBtn"
             class="btn-table"
             type="button"
-            disabled
-            title="Scheduled Maintenance creation will be connected next"
           >
             + Scheduled Maintenance
           </button>
@@ -1053,9 +1051,11 @@ window.openNewIncidentChooser = function () {
       overlay.style.display = "none";
     };
 
+
     overlay
       .querySelector("#closeNewIncidentChooserBtn")
       ?.addEventListener("click", closeChooser);
+
 
     overlay.addEventListener("click", event => {
 
@@ -1080,6 +1080,31 @@ window.openNewIncidentChooser = function () {
 
       });
 
+
+    /* =====================
+       SCHEDULED MAINTENANCE
+       Independent creation form
+    ===================== */
+
+    overlay
+      .querySelector("#chooseNewSmBtn")
+      ?.addEventListener("click", () => {
+
+        if (
+          typeof openNewScheduledMaintenanceModal !== "function"
+        ) {
+          console.error(
+            "New Scheduled Maintenance modal is not available."
+          );
+          return;
+        }
+
+        closeChooser();
+
+        openNewScheduledMaintenanceModal();
+
+      });
+
   }
 
 
@@ -1090,3 +1115,229 @@ window.openNewIncidentChooser = function () {
   overlay.style.display = "flex";
 
 };
+
+/* =========================================================
+   NEW SCHEDULED MAINTENANCE — CREATION FORM
+
+   Independent from New Breakdown.
+
+   Current step:
+   - Open / close the SM form.
+   - Collect SM incident fields.
+   - No POST request or database changes yet.
+
+   Asset selection and Save will be connected next.
+========================================================= */
+
+function openNewScheduledMaintenanceModal() {
+
+  let overlay =
+    document.getElementById("newScheduledMaintenanceOverlay");
+
+
+  /* =====================
+     CREATE MODAL ONCE
+  ===================== */
+
+  if (!overlay) {
+
+    overlay = document.createElement("div");
+
+    overlay.id = "newScheduledMaintenanceOverlay";
+    overlay.className = "modal-overlay";
+
+    overlay.style.display = "none";
+    overlay.style.zIndex = "1250";
+
+    overlay.innerHTML = `
+      <div
+        id="newScheduledMaintenanceModal"
+        class="modal"
+        style="
+          box-sizing: border-box;
+          width: min(650px, calc(100vw - 32px));
+          padding: 24px;
+          background: #181b22;
+          color: #f5f7fa;
+          border: 1px solid rgba(255,255,255,.13);
+          border-radius: 14px;
+        "
+      >
+
+        <div
+          class="modal-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+          "
+        >
+
+          <h2 style="margin: 0;">
+            New Scheduled Maintenance
+          </h2>
+
+          <button
+            id="closeNewSmBtn"
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+        </div>
+
+        <div class="restoration-form-grid">
+
+          <div class="field">
+            <label for="new-sm-asset">
+              Asset *
+            </label>
+
+            <select id="new-sm-asset" disabled>
+              <option value="">
+                Select Asset
+              </option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="new-sm-title">
+              Maintenance Title *
+            </label>
+
+            <input
+              id="new-sm-title"
+              type="text"
+              placeholder="Scheduled Maintenance"
+            >
+          </div>
+
+          <div class="field">
+            <label for="new-sm-scheduled-start">
+              Scheduled Start
+            </label>
+
+            <input
+              id="new-sm-scheduled-start"
+              type="datetime-local"
+            >
+          </div>
+
+          <div class="field">
+            <label for="new-sm-scheduled-end">
+              Scheduled End
+            </label>
+
+            <input
+              id="new-sm-scheduled-end"
+              type="datetime-local"
+            >
+          </div>
+
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="new-sm-description">
+              Description
+            </label>
+
+            <textarea
+              id="new-sm-description"
+              rows="3"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div
+          class="modal-actions"
+          style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+          "
+        >
+
+          <button
+            id="cancelNewSmBtn"
+            class="btn-table"
+            type="button"
+          >
+            Cancel
+          </button>
+
+          <button
+            id="saveNewSmBtn"
+            class="btn-table"
+            type="button"
+            disabled
+          >
+            Create Scheduled Maintenance
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+
+    /* =====================
+       CLOSE HANDLERS
+    ===================== */
+
+    const closeModal = () => {
+      overlay.style.display = "none";
+    };
+
+    overlay
+      .querySelector("#closeNewSmBtn")
+      ?.addEventListener("click", closeModal);
+
+    overlay
+      .querySelector("#cancelNewSmBtn")
+      ?.addEventListener("click", closeModal);
+
+    overlay.addEventListener("click", event => {
+
+      if (event.target === overlay) {
+        closeModal();
+      }
+
+    });
+
+  }
+
+
+  /* =====================
+     RESET NEW INCIDENT FORM
+  ===================== */
+
+  [
+    "new-sm-title",
+    "new-sm-scheduled-start",
+    "new-sm-scheduled-end",
+    "new-sm-description"
+  ].forEach(id => {
+
+    const field = document.getElementById(id);
+
+    if (field) {
+      field.value = "";
+    }
+
+  });
+
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
+
+  overlay.style.display = "flex";
+
+  document.getElementById("new-sm-title")?.focus();
+
+}
