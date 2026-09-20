@@ -6046,15 +6046,29 @@ app.post("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
 });
 
-/* =====================================================
-   TASKS
-   - maintenance_tasks is assumed to have:
-     id, asset_id (FK), section, unit, task, type, qty,
-     duration_min, frequency_hours,
-     due_date, status, completed_by, completed_at,
-     updated_at, is_planned, notes, deleted_at
-===================================================== */
-// GET active tasks (Planned + Overdue), sorted by due date
+/* =========================================================
+   GET /tasks — ACTIVE MAINTENANCE TASKS
+
+   Returns active Planned / Overdue Tasks for active Assets.
+
+   INCIDENT REFERENCES
+   ---------------------------------------------------------
+   breakdown_id:
+     Links a Restoration Task to its parent Breakdown.
+
+   scheduled_maintenance_id:
+     Links a Planned Task to its parent Scheduled Maintenance.
+
+   Both references are returned to the frontend so that
+   the Tasks table can display BD-xxxxx or SM-xxxxx.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   - SM Tasks remain normal Planned Tasks.
+   - This route does not create or complete Tasks.
+   - No Breakdown downtime is calculated or modified.
+   - Completed Tasks are handled by the History endpoint.
+========================================================= */
 
 app.get("/tasks", async (req, res) => {
   try {
@@ -6063,6 +6077,7 @@ app.get("/tasks", async (req, res) => {
       SELECT
         mt.id,
         mt.breakdown_id,
+        mt.scheduled_maintenance_id,
         mt.asset_id,
         mt.task,
         mt.status,
