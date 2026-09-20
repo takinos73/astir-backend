@@ -5347,6 +5347,117 @@ app.get("/scheduled-maintenance", async (req, res) => {
 });
 
 /* =========================================================
+   GET SCHEDULED MAINTENANCE DETAIL
+   GET /scheduled-maintenance/:id
+
+   READ-ONLY:
+   - Loads one Scheduled Maintenance incident.
+   - Includes its Asset and Line information.
+   - Does NOT load or modify Breakdown records.
+   - Does NOT create or modify Tasks.
+   - Does NOT calculate downtime.
+========================================================= */
+
+app.get("/scheduled-maintenance/:id", async (req, res) => {
+
+  try {
+
+    /* =====================
+       VALIDATE SM ID
+    ===================== */
+
+    const smId = Number(req.params.id);
+
+    if (
+      !Number.isInteger(smId) ||
+      smId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid Scheduled Maintenance ID"
+      });
+    }
+
+
+    /* =====================
+       LOAD SM DETAIL
+    ===================== */
+
+    const result = await pool.query(
+      `
+      SELECT
+        sm.id,
+        sm.asset_id,
+        sm.title,
+        sm.description,
+        sm.status,
+
+        sm.scheduled_start_at,
+        sm.scheduled_end_at,
+
+        sm.actual_started_at,
+        sm.actual_closed_at,
+
+        sm.created_at,
+        sm.updated_at,
+
+        a.model AS asset_model,
+        a.serial_number AS asset_serial,
+        a.line_id,
+
+        l.name AS line_name
+
+      FROM scheduled_maintenance sm
+
+      JOIN assets a
+        ON a.id = sm.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE sm.id = $1
+
+      LIMIT 1
+      `,
+      [smId]
+    );
+
+
+    /* =====================
+       NOT FOUND
+    ===================== */
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: "Scheduled Maintenance not found"
+      });
+    }
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.json({
+      scheduled_maintenance: result.rows[0]
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /scheduled-maintenance/:id error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: "Failed to load Scheduled Maintenance detail"
+    });
+
+  }
+
+});
+
+/* =========================================================
    CREATE SCHEDULED MAINTENANCE
    POST /scheduled-maintenance
 
