@@ -50,8 +50,7 @@ body {
   flex-direction: column;
 
   background: #ffffff;
-
-  margin-inline: 1%;
+  
 }
 
 .daily-report-page-break {
@@ -945,4 +944,21 @@ body {
 
 .daily-report-page-3 .daily-report-workload-item {
   text-align: left;
+}
+
+/* =====================================================
+   REPORT PREVIEW — HORIZONTAL MARGINS
+
+   Adds breathing space to all 3 report pages on screen.
+   A4 print layout remains unchanged.
+===================================================== */
+
+@media screen {
+
+  .daily-report-page {
+    width: calc(100% - 64px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
 }
