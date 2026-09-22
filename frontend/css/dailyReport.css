@@ -694,7 +694,14 @@ body {
 
 
 /* =====================================================
-   FOOTER
+   REPORT FOOTER
+
+   Screen:
+     Keep the existing flex layout.
+
+   Print:
+     Anchor the footer inside its own report page.
+     Prevent it from creating an additional printed page.
 ===================================================== */
 
 .daily-report-footer {
@@ -1130,6 +1137,56 @@ body {
     padding-top: 4px !important;
 
     flex-shrink: 0;
+  }
+
+}
+/* =========================================================
+   DAILY REPORT — PRINT FOOTER FIX
+
+   Each report footer belongs to its own designed page.
+
+   Prevent the footer from flowing onto the next
+   physical A4 page when printing.
+
+   PRINT ONLY — Screen preview remains unchanged.
+========================================================= */
+
+@media print {
+
+  /* =====================
+     REPORT PAGE
+
+     Establish the positioning context
+     for its own footer.
+  ===================== */
+
+  .daily-report-page {
+    position: relative !important;
+  }
+
+
+  /* =====================
+     FOOTER POSITION
+
+     Anchor the footer to the bottom of
+     the SAME report page.
+
+     It no longer consumes additional
+     height in the normal document flow.
+  ===================== */
+
+  .daily-report-page .daily-report-footer {
+    position: absolute !important;
+
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    box-sizing: border-box;
+    width: 100% !important;
+
+    margin: 0 !important;
+    padding-top: 5px !important;
   }
 
 }
