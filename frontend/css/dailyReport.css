@@ -293,7 +293,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 240px;
+  min-height: 238px;
 }
 
 .daily-report-donut {
@@ -911,7 +911,7 @@ body {
 }
 
 .daily-report-workload-item {
-  padding: 10px 12px;
+  padding: 8px 10px;
 
   border: 1px solid #dce3ec;
   border-radius: 7px;
