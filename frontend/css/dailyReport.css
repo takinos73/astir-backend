@@ -121,7 +121,7 @@ body {
 ===================================================== */
 
 .daily-report-title-block {
-  margin-bottom: 11px;
+  margin-bottom: 8px;
 }
 
 .daily-report-title {
@@ -293,7 +293,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 238px;
+  min-height: 232px;
 }
 
 .daily-report-donut {
