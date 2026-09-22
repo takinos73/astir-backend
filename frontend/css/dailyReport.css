@@ -1190,3 +1190,164 @@ body {
   }
 
 }
+/* =========================================================
+   DAILY REPORT — PRINT PAGINATION
+
+   TARGET
+   ---------------------------------------------------------
+   Each designed report section occupies one A4
+   landscape sheet.
+
+   Page 1 → Executive Snapshot
+   Page 2 → Reliability & Activity
+   Page 3 → Workload Outlook
+
+   IMPORTANT
+   ---------------------------------------------------------
+   - No fixed page height.
+   - No absolute footer positioning.
+   - No separate page-break elements.
+   - Print-only changes.
+   - Screen preview remains unchanged.
+========================================================= */
+
+@media print {
+
+  /* =====================
+     REPORT PAGE CONTAINER
+
+     Allow the section to use only the
+     height required by its content.
+
+     Avoid fixed heights that can push
+     the footer onto an extra page.
+  ===================== */
+
+  .daily-report-page {
+
+    box-sizing: border-box !important;
+
+    position: relative !important;
+
+    display: block !important;
+
+    width: 100% !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    break-before: auto !important;
+    page-break-before: auto !important;
+
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+
+  }
+
+
+  /* =====================
+     DISABLE SEPARATE PAGE BREAKS
+
+     The HTML contains empty divs
+     between the report sections.
+
+     Page breaks are now controlled
+     directly by the sections below.
+  ===================== */
+
+  .daily-report-page-break {
+
+    display: none !important;
+
+    height: 0 !important;
+
+    break-before: auto !important;
+    page-break-before: auto !important;
+
+    break-after: auto !important;
+    page-break-after: auto !important;
+
+  }
+
+
+  /* =====================
+     PAGE 1 AND PAGE 2
+
+     Start a new physical sheet AFTER
+     each completed report section.
+
+     Page 3 ends normally.
+  ===================== */
+
+  .daily-report-page-1,
+  .daily-report-page-2 {
+
+    break-after: page !important;
+    page-break-after: always !important;
+
+  }
+
+
+  .daily-report-page-3 {
+
+    break-after: auto !important;
+    page-break-after: auto !important;
+
+  }
+
+
+  /* =====================
+     FOOTER
+
+     Keep each footer directly after
+     the content of its own section.
+
+     No absolute positioning.
+     No automatic margin pushing it
+     towards another physical page.
+  ===================== */
+
+  .daily-report-page .daily-report-footer {
+
+    position: static !important;
+
+    display: flex !important;
+
+    box-sizing: border-box !important;
+
+    width: 100% !important;
+
+    height: auto !important;
+
+    margin-top: 6mm !important;
+    margin-bottom: 0 !important;
+
+    padding-top: 5px !important;
+
+    break-before: auto !important;
+    page-break-before: auto !important;
+
+    break-after: auto !important;
+    page-break-after: auto !important;
+
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+
+  }
+
+
+  /* =====================
+     HIDE PRINT TOOLBAR
+  ===================== */
+
+  .daily-report-print-toolbar {
+
+    display: none !important;
+
+  }
+
+}
