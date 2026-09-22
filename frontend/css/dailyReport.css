@@ -967,3 +967,169 @@ body {
   }
 
 }
+
+/* =========================================================
+   DAILY REPORT — A4 LANDSCAPE PRINT PAGINATION
+
+   TARGET
+   ---------------------------------------------------------
+   Each designed report page must fit on ONE printed
+   A4 landscape sheet.
+
+   Printable area with 10mm margins:
+   277mm width × 190mm height.
+
+   Uses 188mm height to leave a small print tolerance.
+
+   PRINT ONLY:
+   - Screen preview remains unchanged.
+   - No report data or HTML is modified.
+   - Content is NOT intentionally clipped.
+========================================================= */
+
+@media print {
+
+  /* =====================
+     PHYSICAL REPORT PAGE
+  ===================== */
+
+  .daily-report-page {
+    box-sizing: border-box !important;
+
+    width: 100% !important;
+
+    height: 188mm !important;
+    min-height: 0 !important;
+    max-height: 188mm !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+
+  /* =====================
+     COMPACT REPORT HEADER
+  ===================== */
+
+  .daily-report-header {
+    margin-bottom: 5px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .daily-report-title-block {
+    margin-bottom: 5px !important;
+  }
+
+  .daily-report-kpi-grid {
+    gap: 7px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .daily-report-kpi {
+    min-height: 52px !important;
+    padding: 6px 9px !important;
+  }
+
+
+  /* =====================
+     CHART CONTAINERS
+
+     Reduce vertical space while preserving
+     chart content and the existing layout.
+  ===================== */
+
+  .daily-report-chart-grid {
+    gap: 6px !important;
+  }
+
+  .daily-report-chart-card {
+    padding: 6px 9px !important;
+  }
+
+  .daily-report-chart-header {
+    margin-bottom: 4px !important;
+  }
+
+  .daily-report-chart-card-wide {
+    margin-bottom: 5px !important;
+  }
+
+
+  /* =====================
+     PAGE 1 — DONUT CHARTS
+  ===================== */
+
+  .daily-report-page-1
+  .daily-report-donut-area {
+    min-height: 50mm !important;
+  }
+
+  .daily-report-page-1
+  .daily-report-donut-chart {
+    width: 175px !important;
+    height: 175px !important;
+    flex: 0 0 175px !important;
+  }
+
+  .daily-report-page-1
+  .daily-report-donut {
+    width: 175px !important;
+    height: 175px !important;
+    flex: 0 0 175px !important;
+  }
+
+  .daily-report-page-1
+  .daily-report-donut svg {
+    width: 175px !important;
+    height: 175px !important;
+  }
+
+
+  /* =====================
+     PAGE 2 — BAR CHARTS
+  ===================== */
+
+  .daily-report-page-2
+  .daily-report-bar-area,
+  .daily-report-page-2
+  .daily-report-stacked-bar-area {
+    min-height: 0 !important;
+  }
+
+
+  /* =====================
+     SUMMARY + INSIGHTS
+  ===================== */
+
+  .daily-report-summary-card {
+    margin-top: 5px !important;
+    padding: 5px 9px !important;
+  }
+
+  .daily-report-insights {
+    margin-top: 4px !important;
+    padding: 5px 9px !important;
+  }
+
+
+  /* =====================
+     FOOTER
+
+     Keep the footer at the bottom
+     of its own designed report page.
+  ===================== */
+
+  .daily-report-footer {
+    margin-top: auto;
+    padding-top: 4px !important;
+
+    flex-shrink: 0;
+  }
+
+}
