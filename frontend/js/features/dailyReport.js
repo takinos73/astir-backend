@@ -1068,9 +1068,6 @@ function renderDailyReportLineActivityChart(items) {
   const barWidth = 24;
   const barGap = 14;
 
-  const groupWidth =
-    3 * barWidth + 2 * barGap;
-
   /* =====================
      TIME AXIS
   ====================== */
@@ -1134,19 +1131,34 @@ function renderDailyReportLineActivityChart(items) {
       plotLeft +
       slotWidth * (index + 0.5);
 
+    /* =====================
+       SHOW ONLY ACTIVE BARS
+       and CENTER THEM
+    ====================== */
+
+    const activeCategories =
+      categories.filter(category =>
+        Number(item[category.key] || 0) > 0
+      );
+
+    const activeCount =
+      activeCategories.length;
+
+    const groupWidth =
+      activeCount > 0
+        ? activeCount * barWidth +
+          (activeCount - 1) * barGap
+        : 0;
+
     const groupStart =
       centerX - groupWidth / 2;
 
-    const bars = categories.map(
-      (category, categoryIndex) => {
+    const bars = activeCategories.map(
+      (category, visibleIndex) => {
 
         const count = Number(
           item[category.key] || 0
         );
-
-        if (count === 0) {
-          return "";
-        }
 
         const minutes = Number(
           item.minutes?.[category.key] || 0
@@ -1158,7 +1170,7 @@ function renderDailyReportLineActivityChart(items) {
 
         const x =
           groupStart +
-          categoryIndex * (barWidth + barGap);
+          visibleIndex * (barWidth + barGap);
 
         const barCenter =
           x + barWidth / 2;
@@ -1180,12 +1192,6 @@ function renderDailyReportLineActivityChart(items) {
           `${category.label}: ` +
           `${count} executions, ` +
           `${timeLabel} recorded`;
-
-        /* =====================
-           LABEL POSITIONS
-           - duration outside, top
-           - count inside, center
-        ====================== */
 
         const timeY = y - 6;
         const countY = y + (barHeight / 2) + 4;
@@ -1233,11 +1239,23 @@ function renderDailyReportLineActivityChart(items) {
     return `
       <g>
 
+        <!-- subtle center guide -->
+        <line
+          x1="${centerX}"
+          y1="${plotBottom + 2}"
+          x2="${centerX}"
+          y2="192"
+          stroke="#cbd5e1"
+          stroke-width="1"
+          stroke-dasharray="3 3"
+          opacity="0.8"
+        />
+
         ${bars}
 
         <text
           x="${centerX}"
-          y="199"
+          y="203"
           text-anchor="middle"
           font-size="11"
           font-weight="700"
