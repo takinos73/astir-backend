@@ -529,7 +529,7 @@ body {
 }
 
 .daily-report-stacked-track {
-  height: 22px;
+  height: 18px;
 
   display: flex;
 
@@ -537,7 +537,7 @@ body {
 
   border-radius: 4px;
 
-  background: red;
+  background: #edf1f5;
 }
 
 .daily-report-stacked-segment {
@@ -574,9 +574,8 @@ body {
 
   gap: 5px;
 
-  font-size: 9px;
+  font-size: 8px;
   color: #64748b;
-  margin-right:24px;
 }
 
 .daily-report-chart-legend-swatch {
