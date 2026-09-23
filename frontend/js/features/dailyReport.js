@@ -837,59 +837,73 @@ function renderDailyReportReliabilityImpactChart(items) {
 
 function buildDailyReportLineActivity(executions) {
 
-  const byLine =
-    new Map();
-
+  const byLine = new Map();
 
   executions.forEach(e => {
 
-    const line =
-      String(
-        e.line ||
-        e.line_code ||
-        e.line_name ||
-        "Unassigned"
-      ).trim();
-
+    const line = String(
+      e.line ||
+      e.line_code ||
+      e.line_name ||
+      "Unassigned"
+    ).trim();
 
     if (!byLine.has(line)) {
 
-      byLine.set(
+      byLine.set(line, {
         line,
-        {
-          line,
+
+        preventive: 0,
+        planned: 0,
+        restoration: 0,
+        legacyUnplanned: 0,
+        total: 0,
+
+        minutes: {
           preventive: 0,
           planned: 0,
-          corrective: 0,
-          total: 0
+          restoration: 0
+        },
+
+        withDuration: {
+          preventive: 0,
+          planned: 0,
+          restoration: 0
         }
-      );
+      });
     }
 
+    const item = byLine.get(line);
 
-    const item =
-      byLine.get(line);
+    const executionType = String(
+      e.type || ""
+    ).trim().toLowerCase();
 
+    let category;
 
     /* =====================
        CORRECTIVE
-       Highest priority
 
-       Includes:
-       - New model Breakdown-linked executions
-       - Legacy unplanned executions
+       Internally: restoration
+
+       Breakdown-linked executions
+       and explicitly classified
+       legacy corrective executions.
     ====================== */
 
     if (
-      (e.breakdown_id !== null &&
-       e.breakdown_id !== undefined) ||
-
-      e.is_planned === false
+      e.breakdown_id != null ||
+      [
+        "restoration",
+        "corrective",
+        "unplanned",
+        "breakdown"
+      ].includes(executionType)
     ) {
 
-      item.corrective++;
-    }
+      category = "restoration";
 
+    }
 
     /* =====================
        PREVENTIVE
@@ -900,9 +914,9 @@ function buildDailyReportLineActivity(executions) {
       Number(e.frequency_hours) > 0
     ) {
 
-      item.preventive++;
-    }
+      category = "preventive";
 
+    }
 
     /* =====================
        PLANNED
@@ -910,32 +924,55 @@ function buildDailyReportLineActivity(executions) {
 
     else {
 
-      item.planned++;
+      category = "planned";
+
     }
 
-
+    item[category]++;
     item.total++;
+
+    /* =====================
+       RECORDED SERVICE TIME
+
+       duration_min is measured
+       in minutes.
+
+       Missing duration is NOT
+       treated as a recorded 0m.
+    ====================== */
+
+    if (
+      e.duration_min != null &&
+      e.duration_min !== ""
+    ) {
+
+      const duration = Number(e.duration_min);
+
+      if (
+        Number.isFinite(duration) &&
+        duration >= 0
+      ) {
+
+        item.minutes[category] += duration;
+        item.withDuration[category]++;
+
+      }
+    }
+
   });
 
-
-  return Array.from(
-    byLine.values()
-  )
+  return Array.from(byLine.values())
     .sort(
       (a, b) =>
         String(a.line).localeCompare(
           String(b.line),
           "el",
-          {
-            numeric: true
-          }
+          { numeric: true }
         )
     );
 }
 
-function renderDailyReportLineActivityChart(
-  items
-) {
+function renderDailyReportLineActivityChart(items) {
 
   if (
     !Array.isArray(items) ||
@@ -950,123 +987,293 @@ function renderDailyReportLineActivityChart(
     `;
   }
 
+  /* =====================
+     LOCAL DISPLAY HELPERS
+  ====================== */
 
-  const maxTotal =
-    Math.max(
-      ...items.map(
-        item =>
-          Number(
-            item.total || 0
-          )
-      ),
-      1
+  const escapeSvg = value =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]
     );
 
+  const formatMinutes = value => {
 
-  const rows =
-    items
-      .map(item => {
+    const minutes = Math.round(
+      Math.max(0, Number(value) || 0)
+    );
 
-        const preventiveWidth =
-          item.preventive *
-          100 /
-          maxTotal;
+    const hours = Math.floor(minutes / 60);
+    const remaining = minutes % 60;
 
+    if (hours > 0) {
+      return remaining > 0
+        ? `${hours}h${remaining}m`
+        : `${hours}h`;
+    }
 
-        const plannedWidth =
-          item.planned *
-          100 /
-          maxTotal;
+    return `${minutes}m`;
+  };
 
+  /* =====================
+     DISPLAY CATEGORIES
 
-        const restorationWidth =
-          item.restoration *
-          100 /
-          maxTotal;
+     restoration remains the
+     internal data property.
+  ====================== */
+
+  const categories = [
+    {
+      key: "planned",
+      label: "Planned",
+      color: "#ffad42"
+    },
+    {
+      key: "preventive",
+      label: "Preventive",
+      color: "#2f80ed"
+    },
+    {
+      key: "restoration",
+      label: "Corrective",
+      color: "#ff4848"
+    }
+  ];
+
+  /* =====================
+     CHART DIMENSIONS
+  ====================== */
+
+  const width = Math.max(
+    850,
+    80 + items.length * 138
+  );
+
+  const height = 244;
+
+  const plotLeft = 52;
+  const plotRight = width - 12;
+
+  const plotTop = 45;
+  const plotBottom = 182;
+
+  const plotHeight = plotBottom - plotTop;
+
+  const slotWidth =
+    (plotRight - plotLeft) / items.length;
+
+  const barWidth = 24;
+  const barGap = 14;
+
+  const groupWidth =
+    3 * barWidth + 2 * barGap;
+
+  /* =====================
+     TIME AXIS
+
+     All bar heights represent
+     recorded service minutes.
+  ====================== */
+
+  const maxMinutes = Math.max(
+    0,
+    ...items.flatMap(item =>
+      categories.map(category =>
+        Number(
+          item.minutes?.[category.key] || 0
+        )
+      )
+    )
+  );
+
+  const axisMax = Math.max(
+    60,
+    Math.ceil(maxMinutes / 60) * 60
+  );
+
+  const grid = Array.from(
+    { length: 5 },
+    (_, index) => {
+
+      const ratio = index / 4;
+
+      const y =
+        plotBottom - ratio * plotHeight;
+
+      const hours =
+        axisMax * ratio / 60;
+
+      return `
+        <line
+          x1="${plotLeft}"
+          y1="${y}"
+          x2="${plotRight}"
+          y2="${y}"
+          stroke="#dce5f0"
+          stroke-dasharray="${index === 0 ? "none" : "4 4"}"
+        />
+
+        <text
+          x="${plotLeft - 8}"
+          y="${y + 3}"
+          text-anchor="end"
+          font-size="10"
+          fill="#64748b"
+        >${hours.toFixed(1)}h</text>
+      `;
+    }
+  ).join("");
+
+  /* =====================
+     VERTICAL BAR GROUPS
+  ====================== */
+
+  const groups = items.map((item, index) => {
+
+    const centerX =
+      plotLeft +
+      slotWidth * (index + 0.5);
+
+    const groupStart =
+      centerX - groupWidth / 2;
+
+    const bars = categories.map(
+      (category, categoryIndex) => {
+
+        const count = Number(
+          item[category.key] || 0
+        );
+
+        if (count === 0) {
+          return "";
+        }
+
+        const minutes = Number(
+          item.minutes?.[category.key] || 0
+        );
+
+        const withDuration = Number(
+          item.withDuration?.[category.key] || 0
+        );
+
+        const x =
+          groupStart +
+          categoryIndex * (barWidth + barGap);
+
+        const barCenter =
+          x + barWidth / 2;
+
+        /* A short marker keeps executions
+           with no recorded duration visible. */
+
+        const barHeight = Math.max(
+          3,
+          minutes / axisMax * plotHeight
+        );
+
+        const y =
+          plotBottom - barHeight;
+
+        const timeLabel =
+          withDuration > 0
+            ? formatMinutes(minutes)
+            : "—";
+
+        const detail =
+          `${category.label}: ` +
+          `${count} executions, ` +
+          `${timeLabel} recorded`;
 
         return `
-          <div class="daily-report-stacked-row">
+          <g>
 
-            <div class="daily-report-stacked-label">
-              ${item.line}
-            </div>
+            <title>
+              ${escapeSvg(item.line)} ·
+              ${escapeSvg(detail)}
+            </title>
 
+            <rect
+              x="${x}"
+              y="${y}"
+              width="${barWidth}"
+              height="${barHeight}"
+              rx="3"
+              fill="${category.color}"
+            />
 
-            <div
-              class="daily-report-stacked-track"
-              title="${item.total} completed executions"
-            >
+            <text
+              x="${barCenter}"
+              y="215"
+              text-anchor="middle"
+              font-size="10"
+              font-weight="700"
+              fill="#334155"
+            >${count}×</text>
 
-              ${
-                item.preventive > 0
-                  ? `
-                    <div
-                      class="daily-report-stacked-segment"
-                      style="
-                        width:${preventiveWidth}%;
-                        background:#2f80ed;
-                      "
-                      title="Preventive: ${item.preventive}"
-                    ></div>
-                  `
-                  : ""
-              }
+            <text
+              x="${barCenter}"
+              y="230"
+              text-anchor="middle"
+              font-size="9"
+              fill="#64748b"
+            >${escapeSvg(timeLabel)}</text>
 
-
-              ${
-                item.planned > 0
-                  ? `
-                    <div
-                      class="daily-report-stacked-segment"
-                      style="
-                        width:${plannedWidth}%;
-                        background:#7b8da6;
-                      "
-                      title="Planned: ${item.planned}"
-                    ></div>
-                  `
-                  : ""
-              }
-
-
-              ${
-                item.restoration > 0
-                  ? `
-                    <div
-                      class="daily-report-stacked-segment"
-                      style="
-                        width:${restorationWidth}%;
-                        background:#e67e22;
-                      "
-                      title="Correction: ${item.restoration}"
-                    ></div>
-                  `
-                  : ""
-              }
-
-            </div>
-
-            <div class="daily-report-stacked-total">
-              ${item.total}
-            </div>
-
-          </div>
+          </g>
         `;
+      }
+    ).join("");
 
-      })
-      .join("");
+    return `
+      <g>
 
+        ${bars}
+
+        <text
+          x="${centerX}"
+          y="199"
+          text-anchor="middle"
+          font-size="11"
+          font-weight="700"
+          fill="#172033"
+        >${escapeSvg(item.line)}</text>
+
+      </g>
+    `;
+  }).join("");
+
+  /* =====================
+     FINAL CHART
+  ====================== */
 
   return `
 
-    <div class="daily-report-stacked-bars">
+    <svg
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Maintenance Activity by Line: recorded time and completed executions"
+    >
 
-      ${rows}
+      ${grid}
 
-    </div>
+      ${groups}
 
+    </svg>
 
     <div class="daily-report-chart-legend">
+
+      <div class="daily-report-chart-legend-item">
+        <span
+          class="daily-report-chart-legend-swatch"
+          style="background:#ffad42;"
+        ></span>
+        Planned
+      </div>
 
       <div class="daily-report-chart-legend-item">
         <span
@@ -1076,22 +1283,12 @@ function renderDailyReportLineActivityChart(
         Preventive
       </div>
 
-
       <div class="daily-report-chart-legend-item">
         <span
           class="daily-report-chart-legend-swatch"
-          style="background:#7b8da6;"
+          style="background:#ff4848;"
         ></span>
-        Planned
-      </div>
-
-
-      <div class="daily-report-chart-legend-item">
-        <span
-          class="daily-report-chart-legend-swatch"
-          style="background:#e67e22;"
-        ></span>
-        Correction
+        Corrective
       </div>
 
     </div>
