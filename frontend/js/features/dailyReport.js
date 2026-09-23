@@ -1055,7 +1055,7 @@ function renderDailyReportLineActivityChart(items) {
     80 + items.length * 138
   );
 
-  const height = 244;
+  const height = 250;
 
   const plotLeft = 52;
   const plotRight = width - 12;
@@ -1169,11 +1169,8 @@ function renderDailyReportLineActivityChart(items) {
         const barCenter =
           x + barWidth / 2;
 
-        /* A short marker keeps executions
-           with no recorded duration visible. */
-
         const barHeight = Math.max(
-          3,
+          10,
           minutes / axisMax * plotHeight
         );
 
@@ -1189,6 +1186,18 @@ function renderDailyReportLineActivityChart(items) {
           `${category.label}: ` +
           `${count} executions, ` +
           `${timeLabel} recorded`;
+
+        /* =====================
+           LABEL POSITIONS
+           - time at top inside bar
+           - count at bottom inside bar
+        ====================== */
+
+        const timeY =
+          y + 11;
+
+        const countY =
+          plotBottom - 5;
 
         return `
           <g>
@@ -1209,20 +1218,21 @@ function renderDailyReportLineActivityChart(items) {
 
             <text
               x="${barCenter}"
-              y="215"
+              y="${timeY}"
               text-anchor="middle"
-              font-size="10"
+              font-size="8"
               font-weight="700"
-              fill="#334155"
-            >${count}×</text>
+              fill="#ffffff"
+            >${escapeSvg(timeLabel)}</text>
 
             <text
               x="${barCenter}"
-              y="230"
+              y="${countY}"
               text-anchor="middle"
-              font-size="9"
-              fill="#64748b"
-            >${escapeSvg(timeLabel)}</text>
+              font-size="10"
+              font-weight="700"
+              fill="#ffffff"
+            >${count}</text>
 
           </g>
         `;
