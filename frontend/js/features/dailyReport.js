@@ -1023,9 +1023,6 @@ function renderDailyReportLineActivityChart(items) {
 
   /* =====================
      DISPLAY CATEGORIES
-
-     restoration remains the
-     internal data property.
   ====================== */
 
   const categories = [
@@ -1076,9 +1073,6 @@ function renderDailyReportLineActivityChart(items) {
 
   /* =====================
      TIME AXIS
-
-     All bar heights represent
-     recorded service minutes.
   ====================== */
 
   const maxMinutes = Math.max(
@@ -1189,15 +1183,12 @@ function renderDailyReportLineActivityChart(items) {
 
         /* =====================
            LABEL POSITIONS
-           - time at top inside bar
-           - count at bottom inside bar
+           - duration outside, top
+           - count inside, center
         ====================== */
 
-        const timeY =
-          y + 11;
-
-        const countY =
-          plotBottom - 5;
+        const timeY = y - 6;
+        const countY = y + (barHeight / 2) + 4;
 
         return `
           <g>
@@ -1220,18 +1211,18 @@ function renderDailyReportLineActivityChart(items) {
               x="${barCenter}"
               y="${timeY}"
               text-anchor="middle"
-              font-size="8"
+              font-size="9"
               font-weight="700"
-              fill="#ffffff"
+              fill="#111111"
             >${escapeSvg(timeLabel)}</text>
 
             <text
               x="${barCenter}"
               y="${countY}"
               text-anchor="middle"
-              font-size="10"
+              font-size="12"
               font-weight="700"
-              fill="#ffffff"
+              fill="#111111"
             >${count}</text>
 
           </g>
