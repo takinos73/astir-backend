@@ -4476,7 +4476,7 @@ function printBreakdownDetail() {
               colspan="6"
               class="empty"
             >
-              No Restoration Tasks recorded.
+              No Correction Tasks recorded.
             </td>
           </tr>
         `;
@@ -4844,7 +4844,7 @@ body {
 
 
 /* =====================
-   RESTORATION TABLE
+   Correction TABLE
 ===================== */
 
 table {
@@ -5341,11 +5341,11 @@ td {
 
 
   <!-- =====================
-       RESTORATION TASKS
+       Correction TASKS
   ===================== -->
 
   <div class="section-title">
-    Restoration Work
+    Correction Tasks
   </div>
 
 
@@ -5591,7 +5591,7 @@ document
 
    IMPORTANT:
    - Creates Breakdown only
-   - Does NOT create Restoration Tasks
+   - Does NOT create Correction Tasks
    - Backend creates it as OPEN
 ========================================================= */
 
@@ -6102,7 +6102,7 @@ if (saveBtn) {
   ) {
 
     console.error(
-      "ADD RESTORATION TASK: No active Breakdown"
+      "ADD CORRECTION TASK: No active Breakdown"
     );
 
     return;
@@ -6121,7 +6121,7 @@ if (saveBtn) {
 
     A closed Breakdown may contain
     existing follow-up tasks,
-    but no NEW Restoration Tasks
+    but no NEW Correction Tasks
     can be created.
   ===================== */
 
@@ -6132,7 +6132,7 @@ if (saveBtn) {
   ) {
 
     alert(
-      "This Breakdown is closed. New Restoration Tasks cannot be added."
+      "This Breakdown is closed. New Correction Tasks cannot be added."
     );
 
     return;

@@ -529,7 +529,7 @@ body {
 }
 
 .daily-report-stacked-track {
-  height: 16px;
+  height: 18px;
 
   display: flex;
 
@@ -1350,4 +1350,30 @@ body {
 
   }
 
+}
+
+/* =====================================================
+   MAINTENANCE ACTIVITY BY LINE — RESTORATION COLOR
+
+   Match the Restoration red used in
+   Maintenance Execution Mix.
+
+   Applies ONLY to the Page 2 stacked chart.
+   Overrides the existing inline orange color.
+===================================================== */
+
+/* RESTORATION BAR */
+
+.daily-report-page-2
+.daily-report-stacked-segment[title^="Restoration:"] {
+  background: #ff4848 !important;
+}
+
+
+/* RESTORATION LEGEND */
+
+.daily-report-page-2
+.daily-report-chart-legend-item:last-child
+.daily-report-chart-legend-swatch {
+  background: #ff4848 !important;
 }
