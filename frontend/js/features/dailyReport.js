@@ -280,7 +280,7 @@ function renderDailyReportExecutionMixChart(mix) {
     },
 
     {
-      label: "Restoration",
+      label: "Correction",
       value: mix.restoration,
       color: "#ff4848"
     },
@@ -1038,7 +1038,7 @@ function renderDailyReportLineActivityChart(
                         width:${restorationWidth}%;
                         background:#e67e22;
                       "
-                      title="Restoration: ${item.restoration}"
+                      title="Correction: ${item.restoration}"
                     ></div>
                   `
                   : ""
@@ -1091,7 +1091,7 @@ function renderDailyReportLineActivityChart(
           class="daily-report-chart-legend-swatch"
           style="background:#e67e22;"
         ></span>
-        Restoration
+        Correction
       </div>
 
     </div>
@@ -1600,7 +1600,7 @@ function buildDailyReportInsights(data) {
               completed during the last 24 hours.
             `
             : `
-              No Restoration executions were completed
+              No Correction executions were completed
               during the reporting period.
             `
         }
@@ -1796,7 +1796,7 @@ function buildDailyReportOtherWorkHtml(now, end) {
     },
 
     {
-      label: "OPEN RESTORATION",
+      label: "OPEN CORRECTION",
       data: summarize(restoration),
       note: "All open BD-linked tasks"
     },
@@ -1862,7 +1862,7 @@ function buildDailyReportOtherWorkHtml(now, end) {
           </h2>
 
           <div class="daily-report-chart-subtitle">
-            Planned work, open Restoration and overall
+            Planned work, open Correction and overall
             Overdue Backlog
           </div>
 
