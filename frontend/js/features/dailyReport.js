@@ -860,8 +860,7 @@ function buildDailyReportLineActivity(executions) {
           line,
           preventive: 0,
           planned: 0,
-          restoration: 0,
-          legacyUnplanned: 0,
+          corrective: 0,
           total: 0
         }
       );
@@ -873,17 +872,22 @@ function buildDailyReportLineActivity(executions) {
 
 
     /* =====================
-       RESTORATION
+       CORRECTIVE
        Highest priority
+
+       Includes:
+       - New model Breakdown-linked executions
+       - Legacy unplanned executions
     ====================== */
 
     if (
-      e.breakdown_id !== null &&
-      e.breakdown_id !== undefined
+      (e.breakdown_id !== null &&
+       e.breakdown_id !== undefined) ||
+
+      e.is_planned === false
     ) {
 
-      item.restoration++;
-
+      item.corrective++;
     }
 
 
@@ -893,14 +897,12 @@ function buildDailyReportLineActivity(executions) {
 
     else if (
       e.frequency_hours != null &&
-      Number(
-        e.frequency_hours
-      ) > 0
+      Number(e.frequency_hours) > 0
     ) {
 
       item.preventive++;
-
     }
+
 
     /* =====================
        PLANNED
@@ -909,12 +911,10 @@ function buildDailyReportLineActivity(executions) {
     else {
 
       item.planned++;
-
     }
 
 
     item.total++;
-
   });
 
 
