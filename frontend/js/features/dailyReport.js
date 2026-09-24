@@ -280,7 +280,7 @@ function renderDailyReportExecutionMixChart(mix) {
     },
 
     {
-      label: "Correction",
+      label: "Corrective",
       value: mix.restoration,
       color: "#ff4848"
     },
@@ -1816,7 +1816,7 @@ function buildDailyReportInsights(data) {
               completed during the last 24 hours.
             `
             : `
-              No Correction executions were completed
+              No Corrective executions were completed
               during the reporting period.
             `
         }
@@ -2012,7 +2012,7 @@ function buildDailyReportOtherWorkHtml(now, end) {
     },
 
     {
-      label: "OPEN CORRECTION",
+      label: "OPEN CORRECTIVE",
       data: summarize(restoration),
       note: "All open BD-linked tasks"
     },
