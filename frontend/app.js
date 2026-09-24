@@ -588,8 +588,21 @@ function viewHistoryEntry(executionId) {
     <div class="history-view-grid">
 
       <div class="history-view-section">
-        <strong>Date</strong>
-        <div>${formatDateOnly(h.executed_at)}</div>
+        <strong>Date / Time</strong>
+        <div>
+          ${
+            h.executed_at
+              ? new Date(h.executed_at).toLocaleString("el-GR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false
+                })
+              : "—"
+          }
+        </div>
       </div>
 
       <div class="history-view-section">

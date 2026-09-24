@@ -248,7 +248,6 @@ function buildDailyReportExecutionMix(executions) {
   return mix;
 }
 
-
 /* =====================================================
    MAINTENANCE EXECUTION MIX - DONUT CHART
 
