@@ -248,22 +248,45 @@ function buildDailyReportExecutionMix(executions) {
   return mix;
 }
 
+
+/* =====================================================
+   MAINTENANCE EXECUTION MIX - DONUT CHART
+
+   - Execution count and percentage inside donut segments
+   - Legend displays colors and category names only
+   - Total completed executions remain in the center
+   - No changes to data calculation or classification
+===================================================== */
+
 function renderDailyReportExecutionMixChart(mix) {
 
-    const total =
+  const total =
     Number(mix.total) || 0;
 
+
+  /* =====================================================
+     EMPTY STATE
+  ===================================================== */
 
   if (total === 0) {
 
     return `
       <div class="daily-report-empty-chart">
+
         No completed maintenance executions
         during the reporting period.
+
       </div>
     `;
+
   }
 
+
+  /* =====================================================
+     EXECUTION CATEGORIES
+
+     Preserve existing category colors and order.
+  ===================================================== */
 
   const items = [
 
@@ -283,12 +306,24 @@ function renderDailyReportExecutionMixChart(mix) {
       label: "Corrective",
       value: mix.restoration,
       color: "#ff4848"
-    },
+    }
 
   ];
 
 
+  /* =====================================================
+     DONUT DIMENSIONS
+
+     Slightly wider ring to accommodate
+     execution count and percentage labels.
+  ===================================================== */
+
+  const centerX = 80;
+  const centerY = 80;
+
   const radius = 52;
+
+  const strokeWidth = 34;
 
   const circumference =
     2 * Math.PI * radius;
@@ -297,83 +332,278 @@ function renderDailyReportExecutionMixChart(mix) {
   let cumulative = 0;
 
 
-  const circles =
-    items
-      .filter(item =>
-        item.value > 0
-      )
-      .map(item => {
+  /* =====================================================
+     BUILD DONUT SEGMENTS AND VALUE LABELS
 
-        const percent =
-          item.value / total;
+     Each category has:
+       - Colored arc
+       - Execution count
+       - Percentage
 
-        const dash =
-          circumference *
-          percent;
+     Labels are positioned at the midpoint
+     of the corresponding colored arc.
+  ===================================================== */
 
-        const offset =
-          -circumference *
-          cumulative;
+  const segments = items
 
-        cumulative += percent;
+    .filter(item =>
+      Number(item.value) > 0
+    )
+
+    .map(item => {
+
+      const value =
+        Number(item.value) || 0;
 
 
-        return `
+      const percent =
+        value / total;
+
+
+      const pct =
+        Math.round(
+          percent * 100
+        );
+
+
+      /* ===============================================
+         ARC GEOMETRY
+      =============================================== */
+
+      const dash =
+        circumference * percent;
+
+
+      const offset =
+        -circumference * cumulative;
+
+
+      /* ===============================================
+         LABEL POSITION
+
+         Calculate the midpoint of each segment.
+
+         The donut starts at 12 o'clock.
+      =============================================== */
+
+      const midAngle =
+
+        (
+          cumulative +
+          percent / 2
+        ) * 2 * Math.PI;
+
+
+      const labelX =
+
+        centerX +
+        radius * Math.sin(midAngle);
+
+
+      const labelY =
+
+        centerY -
+        radius * Math.cos(midAngle);
+
+
+      /* ===============================================
+         LABEL COLORS
+
+         Dark text for yellow segment.
+         White text for blue and red segments.
+      =============================================== */
+
+      const textColor =
+
+        item.label === "Planned"
+
+          ? "#172033"
+
+          : "#ffffff";
+
+
+      cumulative += percent;
+
+
+      /* ===============================================
+         ARC + VALUE LABELS
+      =============================================== */
+
+      return {
+
+        circle: `
+
           <circle
-            cx="80"
-            cy="80"
+
+            cx="${centerX}"
+            cy="${centerY}"
+
             r="${radius}"
+
             fill="none"
+
             stroke="${item.color}"
-            stroke-width="22"
-            stroke-dasharray="${dash} ${circumference - dash}"
+
+            stroke-width="${strokeWidth}"
+
+            stroke-dasharray="
+              ${dash} ${circumference - dash}
+            "
+
             stroke-dashoffset="${offset}"
-            transform="rotate(-90 80 80)"
+
+            transform="
+              rotate(-90 ${centerX} ${centerY})
+            "
+
           />
-        `;
 
-      })
-      .join("");
+        `,
 
 
-  const legend =
-    items
-      .map(item => {
+        label: `
 
-        const pct =
-          total > 0
-            ? Math.round(
-                item.value *
-                100 /
-                total
-              )
-            : 0;
+          <g
+
+            text-anchor="middle"
+
+            fill="${textColor}"
+
+            style="
+              pointer-events:none;
+            "
+
+          >
+
+            <!-- EXECUTION COUNT -->
+
+            <text
+
+              x="${labelX}"
+              y="${labelY - 2}"
+
+              font-size="10"
+
+              font-weight="700"
+
+            >
+
+              ${value}
+
+            </text>
 
 
-        return `
-          <div class="daily-report-legend-row">
+            <!-- PERCENTAGE -->
 
-            <span
-              class="daily-report-legend-dot"
-              style="background:${item.color};"
-            ></span>
+            <text
 
-            <span class="daily-report-legend-label">
-              ${item.label}
-            </span>
+              x="${labelX}"
+              y="${labelY + 9}"
 
-            <span class="daily-report-legend-value">
-              ${item.value}
-              ·
+              font-size="8"
+
+              font-weight="600"
+
+            >
+
               ${pct}%
-            </span>
 
-          </div>
-        `;
+            </text>
 
-      })
+          </g>
+
+        `
+
+      };
+
+    });
+
+
+  /* =====================================================
+     SVG CIRCLES
+
+     Colored donut segments.
+  ===================================================== */
+
+  const circles =
+
+    segments
+
+      .map(segment =>
+        segment.circle
+      )
+
       .join("");
 
+
+  /* =====================================================
+     SVG LABELS
+
+     Execution count and percentage are drawn
+     after the circles, so they remain visible.
+  ===================================================== */
+
+  const valueLabels =
+
+    segments
+
+      .map(segment =>
+        segment.label
+      )
+
+      .join("");
+
+
+  /* =====================================================
+     LEGEND
+
+     ONLY:
+       Color indicator
+       Category name
+
+     Execution count and percentage are no longer
+     displayed in the legend.
+  ===================================================== */
+
+  const legend = items
+
+    .map(item => {
+
+      return `
+
+        <div class="daily-report-legend-row">
+
+
+          <span
+
+            class="daily-report-legend-dot"
+
+            style="
+              background:${item.color};
+            "
+
+          ></span>
+
+
+          <span class="daily-report-legend-label">
+
+            ${item.label}
+
+          </span>
+
+
+        </div>
+
+      `;
+
+    })
+
+    .join("");
+
+
+  /* =====================================================
+     FINAL DONUT CHART
+  ===================================================== */
 
   return `
 
@@ -382,47 +612,89 @@ function renderDailyReportExecutionMixChart(mix) {
 
       <div class="daily-report-donut-chart">
 
+
         <svg
+
           viewBox="0 0 160 160"
+
           role="img"
+
           aria-label="Maintenance Execution Mix"
+
         >
 
+
+          <!-- BACKGROUND RING -->
+
           <circle
-            cx="80"
-            cy="80"
+
+            cx="${centerX}"
+            cy="${centerY}"
+
             r="${radius}"
+
             fill="none"
+
             stroke="#edf1f5"
-            stroke-width="22"
+
+            stroke-width="${strokeWidth}"
+
           />
+
+
+          <!-- COLORED SEGMENTS -->
 
           ${circles}
 
 
+          <!-- EXECUTION VALUES INSIDE SEGMENTS -->
+
+          ${valueLabels}
+
+
+          <!-- CENTER TOTAL -->
+
           <text
-            x="80"
+
+            x="${centerX}"
             y="76"
+
             text-anchor="middle"
+
             class="daily-report-donut-center-value"
+
           >
+
             ${total}
+
           </text>
 
+
+          <!-- CENTER LABEL -->
 
           <text
-            x="80"
+
+            x="${centerX}"
             y="94"
+
             text-anchor="middle"
+
             class="daily-report-donut-center-label"
+
           >
+
             COMPLETED
+
           </text>
+
 
         </svg>
 
+
       </div>
 
+
+      <!-- LEGEND: COLORS AND DESCRIPTIONS ONLY -->
 
       <div class="daily-report-donut-legend">
 
@@ -432,8 +704,11 @@ function renderDailyReportExecutionMixChart(mix) {
 
 
     </div>
+
   `;
+
 }
+
 
 function buildDailyReportBreakdownOutcome(breakdowns) {
 
