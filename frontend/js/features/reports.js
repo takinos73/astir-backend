@@ -3022,17 +3022,33 @@ function getFilteredNonPlannedExecutionsForReport() {
 }
 
 
+
 /* =========================================================
    NON-PLANNED (BREAKDOWN) REPORT – PDF
 
-   BREAKDOWN / RESTORATION MODEL
+   ASTIR CMMS
 
-   - One Breakdown can contain multiple Restoration Tasks.
-   - All Breakdowns matching the date and line filters
-     remain visible, even without Restoration Tasks.
-   - Only the latest recorded execution per task is used.
-   - Technician and execution date come from task_executions.
-   - Service Time and Downtime are calculated separately.
+   REPORT STRUCTURE:
+
+   LINE
+     ASSET
+       BREAKDOWN HEADER
+         RESTORATION TASKS
+         BREAKDOWN SERVICE TIME
+
+       BREAKDOWN HEADER
+         RESTORATION TASKS
+         BREAKDOWN SERVICE TIME
+
+     LINE SUMMARY
+
+   IMPORTANT:
+
+   - Every Breakdown remains visible.
+   - One Breakdown can have multiple Restoration Tasks.
+   - Only latest execution per Restoration Task is used.
+   - Technician comes from actual task execution.
+   - Service Time and Downtime are separate values.
    - Breakdown counts and Downtime are never duplicated.
    - Existing backend endpoints remain unchanged.
 ========================================================= */
@@ -3091,20 +3107,18 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        FILTER BREAKDOWNS
 
-       Date filter:
-         Breakdown started_at
+       Date filter: Breakdown started_at
+       Line filter: Breakdown line_name
 
-       Line filter:
-         Breakdown line_name
-
-       IMPORTANT:
-       Do not filter out Breakdowns without Restoration Tasks.
+       Keep Breakdowns without Restoration Tasks.
     ===================================================== */
 
     const filteredBreakdowns = (
+
       Array.isArray(breakdownRows)
         ? breakdownRows
         : []
+
     ).filter(b => {
 
       if (!b.started_at) {
@@ -3161,10 +3175,13 @@ async function generateNonPlannedReportPdf() {
       // LINE
 
       if (
+
         !reportSelectedLines.includes("all") &&
+
         !reportSelectedLines.includes(
           b.line_name
         )
+
       ) {
         return false;
       }
@@ -3177,10 +3194,6 @@ async function generateNonPlannedReportPdf() {
 
     /* =====================================================
        CHECK BREAKDOWNS
-
-       Check the actual Breakdown list before loading tasks.
-
-       A Breakdown without Restoration Tasks is still valid.
     ===================================================== */
 
     if (filteredBreakdowns.length === 0) {
@@ -3198,18 +3211,12 @@ async function generateNonPlannedReportPdf() {
        LOAD RESTORATION TASKS
 
        Existing endpoint:
-         GET /breakdowns/:id/tasks
+       GET /breakdowns/:id/tasks
 
-       This endpoint returns:
-         - Restoration Task information
-         - Latest actual execution
-         - Actual technician
-         - Actual execution date
-         - Actual service duration
+       Returns latest actual execution per task.
 
-       No database changes.
-       No new execution records.
-       No Breakdown status changes.
+       Read only.
+       No database or Breakdown status changes.
     ===================================================== */
 
     const restorationGroups = await Promise.all(
@@ -3248,13 +3255,9 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        TECHNICIAN FILTER
 
-       The technician filter applies to Restoration Tasks.
+       Applies to Restoration Tasks.
 
-       IMPORTANT:
-       It does not remove the parent Breakdown.
-
-       Breakdowns remain visible even when no Restoration
-       Task matches the selected technician.
+       Does not remove the parent Breakdown.
     ===================================================== */
 
     const technicianSelect =
@@ -3310,25 +3313,25 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        NORMALIZE BREAKDOWNS
 
-       IMPORTANT:
        One report object = one Breakdown.
 
-       Restoration Tasks are stored inside the Breakdown.
-
-       Never create one Breakdown object per task.
+       Restoration Tasks are stored inside the
+       Breakdown object.
     ===================================================== */
 
     const rows = restorationGroups.map(
+
       ({ breakdown: b, tasks }) => {
+
 
         /* ===============================================
            NORMALIZE RESTORATION TASKS
 
            Only tasks with an actual recorded execution
-           are included in the Corrective Task rows.
+           are included.
 
-           The endpoint already returns the latest
-           execution for each Restoration Task.
+           The endpoint already returns only the latest
+           execution of each Restoration Task.
         =============================================== */
 
         const completedTasks = tasks
@@ -3391,11 +3394,6 @@ async function generateNonPlannedReportPdf() {
 
         /* ===============================================
            BREAKDOWN OBJECT
-
-           Preserve the original Breakdown fields.
-
-           Actual Restoration Tasks are linked through
-           restoration_tasks.
         =============================================== */
 
         return {
@@ -3417,14 +3415,8 @@ async function generateNonPlannedReportPdf() {
           started_at:
             b.started_at,
 
-          executed_at:
-            b.started_at,
-
           task:
             b.title || "-",
-
-          reported_by:
-            b.reported_by || "-",
 
           effective_down_seconds:
             Number(
@@ -3437,6 +3429,7 @@ async function generateNonPlannedReportPdf() {
         };
 
       }
+
     );
 
 
@@ -3468,7 +3461,7 @@ async function generateNonPlannedReportPdf() {
 
        LINE → ASSET → BREAKDOWN DATE
 
-       Each Breakdown remains a single report object.
+       Each Breakdown remains one report object.
     ===================================================== */
 
     const sorted = [...rows].sort((a, b) => {
@@ -3526,7 +3519,7 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        BASIC TOTALS
 
-       Each row represents exactly one Breakdown.
+       One row = one Breakdown.
     ===================================================== */
 
     const totalBreakdowns =
@@ -3554,34 +3547,7 @@ async function generateNonPlannedReportPdf() {
 
 
     /* =====================================================
-       TOTAL RESTORATION TASKS
-
-       Count actual recorded task executions.
-
-       One latest execution per Restoration Task.
-    ===================================================== */
-
-    const totalRestorationTasks =
-      rows.reduce(
-
-        (sum, r) =>
-
-          sum +
-          r.restoration_tasks.length,
-
-        0
-
-      );
-
-
-    /* =====================================================
-       TOTAL SERVICE TIME
-
-       Sum actual Restoration Task execution durations.
-
-       Never use Breakdown downtime as Service Time.
-
-       Never use estimated task duration.
+       RESTORATION TASK TOTALS
     ===================================================== */
 
     const allRestorationTasks =
@@ -3589,6 +3555,19 @@ async function generateNonPlannedReportPdf() {
         r => r.restoration_tasks
       );
 
+
+    const totalRestorationTasks =
+      allRestorationTasks.length;
+
+
+    /* =====================================================
+       ACTUAL SERVICE TIME
+
+       Uses actual Restoration Task execution duration.
+
+       Does not use estimated task duration.
+       Does not use Breakdown downtime.
+    ===================================================== */
 
     const tasksWithDuration =
       allRestorationTasks.filter(
@@ -3604,7 +3583,6 @@ async function generateNonPlannedReportPdf() {
       tasksWithDuration.reduce(
 
         (sum, t) =>
-
           sum + t.duration_min,
 
         0
@@ -3626,12 +3604,9 @@ async function generateNonPlannedReportPdf() {
 
 
     /* =====================================================
-       TOTAL EFFECTIVE DOWN TIME
+       TOTAL EFFECTIVE DOWNTIME
 
        Each Breakdown is counted exactly once.
-
-       The number of Restoration Tasks does not affect
-       Breakdown Downtime.
     ===================================================== */
 
     const totalEffectiveDownMinutes =
@@ -3657,8 +3632,8 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        CLOSED BREAKDOWNS
 
-       Average Breakdown Downtime is calculated only
-       from CLOSED Breakdown incidents.
+       Average Downtime is calculated from
+       CLOSED Breakdown incidents.
     ===================================================== */
 
     const closedBreakdowns =
@@ -3705,9 +3680,6 @@ async function generateNonPlannedReportPdf() {
 
     /* =====================================================
        BREAKDOWNS BY LINE
-
-       Count Breakdown incidents,
-       not Restoration Task executions.
     ===================================================== */
 
     const breakdownsByLine = {};
@@ -3749,6 +3721,150 @@ async function generateNonPlannedReportPdf() {
 
 
     /* =====================================================
+       REPORT DISPLAY HELPERS
+
+       Local helpers affect only this report.
+
+       No changes to global CMMS functions.
+    ===================================================== */
+
+    const escapeReportHtml = value =>
+
+      String(value ?? "")
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#39;");
+
+
+    const displayDuration = minutes => {
+
+      if (
+        minutes == null ||
+        !Number.isFinite(Number(minutes))
+      ) {
+        return "—";
+      }
+
+      return formatDuration(
+        Math.round(Number(minutes))
+      );
+
+    };
+
+
+    const displayDateTime = value => {
+
+      if (!value) {
+        return "—";
+      }
+
+      const date = new Date(value);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return "—";
+      }
+
+      return date.toLocaleString(
+
+        "en-GB",
+
+        {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }
+
+      );
+
+    };
+
+
+    const displayStatus = status => {
+
+      const value =
+        String(status || "")
+          .toUpperCase();
+
+      if (value === "CLOSED") {
+        return "CLOSED";
+      }
+
+      if (value === "IN_PROGRESS") {
+        return "IN PROGRESS";
+      }
+
+      if (value === "OPEN") {
+        return "OPEN";
+      }
+
+      return escapeReportHtml(
+        status || "—"
+      );
+
+    };
+
+
+    const statusBackground = status => {
+
+      switch (
+        String(status || "").toUpperCase()
+      ) {
+
+        case "CLOSED":
+          return "#dcfce7";
+
+        case "IN_PROGRESS":
+          return "#fef3c7";
+
+        case "OPEN":
+          return "#fee2e2";
+
+        default:
+          return "#e2e8f0";
+
+      }
+
+    };
+
+
+    const statusColor = status => {
+
+      switch (
+        String(status || "").toUpperCase()
+      ) {
+
+        case "CLOSED":
+          return "#166534";
+
+        case "IN_PROGRESS":
+          return "#92400e";
+
+        case "OPEN":
+          return "#991b1b";
+
+        default:
+          return "#334155";
+
+      }
+
+    };
+
+
+    /* =====================================================
        BUILD REPORT CONTENT
     ===================================================== */
 
@@ -3769,95 +3885,116 @@ async function generateNonPlannedReportPdf() {
        REPORT SUMMARY
 
        Service Time and Downtime are separate values.
+
+       Existing report template remains unchanged.
     ===================================================== */
 
     reportContent += `
 
-      <div class="breakdown-line-summary">
+      <div class="breakdown-line-summary"
 
-        <strong>
-          Breakdown Summary
-        </strong>
+           style="
+             margin-bottom:18px;
+             padding:12px 14px;
+             background:#edf3fc;
+             border:1px solid #c7d8ed;
+             border-radius:6px;
+             color:#173b70;
+           ">
 
-        <br><br>
+        <div style="
+          font-size:12px;
+          font-weight:700;
+          margin-bottom:8px;
+        ">
 
-        Breakdowns:
+          BREAKDOWN SUMMARY
 
-        <strong>
-          ${totalBreakdowns}
-        </strong>
+        </div>
 
-        &nbsp;•&nbsp;
 
-        Restoration Tasks:
+        <div style="
+          font-size:10px;
+          line-height:1.9;
+        ">
 
-        <strong>
-          ${totalRestorationTasks}
-        </strong>
+          Breakdowns:
 
-        <br><br>
+          <strong>
+            ${totalBreakdowns}
+          </strong>
 
-        Total Service Time:
+          &nbsp;•&nbsp;
 
-        <strong>
+          Restoration Tasks:
 
-          ${formatDuration(
-            Math.round(
+          <strong>
+            ${totalRestorationTasks}
+          </strong>
+
+          <br>
+
+
+          Total Service Time:
+
+          <strong>
+
+            ${displayDuration(
               totalServiceMinutes
-            )
-          )}
+            )}
 
-        </strong>
+          </strong>
 
-        <br>
+          &nbsp;•&nbsp;
 
-        Total Downtime:
+          Total Downtime:
 
-        <strong>
+          <strong>
 
-          ${formatDuration(
-            Math.round(
+            ${displayDuration(
               totalEffectiveDownMinutes
-            )
-          )}
+            )}
 
-        </strong>
+          </strong>
 
-        <br><br>
+          <br>
 
-        Average Service Time:
 
-        <strong>
+          Average Service Time:
 
-          ${
-            tasksWithDuration.length > 0
+          <strong>
 
-              ? formatDuration(
-                  avgServiceMinutes
-                )
+            ${
+              tasksWithDuration.length > 0
 
-              : "—"
-          }
+                ? displayDuration(
+                    avgServiceMinutes
+                  )
 
-        </strong>
+                : "—"
+            }
 
-        <br>
+          </strong>
 
-        Average Breakdown Downtime:
+          &nbsp;•&nbsp;
 
-        <strong>
+          Average Breakdown Downtime:
 
-          ${
-            closedBreakdowns.length > 0
+          <strong>
 
-              ? formatDuration(
-                  avgEffectiveDownMinutes
-                )
+            ${
+              closedBreakdowns.length > 0
 
-              : "—"
-          }
+                ? displayDuration(
+                    avgEffectiveDownMinutes
+                  )
 
-        </strong>
+                : "—"
+            }
+
+          </strong>
+
+        </div>
 
       </div>
 
@@ -3865,18 +4002,93 @@ async function generateNonPlannedReportPdf() {
 
 
     /* =====================================================
-       BUILD LINE / ASSET / BREAKDOWN TABLES
+       LINE SUMMARY RENDERER
 
-       IMPORTANT:
+       Used both when changing line and at
+       the end of the report.
+    ===================================================== */
 
-       Every Breakdown produces at least one table row.
+    const buildLineSummary = () => {
 
-       If Restoration Tasks exist:
-         Display each completed Restoration Task.
+      return `
 
-       If no completed Restoration Tasks exist:
-         Display the Breakdown with an empty
-         Restoration execution indication.
+        <div class="breakdown-line-summary"
+
+             style="
+               margin-top:12px;
+               margin-bottom:20px;
+               padding:10px 12px;
+               background:#edf3fc;
+               border:1px solid #c7d8ed;
+               border-radius:5px;
+               color:#173b70;
+               font-size:10px;
+               line-height:1.8;
+             ">
+
+          <strong>
+
+            LINE ${escapeReportHtml(
+              currentLine || "—"
+            )} — SUMMARY
+
+          </strong>
+
+          <br>
+
+
+          <span class="breakdown-count">
+
+            ${lineCount}
+
+          </span>
+
+          breakdowns
+
+          &nbsp;•&nbsp;
+
+          Total Service Time:
+
+          <strong>
+
+            ${displayDuration(
+              lineServiceMinutes
+            )}
+
+          </strong>
+
+          &nbsp;•&nbsp;
+
+          Total Downtime:
+
+          <strong>
+
+            ${displayDuration(
+              lineDownMinutes
+            )}
+
+          </strong>
+
+        </div>
+
+      `;
+
+    };
+
+
+    /* =====================================================
+       BUILD LINE / ASSET / BREAKDOWN GROUPS
+
+       New visual structure:
+
+       1. Line header
+       2. Asset header
+       3. Breakdown card with dark blue header
+       4. Restoration Tasks table
+       5. Breakdown Service Time footer
+
+       Every Breakdown remains visible even when
+       no Restoration Tasks have been completed.
     ===================================================== */
 
     sorted.forEach(r => {
@@ -3890,31 +4102,6 @@ async function generateNonPlannedReportPdf() {
 
 
       /* ===================================================
-         CLOSE ASSET TABLE WHEN LINE CHANGES
-      =================================================== */
-
-      if (
-
-        line !== currentLine &&
-
-        currentAsset !== null
-
-      ) {
-
-        reportContent += `
-
-          </tbody>
-
-          </table>
-
-        `;
-
-        currentAsset = null;
-
-      }
-
-
-      /* ===================================================
          NEW LINE
       =================================================== */
 
@@ -3922,69 +4109,40 @@ async function generateNonPlannedReportPdf() {
 
 
         /* ===============================================
-           CLOSE PREVIOUS LINE SUMMARY
+           CLOSE PREVIOUS LINE
         =============================================== */
 
         if (currentLine !== null) {
 
-          reportContent += `
-
-            <div class="breakdown-line-summary">
-
-              <span class="breakdown-count">
-
-                ${lineCount}
-
-              </span>
-
-              breakdowns
-
-              &nbsp;•&nbsp;
-
-              Total Service Time:
-
-              <strong>
-
-                ${formatDuration(
-                  Math.round(
-                    lineServiceMinutes
-                  )
-                )}
-
-              </strong>
-
-              &nbsp;•&nbsp;
-
-              Total Downtime:
-
-              <strong>
-
-                ${formatDuration(
-                  Math.round(
-                    lineDownMinutes
-                  )
-                )}
-
-              </strong>
-
-            </div>
-
-          `;
+          reportContent +=
+            buildLineSummary();
 
         }
 
 
         /* ===============================================
-           NEW LINE HEADER
+           LINE HEADER
         =============================================== */
 
         reportContent += `
 
-          <h3>
+          <div style="
+            margin-top:18px;
+            margin-bottom:12px;
+            padding:9px 12px;
+            background:#edf3fc;
+            border-left:4px solid #2673c7;
+            border-radius:4px;
+            color:#173b70;
+            font-size:14px;
+            font-weight:700;
+            break-after:avoid;
+            page-break-after:avoid;
+          ">
 
-            LINE ${line}
+            LINE ${escapeReportHtml(line)}
 
-          </h3>
+          </div>
 
         `;
 
@@ -4012,86 +4170,49 @@ async function generateNonPlannedReportPdf() {
 
 
       /* ===================================================
-         CLOSE TABLE WHEN ASSET CHANGES
-      =================================================== */
-
-      if (
-
-        assetKey !== currentAsset &&
-
-        currentAsset !== null
-
-      ) {
-
-        reportContent += `
-
-          </tbody>
-
-          </table>
-
-        `;
-
-      }
-
-
-      /* ===================================================
          NEW ASSET
+
+         Asset header appears once per asset group.
       =================================================== */
 
       if (assetKey !== currentAsset) {
 
         reportContent += `
 
-          <h4>
+          <div style="
+            margin-top:12px;
+            margin-bottom:10px;
+            padding:9px 12px;
+            background:#f1f5f9;
+            border:1px solid #d8e2ee;
+            border-radius:4px;
+            color:#173b70;
+            font-size:11px;
+            font-weight:700;
+            break-after:avoid;
+            page-break-after:avoid;
+          ">
 
-            ${r.machine || "-"}
+            ${escapeReportHtml(
+              r.machine || "-"
+            )}
 
-            <span class="sn">
+            <span style="
+              float:right;
+              font-size:10px;
+              color:#64748b;
+              font-weight:400;
+            ">
 
-              SN:
+              S/N:
 
-              ${r.serial_number || "-"}
+              ${escapeReportHtml(
+                r.serial_number || "-"
+              )}
 
             </span>
 
-          </h4>
-
-
-          <table>
-
-            <thead>
-
-              <tr>
-
-                <th style="width:15%;">
-
-                  Date
-
-                </th>
-
-                <th style="width:55%;">
-
-                  Breakdown Description / Restoration Task
-
-                </th>
-
-                <th style="width:15%;">
-
-                  Technician
-
-                </th>
-
-                <th style="width:15%;">
-
-                  Service Time
-
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
+          </div>
 
         `;
 
@@ -4103,7 +4224,7 @@ async function generateNonPlannedReportPdf() {
 
 
       /* ===================================================
-         LINE TOTALS
+         BREAKDOWN TOTALS
 
          One Breakdown = one incident.
 
@@ -4113,224 +4234,570 @@ async function generateNonPlannedReportPdf() {
       lineCount++;
 
 
-      lineDownMinutes +=
+      const breakdownDownMinutes =
 
         Number(
           r.effective_down_seconds || 0
         ) / 60;
 
 
-      /* ===================================================
-         BREAKDOWN HEADER ROW
-
-         Always displayed.
-
-         It does not depend on Restoration Tasks.
-
-         This row contains Breakdown information only.
-         It does not display reported_by as Technician.
-      =================================================== */
-
-      reportContent += `
-
-        <tr>
-
-          <td>
-
-            ${formatDateOnly(
-              r.started_at
-            )}
-
-          </td>
-
-
-          <td>
-
-            <strong>
-
-              BD-${String(
-                r.breakdown_id
-              ).padStart(5, "0")}
-
-            </strong>
-
-            <br>
-
-            <strong>
-
-              ${r.task || "-"}
-
-            </strong>
-
-            <br>
-
-            <span class="small">
-
-              Status:
-
-              ${r.status || "-"}
-
-              &nbsp;•&nbsp;
-
-              Downtime:
-
-              ${formatDuration(
-                Math.round(
-                  Number(
-                    r.effective_down_seconds || 0
-                  ) / 60
-                )
-              )}
-
-            </span>
-
-          </td>
-
-
-          <td>
-
-            —
-
-          </td>
-
-
-          <td>
-
-            —
-
-          </td>
-
-        </tr>
-
-      `;
+      lineDownMinutes +=
+        breakdownDownMinutes;
 
 
       /* ===================================================
-         RESTORATION TASKS
+         BREAKDOWN RESTORATION TASKS
 
-         Breakdown header has already been added.
+         Actual completed tasks only.
 
-         If no completed Restoration Tasks exist,
-         the Breakdown remains visible.
+         The parent Breakdown is always displayed.
       =================================================== */
 
       const restorationTasks =
         r.restoration_tasks || [];
 
 
+      /* ===================================================
+         BREAKDOWN SERVICE TIME
+
+         Sum actual execution durations for this
+         Breakdown only.
+
+         Never use Breakdown Downtime or estimated
+         task duration.
+      =================================================== */
+
+      const breakdownServiceMinutes =
+        restorationTasks.reduce(
+
+          (sum, t) => {
+
+            if (
+
+              t.duration_min != null &&
+
+              Number.isFinite(
+                t.duration_min
+              )
+
+            ) {
+
+              return sum +
+                t.duration_min;
+
+            }
+
+            return sum;
+
+          },
+
+          0
+
+        );
+
+
+      const breakdownHasServiceTime =
+        restorationTasks.some(
+
+          t =>
+            t.duration_min != null &&
+            Number.isFinite(t.duration_min)
+
+        );
+
+
+      lineServiceMinutes +=
+        breakdownServiceMinutes;
+
+
+      /* ===================================================
+         BREAKDOWN DISPLAY VALUES
+      =================================================== */
+
+      const breakdownNumber =
+
+        `BD-${String(
+          r.breakdown_id
+        ).padStart(5, "0")}`;
+
+
+      const breakdownStatus =
+        displayStatus(r.status);
+
+
+      const breakdownStatusBackground =
+        statusBackground(r.status);
+
+
+      const breakdownStatusColor =
+        statusColor(r.status);
+
+
+      const breakdownTaskCount =
+        restorationTasks.length;
+
+
+      /* ===================================================
+         BREAKDOWN CARD
+
+         Each Breakdown has its own visual header.
+
+         The header is separate from the Restoration
+         Tasks table.
+      =================================================== */
+
+      reportContent += `
+
+        <div class="breakdown-report-card"
+
+             style="
+               margin-top:12px;
+               margin-bottom:18px;
+               border:1px solid #c7d8ed;
+               border-radius:6px;
+               background:#ffffff;
+               overflow:hidden;
+             ">
+
+
+          <!-- ==========================================
+               BREAKDOWN HEADER
+          =========================================== -->
+
+          <div style="
+            padding:10px 12px;
+            background:#173b70;
+            color:#ffffff;
+            break-after:avoid;
+            page-break-after:avoid;
+          ">
+
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:8px;
+              margin-bottom:6px;
+            ">
+
+
+              <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+              ">
+
+
+                <span style="
+                  font-size:13px;
+                  font-weight:700;
+                  color:#ffffff;
+                ">
+
+                  ${breakdownNumber}
+
+                </span>
+
+
+                <span style="
+                  padding:3px 7px;
+                  border-radius:10px;
+                  background:${breakdownStatusBackground};
+                  color:${breakdownStatusColor};
+                  font-size:8px;
+                  font-weight:700;
+                ">
+
+                  ${breakdownStatus}
+
+                </span>
+
+
+              </div>
+
+
+              <span style="
+                font-size:9px;
+                color:#ffffff;
+              ">
+
+                ${formatDateOnly(
+                  r.started_at
+                )}
+
+              </span>
+
+
+            </div>
+
+
+            <!-- BREAKDOWN DESCRIPTION -->
+
+            <div style="
+              font-size:11px;
+              font-weight:600;
+              line-height:1.5;
+              color:#ffffff;
+              overflow-wrap:anywhere;
+            ">
+
+              ${escapeReportHtml(
+                r.task || "-"
+              )}
+
+            </div>
+
+
+          </div>
+
+
+          <!-- ==========================================
+               BREAKDOWN INFORMATION
+
+               Downtime is not Service Time.
+          =========================================== -->
+
+          <div style="
+            padding:9px 12px;
+            background:#f8fafc;
+            border-bottom:1px solid #d8e2ee;
+          ">
+
+
+            <table style="
+              width:100%;
+              border-collapse:collapse;
+              table-layout:fixed;
+              font-size:9px;
+              border:0;
+              margin:0;
+              background:transparent;
+            ">
+
+              <tbody>
+
+                <tr>
+
+
+                  <td style="
+                    width:50%;
+                    padding:3px 5px 3px 0;
+                    border:0;
+                    vertical-align:top;
+                    background:transparent;
+                  ">
+
+                    <span style="
+                      display:block;
+                      margin-bottom:3px;
+                      color:#64748b;
+                      font-size:8px;
+                      font-weight:600;
+                    ">
+
+                      STARTED AT
+
+                    </span>
+
+
+                    <strong style="
+                      color:#173b70;
+                      font-size:10px;
+                    ">
+
+                      ${displayDateTime(
+                        r.started_at
+                      )}
+
+                    </strong>
+
+
+                  </td>
+
+
+                  <td style="
+                    width:50%;
+                    padding:3px 0 3px 5px;
+                    border:0;
+                    vertical-align:top;
+                    background:transparent;
+                  ">
+
+                    <span style="
+                      display:block;
+                      margin-bottom:3px;
+                      color:#64748b;
+                      font-size:8px;
+                      font-weight:600;
+                    ">
+
+                      DOWNTIME
+
+                    </span>
+
+
+                    <strong style="
+                      color:#173b70;
+                      font-size:10px;
+                    ">
+
+                      ${displayDuration(
+                        breakdownDownMinutes
+                      )}
+
+                    </strong>
+
+
+                  </td>
+
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+
+          </div>
+
+
+          <!-- ==========================================
+               RESTORATION TASKS SECTION
+          =========================================== -->
+
+          <div style="
+            padding:10px 12px 12px 12px;
+            background:#ffffff;
+          ">
+
+
+            <!-- RESTORATION SECTION HEADER -->
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              margin-bottom:9px;
+              break-after:avoid;
+              page-break-after:avoid;
+            ">
+
+
+              <span style="
+                font-size:10px;
+                font-weight:700;
+                color:#173b70;
+              ">
+
+                RESTORATION TASKS
+
+              </span>
+
+
+              <span style="
+                padding:3px 8px;
+                background:#edf3fc;
+                color:#173b70;
+                border-radius:10px;
+                font-size:8px;
+                font-weight:600;
+              ">
+
+                ${breakdownTaskCount}
+
+                ${
+                  breakdownTaskCount === 1
+                    ? "task"
+                    : "tasks"
+                }
+
+              </span>
+
+
+            </div>
+
+      `;
+
+
+      /* ===================================================
+         RESTORATION TASK TABLE
+
+         If tasks exist:
+           Display one row per actual execution.
+
+         If no tasks exist:
+           Display an informational message.
+
+         Breakdown card remains visible in both cases.
+      =================================================== */
+
       if (restorationTasks.length === 0) {
 
+
         /* ===============================================
-           NO COMPLETED RESTORATION EXECUTION
-
-           Do not remove the Breakdown.
-
-           Do not invent technician, execution date
-           or service duration.
+           NO COMPLETED RESTORATION TASKS
         =============================================== */
 
         reportContent += `
 
-          <tr>
+          <div style="
+            padding:12px;
+            margin-bottom:10px;
+            background:#f1f5f9;
+            border:1px solid #e2e8f0;
+            border-radius:4px;
+            color:#64748b;
+            font-size:9px;
+            font-style:italic;
+            text-align:center;
+          ">
 
-            <td>
+            No completed Restoration Tasks recorded.
 
-              —
-
-            </td>
-
-
-            <td>
-
-              <span class="small">
-
-                No completed Restoration Tasks recorded.
-
-              </span>
-
-            </td>
-
-
-            <td>
-
-              —
-
-            </td>
-
-
-            <td>
-
-              —
-
-            </td>
-
-          </tr>
+          </div>
 
         `;
+
 
       } else {
 
 
         /* ===============================================
-           DISPLAY COMPLETED RESTORATION TASKS
+           RESTORATION TABLE HEADER
+        =============================================== */
+
+        reportContent += `
+
+          <table style="
+            width:100%;
+            border-collapse:collapse;
+            table-layout:fixed;
+            font-size:9px;
+            margin:0;
+          ">
+
+
+            <thead>
+
+              <tr style="
+                background:#edf3fc;
+                color:#173b70;
+              ">
+
+
+                <th style="
+                  width:19%;
+                  padding:7px 5px;
+                  border:1px solid #d8e2ee;
+                  text-align:left;
+                  font-size:8px;
+                ">
+
+                  Executed At
+
+                </th>
+
+
+                <th style="
+                  width:43%;
+                  padding:7px 5px;
+                  border:1px solid #d8e2ee;
+                  text-align:left;
+                  font-size:8px;
+                ">
+
+                  Corrective Task
+
+                </th>
+
+
+                <th style="
+                  width:25%;
+                  padding:7px 5px;
+                  border:1px solid #d8e2ee;
+                  text-align:left;
+                  font-size:8px;
+                ">
+
+                  Technician
+
+                </th>
+
+
+                <th style="
+                  width:13%;
+                  padding:7px 5px;
+                  border:1px solid #d8e2ee;
+                  text-align:right;
+                  font-size:8px;
+                ">
+
+                  Time
+
+                </th>
+
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+        `;
+
+
+        /* ===============================================
+           RESTORATION TASK ROWS
         =============================================== */
 
         restorationTasks.forEach(t => {
 
 
-          /* =============================================
-             ACTUAL SERVICE TIME
-
-             Only recorded execution duration is used.
-          ============================================= */
-
-          if (
-
-            t.duration_min != null &&
-
-            Number.isFinite(
-              t.duration_min
-            )
-
-          ) {
-
-            lineServiceMinutes +=
-              t.duration_min;
-
-          }
-
-
-          /* =============================================
-             RESTORATION TASK ROW
-
-             Date:
-               Actual execution date
-
-             Technician:
-               Actual execution technician
-
-             Duration:
-               Actual execution duration
-          ============================================= */
-
           reportContent += `
 
-            <tr>
+            <tr style="
+              background:#ffffff;
+              break-inside:avoid;
+              page-break-inside:avoid;
+            ">
 
-              <td>
 
-                ${formatDateOnly(
+              <!-- ACTUAL EXECUTION DATE -->
+
+              <td style="
+                padding:7px 5px;
+                border:1px solid #e2e8f0;
+                vertical-align:top;
+                color:#334155;
+                font-size:9px;
+              ">
+
+                ${displayDateTime(
                   t.executed_at
                 )}
 
               </td>
 
 
-              <td>
+              <!-- RESTORATION TASK DESCRIPTION -->
+
+              <td style="
+                padding:7px 5px;
+                border:1px solid #e2e8f0;
+                vertical-align:top;
+                color:#1e293b;
+                font-size:9px;
+                overflow-wrap:anywhere;
+              ">
+
 
                 <strong>
 
-                  ${t.task || "-"}
+                  ${escapeReportHtml(
+                    t.task || "-"
+                  )}
 
                 </strong>
 
@@ -4342,9 +4809,17 @@ async function generateNonPlannedReportPdf() {
 
                       <br>
 
-                      <span class="small">
+                      <span style="
+                        display:block;
+                        margin-top:4px;
+                        font-size:8px;
+                        color:#64748b;
+                        font-weight:400;
+                      ">
 
-                        ${t.section || ""}
+                        ${escapeReportHtml(
+                          t.section || ""
+                        )}
 
                         ${
                           t.section && t.unit
@@ -4354,7 +4829,9 @@ async function generateNonPlannedReportPdf() {
                             : ""
                         }
 
-                        ${t.unit || ""}
+                        ${escapeReportHtml(
+                          t.unit || ""
+                        )}
 
                       </span>
 
@@ -4363,35 +4840,55 @@ async function generateNonPlannedReportPdf() {
                     : ""
                 }
 
-              </td>
-
-
-              <td>
-
-                ${t.executed_by || "-"}
 
               </td>
 
 
-              <td>
+              <!-- ACTUAL TECHNICIAN -->
+
+              <td style="
+                padding:7px 5px;
+                border:1px solid #e2e8f0;
+                vertical-align:top;
+                color:#334155;
+                font-size:9px;
+                overflow-wrap:anywhere;
+              ">
+
+                ${escapeReportHtml(
+                  t.executed_by || "-"
+                )}
+
+              </td>
+
+
+              <!-- ACTUAL SERVICE TIME -->
+
+              <td style="
+                padding:7px 5px;
+                border:1px solid #e2e8f0;
+                vertical-align:top;
+                text-align:right;
+                color:#173b70;
+                font-size:9px;
+                font-weight:600;
+              ">
 
                 ${
-
                   t.duration_min != null &&
-
                   Number.isFinite(
                     t.duration_min
                   )
 
-                    ? formatDuration(
+                    ? displayDuration(
                         t.duration_min
                       )
 
                     : "—"
-
                 }
 
               </td>
+
 
             </tr>
 
@@ -4399,26 +4896,87 @@ async function generateNonPlannedReportPdf() {
 
         });
 
+
+        /* ===============================================
+           CLOSE RESTORATION TASK TABLE
+        =============================================== */
+
+        reportContent += `
+
+            </tbody>
+
+          </table>
+
+        `;
+
       }
 
-    });
 
+      /* ===================================================
+         BREAKDOWN SERVICE TIME FOOTER
 
-    /* =====================================================
-       CLOSE LAST ASSET TABLE
-    ===================================================== */
+         Appears for every Breakdown.
 
-    if (currentAsset !== null) {
+         If no actual Service Time was recorded:
+           Display — instead of inventing a duration.
+      =================================================== */
 
       reportContent += `
 
-        </tbody>
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+              margin-top:10px;
+              padding:9px 11px;
+              background:#f1f5f9;
+              border:1px solid #e2e8f0;
+              border-radius:4px;
+              color:#475569;
+              font-size:9px;
+              break-inside:avoid;
+              page-break-inside:avoid;
+            ">
 
-        </table>
+
+              <span>
+
+                Total Restoration Service Time
+
+              </span>
+
+
+              <strong style="
+                color:#173b70;
+                font-size:11px;
+                white-space:nowrap;
+              ">
+
+                ${
+                  breakdownHasServiceTime
+
+                    ? displayDuration(
+                        breakdownServiceMinutes
+                      )
+
+                    : "—"
+                }
+
+              </strong>
+
+
+            </div>
+
+
+          </div>
+
+
+        </div>
 
       `;
 
-    }
+    });
 
 
     /* =====================================================
@@ -4427,49 +4985,8 @@ async function generateNonPlannedReportPdf() {
 
     if (currentLine !== null) {
 
-      reportContent += `
-
-        <div class="breakdown-line-summary">
-
-          <span class="breakdown-count">
-
-            ${lineCount}
-
-          </span>
-
-          breakdowns
-
-          &nbsp;•&nbsp;
-
-          Total Service Time:
-
-          <strong>
-
-            ${formatDuration(
-              Math.round(
-                lineServiceMinutes
-              )
-            )}
-
-          </strong>
-
-          &nbsp;•&nbsp;
-
-          Total Downtime:
-
-          <strong>
-
-            ${formatDuration(
-              Math.round(
-                lineDownMinutes
-              )
-            )}
-
-          </strong>
-
-        </div>
-
-      `;
+      reportContent +=
+        buildLineSummary();
 
     }
 
@@ -4487,15 +5004,15 @@ async function generateNonPlannedReportPdf() {
     /* =====================================================
        FILL TEMPLATE
 
-       Keep existing template placeholders.
+       Existing template placeholders remain unchanged.
 
        TOTAL_SERVICE_TIME:
-         Actual Restoration Task execution time.
+         Actual Restoration execution time.
 
        AVG_SERVICE_TIME:
-         Average actual Restoration Task execution time.
+         Average actual Restoration execution time.
 
-       Downtime is displayed separately in report content.
+       Breakdown Downtime remains a separate value.
     ===================================================== */
 
     template = template
@@ -4527,42 +5044,36 @@ async function generateNonPlannedReportPdf() {
 
       .replace(
         "{{TOTAL_BREAKDOWNS}}",
-        String(
-          totalBreakdowns
-        )
+        String(totalBreakdowns)
       )
 
       .replace(
         "{{TOTAL_LINES}}",
-        String(
-          totalLines
-        )
+        String(totalLines)
       )
 
       .replace(
         "{{TOTAL_ASSETS}}",
-        String(
-          totalAssets
-        )
+        String(totalAssets)
       )
 
       .replaceAll(
+
         "{{TOTAL_SERVICE_TIME}}",
 
-        formatDuration(
-          Math.round(
-            totalServiceMinutes
-          )
+        displayDuration(
+          totalServiceMinutes
         )
 
       )
 
       .replaceAll(
+
         "{{AVG_SERVICE_TIME}}",
 
         tasksWithDuration.length > 0
 
-          ? formatDuration(
+          ? displayDuration(
               avgServiceMinutes
             )
 
@@ -4577,9 +5088,7 @@ async function generateNonPlannedReportPdf() {
 
       .replace(
         "{{WORST_LINE_COUNT}}",
-        String(
-          worstLineCount
-        )
+        String(worstLineCount)
       )
 
       .replace(
@@ -4614,6 +5123,7 @@ async function generateNonPlannedReportPdf() {
   }
 
 }
+
 
 
 /* =====================
