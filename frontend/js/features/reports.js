@@ -3021,183 +3021,389 @@ function getFilteredNonPlannedExecutionsForReport() {
   });
 }
 
-/* =====================
+
+/* =========================================================
    NON-PLANNED (BREAKDOWN) REPORT – PDF
-===================== */
+
+   BREAKDOWN / RESTORATION MODEL
+
+   - One Breakdown can contain multiple Restoration Tasks.
+   - All Breakdowns matching the date and line filters
+     remain visible, even without Restoration Tasks.
+   - Only the latest recorded execution per task is used.
+   - Technician and execution date come from task_executions.
+   - Service Time and Downtime are calculated separately.
+   - Breakdown counts and Downtime are never duplicated.
+   - Existing backend endpoints remain unchanged.
+========================================================= */
 
 async function generateNonPlannedReportPdf() {
 
   try {
 
-    // =========================
-    // LOAD TEMPLATE
-    // =========================
-    let template =
-      await loadReportTemplate(
-        "breakdown-report"
-      );
+    /* =====================================================
+       LOAD TEMPLATE
+    ===================================================== */
+
+    let template = await loadReportTemplate(
+      "breakdown-report"
+    );
 
 
-  // =========================
-  // GET FILTERED BREAKDOWNS
-  // New Breakdown Model
-  // =========================
+    /* =====================================================
+       LOAD BREAKDOWNS
+    ===================================================== */
 
-  const breakdownResponse =
-    await fetch(
+    const breakdownResponse = await fetch(
       "/breakdowns"
     );
 
+    if (!breakdownResponse.ok) {
 
-  if (
-    !breakdownResponse.ok
-  ) {
+      throw new Error(
+        "Failed to load Breakdown incidents"
+      );
 
-    throw new Error(
-      "Failed to load Breakdown incidents"
-    );
-  }
+    }
 
-
-  const breakdownRows =
-    await breakdownResponse.json();
+    const breakdownRows =
+      await breakdownResponse.json();
 
 
-  const reportFromVal =
-    document.getElementById(
-      "dateFrom"
-    )?.value || "";
+    /* =====================================================
+       REPORT FILTERS
+    ===================================================== */
+
+    const reportFromVal =
+      document.getElementById(
+        "dateFrom"
+      )?.value || "";
+
+    const reportToVal =
+      document.getElementById(
+        "dateTo"
+      )?.value || "";
+
+    const reportSelectedLines =
+      getSelectedReportLines();
 
 
-  const reportToVal =
-    document.getElementById(
-      "dateTo"
-    )?.value || "";
+    /* =====================================================
+       FILTER BREAKDOWNS
 
+       Date filter:
+         Breakdown started_at
 
-  const reportSelectedLines =
-    getSelectedReportLines();
+       Line filter:
+         Breakdown line_name
 
+       IMPORTANT:
+       Do not filter out Breakdowns without Restoration Tasks.
+    ===================================================== */
 
-  const rows =
-    (
-      Array.isArray(
-        breakdownRows
-      )
+    const filteredBreakdowns = (
+      Array.isArray(breakdownRows)
         ? breakdownRows
         : []
-    )
+    ).filter(b => {
 
-      .filter(
-        b => {
+      if (!b.started_at) {
+        return false;
+      }
 
-          if (
-            !b.started_at
-          ) {
-            return false;
-          }
+      const startedAt = new Date(
+        b.started_at
+      );
 
-
-          const startedAt =
-            new Date(
-              b.started_at
-            );
-
-
-          if (
-            Number.isNaN(
-              startedAt.getTime()
-            )
-          ) {
-            return false;
-          }
+      if (
+        Number.isNaN(
+          startedAt.getTime()
+        )
+      ) {
+        return false;
+      }
 
 
-          // =========================
-          // FROM
-          // =========================
+      // FROM
 
-          if (
-            reportFromVal
-          ) {
+      if (reportFromVal) {
 
-            const fromDate =
-              new Date(
-                `${reportFromVal}T00:00:00`
-              );
+        const fromDate = new Date(
+          `${reportFromVal}T00:00:00`
+        );
 
-
-            if (
-              startedAt <
-              fromDate
-            ) {
-              return false;
-            }
-          }
-
-
-          // =========================
-          // TO
-          // Inclusive selected date
-          // =========================
-
-          if (
-            reportToVal
-          ) {
-
-            const toExclusive =
-              new Date(
-                `${reportToVal}T00:00:00`
-              );
-
-
-            toExclusive.setDate(
-              toExclusive.getDate() + 1
-            );
-
-
-            if (
-              startedAt >=
-              toExclusive
-            ) {
-              return false;
-            }
-          }
-
-
-          // =========================
-          // LINE
-          // =========================
-
-          if (
-            !reportSelectedLines.includes(
-              "all"
-            ) &&
-            !reportSelectedLines.includes(
-              b.line_name
-            )
-          ) {
-            return false;
-          }
-
-
-          return true;
+        if (startedAt < fromDate) {
+          return false;
         }
-      )
+
+      }
 
 
-      // =========================
-      // NORMALIZE
-      //
-      // Keep old report structure
-      // temporarily so downstream
-      // rendering still works.
-      // =========================
+      // TO - Inclusive selected date
 
-      .map(
-        b => ({
+      if (reportToVal) {
+
+        const toExclusive = new Date(
+          `${reportToVal}T00:00:00`
+        );
+
+        toExclusive.setDate(
+          toExclusive.getDate() + 1
+        );
+
+        if (startedAt >= toExclusive) {
+          return false;
+        }
+
+      }
+
+
+      // LINE
+
+      if (
+        !reportSelectedLines.includes("all") &&
+        !reportSelectedLines.includes(
+          b.line_name
+        )
+      ) {
+        return false;
+      }
+
+
+      return true;
+
+    });
+
+
+    /* =====================================================
+       CHECK BREAKDOWNS
+
+       Check the actual Breakdown list before loading tasks.
+
+       A Breakdown without Restoration Tasks is still valid.
+    ===================================================== */
+
+    if (filteredBreakdowns.length === 0) {
+
+      alert(
+        "No non-planned tasks found for selected criteria"
+      );
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       LOAD RESTORATION TASKS
+
+       Existing endpoint:
+         GET /breakdowns/:id/tasks
+
+       This endpoint returns:
+         - Restoration Task information
+         - Latest actual execution
+         - Actual technician
+         - Actual execution date
+         - Actual service duration
+
+       No database changes.
+       No new execution records.
+       No Breakdown status changes.
+    ===================================================== */
+
+    const restorationGroups = await Promise.all(
+
+      filteredBreakdowns.map(async b => {
+
+        const response = await fetch(
+          `/breakdowns/${b.id}/tasks`
+        );
+
+        if (!response.ok) {
+
+          throw new Error(
+            `Failed to load Restoration Tasks for BD ${b.id}`
+          );
+
+        }
+
+        const data = await response.json();
+
+        return {
+
+          breakdown: b,
+
+          tasks: Array.isArray(data.tasks)
+            ? data.tasks
+            : []
+
+        };
+
+      })
+
+    );
+
+
+    /* =====================================================
+       TECHNICIAN FILTER
+
+       The technician filter applies to Restoration Tasks.
+
+       IMPORTANT:
+       It does not remove the parent Breakdown.
+
+       Breakdowns remain visible even when no Restoration
+       Task matches the selected technician.
+    ===================================================== */
+
+    const technicianSelect =
+      document.getElementById(
+        "reportTechnician"
+      );
+
+    const technicianValue =
+      technicianSelect?.value || "all";
+
+    const technicianName =
+      technicianSelect
+        ?.selectedOptions?.[0]
+        ?.textContent?.trim() || "";
+
+    const technicianLabel =
+      technicianValue === "all"
+        ? "ALL TECHNICIANS"
+        : technicianName || technicianValue;
+
+
+    const normalizeTechnician = value =>
+
+      String(value ?? "")
+        .trim()
+        .toLocaleLowerCase("el-GR");
+
+
+    const matchesTechnician = technician => {
+
+      if (technicianValue === "all") {
+        return true;
+      }
+
+      const actualTechnician =
+        normalizeTechnician(technician);
+
+      return (
+
+        actualTechnician ===
+          normalizeTechnician(technicianValue)
+
+        ||
+
+        actualTechnician ===
+          normalizeTechnician(technicianName)
+
+      );
+
+    };
+
+
+    /* =====================================================
+       NORMALIZE BREAKDOWNS
+
+       IMPORTANT:
+       One report object = one Breakdown.
+
+       Restoration Tasks are stored inside the Breakdown.
+
+       Never create one Breakdown object per task.
+    ===================================================== */
+
+    const rows = restorationGroups.map(
+      ({ breakdown: b, tasks }) => {
+
+        /* ===============================================
+           NORMALIZE RESTORATION TASKS
+
+           Only tasks with an actual recorded execution
+           are included in the Corrective Task rows.
+
+           The endpoint already returns the latest
+           execution for each Restoration Task.
+        =============================================== */
+
+        const completedTasks = tasks
+
+          .filter(t =>
+            t.completed_at != null
+          )
+
+          .filter(t =>
+            matchesTechnician(
+              t.completed_by
+            )
+          )
+
+          .map(t => ({
+
+            restoration_task_id:
+              t.id,
+
+            breakdown_id:
+              b.id,
+
+            task:
+              t.task || "-",
+
+            section:
+              t.section || "",
+
+            unit:
+              t.unit || "",
+
+            status:
+              t.status,
+
+            executed_at:
+              t.completed_at,
+
+            executed_by:
+              t.completed_by || "-",
+
+            duration_min:
+              t.actual_duration_min != null
+                ? Number(t.actual_duration_min)
+                : null
+
+          }))
+
+          .sort((a, b) =>
+
+            new Date(
+              a.executed_at || 0
+            ) -
+
+            new Date(
+              b.executed_at || 0
+            )
+
+          );
+
+
+        /* ===============================================
+           BREAKDOWN OBJECT
+
+           Preserve the original Breakdown fields.
+
+           Actual Restoration Tasks are linked through
+           restoration_tasks.
+        =============================================== */
+
+        return {
 
           ...b,
+
+          breakdown_id:
+            b.id,
 
           line:
             b.line_name || "—",
@@ -3208,63 +3414,48 @@ async function generateNonPlannedReportPdf() {
           serial_number:
             b.asset_serial || "",
 
+          started_at:
+            b.started_at,
+
           executed_at:
             b.started_at,
 
           task:
             b.title || "-",
 
-          executed_by:
+          reported_by:
             b.reported_by || "-",
 
-          duration_min:
-            Math.round(
-              Number(
-                b.effective_down_seconds || 0
-              ) / 60
+          effective_down_seconds:
+            Number(
+              b.effective_down_seconds || 0
             ),
 
-          section:
-            "",
+          restoration_tasks:
+            completedTasks
 
-          unit:
-            ""
+        };
 
-        })
-      );
-
-
-    if (
-      !Array.isArray(rows) ||
-      rows.length === 0
-    ) {
-
-      alert(
-        "No non-planned tasks found for selected criteria"
-      );
-
-      return;
-    }
+      }
+    );
 
 
-    // =========================
-    // FILTER LABELS
-    // =========================
+    /* =====================================================
+       FILTER LABELS
+    ===================================================== */
+
     const from =
       document.getElementById(
         "dateFrom"
       )?.value || "—";
-
 
     const to =
       document.getElementById(
         "dateTo"
       )?.value || "—";
 
-
     const selectedLines =
       getSelectedReportLines();
-
 
     const lineFilterLabel =
       selectedLines.includes("all")
@@ -3272,162 +3463,253 @@ async function generateNonPlannedReportPdf() {
         : selectedLines.join(", ");
 
 
-    const technicianSelect =
-      document.getElementById(
-        "reportTechnician"
-      );
+    /* =====================================================
+       SORT
+
+       LINE → ASSET → BREAKDOWN DATE
+
+       Each Breakdown remains a single report object.
+    ===================================================== */
+
+    const sorted = [...rows].sort((a, b) => {
+
+      const la =
+        (a.line || "").toString();
+
+      const lb =
+        (b.line || "").toString();
 
 
-    const technicianValue =
-      technicianSelect?.value || "all";
+      if (la !== lb) {
 
-
-    const technicianLabel =
-      technicianValue === "all"
-        ? "ALL TECHNICIANS"
-        : technicianSelect
-            ?.selectedOptions?.[0]
-            ?.textContent || technicianValue;
-
-
-    // =========================
-    // SORT
-    // LINE → ASSET → DATE
-    // =========================
-    const sorted =
-      [...rows].sort((a, b) => {
-
-        const la =
-          (a.line || "").toString();
-
-        const lb =
-          (b.line || "").toString();
-
-
-        if (la !== lb) {
-
-          return la.localeCompare(
-            lb,
-            "el",
-            { numeric: true }
-          );
-        }
-
-
-        const aa =
-          `${a.machine || ""} ${a.serial_number || ""}`;
-
-        const ab =
-          `${b.machine || ""} ${b.serial_number || ""}`;
-
-
-        if (aa !== ab) {
-
-          return aa.localeCompare(
-            ab,
-            "el"
-          );
-        }
-
-
-        return (
-          new Date(
-            b.executed_at || 0
-          ) -
-          new Date(
-            a.executed_at || 0
-          )
+        return la.localeCompare(
+          lb,
+          "el",
+          { numeric: true }
         );
 
-      });
+      }
 
 
-    // =========================
-    // BASIC TOTALS
-    // =========================
+      const aa =
+        `${a.machine || ""} ${a.serial_number || ""}`;
+
+      const ab =
+        `${b.machine || ""} ${b.serial_number || ""}`;
+
+
+      if (aa !== ab) {
+
+        return aa.localeCompare(
+          ab,
+          "el"
+        );
+
+      }
+
+
+      return (
+
+        new Date(
+          b.started_at || 0
+        ) -
+
+        new Date(
+          a.started_at || 0
+        )
+
+      );
+
+    });
+
+
+    /* =====================================================
+       BASIC TOTALS
+
+       Each row represents exactly one Breakdown.
+    ===================================================== */
+
     const totalBreakdowns =
       rows.length;
 
 
     const totalLines =
       new Set(
+
         rows
           .map(r => r.line)
           .filter(Boolean)
+
       ).size;
 
 
     const totalAssets =
       new Set(
-        rows.map(
-          r =>
-            `${r.machine}||${r.serial_number || ""}`
+
+        rows.map(r =>
+          String(r.asset_id)
         )
+
       ).size;
 
 
-  // =========================
-  // EFFECTIVE DOWN
-  // =========================
-  const totalEffectiveDownMinutes =
-    rows.reduce(
+    /* =====================================================
+       TOTAL RESTORATION TASKS
 
-      (sum, r) => {
+       Count actual recorded task executions.
 
-        return r.effective_down_seconds != null
-          ? sum +
-              (
-                Number(
-                  r.effective_down_seconds
-                ) / 60
-              )
-          : sum;
+       One latest execution per Restoration Task.
+    ===================================================== */
 
-      },
+    const totalRestorationTasks =
+      rows.reduce(
 
-      0
-    );
+        (sum, r) =>
+
+          sum +
+          r.restoration_tasks.length,
+
+        0
+
+      );
 
 
-  const closedBreakdowns =
-    rows.filter(
-      r =>
-        r.status === "CLOSED"
-    );
+    /* =====================================================
+       TOTAL SERVICE TIME
+
+       Sum actual Restoration Task execution durations.
+
+       Never use Breakdown downtime as Service Time.
+
+       Never use estimated task duration.
+    ===================================================== */
+
+    const allRestorationTasks =
+      rows.flatMap(
+        r => r.restoration_tasks
+      );
 
 
-  const closedEffectiveDownMinutes =
-    closedBreakdowns.reduce(
+    const tasksWithDuration =
+      allRestorationTasks.filter(
 
-      (sum, r) => {
+        t =>
+          t.duration_min != null &&
+          Number.isFinite(t.duration_min)
 
-        return r.effective_down_seconds != null
-          ? sum +
-              (
-                Number(
-                  r.effective_down_seconds
-                ) / 60
-              )
-          : sum;
-
-      },
-
-      0
-    );
+      );
 
 
-  const avgEffectiveDownMinutes =
-    closedBreakdowns.length > 0
-      ? Math.round(
-          closedEffectiveDownMinutes /
-          closedBreakdowns.length
-        )
-      : 0;
+    const totalServiceMinutes =
+      tasksWithDuration.reduce(
+
+        (sum, t) =>
+
+          sum + t.duration_min,
+
+        0
+
+      );
 
 
-    // =========================
-    // BREAKDOWNS BY LINE
-    // =========================
+    const avgServiceMinutes =
+      tasksWithDuration.length > 0
+
+        ? Math.round(
+
+            totalServiceMinutes /
+            tasksWithDuration.length
+
+          )
+
+        : 0;
+
+
+    /* =====================================================
+       TOTAL EFFECTIVE DOWN TIME
+
+       Each Breakdown is counted exactly once.
+
+       The number of Restoration Tasks does not affect
+       Breakdown Downtime.
+    ===================================================== */
+
+    const totalEffectiveDownMinutes =
+      rows.reduce(
+
+        (sum, r) => {
+
+          return sum +
+
+            (
+              Number(
+                r.effective_down_seconds || 0
+              ) / 60
+            );
+
+        },
+
+        0
+
+      );
+
+
+    /* =====================================================
+       CLOSED BREAKDOWNS
+
+       Average Breakdown Downtime is calculated only
+       from CLOSED Breakdown incidents.
+    ===================================================== */
+
+    const closedBreakdowns =
+      rows.filter(
+
+        r =>
+          r.status === "CLOSED"
+
+      );
+
+
+    const closedEffectiveDownMinutes =
+      closedBreakdowns.reduce(
+
+        (sum, r) => {
+
+          return sum +
+
+            (
+              Number(
+                r.effective_down_seconds || 0
+              ) / 60
+            );
+
+        },
+
+        0
+
+      );
+
+
+    const avgEffectiveDownMinutes =
+      closedBreakdowns.length > 0
+
+        ? Math.round(
+
+            closedEffectiveDownMinutes /
+            closedBreakdowns.length
+
+          )
+
+        : 0;
+
+
+    /* =====================================================
+       BREAKDOWNS BY LINE
+
+       Count Breakdown incidents,
+       not Restoration Task executions.
+    ===================================================== */
+
     const breakdownsByLine = {};
 
 
@@ -3436,8 +3718,8 @@ async function generateNonPlannedReportPdf() {
       const line =
         r.line || "—";
 
-
       breakdownsByLine[line] =
+
         (
           breakdownsByLine[line] || 0
         ) + 1;
@@ -3451,8 +3733,10 @@ async function generateNonPlannedReportPdf() {
       )
 
         .sort(
+
           (a, b) =>
             b[1] - a[1]
+
         )[0] || ["—", 0];
 
 
@@ -3464,17 +3748,136 @@ async function generateNonPlannedReportPdf() {
       worstLineEntry[1];
 
 
-    // =========================
-    // BUILD REPORT CONTENT
-    // =========================
+    /* =====================================================
+       BUILD REPORT CONTENT
+    ===================================================== */
+
     let reportContent = "";
 
     let currentLine = null;
+
     let currentAsset = null;
 
     let lineCount = 0;
-    let lineMinutes = 0;
 
+    let lineServiceMinutes = 0;
+
+    let lineDownMinutes = 0;
+
+
+    /* =====================================================
+       REPORT SUMMARY
+
+       Service Time and Downtime are separate values.
+    ===================================================== */
+
+    reportContent += `
+
+      <div class="breakdown-line-summary">
+
+        <strong>
+          Breakdown Summary
+        </strong>
+
+        <br><br>
+
+        Breakdowns:
+
+        <strong>
+          ${totalBreakdowns}
+        </strong>
+
+        &nbsp;•&nbsp;
+
+        Restoration Tasks:
+
+        <strong>
+          ${totalRestorationTasks}
+        </strong>
+
+        <br><br>
+
+        Total Service Time:
+
+        <strong>
+
+          ${formatDuration(
+            Math.round(
+              totalServiceMinutes
+            )
+          )}
+
+        </strong>
+
+        <br>
+
+        Total Downtime:
+
+        <strong>
+
+          ${formatDuration(
+            Math.round(
+              totalEffectiveDownMinutes
+            )
+          )}
+
+        </strong>
+
+        <br><br>
+
+        Average Service Time:
+
+        <strong>
+
+          ${
+            tasksWithDuration.length > 0
+
+              ? formatDuration(
+                  avgServiceMinutes
+                )
+
+              : "—"
+          }
+
+        </strong>
+
+        <br>
+
+        Average Breakdown Downtime:
+
+        <strong>
+
+          ${
+            closedBreakdowns.length > 0
+
+              ? formatDuration(
+                  avgEffectiveDownMinutes
+                )
+
+              : "—"
+          }
+
+        </strong>
+
+      </div>
+
+    `;
+
+
+    /* =====================================================
+       BUILD LINE / ASSET / BREAKDOWN TABLES
+
+       IMPORTANT:
+
+       Every Breakdown produces at least one table row.
+
+       If Restoration Tasks exist:
+         Display each completed Restoration Task.
+
+       If no completed Restoration Tasks exist:
+         Display the Breakdown with an empty
+         Restoration execution indication.
+    ===================================================== */
 
     sorted.forEach(r => {
 
@@ -3486,64 +3889,109 @@ async function generateNonPlannedReportPdf() {
         `${r.machine}||${r.serial_number || ""}`;
 
 
-      // =========================
-      // CLOSE ASSET TABLE
-      // WHEN LINE CHANGES
-      // =========================
+      /* ===================================================
+         CLOSE ASSET TABLE WHEN LINE CHANGES
+      =================================================== */
+
       if (
+
         line !== currentLine &&
+
         currentAsset !== null
+
       ) {
 
         reportContent += `
-            </tbody>
+
+          </tbody>
+
           </table>
+
         `;
 
         currentAsset = null;
+
       }
 
 
-      // =========================
-      // NEW LINE
-      // =========================
-      if (
-        line !== currentLine
-      ) {
+      /* ===================================================
+         NEW LINE
+      =================================================== */
 
-        if (
-          currentLine !== null
-        ) {
+      if (line !== currentLine) {
+
+
+        /* ===============================================
+           CLOSE PREVIOUS LINE SUMMARY
+        =============================================== */
+
+        if (currentLine !== null) {
 
           reportContent += `
 
             <div class="breakdown-line-summary">
 
               <span class="breakdown-count">
+
                 ${lineCount}
+
               </span>
 
               breakdowns
 
               &nbsp;•&nbsp;
 
-              Total service time:
+              Total Service Time:
+
               <strong>
-                ${formatDuration(lineMinutes)}
+
+                ${formatDuration(
+                  Math.round(
+                    lineServiceMinutes
+                  )
+                )}
+
+              </strong>
+
+              &nbsp;•&nbsp;
+
+              Total Downtime:
+
+              <strong>
+
+                ${formatDuration(
+                  Math.round(
+                    lineDownMinutes
+                  )
+                )}
+
               </strong>
 
             </div>
+
           `;
+
         }
 
+
+        /* ===============================================
+           NEW LINE HEADER
+        =============================================== */
 
         reportContent += `
 
           <h3>
+
             LINE ${line}
+
           </h3>
+
         `;
 
+
+        /* ===============================================
+           RESET LINE GROUPING
+        =============================================== */
 
         currentLine =
           line;
@@ -3554,33 +4002,43 @@ async function generateNonPlannedReportPdf() {
         lineCount =
           0;
 
-        lineMinutes =
+        lineServiceMinutes =
           0;
+
+        lineDownMinutes =
+          0;
+
       }
 
 
-      // =========================
-      // CLOSE TABLE
-      // WHEN ASSET CHANGES
-      // =========================
+      /* ===================================================
+         CLOSE TABLE WHEN ASSET CHANGES
+      =================================================== */
+
       if (
+
         assetKey !== currentAsset &&
+
         currentAsset !== null
+
       ) {
 
         reportContent += `
-            </tbody>
+
+          </tbody>
+
           </table>
+
         `;
+
       }
 
 
-      // =========================
-      // NEW ASSET
-      // =========================
-      if (
-        assetKey !== currentAsset
-      ) {
+      /* ===================================================
+         NEW ASSET
+      =================================================== */
+
+      if (assetKey !== currentAsset) {
 
         reportContent += `
 
@@ -3591,6 +4049,7 @@ async function generateNonPlannedReportPdf() {
             <span class="sn">
 
               SN:
+
               ${r.serial_number || "-"}
 
             </span>
@@ -3605,19 +4064,27 @@ async function generateNonPlannedReportPdf() {
               <tr>
 
                 <th style="width:15%;">
+
                   Date
+
                 </th>
 
                 <th style="width:55%;">
-                  Breakdown Description
+
+                  Breakdown Description / Restoration Task
+
                 </th>
 
                 <th style="width:15%;">
+
                   Technician
+
                 </th>
 
                 <th style="width:15%;">
-                  Duration
+
+                  Service Time
+
                 </th>
 
               </tr>
@@ -3625,151 +4092,412 @@ async function generateNonPlannedReportPdf() {
             </thead>
 
             <tbody>
+
         `;
 
 
         currentAsset =
           assetKey;
+
       }
 
 
-      // =========================
-      // LINE TOTALS
-      // =========================
+      /* ===================================================
+         LINE TOTALS
+
+         One Breakdown = one incident.
+
+         Downtime is counted once per Breakdown.
+      =================================================== */
+
       lineCount++;
 
 
-      if (
-        r.duration_min != null
-      ) {
+      lineDownMinutes +=
 
-        lineMinutes +=
-          Number(
-            r.duration_min
-          );
-      }
+        Number(
+          r.effective_down_seconds || 0
+        ) / 60;
 
 
-      // =========================
-      // ROW
-      // =========================
+      /* ===================================================
+         BREAKDOWN HEADER ROW
+
+         Always displayed.
+
+         It does not depend on Restoration Tasks.
+
+         This row contains Breakdown information only.
+         It does not display reported_by as Technician.
+      =================================================== */
+
       reportContent += `
 
         <tr>
 
           <td>
+
             ${formatDateOnly(
-              r.executed_at
+              r.started_at
             )}
+
           </td>
 
 
           <td>
 
             <strong>
-              ${r.task || "-"}
+
+              BD-${String(
+                r.breakdown_id
+              ).padStart(5, "0")}
+
             </strong>
 
-            ${
-              r.section || r.unit
-                ? `
-                  <br>
+            <br>
 
-                  <span class="small">
+            <strong>
 
-                    ${r.section || ""}
+              ${r.task || "-"}
 
-                    ${
-                      r.section &&
-                      r.unit
-                        ? " / "
-                        : ""
-                    }
+            </strong>
 
-                    ${r.unit || ""}
+            <br>
 
-                  </span>
-                `
-                : ""
-            }
+            <span class="small">
+
+              Status:
+
+              ${r.status || "-"}
+
+              &nbsp;•&nbsp;
+
+              Downtime:
+
+              ${formatDuration(
+                Math.round(
+                  Number(
+                    r.effective_down_seconds || 0
+                  ) / 60
+                )
+              )}
+
+            </span>
 
           </td>
 
 
           <td>
-            ${r.executed_by || "-"}
+
+            —
+
           </td>
 
 
           <td>
-            ${formatDuration(
-              r.duration_min
-            )}
+
+            —
+
           </td>
 
         </tr>
+
       `;
+
+
+      /* ===================================================
+         RESTORATION TASKS
+
+         Breakdown header has already been added.
+
+         If no completed Restoration Tasks exist,
+         the Breakdown remains visible.
+      =================================================== */
+
+      const restorationTasks =
+        r.restoration_tasks || [];
+
+
+      if (restorationTasks.length === 0) {
+
+        /* ===============================================
+           NO COMPLETED RESTORATION EXECUTION
+
+           Do not remove the Breakdown.
+
+           Do not invent technician, execution date
+           or service duration.
+        =============================================== */
+
+        reportContent += `
+
+          <tr>
+
+            <td>
+
+              —
+
+            </td>
+
+
+            <td>
+
+              <span class="small">
+
+                No completed Restoration Tasks recorded.
+
+              </span>
+
+            </td>
+
+
+            <td>
+
+              —
+
+            </td>
+
+
+            <td>
+
+              —
+
+            </td>
+
+          </tr>
+
+        `;
+
+      } else {
+
+
+        /* ===============================================
+           DISPLAY COMPLETED RESTORATION TASKS
+        =============================================== */
+
+        restorationTasks.forEach(t => {
+
+
+          /* =============================================
+             ACTUAL SERVICE TIME
+
+             Only recorded execution duration is used.
+          ============================================= */
+
+          if (
+
+            t.duration_min != null &&
+
+            Number.isFinite(
+              t.duration_min
+            )
+
+          ) {
+
+            lineServiceMinutes +=
+              t.duration_min;
+
+          }
+
+
+          /* =============================================
+             RESTORATION TASK ROW
+
+             Date:
+               Actual execution date
+
+             Technician:
+               Actual execution technician
+
+             Duration:
+               Actual execution duration
+          ============================================= */
+
+          reportContent += `
+
+            <tr>
+
+              <td>
+
+                ${formatDateOnly(
+                  t.executed_at
+                )}
+
+              </td>
+
+
+              <td>
+
+                <strong>
+
+                  ${t.task || "-"}
+
+                </strong>
+
+
+                ${
+                  t.section || t.unit
+
+                    ? `
+
+                      <br>
+
+                      <span class="small">
+
+                        ${t.section || ""}
+
+                        ${
+                          t.section && t.unit
+
+                            ? " / "
+
+                            : ""
+                        }
+
+                        ${t.unit || ""}
+
+                      </span>
+
+                    `
+
+                    : ""
+                }
+
+              </td>
+
+
+              <td>
+
+                ${t.executed_by || "-"}
+
+              </td>
+
+
+              <td>
+
+                ${
+
+                  t.duration_min != null &&
+
+                  Number.isFinite(
+                    t.duration_min
+                  )
+
+                    ? formatDuration(
+                        t.duration_min
+                      )
+
+                    : "—"
+
+                }
+
+              </td>
+
+            </tr>
+
+          `;
+
+        });
+
+      }
 
     });
 
 
-    // =========================
-    // CLOSE LAST ASSET TABLE
-    // =========================
-    if (
-      currentAsset !== null
-    ) {
+    /* =====================================================
+       CLOSE LAST ASSET TABLE
+    ===================================================== */
+
+    if (currentAsset !== null) {
 
       reportContent += `
-          </tbody>
+
+        </tbody>
+
         </table>
+
       `;
+
     }
 
 
-    // =========================
-    // LAST LINE SUMMARY
-    // =========================
-    if (
-      currentLine !== null
-    ) {
+    /* =====================================================
+       LAST LINE SUMMARY
+    ===================================================== */
+
+    if (currentLine !== null) {
 
       reportContent += `
 
         <div class="breakdown-line-summary">
 
           <span class="breakdown-count">
+
             ${lineCount}
+
           </span>
 
           breakdowns
 
           &nbsp;•&nbsp;
 
-          Total service time:
+          Total Service Time:
 
           <strong>
-            ${formatDuration(lineMinutes)}
+
+            ${formatDuration(
+              Math.round(
+                lineServiceMinutes
+              )
+            )}
+
+          </strong>
+
+          &nbsp;•&nbsp;
+
+          Total Downtime:
+
+          <strong>
+
+            ${formatDuration(
+              Math.round(
+                lineDownMinutes
+              )
+            )}
+
           </strong>
 
         </div>
+
       `;
+
     }
 
 
-    // =========================
-    // GENERATED DATE
-    // =========================
+    /* =====================================================
+       GENERATED DATE
+    ===================================================== */
+
     const generatedDate =
-      new Date()
-        .toLocaleDateString(
-          "el-GR"
-        );
+      new Date().toLocaleDateString(
+        "el-GR"
+      );
 
 
-    // =========================
-    // FILL TEMPLATE
-    // =========================
+    /* =====================================================
+       FILL TEMPLATE
+
+       Keep existing template placeholders.
+
+       TOTAL_SERVICE_TIME:
+         Actual Restoration Task execution time.
+
+       AVG_SERVICE_TIME:
+         Average actual Restoration Task execution time.
+
+       Downtime is displayed separately in report content.
+    ===================================================== */
+
     template = template
 
       .replaceAll(
@@ -3799,35 +4527,47 @@ async function generateNonPlannedReportPdf() {
 
       .replace(
         "{{TOTAL_BREAKDOWNS}}",
-        String(totalBreakdowns)
+        String(
+          totalBreakdowns
+        )
       )
 
       .replace(
         "{{TOTAL_LINES}}",
-        String(totalLines)
+        String(
+          totalLines
+        )
       )
 
       .replace(
         "{{TOTAL_ASSETS}}",
-        String(totalAssets)
-      )
-
-      .replaceAll(
-        "{{TOTAL_SERVICE_TIME}}",
-        formatDuration(
-          Math.round(
-            totalEffectiveDownMinutes
-          )
+        String(
+          totalAssets
         )
       )
 
       .replaceAll(
+        "{{TOTAL_SERVICE_TIME}}",
+
+        formatDuration(
+          Math.round(
+            totalServiceMinutes
+          )
+        )
+
+      )
+
+      .replaceAll(
         "{{AVG_SERVICE_TIME}}",
-        avgEffectiveDownMinutes
+
+        tasksWithDuration.length > 0
+
           ? formatDuration(
-              avgEffectiveDownMinutes
+              avgServiceMinutes
             )
+
           : "—"
+
       )
 
       .replace(
@@ -3848,9 +4588,12 @@ async function generateNonPlannedReportPdf() {
       );
 
 
-    // =========================
-    // PRINT
-    // =========================
+    /* =====================================================
+       PRINT
+
+       Existing print function remains unchanged.
+    ===================================================== */
+
     await printReportHtml(
       template
     );
@@ -3867,8 +4610,11 @@ async function generateNonPlannedReportPdf() {
     alert(
       "Could not generate Breakdown Report."
     );
+
   }
+
 }
+
 
 /* =====================
    OVERDUE REPORT – DATA
