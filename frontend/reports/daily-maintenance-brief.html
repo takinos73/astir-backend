@@ -1,597 +1,1318 @@
 <!DOCTYPE html>
+
 <html>
 
+
+
 <head>
+
   <meta charset="UTF-8">
 
+
+
   <title>
+
     Daily Maintenance Brief
+
   </title>
 
+
+
   <link
+
     rel="stylesheet"
+
     href="/css/dailyReport.css"
+
   >
+
 </head>
+
+
+
 
 
 <body>
 
+
+
   <!-- =====================================================
+
        PAGE 1
+
        EXECUTIVE SNAPSHOT
+
   ====================================================== -->
+
+
 
   <section class="daily-report-page daily-report-page-1">
 
 
+
+
+
     <!-- =====================
+
          HEADER
+
     ====================== -->
+
+
 
     <header class="daily-report-header">
 
+
+
       <div class="daily-report-brand">
 
+
+
         <div class="daily-report-company">
+
           ASTIR
+
         </div>
+
+
 
         <div class="daily-report-system">
+
           Computerized Maintenance Management System
+
         </div>
 
+
+
       </div>
+
+
+
 
 
       <div class="daily-report-header-meta">
 
+
+
         <div>
+
           DAILY MAINTENANCE BRIEF
+
         </div>
+
+
 
         <div class="daily-report-header-date">
+
           Generated: {{GENERATED_DATE}}
+
         </div>
 
+
+
       </div>
+
+
 
     </header>
 
 
+
+
+
     <!-- =====================
+
          TITLE
+
     ====================== -->
+
+
 
     <div class="daily-report-title-block">
 
+
+
       <h1 class="daily-report-title">
+
         Daily Maintenance Brief
+
       </h1>
 
+
+
       <div class="daily-report-subtitle">
+
         Maintenance activity and reliability changes during period
+
       </div>
 
+
+
       <div class="daily-report-period">
+
         {{REPORT_PERIOD}}
+
       </div>
+
+
 
     </div>
 
 
+
+
+
     <!-- =====================
+
          KPI STRIP
+
     ====================== -->
+
+
 
     <div class="daily-report-kpi-grid">
 
 
+
+
+
       <div class="daily-report-kpi">
 
+
+
         <div class="daily-report-kpi-label">
+
           Completed Tasks
+
         </div>
 
+
+
         <div class="daily-report-kpi-value">
+
           {{KPI_COMPLETED}}
+
         </div>
 
+
+
         <div class="daily-report-kpi-sub">
+
           In Period time
+
         </div>
+
+
 
       </div>
 
 
+
+
+
       <div class="daily-report-kpi">
 
+
+
         <div class="daily-report-kpi-label">
+
           New Breakdowns
+
         </div>
 
+
+
         <div class="daily-report-kpi-value">
+
           {{KPI_NEW_BREAKDOWNS}}
+
         </div>
 
+
+
         <div class="daily-report-kpi-sub">
+
           New incidents
+
         </div>
+
+
 
       </div>
 
 
+
+
+
       <div class="daily-report-kpi">
 
+
+
         <div class="daily-report-kpi-label">
+
           Effective DOWN
+
         </div>
+
+
 
         <div class="daily-report-kpi-value">
+
           {{KPI_EFFECTIVE_DOWN}}
+
         </div>
+
+
 
         <div class="daily-report-kpi-sub">
+
           Added in las time period
+
         </div>
 
+
+
       </div>
+
+
+
 
 
       <div class="daily-report-kpi">
 
+
+
         <div class="daily-report-kpi-label">
+
           Active Incidents
+
         </div>
+
+
 
         <div class="daily-report-kpi-value">
+
           {{KPI_ACTIVE_BREAKDOWNS}}
+
         </div>
+
+
 
         <div class="daily-report-kpi-sub">
+
           Currently open
-        </div>
-
-      </div>
-
-    </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         SCHEDULED & BACKLOG DELIVERY
-    ====================================================== -->
-
-    <div class="daily-report-chart-card daily-report-chart-card-wide">
-
-      <div class="daily-report-chart-header">
-
-        <div>
-
-          <h2 class="daily-report-chart-title">
-            Scheduled & Backlog Delivery
-          </h2>
-
-          <div class="daily-report-chart-subtitle">
-            Scheduled maintenance fulfillment and backlog recovery
-          </div>
 
         </div>
 
+
+
       </div>
 
 
-      <div class="daily-report-chart-body">
-
-        {{SCHEDULED_DELIVERY_PANEL}}
-
-      </div>
 
     </div>
-
-
 
     <!-- =====================
+
          DONUT CHARTS
+
     ====================== -->
+
 
     <div class="daily-report-chart-grid daily-report-chart-grid-2">
 
 
+
+
+
       <!-- EXECUTION MIX -->
+
+
 
       <div class="daily-report-chart-card">
 
+
+
         <div class="daily-report-chart-header">
+
+
 
           <div>
 
+
+
             <h2 class="daily-report-chart-title">
+
               Maintenance Execution Mix
+
             </h2>
 
+
+
             <div class="daily-report-chart-subtitle">
+
               Completed maintenance executions · in Period time
+
             </div>
+
+
 
           </div>
 
+
+
         </div>
+
+
+
 
 
         <div class="daily-report-chart-body daily-report-donut-area">
 
+
+
           {{EXECUTION_MIX_CHART}}
+
+
 
         </div>
 
+
+
       </div>
+
+
+
 
 
       <!-- BREAKDOWN OUTCOME -->
 
+
+
       <div class="daily-report-chart-card">
+
+
 
         <div class="daily-report-chart-header">
 
+
+
           <div>
 
+
+
             <h2 class="daily-report-chart-title">
+
               Breakdown Outcome
+
             </h2>
 
+
+
             <div class="daily-report-chart-subtitle">
+
               Breakdown incidents opened during the reporting period
+
             </div>
+
+
 
           </div>
 
+
+
         </div>
+
+
+
 
 
         <div class="daily-report-chart-body daily-report-donut-area">
 
+
+
           {{BREAKDOWN_OUTCOME_CHART}}
+
+
 
         </div>
 
+
+
       </div>
 
+
+
     </div>
+
+
 
       <div class="daily-report-chart-card">
 
+
+
         <div class="daily-report-chart-header">
+
+
 
           <div>
 
+
+
             <h2 class="daily-report-chart-title">
+
               Maintenance Workload · In Selected Period
+
             </h2>
 
+
+
             <div class="daily-report-chart-subtitle">
+
               Total recorded maintenance effort from completed executions
+
             </div>
+
+
 
           </div>
 
+
+
         </div>
+
+
 
         <div class="daily-report-chart-body">
+
           {{MAINTENANCE_WORKLOAD}}
+
         </div>
 
+
+
       </div>
+
+
+
 
 
     <!-- =====================
+
          PERIOD TIME SUMMARY
+
     ====================== -->
+
+
 
     <div class="daily-report-summary-card">
 
+
+
       <div class="daily-report-summary-title">
+
         During Period
+
       </div>
 
+
+
       <div class="daily-report-summary-content">
+
         {{PAGE1_SUMMARY}}
+
       </div>
+
+
 
     </div>
 
 
+
+
+
     <!-- =====================
+
          FOOTER
+
     ====================== -->
+
+
 
     <footer class="daily-report-footer">
 
-      <div>
-        ASTIR CMMS
-      </div>
+
 
       <div>
-        Daily Maintenance Brief · Page 1 / 3
+
+        ASTIR CMMS
+
       </div>
+
+
+
+      <div>
+
+        Daily Maintenance Brief · Page 1 / 4
+
+      </div>
+
+
 
     </footer>
+
+
 
   </section>
 
 
 
+
+
   <!-- =====================================================
-       PAGE BREAK
-  ====================================================== -->
+
+      PAGE BREAK
+
+  ===================================================== -->
+
+
 
   <div class="daily-report-page-break">
+
   </div>
 
 
 
+
+
   <!-- =====================================================
-       PAGE 2
-       RELIABILITY & LINE ACTIVITY
-  ====================================================== -->
+
+      PAGE 2
+
+      SCHEDULED & BACKLOG DELIVERY
+
+  ===================================================== -->
+
+
 
   <section class="daily-report-page daily-report-page-2">
 
 
+
+
+
     <!-- =====================
-         HEADER
+
+        HEADER
+
     ====================== -->
+
+
 
     <header class="daily-report-header daily-report-header-small">
 
+
+
       <div class="daily-report-brand">
 
+
+
         <div class="daily-report-company">
+
           ASTIR
+
         </div>
+
+
 
         <div class="daily-report-system">
+
           CMMS · Daily Maintenance Brief
+
         </div>
 
+
+
       </div>
+
+
+
 
 
       <div class="daily-report-header-meta">
 
+
+
         <div>
-          RELIABILITY & ACTIVITY
+
+          SCHEDULED & BACKLOG DELIVERY
+
         </div>
+
+
 
         <div class="daily-report-header-date">
+
           {{REPORT_PERIOD}}
+
         </div>
 
+
+
       </div>
+
+
 
     </header>
 
 
+
+
+
     <!-- =====================
-         RELIABILITY IMPACT
+
+        TITLE
+
     ====================== -->
+
+
+
+    <div class="daily-report-title-block">
+
+
+
+      <h1 class="daily-report-title">
+
+        Scheduled & Backlog Delivery
+
+      </h1>
+
+
+
+      <div class="daily-report-subtitle">
+
+        Scheduled maintenance fulfillment, backlog recovery and delivered work
+
+      </div>
+
+
+
+      <div class="daily-report-period">
+
+        {{REPORT_PERIOD}}
+
+      </div>
+
+
+
+    </div>
+
+
+
+
+
+    <!-- =====================
+
+        SCHEDULED DELIVERY PANEL
+
+    ====================== -->
+
+
 
     <div class="daily-report-chart-card daily-report-chart-card-wide">
 
-      <div class="daily-report-chart-header">
 
-        <div>
 
-          <h2 class="daily-report-chart-title">
-            Reliability Impact · Top Assets
-          </h2>
+      <div class="daily-report-chart-body">
 
-          <div class="daily-report-chart-subtitle">
-            Assets with the highest Effective DOWN during the selected Period
-          </div>
 
-        </div>
+
+        {{SCHEDULED_DELIVERY_PANEL}}
+
+
 
       </div>
 
 
-      <div class="daily-report-chart-body daily-report-bar-area">
-
-        {{RELIABILITY_IMPACT_CHART}}
-
-      </div>
 
     </div>
 
 
-    <!-- =====================
-         MAINTENANCE ACTIVITY
-         BY LINE
-    ====================== -->
 
-    <div class="daily-report-chart-card daily-report-chart-card-wide">
-
-      <div class="daily-report-chart-header">
-
-        <div>
-
-          <h2 class="daily-report-chart-title">
-            Maintenance Activity by Line
-          </h2>
-
-          <div class="daily-report-chart-subtitle">
-            Preventive, Planned and Corrective executions by production line
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="daily-report-chart-body daily-report-stacked-bar-area">
-
-        {{LINE_ACTIVITY_CHART}}
-
-      </div>
-
-    </div>
 
 
     <!-- =====================
-         KEY INSIGHTS
+
+        FOOTER
+
     ====================== -->
 
-    <div class="daily-report-insights">
 
-
-      <div class="daily-report-insights-title">
-        Key Maintenance Insights
-      </div>
-
-      <div class="daily-report-insights-content">
-        {{REPORT_INSIGHTS}}
-      </div>
-
-    </div>
-
-
-    <!-- =====================
-         FOOTER
-    ====================== -->
 
     <footer class="daily-report-footer">
 
-      <div>
-        ASTIR CMMS
-      </div>
+
 
       <div>
-        Daily Maintenance Brief · Page 2 / 3
+
+        ASTIR CMMS
+
       </div>
+
+
+
+      <div>
+
+        Daily Maintenance Brief · Page 2 / 4
+
+      </div>
+
+
 
     </footer>
+
+
 
   </section>
 
 
+
+
+
+
+
   <!-- =====================================================
        PAGE BREAK
-  ====================================================== -->
+  ===================================================== -->
 
   <div class="daily-report-page-break">
   </div>
 
 
   <!-- =====================================================
-       PAGE 3
-       NEXT 24H WORKLOAD OUTLOOK
 
-       Read-only presentation.
-       No task assignment or asset availability changes.
+       PAGE 3
+
+       RELIABILITY & LINE ACTIVITY
+
   ====================================================== -->
+
+
 
   <section class="daily-report-page daily-report-page-3">
 
+
+
+
+
     <!-- =====================
+
          HEADER
+
     ====================== -->
+
+
 
     <header class="daily-report-header daily-report-header-small">
 
+
+
       <div class="daily-report-brand">
 
+
+
         <div class="daily-report-company">
+
           ASTIR
+
         </div>
+
+
 
         <div class="daily-report-system">
+
           CMMS · Daily Maintenance Brief
+
         </div>
 
+
+
       </div>
+
+
+
+
 
       <div class="daily-report-header-meta">
 
+
+
         <div>
-          NEXT 24H WORKLOAD OUTLOOK
+
+          RELIABILITY & ACTIVITY
+
         </div>
+
+
 
         <div class="daily-report-header-date">
-          Generated: {{GENERATED_DATE}}
+
+          {{REPORT_PERIOD}}
+
         </div>
 
+
+
       </div>
+
+
 
     </header>
 
 
+
+
+
     <!-- =====================
-         WORKLOAD OUTLOOK
-         Data connection will be added separately.
+
+         RELIABILITY IMPACT
+
     ====================== -->
+
+
 
     <div class="daily-report-chart-card daily-report-chart-card-wide">
 
+
+
       <div class="daily-report-chart-header">
+
+
 
         <div>
 
+
+
           <h2 class="daily-report-chart-title">
-            Preventive Maintenance · Asset Workload
+
+            Reliability Impact · Top Assets
+
           </h2>
 
+
+
           <div class="daily-report-chart-subtitle">
-            Next 24 hours · Risk-based candidates for Planner review
+
+            Assets with the highest Effective DOWN during the selected Period
+
           </div>
+
+
 
         </div>
 
+
+
       </div>
 
-      <div
-        id="dailyReportNext24HWorkload"
-        class="daily-report-chart-body"
-      >
-        Workload data not connected yet.
+
+
+
+
+      <div class="daily-report-chart-body daily-report-bar-area">
+
+
+
+        {{RELIABILITY_IMPACT_CHART}}
+
+
+
       </div>
+
+
 
     </div>
 
 
+
+
+
     <!-- =====================
-         FOOTER
+
+         MAINTENANCE ACTIVITY
+
+         BY LINE
+
     ====================== -->
+
+
+
+    <div class="daily-report-chart-card daily-report-chart-card-wide">
+
+
+
+      <div class="daily-report-chart-header">
+
+
+
+        <div>
+
+
+
+          <h2 class="daily-report-chart-title">
+
+            Maintenance Activity by Line
+
+          </h2>
+
+
+
+          <div class="daily-report-chart-subtitle">
+
+            Preventive, Planned and Corrective executions by production line
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+
+
+      <div class="daily-report-chart-body daily-report-stacked-bar-area">
+
+
+
+        {{LINE_ACTIVITY_CHART}}
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+
+
+    <!-- =====================
+
+         KEY INSIGHTS
+
+    ====================== -->
+
+
+
+    <div class="daily-report-insights">
+
+
+
+
+
+      <div class="daily-report-insights-title">
+
+        Key Maintenance Insights
+
+      </div>
+
+
+
+      <div class="daily-report-insights-content">
+
+        {{REPORT_INSIGHTS}}
+
+      </div>
+
+
+
+    </div>
+
+
+
+
+
+    <!-- =====================
+
+         FOOTER
+
+    ====================== -->
+
+
 
     <footer class="daily-report-footer">
 
-      <div>
-        ASTIR CMMS
-      </div>
+
 
       <div>
-        Daily Maintenance Brief · Page 3 / 3
+
+        ASTIR CMMS
+
       </div>
+
+
+
+      <div>
+
+        Daily Maintenance Brief · Page 3 / 4
+
+      </div>
+
+
 
     </footer>
 
+
+
   </section>
+
+
+
+
+
+  <!-- =====================================================
+
+       PAGE BREAK
+
+  ====================================================== -->
+
+
+
+  <div class="daily-report-page-break">
+
+  </div>
+
+
+
+
+
+  <!-- =====================================================
+
+       PAGE 4
+
+       NEXT 24H WORKLOAD OUTLOOK
+
+
+
+       Read-only presentation.
+
+       No task assignment or asset availability changes.
+
+  ====================================================== -->
+
+
+
+  <section class="daily-report-page daily-report-page-4">
+
+
+
+    <!-- =====================
+
+         HEADER
+
+    ====================== -->
+
+
+
+    <header class="daily-report-header daily-report-header-small">
+
+
+
+      <div class="daily-report-brand">
+
+
+
+        <div class="daily-report-company">
+
+          ASTIR
+
+        </div>
+
+
+
+        <div class="daily-report-system">
+
+          CMMS · Daily Maintenance Brief
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div class="daily-report-header-meta">
+
+
+
+        <div>
+
+          NEXT 24H WORKLOAD OUTLOOK
+
+        </div>
+
+
+
+        <div class="daily-report-header-date">
+
+          Generated: {{GENERATED_DATE}}
+
+        </div>
+
+
+
+      </div>
+
+
+
+    </header>
+
+
+
+
+
+    <!-- =====================
+
+         WORKLOAD OUTLOOK
+
+         Data connection will be added separately.
+
+    ====================== -->
+
+
+
+    <div class="daily-report-chart-card daily-report-chart-card-wide">
+
+
+
+      <div class="daily-report-chart-header">
+
+
+
+        <div>
+
+
+
+          <h2 class="daily-report-chart-title">
+
+            Preventive Maintenance · Asset Workload
+
+          </h2>
+
+
+
+          <div class="daily-report-chart-subtitle">
+
+            Next 24 hours · Risk-based candidates for Planner review
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div
+
+        id="dailyReportNext24HWorkload"
+
+        class="daily-report-chart-body"
+
+      >
+
+        Workload data not connected yet.
+
+      </div>
+
+
+
+    </div>
+
+
+
+
+
+    <!-- =====================
+
+         FOOTER
+
+    ====================== -->
+
+
+
+    <footer class="daily-report-footer">
+
+
+
+      <div>
+
+        ASTIR CMMS
+
+      </div>
+
+
+
+      <div>
+
+        Daily Maintenance Brief · Page 4 / 4
+
+      </div>
+
+
+
+    </footer>
+
+
+
+  </section>
+
+
 
 </body>
 
+
+
 <!-- PRINT TOOLBAR -->
+
+
 
 <div class="daily-report-print-toolbar">
 
+
+
   <button
+
     type="button"
+
     class="daily-report-print-btn"
+
     onclick="window.print()"
+
     title="Print or save this report as PDF"
+
   >
+
     🖨 Print / Save PDF
+
   </button>
 
+
+
 </div>
+
+
 
 </html>
