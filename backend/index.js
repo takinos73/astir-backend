@@ -7413,6 +7413,7 @@ app.get("/executions", async (req, res) => {
     const result = await pool.query(`
       SELECT
         e.id,
+        e.task_id,
         e.executed_at,
         e.executed_by,
         e.technician_id,

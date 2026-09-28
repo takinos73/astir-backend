@@ -1630,6 +1630,773 @@ function buildDailyReportWorkload(executions) {
 }
 
 /* =====================================================
+   SCHEDULED & BACKLOG DELIVERY
+
+   Builds audit-friendly delivery metrics for the
+   Daily / 7 Days Maintenance Report.
+
+   DATA SOURCES
+   -----------------------------------------------------
+   executions:
+     Historical completed Task occurrences.
+
+     prev_due_date = scheduled due timestamp
+     executed_at   = actual execution timestamp
+
+   tasks:
+     Current open Task occurrences.
+
+     due_date       = current scheduled due timestamp
+
+   IMPORTANT
+   -----------------------------------------------------
+   - Corrective / Restoration Tasks are excluded.
+   - Preventive and Planned work only.
+   - Due-day logic is based on UTC/server calendar day.
+   - A Task completed after the end of its due-day
+     becomes Backlog Recovered.
+   - Completed Late means:
+       after exact due time
+       but before next calendar day.
+   - No database changes.
+===================================================== */
+
+function buildDailyReportScheduledDelivery(executions, tasks, from, to) {
+
+  /* =====================
+     REPORT PERIOD
+  ====================== */
+
+  const periodFrom = new Date(from);
+  const periodTo = new Date(to);
+
+
+  if (
+    Number.isNaN(periodFrom.getTime()) ||
+    Number.isNaN(periodTo.getTime())
+  ) {
+
+    throw new Error(
+      "Invalid reporting period for Scheduled Delivery"
+    );
+
+  }
+
+
+  /* =====================
+     INPUT DATA
+  ====================== */
+
+  const executionRows =
+    Array.isArray(executions)
+      ? executions
+      : [];
+
+
+  const taskRows =
+    Array.isArray(tasks)
+      ? tasks
+      : [];
+
+
+  /* =====================
+     DATE HELPERS
+  ====================== */
+
+  const parseDate = value => {
+
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value);
+
+    return Number.isNaN(
+      date.getTime()
+    )
+      ? null
+      : date;
+
+  };
+
+
+  const inPeriod = date =>
+    date &&
+    date >= periodFrom &&
+    date <= periodTo;
+
+
+  /*
+    Server timestamps are UTC.
+
+    Due-day must therefore be evaluated using
+    the UTC calendar day, not browser local time.
+  */
+
+  const getUtcDayStart = value => {
+
+    const date = parseDate(value);
+
+    if (!date) {
+      return null;
+    }
+
+    return new Date(
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
+      )
+    );
+
+  };
+
+
+  const getUtcNextDayStart = value => {
+
+    const start =
+      getUtcDayStart(value);
+
+    if (!start) {
+      return null;
+    }
+
+    return new Date(
+      start.getTime() +
+      24 * 60 * 60 * 1000
+    );
+
+  };
+
+
+  /* =====================
+     WORK TYPE
+
+     Corrective / Restoration:
+       EXCLUDED
+
+     Preventive:
+       frequency_hours > 0
+
+     Planned:
+       normal planned Task
+  ====================== */
+
+  const getCategory = row => {
+
+    if (!row) {
+      return null;
+    }
+
+
+    // Restoration / Corrective
+    if (
+      row.breakdown_id !== null &&
+      row.breakdown_id !== undefined
+    ) {
+
+      return null;
+
+    }
+
+
+    // Preventive
+    if (
+      row.frequency_hours != null &&
+      Number(row.frequency_hours) > 0
+    ) {
+
+      return "preventive";
+
+    }
+
+
+    /*
+      Exclude legacy unplanned work
+      that is not linked to a Breakdown.
+    */
+
+    if (
+      row.is_planned === false ||
+      String(
+        row.is_planned
+      ).toLowerCase() === "false"
+    ) {
+
+      return null;
+
+    }
+
+
+    return "planned";
+
+  };
+
+
+  /* =====================
+     METRIC BUCKET
+  ====================== */
+
+  const createBucket = () => ({
+
+    scheduledDue: 0,
+
+    completedScheduled: 0,
+
+    outstanding: 0,
+
+    backlogRecovered: 0,
+
+    completedLate: 0,
+
+    earlyCompleted: 0,
+
+    /*
+      Audit / diagnostic metric.
+
+      Scheduled occurrence whose execution
+      happened before this report period.
+    */
+    completedBeforePeriod: 0,
+
+    scheduleGap: 0,
+
+    deliveryRate: 0,
+
+    totalDelivered: 0
+
+  });
+
+
+  const result = {
+
+    total: createBucket(),
+
+    preventive: createBucket(),
+
+    planned: createBucket()
+
+  };
+
+
+  /* =====================
+     OCCURRENCE SETS
+
+     task_id + due timestamp identifies
+     one scheduled occurrence.
+
+     Sets protect against accidental
+     double counting.
+  ====================== */
+
+  const sets = {
+
+    total: {
+      scheduledDue: new Set(),
+      completedScheduled: new Set(),
+      outstanding: new Set(),
+      backlogRecovered: new Set(),
+      completedLate: new Set(),
+      earlyCompleted: new Set(),
+      completedBeforePeriod: new Set()
+    },
+
+    preventive: {
+      scheduledDue: new Set(),
+      completedScheduled: new Set(),
+      outstanding: new Set(),
+      backlogRecovered: new Set(),
+      completedLate: new Set(),
+      earlyCompleted: new Set(),
+      completedBeforePeriod: new Set()
+    },
+
+    planned: {
+      scheduledDue: new Set(),
+      completedScheduled: new Set(),
+      outstanding: new Set(),
+      backlogRecovered: new Set(),
+      completedLate: new Set(),
+      earlyCompleted: new Set(),
+      completedBeforePeriod: new Set()
+    }
+
+  };
+
+
+  /* =====================
+     ADD OCCURRENCE
+  ====================== */
+
+  const addMetric = (
+    category,
+    metric,
+    key
+  ) => {
+
+    if (
+      !category ||
+      !sets[category] ||
+      !sets[category][metric]
+    ) {
+
+      return;
+
+    }
+
+
+    sets[category][metric].add(key);
+
+    sets.total[metric].add(key);
+
+  };
+
+
+  /* =====================================================
+     COMPLETED OCCURRENCES
+
+     Source:
+       /executions
+  ===================================================== */
+
+  executionRows.forEach(execution => {
+
+    const category =
+      getCategory(execution);
+
+
+    if (!category) {
+      return;
+    }
+
+
+    const executedAt =
+      parseDate(
+        execution.executed_at
+      );
+
+
+    const dueAt =
+      parseDate(
+        execution.prev_due_date
+      );
+
+
+    if (
+      !executedAt ||
+      !dueAt
+    ) {
+
+      return;
+
+    }
+
+
+    const taskId =
+      execution.task_id ??
+      `execution-${execution.id}`;
+
+
+    const occurrenceKey =
+      `${category}|${taskId}|${dueAt.toISOString()}`;
+
+
+    const dueInPeriod =
+      inPeriod(dueAt);
+
+
+    const executionInPeriod =
+      inPeriod(executedAt);
+
+
+    const dueDayStart =
+      getUtcDayStart(dueAt);
+
+
+    const nextDueDay =
+      getUtcNextDayStart(dueAt);
+
+
+    if (
+      !dueDayStart ||
+      !nextDueDay
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       SCHEDULED DUE
+
+       The occurrence was due
+       during this report period.
+
+       Execution time does NOT
+       determine whether it was due.
+    ====================== */
+
+    if (dueInPeriod) {
+
+      addMetric(
+        category,
+        "scheduledDue",
+        occurrenceKey
+      );
+
+    }
+
+
+    /* =====================
+       COMPLETED BEFORE PERIOD
+
+       Due belongs to this period,
+       but the occurrence was already
+       executed before report.from.
+
+       Kept for audit visibility.
+    ====================== */
+
+    if (
+      dueInPeriod &&
+      executedAt < periodFrom
+    ) {
+
+      addMetric(
+        category,
+        "completedBeforePeriod",
+        occurrenceKey
+      );
+
+    }
+
+
+    /*
+      From here onward we only analyse
+      executions actually performed
+      inside the report period.
+    */
+
+    if (!executionInPeriod) {
+      return;
+    }
+
+
+    /* =====================
+       COMPLETED SCHEDULED
+
+       Due belongs to report period
+       AND execution happened before
+       the end of the due calendar day.
+
+       This includes:
+
+       - before exact due time
+       - exactly on due time
+       - later on the same due-day
+    ====================== */
+
+    if (
+      dueInPeriod &&
+      executedAt < nextDueDay
+    ) {
+
+      addMetric(
+        category,
+        "completedScheduled",
+        occurrenceKey
+      );
+
+    }
+
+
+    /* =====================
+       COMPLETED LATE
+
+       Same due-day,
+       but after exact due timestamp.
+
+       Example:
+
+       Due:
+         28/09 09:00
+
+       Executed:
+         28/09 11:00
+
+       => Completed Late
+       => Still Completed Scheduled
+    ====================== */
+
+    if (
+      dueInPeriod &&
+      executedAt > dueAt &&
+      executedAt < nextDueDay
+    ) {
+
+      addMetric(
+        category,
+        "completedLate",
+        occurrenceKey
+      );
+
+    }
+
+
+    /* =====================
+       EARLY COMPLETED
+
+       Execution happened before
+       the calendar due-day.
+
+       Same-day execution before the
+       09:00 due time is NOT considered
+       Early in due-day logic.
+    ====================== */
+
+    if (
+      dueInPeriod &&
+      executedAt < dueDayStart
+    ) {
+
+      addMetric(
+        category,
+        "earlyCompleted",
+        occurrenceKey
+      );
+
+    }
+
+
+    /* =====================
+       BACKLOG RECOVERED
+
+       Execution happened during
+       the report period AFTER the
+       scheduled due-day had ended.
+
+       Example:
+
+       Due:
+         28/09 09:00
+
+       Executed:
+         29/09 10:00
+
+       => Backlog Recovered
+
+       This applies whether the
+       original due date was before
+       report.from OR inside the
+       current report period.
+    ====================== */
+
+    if (
+      executedAt >= nextDueDay
+    ) {
+
+      addMetric(
+        category,
+        "backlogRecovered",
+        occurrenceKey
+      );
+
+    }
+
+  });
+
+
+  /* =====================================================
+     OPEN OCCURRENCES
+
+     Source:
+       /tasks
+
+     /tasks already contains only
+     active Planned / Overdue Tasks.
+  ===================================================== */
+
+  taskRows.forEach(task => {
+
+    const category =
+      getCategory(task);
+
+
+    if (!category) {
+      return;
+    }
+
+
+    const dueAt =
+      parseDate(
+        task.due_date
+      );
+
+
+    if (
+      !dueAt ||
+      !inPeriod(dueAt)
+    ) {
+
+      return;
+
+    }
+
+
+    const taskId =
+      task.id ??
+      "unknown";
+
+
+    const occurrenceKey =
+      `${category}|${taskId}|${dueAt.toISOString()}`;
+
+
+    /* =====================
+       SCHEDULED DUE
+    ====================== */
+
+    addMetric(
+      category,
+      "scheduledDue",
+      occurrenceKey
+    );
+
+
+    /* =====================
+       OUTSTANDING
+
+       Due in reporting period
+       and still present in the
+       active Tasks endpoint.
+    ====================== */
+
+    addMetric(
+      category,
+      "outstanding",
+      occurrenceKey
+    );
+
+  });
+
+
+  /* =====================================================
+     FINALIZE COUNTS
+  ===================================================== */
+
+  [
+    "total",
+    "preventive",
+    "planned"
+  ].forEach(category => {
+
+    const bucket =
+      result[category];
+
+
+    const categorySets =
+      sets[category];
+
+
+    bucket.scheduledDue =
+      categorySets.scheduledDue.size;
+
+
+    bucket.completedScheduled =
+      categorySets.completedScheduled.size;
+
+
+    bucket.outstanding =
+      categorySets.outstanding.size;
+
+
+    bucket.backlogRecovered =
+      categorySets.backlogRecovered.size;
+
+
+    bucket.completedLate =
+      categorySets.completedLate.size;
+
+
+    bucket.earlyCompleted =
+      categorySets.earlyCompleted.size;
+
+
+    bucket.completedBeforePeriod =
+      categorySets.completedBeforePeriod.size;
+
+
+    /* =====================
+       DELIVERY RATE
+
+       Backlog recovery does NOT
+       inflate Scheduled Delivery.
+    ====================== */
+
+    bucket.deliveryRate =
+      bucket.scheduledDue > 0
+
+        ? Math.round(
+            bucket.completedScheduled *
+            100 /
+            bucket.scheduledDue
+          )
+
+        : 0;
+
+
+    /* =====================
+       TOTAL DELIVERED
+
+       Actual maintenance output
+       represented by this section.
+
+       Corrective work remains
+       outside this metric.
+    ====================== */
+
+    bucket.totalDelivered =
+      bucket.completedScheduled +
+      bucket.backlogRecovered;
+
+
+    /*
+      Schedule Gap is intentionally
+      separate from Outstanding.
+
+      Example:
+
+      A Task due Monday but completed
+      Tuesday is no longer OPEN,
+      therefore not Outstanding.
+
+      But it was not delivered inside
+      its scheduled due-day.
+
+      Therefore:
+
+      Schedule Gap =
+        Scheduled Due
+        -
+        Completed Scheduled
+    */
+
+    bucket.scheduleGap =
+      Math.max(
+        0,
+        bucket.scheduledDue -
+        bucket.completedScheduled
+      );
+
+  });
+
+
+  return result;
+
+}
+
+/* =====================================================
    BUILD DAILY REPORT DATA
 ===================================================== */
 
