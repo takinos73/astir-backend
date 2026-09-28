@@ -2389,6 +2389,20 @@ function buildDailyReportScheduledDelivery(executions, tasks, from, to) {
         bucket.completedScheduled
       );
 
+    bucket.fulfilled =
+    bucket.completedScheduled +
+    bucket.completedBeforePeriod;
+
+
+    bucket.fulfillmentRate =
+    bucket.scheduledDue > 0
+      ? Math.round(
+          bucket.fulfilled *
+          100 /
+          bucket.scheduledDue
+        )
+      : 0;
+
   });
 
 
