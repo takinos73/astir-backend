@@ -1373,17 +1373,7 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
             "
           >
 
-            <div>
-
-              <div
-                style="
-                  font-size:10px;
-                  font-weight:700;
-                  color:#172033;
-                "
-              >
-                Late · Same Day
-            </div>
+              <div>
 
                 <div>
 
@@ -1417,7 +1407,7 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
                   ${earlyCompleted}
                 </strong>
 
-          </div>
+            </div>
 
         </div>
 
