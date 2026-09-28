@@ -708,6 +708,1123 @@ function renderDailyReportExecutionMixChart(mix) {
 
 }
 
+/* =====================================================
+   SCHEDULED & BACKLOG DELIVERY PANEL
+
+   Executive / audit-friendly visualization
+   for Daily Maintenance Brief.
+
+   COLOR CODE
+   -----------------------------------------------------
+   Preventive       = Blue
+   Planned          = Orange
+   Backlog Recovery = Green
+   Outstanding      = Amber
+   Overall KPI      = Navy / Neutral
+
+   DATA
+   -----------------------------------------------------
+   Receives output from:
+   buildDailyReportScheduledDelivery()
+
+   No calculations are changed here.
+   This function is presentation only.
+===================================================== */
+
+function renderDailyReportScheduledDeliveryPanel(delivery) {
+
+  /* =====================
+     SAFE DATA
+  ====================== */
+
+  const total =
+    delivery?.total || {};
+
+  const preventive =
+    delivery?.preventive || {};
+
+  const planned =
+    delivery?.planned || {};
+
+
+  const safeNumber = value => {
+
+    const number =
+      Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : 0;
+
+  };
+
+
+  const clampPercent = value => {
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        safeNumber(value)
+      )
+    );
+
+  };
+
+
+  /* =====================
+     TOTAL VALUES
+  ====================== */
+
+  const scheduledDue =
+    safeNumber(
+      total.scheduledDue
+    );
+
+  const completedScheduled =
+    safeNumber(
+      total.completedScheduled
+    );
+
+  const completedBeforePeriod =
+    safeNumber(
+      total.completedBeforePeriod
+    );
+
+  const fulfilled =
+    safeNumber(
+      total.fulfilled
+    );
+
+  const outstanding =
+    safeNumber(
+      total.outstanding
+    );
+
+  const backlogRecovered =
+    safeNumber(
+      total.backlogRecovered
+    );
+
+  const completedLate =
+    safeNumber(
+      total.completedLate
+    );
+
+  const deliveryRate =
+    clampPercent(
+      total.deliveryRate
+    );
+
+  const fulfillmentRate =
+    clampPercent(
+      total.fulfillmentRate
+    );
+
+  const totalDelivered =
+    safeNumber(
+      total.totalDelivered
+    );
+
+
+  /* =====================
+     TYPE VALUES
+  ====================== */
+
+  const preventiveDue =
+    safeNumber(
+      preventive.scheduledDue
+    );
+
+  const preventiveFulfilled =
+    safeNumber(
+      preventive.fulfilled
+    );
+
+  const preventiveOutstanding =
+    safeNumber(
+      preventive.outstanding
+    );
+
+  const preventiveCompleted =
+    safeNumber(
+      preventive.completedScheduled
+    );
+
+  const preventiveEarlier =
+    safeNumber(
+      preventive.completedBeforePeriod
+    );
+
+  const preventiveBacklog =
+    safeNumber(
+      preventive.backlogRecovered
+    );
+
+  const preventiveRate =
+    clampPercent(
+      preventive.fulfillmentRate
+    );
+
+
+  const plannedDue =
+    safeNumber(
+      planned.scheduledDue
+    );
+
+  const plannedFulfilled =
+    safeNumber(
+      planned.fulfilled
+    );
+
+  const plannedOutstanding =
+    safeNumber(
+      planned.outstanding
+    );
+
+  const plannedCompleted =
+    safeNumber(
+      planned.completedScheduled
+    );
+
+  const plannedEarlier =
+    safeNumber(
+      planned.completedBeforePeriod
+    );
+
+  const plannedBacklog =
+    safeNumber(
+      planned.backlogRecovered
+    );
+
+  const plannedRate =
+    clampPercent(
+      planned.fulfillmentRate
+    );
+
+
+  /* =====================
+     DONUT
+  ====================== */
+
+  const radius = 46;
+
+  const circumference =
+    2 * Math.PI * radius;
+
+  const fulfilledDash =
+    circumference *
+    fulfillmentRate /
+    100;
+
+
+  /* =====================
+     EMPTY STATE
+
+     There may still be backlog recovery
+     even when Scheduled Due = 0.
+  ====================== */
+
+  if (
+    scheduledDue === 0 &&
+    backlogRecovered === 0 &&
+    totalDelivered === 0
+  ) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No scheduled maintenance delivery activity
+        during the reporting period.
+      </div>
+    `;
+
+  }
+
+
+  /* =====================
+     FINAL PANEL
+  ====================== */
+
+  return `
+
+    <div
+      style="
+        width:100%;
+        box-sizing:border-box;
+      "
+    >
+
+      <!-- ==========================================
+           EXECUTIVE SUMMARY
+      =========================================== -->
+
+      <div
+        style="
+          display:grid;
+          grid-template-columns:180px 1fr 1.05fr;
+          gap:16px;
+          align-items:stretch;
+        "
+      >
+
+        <!-- =====================
+             FULFILLMENT DONUT
+        ====================== -->
+
+        <div
+          style="
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            min-height:175px;
+          "
+        >
+
+          <svg
+            viewBox="0 0 140 140"
+            role="img"
+            aria-label="Schedule fulfillment ${fulfillmentRate}%"
+            style="
+              width:155px;
+              height:155px;
+              overflow:visible;
+            "
+          >
+
+            <circle
+              cx="70"
+              cy="70"
+              r="${radius}"
+              fill="none"
+              stroke="#e8edf3"
+              stroke-width="16"
+            />
+
+            <circle
+              cx="70"
+              cy="70"
+              r="${radius}"
+              fill="none"
+              stroke="#27ae60"
+              stroke-width="16"
+              stroke-linecap="round"
+              stroke-dasharray="
+                ${fulfilledDash}
+                ${circumference - fulfilledDash}
+              "
+              transform="rotate(-90 70 70)"
+            />
+
+            <text
+              x="70"
+              y="64"
+              text-anchor="middle"
+              font-size="27"
+              font-weight="800"
+              fill="#172033"
+            >
+              ${fulfillmentRate}%
+            </text>
+
+            <text
+              x="70"
+              y="82"
+              text-anchor="middle"
+              font-size="10"
+              font-weight="700"
+              fill="#172033"
+            >
+              FULFILLED
+            </text>
+
+            <text
+              x="70"
+              y="98"
+              text-anchor="middle"
+              font-size="9"
+              fill="#7b8da6"
+            >
+              ${fulfilled} of ${scheduledDue}
+            </text>
+
+          </svg>
+
+        </div>
+
+
+        <!-- =====================
+             PRIMARY COUNTERS
+        ====================== -->
+
+        <div
+          style="
+            border-right:1px solid #dbe3ec;
+            padding-right:16px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            gap:14px;
+          "
+        >
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:11px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Scheduled Due
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                  margin-top:2px;
+                "
+              >
+                Preventive + Planned
+              </div>
+
+            </div>
+
+            <div
+              style="
+                font-size:25px;
+                line-height:1;
+                font-weight:800;
+                color:#172033;
+              "
+            >
+              ${scheduledDue}
+            </div>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:11px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Fulfilled
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                  margin-top:2px;
+                "
+              >
+                In period + completed earlier
+              </div>
+
+            </div>
+
+            <div
+              style="
+                font-size:25px;
+                line-height:1;
+                font-weight:800;
+                color:#27ae60;
+              "
+            >
+              ${fulfilled}
+            </div>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:11px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Outstanding
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                  margin-top:2px;
+                "
+              >
+                Still open · due in period
+              </div>
+
+            </div>
+
+            <div
+              style="
+                font-size:25px;
+                line-height:1;
+                font-weight:800;
+                color:#e67e22;
+              "
+            >
+              ${outstanding}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =====================
+             EXECUTION DETAILS
+        ====================== -->
+
+        <div
+          style="
+            background:#f7f9fc;
+            border:1px solid #e1e7ef;
+            border-radius:8px;
+            padding:13px 15px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            gap:10px;
+          "
+        >
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:10px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Completed in Period
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                "
+              >
+                Scheduled work executed
+              </div>
+
+            </div>
+
+            <strong
+              style="
+                font-size:19px;
+                color:#172033;
+              "
+            >
+              ${completedScheduled}
+            </strong>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:10px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Completed Earlier
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                "
+              >
+                Before reporting period
+              </div>
+
+            </div>
+
+            <strong
+              style="
+                font-size:19px;
+                color:#58708f;
+              "
+            >
+              ${completedBeforePeriod}
+            </strong>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:10px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Backlog Recovered
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                "
+              >
+                Overdue completed in period
+              </div>
+
+            </div>
+
+            <strong
+              style="
+                font-size:19px;
+                color:#27ae60;
+              "
+            >
+              ${backlogRecovered}
+            </strong>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size:10px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Late · Same Day
+              </div>
+
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                "
+              >
+                After due time · same due-day
+              </div>
+
+            </div>
+
+            <strong
+              style="
+                font-size:19px;
+                color:#e67e22;
+              "
+            >
+              ${completedLate}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ==========================================
+           TYPE BREAKDOWN
+      =========================================== -->
+
+      <div
+        style="
+          border-top:1px solid #dbe3ec;
+          margin-top:14px;
+          padding-top:12px;
+        "
+      >
+
+        <div
+          style="
+            font-size:10px;
+            font-weight:800;
+            color:#172033;
+            text-transform:uppercase;
+            letter-spacing:.5px;
+            margin-bottom:10px;
+          "
+        >
+          By Maintenance Type
+        </div>
+
+
+        <!-- =====================
+             PREVENTIVE
+        ====================== -->
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:105px 1fr 58px 155px;
+            gap:12px;
+            align-items:center;
+            background:#f4f8fe;
+            border:1px solid #dbe9fb;
+            border-radius:7px;
+            padding:9px 11px;
+            margin-bottom:8px;
+          "
+        >
+
+          <div>
+
+            <div
+              style="
+                font-size:11px;
+                font-weight:800;
+                color:#2f80ed;
+              "
+            >
+              Preventive
+            </div>
+
+            <div
+              style="
+                font-size:8px;
+                color:#7b8da6;
+              "
+            >
+              Scheduled maintenance
+            </div>
+
+          </div>
+
+
+          <div
+            style="
+              height:10px;
+              background:#dde6f0;
+              border-radius:8px;
+              overflow:hidden;
+            "
+          >
+
+            <div
+              style="
+                width:${preventiveRate}%;
+                height:100%;
+                background:#2f80ed;
+                border-radius:8px;
+              "
+            ></div>
+
+          </div>
+
+
+          <div
+            style="
+              text-align:right;
+              font-size:12px;
+              font-weight:800;
+              color:#172033;
+            "
+          >
+            ${preventiveFulfilled}/${preventiveDue}
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:8px;
+            "
+          >
+
+            <div
+              style="
+                font-size:8px;
+                line-height:1.45;
+                color:#64748b;
+              "
+            >
+              Outstanding ${preventiveOutstanding}<br>
+              In period ${preventiveCompleted}<br>
+              Earlier ${preventiveEarlier}<br>
+              Backlog ${preventiveBacklog}
+            </div>
+
+            <div
+              style="
+                min-width:44px;
+                text-align:center;
+                padding:6px 7px;
+                border-radius:6px;
+                background:#e5f0ff;
+                color:#2f80ed;
+                font-size:15px;
+                font-weight:800;
+              "
+            >
+              ${preventiveRate}%
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =====================
+             PLANNED
+        ====================== -->
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:105px 1fr 58px 155px;
+            gap:12px;
+            align-items:center;
+            background:#fff9ef;
+            border:1px solid #f6e2bd;
+            border-radius:7px;
+            padding:9px 11px;
+          "
+        >
+
+          <div>
+
+            <div
+              style="
+                font-size:11px;
+                font-weight:800;
+                color:#e67e22;
+              "
+            >
+              Planned
+            </div>
+
+            <div
+              style="
+                font-size:8px;
+                color:#7b8da6;
+              "
+            >
+              Manual planned work
+            </div>
+
+          </div>
+
+
+          <div
+            style="
+              height:10px;
+              background:#ece4d8;
+              border-radius:8px;
+              overflow:hidden;
+            "
+          >
+
+            <div
+              style="
+                width:${plannedRate}%;
+                height:100%;
+                background:#ffad42;
+                border-radius:8px;
+              "
+            ></div>
+
+          </div>
+
+
+          <div
+            style="
+              text-align:right;
+              font-size:12px;
+              font-weight:800;
+              color:#172033;
+            "
+          >
+            ${plannedFulfilled}/${plannedDue}
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:8px;
+            "
+          >
+
+            <div
+              style="
+                font-size:8px;
+                line-height:1.45;
+                color:#64748b;
+              "
+            >
+              Outstanding ${plannedOutstanding}<br>
+              In period ${plannedCompleted}<br>
+              Earlier ${plannedEarlier}<br>
+              Backlog ${plannedBacklog}
+            </div>
+
+            <div
+              style="
+                min-width:44px;
+                text-align:center;
+                padding:6px 7px;
+                border-radius:6px;
+                background:#fff0d9;
+                color:#e67e22;
+                font-size:15px;
+                font-weight:800;
+              "
+            >
+              ${plannedRate}%
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ==========================================
+           BOTTOM MANAGEMENT METRICS
+      =========================================== -->
+
+      <div
+        style="
+          display:grid;
+          grid-template-columns:repeat(4, 1fr);
+          gap:8px;
+          border-top:1px solid #dbe3ec;
+          margin-top:12px;
+          padding-top:10px;
+        "
+      >
+
+        <div
+          style="
+            padding:8px 10px;
+            border:1px solid #e1e7ef;
+            border-radius:6px;
+            background:#ffffff;
+          "
+        >
+
+          <div
+            style="
+              font-size:8px;
+              color:#7b8da6;
+              text-transform:uppercase;
+              font-weight:700;
+            "
+          >
+            Period Delivery
+          </div>
+
+          <div
+            style="
+              font-size:17px;
+              font-weight:800;
+              color:#172033;
+              margin-top:2px;
+            "
+          >
+            ${deliveryRate}%
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            padding:8px 10px;
+            border:1px solid #dceee3;
+            border-radius:6px;
+            background:#f6fbf8;
+          "
+        >
+
+          <div
+            style="
+              font-size:8px;
+              color:#7b8da6;
+              text-transform:uppercase;
+              font-weight:700;
+            "
+          >
+            Schedule Fulfillment
+          </div>
+
+          <div
+            style="
+              font-size:17px;
+              font-weight:800;
+              color:#27ae60;
+              margin-top:2px;
+            "
+          >
+            ${fulfillmentRate}%
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            padding:8px 10px;
+            border:1px solid #dceee3;
+            border-radius:6px;
+            background:#f6fbf8;
+          "
+        >
+
+          <div
+            style="
+              font-size:8px;
+              color:#7b8da6;
+              text-transform:uppercase;
+              font-weight:700;
+            "
+          >
+            Backlog Recovered
+          </div>
+
+          <div
+            style="
+              font-size:17px;
+              font-weight:800;
+              color:#27ae60;
+              margin-top:2px;
+            "
+          >
+            ${backlogRecovered}
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            padding:8px 10px;
+            border:1px solid #f0e0ca;
+            border-radius:6px;
+            background:#fffaf3;
+          "
+        >
+
+          <div
+            style="
+              font-size:8px;
+              color:#7b8da6;
+              text-transform:uppercase;
+              font-weight:700;
+            "
+          >
+            Total Delivered
+          </div>
+
+          <div
+            style="
+              font-size:17px;
+              font-weight:800;
+              color:#172033;
+              margin-top:2px;
+            "
+          >
+            ${totalDelivered}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
 
 function buildDailyReportBreakdownOutcome(breakdowns) {
 
