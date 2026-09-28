@@ -806,6 +806,11 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
       total.backlogRecovered
     );
 
+  const earlyCompleted =
+  safeNumber(
+    total.earlyCompleted
+  );  
+
   const completedLate =
     safeNumber(
       total.completedLate
@@ -1378,27 +1383,39 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
                 "
               >
                 Late · Same Day
-              </div>
-
-              <div
-                style="
-                  font-size:8px;
-                  color:#7b8da6;
-                "
-              >
-                After due time · same due-day
-              </div>
-
             </div>
 
-            <strong
-              style="
-                font-size:19px;
-                color:#e67e22;
-              "
-            >
-              ${completedLate}
-            </strong>
+                <div>
+
+                  <div
+                    style="
+                      font-size:10px;
+                      font-weight:700;
+                      color:#172033;
+                    "
+                  >
+                    Future Due Completed Early
+                  </div>
+
+                  <div
+                    style="
+                      font-size:8px;
+                      color:#7b8da6;
+                    "
+                  >
+                    Executed in period · due after period
+                  </div>
+
+                </div>
+
+                <strong
+                  style="
+                    font-size:19px;
+                    color:#2f80ed;
+                  "
+                >
+                  ${earlyCompleted}
+                </strong>
 
           </div>
 
