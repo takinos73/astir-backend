@@ -3559,6 +3559,45 @@ async function buildDailyReportData() {
       : [];
 
 
+  /* =====================
+     ACTIVE TASKS
+  ====================== */
+
+  const tasks =
+    Array.isArray(
+      state.tasksData
+    )
+      ? state.tasksData
+      : [];
+
+
+  /* =====================
+     SCHEDULED & BACKLOG DELIVERY
+
+     IMPORTANT:
+     Uses ALL executions, not only executions
+     inside the reporting period.
+
+     This is required in order to identify:
+     - Scheduled Completed
+     - Completed Before Period
+     - Backlog Recovered
+     - Outstanding scheduled work
+  ====================== */
+
+  const scheduledDelivery =
+    buildDailyReportScheduledDelivery(
+      executions,
+      tasks,
+      from,
+      to
+    );
+
+
+  /* =====================
+     EXECUTIONS IN PERIOD
+  ====================== */
+
   const executions24h =
     executions.filter(e => {
 
@@ -3583,6 +3622,7 @@ async function buildDailyReportData() {
         executedAt >= from &&
         executedAt <= to
       );
+
     });
 
 
@@ -3590,15 +3630,17 @@ async function buildDailyReportData() {
     buildDailyReportExecutionMix(
       executions24h
     );
-  
-  const workload =
-  buildDailyReportWorkload(
-    executions24h
-  );
 
-    const lineActivity =
+
+  const workload =
+    buildDailyReportWorkload(
+      executions24h
+    );
+
+
+  const lineActivity =
     buildDailyReportLineActivity(
-        executions24h
+      executions24h
     );
 
 
@@ -3634,17 +3676,19 @@ async function buildDailyReportData() {
         startedAt >= from &&
         startedAt <= to
       );
+
     });
 
 
-    const breakdownOutcome =
-        buildDailyReportBreakdownOutcome(
-        newBreakdowns24h
-        );
+  const breakdownOutcome =
+    buildDailyReportBreakdownOutcome(
+      newBreakdowns24h
+    );
 
-    const reliabilityImpact =
+
+  const reliabilityImpact =
     buildDailyReportReliabilityImpact(
-        newBreakdowns24h
+      newBreakdowns24h
     );
 
 
@@ -3664,6 +3708,7 @@ async function buildDailyReportData() {
           .toUpperCase() !==
         "CLOSED"
       );
+
     });
 
 
@@ -3671,7 +3716,7 @@ async function buildDailyReportData() {
      EFFECTIVE DOWN
 
      Only Breakdown incidents
-     STARTED during this 24h period.
+     STARTED during this reporting period.
   ====================== */
 
   const effectiveDownSeconds =
@@ -3685,6 +3730,10 @@ async function buildDailyReportData() {
     );
 
 
+  /* =====================
+     FINAL REPORT DATA
+  ====================== */
+
   return {
 
     period: {
@@ -3695,6 +3744,8 @@ async function buildDailyReportData() {
     executions24h,
 
     executionMix,
+
+    scheduledDelivery,
 
     workload,
 
@@ -3722,9 +3773,11 @@ async function buildDailyReportData() {
 
       activeBreakdowns:
         activeBreakdowns.length
+
     }
 
   };
+
 }
 
 function buildDailyReportPage1Summary(data) {
@@ -4602,77 +4655,84 @@ async function buildDailyReportHtml() {
         buildDailyReportWorkloadHtml(
           data.workload
         )
-      )
-;
+      );
 
 
   /* =====================
-     TEMPORARY CHART CONTENT
-
-     Replaced in next steps.
+     REPORT VISUALS
   ====================== */
 
   template =
     template
 
-    .replace(
+      .replace(
+        "{{SCHEDULED_DELIVERY_PANEL}}",
+        renderDailyReportScheduledDeliveryPanel(
+          data.scheduledDelivery
+        )
+      )
+
+      .replace(
         "{{EXECUTION_MIX_CHART}}",
         renderDailyReportExecutionMixChart(
-            data.executionMix
+          data.executionMix
         )
-    )
+      )
 
-    .replace(
-    "{{BREAKDOWN_OUTCOME_CHART}}",
-    renderDailyReportBreakdownOutcomeChart(
-        data.breakdownOutcome
-    )
-    )
+      .replace(
+        "{{BREAKDOWN_OUTCOME_CHART}}",
+        renderDailyReportBreakdownOutcomeChart(
+          data.breakdownOutcome
+        )
+      )
 
-    .replace(
-    "{{RELIABILITY_IMPACT_CHART}}",
-    renderDailyReportReliabilityImpactChart(
-        data.reliabilityImpact
-    )
-    )
+      .replace(
+        "{{RELIABILITY_IMPACT_CHART}}",
+        renderDailyReportReliabilityImpactChart(
+          data.reliabilityImpact
+        )
+      )
 
-    .replace(
-    "{{LINE_ACTIVITY_CHART}}",
-    renderDailyReportLineActivityChart(
-        data.lineActivity
-    )
-    )
+      .replace(
+        "{{LINE_ACTIVITY_CHART}}",
+        renderDailyReportLineActivityChart(
+          data.lineActivity
+        )
+      )
 
-    .replace(
-    "{{PAGE1_SUMMARY}}",
-    buildDailyReportPage1Summary(
-        data
-    )
-    )
+      .replace(
+        "{{PAGE1_SUMMARY}}",
+        buildDailyReportPage1Summary(
+          data
+        )
+      )
 
-    .replace(
-    "{{REPORT_INSIGHTS}}",
-    buildDailyReportInsights(
-        data
-    )
-    )
+      .replace(
+        "{{REPORT_INSIGHTS}}",
+        buildDailyReportInsights(
+          data
+        )
+      );
 
 
-    /* =====================
-      NEXT 24H WORKLOAD OUTLOOK
+  /* =====================
+     NEXT 24H WORKLOAD OUTLOOK
 
-      Populate Page 3 using current task data.
-      Historical report period remains unchanged.
-    ====================== */
+     Populate Page 3 using current task data.
+     Historical report period remains unchanged.
+  ====================== */
 
-    template = template.replace(
+  template =
+    template.replace(
       "Workload data not connected yet.",
       buildDailyReportNext24HAssetsHtml(
         data.period.to
       )
     );
 
-    return template;
+
+  return template;
+
 }
 
 /* =====================================================
