@@ -709,6 +709,620 @@ function renderDailyReportExecutionMixChart(mix) {
 }
 
 /* =====================================================
+   EXECUTION DELIVERY BREAKDOWN
+
+   Explains how Preventive + Planned executions
+   completed during the reporting period reconcile
+   with Total Delivered.
+
+   DATA SOURCE:
+   buildDailyReportScheduledDelivery()
+
+   Current Schedule
+   + Backlog Recovered
+   + Future Due Completed Early
+   = Total Delivered
+===================================================== */
+
+function renderDailyReportExecutionDeliveryBreakdown(delivery) {
+
+  const preventive =
+    delivery?.preventive || {};
+
+  const planned =
+    delivery?.planned || {};
+
+  const total =
+    delivery?.total || {};
+
+
+  const safeNumber = value => {
+
+    const number =
+      Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : 0;
+
+  };
+
+
+  /* =====================
+     PREVENTIVE
+  ====================== */
+
+  const preventiveCurrent =
+    safeNumber(
+      preventive.completedScheduled
+    );
+
+  const preventiveBacklog =
+    safeNumber(
+      preventive.backlogRecovered
+    );
+
+  const preventiveFuture =
+    safeNumber(
+      preventive.earlyCompleted
+    );
+
+  const preventiveTotal =
+    preventiveCurrent +
+    preventiveBacklog +
+    preventiveFuture;
+
+
+  /* =====================
+     PLANNED
+  ====================== */
+
+  const plannedCurrent =
+    safeNumber(
+      planned.completedScheduled
+    );
+
+  const plannedBacklog =
+    safeNumber(
+      planned.backlogRecovered
+    );
+
+  const plannedFuture =
+    safeNumber(
+      planned.earlyCompleted
+    );
+
+  const plannedTotal =
+    plannedCurrent +
+    plannedBacklog +
+    plannedFuture;
+
+
+  /* =====================
+     ROW TOTALS
+  ====================== */
+
+  const currentTotal =
+    preventiveCurrent +
+    plannedCurrent;
+
+  const backlogTotal =
+    preventiveBacklog +
+    plannedBacklog;
+
+  const futureTotal =
+    preventiveFuture +
+    plannedFuture;
+
+  const totalDelivered =
+    safeNumber(
+      total.totalDelivered
+    );
+
+
+  const percent = value => {
+
+    if (totalDelivered <= 0) {
+      return 0;
+    }
+
+    return Math.round(
+      value *
+      100 /
+      totalDelivered
+    );
+
+  };
+
+
+  const currentPct =
+    percent(
+      currentTotal
+    );
+
+  const backlogPct =
+    percent(
+      backlogTotal
+    );
+
+  const futurePct =
+    percent(
+      futureTotal
+    );
+
+
+  /* =====================
+     EMPTY STATE
+  ====================== */
+
+  if (totalDelivered === 0) {
+
+    return `
+      <div class="daily-report-empty-chart">
+        No Preventive or Planned maintenance executions
+        were completed during the reporting period.
+      </div>
+    `;
+
+  }
+
+
+  /* =====================
+     TABLE ROW
+  ====================== */
+
+  function buildRow({
+    title,
+    subtitle,
+    preventiveValue,
+    plannedValue,
+    totalValue,
+    percentage,
+    barColor
+  }) {
+
+    return `
+      <div
+        style="
+          display:grid;
+          grid-template-columns:
+            minmax(210px, 1.7fr)
+            .75fr
+            .75fr
+            .8fr
+            1.2fr;
+          align-items:center;
+          min-height:42px;
+          border-top:1px solid #dfe6ee;
+        "
+      >
+
+        <div
+          style="
+            padding:7px 12px;
+          "
+        >
+
+          <div
+            style="
+              font-size:10px;
+              font-weight:800;
+              color:#172033;
+            "
+          >
+            ${title}
+          </div>
+
+          <div
+            style="
+              font-size:8px;
+              color:#7b8da6;
+              margin-top:1px;
+            "
+          >
+            ${subtitle}
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            text-align:center;
+            font-size:12px;
+            font-weight:800;
+            color:#2f80ed;
+          "
+        >
+          ${preventiveValue}
+        </div>
+
+
+        <div
+          style="
+            text-align:center;
+            font-size:12px;
+            font-weight:800;
+            color:#e67e22;
+          "
+        >
+          ${plannedValue}
+        </div>
+
+
+        <div
+          style="
+            text-align:center;
+            font-size:13px;
+            font-weight:800;
+            color:#172033;
+          "
+        >
+          ${totalValue}
+        </div>
+
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:38px 1fr;
+            gap:8px;
+            align-items:center;
+            padding:0 12px;
+          "
+        >
+
+          <div
+            style="
+              text-align:right;
+              font-size:10px;
+              font-weight:800;
+              color:#172033;
+            "
+          >
+            ${percentage}%
+          </div>
+
+          <div
+            style="
+              height:8px;
+              background:#e5ebf2;
+              border-radius:5px;
+              overflow:hidden;
+            "
+          >
+
+            <div
+              style="
+                width:${Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    percentage
+                  )
+                )}%;
+                height:100%;
+                background:${barColor};
+                border-radius:5px;
+              "
+            ></div>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  /* =====================
+     FINAL PANEL
+  ====================== */
+
+  return `
+
+    <div
+      style="
+        width:100%;
+        box-sizing:border-box;
+      "
+    >
+
+      <!-- TABLE HEADER -->
+
+      <div
+        style="
+          display:grid;
+          grid-template-columns:
+            minmax(210px, 1.7fr)
+            .75fr
+            .75fr
+            .8fr
+            1.2fr;
+          align-items:center;
+          min-height:31px;
+          background:#f3f6fa;
+          border:1px solid #d9e2ec;
+          border-radius:7px 7px 0 0;
+          color:#5f7189;
+          font-size:8px;
+          font-weight:800;
+          text-transform:uppercase;
+        "
+      >
+
+        <div
+          style="
+            padding-left:12px;
+          "
+        >
+          Delivery Type
+        </div>
+
+        <div
+          style="
+            text-align:center;
+            color:#2f80ed;
+          "
+        >
+          Preventive
+        </div>
+
+        <div
+          style="
+            text-align:center;
+            color:#e67e22;
+          "
+        >
+          Planned
+        </div>
+
+        <div
+          style="
+            text-align:center;
+          "
+        >
+          Total
+        </div>
+
+        <div
+          style="
+            text-align:center;
+          "
+        >
+          % of Non-Corrective
+        </div>
+
+      </div>
+
+
+      <!-- BODY -->
+
+      <div
+        style="
+          border-left:1px solid #d9e2ec;
+          border-right:1px solid #d9e2ec;
+        "
+      >
+
+        ${buildRow({
+          title:
+            "Completed in Period",
+
+          subtitle:
+            "Scheduled work executed",
+
+          preventiveValue:
+            preventiveCurrent,
+
+          plannedValue:
+            plannedCurrent,
+
+          totalValue:
+            currentTotal,
+
+          percentage:
+            currentPct,
+
+          barColor:
+            "#2f80ed"
+        })}
+
+
+        ${buildRow({
+          title:
+            "Backlog Recovered",
+
+          subtitle:
+            "Overdue completed in period",
+
+          preventiveValue:
+            preventiveBacklog,
+
+          plannedValue:
+            plannedBacklog,
+
+          totalValue:
+            backlogTotal,
+
+          percentage:
+            backlogPct,
+
+          barColor:
+            "#27ae60"
+        })}
+
+
+        ${buildRow({
+          title:
+            "Future Due Completed Early",
+
+          subtitle:
+            "Executed in period · due after period",
+
+          preventiveValue:
+            preventiveFuture,
+
+          plannedValue:
+            plannedFuture,
+
+          totalValue:
+            futureTotal,
+
+          percentage:
+            futurePct,
+
+          barColor:
+            "#3b82f6"
+        })}
+
+      </div>
+
+
+      <!-- TOTAL ROW -->
+
+      <div
+        style="
+          display:grid;
+          grid-template-columns:
+            minmax(210px, 1.7fr)
+            .75fr
+            .75fr
+            .8fr
+            1.2fr;
+          align-items:center;
+          min-height:39px;
+          border:1px solid #cfe8d9;
+          background:#f1faf5;
+          border-radius:0 0 7px 7px;
+        "
+      >
+
+        <div
+          style="
+            padding-left:12px;
+            font-size:10px;
+            font-weight:800;
+            color:#172033;
+          "
+        >
+          Total Preventive + Planned
+        </div>
+
+        <div
+          style="
+            text-align:center;
+            font-size:13px;
+            font-weight:800;
+            color:#2f80ed;
+          "
+        >
+          ${preventiveTotal}
+        </div>
+
+        <div
+          style="
+            text-align:center;
+            font-size:13px;
+            font-weight:800;
+            color:#e67e22;
+          "
+        >
+          ${plannedTotal}
+        </div>
+
+        <div
+          style="
+            text-align:center;
+            font-size:14px;
+            font-weight:900;
+            color:#172033;
+          "
+        >
+          ${totalDelivered}
+        </div>
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:38px 1fr;
+            gap:8px;
+            align-items:center;
+            padding:0 12px;
+          "
+        >
+
+          <div
+            style="
+              text-align:right;
+              font-size:10px;
+              font-weight:800;
+              color:#172033;
+            "
+          >
+            100%
+          </div>
+
+          <div
+            style="
+              height:8px;
+              background:#2f80ed;
+              border-radius:5px;
+            "
+          ></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- RECONCILIATION NOTE -->
+
+      <div
+        style="
+          margin-top:8px;
+          padding:8px 11px;
+          border:1px solid #d7e7f8;
+          border-radius:6px;
+          background:#f5f9fe;
+          font-size:8.5px;
+          line-height:1.45;
+          color:#536982;
+        "
+      >
+
+        <strong
+          style="
+            color:#172033;
+          "
+        >
+          ${totalDelivered} Preventive + Planned executions
+        </strong>
+
+        consist of
+
+        <strong>${currentTotal}</strong>
+        completed from the current-period schedule,
+
+        <strong>${backlogTotal}</strong>
+        backlog recoveries and
+
+        <strong>${futureTotal}</strong>
+        future-due tasks completed early.
+
+        Corrective executions are excluded from this delivery breakdown.
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+/* =====================================================
    SCHEDULED & BACKLOG DELIVERY PANEL
 
    Executive / audit-friendly visualization
@@ -4707,6 +5321,13 @@ async function buildDailyReportHtml() {
         "{{EXECUTION_MIX_CHART}}",
         renderDailyReportExecutionMixChart(
           data.executionMix
+        )
+      )
+
+      .replace(
+        "{{EXECUTION_DELIVERY_ANALYSIS}}",
+        renderDailyReportExecutionDeliveryBreakdown(
+          data.scheduledDelivery
         )
       )
 
