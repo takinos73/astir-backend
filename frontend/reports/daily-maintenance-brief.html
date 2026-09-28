@@ -379,46 +379,6 @@
     </div>
 
 
-      <div class="daily-report-chart-card">
-
-
-        <div class="daily-report-chart-header">
-
-
-          <div>
-
-
-            <h2 class="daily-report-chart-title">
-
-              Maintenance Workload · In Selected Period
-
-            </h2>
-
-
-            <div class="daily-report-chart-subtitle">
-
-              Total recorded maintenance effort from completed executions
-
-            </div>
-
-
-          </div>
-
-
-        </div>
-
-
-        <div class="daily-report-chart-body">
-
-          {{MAINTENANCE_WORKLOAD}}
-
-        </div>
-
-
-
-      </div>
-
-
 
     <!-- =====================
 
@@ -804,24 +764,49 @@
 
           </div>
 
+        </div>
+
+      </div>
+
+
+      <div class="daily-report-chart-body daily-report-stacked-bar-area">
+
+        {{LINE_ACTIVITY_CHART}}
+
+      </div>
+
+    </div>
+    
+        <div class="daily-report-chart-card">
+
+        <div class="daily-report-chart-header">
+
+          <div>
+
+            <h2 class="daily-report-chart-title">
+
+              Maintenance Workload · In Selected Period
+
+            </h2>
+
+            <div class="daily-report-chart-subtitle">
+
+              Total recorded maintenance effort from completed executions
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="daily-report-chart-body">
+
+          {{MAINTENANCE_WORKLOAD}}
 
         </div>
 
 
       </div>
-
-
-
-      <div class="daily-report-chart-body daily-report-stacked-bar-area">
-
-
-        {{LINE_ACTIVITY_CHART}}
-
-
-      </div>
-
-
-    </div>
 
 
     <!-- =====================
