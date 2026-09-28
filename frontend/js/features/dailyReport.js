@@ -1416,6 +1416,7 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
           </div>
 
         </div>
+      </div>
 
 
       <!-- ==========================================
