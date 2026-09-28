@@ -1863,6 +1863,10 @@ function buildDailyReportScheduledDelivery(executions, tasks, from, to) {
 
     deliveryRate: 0,
 
+    fulfilled: 0,
+
+    fulfillmentRate: 0,
+
     totalDelivered: 0
 
   });
