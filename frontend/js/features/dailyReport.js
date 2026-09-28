@@ -2291,110 +2291,77 @@ function buildDailyReportScheduledDelivery(executions, tasks, from, to) {
     "planned"
   ].forEach(category => {
 
-    const bucket =
-      result[category];
+  const bucket =
+    result[category];
 
 
-    const categorySets =
-      sets[category];
+  const categorySets =
+    sets[category];
 
 
-    bucket.scheduledDue =
-      categorySets.scheduledDue.size;
+  bucket.scheduledDue =
+    categorySets.scheduledDue.size;
 
 
-    bucket.completedScheduled =
-      categorySets.completedScheduled.size;
+  bucket.completedScheduled =
+    categorySets.completedScheduled.size;
 
 
-    bucket.outstanding =
-      categorySets.outstanding.size;
+  bucket.outstanding =
+    categorySets.outstanding.size;
 
 
-    bucket.backlogRecovered =
-      categorySets.backlogRecovered.size;
+  bucket.backlogRecovered =
+    categorySets.backlogRecovered.size;
 
 
-    bucket.completedLate =
-      categorySets.completedLate.size;
+  bucket.completedLate =
+    categorySets.completedLate.size;
 
 
-    bucket.earlyCompleted =
-      categorySets.earlyCompleted.size;
+  bucket.earlyCompleted =
+    categorySets.earlyCompleted.size;
 
 
-    bucket.completedBeforePeriod =
-      categorySets.completedBeforePeriod.size;
+  bucket.completedBeforePeriod =
+    categorySets.completedBeforePeriod.size;
 
 
-    /* =====================
-       DELIVERY RATE
+  /* =====================
+     DELIVERY RATE
 
-       Backlog recovery does NOT
-       inflate Scheduled Delivery.
-    ====================== */
+     Completed during this reporting period
+     from work scheduled for this period.
 
-    bucket.deliveryRate =
-      bucket.scheduledDue > 0
+     Backlog recovery does NOT inflate
+     Scheduled Delivery.
+  ====================== */
 
-        ? Math.round(
-            bucket.completedScheduled *
-            100 /
-            bucket.scheduledDue
-          )
-
-        : 0;
-
-
-    /* =====================
-       TOTAL DELIVERED
-
-       Actual maintenance output
-       represented by this section.
-
-       Corrective work remains
-       outside this metric.
-    ====================== */
-
-    bucket.totalDelivered =
-      bucket.completedScheduled +
-      bucket.backlogRecovered;
+  bucket.deliveryRate =
+    bucket.scheduledDue > 0
+      ? Math.round(
+          bucket.completedScheduled *
+          100 /
+          bucket.scheduledDue
+        )
+      : 0;
 
 
-    /*
-      Schedule Gap is intentionally
-      separate from Outstanding.
+  /* =====================
+     FULFILLED SCHEDULE
 
-      Example:
+     Scheduled work already covered:
 
-      A Task due Monday but completed
-      Tuesday is no longer OPEN,
-      therefore not Outstanding.
+     - completed during this period
+     - completed earlier
+  ====================== */
 
-      But it was not delivered inside
-      its scheduled due-day.
-
-      Therefore:
-
-      Schedule Gap =
-        Scheduled Due
-        -
-        Completed Scheduled
-    */
-
-    bucket.scheduleGap =
-      Math.max(
-        0,
-        bucket.scheduledDue -
-        bucket.completedScheduled
-      );
-
-    bucket.fulfilled =
+  bucket.fulfilled =
     bucket.completedScheduled +
     bucket.completedBeforePeriod;
 
 
-    bucket.fulfillmentRate =
+  bucket.fulfillmentRate =
     bucket.scheduledDue > 0
       ? Math.round(
           bucket.fulfilled *
@@ -2403,7 +2370,43 @@ function buildDailyReportScheduledDelivery(executions, tasks, from, to) {
         )
       : 0;
 
-  });
+
+  /* =====================
+     TOTAL DELIVERED
+
+     Work actually executed during
+     this reporting period:
+
+     - Scheduled Completed
+     - Backlog Recovered
+
+     Corrective remains outside.
+  ====================== */
+
+  bucket.totalDelivered =
+    bucket.completedScheduled +
+    bucket.backlogRecovered;
+
+
+  /* =====================
+     SCHEDULE GAP
+
+     Scheduled work not fulfilled.
+
+     Work completed before the reporting
+     period is already fulfilled and
+     must not remain in the gap.
+  ====================== */
+
+  bucket.scheduleGap =
+    Math.max(
+      0,
+      bucket.scheduledDue -
+      bucket.completedScheduled -
+      bucket.completedBeforePeriod
+    );
+
+});
 
 
   return result;
