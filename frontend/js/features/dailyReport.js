@@ -1216,7 +1216,7 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
 
 
         <!-- =====================
-             EXECUTION DETAILS
+            EXECUTION DETAILS
         ====================== -->
 
         <div
@@ -1231,6 +1231,8 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
             gap:10px;
           "
         >
+
+          <!-- COMPLETED IN PERIOD -->
 
           <div
             style="
@@ -1276,6 +1278,8 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
           </div>
 
 
+          <!-- COMPLETED EARLIER -->
+
           <div
             style="
               display:flex;
@@ -1319,6 +1323,8 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
 
           </div>
 
+
+          <!-- BACKLOG RECOVERED -->
 
           <div
             style="
@@ -1364,6 +1370,8 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
           </div>
 
 
+          <!-- FUTURE DUE COMPLETED EARLY -->
+
           <div
             style="
               display:flex;
@@ -1373,45 +1381,41 @@ function renderDailyReportScheduledDeliveryPanel(delivery) {
             "
           >
 
-              <div>
+            <div>
 
-                <div>
+              <div
+                style="
+                  font-size:10px;
+                  font-weight:700;
+                  color:#172033;
+                "
+              >
+                Future Due Completed Early
+              </div>
 
-                  <div
-                    style="
-                      font-size:10px;
-                      font-weight:700;
-                      color:#172033;
-                    "
-                  >
-                    Future Due Completed Early
-                  </div>
-
-                  <div
-                    style="
-                      font-size:8px;
-                      color:#7b8da6;
-                    "
-                  >
-                    Executed in period · due after period
-                  </div>
-
-                </div>
-
-                <strong
-                  style="
-                    font-size:19px;
-                    color:#2f80ed;
-                  "
-                >
-                  ${earlyCompleted}
-                </strong>
+              <div
+                style="
+                  font-size:8px;
+                  color:#7b8da6;
+                "
+              >
+                Executed in period · due after period
+              </div>
 
             </div>
 
-        </div>
+            <strong
+              style="
+                font-size:19px;
+                color:#2f80ed;
+              "
+            >
+              ${earlyCompleted}
+            </strong>
 
-      </div>
+          </div>
+
+        </div>
 
 
       <!-- ==========================================
