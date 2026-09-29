@@ -145,24 +145,18 @@ async function openScheduledMaintenanceDetail(smId) {
     // Keep the loaded SM for its own Task modal.
     currentScheduledMaintenance = sm;
 
-  /* =====================
-   REFRESH SM ACTIONS
+    /* =====================
+      CREATE / REFRESH SM ACTION BAR
+    ===================== */
 
-   - Start button:
-     visible only for PLANNED SM
+    ensureSmActionBar();
 
-   - Add Task:
-     available while SM is not CLOSED
+    /* =====================
+      REFRESH SM ACTIONS
+    ===================== */
 
-   - Add Completed Task:
-     available only while SM is IN_PROGRESS
-
-   - Close Maintenance:
-     handled by refreshSmCloseButton()
-===================== */
-
-refreshSmStartButton();
-refreshSmCloseButton();
+    refreshSmStartButton();
+    refreshSmCloseButton();
 
 
 // CLOSED SM incidents cannot receive new Tasks.
