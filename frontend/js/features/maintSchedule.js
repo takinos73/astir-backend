@@ -270,83 +270,316 @@ if (completedTaskBtn) {
     }
 
     /* =====================
-       RENDER SM TASK CARDS
+      RENDER SM TASK CARDS
 
-       - Open Tasks: show Complete action.
-       - Done Tasks: show completion status.
-       - Completion uses the existing CMMS engine.
-       - No Breakdown functions or routes are modified.
+      OPEN TASK:
+      - Shows Estimated Duration
+      - Complete
+      - Delete while SM is IN_PROGRESS
+
+      DONE TASK:
+      - Shows Actual Duration from task_executions
+      - Done status
+      - Delete while SM is IN_PROGRESS
+
+      CLOSED SM:
+      - No Delete action
     ===================== */
+
+    const smStatus =
+      String(sm.status || "")
+        .trim()
+        .toUpperCase();
+
+    const smIsInProgress =
+      smStatus === "IN_PROGRESS";
+
 
     tasks.forEach(task => {
 
-      const card = document.createElement("div");
-      card.className = "restoration-task-item";
+      const card =
+        document.createElement("div");
 
-      const title = document.createElement("div");
-      title.className = "restoration-task-title";
-      title.textContent = task.task || "—";
+      card.className =
+        "restoration-task-item";
 
-      const meta = document.createElement("div");
-      meta.className = "task-meta";
 
-      const estimated =
-        task.duration_min == null
-          ? "—"
-          : `${task.duration_min} min`;
+      /* =====================
+        TASK TITLE
+      ===================== */
 
-      meta.textContent =
-        `Task #${task.id} · ${task.status || "—"}` +
-        ` · Est. ${estimated}`;
+      const title =
+        document.createElement("div");
 
-      card.append(title, meta);
+      title.className =
+        "restoration-task-title";
+
+      title.textContent =
+        task.task || "—";
+
+
+      /* =====================
+        TASK STATUS
+      ===================== */
 
       const status =
-        String(task.status || "").trim().toUpperCase();
+        String(task.status || "")
+          .trim()
+          .toUpperCase();
+
 
       const isOpen =
         status === "PLANNED" ||
         status === "OVERDUE";
+
+
+      const isDone =
+        status === "DONE";
+
+
+      /* =====================
+        TASK META
+
+        OPEN:
+        → Est. 60 min
+
+        DONE:
+        → Duration 45 min
+      ===================== */
+
+      const meta =
+        document.createElement("div");
+
+      meta.className =
+        "task-meta";
+
+
+      let durationText = "";
+
+
+      if (isDone) {
+
+        const actualDuration =
+          task.actual_duration_min;
+
+
+        durationText =
+          actualDuration == null
+            ? "Duration —"
+            : `Duration ${actualDuration} min`;
+
+      } else {
+
+        const estimatedDuration =
+          task.duration_min;
+
+
+        durationText =
+          estimatedDuration == null
+            ? "Est. —"
+            : `Est. ${estimatedDuration} min`;
+
+      }
+
+
+      meta.textContent =
+        `Task #${task.id} · ` +
+        `${task.status || "—"} · ` +
+        durationText;
+
+
+      card.append(
+        title,
+        meta
+      );
+
+
+      /* =====================
+        ACTIONS CONTAINER
+      ===================== */
+
+      const actions =
+        document.createElement("div");
+
+      actions.style.display =
+        "flex";
+
+      actions.style.alignItems =
+        "center";
+
+      actions.style.gap =
+        "8px";
+
+      actions.style.marginTop =
+        "10px";
+
+
+      /* =====================
+        OPEN TASK
+        COMPLETE
+      ===================== */
 
       if (isOpen) {
 
         const completeBtn =
           document.createElement("button");
 
-        completeBtn.type = "button";
-        completeBtn.className = "btn-table sm-task-complete-btn";
-        completeBtn.textContent = "Complete";
 
-        completeBtn.addEventListener("click", () => {
+        completeBtn.type =
+          "button";
 
-          // Use the existing Task completion modal.
-          // No SM-specific completion route is created.
+        completeBtn.className =
+          "btn-table sm-task-complete-btn";
 
-          if (typeof askTechnician !== "function") {
-            console.error(
-              "SM TASK: Standard completion modal unavailable"
+        completeBtn.textContent =
+          "Complete";
+
+
+        completeBtn.addEventListener(
+          "click",
+          () => {
+
+            /*
+              Use normal CMMS completion flow.
+              No SM-specific completion logic here.
+            */
+
+            if (
+              typeof askTechnician !==
+              "function"
+            ) {
+
+              console.error(
+                "SM TASK: Standard completion modal unavailable"
+              );
+
+              return;
+            }
+
+
+            askTechnician(
+              task.id
             );
-            return;
+
           }
+        );
 
-          askTechnician(task.id);
 
-        });
+        actions.appendChild(
+          completeBtn
+        );
 
-        card.appendChild(completeBtn);
+      }
 
-      } else if (status === "DONE") {
+
+      /* =====================
+        DONE TASK
+      ===================== */
+
+      if (isDone) {
 
         const doneLabel =
           document.createElement("div");
 
-        doneLabel.className = "restoration-task-done";
-        doneLabel.textContent = "✓ Done";
 
-        card.appendChild(doneLabel);
+        doneLabel.className =
+          "restoration-task-done";
+
+        doneLabel.textContent =
+          "✓ Done";
+
+
+        actions.appendChild(
+          doneLabel
+        );
+
       }
 
-      taskContainer.appendChild(card);
+
+      /* =====================
+        DELETE
+
+        Available ONLY while
+        parent SM is IN_PROGRESS.
+
+        Handler will be connected
+        in the next step.
+      ===================== */
+
+      if (smIsInProgress) {
+
+        const deleteBtn =
+          document.createElement("button");
+
+
+        deleteBtn.type =
+          "button";
+
+        deleteBtn.className =
+          "btn-table sm-task-delete-btn";
+
+        deleteBtn.textContent =
+          "Delete";
+
+
+        deleteBtn.dataset.smId =
+          String(sm.id);
+
+        deleteBtn.dataset.taskId =
+          String(task.id);
+
+
+        deleteBtn.addEventListener(
+          "click",
+          () => {
+
+            if (
+              typeof deleteScheduledMaintenanceTask !==
+              "function"
+            ) {
+
+              console.error(
+                "SM TASK: Delete function is not connected yet"
+              );
+
+              return;
+            }
+
+
+            deleteScheduledMaintenanceTask(
+              sm.id,
+              task
+            );
+
+          }
+        );
+
+
+        actions.appendChild(
+          deleteBtn
+        );
+
+      }
+
+
+      /* =====================
+        APPEND ACTIONS
+      ===================== */
+
+      if (
+        actions.children.length > 0
+      ) {
+
+        card.appendChild(
+          actions
+        );
+
+      }
+
+
+      taskContainer.appendChild(
+        card
+      );
 
     });
 
