@@ -1272,3 +1272,65 @@
   transform: translateY(1px);
 
 }
+
+/* =========================================================
+   SM TASKS HEADER / ACTION BAR ALIGNMENT
+========================================================= */
+
+/* Left text block */
+#scheduledMaintenanceDetailOverlay .sm-tasks-header,
+#scheduledMaintenanceDetailOverlay .maintenance-tasks-header {
+  color: #aeb8c6;
+}
+
+#scheduledMaintenanceDetailOverlay .sm-tasks-header h3,
+#scheduledMaintenanceDetailOverlay .maintenance-tasks-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #d6dde7;
+}
+
+#scheduledMaintenanceDetailOverlay .sm-tasks-header p,
+#scheduledMaintenanceDetailOverlay .maintenance-tasks-header p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #8f9aaa;
+}
+
+
+/* Main row */
+#smActionBar {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+
+  margin-top: 0 !important;
+  margin-bottom: 18px !important;
+}
+
+
+/* Keep all 3 buttons same height */
+#smActionBar .btn-table {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+
+/* Prevent Close button dropping underneath */
+#closeSmBtn {
+  margin-top: 0 !important;
+}
+
+
+/* Optional tighter button proportions */
+#addSmTaskBtn,
+#addCompletedSmTaskBtn,
+#closeSmBtn {
+  padding: 9px 16px;
+}
