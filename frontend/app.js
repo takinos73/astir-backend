@@ -2302,17 +2302,24 @@ getEl("confirmDone")?.addEventListener("click", async () => {
 
     await refreshAfterTaskCompletion();
 
-
     /* =====================
       REFRESH SCHEDULED MAINTENANCE DETAIL
-      IF CURRENTLY OPEN
-
-      Refreshes the linked SM Detail after
-      a Task completion so the latest Task
-      statuses are shown immediately.
+      ONLY IF IT IS CURRENTLY OPEN
     ===================== */
 
+    const smDetailOverlay =
+      document.getElementById(
+        "scheduledMaintenanceDetailOverlay"
+      );
+
+
+    const smDetailIsOpen =
+      smDetailOverlay &&
+      smDetailOverlay.style.display !== "none";
+
+
     if (
+      smDetailIsOpen &&
       currentScheduledMaintenance?.id &&
       typeof openScheduledMaintenanceDetail === "function"
     ) {
