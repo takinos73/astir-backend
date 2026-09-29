@@ -6917,6 +6917,293 @@ app.post("/scheduled-maintenance/:id/completed-task", async (req, res) => {
 
 });
 
+/* =========================================================
+   DELETE SCHEDULED MAINTENANCE TASK
+   DELETE /scheduled-maintenance/:smId/tasks/:taskId
+
+   Permanently removes a Task from an IN_PROGRESS
+   Scheduled Maintenance.
+
+   RULES:
+   - SM must exist.
+   - SM must be IN_PROGRESS.
+   - Task must belong to this SM.
+   - If Task has executions, they are deleted first.
+   - Task is then permanently deleted from maintenance_tasks.
+
+   IMPORTANT:
+   - Hard delete by design.
+   - Intended for correction of wrong entries
+     while Scheduled Maintenance is still open.
+   - CLOSED Scheduled Maintenance cannot be modified.
+   - Does NOT affect Breakdown tasks.
+========================================================= */
+
+app.delete("/scheduled-maintenance/:smId/tasks/:taskId", async (req, res) => {
+
+    /* =====================
+       READ IDS
+    ===================== */
+
+    const smId =
+      Number(req.params.smId);
+
+    const taskId =
+      Number(req.params.taskId);
+
+
+    /* =====================
+       VALIDATE IDS
+    ===================== */
+
+    if (
+      !Number.isInteger(smId) ||
+      smId <= 0
+    ) {
+      return res.status(400).json({
+        error:
+          "Invalid Scheduled Maintenance ID"
+      });
+    }
+
+
+    if (
+      !Number.isInteger(taskId) ||
+      taskId <= 0
+    ) {
+      return res.status(400).json({
+        error:
+          "Invalid Task ID"
+      });
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOAD + LOCK SM
+      ===================== */
+
+      const smResult =
+        await client.query(
+          `
+            SELECT
+              id,
+              status
+            FROM scheduled_maintenance
+            WHERE id = $1
+            FOR UPDATE
+          `,
+          [smId]
+        );
+
+
+      if (!smResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Scheduled Maintenance not found"
+        });
+      }
+
+
+      const sm =
+        smResult.rows[0];
+
+
+      /* =====================
+         SM STATUS GUARD
+      ===================== */
+
+      if (
+        String(
+          sm.status || ""
+        ).toUpperCase() !==
+        "IN_PROGRESS"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Tasks can only be deleted while Scheduled Maintenance is IN_PROGRESS"
+        });
+      }
+
+
+      /* =====================
+         LOAD + LOCK TASK
+
+         Important:
+         Task MUST belong to this SM.
+      ===================== */
+
+      const taskResult =
+        await client.query(
+          `
+            SELECT
+              id,
+              status,
+              task,
+              scheduled_maintenance_id,
+              breakdown_id
+            FROM maintenance_tasks
+            WHERE id = $1
+              AND scheduled_maintenance_id = $2
+            FOR UPDATE
+          `,
+          [
+            taskId,
+            smId
+          ]
+        );
+
+
+      if (!taskResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Scheduled Maintenance Task not found"
+        });
+      }
+
+
+      const task =
+        taskResult.rows[0];
+
+
+      /* =====================
+         SAFETY GUARD
+
+         SM tasks must never be
+         Breakdown tasks.
+      ===================== */
+
+      if (
+        task.breakdown_id !== null &&
+        task.breakdown_id !== undefined
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Breakdown Task cannot be deleted through Scheduled Maintenance"
+        });
+      }
+
+
+      /* =====================
+         DELETE EXECUTIONS
+
+         For open tasks:
+         → usually deletes 0 rows
+
+         For Done tasks:
+         → removes execution/history
+      ===================== */
+
+      const executionDeleteResult =
+        await client.query(
+          `
+            DELETE FROM task_executions
+            WHERE task_id = $1
+          `,
+          [taskId]
+        );
+
+
+      /* =====================
+         DELETE TASK
+      ===================== */
+
+      const taskDeleteResult =
+        await client.query(
+          `
+            DELETE FROM maintenance_tasks
+            WHERE id = $1
+              AND scheduled_maintenance_id = $2
+            RETURNING
+              id,
+              task,
+              status
+          `,
+          [
+            taskId,
+            smId
+          ]
+        );
+
+
+      if (!taskDeleteResult.rows.length) {
+
+        throw new Error(
+          "Task deletion failed"
+        );
+      }
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      return res.json({
+
+        success: true,
+
+        message:
+          "Scheduled Maintenance Task deleted successfully",
+
+        deleted_task:
+          taskDeleteResult.rows[0],
+
+        deleted_executions:
+          executionDeleteResult.rowCount
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+
+      console.error(
+        "DELETE SM TASK ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to delete Scheduled Maintenance Task"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
 
 /* =========================================================
    GET /tasks — ACTIVE MAINTENANCE TASKS
