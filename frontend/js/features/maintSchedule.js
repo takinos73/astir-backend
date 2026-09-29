@@ -4203,23 +4203,29 @@ function refreshSmCloseButton() {
   const sm =
     currentScheduledMaintenance;
 
-
   const closeBtn =
     document.getElementById(
       "closeSmBtn"
     );
 
-
   if (!closeBtn) return;
 
 
-  closeBtn.hidden =
-    !sm ||
-    String(
-      sm.status || ""
-    ).toUpperCase() !==
+  const isInProgress =
+    !!sm &&
+    String(sm.status || "")
+      .trim()
+      .toUpperCase() ===
       "IN_PROGRESS";
 
+
+  closeBtn.hidden =
+    !isInProgress;
+
+  closeBtn.style.display =
+    isInProgress
+      ? "inline-flex"
+      : "none";
 
   closeBtn.disabled =
     smCloseInProgress;
