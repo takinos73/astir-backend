@@ -595,6 +595,8 @@ if (completedTaskBtn) {
 
 }
 
+
+
 /* =========================================================
    SCHEDULED MAINTENANCE — ADD TASK MODAL
 
@@ -2241,6 +2243,212 @@ async function createScheduledMaintenance() {
       saveBtn.textContent =
         "Create Scheduled Maintenance";
     }
+
+  }
+
+}
+
+/* =========================================================
+   DELETE SCHEDULED MAINTENANCE TASK
+
+   Allowed only while parent SM is IN_PROGRESS.
+
+   OPEN TASK:
+   - Deletes maintenance_tasks row.
+
+   DONE TASK:
+   - Deletes task_executions first.
+   - Deletes maintenance_tasks row.
+
+   Backend performs the final safety checks.
+========================================================= */
+
+async function deleteScheduledMaintenanceTask(smId, task) {
+
+  const scheduledMaintenanceId =
+    Number(smId);
+
+  const taskId =
+    Number(task?.id);
+
+
+  if (
+    !Number.isInteger(scheduledMaintenanceId) ||
+    scheduledMaintenanceId <= 0 ||
+    !Number.isInteger(taskId) ||
+    taskId <= 0
+  ) {
+
+    alert(
+      "Invalid Scheduled Maintenance Task."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     CURRENT SM GUARD
+  ===================== */
+
+  const currentSm =
+    currentScheduledMaintenance;
+
+
+  if (
+    !currentSm ||
+    Number(currentSm.id) !==
+      scheduledMaintenanceId
+  ) {
+
+    alert(
+      "Scheduled Maintenance context is no longer valid."
+    );
+
+    return;
+  }
+
+
+  if (
+    String(
+      currentSm.status || ""
+    )
+      .trim()
+      .toUpperCase() !==
+    "IN_PROGRESS"
+  ) {
+
+    alert(
+      "Tasks can only be deleted while Scheduled Maintenance is IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     TASK STATUS
+  ===================== */
+
+  const taskStatus =
+    String(
+      task?.status || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const isDone =
+    taskStatus === "DONE";
+
+
+  /* =====================
+     CONFIRM MESSAGE
+  ===================== */
+
+  let confirmMessage = "";
+
+
+  if (isDone) {
+
+    confirmMessage =
+      `Delete completed task?\n\n` +
+      `${task.task || `Task #${taskId}`}\n\n` +
+      `This will permanently remove:\n` +
+      `• the Task\n` +
+      `• its Execution History\n\n` +
+      `Use this only to correct a wrong entry.`;
+
+  } else {
+
+    confirmMessage =
+      `Delete this task?\n\n` +
+      `${task.task || `Task #${taskId}`}\n\n` +
+      `This task has not been executed.`;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      confirmMessage
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  /* =====================
+     DELETE
+  ===================== */
+
+  try {
+
+    const response =
+      await fetch(
+        `/scheduled-maintenance/${scheduledMaintenanceId}/tasks/${taskId}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Could not delete Scheduled Maintenance Task."
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH SM DETAIL
+    ===================== */
+
+    await openScheduledMaintenanceDetail(
+      scheduledMaintenanceId
+    );
+
+
+    /* =====================
+       REFRESH GLOBAL TASKS
+
+       Important for consistency
+       outside SM Detail.
+    ===================== */
+
+    if (
+      typeof loadTasks ===
+      "function"
+    ) {
+
+      await loadTasks();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "DELETE SM TASK ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not delete Scheduled Maintenance Task."
+    );
 
   }
 
