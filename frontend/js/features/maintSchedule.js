@@ -2324,6 +2324,1423 @@ document.addEventListener("click", event => {
 });
 
 /* =========================================================
+   SCHEDULED MAINTENANCE
+   ADD COMPLETED TASK
+
+   Creates a maintenance task that has already been
+   performed during an IN_PROGRESS Scheduled Maintenance.
+
+   RULES:
+   - SM must be IN_PROGRESS.
+   - Asset is fixed from the SM.
+   - Section / Unit come from existing Asset Tasks.
+   - Technician comes from active technicians.
+   - Actual Completion:
+       >= SM Actual Start
+       <= NOW
+   - Task is created directly as Done by backend.
+========================================================= */
+
+let smCompletedTaskSaveInProgress = false;
+
+
+/* =====================
+   LOCAL DATETIME VALUE
+
+   Converts Date / ISO timestamp to
+   datetime-local format:
+   YYYY-MM-DDTHH:mm
+===================== */
+
+function toSmLocalDateTimeValue(value) {
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  return new Date(
+    date.getTime() -
+    date.getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .slice(0, 16);
+
+}
+
+
+/* =========================================================
+   CREATE COMPLETED TASK MODAL
+   Created once dynamically.
+========================================================= */
+
+function ensureCompletedSmTaskModal() {
+
+  let overlay =
+    document.getElementById(
+      "completedSmTaskOverlay"
+    );
+
+
+  if (overlay) {
+    return overlay;
+  }
+
+
+  overlay =
+    document.createElement("div");
+
+
+  overlay.id =
+    "completedSmTaskOverlay";
+
+  overlay.className =
+    "modal-overlay";
+
+  overlay.style.display =
+    "none";
+
+  overlay.style.zIndex =
+    "1300";
+
+
+  overlay.innerHTML = `
+    <div
+      class="modal"
+      style="
+        box-sizing:border-box;
+        width:min(720px, calc(100vw - 32px));
+        max-height:90vh;
+        overflow-y:auto;
+        padding:24px;
+        background:#181b22;
+        color:#f5f7fa;
+        border:1px solid rgba(255,255,255,.13);
+        border-radius:14px;
+      "
+    >
+
+      <!-- HEADER -->
+
+      <div
+        class="modal-header"
+        style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:16px;
+        "
+      >
+
+        <div>
+
+          <h2 style="margin:0;">
+            Add Completed Task
+          </h2>
+
+          <div
+            id="completed-sm-reference"
+            style="
+              margin-top:5px;
+              font-size:12px;
+              opacity:.7;
+            "
+          >
+          </div>
+
+        </div>
+
+
+        <button
+          id="closeCompletedSmTaskBtn"
+          class="modal-close"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <!-- ASSET -->
+
+      <div
+        class="addtask-block"
+        style="margin-top:20px;"
+      >
+
+        <label>Asset</label>
+
+        <input
+          id="completed-sm-asset"
+          type="text"
+          disabled
+          style="width:100%;"
+        />
+
+      </div>
+
+
+      <!-- SECTION / UNIT -->
+
+      <div
+        class="addtask-block addtask-grid"
+      >
+
+        <div class="field">
+
+          <label>Section</label>
+
+          <select
+            id="completed-sm-section"
+            style="width:100%;"
+          >
+            <option value="">
+              Select Section
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Unit</label>
+
+          <select
+            id="completed-sm-unit"
+            style="width:100%;"
+            disabled
+          >
+            <option value="">
+              Select Unit
+            </option>
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- TASK -->
+
+      <div class="addtask-block">
+
+        <label>Maintenance Task *</label>
+
+        <input
+          id="completed-sm-task"
+          type="text"
+          placeholder="Describe the completed maintenance task"
+          style="width:100%;"
+        />
+
+      </div>
+
+
+      <!-- IMPACT / TECHNICIAN -->
+
+      <div
+        class="addtask-block addtask-grid"
+      >
+
+        <div class="field">
+
+          <label>Impact</label>
+
+          <select
+            id="completed-sm-impact"
+            style="width:100%;"
+          >
+            <option value="normal" selected>
+              Normal
+            </option>
+
+            <option value="safety">
+              Safety
+            </option>
+
+            <option value="quality">
+              Quality
+            </option>
+
+            <option value="safety_quality">
+              Safety &amp; Quality
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Technician *</label>
+
+          <select
+            id="completed-sm-technician"
+            style="width:100%;"
+          >
+            <option value="">
+              Select Technician
+            </option>
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- COMPLETION / DURATION -->
+
+      <div
+        class="addtask-block addtask-grid"
+      >
+
+        <div class="field">
+
+          <label>
+            Actual Completion *
+          </label>
+
+          <input
+            id="completed-sm-date"
+            type="datetime-local"
+            style="width:100%;"
+          />
+
+          <small class="field-hint">
+            Must be between SM Actual Start and current time
+          </small>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Actual Duration (minutes) *
+          </label>
+
+          <input
+            id="completed-sm-duration"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="e.g. 45"
+            style="width:100%;"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- NOTES -->
+
+      <div class="addtask-block">
+
+        <label>Notes</label>
+
+        <textarea
+          id="completed-sm-notes"
+          rows="3"
+          style="width:100%;"
+          placeholder="Optional notes"
+        ></textarea>
+
+      </div>
+
+
+      <!-- ACTIONS -->
+
+      <div
+        class="modal-actions"
+        style="
+          display:flex;
+          justify-content:flex-end;
+          gap:10px;
+          margin-top:22px;
+        "
+      >
+
+        <button
+          id="cancelCompletedSmTaskBtn"
+          type="button"
+          class="btn-table"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          id="saveCompletedSmTaskBtn"
+          type="button"
+          class="btn-table"
+        >
+          ✓ Save Completed Task
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  return overlay;
+
+}
+
+
+/* =========================================================
+   POPULATE SECTIONS
+
+   Uses existing maintenance_tasks
+   already loaded in state.tasksData.
+========================================================= */
+
+function populateCompletedSmSections() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const select =
+    document.getElementById(
+      "completed-sm-section"
+    );
+
+
+  if (!select || !sm) {
+    return;
+  }
+
+
+  const assetId =
+    Number(sm.asset_id);
+
+
+  const assetTasks =
+    (
+      Array.isArray(state.tasksData)
+        ? state.tasksData
+        : []
+    )
+      .filter(task =>
+        Number(task.asset_id) === assetId &&
+        task.deleted_at == null
+      );
+
+
+  const sections = [
+
+    ...new Set(
+
+      assetTasks
+        .map(task =>
+          String(
+            task.section || ""
+          ).trim()
+        )
+        .filter(Boolean)
+
+    )
+
+  ].sort((a, b) =>
+    a.localeCompare(
+      b,
+      "el",
+      { numeric: true }
+    )
+  );
+
+
+  select.replaceChildren(
+    new Option(
+      "Select Section",
+      ""
+    )
+  );
+
+
+  sections.forEach(section => {
+
+    select.add(
+      new Option(
+        section,
+        section
+      )
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   POPULATE UNITS
+
+   Units are restricted to:
+   SAME ASSET + SELECTED SECTION
+========================================================= */
+
+function populateCompletedSmUnits() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const sectionSelect =
+    document.getElementById(
+      "completed-sm-section"
+    );
+
+
+  const unitSelect =
+    document.getElementById(
+      "completed-sm-unit"
+    );
+
+
+  if (
+    !sm ||
+    !sectionSelect ||
+    !unitSelect
+  ) {
+    return;
+  }
+
+
+  const section =
+    String(
+      sectionSelect.value || ""
+    ).trim();
+
+
+  unitSelect.replaceChildren(
+    new Option(
+      "Select Unit",
+      ""
+    )
+  );
+
+
+  if (!section) {
+
+    unitSelect.disabled = true;
+
+    return;
+  }
+
+
+  const assetId =
+    Number(sm.asset_id);
+
+
+  const units = [
+
+    ...new Set(
+
+      (
+        Array.isArray(state.tasksData)
+          ? state.tasksData
+          : []
+      )
+
+        .filter(task =>
+
+          Number(task.asset_id) ===
+            assetId &&
+
+          task.deleted_at == null &&
+
+          String(
+            task.section || ""
+          ).trim() === section
+
+        )
+
+        .map(task =>
+          String(
+            task.unit || ""
+          ).trim()
+        )
+
+        .filter(Boolean)
+
+    )
+
+  ].sort((a, b) =>
+    a.localeCompare(
+      b,
+      "el",
+      { numeric: true }
+    )
+  );
+
+
+  units.forEach(unit => {
+
+    unitSelect.add(
+      new Option(
+        unit,
+        unit
+      )
+    );
+
+  });
+
+
+  unitSelect.disabled =
+    units.length === 0;
+
+}
+
+
+/* =========================================================
+   POPULATE TECHNICIANS
+========================================================= */
+
+async function populateCompletedSmTechnicians() {
+
+  const select =
+    document.getElementById(
+      "completed-sm-technician"
+    );
+
+
+  if (!select) {
+    return;
+  }
+
+
+  /* Ensure technician data exists */
+
+  if (
+    (
+      !Array.isArray(
+        state.techniciansData
+      ) ||
+      state.techniciansData.length === 0
+    ) &&
+    typeof loadTechnicians === "function"
+  ) {
+
+    await loadTechnicians();
+
+  }
+
+
+  select.replaceChildren(
+    new Option(
+      "Select Technician",
+      ""
+    )
+  );
+
+
+  if (
+    !Array.isArray(
+      state.techniciansData
+    )
+  ) {
+    return;
+  }
+
+
+  state.techniciansData
+
+    .filter(
+      technician =>
+        technician.active !== false
+    )
+
+    .sort(
+      (a, b) =>
+        String(a.name || "")
+          .localeCompare(
+            String(b.name || ""),
+            "el"
+          )
+    )
+
+    .forEach(technician => {
+
+      const option =
+        new Option(
+          technician.name,
+          technician.id
+        );
+
+
+      select.add(
+        option
+      );
+
+    });
+
+}
+
+
+/* =========================================================
+   OPEN MODAL
+========================================================= */
+
+async function openCompletedSmTaskModal() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  if (
+    !sm ||
+    !Number.isInteger(
+      Number(sm.id)
+    )
+  ) {
+
+    alert(
+      "No Scheduled Maintenance selected."
+    );
+
+    return;
+  }
+
+
+  if (
+    String(
+      sm.status || ""
+    ).toUpperCase() !==
+    "IN_PROGRESS"
+  ) {
+
+    alert(
+      "Completed Tasks can only be added while Scheduled Maintenance is IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  if (!sm.actual_started_at) {
+
+    alert(
+      "Scheduled Maintenance has no Actual Start."
+    );
+
+    return;
+  }
+
+
+  const overlay =
+    ensureCompletedSmTaskModal();
+
+
+  /* =====================
+     RESET
+  ===================== */
+
+  const taskInput =
+    document.getElementById(
+      "completed-sm-task"
+    );
+
+  const sectionSelect =
+    document.getElementById(
+      "completed-sm-section"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "completed-sm-unit"
+    );
+
+  const impactSelect =
+    document.getElementById(
+      "completed-sm-impact"
+    );
+
+  const technicianSelect =
+    document.getElementById(
+      "completed-sm-technician"
+    );
+
+  const dateInput =
+    document.getElementById(
+      "completed-sm-date"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "completed-sm-duration"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "completed-sm-notes"
+    );
+
+
+  if (taskInput) {
+    taskInput.value = "";
+  }
+
+  if (sectionSelect) {
+    sectionSelect.value = "";
+  }
+
+  if (unitSelect) {
+
+    unitSelect.replaceChildren(
+      new Option(
+        "Select Unit",
+        ""
+      )
+    );
+
+    unitSelect.disabled = true;
+
+  }
+
+  if (impactSelect) {
+    impactSelect.value = "normal";
+  }
+
+  if (technicianSelect) {
+    technicianSelect.value = "";
+  }
+
+  if (durationInput) {
+    durationInput.value = "";
+  }
+
+  if (notesInput) {
+    notesInput.value = "";
+  }
+
+
+  /* =====================
+     SM REFERENCE
+  ===================== */
+
+  const reference =
+    document.getElementById(
+      "completed-sm-reference"
+    );
+
+
+  if (reference) {
+
+    reference.textContent =
+      `SM-${String(sm.id).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     LOCKED ASSET
+  ===================== */
+
+  const assetInput =
+    document.getElementById(
+      "completed-sm-asset"
+    );
+
+
+  if (assetInput) {
+
+    assetInput.value =
+      `${sm.line_name || "—"} · ` +
+      `${sm.asset_model || "—"} · ` +
+      `SN ${sm.asset_serial || "—"}`;
+
+  }
+
+
+  /* =====================
+     ACTUAL COMPLETION LIMITS
+
+     MIN = SM Actual Start
+     MAX = Current Time
+     DEFAULT = Current Time
+  ===================== */
+
+  if (dateInput) {
+
+    const minimum =
+      toSmLocalDateTimeValue(
+        sm.actual_started_at
+      );
+
+
+    const maximum =
+      toSmLocalDateTimeValue(
+        new Date()
+      );
+
+
+    dateInput.min =
+      minimum;
+
+    dateInput.max =
+      maximum;
+
+    dateInput.value =
+      maximum;
+
+  }
+
+
+  /* =====================
+     POPULATE DROPDOWNS
+  ===================== */
+
+  populateCompletedSmSections();
+
+  await populateCompletedSmTechnicians();
+
+
+  /* =====================
+     OPEN
+  ===================== */
+
+  overlay.style.display =
+    "flex";
+
+
+  taskInput?.focus();
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
+
+function closeCompletedSmTaskModal() {
+
+  const overlay =
+    document.getElementById(
+      "completedSmTaskOverlay"
+    );
+
+
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+
+}
+
+
+/* =========================================================
+   SAVE COMPLETED TASK
+========================================================= */
+
+async function saveCompletedSmTask() {
+
+  if (
+    smCompletedTaskSaveInProgress
+  ) {
+    return;
+  }
+
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const smId =
+    Number(sm?.id);
+
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+
+    alert(
+      "No Scheduled Maintenance selected."
+    );
+
+    return;
+  }
+
+
+  if (
+    String(
+      sm.status || ""
+    ).toUpperCase() !==
+    "IN_PROGRESS"
+  ) {
+
+    alert(
+      "Scheduled Maintenance is not IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     READ FIELDS
+  ===================== */
+
+  const task =
+    String(
+      document.getElementById(
+        "completed-sm-task"
+      )?.value || ""
+    ).trim();
+
+
+  const section =
+    String(
+      document.getElementById(
+        "completed-sm-section"
+      )?.value || ""
+    ).trim();
+
+
+  const unit =
+    String(
+      document.getElementById(
+        "completed-sm-unit"
+      )?.value || ""
+    ).trim();
+
+
+  const impact =
+    String(
+      document.getElementById(
+        "completed-sm-impact"
+      )?.value || "normal"
+    ).trim();
+
+
+  const technicianId =
+    Number(
+      document.getElementById(
+        "completed-sm-technician"
+      )?.value
+    );
+
+
+  const completionValue =
+    document.getElementById(
+      "completed-sm-date"
+    )?.value;
+
+
+  const durationValue =
+    String(
+      document.getElementById(
+        "completed-sm-duration"
+      )?.value || ""
+    ).trim();
+
+
+  const notes =
+    String(
+      document.getElementById(
+        "completed-sm-notes"
+      )?.value || ""
+    ).trim() || null;
+
+
+  /* =====================
+     VALIDATE TASK
+  ===================== */
+
+  if (!task) {
+
+    alert(
+      "Please enter the Maintenance Task."
+    );
+
+    document.getElementById(
+      "completed-sm-task"
+    )?.focus();
+
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE TECHNICIAN
+  ===================== */
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+
+    alert(
+      "Please select Technician."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE COMPLETION TIME
+  ===================== */
+
+  if (!completionValue) {
+
+    alert(
+      "Actual Completion is required."
+    );
+
+    return;
+  }
+
+
+  const executedAt =
+    new Date(
+      completionValue
+    );
+
+
+  if (
+    Number.isNaN(
+      executedAt.getTime()
+    )
+  ) {
+
+    alert(
+      "Invalid Actual Completion."
+    );
+
+    return;
+  }
+
+
+  const actualStart =
+    new Date(
+      sm.actual_started_at
+    );
+
+
+  if (
+    executedAt < actualStart
+  ) {
+
+    alert(
+      "Actual Completion cannot be earlier than the Scheduled Maintenance Actual Start."
+    );
+
+    return;
+  }
+
+
+  if (
+    executedAt.getTime() >
+    Date.now()
+  ) {
+
+    alert(
+      "Actual Completion cannot be in the future."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE DURATION
+  ===================== */
+
+  if (durationValue === "") {
+
+    alert(
+      "Actual Duration is required."
+    );
+
+    return;
+  }
+
+
+  const actualDurationMin =
+    Number(durationValue);
+
+
+  if (
+    !Number.isInteger(
+      actualDurationMin
+    ) ||
+    actualDurationMin < 0
+  ) {
+
+    alert(
+      "Actual Duration must be a non-negative integer."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    task,
+
+    section:
+      section || null,
+
+    unit:
+      unit || null,
+
+    impact,
+
+    technician_id:
+      technicianId,
+
+    executed_at:
+      executedAt.toISOString(),
+
+    actual_duration_min:
+      actualDurationMin,
+
+    notes
+
+  };
+
+
+  /* =====================
+     SAVE
+  ===================== */
+
+  const saveBtn =
+    document.getElementById(
+      "saveCompletedSmTaskBtn"
+    );
+
+
+  smCompletedTaskSaveInProgress =
+    true;
+
+
+  if (saveBtn) {
+
+    saveBtn.disabled =
+      true;
+
+    saveBtn.textContent =
+      "Saving...";
+
+  }
+
+
+  let taskCreated =
+    false;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/scheduled-maintenance/${smId}/completed-task`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Could not save Completed Task."
+      );
+
+    }
+
+
+    taskCreated =
+      true;
+
+
+    closeCompletedSmTaskModal();
+
+
+    /* =====================
+       REFRESH SM DETAIL
+    ===================== */
+
+    await openScheduledMaintenanceDetail(
+      smId
+    );
+
+
+    /*
+      Refresh normal Tasks state as well.
+      This task is Done, so it will not remain
+      in the open Tasks list.
+    */
+    if (
+      typeof loadTasks ===
+      "function"
+    ) {
+
+      await loadTasks();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "SAVE COMPLETED SM TASK ERROR:",
+      err
+    );
+
+
+    alert(
+      taskCreated
+        ? "Completed Task was recorded, but refresh failed. Reload the page. Do not save it again."
+        : err.message ||
+          "Could not save Completed Task."
+    );
+
+
+  } finally {
+
+    smCompletedTaskSaveInProgress =
+      false;
+
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        false;
+
+      saveBtn.textContent =
+        "✓ Save Completed Task";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   COMPLETED TASK MODAL EVENTS
+========================================================= */
+
+document.addEventListener(
+  "change",
+  event => {
+
+    if (
+      event.target?.id ===
+      "completed-sm-section"
+    ) {
+
+      populateCompletedSmUnits();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const target =
+      event.target;
+
+
+    if (
+      !(target instanceof Element)
+    ) {
+      return;
+    }
+
+
+    /* CLOSE / CANCEL */
+
+    if (
+      target.closest(
+        "#closeCompletedSmTaskBtn"
+      ) ||
+      target.closest(
+        "#cancelCompletedSmTaskBtn"
+      )
+    ) {
+
+      closeCompletedSmTaskModal();
+
+      return;
+    }
+
+
+    /* SAVE */
+
+    if (
+      target.closest(
+        "#saveCompletedSmTaskBtn"
+      )
+    ) {
+
+      saveCompletedSmTask();
+
+      return;
+    }
+
+
+    /* CLICK OUTSIDE MODAL */
+
+    if (
+      target.id ===
+      "completedSmTaskOverlay"
+    ) {
+
+      closeCompletedSmTaskModal();
+
+    }
+
+  }
+);
+
+/* =========================================================
    SCHEDULED MAINTENANCE — CLOSE ACTION
 
    - Available only when SM status = IN_PROGRESS.

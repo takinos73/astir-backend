@@ -6461,6 +6461,7 @@ app.patch("/scheduled-maintenance/:id/close", async (req, res) => {
    - Actual completion time must be after Actual Start.
    - Actual completion time cannot be in the future.
    - Actual duration is stored in task_executions.
+   - Impact uses the standard CMMS classification.
 
    IMPORTANT:
    - Does NOT close the Scheduled Maintenance.
@@ -6468,396 +6469,453 @@ app.patch("/scheduled-maintenance/:id/close", async (req, res) => {
    - Does NOT affect Breakdown flows.
 ========================================================= */
 
-app.post(
-  "/scheduled-maintenance/:id/completed-task",
-  async (req, res) => {
+app.post("/scheduled-maintenance/:id/completed-task", async (req, res) => {
+
+  /* =====================
+     READ INPUT
+  ===================== */
+
+  const smId =
+    Number(req.params.id);
+
+  const {
+    task,
+    section,
+    unit,
+    technician_id,
+    executed_at,
+    actual_duration_min,
+    notes,
+    impact
+  } = req.body || {};
+
+
+  /* =====================
+     VALIDATE SM ID
+  ===================== */
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Invalid Scheduled Maintenance ID"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE TASK
+  ===================== */
+
+  const taskName =
+    String(task || "").trim();
+
+  if (!taskName) {
+    return res.status(400).json({
+      error: "Maintenance Task is required"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE IMPACT
+  ===================== */
+
+  const resolvedImpact =
+    String(impact || "normal")
+      .trim()
+      .toLowerCase();
+
+
+  const validImpacts = [
+    "normal",
+    "safety",
+    "quality",
+    "safety_quality"
+  ];
+
+
+  if (
+    !validImpacts.includes(
+      resolvedImpact
+    )
+  ) {
+    return res.status(400).json({
+      error: "Invalid Task Impact"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE TECHNICIAN
+  ===================== */
+
+  const technicianId =
+    Number(technician_id);
+
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Technician is required"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE ACTUAL COMPLETION TIME
+  ===================== */
+
+  if (!executed_at) {
+    return res.status(400).json({
+      error: "Actual completion time is required"
+    });
+  }
+
+
+  const executedAt =
+    new Date(executed_at);
+
+
+  if (
+    Number.isNaN(executedAt.getTime()) ||
+    executedAt.getTime() > Date.now()
+  ) {
+    return res.status(400).json({
+      error: "Invalid actual completion time"
+    });
+  }
+
+
+  /* =====================
+     VALIDATE ACTUAL DURATION
+  ===================== */
+
+  if (
+    actual_duration_min === null ||
+    actual_duration_min === undefined ||
+    actual_duration_min === ""
+  ) {
+    return res.status(400).json({
+      error: "Actual Duration is required"
+    });
+  }
+
+
+  const actualDuration =
+    Number(actual_duration_min);
+
+
+  if (
+    !Number.isInteger(actualDuration) ||
+    actualDuration < 0
+  ) {
+    return res.status(400).json({
+      error:
+        "Actual Duration must be a non-negative integer"
+    });
+  }
+
+
+  const client =
+    await pool.connect();
+
+
+  try {
+
+    await client.query("BEGIN");
+
 
     /* =====================
-       READ INPUT
+       LOAD + LOCK SM
     ===================== */
 
-    const smId =
-      Number(req.params.id);
-
-    const {
-      task,
-      section,
-      unit,
-      technician_id,
-      executed_at,
-      actual_duration_min,
-      notes
-    } = req.body || {};
-
-
-    /* =====================
-       VALIDATE SM ID
-    ===================== */
-
-    if (
-      !Number.isInteger(smId) ||
-      smId <= 0
-    ) {
-      return res.status(400).json({
-        error: "Invalid Scheduled Maintenance ID"
-      });
-    }
-
-
-    /* =====================
-       VALIDATE TASK
-    ===================== */
-
-    const taskName =
-      String(task || "").trim();
-
-    if (!taskName) {
-      return res.status(400).json({
-        error: "Maintenance Task is required"
-      });
-    }
-
-
-    /* =====================
-       VALIDATE TECHNICIAN
-    ===================== */
-
-    const technicianId =
-      Number(technician_id);
-
-    if (
-      !Number.isInteger(technicianId) ||
-      technicianId <= 0
-    ) {
-      return res.status(400).json({
-        error: "Technician is required"
-      });
-    }
-
-
-    /* =====================
-       VALIDATE ACTUAL COMPLETION TIME
-    ===================== */
-
-    if (!executed_at) {
-      return res.status(400).json({
-        error: "Actual completion time is required"
-      });
-    }
-
-    const executedAt =
-      new Date(executed_at);
-
-    if (
-      Number.isNaN(executedAt.getTime()) ||
-      executedAt.getTime() > Date.now()
-    ) {
-      return res.status(400).json({
-        error: "Invalid actual completion time"
-      });
-    }
-
-
-    /* =====================
-       VALIDATE ACTUAL DURATION
-    ===================== */
-
-    if (
-      actual_duration_min === null ||
-      actual_duration_min === undefined ||
-      actual_duration_min === ""
-    ) {
-      return res.status(400).json({
-        error: "Actual Duration is required"
-      });
-    }
-
-    const actualDuration =
-      Number(actual_duration_min);
-
-    if (
-      !Number.isInteger(actualDuration) ||
-      actualDuration < 0
-    ) {
-      return res.status(400).json({
-        error:
-          "Actual Duration must be a non-negative integer"
-      });
-    }
-
-
-    const client =
-      await pool.connect();
-
-
-    try {
-
-      await client.query("BEGIN");
-
-
-      /* =====================
-         LOAD + LOCK SM
-      ===================== */
-
-      const smResult =
-        await client.query(
-          `
-            SELECT
-              id,
-              asset_id,
-              status,
-              actual_started_at,
-              actual_closed_at
-            FROM scheduled_maintenance
-            WHERE id = $1
-            FOR UPDATE
-          `,
-          [smId]
-        );
-
-
-      if (!smResult.rows.length) {
-
-        await client.query("ROLLBACK");
-
-        return res.status(404).json({
-          error: "Scheduled Maintenance not found"
-        });
-      }
-
-
-      const sm =
-        smResult.rows[0];
-
-
-      /* =====================
-         IN_PROGRESS GUARD
-      ===================== */
-
-      if (
-        String(sm.status || "").toUpperCase() !==
-        "IN_PROGRESS"
-      ) {
-
-        await client.query("ROLLBACK");
-
-        return res.status(409).json({
-          error:
-            "Completed Task can only be added to an IN_PROGRESS Scheduled Maintenance"
-        });
-      }
-
-
-      /* =====================
-         ACTUAL START GUARD
-      ===================== */
-
-      if (!sm.actual_started_at) {
-
-        await client.query("ROLLBACK");
-
-        return res.status(409).json({
-          error:
-            "Scheduled Maintenance has no Actual Start"
-        });
-      }
-
-
-      const actualStartedAt =
-        new Date(sm.actual_started_at);
-
-
-      if (executedAt < actualStartedAt) {
-
-        await client.query("ROLLBACK");
-
-        return res.status(409).json({
-          error:
-            "Actual completion time cannot be earlier than Scheduled Maintenance Actual Start"
-        });
-      }
-
-
-      /* =====================
-         VERIFY TECHNICIAN
-      ===================== */
-
-      const technicianResult =
-        await client.query(
-          `
-            SELECT id, name
-            FROM technicians
-            WHERE id = $1
-            LIMIT 1
-          `,
-          [technicianId]
-        );
-
-
-      if (!technicianResult.rows.length) {
-
-        await client.query("ROLLBACK");
-
-        return res.status(404).json({
-          error: "Technician not found"
-        });
-      }
-
-
-      const technician =
-        technicianResult.rows[0];
-
-
-      /* =====================
-         CREATE COMPLETED TASK
-      ===================== */
-
-      const taskResult =
-        await client.query(
-          `
-            INSERT INTO maintenance_tasks (
-              asset_id,
-              task,
-              section,
-              unit,
-              type,
-              impact,
-              status,
-              due_date,
-              frequency_hours,
-              duration_min,
-              notes,
-              is_planned,
-              breakdown_id,
-              scheduled_maintenance_id,
-              completed_by,
-              completed_at
-            )
-            VALUES (
-              $1,
-              $2,
-              $3,
-              $4,
-              'Planned',
-              'normal',
-              'Done',
-              NULL,
-              0,
-              NULL,
-              $5,
-              true,
-              NULL,
-              $6,
-              $7,
-              $8
-            )
-            RETURNING *
-          `,
-          [
-            sm.asset_id,
-            taskName,
-            String(section || "").trim() || null,
-            String(unit || "").trim() || null,
-            String(notes || "").trim() || null,
-            smId,
-            technician.name,
-            executedAt
-          ]
-        );
-
-
-      const completedTask =
-        taskResult.rows[0];
-
-
-      /* =====================
-         RECORD EXECUTION
-      ===================== */
-
-      const executionResult =
-        await client.query(
-          `
-            INSERT INTO task_executions (
-              task_id,
-              asset_id,
-              executed_by,
-              technician_id,
-              prev_due_date,
-              executed_at,
-              duration_minutes,
-              notes
-            )
-            VALUES (
-              $1, $2, $3, $4,
-              NULL, $5, $6, $7
-            )
-            RETURNING *
-          `,
-          [
-            completedTask.id,
-            sm.asset_id,
-            technician.name,
-            technician.id,
-            executedAt,
-            actualDuration,
-            String(notes || "").trim() || null
-          ]
-        );
-
-
-      /* =====================
-         COMMIT
-      ===================== */
-
-      await client.query("COMMIT");
-
-
-      return res.status(201).json({
-
-        success: true,
-
-        message:
-          "Completed Scheduled Maintenance Task recorded successfully",
-
-        scheduled_maintenance_id:
-          smId,
-
-        task:
-          completedTask,
-
-        execution:
-          executionResult.rows[0]
-
-      });
-
-
-    } catch (err) {
-
-      try {
-        await client.query("ROLLBACK");
-      } catch (_) {}
-
-
-      console.error(
-        "COMPLETED SM TASK ERROR:",
-        err
+    const smResult =
+      await client.query(
+        `
+          SELECT
+            id,
+            asset_id,
+            status,
+            actual_started_at,
+            actual_closed_at
+          FROM scheduled_maintenance
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [smId]
       );
 
 
-      return res.status(500).json({
+    if (!smResult.rows.length) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
         error:
-          "Failed to record completed Scheduled Maintenance Task"
+          "Scheduled Maintenance not found"
       });
-
-
-    } finally {
-
-      client.release();
-
     }
 
+
+    const sm =
+      smResult.rows[0];
+
+
+    /* =====================
+       IN_PROGRESS GUARD
+    ===================== */
+
+    if (
+      String(sm.status || "")
+        .toUpperCase() !==
+      "IN_PROGRESS"
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Completed Task can only be added to an IN_PROGRESS Scheduled Maintenance"
+      });
+    }
+
+
+    /* =====================
+       ACTUAL START GUARD
+    ===================== */
+
+    if (!sm.actual_started_at) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Scheduled Maintenance has no Actual Start"
+      });
+    }
+
+
+    const actualStartedAt =
+      new Date(sm.actual_started_at);
+
+
+    if (
+      executedAt < actualStartedAt
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Actual completion time cannot be earlier than Scheduled Maintenance Actual Start"
+      });
+    }
+
+
+    /* =====================
+       VERIFY TECHNICIAN
+    ===================== */
+
+    const technicianResult =
+      await client.query(
+        `
+          SELECT
+            id,
+            name
+          FROM technicians
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [technicianId]
+      );
+
+
+    if (!technicianResult.rows.length) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        error: "Technician not found"
+      });
+    }
+
+
+    const technician =
+      technicianResult.rows[0];
+
+
+    /* =====================
+       CREATE COMPLETED TASK
+    ===================== */
+
+    const taskResult =
+      await client.query(
+        `
+          INSERT INTO maintenance_tasks (
+            asset_id,
+            task,
+            section,
+            unit,
+            type,
+            impact,
+            status,
+            due_date,
+            frequency_hours,
+            duration_min,
+            notes,
+            is_planned,
+            breakdown_id,
+            scheduled_maintenance_id,
+            completed_by,
+            completed_at
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            'Planned',
+            $5,
+            'Done',
+            NULL,
+            0,
+            NULL,
+            $6,
+            true,
+            NULL,
+            $7,
+            $8,
+            $9
+          )
+          RETURNING *
+        `,
+        [
+          sm.asset_id,
+          taskName,
+
+          String(section || "")
+            .trim() || null,
+
+          String(unit || "")
+            .trim() || null,
+
+          resolvedImpact,
+
+          String(notes || "")
+            .trim() || null,
+
+          smId,
+
+          technician.name,
+
+          executedAt
+        ]
+      );
+
+
+    const completedTask =
+      taskResult.rows[0];
+
+
+    /* =====================
+       RECORD EXECUTION
+    ===================== */
+
+    const executionResult =
+      await client.query(
+        `
+          INSERT INTO task_executions (
+            task_id,
+            asset_id,
+            executed_by,
+            technician_id,
+            prev_due_date,
+            executed_at,
+            duration_minutes,
+            notes
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            NULL,
+            $5,
+            $6,
+            $7
+          )
+          RETURNING *
+        `,
+        [
+          completedTask.id,
+          sm.asset_id,
+          technician.name,
+          technician.id,
+          executedAt,
+          actualDuration,
+
+          String(notes || "")
+            .trim() || null
+        ]
+      );
+
+
+    /* =====================
+       COMMIT
+    ===================== */
+
+    await client.query("COMMIT");
+
+
+    return res.status(201).json({
+
+      success: true,
+
+      message:
+        "Completed Scheduled Maintenance Task recorded successfully",
+
+      scheduled_maintenance_id:
+        smId,
+
+      task:
+        completedTask,
+
+      execution:
+        executionResult.rows[0]
+
+    });
+
+
+  } catch (err) {
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+
+    console.error(
+      "COMPLETED SM TASK ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error:
+        "Failed to record completed Scheduled Maintenance Task"
+    });
+
+
+  } finally {
+
+    client.release();
+
   }
-);
+
+});
 
 
 /* =========================================================
