@@ -5785,12 +5785,18 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
 
     /* =====================
-       RESPONSE
+      RESPONSE
     ===================== */
 
-    return res.json(
-      result.rows
-    );
+    return res.json({
+
+      scheduled_maintenance_id:
+        smId,
+
+      tasks:
+        result.rows
+
+    });
 
 
   } catch (err) {
