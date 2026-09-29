@@ -1081,3 +1081,194 @@
   font-weight: 800;
   line-height: 1.2;
 }
+
+/* =========================================================
+   SCHEDULED MAINTENANCE ACTION BUTTONS
+   Dark Industrial Theme
+========================================================= */
+
+
+/* Base */
+#smActionBar .btn-table,
+.sm-task-complete-btn,
+.sm-task-delete-btn {
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  border-radius: 9px;
+
+  padding: 9px 16px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    opacity 0.15s ease;
+
+}
+
+
+/* =========================================================
+   ADD TASK
+========================================================= */
+
+#addSmTaskBtn {
+
+  background: #2f5f8f;
+  color: #ffffff;
+
+  border-color: #3c73aa;
+
+}
+
+#addSmTaskBtn:hover {
+
+  background: #3971a8;
+  border-color: #4b86c2;
+
+}
+
+
+/* =========================================================
+   ADD COMPLETED TASK
+========================================================= */
+
+#addCompletedSmTaskBtn {
+
+  background: #364b63;
+  color: #ffffff;
+
+  border-color: #4c647f;
+
+}
+
+#addCompletedSmTaskBtn:hover {
+
+  background: #435d78;
+  border-color: #5a7695;
+
+}
+
+
+/* =========================================================
+   CLOSE MAINTENANCE
+========================================================= */
+
+#closeSmBtn {
+
+  background: #8a5b18;
+  color: #ffffff;
+
+  border-color: #b37923;
+
+}
+
+#closeSmBtn:hover {
+
+  background: #a76e1d;
+  border-color: #cf8a2c;
+
+}
+
+
+/* =========================================================
+   COMPLETE TASK
+========================================================= */
+
+.sm-task-complete-btn {
+
+  background: #2f5f8f;
+  color: #ffffff;
+
+  border-color: #3c73aa;
+
+}
+
+.sm-task-complete-btn:hover {
+
+  background: #3971a8;
+  border-color: #4b86c2;
+
+}
+
+
+/* =========================================================
+   DELETE TASK
+========================================================= */
+
+.sm-task-delete-btn {
+
+  background: #6f3035;
+  color: #ffffff;
+
+  border-color: #97444b;
+
+}
+
+.sm-task-delete-btn:hover {
+
+  background: #873a41;
+  border-color: #b7555e;
+
+}
+
+
+/* =========================================================
+   DONE STATUS
+========================================================= */
+
+.restoration-task-done {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 6px 11px;
+
+  border-radius: 999px;
+
+  background: rgba(63, 157, 99, 0.14);
+
+  color: #7ed69d;
+
+  border: 1px solid rgba(96, 196, 132, 0.28);
+
+  font-size: 13px;
+  font-weight: 700;
+
+}
+
+
+/* =========================================================
+   DISABLED
+========================================================= */
+
+#smActionBar .btn-table:disabled,
+.sm-task-complete-btn:disabled,
+.sm-task-delete-btn:disabled {
+
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+}
+
+
+/* =========================================================
+   SMALL PRESS EFFECT
+========================================================= */
+
+#smActionBar .btn-table:active,
+.sm-task-complete-btn:active,
+.sm-task-delete-btn:active {
+
+  transform: translateY(1px);
+
+}
