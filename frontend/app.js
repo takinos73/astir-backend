@@ -2101,214 +2101,242 @@ async function refreshAfterTaskCompletion() {
 
 getEl("confirmDone")?.addEventListener("click", async () => {
 
-      /* =====================
-         TECHNICIAN
-      ===================== */
+  /* =====================
+     TECHNICIAN
+  ===================== */
 
-      const technicianSelect =
-        getEl("technicianSelect");
+  const technicianSelect =
+    getEl("technicianSelect");
 
-      const technicianId =
-        technicianSelect?.value;
-
-
-      if (!technicianId) {
-        return alert(
-          "Επέλεξε τεχνικό"
-        );
-      }
+  const technicianId =
+    technicianSelect?.value;
 
 
-      // Keep name for backward compatibility
-      const technicianName =
-        technicianSelect
-          .options[
-            technicianSelect.selectedIndex
-          ]
-          ?.textContent ||
-        null;
+  if (!technicianId) {
+    return alert(
+      "Επέλεξε τεχνικό"
+    );
+  }
 
 
-      /* =====================
-         NOTES
-      ===================== */
-
-      const notes =
-        getEl("doneNotesInput")
-          ?.value
-          .trim() ||
-        null;
-
-    /* =====================
-      COMPLETION DATE + TIME
-
-      datetime-local gives:
-      YYYY-MM-DDTHH:mm
-
-      JavaScript interprets it
-      as LOCAL browser time.
-
-      We convert to ISO UTC
-      only for storage / API.
-    ===================== */
-
-    const dateValue =
-      getEl("completedDateInput")
-        ?.value;
+  // Keep name for backward compatibility
+  const technicianName =
+    technicianSelect
+      .options[
+        technicianSelect.selectedIndex
+      ]
+      ?.textContent ||
+    null;
 
 
-    let completedAt;
+  /* =====================
+     NOTES
+  ===================== */
+
+  const notes =
+    getEl("doneNotesInput")
+      ?.value
+      .trim() ||
+    null;
 
 
-    if (dateValue) {
+  /* =====================
+     COMPLETION DATE + TIME
 
-      const localCompletedDate =
-        new Date(dateValue);
+     datetime-local gives:
+     YYYY-MM-DDTHH:mm
+
+     JavaScript interprets it
+     as LOCAL browser time.
+
+     We convert to ISO UTC
+     only for storage / API.
+  ===================== */
+
+  const dateValue =
+    getEl("completedDateInput")
+      ?.value;
+
+
+  let completedAt;
+
+
+  if (dateValue) {
+
+    const localCompletedDate =
+      new Date(dateValue);
+
+
+    if (
+      Number.isNaN(
+        localCompletedDate.getTime()
+      )
+    ) {
+
+      return alert(
+        "Invalid completion date / time."
+      );
+    }
+
+
+    completedAt =
+      localCompletedDate.toISOString();
+
+  } else {
+
+    completedAt =
+      new Date().toISOString();
+
+  }
+
+
+  /* =====================
+     ACTUAL DURATION
+     SINGLE mode only
+
+     Blank = null
+     Value = actual service duration in minutes
+  ===================== */
+
+  const actualDurationInput =
+    getEl("actualDurationInput");
+
+  let actualDurationMin = null;
+
+
+  /*
+    Bulk completion does not use one common
+    Actual Duration.
+
+    Each task keeps its own estimated duration
+    as the existing bulk fallback.
+  */
+  if (
+    state.bulkDoneMode !== true &&
+    actualDurationInput
+  ) {
+
+    const rawActualDuration =
+      String(
+        actualDurationInput.value || ""
+      ).trim();
+
+
+    if (rawActualDuration !== "") {
+
+      const parsedDuration =
+        Number(rawActualDuration);
 
 
       if (
-        Number.isNaN(
-          localCompletedDate.getTime()
-        )
+        !Number.isFinite(parsedDuration) ||
+        parsedDuration < 0
       ) {
-
         return alert(
-          "Invalid completion date / time."
+          "Actual Duration must be zero or greater."
         );
       }
 
+      actualDurationMin =
+        parsedDuration;
+    }
+  }
 
-      completedAt =
-        localCompletedDate.toISOString();
 
-    } else {
+  try {
 
-      completedAt =
-        new Date().toISOString();
+    /* =====================
+       BULK DONE
+    ===================== */
+
+    if (
+      state.bulkDoneMode === true
+    ) {
+
+      const completed =
+        await completeBulkTasks({
+          technicianId,
+          technicianName,
+          completedAt,
+          notes
+        });
+
+
+      // User cancelled common-note warning
+      if (!completed) {
+        return;
+      }
 
     }
 
-        /* =====================
-          ACTUAL DURATION
-          SINGLE mode only
 
-          Blank = null
-          Value = actual service duration in minutes
-        ===================== */
+    /* =====================
+       SINGLE DONE
+    ===================== */
 
-        const actualDurationInput =
-          getEl("actualDurationInput");
+    else {
 
-        let actualDurationMin = null;
+      await completeSingleTask({
+        technicianId,
+        technicianName,
+        completedAt,
+        notes,
+        actualDurationMin
+      });
 
-
-        /*
-          Bulk completion does not use one common
-          Actual Duration.
-
-          Each task keeps its own estimated duration
-          as the existing bulk fallback.
-        */
-        if (
-          state.bulkDoneMode !== true &&
-          actualDurationInput
-        ) {
-
-          const rawActualDuration =
-            String(
-              actualDurationInput.value || ""
-            ).trim();
-
-
-          if (rawActualDuration !== "") {
-
-            const parsedDuration =
-              Number(rawActualDuration);
-
-
-            if (
-              !Number.isFinite(parsedDuration) ||
-              parsedDuration < 0
-            ) {
-              return alert(
-                "Actual Duration must be zero or greater."
-              );
-            }
-
-            actualDurationMin =
-              parsedDuration;
-          }
-        }
-
-      try {
-
-        /* =====================
-           BULK DONE
-        ===================== */
-
-        if (
-          state.bulkDoneMode === true
-        ) {
-
-          const completed =
-            await completeBulkTasks({
-              technicianId,
-              technicianName,
-              completedAt,
-              notes
-            });
-
-
-          // User cancelled common-note warning
-          if (!completed) {
-            return;
-          }
-        }
-
-
-        /* =====================
-           SINGLE DONE
-        ===================== */
-
-        else {
-
-          await completeSingleTask({
-            technicianId,
-            technicianName,
-            completedAt,
-            notes,
-            actualDurationMin
-          });
-        }
-
-        /* =====================
-           COMMON CLEANUP
-        ===================== */
-
-        resetDoneModal(
-          technicianSelect
-        );
-
-
-        /* =====================
-           COMMON REFRESH
-        ===================== */
-
-        await refreshAfterTaskCompletion();
-
-      }
-
-      catch (err) {
-
-        alert(err.message);
-
-        console.error(
-          "CONFIRM DONE ERROR:",
-          err
-        );
-      }
     }
-  );
+
+
+    /* =====================
+       COMMON CLEANUP
+    ===================== */
+
+    resetDoneModal(
+      technicianSelect
+    );
+
+
+    /* =====================
+       COMMON REFRESH
+    ===================== */
+
+    await refreshAfterTaskCompletion();
+
+
+    /* =====================
+      REFRESH SCHEDULED MAINTENANCE DETAIL
+      IF CURRENTLY OPEN
+
+      Refreshes the linked SM Detail after
+      a Task completion so the latest Task
+      statuses are shown immediately.
+    ===================== */
+
+    if (
+      currentScheduledMaintenance?.id &&
+      typeof openScheduledMaintenanceDetail === "function"
+    ) {
+
+      await openScheduledMaintenanceDetail(
+        currentScheduledMaintenance.id
+      );
+
+    }
+
+  }
+
+  catch (err) {
+
+    alert(err.message);
+
+    console.error(
+      "CONFIRM DONE ERROR:",
+      err
+    );
+
+  }
+
+});
 
 /* ===========================
    LOAD TASK DONE from HISTORY

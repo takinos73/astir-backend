@@ -152,6 +152,7 @@ async function openScheduledMaintenanceDetail(smId) {
     ===================== */
 
     refreshSmStartButton();
+    refreshSmCloseButton();
 
     // CLOSED SM incidents cannot receive new Tasks.
     if (addTaskBtn) {
@@ -2156,3 +2157,440 @@ document.addEventListener("click", event => {
   }
 
 });
+
+/* =========================================================
+   SCHEDULED MAINTENANCE — CLOSE ACTION
+
+   - Available only when SM status = IN_PROGRESS.
+   - Checks all linked Tasks before closing.
+   - If open Tasks remain → informs user and stops.
+   - If all Tasks are Done → asks for confirmation.
+   - Backend performs the final validation again.
+========================================================= */
+
+let smCloseInProgress = false;
+
+
+/* =====================
+   SHOW / HIDE CLOSE BUTTON
+===================== */
+
+function refreshSmCloseButton() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const assetEl =
+    document.getElementById("sm-detail-asset");
+
+
+  if (!assetEl) return;
+
+
+  let closeBtn =
+    document.getElementById("closeSmBtn");
+
+
+  /* =====================
+     CREATE BUTTON ONCE
+  ===================== */
+
+  if (!closeBtn) {
+
+    closeBtn =
+      document.createElement("button");
+
+
+    closeBtn.id =
+      "closeSmBtn";
+
+    closeBtn.type =
+      "button";
+
+    closeBtn.className =
+      "btn-table";
+
+
+    closeBtn.textContent =
+      "✓ Close Maintenance";
+
+
+    closeBtn.style.marginTop =
+      "14px";
+
+    closeBtn.style.marginBottom =
+      "18px";
+
+    closeBtn.style.marginLeft =
+      "10px";
+
+    closeBtn.style.padding =
+      "10px 16px";
+
+
+    assetEl.insertAdjacentElement(
+      "afterend",
+      closeBtn
+    );
+
+  }
+
+
+  /* =====================
+     AVAILABLE ONLY FOR
+     IN_PROGRESS SM
+  ===================== */
+
+  closeBtn.hidden =
+    !sm ||
+    String(
+      sm.status || ""
+    ).toUpperCase() !==
+      "IN_PROGRESS";
+
+
+  closeBtn.disabled =
+    smCloseInProgress;
+
+}
+
+
+/* =====================
+   CLOSE SCHEDULED MAINTENANCE
+===================== */
+
+async function closeScheduledMaintenance() {
+
+  if (smCloseInProgress) {
+    return;
+  }
+
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const smId =
+    Number(sm?.id);
+
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+
+    alert(
+      "No Scheduled Maintenance selected."
+    );
+
+    return;
+  }
+
+
+  if (
+    String(
+      sm.status || ""
+    ).toUpperCase() !==
+    "IN_PROGRESS"
+  ) {
+
+    alert(
+      "This Scheduled Maintenance is not IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  const closeBtn =
+    document.getElementById(
+      "closeSmBtn"
+    );
+
+
+  smCloseInProgress = true;
+
+
+  if (closeBtn) {
+
+    closeBtn.disabled = true;
+
+    closeBtn.textContent =
+      "Checking Tasks...";
+
+  }
+
+
+  try {
+
+    /* =====================
+       1. LOAD LINKED TASKS
+    ===================== */
+
+    const tasksResponse =
+      await fetch(
+        `/scheduled-maintenance/${smId}/tasks`
+      );
+
+
+    const tasksResult =
+      await tasksResponse
+        .json()
+        .catch(() => ({}));
+
+
+    if (!tasksResponse.ok) {
+
+      throw new Error(
+        tasksResult?.error ||
+        "Could not check Maintenance Tasks."
+      );
+
+    }
+
+
+    const tasks =
+      Array.isArray(tasksResult.tasks)
+        ? tasksResult.tasks
+        : [];
+
+
+    /* =====================
+       2. FIND OPEN TASKS
+    ===================== */
+
+    const openTasks =
+      tasks.filter(task => {
+
+        const status =
+          String(
+            task.status || ""
+          )
+            .trim()
+            .toUpperCase();
+
+
+        return (
+          status !== "DONE"
+        );
+
+      });
+
+
+    /* =====================
+       3. OPEN TASKS EXIST
+    ===================== */
+
+    if (openTasks.length > 0) {
+
+      const taskWord =
+        openTasks.length === 1
+          ? "task is"
+          : "tasks are";
+
+
+      alert(
+        `Scheduled Maintenance cannot be closed.\n\n` +
+        `${openTasks.length} maintenance ${taskWord} still open.\n\n` +
+        `Complete all Maintenance Tasks first.`
+      );
+
+
+      return;
+    }
+
+
+    /* =====================
+       4. ALL TASKS COMPLETED
+       CONFIRM CLOSE
+    ===================== */
+
+    const confirmed =
+      window.confirm(
+        `All Maintenance Tasks are completed.\n\n` +
+        `Close SM-${String(smId).padStart(5, "0")}?\n\n` +
+        `OK = Close SM\n` +
+        `Cancel = Keep IN_PROGRESS`
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    /* =====================
+       5. ACTUAL CLOSE TIME
+
+       Current real time is sent.
+    ===================== */
+
+    const actualClose =
+      new Date();
+
+
+    if (closeBtn) {
+
+      closeBtn.textContent =
+        "Closing...";
+
+    }
+
+
+    /* =====================
+       6. SEND CLOSE REQUEST
+
+       Backend checks Tasks again.
+    ===================== */
+
+    const response =
+      await fetch(
+        `/scheduled-maintenance/${smId}/close`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            actual_close_at:
+              actualClose.toISOString()
+          })
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      if (
+        response.status === 409 &&
+        Number(result?.open_tasks) > 0
+      ) {
+
+        alert(
+          `Scheduled Maintenance cannot be closed.\n\n` +
+          `${result.open_tasks} maintenance task(s) are still open.`
+        );
+
+        return;
+      }
+
+
+      throw new Error(
+        result?.error ||
+        "Could not close Scheduled Maintenance."
+      );
+
+    }
+
+
+    /* =====================
+       7. REFRESH DETAIL
+
+       New backend state:
+       status = CLOSED
+       actual_closed_at populated
+    ===================== */
+
+    await openScheduledMaintenanceDetail(
+      smId
+    );
+
+
+    /*
+      Refresh main incident list as well.
+      Existing SMs are loaded together with
+      the Maintenance incident view.
+    */
+    if (
+      typeof loadBreakdowns ===
+      "function"
+    ) {
+
+      await loadBreakdowns();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "CLOSE SM ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not close Scheduled Maintenance."
+    );
+
+  } finally {
+
+    smCloseInProgress = false;
+
+
+    const refreshedCloseBtn =
+      document.getElementById(
+        "closeSmBtn"
+      );
+
+
+    if (refreshedCloseBtn) {
+
+      refreshedCloseBtn.disabled =
+        false;
+
+      refreshedCloseBtn.textContent =
+        "✓ Close Maintenance";
+
+
+      /*
+        After successful close,
+        currentScheduledMaintenance
+        has already been reloaded
+        with status = CLOSED.
+      */
+      refreshedCloseBtn.hidden =
+        !currentScheduledMaintenance ||
+        String(
+          currentScheduledMaintenance.status ||
+          ""
+        ).toUpperCase() !==
+          "IN_PROGRESS";
+
+    }
+
+  }
+
+}
+
+
+/* =====================
+   CLOSE BUTTON EVENT
+===================== */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target instanceof Element &&
+      event.target.closest("#closeSmBtn")
+    ) {
+
+      closeScheduledMaintenance();
+
+    }
+
+  }
+);

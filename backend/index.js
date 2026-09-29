@@ -6181,6 +6181,268 @@ app.patch("/scheduled-maintenance/:id/start", async (req, res) => {
 });
 
 /* =========================================================
+   PATCH /scheduled-maintenance/:id/close
+
+   CLOSE SCHEDULED MAINTENANCE
+   ---------------------------------------------------------
+   - Only an IN_PROGRESS SM can be closed.
+   - All linked Tasks must already be Done.
+   - Records the user-selected actual close time.
+   - Does not modify Tasks or Breakdowns.
+========================================================= */
+
+app.patch("/scheduled-maintenance/:id/close", async (req, res) => {
+
+  const client = await pool.connect();
+
+  try {
+
+    const smId =
+      Number(req.params.id);
+
+
+    if (
+      !Number.isInteger(smId) ||
+      smId <= 0
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid Scheduled Maintenance ID."
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE ACTUAL CLOSE
+    ===================== */
+
+    const actualCloseValue =
+      req.body?.actual_close_at;
+
+
+    if (
+      typeof actualCloseValue !== "string" ||
+      !/(Z|[+-]\d{2}:\d{2})$/i.test(actualCloseValue)
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual Close must include timezone information."
+      });
+
+    }
+
+
+    const actualClose =
+      new Date(actualCloseValue);
+
+
+    if (
+      Number.isNaN(
+        actualClose.getTime()
+      )
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid Actual Close date."
+      });
+
+    }
+
+
+    if (
+      actualClose.getTime() >
+      Date.now() + 60000
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual Close cannot be in the future."
+      });
+
+    }
+
+
+    await client.query("BEGIN");
+
+
+    /* =====================
+       1. LOAD + LOCK SM
+    ===================== */
+
+    const smResult =
+      await client.query(
+        `
+          SELECT
+            id,
+            status,
+            actual_started_at,
+            actual_closed_at
+          FROM scheduled_maintenance
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [smId]
+      );
+
+
+    if (!smResult.rows.length) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        error:
+          "Scheduled Maintenance not found."
+      });
+
+    }
+
+
+    const sm =
+      smResult.rows[0];
+
+
+    /* =====================
+       2. STATUS GUARD
+    ===================== */
+
+    if (
+      String(sm.status || "").toUpperCase() !==
+      "IN_PROGRESS"
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Only IN_PROGRESS Scheduled Maintenance can be closed."
+      });
+
+    }
+
+
+    /* =====================
+       3. CLOSE DATE GUARD
+    ===================== */
+
+    if (
+      sm.actual_started_at &&
+      actualClose <
+        new Date(sm.actual_started_at)
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(400).json({
+        error:
+          "Actual Close cannot be earlier than Actual Start."
+      });
+
+    }
+
+
+    /* =====================
+       4. CHECK LINKED TASKS
+
+       All active linked tasks
+       must already be Done.
+    ===================== */
+
+    const openTasksResult =
+      await client.query(
+        `
+          SELECT
+            COUNT(*)::int AS open_count
+          FROM maintenance_tasks
+          WHERE scheduled_maintenance_id = $1
+            AND deleted_at IS NULL
+            AND status <> 'Done'
+        `,
+        [smId]
+      );
+
+
+    const openCount =
+      Number(
+        openTasksResult.rows[0]?.open_count || 0
+      );
+
+
+    if (openCount > 0) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error:
+          "Scheduled Maintenance still has open Tasks.",
+        open_tasks: openCount
+      });
+
+    }
+
+
+    /* =====================
+       5. CLOSE SM
+    ===================== */
+
+    const closeResult =
+      await client.query(
+        `
+          UPDATE scheduled_maintenance
+          SET
+            status = 'CLOSED',
+            actual_closed_at = $2,
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING *
+        `,
+        [
+          smId,
+          actualClose.toISOString()
+        ]
+      );
+
+
+    await client.query("COMMIT");
+
+
+    return res.json({
+      success: true,
+      scheduled_maintenance:
+        closeResult.rows[0]
+    });
+
+
+  } catch (err) {
+
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+
+    console.error(
+      "CLOSE SCHEDULED MAINTENANCE ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error:
+        "Could not close Scheduled Maintenance."
+    });
+
+
+  } finally {
+
+    client.release();
+
+  }
+
+});
+
+
+/* =========================================================
    GET /tasks — ACTIVE MAINTENANCE TASKS
 
    Returns active Planned / Overdue Tasks for active Assets.
@@ -6913,16 +7175,17 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
 app.patch("/tasks/:id", async (req, res) => {
 
   const {
-  completed_by,
-  completed_at,
-  notes,
-  technician_id,
-  actual_duration_min
-} = req.body;
+    completed_by,
+    completed_at,
+    notes,
+    technician_id,
+    actual_duration_min
+  } = req.body;
 
   const { id } = req.params;
 
-  const client = await pool.connect();
+  const client =
+    await pool.connect();
 
 
   try {
@@ -6932,26 +7195,28 @@ app.patch("/tasks/:id", async (req, res) => {
 
     /* =====================
        NORMALIZE DATE
-    ===================== */
+    ====================== */
 
     const completedAt =
       completed_at
         ? new Date(completed_at)
         : new Date();
 
+
     if (
-        Number.isNaN(
-          completedAt.getTime()
-        )
-      ) {
+      Number.isNaN(
+        completedAt.getTime()
+      )
+    ) {
 
-        await client.query("ROLLBACK");
+      await client.query("ROLLBACK");
 
-        return res.status(400).json({
-          error: "Invalid completion date / time"
-        });
+      return res.status(400).json({
+        error: "Invalid completion date / time"
+      });
 
-      }
+    }
+
 
     /* =====================
        1. FETCH + LOCK TASK
@@ -6959,17 +7224,18 @@ app.patch("/tasks/:id", async (req, res) => {
        FOR UPDATE prevents two simultaneous
        completion requests from processing
        the same task at the same time.
-    ===================== */
+    ====================== */
 
-    const taskRes = await client.query(
-      `
-      SELECT *
-      FROM maintenance_tasks
-      WHERE id = $1
-      FOR UPDATE
-      `,
-      [id]
-    );
+    const taskRes =
+      await client.query(
+        `
+          SELECT *
+          FROM maintenance_tasks
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [id]
+      );
 
 
     if (!taskRes.rows.length) {
@@ -7001,7 +7267,7 @@ app.patch("/tasks/:id", async (req, res) => {
 
        One-off tasks (including Restoration)
        may only be completed once.
-    ===================== */
+    ====================== */
 
     if (
       !hasFrequency &&
@@ -7019,23 +7285,23 @@ app.patch("/tasks/:id", async (req, res) => {
 
     /* =====================
        3. LOG EXECUTION
-    ===================== */
+    ====================== */
 
     await client.query(
       `
-      INSERT INTO task_executions (
-        task_id,
-        asset_id,
-        executed_by,
-        technician_id,
-        prev_due_date,
-        executed_at,
-        duration_minutes,
-        notes
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8
-      )
+        INSERT INTO task_executions (
+          task_id,
+          asset_id,
+          executed_by,
+          technician_id,
+          prev_due_date,
+          executed_at,
+          duration_minutes,
+          notes
+        )
+        VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8
+        )
       `,
       [
         task.id,
@@ -7059,7 +7325,7 @@ app.patch("/tasks/:id", async (req, res) => {
                     Number(task.duration_min)
                   )
                 : null
-              ),
+            ),
 
         notes || task.notes || null
       ]
@@ -7068,7 +7334,7 @@ app.patch("/tasks/:id", async (req, res) => {
 
     /* =====================
        4. PREVENTIVE → ROTATE
-    ===================== */
+    ====================== */
 
     if (hasFrequency) {
 
@@ -7096,15 +7362,15 @@ app.patch("/tasks/:id", async (req, res) => {
 
       await client.query(
         `
-        UPDATE maintenance_tasks
-        SET
-          status = 'Planned',
-          due_date = $2,
-          completed_by = $3,
-          completed_at = $4,
-          notes = NULL,
-          updated_at = NOW()
-        WHERE id = $1
+          UPDATE maintenance_tasks
+          SET
+            status = 'Planned',
+            due_date = $2,
+            completed_by = $3,
+            completed_at = $4,
+            notes = NULL,
+            updated_at = NOW()
+          WHERE id = $1
         `,
         [
           id,
@@ -7120,20 +7386,20 @@ app.patch("/tasks/:id", async (req, res) => {
     /* =====================
        5. ONE-OFF / RESTORATION
           → FINISH
-    ===================== */
+    ====================== */
 
     else {
 
       await client.query(
         `
-        UPDATE maintenance_tasks
-        SET
-          status = 'Done',
-          completed_by = $2,
-          completed_at = $3,
-          notes = COALESCE($4, notes),
-          updated_at = NOW()
-        WHERE id = $1
+          UPDATE maintenance_tasks
+          SET
+            status = 'Done',
+            completed_by = $2,
+            completed_at = $3,
+            notes = COALESCE($4, notes),
+            updated_at = NOW()
+          WHERE id = $1
         `,
         [
           id,
@@ -7148,7 +7414,7 @@ app.patch("/tasks/:id", async (req, res) => {
 
     /* =====================
        COMMIT
-    ===================== */
+    ====================== */
 
     await client.query("COMMIT");
 
