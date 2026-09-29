@@ -5681,12 +5681,13 @@ app.post("/scheduled-maintenance", async (req, res) => {
 
 /* =========================================================
    GET SCHEDULED MAINTENANCE TASKS
+
    GET /scheduled-maintenance/:id/tasks
 
    READ-ONLY:
    - Loads tasks linked to one Scheduled Maintenance.
    - Excludes soft-deleted tasks.
-   - Does NOT read or modify Breakdown tasks.
+   - Includes latest execution information when available.
    - Does NOT modify task status or execution history.
 ========================================================= */
 
@@ -5698,76 +5699,111 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
        VALIDATE SM ID
     ===================== */
 
-    const smId = Number(req.params.id);
+    const smId =
+      Number(req.params.id);
+
 
     if (
       !Number.isInteger(smId) ||
       smId <= 0
     ) {
       return res.status(400).json({
-        error: "Invalid Scheduled Maintenance ID"
+        error:
+          "Invalid Scheduled Maintenance ID"
       });
     }
 
 
     /* =====================
-       VERIFY SM EXISTS
+       LOAD TASKS
+
+       OPEN TASK:
+       - duration_min = estimated duration
+       - actual_duration_min = NULL
+
+       DONE TASK:
+       - duration_min = estimated duration
+       - actual_duration_min =
+         latest task execution duration
     ===================== */
 
-    const smResult = await pool.query(
-      `
-      SELECT id
-      FROM scheduled_maintenance
-      WHERE id = $1
-      LIMIT 1
-      `,
-      [smId]
-    );
+    const result =
+      await pool.query(
+        `
+          SELECT
 
-    if (smResult.rows.length === 0) {
-      return res.status(404).json({
-        error: "Scheduled Maintenance not found"
-      });
-    }
+            t.*,
+
+            te.duration_minutes
+              AS actual_duration_min,
+
+            te.executed_at
+              AS execution_executed_at,
+
+            te.executed_by
+              AS execution_executed_by,
+
+            te.technician_id
+              AS execution_technician_id
+
+          FROM maintenance_tasks t
 
 
-    /* =====================
-       LOAD LINKED TASKS
+          LEFT JOIN LATERAL (
 
-       No task or execution is created or modified.
-    ===================== */
+            SELECT
 
-    const result = await pool.query(
-      `
-      SELECT t.*
-      FROM maintenance_tasks t
-      WHERE t.scheduled_maintenance_id = $1
-        AND t.deleted_at IS NULL
-      ORDER BY t.id ASC
-      `,
-      [smId]
-    );
+              duration_minutes,
+              executed_at,
+              executed_by,
+              technician_id
+
+            FROM task_executions
+
+            WHERE task_id = t.id
+
+            ORDER BY
+              executed_at DESC,
+              id DESC
+
+            LIMIT 1
+
+          ) te ON true
+
+
+          WHERE
+            t.scheduled_maintenance_id = $1
+
+            AND t.deleted_at IS NULL
+
+
+          ORDER BY
+            t.id ASC
+        `,
+        [smId]
+      );
 
 
     /* =====================
        RESPONSE
     ===================== */
 
-    return res.json({
-      scheduled_maintenance_id: smId,
-      tasks: result.rows
-    });
+    return res.json(
+      result.rows
+    );
 
 
   } catch (err) {
 
     console.error(
-      "GET /scheduled-maintenance/:id/tasks error:",
+      "GET SCHEDULED MAINTENANCE TASKS ERROR:",
       err
     );
 
+
     return res.status(500).json({
-      error: "Failed to load Scheduled Maintenance Tasks"
+      error:
+        "Failed to load Scheduled Maintenance Tasks"
     });
 
   }
