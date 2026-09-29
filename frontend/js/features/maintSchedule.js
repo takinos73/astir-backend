@@ -145,26 +145,68 @@ async function openScheduledMaintenanceDetail(smId) {
     // Keep the loaded SM for its own Task modal.
     currentScheduledMaintenance = sm;
 
-    /* =====================
-      REFRESH SM START ACTION
+  /* =====================
+   REFRESH SM ACTIONS
 
-      Shows Start only for PLANNED maintenance.
-    ===================== */
+   - Start button:
+     visible only for PLANNED SM
 
-    refreshSmStartButton();
-    refreshSmCloseButton();
+   - Add Task:
+     available while SM is not CLOSED
 
-    // CLOSED SM incidents cannot receive new Tasks.
-    if (addTaskBtn) {
-      const isClosed =
-        String(sm.status || "").toUpperCase() === "CLOSED";
+   - Add Completed Task:
+     available only while SM is IN_PROGRESS
 
-      addTaskBtn.style.display =
-        isClosed ? "none" : "";
+   - Close Maintenance:
+     handled by refreshSmCloseButton()
+===================== */
 
-      addTaskBtn.disabled = isClosed;
-    }
+refreshSmStartButton();
+refreshSmCloseButton();
 
+
+// CLOSED SM incidents cannot receive new Tasks.
+if (addTaskBtn) {
+
+  const isClosed =
+    String(sm.status || "").toUpperCase() === "CLOSED";
+
+
+  addTaskBtn.style.display =
+    isClosed ? "none" : "";
+
+
+  addTaskBtn.disabled =
+    isClosed;
+
+}
+
+
+// Completed Task action is available
+// only while SM is IN_PROGRESS.
+const completedTaskBtn =
+  document.getElementById(
+    "addCompletedSmTaskBtn"
+  );
+
+
+if (completedTaskBtn) {
+
+  const isInProgress =
+    String(
+      sm.status || ""
+    ).toUpperCase() ===
+      "IN_PROGRESS";
+
+
+  completedTaskBtn.style.display =
+    isInProgress ? "" : "none";
+
+
+  completedTaskBtn.disabled =
+    !isInProgress;
+
+}
 
     /* =====================
        RENDER SM DETAILS
@@ -418,7 +460,6 @@ function openSmTaskModal() {
 
 }
 
-
 function closeSmTaskModal() {
 
   const overlay =
@@ -430,6 +471,139 @@ function closeSmTaskModal() {
 
 }
 
+/* =========================================================
+   SCHEDULED MAINTENANCE — ACTION BAR
+
+   Creates a common action area for:
+   - Add Task
+   - Add Completed Task
+   - Close Maintenance
+========================================================= */
+
+function ensureSmActionBar() {
+
+  const addTaskBtn =
+    document.getElementById("addSmTaskBtn");
+
+  if (!addTaskBtn) return null;
+
+
+  let actionBar =
+    document.getElementById("smActionBar");
+
+
+  if (!actionBar) {
+
+    actionBar =
+      document.createElement("div");
+
+    actionBar.id =
+      "smActionBar";
+
+    actionBar.style.display =
+      "flex";
+
+    actionBar.style.flexWrap =
+      "wrap";
+
+    actionBar.style.alignItems =
+      "center";
+
+    actionBar.style.gap =
+      "10px";
+
+    actionBar.style.marginTop =
+      "14px";
+
+    actionBar.style.marginBottom =
+      "18px";
+
+
+    addTaskBtn.parentNode.insertBefore(
+      actionBar,
+      addTaskBtn
+    );
+
+
+    actionBar.appendChild(
+      addTaskBtn
+    );
+
+  }
+
+
+  /* =====================
+     ADD COMPLETED TASK
+  ===================== */
+
+  let completedTaskBtn =
+    document.getElementById(
+      "addCompletedSmTaskBtn"
+    );
+
+
+  if (!completedTaskBtn) {
+
+    completedTaskBtn =
+      document.createElement("button");
+
+    completedTaskBtn.id =
+      "addCompletedSmTaskBtn";
+
+    completedTaskBtn.type =
+      "button";
+
+    completedTaskBtn.className =
+      "btn-table";
+
+    completedTaskBtn.textContent =
+      "+ Add Completed Task";
+
+
+    actionBar.appendChild(
+      completedTaskBtn
+    );
+
+  }
+
+
+  /* =====================
+     CLOSE MAINTENANCE
+  ===================== */
+
+  let closeBtn =
+    document.getElementById(
+      "closeSmBtn"
+    );
+
+
+  if (!closeBtn) {
+
+    closeBtn =
+      document.createElement("button");
+
+    closeBtn.id =
+      "closeSmBtn";
+
+    closeBtn.type =
+      "button";
+
+    closeBtn.className =
+      "btn-table";
+
+    closeBtn.textContent =
+      "✓ Close Maintenance";
+
+
+    actionBar.appendChild(
+      closeBtn
+    );
+
+  }
+
+
+  return actionBar;
+}
 
 /* =====================
    SM TASK MODAL BUTTONS
@@ -1933,7 +2107,6 @@ function refreshSmStartButton() {
 
   }
 
-
   /* =====================
      AVAILABLE ONLY FOR PLANNED SM
   ===================== */
@@ -1946,7 +2119,6 @@ function refreshSmStartButton() {
     smStartInProgress;
 
 }
-
 
 /* =====================
    START MAINTENANCE
@@ -2142,7 +2314,6 @@ async function startScheduledMaintenance() {
 
 }
 
-
 /* =====================
    START BUTTON EVENT
 ===================== */
@@ -2181,66 +2352,14 @@ function refreshSmCloseButton() {
     currentScheduledMaintenance;
 
 
-  const assetEl =
-    document.getElementById("sm-detail-asset");
-
-
-  if (!assetEl) return;
-
-
-  let closeBtn =
-    document.getElementById("closeSmBtn");
-
-
-  /* =====================
-     CREATE BUTTON ONCE
-  ===================== */
-
-  if (!closeBtn) {
-
-    closeBtn =
-      document.createElement("button");
-
-
-    closeBtn.id =
-      "closeSmBtn";
-
-    closeBtn.type =
-      "button";
-
-    closeBtn.className =
-      "btn-table";
-
-
-    closeBtn.textContent =
-      "✓ Close Maintenance";
-
-
-    closeBtn.style.marginTop =
-      "14px";
-
-    closeBtn.style.marginBottom =
-      "18px";
-
-    closeBtn.style.marginLeft =
-      "10px";
-
-    closeBtn.style.padding =
-      "10px 16px";
-
-
-    assetEl.insertAdjacentElement(
-      "afterend",
-      closeBtn
+  const closeBtn =
+    document.getElementById(
+      "closeSmBtn"
     );
 
-  }
 
+  if (!closeBtn) return;
 
-  /* =====================
-     AVAILABLE ONLY FOR
-     IN_PROGRESS SM
-  ===================== */
 
   closeBtn.hidden =
     !sm ||
@@ -2254,7 +2373,6 @@ function refreshSmCloseButton() {
     smCloseInProgress;
 
 }
-
 
 /* =====================
    CLOSE SCHEDULED MAINTENANCE
@@ -2574,7 +2692,6 @@ async function closeScheduledMaintenance() {
 
 }
 
-
 /* =====================
    CLOSE BUTTON EVENT
 ===================== */
@@ -2594,3 +2711,40 @@ document.addEventListener(
 
   }
 );
+
+document.addEventListener("click", event => {
+
+  const target =
+    event.target;
+
+
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+
+  if (
+    target.closest(
+      "#addCompletedSmTaskBtn"
+    )
+  ) {
+
+    if (
+      typeof openCompletedSmTaskModal ===
+      "function"
+    ) {
+
+      openCompletedSmTaskModal();
+
+    } else {
+
+      console.error(
+        "Completed SM Task modal is not available yet."
+      );
+
+    }
+
+    return;
+  }
+
+});
