@@ -6117,19 +6117,19 @@ function openRestorationTaskModal() {
     Number(currentBreakdownId);
 
     /* =====================
-   CREATE MODE
-===================== */
+      CREATE MODE
+    ===================== */
 
-editingRestorationTaskId = null;
+    editingRestorationTaskId = null;
 
-const saveBtn =
-  document.getElementById(
-    "saveRestorationTaskBtn"
-  );
+    const saveBtn =
+      document.getElementById(
+        "saveRestorationTaskBtn"
+      );
 
-if (saveBtn) {
-  saveBtn.textContent = "Add Task";
-}
+    if (saveBtn) {
+      saveBtn.textContent = "Add Task";
+    }
 
   if (
     !Number.isInteger(breakdownId) ||
@@ -6247,6 +6247,40 @@ if (saveBtn) {
       `BD-${String(
         breakdownId
       ).padStart(5, "0")}`;
+
+  }
+
+  const startedAtEl =
+  document.getElementById(
+    "restorationTaskStartedAt"
+  );
+
+  if (startedAtEl) {
+
+    const startedAt =
+      currentBreakdown?.started_at
+        ? new Date(
+            currentBreakdown.started_at
+          )
+        : null;
+
+    startedAtEl.textContent =
+      startedAt &&
+      !Number.isNaN(
+        startedAt.getTime()
+      )
+        ? `Opened: ${startedAt.toLocaleString(
+            "en-GB",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false
+            }
+          )}`
+        : "Opened: -";
 
   }
 
@@ -7407,12 +7441,33 @@ function ensureCompletedCorrectiveModal() {
             Add Completed Corrective
           </h3>
 
-          <div
+        <div
+          style="
+            margin-top:6px;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+          "
+        >
+          <span
             id="completedCorrectiveReference"
-            class="section-subtitle"
-            style="margin-top:4px;"
+            style="
+              color:#dc2626;
+              font-weight:700;
+            "
           >
-          </div>
+          </span>
+
+          <span
+            id="completedCorrectiveStartedAt"
+            style="
+              color:#9ca3af;
+              font-size:13px;
+            "
+          >
+          </span>
+        </div>
 
         </div>
 
@@ -8296,6 +8351,40 @@ async function openCompletedCorrectiveModal() {
       ).padStart(5, "0")}`;
 
   }
+
+  const startedAtEl =
+  document.getElementById(
+    "completedCorrectiveStartedAt"
+  );
+
+if (startedAtEl) {
+
+  const startedAt =
+    currentBreakdown?.started_at
+      ? new Date(
+          currentBreakdown.started_at
+        )
+      : null;
+
+  startedAtEl.textContent =
+    startedAt &&
+    !Number.isNaN(
+      startedAt.getTime()
+    )
+      ? `Opened: ${startedAt.toLocaleString(
+          "en-GB",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          }
+        )}`
+      : "Opened: -";
+
+}
 
 
   /* =====================
