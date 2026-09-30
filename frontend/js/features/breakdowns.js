@@ -7485,6 +7485,13 @@ function ensureCompletedCorrectiveModal() {
               </option>
             </select>
 
+            <input
+              id="completedCorrectiveUnitInput"
+              type="text"
+              placeholder="Enter new unit"
+              style="display:none; margin-top:8px;"
+            >
+
           </div>
 
         </div>
@@ -7685,7 +7692,7 @@ function ensureCompletedCorrectiveModal() {
 
     }
   );
-
+  
 
   /* =====================
      SECTION → UNIT
@@ -7705,6 +7712,55 @@ function ensureCompletedCorrectiveModal() {
 
       }
     );
+
+    /* =====================
+      UNIT → NEW UNIT
+    ===================== */
+
+    document
+      .getElementById(
+        "completedCorrectiveUnit"
+      )
+      ?.addEventListener(
+        "change",
+        event => {
+
+          const unitInput =
+            document.getElementById(
+              "completedCorrectiveUnitInput"
+            );
+
+
+          if (!unitInput) {
+            return;
+          }
+
+
+          if (
+            event.target.value ===
+            "__new__"
+          ) {
+
+            unitInput.style.display =
+              "block";
+
+            unitInput.value = "";
+
+            unitInput.focus();
+
+          }
+
+          else {
+
+            unitInput.style.display =
+              "none";
+
+            unitInput.value = "";
+
+          }
+
+        }
+      );
 
 
   /* =====================
@@ -7985,13 +8041,7 @@ async function populateCompletedCorrectiveSections() {
 }
 
 
-/* =====================
-   POPULATE UNITS
-===================== */
-
-function populateCompletedCorrectiveUnits(
-  section
-) {
+function populateCompletedCorrectiveUnits(section) {
 
   const sectionSelect =
     document.getElementById(
@@ -8003,17 +8053,34 @@ function populateCompletedCorrectiveUnits(
       "completedCorrectiveUnit"
     );
 
+  const unitInput =
+    document.getElementById(
+      "completedCorrectiveUnitInput"
+    );
+
 
   if (
     !sectionSelect ||
-    !unitSelect
+    !unitSelect ||
+    !unitInput
   ) {
     return;
   }
 
 
+  /* =====================
+     RESET
+  ===================== */
+
   unitSelect.innerHTML =
     `<option value="">Select unit</option>`;
+
+  unitSelect.value = "";
+
+  unitInput.value = "";
+
+  unitInput.style.display =
+    "none";
 
 
   if (!section) {
@@ -8103,42 +8170,63 @@ function populateCompletedCorrectiveUnits(
   );
 
 
-  Array.from(
-    unitMap.values()
-  )
-    .sort(
-      (a, b) =>
-        a.localeCompare(
-          b,
-          "el",
-          {
-            sensitivity: "base"
-          }
-        )
+  const units =
+    Array.from(
+      unitMap.values()
     )
-    .forEach(
-      unit => {
+      .sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "el",
+            {
+              sensitivity: "base"
+            }
+          )
+      );
 
-        const option =
-          document.createElement(
-            "option"
-          );
 
-        option.value =
-          unit;
+  /* =====================
+     EXISTING UNITS
+  ===================== */
 
-        option.textContent =
-          unit;
+  if (units.length > 0) {
 
-        unitSelect.appendChild(
-          option
-        );
+    unitSelect.innerHTML =
+      `<option value="">Select unit</option>` +
 
-      }
-    );
+      units
+        .map(
+          unit =>
+            `<option value="${escapeBreakdownHtml(unit)}">${escapeBreakdownHtml(unit)}</option>`
+        )
+        .join("") +
+
+      `<option value="__new__">➕ New unit</option>`;
+
+
+    unitSelect.style.display =
+      "block";
+
+    unitInput.style.display =
+      "none";
+
+    return;
+  }
+
+
+  /* =====================
+     NO EXISTING UNITS
+  ===================== */
+
+  unitSelect.innerHTML =
+    `<option value="">Select unit</option>` +
+    `<option value="__new__">➕ New unit</option>`;
+
+  unitSelect.style.display =
+    "block";
 
 }
-
 
 /* =====================
    OPEN MODAL
@@ -8431,7 +8519,7 @@ async function saveCompletedCorrectiveTask() {
     ).trim();
 
 
-  const unit =
+  const unitSelectValue =
     String(
       document
         .getElementById(
@@ -8439,6 +8527,22 @@ async function saveCompletedCorrectiveTask() {
         )
         ?.value || ""
     ).trim();
+
+
+  const unitInputValue =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveUnitInput"
+        )
+        ?.value || ""
+    ).trim();
+
+
+  const unit =
+    unitSelectValue === "__new__"
+      ? unitInputValue
+      : unitSelectValue;
 
 
   const impact =
