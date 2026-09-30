@@ -4038,12 +4038,12 @@ app.post("/breakdowns/:id/tasks", async (req, res) => {
    POST /breakdowns/:id/completed-task
 
    Creates a new completed corrective / Restoration task
-   directly inside an OPEN Breakdown.
+   directly inside an IN_PROGRESS Breakdown.
 
    Available to ALL users.
 
    RULES:
-   - Breakdown must be OPEN.
+   - Breakdown must be IN_PROGRESS.
    - Task belongs to Breakdown asset.
    - type = Restoration
    - status = Done
@@ -4060,7 +4060,7 @@ app.post("/breakdowns/:id/tasks", async (req, res) => {
    - Does NOT modify diagnosis fields.
 ========================================================= */
 
-app.post("/breakdowns/:id/completed-task",async (req, res) => {
+app.post("/breakdowns/:id/completed-task", async (req, res) => {
 
     const breakdownId =
       Number(req.params.id);
@@ -4261,7 +4261,7 @@ app.post("/breakdowns/:id/completed-task",async (req, res) => {
 
 
       /* =====================
-         OPEN BREAKDOWN GUARD
+         IN_PROGRESS BREAKDOWN GUARD
       ===================== */
 
       if (
@@ -4270,14 +4270,14 @@ app.post("/breakdowns/:id/completed-task",async (req, res) => {
         )
           .trim()
           .toUpperCase() !==
-        "OPEN"
+        "IN_PROGRESS"
       ) {
 
         await client.query("ROLLBACK");
 
         return res.status(409).json({
           error:
-            "Completed Corrective Task can only be added to an OPEN Breakdown"
+            "Completed Corrective Task can only be added to an IN_PROGRESS Breakdown"
         });
       }
 

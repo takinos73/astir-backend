@@ -2470,6 +2470,11 @@ function updateBreakdownStatusUI(breakdown) {
       "addRestorationTaskBtn"
     );
 
+  const addCompletedCorrectiveBtn =
+    document.getElementById(
+      "addCompletedCorrectiveTaskBtn"
+    );
+
   const editBreakdownBtn =
     document.getElementById(
       "editBreakdownBtn"
@@ -2583,6 +2588,36 @@ function updateBreakdownStatusUI(breakdown) {
       status === "CLOSED"
         ? "none"
         : "";
+
+  }
+
+  /* =====================
+    ADD COMPLETED CORRECTIVE
+
+    Available to ALL users.
+
+    Only IN PROGRESS Breakdowns may receive
+    a new Task that is created directly
+    as completed.
+
+    CLOSED / other states:
+    action is hidden.
+  ===================== */
+
+  if (addCompletedCorrectiveBtn) {
+
+    const canAddCompletedCorrective =
+      status === "IN_PROGRESS";
+
+
+    addCompletedCorrectiveBtn.style.display =
+      canAddCompletedCorrective
+        ? "inline-flex"
+        : "none";
+
+
+    addCompletedCorrectiveBtn.disabled =
+      !canAddCompletedCorrective;
 
   }
 
