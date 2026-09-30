@@ -7318,6 +7318,1437 @@ document
   );
 
   /* =========================================================
+   COMPLETED CORRECTIVE TASK
+   BREAKDOWN - IN_PROGRESS ONLY
+
+   Creates a new Restoration Task directly as DONE
+   and creates its Task Execution at the same time.
+
+   Backend:
+   POST /breakdowns/:id/completed-task
+========================================================= */
+
+
+/* =====================
+   DATETIME-LOCAL HELPER
+===================== */
+
+function toCompletedCorrectiveLocalDateTime(value) {
+
+  const date =
+    value
+      ? new Date(value)
+      : new Date();
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  const pad =
+    n => String(n).padStart(2, "0");
+
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  );
+}
+
+
+/* =====================
+   CREATE MODAL
+===================== */
+
+function ensureCompletedCorrectiveModal() {
+
+  if (
+    document.getElementById(
+      "completedCorrectiveOverlay"
+    )
+  ) {
+    return;
+  }
+
+
+  const overlay =
+    document.createElement("div");
+
+  overlay.id =
+    "completedCorrectiveOverlay";
+
+  overlay.className =
+    "modal-overlay";
+
+  overlay.style.display =
+    "none";
+
+
+  overlay.innerHTML = `
+    <div
+      class="modal-card"
+      style="
+        width:min(720px, 94vw);
+        max-height:90vh;
+        overflow:auto;
+      "
+    >
+
+      <div class="modal-header">
+
+        <div>
+
+          <h3 style="margin:0;">
+            Add Completed Corrective
+          </h3>
+
+          <div
+            id="completedCorrectiveReference"
+            class="section-subtitle"
+            style="margin-top:4px;"
+          >
+          </div>
+
+        </div>
+
+
+        <button
+          id="closeCompletedCorrectiveBtn"
+          type="button"
+          class="modal-close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+
+        <div class="form-group">
+
+          <label>
+            Asset
+          </label>
+
+          <input
+            id="completedCorrectiveAsset"
+            type="text"
+            readonly
+          >
+
+        </div>
+
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+          "
+        >
+
+          <div class="form-group">
+
+            <label>
+              Section *
+            </label>
+
+            <select
+              id="completedCorrectiveSection"
+            >
+              <option value="">
+                Select section
+              </option>
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Unit *
+            </label>
+
+            <select
+              id="completedCorrectiveUnit"
+            >
+              <option value="">
+                Select unit
+              </option>
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Corrective Task *
+          </label>
+
+          <input
+            id="completedCorrectiveTask"
+            type="text"
+            autocomplete="off"
+            placeholder="Describe completed corrective work"
+          >
+
+        </div>
+
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+          "
+        >
+
+          <div class="form-group">
+
+            <label>
+              Impact *
+            </label>
+
+            <select
+              id="completedCorrectiveImpact"
+            >
+              <option value="normal">
+                Normal
+              </option>
+
+              <option value="safety">
+                Safety
+              </option>
+
+              <option value="quality">
+                Quality
+              </option>
+
+              <option value="safety_quality">
+                Safety + Quality
+              </option>
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Technician *
+            </label>
+
+            <select
+              id="completedCorrectiveTechnician"
+            >
+              <option value="">
+                Select Technician
+              </option>
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+          "
+        >
+
+          <div class="form-group">
+
+            <label>
+              Actual Completion *
+            </label>
+
+            <input
+              id="completedCorrectiveExecutedAt"
+              type="datetime-local"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Actual Duration (min) *
+            </label>
+
+            <input
+              id="completedCorrectiveDuration"
+              type="number"
+              min="0"
+              step="1"
+              inputmode="numeric"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Notes
+          </label>
+
+          <textarea
+            id="completedCorrectiveNotes"
+            rows="3"
+          ></textarea>
+
+        </div>
+
+
+      </div>
+
+
+      <div class="modal-actions">
+
+        <button
+          id="cancelCompletedCorrectiveBtn"
+          type="button"
+          class="btn-table"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="saveCompletedCorrectiveBtn"
+          type="button"
+          class="btn-table"
+        >
+          Save Completed Corrective
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  /* =====================
+     CLOSE
+  ===================== */
+
+  document
+    .getElementById(
+      "closeCompletedCorrectiveBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeCompletedCorrectiveModal
+    );
+
+
+  document
+    .getElementById(
+      "cancelCompletedCorrectiveBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeCompletedCorrectiveModal
+    );
+
+
+  overlay.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target === overlay
+      ) {
+        closeCompletedCorrectiveModal();
+      }
+
+    }
+  );
+
+
+  /* =====================
+     SECTION → UNIT
+  ===================== */
+
+  document
+    .getElementById(
+      "completedCorrectiveSection"
+    )
+    ?.addEventListener(
+      "change",
+      event => {
+
+        populateCompletedCorrectiveUnits(
+          event.target.value
+        );
+
+      }
+    );
+
+
+  /* =====================
+     SAVE
+  ===================== */
+
+  document
+    .getElementById(
+      "saveCompletedCorrectiveBtn"
+    )
+    ?.addEventListener(
+      "click",
+      saveCompletedCorrectiveTask
+    );
+
+}
+
+
+/* =====================
+   CLOSE MODAL
+===================== */
+
+function closeCompletedCorrectiveModal() {
+
+  const overlay =
+    document.getElementById(
+      "completedCorrectiveOverlay"
+    );
+
+  if (!overlay) return;
+
+  overlay.style.display =
+    "none";
+
+}
+
+
+/* =====================
+   POPULATE TECHNICIANS
+===================== */
+
+async function populateCompletedCorrectiveTechnicians() {
+
+  const select =
+    document.getElementById(
+      "completedCorrectiveTechnician"
+    );
+
+  if (!select) return;
+
+
+  if (
+    !Array.isArray(
+      state.techniciansData
+    ) ||
+    state.techniciansData.length === 0
+  ) {
+
+    try {
+
+      await loadTechnicians();
+
+    } catch (err) {
+
+      console.error(
+        "LOAD TECHNICIANS ERROR:",
+        err
+      );
+
+    }
+
+  }
+
+
+  select.innerHTML =
+    `<option value="">Select Technician</option>`;
+
+
+  if (
+    !Array.isArray(
+      state.techniciansData
+    )
+  ) {
+    return;
+  }
+
+
+  state.techniciansData
+    .filter(
+      technician =>
+        technician.active !== false
+    )
+    .sort(
+      (a, b) =>
+        String(a.name || "")
+          .localeCompare(
+            String(b.name || ""),
+            "el"
+          )
+    )
+    .forEach(
+      technician => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          String(
+            technician.id
+          );
+
+        option.textContent =
+          technician.name;
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+}
+
+
+/* =====================
+   POPULATE SECTIONS
+===================== */
+
+async function populateCompletedCorrectiveSections() {
+
+  const select =
+    document.getElementById(
+      "completedCorrectiveSection"
+    );
+
+  if (!select) return;
+
+
+  const assetId =
+    Number(
+      currentBreakdown?.asset_id
+    );
+
+
+  select.innerHTML =
+    `<option value="">Select section</option>`;
+
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/assets/${assetId}/locations`
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to load locations"
+      );
+
+    }
+
+
+    const locations =
+      Array.isArray(result)
+        ? result
+        : (
+            Array.isArray(result.locations)
+              ? result.locations
+              : []
+          );
+
+
+    const sectionMap =
+      new Map();
+
+
+    locations.forEach(
+      location => {
+
+        const section =
+          String(
+            location?.section || ""
+          ).trim();
+
+        if (!section) return;
+
+
+        const key =
+          section.toLocaleLowerCase(
+            "el-GR"
+          );
+
+
+        if (
+          !sectionMap.has(key)
+        ) {
+          sectionMap.set(
+            key,
+            section
+          );
+        }
+
+      }
+    );
+
+
+    const sections =
+      Array.from(
+        sectionMap.values()
+      )
+        .sort(
+          (a, b) =>
+            a.localeCompare(
+              b,
+              "el",
+              {
+                sensitivity: "base"
+              }
+            )
+        );
+
+
+    sections.forEach(
+      section => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          section;
+
+        option.textContent =
+          section;
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+
+    select.dataset.locations =
+      JSON.stringify(
+        locations
+      );
+
+
+  } catch (err) {
+
+    console.error(
+      "COMPLETED CORRECTIVE LOCATIONS ERROR:",
+      err
+    );
+
+  }
+
+}
+
+
+/* =====================
+   POPULATE UNITS
+===================== */
+
+function populateCompletedCorrectiveUnits(
+  section
+) {
+
+  const sectionSelect =
+    document.getElementById(
+      "completedCorrectiveSection"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "completedCorrectiveUnit"
+    );
+
+
+  if (
+    !sectionSelect ||
+    !unitSelect
+  ) {
+    return;
+  }
+
+
+  unitSelect.innerHTML =
+    `<option value="">Select unit</option>`;
+
+
+  if (!section) {
+    return;
+  }
+
+
+  let locations = [];
+
+
+  try {
+
+    locations =
+      JSON.parse(
+        sectionSelect.dataset.locations ||
+        "[]"
+      );
+
+  } catch (_) {
+
+    locations = [];
+
+  }
+
+
+  const normalizedSection =
+    String(section)
+      .trim()
+      .toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+  const unitMap =
+    new Map();
+
+
+  locations.forEach(
+    location => {
+
+      const locationSection =
+        String(
+          location?.section || ""
+        ).trim();
+
+      const unit =
+        String(
+          location?.unit || ""
+        ).trim();
+
+
+      if (
+        !locationSection ||
+        !unit
+      ) {
+        return;
+      }
+
+
+      if (
+        locationSection
+          .toLocaleLowerCase(
+            "el-GR"
+          ) !==
+        normalizedSection
+      ) {
+        return;
+      }
+
+
+      const key =
+        unit.toLocaleLowerCase(
+          "el-GR"
+        );
+
+
+      if (
+        !unitMap.has(key)
+      ) {
+        unitMap.set(
+          key,
+          unit
+        );
+      }
+
+    }
+  );
+
+
+  Array.from(
+    unitMap.values()
+  )
+    .sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          "el",
+          {
+            sensitivity: "base"
+          }
+        )
+    )
+    .forEach(
+      unit => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          unit;
+
+        option.textContent =
+          unit;
+
+        unitSelect.appendChild(
+          option
+        );
+
+      }
+    );
+
+}
+
+
+/* =====================
+   OPEN MODAL
+===================== */
+
+async function openCompletedCorrectiveModal() {
+
+  ensureCompletedCorrectiveModal();
+
+
+  const breakdownId =
+    Number(
+      currentBreakdownId
+    );
+
+
+  if (
+    !Number.isInteger(
+      breakdownId
+    ) ||
+    breakdownId <= 0
+  ) {
+
+    alert(
+      "Invalid Breakdown."
+    );
+
+    return;
+  }
+
+
+  const status =
+    String(
+      currentBreakdown?.status || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  if (
+    status !== "IN_PROGRESS"
+  ) {
+
+    alert(
+      "Completed Corrective Tasks can only be added while the Breakdown is IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     REFERENCE
+  ===================== */
+
+  const reference =
+    document.getElementById(
+      "completedCorrectiveReference"
+    );
+
+
+  if (reference) {
+
+    reference.textContent =
+      `BD-${String(
+        breakdownId
+      ).padStart(5, "0")}`;
+
+  }
+
+
+  /* =====================
+     ASSET
+  ===================== */
+
+  const assetInput =
+    document.getElementById(
+      "completedCorrectiveAsset"
+    );
+
+
+  if (assetInput) {
+
+    const parts = [
+      currentBreakdown?.asset_model,
+      currentBreakdown?.asset_serial
+        ? `S/N ${currentBreakdown.asset_serial}`
+        : null,
+      currentBreakdown?.line_name
+    ]
+      .filter(Boolean);
+
+
+    assetInput.value =
+      parts.join(" — ");
+
+  }
+
+
+  /* =====================
+     RESET
+  ===================== */
+
+  const taskInput =
+    document.getElementById(
+      "completedCorrectiveTask"
+    );
+
+  const impactSelect =
+    document.getElementById(
+      "completedCorrectiveImpact"
+    );
+
+  const executedInput =
+    document.getElementById(
+      "completedCorrectiveExecutedAt"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "completedCorrectiveDuration"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "completedCorrectiveNotes"
+    );
+
+
+  if (taskInput) {
+    taskInput.value = "";
+  }
+
+  if (impactSelect) {
+    impactSelect.value =
+      "normal";
+  }
+
+  if (durationInput) {
+    durationInput.value = "";
+  }
+
+  if (notesInput) {
+    notesInput.value = "";
+  }
+
+
+  /* =====================
+     EXECUTION TIME LIMITS
+  ===================== */
+
+  if (executedInput) {
+
+    executedInput.value =
+      toCompletedCorrectiveLocalDateTime(
+        new Date()
+      );
+
+    executedInput.max =
+      toCompletedCorrectiveLocalDateTime(
+        new Date()
+      );
+
+
+    if (
+      currentBreakdown?.started_at
+    ) {
+
+      executedInput.min =
+        toCompletedCorrectiveLocalDateTime(
+          currentBreakdown.started_at
+        );
+
+    }
+
+  }
+
+
+  /* =====================
+     LOAD DROPDOWNS
+  ===================== */
+
+  await populateCompletedCorrectiveSections();
+
+  await populateCompletedCorrectiveTechnicians();
+
+
+  const unitSelect =
+    document.getElementById(
+      "completedCorrectiveUnit"
+    );
+
+  if (unitSelect) {
+
+    unitSelect.innerHTML =
+      `<option value="">Select unit</option>`;
+
+  }
+
+
+  /* =====================
+     SHOW
+  ===================== */
+
+  const overlay =
+    document.getElementById(
+      "completedCorrectiveOverlay"
+    );
+
+
+  if (overlay) {
+
+    overlay.style.display =
+      "flex";
+
+  }
+
+
+  setTimeout(
+    () => {
+      taskInput?.focus();
+    },
+    0
+  );
+
+}
+
+
+/* =====================
+   SAVE
+===================== */
+
+async function saveCompletedCorrectiveTask() {
+
+  const breakdownId =
+    Number(
+      currentBreakdownId
+    );
+
+
+  if (
+    !Number.isInteger(
+      breakdownId
+    ) ||
+    breakdownId <= 0
+  ) {
+
+    alert(
+      "Invalid Breakdown."
+    );
+
+    return;
+  }
+
+
+  if (
+    String(
+      currentBreakdown?.status || ""
+    )
+      .trim()
+      .toUpperCase() !==
+    "IN_PROGRESS"
+  ) {
+
+    alert(
+      "The Breakdown is no longer IN_PROGRESS."
+    );
+
+    return;
+  }
+
+
+  const task =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveTask"
+        )
+        ?.value || ""
+    ).trim();
+
+
+  const section =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveSection"
+        )
+        ?.value || ""
+    ).trim();
+
+
+  const unit =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveUnit"
+        )
+        ?.value || ""
+    ).trim();
+
+
+  const impact =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveImpact"
+        )
+        ?.value || "normal"
+    ).trim();
+
+
+  const technicianId =
+    Number(
+      document
+        .getElementById(
+          "completedCorrectiveTechnician"
+        )
+        ?.value
+    );
+
+
+  const executedValue =
+    document
+      .getElementById(
+        "completedCorrectiveExecutedAt"
+      )
+      ?.value || "";
+
+
+  const durationValue =
+    document
+      .getElementById(
+        "completedCorrectiveDuration"
+      )
+      ?.value ?? "";
+
+
+  const actualDuration =
+    Number(
+      durationValue
+    );
+
+
+  const notes =
+    String(
+      document
+        .getElementById(
+          "completedCorrectiveNotes"
+        )
+        ?.value || ""
+    ).trim();
+
+
+  /* =====================
+     REQUIRED FIELDS
+  ===================== */
+
+  if (
+    !task ||
+    !section ||
+    !unit ||
+    !Number.isInteger(
+      technicianId
+    ) ||
+    technicianId <= 0 ||
+    !executedValue ||
+    durationValue === "" ||
+    !Number.isInteger(
+      actualDuration
+    ) ||
+    actualDuration < 0
+  ) {
+
+    alert(
+      "Please complete all required fields."
+    );
+
+    return;
+  }
+
+
+  const executedAt =
+    new Date(
+      executedValue
+    );
+
+
+  if (
+    Number.isNaN(
+      executedAt.getTime()
+    )
+  ) {
+
+    alert(
+      "Invalid Actual Completion date/time."
+    );
+
+    return;
+  }
+
+
+  const breakdownStartedAt =
+    new Date(
+      currentBreakdown.started_at
+    );
+
+
+  if (
+    executedAt <
+    breakdownStartedAt
+  ) {
+
+    alert(
+      "Actual Completion cannot be earlier than Breakdown start."
+    );
+
+    return;
+  }
+
+
+  if (
+    executedAt.getTime() >
+    Date.now()
+  ) {
+
+    alert(
+      "Actual Completion cannot be in the future."
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `Record completed Corrective Task?\n\n` +
+      `BD-${String(
+        breakdownId
+      ).padStart(5, "0")}\n` +
+      `Task: ${task}\n` +
+      `Actual Duration: ${actualDuration} min\n\n` +
+      `The Breakdown will remain IN_PROGRESS.`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const saveBtn =
+    document.getElementById(
+      "saveCompletedCorrectiveBtn"
+    );
+
+
+  try {
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        true;
+
+      saveBtn.textContent =
+        "Saving...";
+
+    }
+
+
+    const response =
+      await fetch(
+        `/breakdowns/${breakdownId}/completed-task`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              task,
+              section,
+              unit,
+              impact,
+
+              technician_id:
+                technicianId,
+
+              executed_at:
+                executedAt.toISOString(),
+
+              actual_duration_min:
+                actualDuration,
+
+              notes:
+                notes || null
+            })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Failed to record completed Corrective Task"
+      );
+
+    }
+
+
+    closeCompletedCorrectiveModal();
+
+
+    /* =====================
+       REFRESH BREAKDOWN TASKS
+    ===================== */
+
+    try {
+
+      await loadRestorationTasks(
+        breakdownId
+      );
+
+    } catch (refreshError) {
+
+      console.error(
+        "REFRESH BREAKDOWN TASKS ERROR:",
+        refreshError
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH GLOBAL TASKS
+    ===================== */
+
+    try {
+
+      await loadTasks();
+
+    } catch (refreshError) {
+
+      console.error(
+        "REFRESH GLOBAL TASKS ERROR:",
+        refreshError
+      );
+
+    }
+
+
+    alert(
+      `Completed Corrective Task recorded successfully.\n\n` +
+      `Task #${result.task?.id ?? "-"}`
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "SAVE COMPLETED CORRECTIVE ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not record Completed Corrective Task."
+    );
+
+
+  } finally {
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        false;
+
+      saveBtn.textContent =
+        "Save Completed Corrective";
+
+    }
+
+  }
+
+}
+
+
+/* =====================
+   BUTTON
+===================== */
+
+document
+  .getElementById(
+    "addCompletedCorrectiveTaskBtn"
+  )
+  ?.addEventListener(
+    "click",
+    openCompletedCorrectiveModal
+  );
+
+  /* =========================================================
    DELETE RESTORATION TASK
 
    Soft-delete through backend:
