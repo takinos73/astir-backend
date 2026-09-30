@@ -4034,6 +4034,503 @@ app.post("/breakdowns/:id/tasks", async (req, res) => {
 });
 
 /* =========================================================
+   CREATE + COMPLETE CORRECTIVE TASK
+   POST /breakdowns/:id/completed-task
+
+   Creates a new completed corrective / Restoration task
+   directly inside an OPEN Breakdown.
+
+   Available to ALL users.
+
+   RULES:
+   - Breakdown must be OPEN.
+   - Task belongs to Breakdown asset.
+   - type = Restoration
+   - status = Done
+   - frequency_hours = 0
+   - due_date = NULL
+   - prev_due_date = NULL
+   - Actual completion >= Breakdown started_at
+   - Actual completion <= NOW
+   - Creates task + execution in one transaction.
+
+   IMPORTANT:
+   - Does NOT close the Breakdown.
+   - Does NOT modify machine state.
+   - Does NOT modify diagnosis fields.
+========================================================= */
+
+app.post("/breakdowns/:id/completed-task",async (req, res) => {
+
+    const breakdownId =
+      Number(req.params.id);
+
+    const {
+      task,
+      section,
+      unit,
+      technician_id,
+      executed_at,
+      actual_duration_min,
+      notes,
+      impact
+    } = req.body || {};
+
+
+    /* =====================
+       VALIDATE BREAKDOWN ID
+    ===================== */
+
+    if (
+      !Number.isInteger(breakdownId) ||
+      breakdownId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid Breakdown ID"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE TASK
+    ===================== */
+
+    const taskName =
+      String(task || "").trim();
+
+    if (!taskName) {
+      return res.status(400).json({
+        error: "Corrective Task is required"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE IMPACT
+    ===================== */
+
+    const resolvedImpact =
+      String(impact || "normal")
+        .trim()
+        .toLowerCase();
+
+    const validImpacts = [
+      "normal",
+      "safety",
+      "quality",
+      "safety_quality"
+    ];
+
+    if (
+      !validImpacts.includes(
+        resolvedImpact
+      )
+    ) {
+      return res.status(400).json({
+        error: "Invalid Task Impact"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE TECHNICIAN
+    ===================== */
+
+    const technicianId =
+      Number(technician_id);
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Technician is required"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE EXECUTION TIME
+    ===================== */
+
+    if (!executed_at) {
+      return res.status(400).json({
+        error:
+          "Actual completion time is required"
+      });
+    }
+
+    const executedAt =
+      new Date(executed_at);
+
+    if (
+      Number.isNaN(
+        executedAt.getTime()
+      )
+    ) {
+      return res.status(400).json({
+        error:
+          "Invalid actual completion time"
+      });
+    }
+
+    if (
+      executedAt.getTime() >
+      Date.now()
+    ) {
+      return res.status(400).json({
+        error:
+          "Actual completion time cannot be in the future"
+      });
+    }
+
+
+    /* =====================
+       VALIDATE ACTUAL DURATION
+    ===================== */
+
+    if (
+      actual_duration_min === null ||
+      actual_duration_min === undefined ||
+      actual_duration_min === ""
+    ) {
+      return res.status(400).json({
+        error:
+          "Actual Duration is required"
+      });
+    }
+
+    const actualDuration =
+      Number(actual_duration_min);
+
+    if (
+      !Number.isInteger(actualDuration) ||
+      actualDuration < 0
+    ) {
+      return res.status(400).json({
+        error:
+          "Actual Duration must be a non-negative integer"
+      });
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOAD + LOCK BREAKDOWN
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+            SELECT
+              id,
+              asset_id,
+              status,
+              started_at,
+              closed_at
+            FROM breakdowns
+            WHERE id = $1
+            FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        !breakdownResult.rows.length
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Breakdown not found"
+        });
+      }
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         OPEN BREAKDOWN GUARD
+      ===================== */
+
+      if (
+        String(
+          breakdown.status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "OPEN"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Completed Corrective Task can only be added to an OPEN Breakdown"
+        });
+      }
+
+
+      /* =====================
+         BREAKDOWN START GUARD
+      ===================== */
+
+      if (!breakdown.started_at) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Breakdown has no start time"
+        });
+      }
+
+
+      const startedAt =
+        new Date(
+          breakdown.started_at
+        );
+
+
+      if (
+        executedAt < startedAt
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Actual completion time cannot be earlier than Breakdown start"
+        });
+      }
+
+
+      /* =====================
+         VERIFY TECHNICIAN
+      ===================== */
+
+      const technicianResult =
+        await client.query(
+          `
+            SELECT
+              id,
+              name
+            FROM technicians
+            WHERE id = $1
+              AND active = true
+            LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (
+        !technicianResult.rows.length
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Active Technician not found"
+        });
+      }
+
+
+      const technician =
+        technicianResult.rows[0];
+
+
+      /* =====================
+         CREATE COMPLETED TASK
+      ===================== */
+
+      const taskResult =
+        await client.query(
+          `
+            INSERT INTO maintenance_tasks (
+              asset_id,
+              task,
+              section,
+              unit,
+              type,
+              impact,
+              status,
+              due_date,
+              frequency_hours,
+              duration_min,
+              notes,
+              is_planned,
+              breakdown_id,
+              scheduled_maintenance_id,
+              completed_by,
+              completed_at
+            )
+
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              'Restoration',
+              $5,
+              'Done',
+              NULL,
+              0,
+              NULL,
+              $6,
+              true,
+              $7,
+              NULL,
+              $8,
+              $9
+            )
+
+            RETURNING *
+          `,
+          [
+            breakdown.asset_id,
+            taskName,
+
+            String(
+              section || ""
+            ).trim() || null,
+
+            String(
+              unit || ""
+            ).trim() || null,
+
+            resolvedImpact,
+
+            String(
+              notes || ""
+            ).trim() || null,
+
+            breakdownId,
+
+            technician.name,
+
+            executedAt
+          ]
+        );
+
+
+      const completedTask =
+        taskResult.rows[0];
+
+
+      /* =====================
+         CREATE EXECUTION
+      ===================== */
+
+      const executionResult =
+        await client.query(
+          `
+            INSERT INTO task_executions (
+              task_id,
+              asset_id,
+              executed_by,
+              technician_id,
+              prev_due_date,
+              executed_at,
+              duration_minutes,
+              notes
+            )
+
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              NULL,
+              $5,
+              $6,
+              $7
+            )
+
+            RETURNING *
+          `,
+          [
+            completedTask.id,
+            breakdown.asset_id,
+            technician.name,
+            technician.id,
+            executedAt,
+            actualDuration,
+
+            String(
+              notes || ""
+            ).trim() || null
+          ]
+        );
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      return res.status(201).json({
+
+        success: true,
+
+        message:
+          "Completed Corrective Task recorded successfully",
+
+        breakdown_id:
+          breakdownId,
+
+        task:
+          completedTask,
+
+        execution:
+          executionResult.rows[0]
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+
+      console.error(
+        "COMPLETED BREAKDOWN TASK ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to record completed Corrective Task"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    GET RESTORATION TASKS
    GET /breakdowns/:id/tasks
 
