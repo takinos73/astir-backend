@@ -934,9 +934,20 @@ function viewTask(taskId) {
   </div>
 
   <!-- WORK ORDER TITLE -->
-  <div class="task-view-title tech">
-    ${task.task}
-  </div>
+    <div class="task-view-title tech">
+      ${task.task}
+    </div>
+
+    <div
+      style="
+        margin-top:4px;
+        font-size:12px;
+        color:#8b949e;
+        font-weight:500;
+      "
+    >
+      Task ID: ${task.id}
+    </div>
 
   <!-- STATUS / TYPE / IMPACT -->
   <div class="task-view-meta tech">
