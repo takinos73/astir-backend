@@ -2224,3 +2224,32 @@ input[type="date"] {
   color: white;
   border: 0;
 }
+
+/* =========================================
+   BREAKDOWN TASK ACTION BUTTONS
+========================================= */
+
+#addRestorationTaskBtn {
+  background: #1f4f7a;
+  color: #ffffff;
+  border: 1px solid #3b82c4;
+  font-weight: 600;
+}
+
+#addRestorationTaskBtn:hover {
+  background: #285f91;
+}
+
+
+/* Completed corrective = immediate history entry */
+
+#addCompletedCorrectiveTaskBtn {
+  background: #6b4a12;
+  color: #fff7df;
+  border: 1px solid #c58a24;
+  font-weight: 600;
+}
+
+#addCompletedCorrectiveTaskBtn:hover {
+  background: #805a18;
+}
