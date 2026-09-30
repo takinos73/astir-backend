@@ -2080,3 +2080,147 @@ input[type="date"] {
   }
 
 }
+
+/* =========================================================
+   COMPLETED CORRECTIVE MODAL
+========================================================= */
+
+#completedCorrectiveOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+
+#completedCorrectiveOverlay .modal-card {
+  width: min(720px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  background: #101318;
+  border: 1px solid #2b313b;
+  border-radius: 16px;
+
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.65);
+
+  color: #f3f4f6;
+}
+
+
+#completedCorrectiveOverlay .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  padding: 20px 22px 14px;
+
+  border-bottom: 1px solid #252b33;
+}
+
+
+#completedCorrectiveOverlay .modal-body {
+  padding: 20px 22px;
+}
+
+
+#completedCorrectiveOverlay .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 16px 22px 20px;
+
+  border-top: 1px solid #252b33;
+}
+
+
+#completedCorrectiveOverlay .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  margin-bottom: 14px;
+}
+
+
+#completedCorrectiveOverlay label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+
+#completedCorrectiveOverlay input,
+#completedCorrectiveOverlay select,
+#completedCorrectiveOverlay textarea {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+
+  border: 1px solid #374151;
+  border-radius: 8px;
+
+  background: #171b22;
+  color: #f9fafb;
+
+  font: inherit;
+}
+
+
+#completedCorrectiveOverlay input[readonly] {
+  background: #11151b;
+  color: #9ca3af;
+}
+
+
+#completedCorrectiveOverlay input:focus,
+#completedCorrectiveOverlay select:focus,
+#completedCorrectiveOverlay textarea:focus {
+  outline: none;
+  border-color: #64748b;
+}
+
+
+#completedCorrectiveOverlay textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+
+#completedCorrectiveOverlay .modal-close {
+  border: 0;
+  background: transparent;
+  color: #d1d5db;
+
+  font-size: 26px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+/* Save */
+#saveCompletedCorrectiveBtn {
+  background: #2563eb;
+  color: white;
+  border: 0;
+}
+
+
+/* Cancel */
+#cancelCompletedCorrectiveBtn {
+  background: #374151;
+  color: white;
+  border: 0;
+}
