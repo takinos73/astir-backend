@@ -28,26 +28,38 @@ async function openScheduledMaintenanceDetail(smId) {
     return;
   }
 
+
   // Clear the previously selected SM before loading another.
   currentScheduledMaintenance = null;
 
+
   const addTaskBtn =
     document.getElementById("addSmTaskBtn");
+
 
   if (addTaskBtn) {
     addTaskBtn.disabled = true;
   }
 
-  const overlay = document.getElementById(
-    "scheduledMaintenanceDetailOverlay"
-  );
 
-  const taskContainer = document.getElementById(
-    "sm-maintenance-tasks"
-  );
+  const overlay =
+    document.getElementById(
+      "scheduledMaintenanceDetailOverlay"
+    );
+
+
+  const taskContainer =
+    document.getElementById(
+      "sm-maintenance-tasks"
+    );
+
 
   if (!overlay || !taskContainer) {
-    console.error("SM Detail HTML not found");
+
+    console.error(
+      "SM Detail HTML not found"
+    );
+
     return;
   }
 
@@ -57,21 +69,35 @@ async function openScheduledMaintenanceDetail(smId) {
   ===================== */
 
   const closeModal = () => {
-    overlay.style.display = "none";
+
+    overlay.style.display =
+      "none";
+
   };
 
-  const closeBtn = document.getElementById(
-    "closeScheduledMaintenanceDetailBtn"
-  );
+
+  const closeBtn =
+    document.getElementById(
+      "closeScheduledMaintenanceDetailBtn"
+    );
+
 
   if (closeBtn) {
-    closeBtn.onclick = closeModal;
+
+    closeBtn.onclick =
+      closeModal;
+
   }
 
+
   overlay.onclick = event => {
+
     if (event.target === overlay) {
+
       closeModal();
+
     }
+
   };
 
 
@@ -79,33 +105,57 @@ async function openScheduledMaintenanceDetail(smId) {
      HELPERS
   ===================== */
 
-  const setText = (elementId, value) => {
+  const setText = (
+    elementId,
+    value
+  ) => {
 
-    const element = document.getElementById(elementId);
+    const element =
+      document.getElementById(
+        elementId
+      );
+
 
     if (element) {
-      element.textContent = value ?? "—";
+
+      element.textContent =
+        value ?? "—";
+
     }
 
   };
 
-  const formatDate = value => {
 
-    if (!value) return "—";
+  const formatDate =
+    value => {
 
-    const date = new Date(value);
+      if (!value) {
+        return "—";
+      }
 
-    return Number.isNaN(date.getTime())
-      ? "—"
-      : date.toLocaleString("el-GR");
-  };
+
+      const date =
+        new Date(value);
+
+
+      return Number.isNaN(
+        date.getTime()
+      )
+        ? "—"
+        : date.toLocaleString(
+            "el-GR"
+          );
+
+    };
 
 
   /* =====================
      OPEN / LOADING
   ===================== */
 
-  overlay.style.display = "flex";
+  overlay.style.display =
+    "flex";
+
 
   taskContainer.textContent =
     "Loading maintenance tasks...";
@@ -115,92 +165,136 @@ async function openScheduledMaintenanceDetail(smId) {
 
     /* =====================
        LOAD SM + LINKED TASKS
-       Read-only requests.
     ===================== */
 
-    const [smResponse, tasksResponse] =
+    const [
+      smResponse,
+      tasksResponse
+    ] =
       await Promise.all([
 
-        fetch(`/scheduled-maintenance/${id}`),
+        fetch(
+          `/scheduled-maintenance/${id}`
+        ),
 
-        fetch(`/scheduled-maintenance/${id}/tasks`)
+        fetch(
+          `/scheduled-maintenance/${id}/tasks`
+        )
 
       ]);
 
-    if (!smResponse.ok || !tasksResponse.ok) {
+
+    if (
+      !smResponse.ok ||
+      !tasksResponse.ok
+    ) {
+
       throw new Error(
         "Failed to load Scheduled Maintenance detail"
       );
+
     }
 
-    const smResult = await smResponse.json();
-    const tasksResult = await tasksResponse.json();
 
-    const sm = smResult.scheduled_maintenance;
+    const smResult =
+      await smResponse.json();
+
+
+    const tasksResult =
+      await tasksResponse.json();
+
+
+    const sm =
+      smResult.scheduled_maintenance;
+
 
     if (!sm) {
-      throw new Error("Scheduled Maintenance not found");
+
+      throw new Error(
+        "Scheduled Maintenance not found"
+      );
+
     }
 
+
     // Keep the loaded SM for its own Task modal.
-    currentScheduledMaintenance = sm;
+    currentScheduledMaintenance =
+      sm;
+
 
     /* =====================
-      CREATE / REFRESH SM ACTION BAR
+       CREATE / REFRESH
+       SM ACTION BAR
     ===================== */
 
     ensureSmActionBar();
 
+
     /* =====================
-      REFRESH SM ACTIONS
+       REFRESH SM ACTIONS
     ===================== */
 
     refreshSmStartButton();
+
     refreshSmCloseButton();
 
 
-// CLOSED SM incidents cannot receive new Tasks.
-if (addTaskBtn) {
+    /* =====================
+       ADD TASK VISIBILITY
+    ===================== */
 
-  const isClosed =
-    String(sm.status || "").toUpperCase() === "CLOSED";
+    if (addTaskBtn) {
 
-
-  addTaskBtn.style.display =
-    isClosed ? "none" : "";
-
-
-  addTaskBtn.disabled =
-    isClosed;
-
-}
+      const isClosed =
+        String(
+          sm.status || ""
+        ).toUpperCase() ===
+        "CLOSED";
 
 
-// Completed Task action is available
-// only while SM is IN_PROGRESS.
-const completedTaskBtn =
-  document.getElementById(
-    "addCompletedSmTaskBtn"
-  );
+      addTaskBtn.style.display =
+        isClosed
+          ? "none"
+          : "";
 
 
-if (completedTaskBtn) {
+      addTaskBtn.disabled =
+        isClosed;
 
-  const isInProgress =
-    String(
-      sm.status || ""
-    ).toUpperCase() ===
-      "IN_PROGRESS";
+    }
 
 
-  completedTaskBtn.style.display =
-    isInProgress ? "" : "none";
+    /* =====================
+       ADD COMPLETED TASK
+       IN_PROGRESS ONLY
+    ===================== */
+
+    const completedTaskBtn =
+      document.getElementById(
+        "addCompletedSmTaskBtn"
+      );
 
 
-  completedTaskBtn.disabled =
-    !isInProgress;
+    if (completedTaskBtn) {
 
-}
+      const isInProgress =
+        String(
+          sm.status || ""
+        ).toUpperCase() ===
+        "IN_PROGRESS";
+
+
+      completedTaskBtn.style.display =
+        isInProgress
+          ? ""
+          : "none";
+
+
+      completedTaskBtn.disabled =
+        !isInProgress;
+
+    }
+
 
     /* =====================
        RENDER SM DETAILS
@@ -208,10 +302,17 @@ if (completedTaskBtn) {
 
     setText(
       "sm-detail-code",
-      `SM-${String(sm.id).padStart(5, "0")}`
+      `SM-${String(
+        sm.id
+      ).padStart(5, "0")}`
     );
 
-    setText("sm-detail-status", sm.status);
+
+    setText(
+      "sm-detail-status",
+      sm.status
+    );
+
 
     setText(
       "sm-detail-asset",
@@ -220,46 +321,65 @@ if (completedTaskBtn) {
       `SN ${sm.asset_serial || "—"}`
     );
 
-    setText("sm-detail-title", sm.title || "—");
+
+    setText(
+      "sm-detail-title",
+      sm.title || "—"
+    );
+
 
     setText(
       "sm-detail-description",
       sm.description || "—"
     );
 
+
     setText(
       "sm-detail-scheduled-start",
-      formatDate(sm.scheduled_start_at)
+      formatDate(
+        sm.scheduled_start_at
+      )
     );
+
 
     setText(
       "sm-detail-scheduled-end",
-      formatDate(sm.scheduled_end_at)
+      formatDate(
+        sm.scheduled_end_at
+      )
     );
+
 
     setText(
       "sm-detail-actual-start",
-      formatDate(sm.actual_started_at)
+      formatDate(
+        sm.actual_started_at
+      )
     );
+
 
     setText(
       "sm-detail-actual-closed",
-      formatDate(sm.actual_closed_at)
+      formatDate(
+        sm.actual_closed_at
+      )
     );
 
 
     /* =====================
-       RENDER LINKED TASKS
-
-       Initial read-only cards.
-       Task actions will be connected separately.
+       LINKED TASKS
     ===================== */
 
-    const tasks = Array.isArray(tasksResult.tasks)
-      ? tasksResult.tasks
-      : [];
+    const tasks =
+      Array.isArray(
+        tasksResult.tasks
+      )
+        ? tasksResult.tasks
+        : [];
+
 
     taskContainer.replaceChildren();
+
 
     if (tasks.length === 0) {
 
@@ -267,63 +387,69 @@ if (completedTaskBtn) {
         "No maintenance tasks yet.";
 
       return;
+
     }
 
+
     /* =====================
-      RENDER SM TASK CARDS
-
-      OPEN TASK:
-      - Shows Estimated Duration
-      - Complete
-      - Delete while SM is IN_PROGRESS
-
-      DONE TASK:
-      - Shows Actual Duration from task_executions
-      - Done status
-      - Delete while SM is IN_PROGRESS
-
-      CLOSED SM:
-      - No Delete action
+       SM STATUS
     ===================== */
 
     const smStatus =
-      String(sm.status || "")
+      String(
+        sm.status || ""
+      )
         .trim()
         .toUpperCase();
 
-    const smIsInProgress =
-      smStatus === "IN_PROGRESS";
 
+    const smIsInProgress =
+      smStatus ===
+      "IN_PROGRESS";
+
+
+    /* =====================
+       RENDER TASK CARDS
+    ===================== */
 
     tasks.forEach(task => {
 
       const card =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       card.className =
         "restoration-task-item";
 
 
       /* =====================
-        TASK TITLE
+         TASK TITLE
       ===================== */
 
       const title =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       title.className =
         "restoration-task-title";
+
 
       title.textContent =
         task.task || "—";
 
 
       /* =====================
-        TASK STATUS
+         TASK STATUS
       ===================== */
 
       const status =
-        String(task.status || "")
+        String(
+          task.status || ""
+        )
           .trim()
           .toUpperCase();
 
@@ -338,23 +464,21 @@ if (completedTaskBtn) {
 
 
       /* =====================
-        TASK META
-
-        OPEN:
-        → Est. 60 min
-
-        DONE:
-        → Duration 45 min
+         TASK META
       ===================== */
 
       const meta =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       meta.className =
         "task-meta";
 
 
-      let durationText = "";
+      let durationText =
+        "";
 
 
       if (isDone) {
@@ -388,48 +512,93 @@ if (completedTaskBtn) {
         durationText;
 
 
+      /* =====================
+         DUE DATE
+      ===================== */
+
+      const due =
+        document.createElement(
+          "div"
+        );
+
+
+      due.style.marginTop =
+        "4px";
+
+
+      due.style.fontSize =
+        "12px";
+
+
+      due.style.color =
+        "#9ca3af";
+
+
+      due.textContent =
+        task.due_date
+          ? `Due: ${formatDate(
+              task.due_date
+            )}`
+          : "Due: —";
+
+
+      /* =====================
+         APPEND TASK INFO
+      ===================== */
+
       card.append(
         title,
-        meta
+        meta,
+        due
       );
 
 
       /* =====================
-        ACTIONS CONTAINER
+         ACTIONS CONTAINER
       ===================== */
 
       const actions =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       actions.style.display =
         "flex";
 
+
       actions.style.alignItems =
         "center";
 
+
       actions.style.gap =
         "8px";
+
 
       actions.style.marginTop =
         "10px";
 
 
       /* =====================
-        OPEN TASK
-        COMPLETE
+         OPEN TASK
+         COMPLETE
       ===================== */
 
       if (isOpen) {
 
         const completeBtn =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
 
         completeBtn.type =
           "button";
 
+
         completeBtn.className =
           "btn-table sm-task-complete-btn";
+
 
         completeBtn.textContent =
           "Complete";
@@ -440,8 +609,8 @@ if (completedTaskBtn) {
           () => {
 
             /*
-              Use normal CMMS completion flow.
-              No SM-specific completion logic here.
+              Use normal CMMS
+              completion flow.
             */
 
             if (
@@ -473,17 +642,20 @@ if (completedTaskBtn) {
 
 
       /* =====================
-        DONE TASK
+         DONE TASK
       ===================== */
 
       if (isDone) {
 
         const doneLabel =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
 
         doneLabel.className =
           "restoration-task-done";
+
 
         doneLabel.textContent =
           "✓ Done";
@@ -497,26 +669,27 @@ if (completedTaskBtn) {
 
 
       /* =====================
-        DELETE
+         DELETE
 
-        Available ONLY while
-        parent SM is IN_PROGRESS.
-
-        Handler will be connected
-        in the next step.
+         Available ONLY while
+         SM is IN_PROGRESS.
       ===================== */
 
       if (smIsInProgress) {
 
         const deleteBtn =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
 
         deleteBtn.type =
           "button";
 
+
         deleteBtn.className =
           "btn-table sm-task-delete-btn";
+
 
         deleteBtn.textContent =
           "Delete";
@@ -524,6 +697,7 @@ if (completedTaskBtn) {
 
         deleteBtn.dataset.smId =
           String(sm.id);
+
 
         deleteBtn.dataset.taskId =
           String(task.id);
@@ -563,11 +737,12 @@ if (completedTaskBtn) {
 
 
       /* =====================
-        APPEND ACTIONS
+         APPEND ACTIONS
       ===================== */
 
       if (
-        actions.children.length > 0
+        actions.children.length >
+        0
       ) {
 
         card.appendChild(
@@ -586,7 +761,11 @@ if (completedTaskBtn) {
 
   } catch (err) {
 
-    console.error("LOAD SM DETAIL ERROR:", err);
+    console.error(
+      "LOAD SM DETAIL ERROR:",
+      err
+    );
+
 
     taskContainer.textContent =
       "Could not load Scheduled Maintenance detail.";
@@ -594,8 +773,6 @@ if (completedTaskBtn) {
   }
 
 }
-
-
 
 /* =========================================================
    SCHEDULED MAINTENANCE — ADD TASK MODAL

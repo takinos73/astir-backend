@@ -6275,6 +6275,7 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
 
           ORDER BY
+            t.due_date ASC NULLS LAST,
             t.id ASC
         `,
         [smId]
