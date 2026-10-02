@@ -1031,9 +1031,10 @@ if (addWidgetBtn) {
    MANAGEMENT DASHBOARD DATA
 ========================================================= */
 
-const managementDashboardData = {
-  maintenance_mix: null
-};
+    const managementDashboardData = {
+    maintenance_mix: null,
+    schedule_delivery: null
+    };
 
 
 /* =========================================================
@@ -1102,10 +1103,14 @@ async function loadManagementDashboardData() {
 
 
     managementDashboardData.maintenance_mix =
-      data?.maintenance_mix || null;
+        data?.maintenance_mix || null;
+
+    managementDashboardData.schedule_delivery =
+        data?.schedule_delivery || null;
 
 
     renderManagementMaintenanceMix();
+    renderManagementScheduleDelivery();
 
   } catch (err) {
 
@@ -1515,6 +1520,442 @@ function renderManagementMaintenanceMix() {
       <div class="management-mix-legend">
 
         ${legend}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+/* =========================================================
+   SCHEDULE DELIVERY
+========================================================= */
+
+function renderManagementScheduleDelivery() {
+
+  const container =
+    document.getElementById(
+      "management-widget-schedule_delivery"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const delivery =
+    managementDashboardData.schedule_delivery;
+
+
+  if (!delivery) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+
+  }
+
+
+  const total =
+    delivery.total || {};
+
+  const preventive =
+    delivery.preventive || {};
+
+  const planned =
+    delivery.planned || {};
+
+
+  const safeNumber = value => {
+
+    const n =
+      Number(value);
+
+    return Number.isFinite(n)
+      ? n
+      : 0;
+
+  };
+
+
+  const scheduledDue =
+    safeNumber(
+      total.scheduledDue
+    );
+
+  const fulfilled =
+    safeNumber(
+      total.fulfilled
+    );
+
+  const outstanding =
+    safeNumber(
+      total.outstanding
+    );
+
+  const backlogRecovered =
+    safeNumber(
+      total.backlogRecovered
+    );
+
+  const fulfillmentRate =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        safeNumber(
+          total.fulfillmentRate
+        )
+      )
+    );
+
+  const totalDelivered =
+    safeNumber(
+      total.totalDelivered
+    );
+
+
+  const preventiveDelivered =
+    safeNumber(
+      preventive.totalDelivered
+    );
+
+  const plannedDelivered =
+    safeNumber(
+      planned.totalDelivered
+    );
+
+
+  const preventivePct =
+    totalDelivered > 0
+
+      ? Math.round(
+          preventiveDelivered *
+          100 /
+          totalDelivered
+        )
+
+      : 0;
+
+
+  const plannedPct =
+    totalDelivered > 0
+
+      ? Math.round(
+          plannedDelivered *
+          100 /
+          totalDelivered
+        )
+
+      : 0;
+
+
+  /*
+    Gauge geometry
+  */
+
+  const radius = 54;
+
+  const circumference =
+    Math.PI * radius;
+
+  const progress =
+    circumference *
+    fulfillmentRate /
+    100;
+
+
+  container.className =
+    "management-widget-body";
+
+
+  container.innerHTML = `
+
+    <div class="management-schedule-layout">
+
+      <!-- =====================
+           LEFT / GAUGE
+      ===================== -->
+
+      <div class="management-schedule-gauge-panel">
+
+        <svg
+          class="management-schedule-gauge"
+          viewBox="0 0 140 92"
+          role="img"
+          aria-label="Schedule fulfillment ${fulfillmentRate}%"
+        >
+
+          <!-- BACKGROUND ARC -->
+
+          <path
+            d="
+              M 16 78
+              A 54 54
+              0 0 1
+              124 78
+            "
+            fill="none"
+            stroke="#263241"
+            stroke-width="15"
+            stroke-linecap="round"
+          />
+
+
+          <!-- VALUE ARC -->
+
+          <path
+            d="
+              M 16 78
+              A 54 54
+              0 0 1
+              124 78
+            "
+            fill="none"
+            stroke="#22c55e"
+            stroke-width="15"
+            stroke-linecap="round"
+
+            pathLength="100"
+
+            stroke-dasharray="
+              ${fulfillmentRate}
+              ${100 - fulfillmentRate}
+            "
+          />
+
+
+          <!-- VALUE -->
+
+          <text
+            x="70"
+            y="57"
+            text-anchor="middle"
+            class="management-schedule-gauge-value"
+          >
+            ${fulfillmentRate}%
+          </text>
+
+
+          <text
+            x="70"
+            y="73"
+            text-anchor="middle"
+            class="management-schedule-gauge-label"
+          >
+            FULFILLMENT
+          </text>
+
+        </svg>
+
+
+        <div class="management-schedule-gauge-footer">
+
+          <div>
+
+            <strong>
+              ${fulfilled}
+            </strong>
+
+            <span>
+              FULFILLED
+            </span>
+
+          </div>
+
+
+          <div>
+
+            <strong>
+              ${scheduledDue}
+            </strong>
+
+            <span>
+              SCHEDULED
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           RIGHT / KPIs
+      ===================== -->
+
+      <div class="management-schedule-right">
+
+
+        <!-- TOP METRICS -->
+
+        <div class="management-schedule-kpi-grid">
+
+
+          <div class="management-schedule-kpi">
+
+            <div class="management-schedule-kpi-icon blue">
+              ▣
+            </div>
+
+            <div>
+
+              <strong>
+                ${scheduledDue}
+              </strong>
+
+              <span>
+                Scheduled Due
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="management-schedule-kpi">
+
+            <div class="management-schedule-kpi-icon green">
+              ✓
+            </div>
+
+            <div>
+
+              <strong>
+                ${fulfilled}
+              </strong>
+
+              <span>
+                Fulfilled
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="management-schedule-kpi">
+
+            <div class="management-schedule-kpi-icon amber">
+              ⌛
+            </div>
+
+            <div>
+
+              <strong>
+                ${outstanding}
+              </strong>
+
+              <span>
+                Outstanding
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- LOWER ROW -->
+
+        <div class="management-schedule-lower">
+
+
+          <!-- BACKLOG -->
+
+          <div class="management-schedule-backlog">
+
+            <div class="management-schedule-kpi-icon cyan">
+              ↗
+            </div>
+
+            <div>
+
+              <strong>
+                ${backlogRecovered}
+              </strong>
+
+              <span>
+                Backlog Recovered
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- DELIVERED BY TYPE -->
+
+          <div class="management-schedule-type-panel">
+
+            <div class="management-schedule-type-title">
+              Delivered by Type
+            </div>
+
+
+            <div class="management-schedule-type-row">
+
+              <div class="management-schedule-type-label">
+
+                <span class="management-mix-dot preventive"></span>
+
+                Preventive
+
+              </div>
+
+              <strong>
+                ${preventiveDelivered}
+              </strong>
+
+              <span>
+                ${preventivePct}%
+              </span>
+
+            </div>
+
+
+            <div class="management-schedule-type-row">
+
+              <div class="management-schedule-type-label">
+
+                <span class="management-mix-dot planned"></span>
+
+                Planned
+
+              </div>
+
+              <strong>
+                ${plannedDelivered}
+              </strong>
+
+              <span>
+                ${plannedPct}%
+              </span>
+
+            </div>
+
+
+            <div class="management-schedule-type-total">
+
+              Total Delivered
+
+              <strong>
+                ${totalDelivered}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
