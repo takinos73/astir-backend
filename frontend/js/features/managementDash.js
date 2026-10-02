@@ -560,7 +560,13 @@ function renderManagementWidgets() {
     return;
   }
 
+
+  /* =====================
+     REBUILD GRID
+  ===================== */
+
   grid.innerHTML = "";
+
 
   managementVisibleWidgets.forEach(
     widgetKey => {
@@ -577,13 +583,28 @@ function renderManagementWidgets() {
     }
   );
 
-    enableManagementWidgetDragDrop();
 
-    /*
-    Re-render real widget data
-    after Add / Remove / Reorder.
-    */
-    renderManagementMaintenanceMix();
+  /* =====================
+     DRAG & DROP
+  ===================== */
+
+  enableManagementWidgetDragDrop();
+
+
+  /* =====================
+     RE-RENDER REAL DATA
+
+     Important:
+     renderManagementWidgets()
+     recreates the DOM cards.
+
+     Therefore every widget that
+     has already loaded data must
+     be rendered again.
+  ===================== */
+
+  renderManagementMaintenanceMix();
+  renderManagementScheduleDelivery();
 
 }
 
