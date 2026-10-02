@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./css/tasks.css">
   <link rel="stylesheet" href="./css/breakdowns.css">
   <link rel="stylesheet" href="/css/maintSchedule.css">
+  <link rel="stylesheet" href="/css/managementDash.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
@@ -1225,14 +1226,24 @@
 
     <!-- MAIN TABS -->
   <section class="main-tabs">
+
+    <button id="managementTabBtn" class="main-tab" data-tab="management" style="display:none;">Management</button>
+
     <button class="main-tab active" data-tab="dashboard">Dashboard</button>
+
     <button class="main-tab" data-tab="assets">Assets</button>
+
     <button class="main-tab" data-tab="tasks">Tasks</button>
+
     <!-- NEW BREAKDOWN MANAGEMENT -->
     <button class="main-tab" data-tab="breakdowns">Incidents</button>
+
     <button class="main-tab" data-tab="technicians">👷 Technicians</button>  
+
     <button class="main-tab" data-tab="reports">Reports</button>
+
     <button class="main-tab" data-tab="library">Library</button>
+
     <button class="main-tab" data-tab="docs">Docs</button>
 
     <!-- 🔧 ADMIN / TOOLS -->
@@ -1250,6 +1261,282 @@
       <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
     </div>
   </section>
+
+  <!-- =========================================================
+      MANAGEMENT DASHBOARD
+      Manager-only executive view
+  ========================================================= -->
+
+  <div id="tab-management" class="tab-panel" style="display:none;">
+
+    <!-- =====================
+        HEADER
+    ===================== -->
+
+    <div class="management-header">
+
+      <div>
+        <h1 class="management-title">
+          Maintenance Management Dashboard
+        </h1>
+
+        <div class="management-subtitle">
+          Executive maintenance performance overview
+        </div>
+      </div>
+
+      <button
+        id="managementAddWidgetBtn"
+        class="btn-secondary"
+        type="button"
+      >
+        + Add Widget
+      </button>
+
+    </div>
+
+
+    <!-- =====================
+        GLOBAL FILTERS
+    ===================== -->
+
+    <div class="management-filters">
+
+      <!-- REPORTING PERIOD -->
+      <div class="management-filter-group">
+
+        <div class="management-filter-label">
+          Reporting Period
+        </div>
+
+        <div class="management-filter-buttons">
+
+          <button
+            type="button"
+            class="management-filter-btn"
+            data-management-period="week"
+          >
+            This Week
+          </button>
+
+          <button
+            type="button"
+            class="management-filter-btn active"
+            data-management-period="month"
+          >
+            This Month
+          </button>
+
+          <button
+            type="button"
+            class="management-filter-btn"
+            data-management-period="custom"
+          >
+            Custom
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- PLANT AREA -->
+      <div class="management-filter-group">
+
+        <div class="management-filter-label">
+          Plant Area
+        </div>
+
+        <div class="management-filter-buttons">
+
+          <button
+            type="button"
+            class="management-filter-btn active"
+            data-management-area="all"
+          >
+            All
+          </button>
+
+          <button
+            type="button"
+            class="management-filter-btn"
+            data-management-area="litho"
+          >
+            Litho
+          </button>
+
+          <button
+            type="button"
+            class="management-filter-btn"
+            data-management-area="crown"
+          >
+            Crown
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+        CUSTOM PERIOD
+        Hidden by default
+    ===================== -->
+
+    <div
+      id="managementCustomPeriod"
+      class="management-custom-period"
+      style="display:none;"
+    >
+
+      <div>
+        <label for="managementFromDate">
+          From
+        </label>
+
+        <input
+          id="managementFromDate"
+          type="date"
+        >
+      </div>
+
+      <div>
+        <label for="managementToDate">
+          To
+        </label>
+
+        <input
+          id="managementToDate"
+          type="date"
+        >
+      </div>
+
+      <button
+        id="managementApplyPeriodBtn"
+        type="button"
+        class="btn-table"
+      >
+        Apply
+      </button>
+
+    </div>
+
+
+    <!-- =====================
+        ACTIVE SCOPE
+    ===================== -->
+
+    <div
+      id="managementScopeLabel"
+      class="management-scope-label"
+    >
+      This Month · All Plant
+    </div>
+
+
+    <!-- =====================
+        WIDGET GRID
+    ===================== -->
+
+    <div
+      id="managementWidgetGrid"
+      class="management-widget-grid"
+    >
+
+      <!-- MAINTENANCE MIX -->
+      <section
+        class="management-widget management-widget-medium"
+        data-widget-key="maintenance_mix"
+      >
+
+        <div class="management-widget-header">
+
+          <div>
+            <div class="management-widget-title">
+              Maintenance Mix
+            </div>
+
+            <div class="management-widget-subtitle">
+              Completed maintenance executions
+            </div>
+          </div>
+
+        </div>
+
+        <div
+          id="managementMaintenanceMix"
+          class="management-widget-body management-widget-placeholder"
+        >
+          Widget data will appear here
+        </div>
+
+      </section>
+
+
+      <!-- SCHEDULE DELIVERY -->
+      <section
+        class="management-widget management-widget-large"
+        data-widget-key="schedule_delivery"
+      >
+
+        <div class="management-widget-header">
+
+          <div>
+            <div class="management-widget-title">
+              Schedule Delivery
+            </div>
+
+            <div class="management-widget-subtitle">
+              Scheduled maintenance performance
+            </div>
+          </div>
+
+        </div>
+
+        <div
+          id="managementScheduleDelivery"
+          class="management-widget-body management-widget-placeholder"
+        >
+          Widget data will appear here
+        </div>
+
+      </section>
+
+
+      <!-- RELIABILITY -->
+      <section
+        class="management-widget management-widget-large"
+        data-widget-key="reliability"
+      >
+
+        <div class="management-widget-header">
+
+          <div>
+            <div class="management-widget-title">
+              Reliability
+            </div>
+
+            <div class="management-widget-subtitle">
+              Breakdowns and downtime
+            </div>
+          </div>
+
+        </div>
+
+        <div
+          id="managementReliability"
+          class="management-widget-body management-widget-placeholder"
+        >
+          Widget data will appear here
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>  
 
   <!-- =====================
       MAINTENANCE INCIDENTS TAB
@@ -5727,9 +6014,10 @@
   <script src="./js/features/maintSchedule.js" defer></script>
   <script src="./js/features/tasks.js" defer></script>
   <script src="./js/features/dailyReport.js" defer></script>
-
+  
   <!-- APP (state, loaders, globals) -->
   <script src="./app.js" defer></script>  
+  <script src="./js/features/managementDash.js" defer></script>
 
 </body>
 </html>

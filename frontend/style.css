@@ -1208,7 +1208,7 @@ td:last-child {
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
-    max-height: 54px;
+    max-height: 56px;
     resize: vertical;
     margin-top: 3px;
 }
