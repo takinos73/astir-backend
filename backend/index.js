@@ -7747,12 +7747,15 @@ app.delete("/scheduled-maintenance/:smId/tasks/:taskId", async (req, res) => {
 
 /* =========================================================
    MANAGEMENT DASHBOARD
-   Maintenance Mix
 
    Filters:
    - from
    - to
    - area = all | litho | crown
+
+   Widgets currently supported:
+   - Maintenance Mix
+   - Schedule Delivery
 
    Classification:
    - Preventive  = frequency_hours > 0
@@ -7840,17 +7843,59 @@ app.get("/management-dashboard", async (req, res) => {
     }
 
 
-    /* =====================
-       QUERY PARAMETERS
-    ===================== */
+    /* =====================================================
+       AREA HELPER
+    ===================================================== */
 
-    const params = [
+    function getAreaLines() {
+
+      if (normalizedArea === "litho") {
+
+        return [
+          "F1",
+          "F2",
+          "F3",
+          "F4"
+        ];
+
+      }
+
+
+      if (normalizedArea === "crown") {
+
+        return [
+          "L1",
+          "L2",
+          "L3",
+          "L4",
+          "L5",
+          "L6",
+          "L7"
+        ];
+
+      }
+
+
+      return null;
+
+    }
+
+
+    const areaLines =
+      getAreaLines();
+
+
+    /* =====================================================
+       1. MAINTENANCE MIX
+    ===================================================== */
+
+    const mixParams = [
       fromDate.toISOString(),
       toDate.toISOString()
     ];
 
 
-    const conditions = [
+    const mixConditions = [
 
       `te.executed_at >= $1::timestamptz`,
 
@@ -7859,67 +7904,31 @@ app.get("/management-dashboard", async (req, res) => {
     ];
 
 
-    /* =====================
-       PLANT AREA FILTER
-    ===================== */
+    if (areaLines) {
 
-    if (normalizedArea === "litho") {
+      mixParams.push(
+        areaLines
+      );
 
-      params.push([
-        "F1",
-        "F2",
-        "F3",
-        "F4"
-      ]);
-
-      conditions.push(
-        `UPPER(TRIM(l.name)) = ANY($${params.length}::text[])`
+      mixConditions.push(
+        `UPPER(TRIM(l.name)) = ANY($${mixParams.length}::text[])`
       );
 
     }
 
 
-    if (normalizedArea === "crown") {
-
-      params.push([
-        "L1",
-        "L2",
-        "L3",
-        "L4",
-        "L5",
-        "L6",
-        "L7"
-      ]);
-
-      conditions.push(
-        `UPPER(TRIM(l.name)) = ANY($${params.length}::text[])`
-      );
-
-    }
+    const mixWhereSql =
+      `WHERE ${mixConditions.join(" AND ")}`;
 
 
-    const whereSql =
-      `WHERE ${conditions.join(" AND ")}`;
-
-
-    /* =====================
-       MAINTENANCE MIX
-    ===================== */
-
-    const sql = `
+    const mixSql = `
 
       SELECT
-
-        /* =====================
-           PREVENTIVE
-        ===================== */
 
         COUNT(te.id) FILTER (
 
           WHERE
-
             mt.breakdown_id IS NULL
-
             AND COALESCE(
               mt.frequency_hours,
               0
@@ -7929,14 +7938,9 @@ app.get("/management-dashboard", async (req, res) => {
           AS preventive,
 
 
-        /* =====================
-           PLANNED
-        ===================== */
-
         COUNT(te.id) FILTER (
 
           WHERE
-
             mt.breakdown_id IS NULL
 
             AND COALESCE(
@@ -7950,11 +7954,6 @@ app.get("/management-dashboard", async (req, res) => {
         )::int
           AS planned,
 
-
-        /* =====================
-           CORRECTIVE
-           DB = Restoration
-        ===================== */
 
         COUNT(te.id) FILTER (
 
@@ -7976,20 +7975,20 @@ app.get("/management-dashboard", async (req, res) => {
       LEFT JOIN lines l
         ON l.id = a.line_id
 
-      ${whereSql}
+      ${mixWhereSql}
 
     `;
 
 
-    const { rows } =
+    const mixResult =
       await pool.query(
-        sql,
-        params
+        mixSql,
+        mixParams
       );
 
 
     const mix =
-      rows[0] || {};
+      mixResult.rows[0] || {};
 
 
     const preventive =
@@ -8002,19 +8001,721 @@ app.get("/management-dashboard", async (req, res) => {
       Number(mix.corrective) || 0;
 
 
+    /* =====================================================
+       2. SCHEDULE DELIVERY
+
+       Same semantics as Daily Report.
+
+       Historical occurrences:
+       task_executions.prev_due_date
+
+       Current open occurrence:
+       maintenance_tasks.due_date
+    ===================================================== */
+
+
     /* =====================
-       RESPONSE
+       LOAD RELEVANT EXECUTIONS
     ===================== */
+
+    const executionParams = [
+      fromDate.toISOString(),
+      toDate.toISOString()
+    ];
+
+
+    const executionConditions = [
+
+      `
+        (
+          te.prev_due_date BETWEEN
+            $1::timestamptz
+            AND
+            $2::timestamptz
+
+          OR
+
+          te.executed_at BETWEEN
+            $1::timestamptz
+            AND
+            $2::timestamptz
+        )
+      `
+
+    ];
+
+
+    if (areaLines) {
+
+      executionParams.push(
+        areaLines
+      );
+
+      executionConditions.push(
+        `UPPER(TRIM(l.name)) = ANY($${executionParams.length}::text[])`
+      );
+
+    }
+
+
+    const executionSql = `
+
+      SELECT
+
+        te.id AS execution_id,
+
+        te.task_id,
+
+        te.executed_at,
+
+        te.prev_due_date,
+
+        mt.frequency_hours,
+
+        mt.is_planned,
+
+        mt.breakdown_id
+
+      FROM task_executions te
+
+      JOIN maintenance_tasks mt
+        ON mt.id = te.task_id
+
+      JOIN assets a
+        ON a.id = mt.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE
+        ${executionConditions.join(" AND ")}
+
+    `;
+
+
+    const executionResult =
+      await pool.query(
+        executionSql,
+        executionParams
+      );
+
+
+    /* =====================
+       LOAD OPEN TASKS DUE
+       INSIDE SELECTED PERIOD
+    ===================== */
+
+    const taskParams = [
+      fromDate.toISOString(),
+      toDate.toISOString()
+    ];
+
+
+    const taskConditions = [
+
+      `mt.deleted_at IS NULL`,
+
+      `mt.status != 'Done'`,
+
+      `mt.due_date >= $1::timestamptz`,
+
+      `mt.due_date <= $2::timestamptz`
+
+    ];
+
+
+    if (areaLines) {
+
+      taskParams.push(
+        areaLines
+      );
+
+      taskConditions.push(
+        `UPPER(TRIM(l.name)) = ANY($${taskParams.length}::text[])`
+      );
+
+    }
+
+
+    const taskSql = `
+
+      SELECT
+
+        mt.id,
+
+        mt.due_date,
+
+        mt.frequency_hours,
+
+        mt.is_planned,
+
+        mt.breakdown_id
+
+      FROM maintenance_tasks mt
+
+      JOIN assets a
+        ON a.id = mt.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      WHERE
+        ${taskConditions.join(" AND ")}
+
+    `;
+
+
+    const taskResult =
+      await pool.query(
+        taskSql,
+        taskParams
+      );
+
+
+    /* =====================================================
+       SCHEDULE DELIVERY HELPERS
+    ===================================================== */
+
+    function getCategory(row) {
+
+      /*
+        Corrective does not belong
+        to Schedule Delivery.
+      */
+
+      if (
+        row?.breakdown_id !== null &&
+        row?.breakdown_id !== undefined
+      ) {
+
+        return null;
+
+      }
+
+
+      if (
+        Number(
+          row?.frequency_hours
+        ) > 0
+      ) {
+
+        return "preventive";
+
+      }
+
+
+      if (
+        row?.is_planned === false ||
+        String(
+          row?.is_planned
+        ).toLowerCase() === "false"
+      ) {
+
+        return null;
+
+      }
+
+
+      return "planned";
+
+    }
+
+
+    function parseDate(value) {
+
+      if (!value) {
+        return null;
+      }
+
+
+      const date =
+        new Date(value);
+
+
+      return Number.isNaN(
+        date.getTime()
+      )
+        ? null
+        : date;
+
+    }
+
+
+    function inPeriod(date) {
+
+      return (
+        date &&
+        date >= fromDate &&
+        date <= toDate
+      );
+
+    }
+
+
+    function createBucket() {
+
+      return {
+
+        scheduledDue: 0,
+
+        fulfilled: 0,
+
+        outstanding: 0,
+
+        scheduleGap: 0,
+
+        completedScheduled: 0,
+
+        completedBeforePeriod: 0,
+
+        backlogRecovered: 0,
+
+        earlyCompleted: 0,
+
+        deliveryRate: 0,
+
+        fulfillmentRate: 0,
+
+        totalDelivered: 0
+
+      };
+
+    }
+
+
+    const delivery = {
+
+      total:
+        createBucket(),
+
+      preventive:
+        createBucket(),
+
+      planned:
+        createBucket()
+
+    };
+
+
+    function createSets() {
+
+      return {
+
+        scheduledDue:
+          new Set(),
+
+        completedScheduled:
+          new Set(),
+
+        completedBeforePeriod:
+          new Set(),
+
+        outstanding:
+          new Set(),
+
+        backlogRecovered:
+          new Set(),
+
+        earlyCompleted:
+          new Set()
+
+      };
+
+    }
+
+
+    const sets = {
+
+      total:
+        createSets(),
+
+      preventive:
+        createSets(),
+
+      planned:
+        createSets()
+
+    };
+
+
+    function getOccurrenceKey(
+      row,
+      dueDate
+    ) {
+
+      const taskId =
+        row?.task_id ??
+        row?.id ??
+        "unknown";
+
+
+      return (
+        String(taskId) +
+        "|" +
+        dueDate.toISOString()
+      );
+
+    }
+
+
+    function addToSet(
+      category,
+      metric,
+      key
+    ) {
+
+      sets.total[metric].add(
+        key
+      );
+
+      sets[category][metric].add(
+        key
+      );
+
+    }
+
+
+    /* =====================================================
+       COMPLETED EXECUTIONS
+    ===================================================== */
+
+    executionResult.rows.forEach(row => {
+
+      const category =
+        getCategory(row);
+
+
+      if (!category) {
+        return;
+      }
+
+
+      const executedAt =
+        parseDate(
+          row.executed_at
+        );
+
+
+      const dueAt =
+        parseDate(
+          row.prev_due_date
+        );
+
+
+      /*
+        Scheduled Delivery requires
+        a historical due occurrence.
+      */
+
+      if (
+        !executedAt ||
+        !dueAt
+      ) {
+
+        return;
+
+      }
+
+
+      const key =
+        getOccurrenceKey(
+          row,
+          dueAt
+        );
+
+
+      const dueInPeriod =
+        inPeriod(
+          dueAt
+        );
+
+
+      const executionInPeriod =
+        inPeriod(
+          executedAt
+        );
+
+
+      /* =====================
+         SCHEDULED DUE
+      ===================== */
+
+      if (dueInPeriod) {
+
+        addToSet(
+          category,
+          "scheduledDue",
+          key
+        );
+
+      }
+
+
+      /* =====================
+         COMPLETED EARLIER
+
+         Due in selected period,
+         execution before period.
+      ===================== */
+
+      if (
+        dueInPeriod &&
+        executedAt < fromDate
+      ) {
+
+        addToSet(
+          category,
+          "completedBeforePeriod",
+          key
+        );
+
+        return;
+
+      }
+
+
+      /*
+        From here onward:
+        execution must belong
+        to selected period.
+      */
+
+      if (!executionInPeriod) {
+        return;
+      }
+
+
+      /* =====================
+         COMPLETED IN PERIOD
+         FROM CURRENT SCHEDULE
+      ===================== */
+
+      if (dueInPeriod) {
+
+        addToSet(
+          category,
+          "completedScheduled",
+          key
+        );
+
+        return;
+
+      }
+
+
+      /* =====================
+         BACKLOG RECOVERED
+      ===================== */
+
+      if (
+        dueAt < fromDate
+      ) {
+
+        addToSet(
+          category,
+          "backlogRecovered",
+          key
+        );
+
+        return;
+
+      }
+
+
+      /* =====================
+         FUTURE DUE
+         COMPLETED EARLY
+      ===================== */
+
+      if (
+        dueAt > toDate
+      ) {
+
+        addToSet(
+          category,
+          "earlyCompleted",
+          key
+        );
+
+      }
+
+    });
+
+
+    /* =====================================================
+       CURRENT OPEN TASKS
+       DUE INSIDE PERIOD
+    ===================================================== */
+
+    taskResult.rows.forEach(row => {
+
+      const category =
+        getCategory(row);
+
+
+      if (!category) {
+        return;
+      }
+
+
+      const dueAt =
+        parseDate(
+          row.due_date
+        );
+
+
+      if (
+        !dueAt ||
+        !inPeriod(dueAt)
+      ) {
+
+        return;
+      }
+
+
+      const key =
+        getOccurrenceKey(
+          {
+            ...row,
+            task_id: row.id
+          },
+          dueAt
+        );
+
+
+      addToSet(
+        category,
+        "scheduledDue",
+        key
+      );
+
+
+      addToSet(
+        category,
+        "outstanding",
+        key
+      );
+
+    });
+
+
+    /* =====================================================
+       FINALIZE DELIVERY
+    ===================================================== */
+
+    [
+      "total",
+      "preventive",
+      "planned"
+    ].forEach(category => {
+
+      const bucket =
+        delivery[category];
+
+
+      const categorySets =
+        sets[category];
+
+
+      bucket.scheduledDue =
+        categorySets
+          .scheduledDue
+          .size;
+
+
+      bucket.completedScheduled =
+        categorySets
+          .completedScheduled
+          .size;
+
+
+      bucket.completedBeforePeriod =
+        categorySets
+          .completedBeforePeriod
+          .size;
+
+
+      bucket.outstanding =
+        categorySets
+          .outstanding
+          .size;
+
+
+      bucket.backlogRecovered =
+        categorySets
+          .backlogRecovered
+          .size;
+
+
+      bucket.earlyCompleted =
+        categorySets
+          .earlyCompleted
+          .size;
+
+
+      bucket.fulfilled =
+        bucket.completedScheduled +
+        bucket.completedBeforePeriod;
+
+
+      bucket.scheduleGap =
+        Math.max(
+          0,
+          bucket.scheduledDue -
+          bucket.fulfilled
+        );
+
+
+      bucket.deliveryRate =
+        bucket.scheduledDue > 0
+
+          ? Math.round(
+              bucket.completedScheduled *
+              100 /
+              bucket.scheduledDue
+            )
+
+          : 0;
+
+
+      bucket.fulfillmentRate =
+        bucket.scheduledDue > 0
+
+          ? Math.round(
+              bucket.fulfilled *
+              100 /
+              bucket.scheduledDue
+            )
+
+          : 0;
+
+
+      bucket.totalDelivered =
+        bucket.completedScheduled +
+        bucket.backlogRecovered +
+        bucket.earlyCompleted;
+
+    });
+
+
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
 
     res.json({
 
       period: {
-        from: fromDate.toISOString(),
-        to: toDate.toISOString()
+        from:
+          fromDate.toISOString(),
+
+        to:
+          toDate.toISOString()
       },
+
 
       area:
         normalizedArea,
+
 
       maintenance_mix: {
 
@@ -8029,7 +8730,11 @@ app.get("/management-dashboard", async (req, res) => {
 
         corrective
 
-      }
+      },
+
+
+      schedule_delivery:
+        delivery
 
     });
 
@@ -8040,6 +8745,7 @@ app.get("/management-dashboard", async (req, res) => {
       "GET /management-dashboard ERROR:",
       err
     );
+
 
     res.status(500).json({
       error:
