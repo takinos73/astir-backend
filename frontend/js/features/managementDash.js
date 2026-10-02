@@ -605,6 +605,7 @@ function renderManagementWidgets() {
 
   renderManagementMaintenanceMix();
   renderManagementScheduleDelivery();
+  renderManagementReliability();
 
 }
 
@@ -1054,9 +1055,9 @@ if (addWidgetBtn) {
 
     const managementDashboardData = {
     maintenance_mix: null,
-    schedule_delivery: null
+    schedule_delivery: null,
+    reliability: null
     };
-
 
 /* =========================================================
    LOAD MANAGEMENT DASHBOARD DATA
@@ -1129,9 +1130,12 @@ async function loadManagementDashboardData() {
     managementDashboardData.schedule_delivery =
         data?.schedule_delivery || null;
 
+    managementDashboardData.reliability =
+        data?.reliability || null;
 
     renderManagementMaintenanceMix();
     renderManagementScheduleDelivery();
+    renderManagementReliability();
 
   } catch (err) {
 
@@ -1975,6 +1979,323 @@ function renderManagementScheduleDelivery() {
             </div>
 
           </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+/* =========================================================
+   RELIABILITY
+========================================================= */
+
+function renderManagementReliability() {
+
+  const container =
+    document.getElementById(
+      "management-widget-reliability"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const reliability =
+    managementDashboardData.reliability;
+
+
+  if (!reliability) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+  }
+
+
+  const totalIncidents =
+    Number(
+      reliability.total_incidents
+    ) || 0;
+
+
+  const activeIncidents =
+    Number(
+      reliability.active_incidents
+    ) || 0;
+
+
+  const effectiveDownSeconds =
+    Number(
+      reliability.effective_down_seconds
+    ) || 0;
+
+
+  const lines =
+    Array.isArray(
+      reliability.downtime_by_line
+    )
+      ? reliability.downtime_by_line
+      : [];
+
+
+  /* =====================
+     FORMAT DOWNTIME
+  ===================== */
+
+  function formatDownTime(seconds) {
+
+    const total =
+      Math.max(
+        0,
+        Math.round(
+          Number(seconds) || 0
+        )
+      );
+
+    const hours =
+      Math.floor(
+        total / 3600
+      );
+
+    const minutes =
+      Math.floor(
+        (total % 3600) / 60
+      );
+
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h`;
+    }
+
+    return `${minutes}m`;
+  }
+
+
+  /* =====================
+     MAX LINE DOWNTIME
+  ===================== */
+
+  const maxDown =
+    lines.length > 0
+
+      ? Math.max(
+          ...lines.map(
+            row =>
+              Number(
+                row.effective_down_seconds
+              ) || 0
+          )
+        )
+
+      : 0;
+
+
+  /* =====================
+     LINE BARS
+  ===================== */
+
+  const linesHtml =
+    lines.length > 0
+
+      ? lines.map(row => {
+
+          const seconds =
+            Number(
+              row.effective_down_seconds
+            ) || 0;
+
+          const incidents =
+            Number(
+              row.incidents
+            ) || 0;
+
+
+          const width =
+            maxDown > 0
+
+              ? Math.max(
+                  3,
+                  seconds *
+                  100 /
+                  maxDown
+                )
+
+              : 0;
+
+
+          return `
+
+            <div class="management-reliability-line-row">
+
+              <div class="management-reliability-line-name">
+                ${row.line || "—"}
+              </div>
+
+
+              <div class="management-reliability-line-track">
+
+                <div
+                  class="management-reliability-line-fill"
+                  style="width:${width}%"
+                ></div>
+
+              </div>
+
+
+              <div class="management-reliability-line-value">
+
+                <strong>
+                  ${formatDownTime(seconds)}
+                </strong>
+
+                <span>
+                  ${incidents}
+                  ${incidents === 1 ? "BD" : "BDs"}
+                </span>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }).join("")
+
+      : `
+
+          <div class="management-widget-empty">
+            No Breakdown incidents
+            during the selected period.
+          </div>
+
+        `;
+
+
+  /* =====================
+     FINAL CONTENT
+  ===================== */
+
+  container.className =
+    "management-widget-body";
+
+
+  container.innerHTML = `
+
+    <div class="management-reliability-layout">
+
+
+      <!-- =====================
+           TOP KPIs
+      ===================== -->
+
+      <div class="management-reliability-kpis">
+
+
+        <div class="management-reliability-kpi">
+
+          <div class="management-reliability-icon red">
+            ⚙
+          </div>
+
+          <div>
+
+            <span>
+              Breakdowns
+            </span>
+
+            <strong>
+              ${totalIncidents}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-reliability-kpi">
+
+          <div class="management-reliability-icon blue">
+            ◷
+          </div>
+
+          <div>
+
+            <span>
+              Effective DOWN
+            </span>
+
+            <strong>
+              ${formatDownTime(
+                effectiveDownSeconds
+              )}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-reliability-kpi">
+
+          <div class="management-reliability-icon amber">
+            !
+          </div>
+
+          <div>
+
+            <span>
+              Active Incidents
+            </span>
+
+            <strong>
+              ${activeIncidents}
+            </strong>
+
+            <small>
+              Active now
+            </small>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           DOWNTIME BY LINE
+      ===================== -->
+
+      <div class="management-reliability-lines">
+
+        <div class="management-reliability-lines-title">
+
+          <span>
+            ▮▮
+          </span>
+
+          Downtime by Line
+
+        </div>
+
+
+        <div class="management-reliability-lines-body">
+
+          ${linesHtml}
 
         </div>
 

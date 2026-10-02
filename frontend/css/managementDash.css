@@ -1116,3 +1116,246 @@
   }
 
 }
+
+/* =========================================================
+   RELIABILITY
+========================================================= */
+
+.management-reliability-layout {
+  display: flex;
+  flex-direction: column;
+
+  gap: 15px;
+}
+
+
+/* =====================
+   KPI CARDS
+===================== */
+
+.management-reliability-kpis {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+
+.management-reliability-kpi {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 82px;
+
+  padding: 13px 14px;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+}
+
+
+.management-reliability-kpi > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.management-reliability-kpi span {
+  font-size: 11px;
+
+  color: #8b949e;
+}
+
+
+.management-reliability-kpi strong {
+  margin-top: 3px;
+
+  font-size: 23px;
+  line-height: 1.1;
+
+  color: #f0f6fc;
+}
+
+
+.management-reliability-kpi small {
+  margin-top: 4px;
+
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   KPI ICONS
+===================== */
+
+.management-reliability-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 40px;
+
+  border-radius: 9px;
+
+  font-size: 19px;
+  font-weight: 800;
+}
+
+
+.management-reliability-icon.red {
+  color: #ff4848;
+
+  background:
+    rgba(255, 72, 72, 0.14);
+}
+
+
+.management-reliability-icon.blue {
+  color: #2f80ed;
+
+  background:
+    rgba(47, 128, 237, 0.15);
+}
+
+
+.management-reliability-icon.amber {
+  color: #ffc156;
+
+  background:
+    rgba(255, 193, 86, 0.14);
+}
+
+
+/* =====================
+   DOWNTIME BY LINE
+===================== */
+
+.management-reliability-lines {
+  padding: 14px 16px;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+}
+
+
+.management-reliability-lines-title {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 13px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #c9d1d9;
+}
+
+
+.management-reliability-lines-title span {
+  color: #2f80ed;
+}
+
+
+/* =====================
+   LINE ROW
+===================== */
+
+.management-reliability-line-row {
+  display: grid;
+
+  grid-template-columns:
+    40px 1fr 100px;
+
+  gap: 12px;
+
+  align-items: center;
+
+  min-height: 31px;
+}
+
+
+.management-reliability-line-name {
+  font-size: 11px;
+  font-weight: 700;
+
+  color: #c9d1d9;
+}
+
+
+.management-reliability-line-track {
+  height: 9px;
+
+  overflow: hidden;
+
+  border-radius: 6px;
+
+  background: #1c2735;
+}
+
+
+.management-reliability-line-fill {
+  height: 100%;
+
+  border-radius: 6px;
+
+  background: #2f80ed;
+}
+
+
+.management-reliability-line-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+
+  gap: 7px;
+}
+
+
+.management-reliability-line-value strong {
+  font-size: 11px;
+
+  color: #f0f6fc;
+}
+
+
+.management-reliability-line-value span {
+  min-width: 30px;
+
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .management-reliability-kpis {
+    grid-template-columns: 1fr;
+  }
+
+
+  .management-reliability-line-row {
+    grid-template-columns:
+      35px 1fr 85px;
+  }
+
+}
