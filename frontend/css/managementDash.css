@@ -192,7 +192,7 @@
 }
 
 .management-widget-large {
-  grid-column: span 4;
+  grid-column: span 8;
 }
 
 .management-widget-header {
