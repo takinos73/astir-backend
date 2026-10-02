@@ -8697,6 +8697,437 @@ app.get("/management-dashboard", async (req, res) => {
 
     });
 
+  /* =========================================================
+   3. RELIABILITY
+========================================================= */
+
+
+/* =====================
+   RELIABILITY FILTERS
+===================== */
+
+const reliabilityParams = [
+  fromDate.toISOString(),
+  toDate.toISOString()
+];
+
+
+const reliabilityConditions = [
+
+  `b.started_at >= $1::timestamptz`,
+
+  `b.started_at <= $2::timestamptz`
+
+];
+
+
+if (areaLines) {
+
+  reliabilityParams.push(
+    areaLines
+  );
+
+  reliabilityConditions.push(
+    `UPPER(TRIM(l.name)) = ANY($${reliabilityParams.length}::text[])`
+  );
+
+}
+
+
+const reliabilityWhereSql =
+  `WHERE ${reliabilityConditions.join(" AND ")}`;
+
+
+/* =====================
+   RELIABILITY SUMMARY
+===================== */
+
+const reliabilitySummarySql = `
+
+  WITH breakdown_dt AS (
+
+    SELECT
+
+      b.id,
+      b.status,
+      b.started_at,
+      b.closed_at,
+      b.verified_down_seconds,
+
+      l.name AS line_name,
+
+
+      /* =====================
+         RECORDED DOWN
+      ===================== */
+
+      COALESCE(
+
+        SUM(
+
+          CASE
+
+            WHEN bsh.state = 'DOWN'
+
+            THEN
+
+              GREATEST(
+
+                0,
+
+                EXTRACT(
+
+                  EPOCH FROM (
+
+                    LEAST(
+
+                      COALESCE(
+                        bsh.ended_at,
+                        b.closed_at,
+                        NOW()
+                      ),
+
+                      COALESCE(
+                        b.closed_at,
+                        NOW()
+                      )
+
+                    )
+
+                    -
+
+                    bsh.started_at
+
+                  )
+
+                )
+
+              )
+
+            ELSE 0
+
+          END
+
+        ),
+
+        0
+
+      )::bigint
+        AS recorded_down_seconds
+
+
+    FROM breakdowns b
+
+
+    JOIN assets a
+      ON a.id = b.asset_id
+
+
+    LEFT JOIN lines l
+      ON l.id = a.line_id
+
+
+    LEFT JOIN breakdown_state_history bsh
+      ON bsh.breakdown_id = b.id
+
+
+    ${reliabilityWhereSql}
+
+
+    GROUP BY
+
+      b.id,
+      b.status,
+      b.started_at,
+      b.closed_at,
+      b.verified_down_seconds,
+      l.name
+
+  ),
+
+
+  effective_dt AS (
+
+    SELECT
+
+      id,
+      status,
+      line_name,
+
+      COALESCE(
+
+        verified_down_seconds,
+
+        recorded_down_seconds
+
+      )::bigint
+        AS effective_down_seconds
+
+    FROM breakdown_dt
+
+  )
+
+
+  SELECT
+
+    COUNT(*)::int
+      AS total_incidents,
+
+
+    COUNT(*) FILTER (
+
+      WHERE status IN (
+        'OPEN',
+        'IN_PROGRESS'
+      )
+
+    )::int
+      AS active_incidents,
+
+
+    COALESCE(
+
+      SUM(
+        effective_down_seconds
+      ),
+
+      0
+
+    )::bigint
+      AS total_effective_down_seconds
+
+
+  FROM effective_dt
+
+`;
+
+
+const reliabilitySummaryResult =
+  await pool.query(
+    reliabilitySummarySql,
+    reliabilityParams
+  );
+
+
+const reliabilitySummary =
+  reliabilitySummaryResult.rows[0] || {};
+
+
+/* =====================
+   DOWNTIME BY LINE
+===================== */
+
+const reliabilityByLineSql = `
+
+  WITH breakdown_dt AS (
+
+    SELECT
+
+      b.id,
+      b.status,
+      b.started_at,
+      b.closed_at,
+      b.verified_down_seconds,
+
+      l.name AS line_name,
+
+
+      COALESCE(
+
+        SUM(
+
+          CASE
+
+            WHEN bsh.state = 'DOWN'
+
+            THEN
+
+              GREATEST(
+
+                0,
+
+                EXTRACT(
+
+                  EPOCH FROM (
+
+                    LEAST(
+
+                      COALESCE(
+                        bsh.ended_at,
+                        b.closed_at,
+                        NOW()
+                      ),
+
+                      COALESCE(
+                        b.closed_at,
+                        NOW()
+                      )
+
+                    )
+
+                    -
+
+                    bsh.started_at
+
+                  )
+
+                )
+
+              )
+
+            ELSE 0
+
+          END
+
+        ),
+
+        0
+
+      )::bigint
+        AS recorded_down_seconds
+
+
+    FROM breakdowns b
+
+
+    JOIN assets a
+      ON a.id = b.asset_id
+
+
+    LEFT JOIN lines l
+      ON l.id = a.line_id
+
+
+    LEFT JOIN breakdown_state_history bsh
+      ON bsh.breakdown_id = b.id
+
+
+    ${reliabilityWhereSql}
+
+
+    GROUP BY
+
+      b.id,
+      b.status,
+      b.started_at,
+      b.closed_at,
+      b.verified_down_seconds,
+      l.name
+
+  ),
+
+
+  effective_dt AS (
+
+    SELECT
+
+      id,
+
+      COALESCE(
+        line_name,
+        '—'
+      ) AS line,
+
+      COALESCE(
+
+        verified_down_seconds,
+
+        recorded_down_seconds
+
+      )::bigint
+        AS effective_down_seconds
+
+    FROM breakdown_dt
+
+  )
+
+
+  SELECT
+
+    line,
+
+    COUNT(*)::int
+      AS incidents,
+
+    COALESCE(
+
+      SUM(
+        effective_down_seconds
+      ),
+
+      0
+
+    )::bigint
+      AS effective_down_seconds
+
+
+  FROM effective_dt
+
+
+  GROUP BY
+    line
+
+
+  ORDER BY
+    effective_down_seconds DESC,
+    line ASC
+
+`;
+
+
+const reliabilityByLineResult =
+  await pool.query(
+    reliabilityByLineSql,
+    reliabilityParams
+  );
+
+
+/* =====================
+   NORMALIZE RELIABILITY
+===================== */
+
+const reliability = {
+
+  total_incidents:
+    Number(
+      reliabilitySummary.total_incidents
+    ) || 0,
+
+
+  active_incidents:
+    Number(
+      reliabilitySummary.active_incidents
+    ) || 0,
+
+
+  effective_down_seconds:
+    Number(
+      reliabilitySummary.total_effective_down_seconds
+    ) || 0,
+
+
+  downtime_by_line:
+    reliabilityByLineResult.rows.map(
+      row => ({
+
+        line:
+          row.line,
+
+        incidents:
+          Number(
+            row.incidents
+          ) || 0,
+
+        effective_down_seconds:
+          Number(
+            row.effective_down_seconds
+          ) || 0
+
+      })
+    )
+
+};  
+
 
     /* =====================================================
        RESPONSE
@@ -8734,7 +9165,10 @@ app.get("/management-dashboard", async (req, res) => {
 
 
       schedule_delivery:
-        delivery
+        delivery,
+
+      reliability:
+        reliability
 
     });
 
