@@ -1176,6 +1176,10 @@ function renderManagementMaintenanceMix() {
     Number(mix.corrective) || 0;
 
 
+  /* =====================
+     EMPTY STATE
+  ===================== */
+
   if (total <= 0) {
 
     container.className =
@@ -1193,36 +1197,246 @@ function renderManagementMaintenanceMix() {
   }
 
 
-  const preventivePct =
-    Math.round(
-      preventive * 100 / total
-    );
+  /* =====================
+     DONUT CONFIG
+  ===================== */
 
-  const plannedPct =
-    Math.round(
-      planned * 100 / total
-    );
+  const items = [
 
-  const correctivePct =
-    Math.round(
-      corrective * 100 / total
-    );
+    {
+      label: "Preventive",
+      value: preventive,
+      color: "#2f80ed",
+      textColor: "#ffffff"
+    },
+
+    {
+      label: "Planned",
+      value: planned,
+      color: "#ffc156",
+      textColor: "#172033"
+    },
+
+    {
+      label: "Corrective",
+      value: corrective,
+      color: "#ff4848",
+      textColor: "#ffffff"
+    }
+
+  ];
 
 
-  /*
-    Conic-gradient boundaries.
-  */
+  const centerX = 90;
+  const centerY = 90;
 
-  const preventiveEnd =
-    preventive * 100 / total;
+  const radius = 59;
 
-  const plannedEnd =
-    preventiveEnd +
-    planned * 100 / total;
+  const strokeWidth = 36;
 
+  const circumference =
+    2 * Math.PI * radius;
+
+
+  let cumulative = 0;
+
+
+  /* =====================
+     BUILD SEGMENTS
+  ===================== */
+
+  const segments =
+    items
+
+      .filter(item =>
+        item.value > 0
+      )
+
+      .map(item => {
+
+        const value =
+          Number(item.value) || 0;
+
+        const percent =
+          value / total;
+
+        const pct =
+          Math.round(
+            percent * 100
+          );
+
+
+        const dash =
+          circumference * percent;
+
+
+        const offset =
+          -circumference * cumulative;
+
+
+        /* =====================
+           LABEL POSITION
+        ===================== */
+
+        const midAngle =
+          (
+            cumulative +
+            percent / 2
+          ) *
+          2 *
+          Math.PI;
+
+
+        const labelX =
+          centerX +
+          radius *
+          Math.sin(midAngle);
+
+
+        const labelY =
+          centerY -
+          radius *
+          Math.cos(midAngle);
+
+
+        cumulative += percent;
+
+
+        return {
+
+          circle: `
+
+            <circle
+              cx="${centerX}"
+              cy="${centerY}"
+              r="${radius}"
+
+              fill="none"
+
+              stroke="${item.color}"
+              stroke-width="${strokeWidth}"
+
+              stroke-dasharray="
+                ${dash}
+                ${circumference - dash}
+              "
+
+              stroke-dashoffset="${offset}"
+
+              transform="
+                rotate(
+                  -90
+                  ${centerX}
+                  ${centerY}
+                )
+              "
+            />
+
+          `,
+
+
+          label: `
+
+            <g
+              text-anchor="middle"
+
+              fill="${item.textColor}"
+
+              style="
+                pointer-events:none;
+              "
+            >
+
+              <text
+                x="${labelX}"
+                y="${labelY - 2}"
+
+                font-size="12"
+
+                font-weight="800"
+              >
+                ${value}
+              </text>
+
+
+              <text
+                x="${labelX}"
+                y="${labelY + 10}"
+
+                font-size="9"
+
+                font-weight="700"
+              >
+                ${pct}%
+              </text>
+
+            </g>
+
+          `
+
+        };
+
+      });
+
+
+  const circles =
+    segments
+      .map(segment =>
+        segment.circle
+      )
+      .join("");
+
+
+  const labels =
+    segments
+      .map(segment =>
+        segment.label
+      )
+      .join("");
+
+
+  /* =====================
+     LEGEND
+  ===================== */
+
+  const legend =
+    items
+      .map(item => {
+
+        const cssClass =
+          item.label
+            .toLowerCase();
+
+        return `
+
+          <div class="management-mix-legend-row">
+
+            <span
+              class="
+                management-mix-dot
+                ${cssClass}
+              "
+            ></span>
+
+            <span>
+              ${item.label}
+            </span>
+
+          </div>
+
+        `;
+
+      })
+      .join("");
+
+
+  /* =====================
+     FINAL CONTENT
+  ===================== */
 
   container.className =
     "management-widget-body";
+
 
   container.innerHTML = `
 
@@ -1232,125 +1446,75 @@ function renderManagementMaintenanceMix() {
 
       <div class="management-mix-chart-wrap">
 
-        <div
-          class="management-mix-donut"
-          style="
-            background:
-              conic-gradient(
-                #2f80ed 0%
-                ${preventiveEnd}%,
+        <svg
+          class="management-mix-svg"
 
-                #ffc156
-                ${preventiveEnd}%
-                ${plannedEnd}%,
+          viewBox="0 0 180 180"
 
-                #ff4848
-                ${plannedEnd}%
-                100%
-              );
-          "
+          role="img"
+
+          aria-label="Maintenance Mix"
         >
 
-          <div class="management-mix-donut-center">
+          <!-- BACKGROUND -->
 
-            <strong>
-              ${total}
-            </strong>
+          <circle
+            cx="${centerX}"
+            cy="${centerY}"
+            r="${radius}"
 
-            <span>
-              COMPLETED
-            </span>
+            fill="none"
 
-          </div>
+            stroke="#21262d"
+            stroke-width="${strokeWidth}"
+          />
 
-        </div>
+
+          <!-- SEGMENTS -->
+
+          ${circles}
+
+
+          <!-- VALUES -->
+
+          ${labels}
+
+
+          <!-- CENTER TOTAL -->
+
+          <text
+            x="${centerX}"
+            y="86"
+
+            text-anchor="middle"
+
+            class="management-mix-center-value"
+          >
+            ${total}
+          </text>
+
+
+          <text
+            x="${centerX}"
+            y="103"
+
+            text-anchor="middle"
+
+            class="management-mix-center-label"
+          >
+            COMPLETED
+          </text>
+
+        </svg>
 
       </div>
 
 
-      <!-- LEGEND / VALUES -->
+      <!-- LEGEND -->
 
-      <div class="management-mix-stats">
+      <div class="management-mix-legend">
 
-        <div class="management-mix-stat">
-
-          <div class="management-mix-stat-label">
-
-            <span
-              class="management-mix-dot preventive"
-            ></span>
-
-            Preventive
-
-          </div>
-
-          <div class="management-mix-stat-values">
-
-            <strong>
-              ${preventive}
-            </strong>
-
-            <span>
-              ${preventivePct}%
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div class="management-mix-stat">
-
-          <div class="management-mix-stat-label">
-
-            <span
-              class="management-mix-dot planned"
-            ></span>
-
-            Planned
-
-          </div>
-
-          <div class="management-mix-stat-values">
-
-            <strong>
-              ${planned}
-            </strong>
-
-            <span>
-              ${plannedPct}%
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div class="management-mix-stat">
-
-          <div class="management-mix-stat-label">
-
-            <span
-              class="management-mix-dot corrective"
-            ></span>
-
-            Corrective
-
-          </div>
-
-          <div class="management-mix-stat-values">
-
-            <strong>
-              ${corrective}
-            </strong>
-
-            <span>
-              ${correctivePct}%
-            </span>
-
-          </div>
-
-        </div>
+        ${legend}
 
       </div>
 
@@ -1359,7 +1523,6 @@ function renderManagementMaintenanceMix() {
   `;
 
 }
-
 
   /* =====================
      INIT

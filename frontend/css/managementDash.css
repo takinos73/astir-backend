@@ -695,3 +695,66 @@
   }
 
 }
+
+/* =========================================================
+   MAINTENANCE MIX SVG
+========================================================= */
+
+.management-mix-svg {
+  width: 190px;
+  height: 190px;
+
+  overflow: visible;
+}
+
+
+.management-mix-center-value {
+  fill: #f0f6fc;
+
+  font-size: 29px;
+  font-weight: 800;
+}
+
+
+.management-mix-center-label {
+  fill: #8b949e;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.8px;
+}
+
+
+/* =====================
+   LEGEND
+===================== */
+
+.management-mix-legend {
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
+}
+
+
+.management-mix-legend-row {
+  min-width: 150px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 11px 13px;
+
+  border: 1px solid #30363d;
+  border-radius: 9px;
+
+  background: #0d1117;
+
+  color: #c9d1d9;
+
+  font-size: 13px;
+  font-weight: 600;
+}
