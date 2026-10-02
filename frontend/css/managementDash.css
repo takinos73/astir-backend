@@ -281,3 +281,170 @@
   }
 
 }
+
+/* =========================================================
+   MANAGEMENT WIDGET ACTIONS
+========================================================= */
+
+.management-widget-remove-btn {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #30363d;
+  border-radius: 7px;
+
+  background: transparent;
+  color: #8b949e;
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.management-widget-remove-btn:hover {
+  background: #21262d;
+  color: #f0f6fc;
+}
+
+
+/* =========================================================
+   WIDGET PICKER
+========================================================= */
+
+.management-widget-picker-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.72);
+}
+
+
+.management-widget-picker {
+  width: min(520px, 100%);
+
+  max-height: 80vh;
+  overflow-y: auto;
+
+  border: 1px solid #30363d;
+  border-radius: 16px;
+
+  background: #161b22;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+
+.management-widget-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid #30363d;
+}
+
+
+.management-widget-picker-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+
+.management-widget-picker-close {
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+  color: #8b949e;
+
+  font-size: 22px;
+
+  cursor: pointer;
+}
+
+
+.management-widget-picker-close:hover {
+  background: #21262d;
+  color: #f0f6fc;
+}
+
+
+.management-widget-picker-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  padding: 16px;
+}
+
+
+.management-widget-picker-item {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 15px 16px;
+
+  text-align: left;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+  color: #c9d1d9;
+
+  cursor: pointer;
+}
+
+
+.management-widget-picker-item:hover {
+  background: #1c2128;
+  border-color: #484f58;
+}
+
+
+.management-widget-picker-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+
+.management-widget-picker-item-subtitle {
+  margin-top: 4px;
+
+  font-size: 12px;
+  color: #8b949e;
+}
+
+
+.management-widget-picker-add {
+  font-size: 22px;
+  font-weight: 600;
+
+  color: #3fb950;
+}
