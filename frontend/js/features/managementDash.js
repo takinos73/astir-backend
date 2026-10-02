@@ -445,6 +445,7 @@ function createManagementWidgetCard(widgetKey) {
 
   card.dataset.widgetKey =
     config.key;
+    card.draggable = true;
 
 
   const header =
@@ -570,8 +571,188 @@ function renderManagementWidgets() {
     }
   );
 
+  enableManagementWidgetDragDrop();
+
 }
 
+/* =========================================================
+   WIDGET DRAG & DROP
+========================================================= */
+
+let draggedManagementWidgetKey = null;
+
+
+function enableManagementWidgetDragDrop() {
+
+  const grid =
+    document.getElementById(
+      "managementWidgetGrid"
+    );
+
+  if (!grid) {
+    return;
+  }
+
+  const cards =
+    grid.querySelectorAll(
+      ".management-widget"
+    );
+
+
+  cards.forEach(card => {
+
+    card.addEventListener(
+      "dragstart",
+      e => {
+
+        draggedManagementWidgetKey =
+          card.dataset.widgetKey;
+
+        card.classList.add(
+          "management-widget-dragging"
+        );
+
+        e.dataTransfer.effectAllowed =
+          "move";
+
+      }
+    );
+
+
+    card.addEventListener(
+      "dragend",
+      () => {
+
+        draggedManagementWidgetKey =
+          null;
+
+        card.classList.remove(
+          "management-widget-dragging"
+        );
+
+        document
+          .querySelectorAll(
+            ".management-widget-drag-over"
+          )
+          .forEach(el => {
+            el.classList.remove(
+              "management-widget-drag-over"
+            );
+          });
+
+      }
+    );
+
+
+    card.addEventListener(
+      "dragover",
+      e => {
+
+        e.preventDefault();
+
+        if (
+          !draggedManagementWidgetKey ||
+          draggedManagementWidgetKey ===
+            card.dataset.widgetKey
+        ) {
+          return;
+        }
+
+        card.classList.add(
+          "management-widget-drag-over"
+        );
+
+      }
+    );
+
+
+    card.addEventListener(
+      "dragleave",
+      () => {
+
+        card.classList.remove(
+          "management-widget-drag-over"
+        );
+
+      }
+    );
+
+
+    card.addEventListener(
+      "drop",
+      e => {
+
+        e.preventDefault();
+
+        card.classList.remove(
+          "management-widget-drag-over"
+        );
+
+
+        const targetKey =
+          card.dataset.widgetKey;
+
+        if (
+          !draggedManagementWidgetKey ||
+          draggedManagementWidgetKey ===
+            targetKey
+        ) {
+          return;
+        }
+
+
+        const fromIndex =
+          managementVisibleWidgets.indexOf(
+            draggedManagementWidgetKey
+          );
+
+        const toIndex =
+          managementVisibleWidgets.indexOf(
+            targetKey
+          );
+
+
+        if (
+          fromIndex === -1 ||
+          toIndex === -1
+        ) {
+          return;
+        }
+
+
+        const reordered =
+          [...managementVisibleWidgets];
+
+        const [moved] =
+          reordered.splice(
+            fromIndex,
+            1
+          );
+
+        reordered.splice(
+          toIndex,
+          0,
+          moved
+        );
+
+
+        managementVisibleWidgets =
+          reordered;
+
+
+        saveManagementWidgets(
+          managementVisibleWidgets
+        );
+
+
+        renderManagementWidgets();
+
+      }
+    );
+
+  });
+
+}
 
 /* =========================================================
    ADD / REMOVE WIDGET

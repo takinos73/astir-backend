@@ -448,3 +448,24 @@
 
   color: #3fb950;
 }
+
+/* =========================================================
+   WIDGET DRAG & DROP
+========================================================= */
+
+.management-widget {
+  cursor: grab;
+}
+
+.management-widget:active {
+  cursor: grabbing;
+}
+
+.management-widget-dragging {
+  opacity: 0.45;
+}
+
+.management-widget-drag-over {
+  outline: 2px solid #2ea043;
+  outline-offset: 2px;
+}
