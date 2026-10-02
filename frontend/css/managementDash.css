@@ -469,3 +469,229 @@
   outline: 2px solid #2ea043;
   outline-offset: 2px;
 }
+
+/* =========================================================
+   MANAGEMENT MIX
+========================================================= */
+
+.management-mix-layout {
+  min-height: 205px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  align-items: center;
+
+  gap: 20px;
+}
+
+
+/* =====================
+   DONUT
+===================== */
+
+.management-mix-chart-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.management-mix-donut {
+  width: 165px;
+  height: 165px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+}
+
+
+.management-mix-donut::after {
+  content: "";
+
+  position: absolute;
+
+  width: 92px;
+  height: 92px;
+
+  border-radius: 50%;
+
+  background: #161b22;
+}
+
+
+.management-mix-donut-center {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+.management-mix-donut-center strong {
+  font-size: 30px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  color: #f0f6fc;
+}
+
+
+.management-mix-donut-center span {
+  margin-top: 7px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.7px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   VALUES
+===================== */
+
+.management-mix-stats {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+
+.management-mix-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #30363d;
+  border-radius: 9px;
+
+  background: #0d1117;
+}
+
+
+.management-mix-stat-label {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #c9d1d9;
+}
+
+
+.management-mix-dot {
+  width: 9px;
+  height: 9px;
+
+  flex: 0 0 9px;
+
+  border-radius: 50%;
+}
+
+
+.management-mix-dot.preventive {
+  background: #2f80ed;
+}
+
+
+.management-mix-dot.planned {
+  background: #ffc156;
+}
+
+
+.management-mix-dot.corrective {
+  background: #ff4848;
+}
+
+
+.management-mix-stat-values {
+  display: flex;
+  align-items: baseline;
+
+  gap: 8px;
+}
+
+
+.management-mix-stat-values strong {
+  font-size: 18px;
+  font-weight: 800;
+
+  color: #f0f6fc;
+}
+
+
+.management-mix-stat-values span {
+  min-width: 34px;
+
+  text-align: right;
+
+  font-size: 11px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   LOADING / EMPTY / ERROR
+===================== */
+
+.management-widget-loading,
+.management-widget-empty,
+.management-widget-error {
+  min-height: 205px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+
+.management-widget-loading,
+.management-widget-empty {
+  color: #8b949e;
+}
+
+
+.management-widget-error {
+  color: #f85149;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 1250px) {
+
+  .management-mix-layout {
+    grid-template-columns: 1fr;
+  }
+
+}

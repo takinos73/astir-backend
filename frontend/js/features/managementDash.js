@@ -226,7 +226,11 @@
 
       }
 
-      updateScopeLabel();
+        updateScopeLabel();
+
+        if (managementState.period !== "custom") {
+        loadManagementDashboardData();
+        }
 
     });
 
@@ -250,7 +254,8 @@
       managementState.area =
         btn.dataset.managementArea;
 
-      updateScopeLabel();
+        updateScopeLabel();
+        loadManagementDashboardData();
 
     });
 
@@ -301,6 +306,7 @@
         to.toISOString();
 
       updateScopeLabel();
+      loadManagementDashboardData();
 
     });
 
@@ -571,7 +577,13 @@ function renderManagementWidgets() {
     }
   );
 
-  enableManagementWidgetDragDrop();
+    enableManagementWidgetDragDrop();
+
+    /*
+    Re-render real widget data
+    after Add / Remove / Reorder.
+    */
+    renderManagementMaintenanceMix();
 
 }
 
@@ -1015,13 +1027,347 @@ if (addWidgetBtn) {
 
 }
 
+/* =========================================================
+   MANAGEMENT DASHBOARD DATA
+========================================================= */
+
+const managementDashboardData = {
+  maintenance_mix: null
+};
+
+
+/* =========================================================
+   LOAD MANAGEMENT DASHBOARD DATA
+========================================================= */
+
+async function loadManagementDashboardData() {
+
+  const range =
+    getCurrentRange();
+
+  /*
+    Custom selected but dates not applied yet.
+  */
+  if (!range) {
+    return;
+  }
+
+
+  const maintenanceMixBody =
+    document.getElementById(
+      "management-widget-maintenance_mix"
+    );
+
+  if (maintenanceMixBody) {
+
+    maintenanceMixBody.className =
+      "management-widget-body";
+
+    maintenanceMixBody.innerHTML = `
+      <div class="management-widget-loading">
+        Loading...
+      </div>
+    `;
+
+  }
+
+
+  try {
+
+    const params =
+      new URLSearchParams({
+        from: range.from.toISOString(),
+        to: range.to.toISOString(),
+        area: managementState.area
+      });
+
+
+    const response =
+      await fetch(
+        `/management-dashboard?${params.toString()}`
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Management Dashboard request failed (${response.status})`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    managementDashboardData.maintenance_mix =
+      data?.maintenance_mix || null;
+
+
+    renderManagementMaintenanceMix();
+
+  } catch (err) {
+
+    console.error(
+      "MANAGEMENT DASHBOARD LOAD ERROR:",
+      err
+    );
+
+
+    if (maintenanceMixBody) {
+
+      maintenanceMixBody.innerHTML = `
+        <div class="management-widget-error">
+          Unable to load maintenance data.
+        </div>
+      `;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   MAINTENANCE MIX
+========================================================= */
+
+function renderManagementMaintenanceMix() {
+
+  const container =
+    document.getElementById(
+      "management-widget-maintenance_mix"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const mix =
+    managementDashboardData.maintenance_mix;
+
+
+  if (!mix) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+
+  }
+
+
+  const total =
+    Number(mix.total) || 0;
+
+  const preventive =
+    Number(mix.preventive) || 0;
+
+  const planned =
+    Number(mix.planned) || 0;
+
+  const corrective =
+    Number(mix.corrective) || 0;
+
+
+  if (total <= 0) {
+
+    container.className =
+      "management-widget-body";
+
+    container.innerHTML = `
+      <div class="management-widget-empty">
+        No completed maintenance executions
+        during the selected period.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  const preventivePct =
+    Math.round(
+      preventive * 100 / total
+    );
+
+  const plannedPct =
+    Math.round(
+      planned * 100 / total
+    );
+
+  const correctivePct =
+    Math.round(
+      corrective * 100 / total
+    );
+
+
+  /*
+    Conic-gradient boundaries.
+  */
+
+  const preventiveEnd =
+    preventive * 100 / total;
+
+  const plannedEnd =
+    preventiveEnd +
+    planned * 100 / total;
+
+
+  container.className =
+    "management-widget-body";
+
+  container.innerHTML = `
+
+    <div class="management-mix-layout">
+
+      <!-- DONUT -->
+
+      <div class="management-mix-chart-wrap">
+
+        <div
+          class="management-mix-donut"
+          style="
+            background:
+              conic-gradient(
+                #2f80ed 0%
+                ${preventiveEnd}%,
+
+                #ffc156
+                ${preventiveEnd}%
+                ${plannedEnd}%,
+
+                #ff4848
+                ${plannedEnd}%
+                100%
+              );
+          "
+        >
+
+          <div class="management-mix-donut-center">
+
+            <strong>
+              ${total}
+            </strong>
+
+            <span>
+              COMPLETED
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- LEGEND / VALUES -->
+
+      <div class="management-mix-stats">
+
+        <div class="management-mix-stat">
+
+          <div class="management-mix-stat-label">
+
+            <span
+              class="management-mix-dot preventive"
+            ></span>
+
+            Preventive
+
+          </div>
+
+          <div class="management-mix-stat-values">
+
+            <strong>
+              ${preventive}
+            </strong>
+
+            <span>
+              ${preventivePct}%
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-mix-stat">
+
+          <div class="management-mix-stat-label">
+
+            <span
+              class="management-mix-dot planned"
+            ></span>
+
+            Planned
+
+          </div>
+
+          <div class="management-mix-stat-values">
+
+            <strong>
+              ${planned}
+            </strong>
+
+            <span>
+              ${plannedPct}%
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-mix-stat">
+
+          <div class="management-mix-stat-label">
+
+            <span
+              class="management-mix-dot corrective"
+            ></span>
+
+            Corrective
+
+          </div>
+
+          <div class="management-mix-stat-values">
+
+            <strong>
+              ${corrective}
+            </strong>
+
+            <span>
+              ${correctivePct}%
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
 
   /* =====================
      INIT
   ===================== */
 
-  updateScopeLabel();
-  renderManagementWidgets();
+    updateScopeLabel();
+    renderManagementWidgets();
+    loadManagementDashboardData();
 
   /* =====================
      TEMPORARY GLOBAL ACCESS
