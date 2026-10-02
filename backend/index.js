@@ -7746,6 +7746,311 @@ app.delete("/scheduled-maintenance/:smId/tasks/:taskId", async (req, res) => {
 );
 
 /* =========================================================
+   MANAGEMENT DASHBOARD
+   Maintenance Mix
+
+   Filters:
+   - from
+   - to
+   - area = all | litho | crown
+
+   Classification:
+   - Preventive  = frequency_hours > 0
+   - Planned     = non-BD, non-preventive, planned
+   - Corrective  = breakdown_id IS NOT NULL
+
+   UI terminology:
+   Database Restoration → Management "Corrective"
+========================================================= */
+
+app.get("/management-dashboard", async (req, res) => {
+
+  try {
+
+    const {
+      from,
+      to,
+      area = "all"
+    } = req.query;
+
+
+    /* =====================
+       VALIDATE PERIOD
+    ===================== */
+
+    if (!from || !to) {
+
+      return res.status(400).json({
+        error: "from and to are required"
+      });
+
+    }
+
+
+    const fromDate =
+      new Date(from);
+
+    const toDate =
+      new Date(to);
+
+
+    if (
+      Number.isNaN(fromDate.getTime()) ||
+      Number.isNaN(toDate.getTime())
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid from/to date"
+      });
+
+    }
+
+
+    if (fromDate > toDate) {
+
+      return res.status(400).json({
+        error: "from cannot be after to"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE AREA
+    ===================== */
+
+    const normalizedArea =
+      String(area)
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      ![
+        "all",
+        "litho",
+        "crown"
+      ].includes(normalizedArea)
+    ) {
+
+      return res.status(400).json({
+        error: "Invalid area"
+      });
+
+    }
+
+
+    /* =====================
+       QUERY PARAMETERS
+    ===================== */
+
+    const params = [
+      fromDate.toISOString(),
+      toDate.toISOString()
+    ];
+
+
+    const conditions = [
+
+      `te.executed_at >= $1::timestamptz`,
+
+      `te.executed_at <= $2::timestamptz`
+
+    ];
+
+
+    /* =====================
+       PLANT AREA FILTER
+    ===================== */
+
+    if (normalizedArea === "litho") {
+
+      params.push([
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ]);
+
+      conditions.push(
+        `UPPER(TRIM(l.name)) = ANY($${params.length}::text[])`
+      );
+
+    }
+
+
+    if (normalizedArea === "crown") {
+
+      params.push([
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "L7"
+      ]);
+
+      conditions.push(
+        `UPPER(TRIM(l.name)) = ANY($${params.length}::text[])`
+      );
+
+    }
+
+
+    const whereSql =
+      `WHERE ${conditions.join(" AND ")}`;
+
+
+    /* =====================
+       MAINTENANCE MIX
+    ===================== */
+
+    const sql = `
+
+      SELECT
+
+        /* =====================
+           PREVENTIVE
+        ===================== */
+
+        COUNT(te.id) FILTER (
+
+          WHERE
+
+            mt.breakdown_id IS NULL
+
+            AND COALESCE(
+              mt.frequency_hours,
+              0
+            ) > 0
+
+        )::int
+          AS preventive,
+
+
+        /* =====================
+           PLANNED
+        ===================== */
+
+        COUNT(te.id) FILTER (
+
+          WHERE
+
+            mt.breakdown_id IS NULL
+
+            AND COALESCE(
+              mt.frequency_hours,
+              0
+            ) <= 0
+
+            AND mt.is_planned
+                IS DISTINCT FROM false
+
+        )::int
+          AS planned,
+
+
+        /* =====================
+           CORRECTIVE
+           DB = Restoration
+        ===================== */
+
+        COUNT(te.id) FILTER (
+
+          WHERE
+            mt.breakdown_id IS NOT NULL
+
+        )::int
+          AS corrective
+
+
+      FROM task_executions te
+
+      JOIN maintenance_tasks mt
+        ON mt.id = te.task_id
+
+      JOIN assets a
+        ON a.id = mt.asset_id
+
+      LEFT JOIN lines l
+        ON l.id = a.line_id
+
+      ${whereSql}
+
+    `;
+
+
+    const { rows } =
+      await pool.query(
+        sql,
+        params
+      );
+
+
+    const mix =
+      rows[0] || {};
+
+
+    const preventive =
+      Number(mix.preventive) || 0;
+
+    const planned =
+      Number(mix.planned) || 0;
+
+    const corrective =
+      Number(mix.corrective) || 0;
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    res.json({
+
+      period: {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString()
+      },
+
+      area:
+        normalizedArea,
+
+      maintenance_mix: {
+
+        total:
+          preventive +
+          planned +
+          corrective,
+
+        preventive,
+
+        planned,
+
+        corrective
+
+      }
+
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /management-dashboard ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error:
+        "Failed to load Management Dashboard"
+    });
+
+  }
+
+});
+
+/* =========================================================
    GET /tasks — ACTIVE MAINTENANCE TASKS
 
    Returns active Planned / Overdue Tasks for active Assets.
