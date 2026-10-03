@@ -1661,14 +1661,14 @@
 ========================================================= */
 
 .management-effort-layout {
-  display: grid;
-
-  grid-template-columns:
-    155px 1fr;
-
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
 
   align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
 }
 
 
@@ -1680,19 +1680,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  width: 100%;
 }
 
 
 .management-effort-donut {
-  width: 150px;
-  height: 150px;
+  width: 215px;
+  height: 215px;
 }
 
+
+/* =====================
+   CENTER TEXT
+===================== */
 
 .management-effort-total {
   fill: #f0f6fc;
 
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -1700,7 +1706,7 @@
 .management-effort-total-label {
   fill: #8b949e;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
 
   letter-spacing: .5px;
@@ -1708,69 +1714,63 @@
 
 
 /* =====================
-   ROWS
+   SEGMENT LABELS
+===================== */
+
+.management-effort-segment-hours {
+  fill: #ffffff;
+
+  font-size: 7px;
+  font-weight: 800;
+}
+
+
+.management-effort-segment-pct {
+  fill: #ffffff;
+
+  font-size: 6px;
+  font-weight: 700;
+}
+
+
+/* =====================
+   LEGEND
 ===================== */
 
 .management-effort-types {
   display: flex;
-  flex-direction: column;
-}
-
-
-.management-effort-row {
-  display: flex;
 
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 
-  gap: 12px;
+  gap: 20px;
 
-  padding: 10px 0;
+  width: 100%;
 
-  border-bottom: 1px solid #21262d;
+  margin-top: -4px;
 }
 
 
-.management-effort-row:last-child {
-  border-bottom: 0;
-}
-
-
-.management-effort-type {
+.management-effort-legend-item {
   display: flex;
   align-items: center;
 
-  gap: 10px;
-}
+  gap: 6px;
 
+  font-size: 10px;
+  font-weight: 600;
 
-.management-effort-type > div {
-  display: flex;
-  flex-direction: column;
-}
+  color: #c9d1d9;
 
-
-.management-effort-type strong {
-  font-size: 11px;
-
-  color: #f0f6fc;
-}
-
-
-.management-effort-type small {
-  margin-top: 2px;
-
-  font-size: 9px;
-
-  color: #8b949e;
+  white-space: nowrap;
 }
 
 
 .management-effort-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 
-  flex: 0 0 10px;
+  flex: 0 0 8px;
 
   border-radius: 50%;
 }
@@ -1792,40 +1792,10 @@
 
 
 /* =====================
-   VALUES
-===================== */
-
-.management-effort-value {
-  display: flex;
-  flex-direction: column;
-
-  align-items: flex-end;
-}
-
-
-.management-effort-value strong {
-  font-size: 12px;
-
-  color: #f0f6fc;
-}
-
-
-.management-effort-value span {
-  margin-top: 2px;
-
-  font-size: 10px;
-
-  color: #8b949e;
-}
-
-
-/* =====================
    FOOTER
 ===================== */
 
 .management-effort-footer {
-  grid-column: 1 / -1;
-
   display: grid;
 
   grid-template-columns:
@@ -1833,6 +1803,9 @@
 
   gap: 12px;
 
+  width: 100%;
+
+  margin-top: 4px;
   padding-top: 12px;
 
   border-top: 1px solid #30363d;
@@ -1872,64 +1845,19 @@
 
 @media (max-width: 850px) {
 
-  .management-effort-layout {
-    grid-template-columns: 1fr;
+  .management-effort-donut {
+    width: 190px;
+    height: 190px;
   }
 
 
-  .management-effort-footer {
-    grid-column: auto;
+  .management-effort-types {
+    gap: 12px;
   }
 
-}
 
-.management-mix-content {
-  display: flex;
-  flex-direction: column;
+  .management-effort-legend-item {
+    font-size: 9px;
+  }
 
-  align-items: center;
-
-  gap: 10px;
-}
-
-
-.management-mix-svg {
-  width: 220px;
-  height: 220px;
-}
-
-
-.management-mix-legend {
-  display: flex;
-
-  justify-content: center;
-  align-items: center;
-
-  gap: 20px;
-
-  width: 100%;
-}
-
-
-.management-mix-legend-row {
-  display: flex;
-  align-items: center;
-
-  gap: 6px;
-
-  padding: 0;
-
-  border: 0;
-
-  background: transparent;
-
-  font-size: 10px;
-}
-
-
-.management-mix-dot {
-  width: 8px;
-  height: 8px;
-
-  flex: 0 0 8px;
 }
