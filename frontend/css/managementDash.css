@@ -699,12 +699,38 @@
 }
 
 /* =========================================================
-   MAINTENANCE MIX SVG
+   MAINTENANCE MIX
 ========================================================= */
 
+.management-mix-layout {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  width: 100%;
+}
+
+
+/* =====================
+   DONUT
+===================== */
+
+.management-mix-chart-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+}
+
+
 .management-mix-svg {
-  width: 190px;
-  height: 190px;
+  width: 220px;
+  height: 220px;
 
   overflow: visible;
 }
@@ -734,31 +760,94 @@
 
 .management-mix-legend {
   display: flex;
-  flex-direction: column;
 
-  gap: 14px;
+  flex-direction: row;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 18px;
+
+  width: 100%;
+
+  margin-top: -4px;
 }
 
 
 .management-mix-legend-row {
-  min-width: 150px;
-
   display: flex;
   align-items: center;
 
-  gap: 10px;
+  gap: 6px;
 
-  padding: 11px 13px;
+  min-width: 0;
 
-  border: 1px solid #30363d;
-  border-radius: 9px;
+  padding: 0;
 
-  background: #0d1117;
+  border: 0;
+  border-radius: 0;
 
-  color: #c9d1d9;
+  background: transparent;
 
-  font-size: 13px;
+  color: #9da7b3;
+
+  font-size: 10px;
   font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+/* =====================
+   LEGEND DOTS
+===================== */
+
+.management-mix-dot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 50%;
+}
+
+
+.management-mix-dot.preventive {
+  background: #2f80ed;
+}
+
+
+.management-mix-dot.planned {
+  background: #ffc156;
+}
+
+
+.management-mix-dot.corrective {
+  background: #ff4848;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .management-mix-svg {
+    width: 195px;
+    height: 195px;
+  }
+
+
+  .management-mix-legend {
+    gap: 12px;
+  }
+
+
+  .management-mix-legend-row {
+    font-size: 9px;
+  }
+
 }
 
 /* =========================================================
