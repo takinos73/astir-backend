@@ -102,6 +102,40 @@
   color: #ffffff;
 }
 
+/* =========================================================
+   MANAGEMENT FILTERS
+========================================================= */
+
+.management-filters {
+  display: flex;
+  align-items: flex-end;
+
+  gap: 28px;
+
+  padding: 20px;
+
+  border: 1px solid #30363d;
+  border-radius: 18px;
+
+  background: #161b22;
+}
+
+
+/* =====================
+   ADD WIDGET BUTTON
+===================== */
+
+#managementAddWidgetBtn {
+  margin-left: auto;
+
+  align-self: flex-end;
+
+  white-space: nowrap;
+
+  min-height: 40px;
+  padding: 9px 14px;
+}
+
 
 /* =====================
    CUSTOM PERIOD
