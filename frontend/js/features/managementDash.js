@@ -1192,7 +1192,7 @@ async function loadManagementDashboardData({silent = false} = {}) {
 ========================================================= */
 
 const MANAGEMENT_REFRESH_INTERVAL =
-  60 * 1000; // 60 seconds
+  90 * 1000; // 90 seconds
 
 
 let managementRefreshTimer =
