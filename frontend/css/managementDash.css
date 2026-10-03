@@ -189,10 +189,12 @@
 
 .management-widget-medium {
   grid-column: span 4;
+  min-height: 360px;
 }
 
 .management-widget-large {
   grid-column: span 8;
+  min-height: 360px;
 }
 
 .management-widget-header {
@@ -1644,23 +1646,12 @@
 
 }
 
-/* Prevent cards in the same grid row
-   from stretching to equal height */
-
-#managementWidgetGrid {
-  align-items: start;
-}
-
 .management-widget {
-  align-self: start;
+  height: 100%;
 }
-
-
-/* Reliability:
-   keep Downtime by Line compact */
 
 .management-reliability-lines-body {
-  max-height: 220px;
+  max-height: 180px;
   overflow-y: auto;
   padding-right: 4px;
 }
