@@ -440,71 +440,203 @@ async function loadLoginTechnicians() {
 /* =====================
    LOGIN
 ===================== */
-function handleLogin() {
+
+async function handleLogin() {
+
   const select =
-    document.getElementById("loginTechnician");
-
-  const passwordInput =
-    document.getElementById("loginPassword");
-
-  const error =
-    document.getElementById("loginError");
-
-  if (!select || !passwordInput) return;
-
-  const selectedOption =
-    select.options[select.selectedIndex];
-
-  const technicianId = select.value;
-
-  const technicianName =
-    selectedOption?.textContent?.trim() || "";
-
-  const role =
-    normalizeTechnicianRole(
-      selectedOption?.dataset.role
+    document.getElementById(
+      "loginTechnician"
     );
 
-  const password = passwordInput.value;
+  const passwordInput =
+    document.getElementById(
+      "loginPassword"
+    );
 
-  const validPassword = ROLE_PASSWORDS[role];
+  const error =
+    document.getElementById(
+      "loginError"
+    );
+
+
+  if (
+    !select ||
+    !passwordInput
+  ) {
+    return;
+  }
+
+
+  const selectedOption =
+    select.options[
+      select.selectedIndex
+    ];
+
+
+  const technicianId =
+    select.value;
+
+
+  const technicianName =
+    selectedOption
+      ?.textContent
+      ?.trim() || "";
+
+
+  const password =
+    passwordInput.value;
+
+
+  /* =====================
+     BASIC VALIDATION
+  ===================== */
 
   if (
     !technicianId ||
     !technicianName ||
-    !validPassword ||
-    password !== validPassword
+    !password
   ) {
+
     if (error) {
-      error.style.display = "block";
-      error.textContent = "❌ Invalid credentials";
+
+      error.style.display =
+        "block";
+
+      error.textContent =
+        "❌ Invalid credentials";
+
     }
 
     return;
   }
 
+
   if (error) {
-    error.style.display = "none";
+
+    error.style.display =
+      "none";
+
   }
 
-  localStorage.setItem(
-    TECHNICIAN_ID_STORAGE_KEY,
-    technicianId
-  );
 
-  localStorage.setItem(
-    TECHNICIAN_NAME_STORAGE_KEY,
-    technicianName
-  );
+  /* =====================
+     BACKEND LOGIN
+  ===================== */
 
-  localStorage.setItem(
-    ROLE_STORAGE_KEY,
-    role
-  );
+  try {
 
-  passwordInput.value = "";
+    const response =
+      await fetch(
+        `${API}/auth/login-v2`,
+        {
+          method: "POST",
 
-  applyRoleUI(role);
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            technician_id:
+              Number(
+                technicianId
+              ),
+
+            password
+
+          })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    /* =====================
+       INVALID LOGIN
+    ===================== */
+
+    if (
+      !response.ok ||
+      !data?.success ||
+      !data?.role
+    ) {
+
+      if (error) {
+
+        error.style.display =
+          "block";
+
+        error.textContent =
+          "❌ Invalid credentials";
+
+      }
+
+      return;
+    }
+
+
+    /* =====================
+       SUCCESS
+    ===================== */
+
+    const role =
+      normalizeTechnicianRole(
+        data.role
+      );
+
+
+    localStorage.setItem(
+      TECHNICIAN_ID_STORAGE_KEY,
+      String(
+        data.technician_id
+      )
+    );
+
+
+    localStorage.setItem(
+      TECHNICIAN_NAME_STORAGE_KEY,
+      data.technician_name ||
+      technicianName
+    );
+
+
+    localStorage.setItem(
+      ROLE_STORAGE_KEY,
+      role
+    );
+
+
+    passwordInput.value = "";
+
+
+    applyRoleUI(
+      role
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "LOGIN ERROR:",
+      err
+    );
+
+
+    if (error) {
+
+      error.style.display =
+        "block";
+
+      error.textContent =
+        "❌ Login service unavailable";
+
+    }
+
+  }
+
 }
 
 /* =====================
