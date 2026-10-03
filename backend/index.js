@@ -9535,16 +9535,25 @@ const effortSql = `
     )::int
       AS planned_minutes,
 
-
-
     /* =====================
-       CORRECTIVE
+      CORRECTIVE
+      - New model: linked to Breakdown
+      - Legacy model: is_planned = false
     ===================== */
 
     COUNT(te.id) FILTER (
 
       WHERE
+
         mt.breakdown_id IS NOT NULL
+
+        OR (
+
+          mt.breakdown_id IS NULL
+
+          AND mt.is_planned = false
+
+        )
 
     )::int
       AS corrective_executions,
@@ -9557,7 +9566,16 @@ const effortSql = `
       ) FILTER (
 
         WHERE
+
           mt.breakdown_id IS NOT NULL
+
+          OR (
+
+            mt.breakdown_id IS NULL
+
+            AND mt.is_planned = false
+
+          )
 
       ),
 
