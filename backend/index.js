@@ -8010,6 +8010,19 @@ app.get("/management-dashboard", async (req, res) => {
     const corrective =
       Number(mix.corrective) || 0;
 
+    const maintenanceMix = {
+
+        total:
+          preventive +
+          planned +
+          corrective,
+
+          preventive,
+          planned,
+          corrective
+
+        };
+
 
     /* =====================================================
        2. SCHEDULE DELIVERY
