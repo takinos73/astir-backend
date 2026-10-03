@@ -48,47 +48,125 @@ const uploadDisk = multer({
 app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
+
 // =====================
 // AUTH: LOGIN
 // =====================
+
 app.post("/auth/login", async (req, res) => {
+
   try {
-    const { password } = req.body || {};
+
+    const { password } =
+      req.body || {};
+
 
     if (!password) {
-      return res.status(400).json({ error: "Password required" });
+
+      return res.status(400).json({
+        error: "Password required"
+      });
+
     }
 
-    const result = await pool.query(
-      `SELECT admin_password, planner_password, technician_password
-       FROM roles_config
-       ORDER BY id DESC
-       LIMIT 1`
-    );
+
+    const result =
+      await pool.query(
+        `
+        SELECT
+          admin_password,
+          planner_password,
+          technician_password,
+          manager_password
+
+        FROM roles_config
+
+        ORDER BY id DESC
+
+        LIMIT 1
+        `
+      );
+
 
     if (!result.rows.length) {
-      return res.status(500).json({ error: "Roles not configured" });
+
+      return res.status(500).json({
+        error: "Roles not configured"
+      });
+
     }
 
-    const cfg = result.rows[0];
+
+    const cfg =
+      result.rows[0];
+
 
     let role = null;
 
-    if (password === cfg.admin_password) role = "admin";
-    else if (password === cfg.planner_password) role = "planner";
-    else if (password === cfg.technician_password) role = "technician";
 
-    if (!role) {
-      return res.status(401).json({ error: "Invalid access code" });
+    if (
+      password === cfg.admin_password
+    ) {
+
+      role = "admin";
+
     }
 
-    res.json({ role });
+    else if (
+      password === cfg.planner_password
+    ) {
+
+      role = "planner";
+
+    }
+
+    else if (
+      password === cfg.technician_password
+    ) {
+
+      role = "technician";
+
+    }
+
+    else if (
+      password === cfg.manager_password
+    ) {
+
+      role = "manager";
+
+    }
+
+
+    if (!role) {
+
+      return res.status(401).json({
+        error: "Invalid access code"
+      });
+
+    }
+
+
+    res.json({
+      role
+    });
+
 
   } catch (err) {
-    console.error("AUTH LOGIN ERROR:", err.message);
-    res.status(500).json({ error: "Auth error" });
+
+    console.error(
+      "AUTH LOGIN ERROR:",
+      err.message
+    );
+
+
+    res.status(500).json({
+      error: "Auth error"
+    });
+
   }
+
 });
+
 // =====================
 // MIDDLEWARE: REQUIRE ADMIN
 // =====================
