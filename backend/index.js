@@ -9126,7 +9126,242 @@ const reliability = {
       })
     )
 
-};  
+};
+
+/* =========================================================
+   4. BACKLOG HEALTH
+========================================================= */
+
+const backlogParams = [];
+
+const backlogConditions = [
+
+  `mt.deleted_at IS NULL`,
+
+  `mt.status <> 'Done'`,
+
+  `mt.due_date IS NOT NULL`,
+
+  `mt.due_date < NOW()`,
+
+  /*
+    Corrective / Restoration tasks are not
+    part of scheduled maintenance backlog.
+  */
+  `mt.breakdown_id IS NULL`,
+
+  /*
+    Same classification protection used
+    by Schedule Delivery.
+
+    Preventive:
+      frequency_hours > 0
+
+    Planned:
+      frequency_hours <= 0
+      and not legacy is_planned=false
+  */
+  `(
+      COALESCE(mt.frequency_hours, 0) > 0
+
+      OR
+
+      mt.is_planned IS DISTINCT FROM false
+   )`
+
+];
+
+
+if (areaLines) {
+
+  backlogParams.push(
+    areaLines
+  );
+
+  backlogConditions.push(
+    `UPPER(TRIM(l.name)) =
+      ANY($${backlogParams.length}::text[])`
+  );
+
+}
+
+
+const backlogWhereSql =
+  `WHERE ${backlogConditions.join(" AND ")}`;
+
+
+/* =====================
+   BACKLOG SUMMARY
+===================== */
+
+const backlogSql = `
+
+  SELECT
+
+    COUNT(*)::int
+      AS overdue_tasks,
+
+
+    COALESCE(
+      SUM(
+        COALESCE(
+          mt.duration_min,
+          0
+        )
+      ),
+      0
+    )::int
+      AS workload_minutes,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+        NOW() - mt.due_date
+        <= INTERVAL '7 days'
+
+    )::int
+      AS age_1_7,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+        NOW() - mt.due_date
+          > INTERVAL '7 days'
+
+        AND
+
+        NOW() - mt.due_date
+          <= INTERVAL '30 days'
+
+    )::int
+      AS age_8_30,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+        NOW() - mt.due_date
+          > INTERVAL '30 days'
+
+    )::int
+      AS age_over_30,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+        LOWER(
+          COALESCE(
+            mt.impact,
+            ''
+          )
+        )
+        IN (
+          'safety',
+          'safety_quality'
+        )
+
+    )::int
+      AS safety_overdue,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+        LOWER(
+          COALESCE(
+            mt.impact,
+            ''
+          )
+        )
+        IN (
+          'quality',
+          'safety_quality'
+        )
+
+    )::int
+      AS quality_overdue
+
+
+  FROM maintenance_tasks mt
+
+
+  JOIN assets a
+    ON a.id = mt.asset_id
+
+
+  LEFT JOIN lines l
+    ON l.id = a.line_id
+
+
+  ${backlogWhereSql}
+
+`;
+
+
+const backlogResult =
+  await pool.query(
+    backlogSql,
+    backlogParams
+  );
+
+
+const backlogRow =
+  backlogResult.rows[0] || {};
+
+
+/* =====================
+   NORMALIZE
+===================== */
+
+const backlogHealth = {
+
+  overdue_tasks:
+    Number(
+      backlogRow.overdue_tasks
+    ) || 0,
+
+
+  workload_minutes:
+    Number(
+      backlogRow.workload_minutes
+    ) || 0,
+
+
+  age: {
+
+    days_1_7:
+      Number(
+        backlogRow.age_1_7
+      ) || 0,
+
+    days_8_30:
+      Number(
+        backlogRow.age_8_30
+      ) || 0,
+
+    over_30:
+      Number(
+        backlogRow.age_over_30
+      ) || 0
+
+  },
+
+
+  safety_overdue:
+    Number(
+      backlogRow.safety_overdue
+    ) || 0,
+
+
+  quality_overdue:
+    Number(
+      backlogRow.quality_overdue
+    ) || 0
+
+};
 
 
     /* =====================================================
@@ -9168,7 +9403,10 @@ const reliability = {
         delivery,
 
       reliability:
-        reliability
+        reliability,
+
+      backlog_health:
+        backlogHealth
 
     });
 
