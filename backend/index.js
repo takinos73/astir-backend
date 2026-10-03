@@ -168,6 +168,251 @@ app.post("/auth/login", async (req, res) => {
 });
 
 // =====================
+// AUTH: LOGIN V2
+// Technician + Role validation
+// =====================
+
+app.post("/auth/login-v2", async (req, res) => {
+
+  try {
+
+    const {
+      technician_id,
+      password
+    } = req.body || {};
+
+
+    /* =====================
+       BASIC VALIDATION
+    ===================== */
+
+    const technicianId =
+      Number(technician_id);
+
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error: "Technician required"
+      });
+
+    }
+
+
+    if (!password) {
+
+      return res.status(400).json({
+        error: "Password required"
+      });
+
+    }
+
+
+    /* =====================
+       GET LOGIN USER
+    ===================== */
+
+    const technicianResult =
+      await pool.query(
+        `
+        SELECT
+          id,
+          name,
+          role,
+          active,
+          is_user
+
+        FROM technicians
+
+        WHERE id = $1
+
+        LIMIT 1
+        `,
+        [technicianId]
+      );
+
+
+    if (!technicianResult.rows.length) {
+
+      return res.status(401).json({
+        error: "Invalid credentials"
+      });
+
+    }
+
+
+    const technician =
+      technicianResult.rows[0];
+
+
+    /* =====================
+       USER MUST BE ACTIVE
+       AND CMMS USER
+    ===================== */
+
+    if (
+      technician.active !== true ||
+      technician.is_user !== true
+    ) {
+
+      return res.status(401).json({
+        error: "Invalid credentials"
+      });
+
+    }
+
+
+    /* =====================
+       NORMALIZE ROLE
+    ===================== */
+
+    const dbRole =
+      String(
+        technician.role || ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const roleMap = {
+
+      technician: "technician",
+
+      supervisor: "planner",
+
+      planner: "planner",
+
+      admin: "admin",
+
+      manager: "manager"
+
+    };
+
+
+    const role =
+      roleMap[dbRole];
+
+
+    if (!role) {
+
+      return res.status(401).json({
+        error: "Invalid user role"
+      });
+
+    }
+
+
+    /* =====================
+       GET ROLE PASSWORDS
+    ===================== */
+
+    const configResult =
+      await pool.query(
+        `
+        SELECT
+          admin_password,
+          planner_password,
+          technician_password,
+          manager_password
+
+        FROM roles_config
+
+        ORDER BY id DESC
+
+        LIMIT 1
+        `
+      );
+
+
+    if (!configResult.rows.length) {
+
+      return res.status(500).json({
+        error: "Roles not configured"
+      });
+
+    }
+
+
+    const cfg =
+      configResult.rows[0];
+
+
+    /* =====================
+       PASSWORD FOR USER ROLE
+    ===================== */
+
+    const rolePasswords = {
+
+      technician:
+        cfg.technician_password,
+
+      planner:
+        cfg.planner_password,
+
+      admin:
+        cfg.admin_password,
+
+      manager:
+        cfg.manager_password
+
+    };
+
+
+    const validPassword =
+      rolePasswords[role];
+
+
+    if (
+      !validPassword ||
+      password !== validPassword
+    ) {
+
+      return res.status(401).json({
+        error: "Invalid credentials"
+      });
+
+    }
+
+
+    /* =====================
+       SUCCESS
+    ===================== */
+
+    return res.json({
+
+      success: true,
+
+      technician_id:
+        technician.id,
+
+      technician_name:
+        technician.name,
+
+      role
+
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "AUTH LOGIN V2 ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error: "Auth error"
+    });
+
+  }
+
+});
+
+// =====================
 // MIDDLEWARE: REQUIRE ADMIN
 // =====================
 
