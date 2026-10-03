@@ -3,9 +3,15 @@
 ===================== */
 
 const ROLE_PASSWORDS = {
+
   technician: "tech001",
+
   planner: "plan001",
-  admin: "admin1267"
+
+  admin: "admin1267",
+
+  manager: "manager001"
+
 };
 
 const ROLE_STORAGE_KEY = "cmmsRole";
@@ -15,19 +21,32 @@ const TECHNICIAN_NAME_STORAGE_KEY = "cmmsTechnicianName";
 /* =====================
    NORMALIZE DATABASE ROLE
 ===================== */
+
 function normalizeTechnicianRole(dbRole) {
-  const role = String(dbRole || "")
-    .trim()
-    .toLowerCase();
+
+  const role =
+    String(dbRole || "")
+      .trim()
+      .toLowerCase();
+
 
   const roleMap = {
+
     technician: "technician",
+
     supervisor: "planner",
+
     planner: "planner",
-    admin: "admin"
+
+    admin: "admin",
+
+    manager: "manager"
+
   };
 
+
   return roleMap[role] || "technician";
+
 }
 
 /* =====================
@@ -52,67 +71,303 @@ function hideLogin() {
 /* =====================
    APPLY ROLE UI
 ===================== */
+
 function applyRoleUI(role) {
+
   window.currentUserRole = role;
 
   document.body.dataset.role = role;
 
-  // Admin only
-  document.querySelectorAll(".admin-only").forEach(element => {
-    element.style.display = role === "admin" ? "" : "none";
-  });
 
-  // Planner + Admin
-  document.querySelectorAll(".planner-admin-only").forEach(element => {
-    element.style.display =
-      role === "planner" || role === "admin"
-        ? ""
-        : "none";
-  });
+  const isAdmin =
+    role === "admin";
+
+  const isPlanner =
+    role === "planner";
+
+  const isManager =
+    role === "manager";
+
+
+  /* =====================
+     ADMIN ONLY
+  ===================== */
+
+  document
+    .querySelectorAll(".admin-only")
+    .forEach(element => {
+
+      element.style.display =
+        isAdmin
+          ? ""
+          : "none";
+
+    });
+
+
+  /* =====================
+     PLANNER + ADMIN
+  ===================== */
+
+  document
+    .querySelectorAll(".planner-admin-only")
+    .forEach(element => {
+
+      element.style.display =
+        (
+          isPlanner ||
+          isAdmin
+        )
+          ? ""
+          : "none";
+
+    });
+
+
+  /* =====================
+     LOGGED USER INFO
+  ===================== */
 
   const userInfo =
-    document.getElementById("loggedUserInfo");
+    document.getElementById(
+      "loggedUserInfo"
+    );
+
 
   const nameText =
-    document.getElementById("loggedTechnicianName");
+    document.getElementById(
+      "loggedTechnicianName"
+    );
+
 
   const roleBadge =
-    document.getElementById("loggedRoleBadge");
+    document.getElementById(
+      "loggedRoleBadge"
+    );
+
 
   const roleText =
-    document.getElementById("loggedRoleText");
+    document.getElementById(
+      "loggedRoleText"
+    );
+
 
   const technicianName =
-    localStorage.getItem(TECHNICIAN_NAME_STORAGE_KEY) || "-";
+    localStorage.getItem(
+      TECHNICIAN_NAME_STORAGE_KEY
+    ) || "-";
+
 
   if (nameText) {
-    nameText.textContent = technicianName;
+
+    nameText.textContent =
+      technicianName;
+
   }
+
 
   if (roleText) {
-    roleText.textContent = role;
+
+    roleText.textContent =
+      role;
+
   }
+
 
   if (userInfo) {
-    userInfo.style.display = "flex";
+
+    userInfo.style.display =
+      "flex";
+
   }
+
 
   if (roleBadge) {
-    roleBadge.style.display = "inline-block";
+
+    roleBadge.style.display =
+      "inline-block";
+
   }
+
+
+  /* =====================
+     LOGOUT
+  ===================== */
 
   const logoutBtn =
-    document.getElementById("logoutBtn");
+    document.getElementById(
+      "logoutBtn"
+    );
+
 
   if (logoutBtn) {
-    logoutBtn.style.display = "inline-block";
-  }
-  // Refresh asset cards for the new role
-  if (typeof renderAssetsCards === "function") {
-    renderAssetsCards();
+
+    logoutBtn.style.display =
+      "inline-block";
+
   }
 
+
+  /* =====================
+     MANAGER VIEW
+  ===================== */
+
+  if (isManager) {
+
+    /* ---------------------
+       HIDE ALL MAIN TABS
+    --------------------- */
+
+    document
+      .querySelectorAll(".main-tab")
+      .forEach(tab => {
+
+        tab.style.display =
+          "none";
+
+        tab.classList.remove(
+          "active"
+        );
+
+      });
+
+
+    /* ---------------------
+       SHOW MANAGEMENT TAB
+    --------------------- */
+
+    const managementTab =
+      document.querySelector(
+        '.main-tab[data-tab="management"]'
+      );
+
+
+    if (managementTab) {
+
+      managementTab.style.display =
+        "";
+
+      managementTab.classList.add(
+        "active"
+      );
+
+    }
+
+
+    /* ---------------------
+       HIDE TOP TOOLS
+    --------------------- */
+
+    const topTools =
+      document.querySelector(
+        ".top-tools"
+      );
+
+
+    if (topTools) {
+
+      topTools.style.display =
+        "none";
+
+    }
+
+
+    /* ---------------------
+       HIDE ALL PANELS
+    --------------------- */
+
+    document
+      .querySelectorAll(".tab-panel")
+      .forEach(panel => {
+
+        panel.style.display =
+          "none";
+
+      });
+
+
+    /* ---------------------
+       SHOW MANAGEMENT PANEL
+    --------------------- */
+
+    const managementPanel =
+      document.getElementById(
+        "tab-management"
+      );
+
+
+    if (managementPanel) {
+
+      managementPanel.style.display =
+        "block";
+
+    }
+
+
+    /* ---------------------
+       LOAD MANAGEMENT
+       THROUGH EXISTING TAB LOGIC
+    --------------------- */
+
+    if (managementTab) {
+
+      managementTab.click();
+
+    }
+
+  }
+
+
+  /* =====================
+     NORMAL CMMS VIEW
+     ADMIN / PLANNER /
+     TECHNICIAN
+  ===================== */
+
+  else {
+
+    document
+      .querySelectorAll(".main-tab")
+      .forEach(tab => {
+
+        tab.style.display =
+          "";
+
+      });
+
+
+    const topTools =
+      document.querySelector(
+        ".top-tools"
+      );
+
+
+    if (topTools) {
+
+      topTools.style.display =
+        "";
+
+    }
+
+  }
+
+
+  /* =====================
+     REFRESH ASSET CARDS
+  ===================== */
+
+  if (
+    !isManager &&
+    typeof renderAssetsCards === "function"
+  ) {
+
+    renderAssetsCards();
+
+  }
+
+
   hideLogin();
+
 }
 
 /* =====================
