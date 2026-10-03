@@ -2850,6 +2850,23 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
   tab.addEventListener("click", () => {
 
+    const currentRole =
+      window.currentUserRole ||
+      localStorage.getItem(ROLE_STORAGE_KEY);
+
+
+    /* =====================
+       MANAGER PROTECTION
+    ===================== */
+
+    if (
+      currentRole === "manager" &&
+      tab.dataset.tab !== "management"
+    ) {
+      return;
+    }
+
+
     /* =====================
        ACTIVE TAB
     ===================== */
@@ -2861,6 +2878,7 @@ document.querySelectorAll(".main-tab").forEach(tab => {
       });
 
     tab.classList.add("active");
+
 
     console.log(
       "TAB CLICKED:",
@@ -2989,7 +3007,6 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
     /* =====================
        MANAGEMENT
-       UI shell only for now
     ===================== */
 
     if (sel === "management") {
@@ -2998,20 +3015,45 @@ document.querySelectorAll(".main-tab").forEach(tab => {
         "Management Dashboard opened"
       );
 
-      /*
-        No data loading yet.
-
-        Next step:
-        - period filters
-        - area filters
-        - widget rendering
-      */
-
     }
 
   });
 
 });
+
+
+/* =====================
+   INITIAL TAB ROUTING
+===================== */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    const savedRole =
+      localStorage.getItem(
+        ROLE_STORAGE_KEY
+      );
+
+
+    if (savedRole === "manager") {
+
+      const managementTab =
+        document.querySelector(
+          '.main-tab[data-tab="management"]'
+        );
+
+
+      if (managementTab) {
+
+        managementTab.click();
+
+      }
+
+    }
+
+  }
+);
 
 
 /* =====================
