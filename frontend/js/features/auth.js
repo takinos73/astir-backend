@@ -1,19 +1,3 @@
-/* =====================
-   FRONTEND LOGIN
-===================== */
-
-const ROLE_PASSWORDS = {
-
-  technician: "tech001",
-
-  planner: "plan001",
-
-  admin: "admin1267",
-
-  manager: "manager001"
-
-};
-
 const ROLE_STORAGE_KEY = "cmmsRole";
 const TECHNICIAN_ID_STORAGE_KEY = "cmmsTechnicianId";
 const TECHNICIAN_NAME_STORAGE_KEY = "cmmsTechnicianName";
