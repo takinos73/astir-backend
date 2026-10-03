@@ -9363,6 +9363,317 @@ const backlogHealth = {
 
 };
 
+/* =========================================================
+   5. MAINTENANCE EFFORT BY TYPE
+========================================================= */
+
+const effortParams = [
+  fromDate.toISOString(),
+  toDate.toISOString()
+];
+
+
+const effortConditions = [
+
+  `te.executed_at >= $1::timestamptz`,
+
+  `te.executed_at <= $2::timestamptz`
+
+];
+
+
+if (areaLines) {
+
+  effortParams.push(
+    areaLines
+  );
+
+  effortConditions.push(
+    `UPPER(TRIM(l.name)) =
+      ANY($${effortParams.length}::text[])`
+  );
+
+}
+
+
+const effortWhereSql =
+  `WHERE ${effortConditions.join(" AND ")}`;
+
+
+/* =====================
+   QUERY
+===================== */
+
+const effortSql = `
+
+  SELECT
+
+
+    /* =====================
+       TOTAL
+    ===================== */
+
+    COUNT(te.id)::int
+      AS total_executions,
+
+
+    COUNT(te.duration_minutes)::int
+      AS duration_recorded_executions,
+
+
+    COALESCE(
+
+      SUM(
+        te.duration_minutes
+      ),
+
+      0
+
+    )::int
+      AS total_minutes,
+
+
+    COALESCE(
+
+      ROUND(
+        AVG(
+          te.duration_minutes
+        )::numeric,
+        1
+      ),
+
+      0
+
+    )
+      AS avg_duration_minutes,
+
+
+
+    /* =====================
+       PREVENTIVE
+    ===================== */
+
+    COUNT(te.id) FILTER (
+
+      WHERE
+        mt.breakdown_id IS NULL
+
+        AND COALESCE(
+          mt.frequency_hours,
+          0
+        ) > 0
+
+    )::int
+      AS preventive_executions,
+
+
+    COALESCE(
+
+      SUM(
+        te.duration_minutes
+      ) FILTER (
+
+        WHERE
+          mt.breakdown_id IS NULL
+
+          AND COALESCE(
+            mt.frequency_hours,
+            0
+          ) > 0
+
+      ),
+
+      0
+
+    )::int
+      AS preventive_minutes,
+
+
+
+    /* =====================
+       PLANNED
+    ===================== */
+
+    COUNT(te.id) FILTER (
+
+      WHERE
+        mt.breakdown_id IS NULL
+
+        AND COALESCE(
+          mt.frequency_hours,
+          0
+        ) <= 0
+
+        AND mt.is_planned
+          IS DISTINCT FROM false
+
+    )::int
+      AS planned_executions,
+
+
+    COALESCE(
+
+      SUM(
+        te.duration_minutes
+      ) FILTER (
+
+        WHERE
+          mt.breakdown_id IS NULL
+
+          AND COALESCE(
+            mt.frequency_hours,
+            0
+          ) <= 0
+
+          AND mt.is_planned
+            IS DISTINCT FROM false
+
+      ),
+
+      0
+
+    )::int
+      AS planned_minutes,
+
+
+
+    /* =====================
+       CORRECTIVE
+    ===================== */
+
+    COUNT(te.id) FILTER (
+
+      WHERE
+        mt.breakdown_id IS NOT NULL
+
+    )::int
+      AS corrective_executions,
+
+
+    COALESCE(
+
+      SUM(
+        te.duration_minutes
+      ) FILTER (
+
+        WHERE
+          mt.breakdown_id IS NOT NULL
+
+      ),
+
+      0
+
+    )::int
+      AS corrective_minutes
+
+
+  FROM task_executions te
+
+
+  JOIN maintenance_tasks mt
+    ON mt.id = te.task_id
+
+
+  JOIN assets a
+    ON a.id = mt.asset_id
+
+
+  LEFT JOIN lines l
+    ON l.id = a.line_id
+
+
+  ${effortWhereSql}
+
+`;
+
+
+const effortResult =
+  await pool.query(
+    effortSql,
+    effortParams
+  );
+
+
+const effortRow =
+  effortResult.rows[0] || {};
+
+
+/* =====================
+   NORMALIZE
+===================== */
+
+const maintenanceEffort = {
+
+  total_minutes:
+    Number(
+      effortRow.total_minutes
+    ) || 0,
+
+
+  total_executions:
+    Number(
+      effortRow.total_executions
+    ) || 0,
+
+
+  duration_recorded_executions:
+    Number(
+      effortRow.duration_recorded_executions
+    ) || 0,
+
+
+  avg_duration_minutes:
+    Number(
+      effortRow.avg_duration_minutes
+    ) || 0,
+
+
+  preventive: {
+
+    minutes:
+      Number(
+        effortRow.preventive_minutes
+      ) || 0,
+
+    executions:
+      Number(
+        effortRow.preventive_executions
+      ) || 0
+
+  },
+
+
+  planned: {
+
+    minutes:
+      Number(
+        effortRow.planned_minutes
+      ) || 0,
+
+    executions:
+      Number(
+        effortRow.planned_executions
+      ) || 0
+
+  },
+
+
+  corrective: {
+
+    minutes:
+      Number(
+        effortRow.corrective_minutes
+      ) || 0,
+
+    executions:
+      Number(
+        effortRow.corrective_executions
+      ) || 0
+
+  }
+
+};
+
 
     /* =====================================================
        RESPONSE
@@ -9406,7 +9717,10 @@ const backlogHealth = {
         reliability,
 
       backlog_health:
-        backlogHealth
+        backlogHealth,
+
+      maintenance_effort:
+        maintenanceEffort
 
     });
 

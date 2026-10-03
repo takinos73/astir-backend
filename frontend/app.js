@@ -3271,7 +3271,7 @@ document.getElementById("restoreSnapshot")?.addEventListener("click", async () =
 // =====================
 // SHOW LAST RESTORED SNAPSHOT
 // =====================
-document.addEventListener("DOMContentLoaded", () => {
+/*document.addEventListener("DOMContentLoaded", () => {
   const last = localStorage.getItem("lastRestoredSnapshot");
   const statusEl = document.getElementById("snapshotStatus");
 
@@ -3284,7 +3284,7 @@ document.addEventListener("DOMContentLoaded", () => {
     statusEl.textContent = "No snapshot loaded";
     statusEl.classList.remove("loaded");
   }
-});
+});*/
 
 document.addEventListener(
   "click",
