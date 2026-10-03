@@ -7954,14 +7954,24 @@ app.get("/management-dashboard", async (req, res) => {
         )::int
           AS planned,
 
-
         COUNT(te.id) FILTER (
 
           WHERE
+
             mt.breakdown_id IS NOT NULL
 
-        )::int
-          AS corrective
+            OR (
+
+              mt.breakdown_id IS NULL
+
+              AND mt.is_planned = false
+
+              AND te.executed_at
+                <= '2026-09-03T00:00:00+00'::timestamptz
+
+            )
+
+        )::int AS corrective
 
 
       FROM task_executions te
