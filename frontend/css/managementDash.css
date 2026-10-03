@@ -1359,3 +1359,287 @@
   }
 
 }
+
+/* =========================================================
+   BACKLOG HEALTH
+========================================================= */
+
+.management-backlog-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+
+/* =====================
+   SUMMARY
+===================== */
+
+.management-backlog-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+
+.management-backlog-overdue,
+.management-backlog-workload {
+  min-height: 90px;
+
+  padding: 14px;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+}
+
+
+.management-backlog-overdue {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+.management-backlog-overdue strong {
+  font-size: 38px;
+  line-height: 1;
+
+  color: #ff4848;
+}
+
+
+.management-backlog-overdue span {
+  margin-top: 7px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: .5px;
+
+  color: #8b949e;
+}
+
+
+.management-backlog-workload {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.management-backlog-workload > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.management-backlog-workload span {
+  font-size: 10px;
+
+  color: #8b949e;
+}
+
+
+.management-backlog-workload strong {
+  margin-top: 5px;
+
+  font-size: 23px;
+
+  color: #f0f6fc;
+}
+
+
+/* =====================
+   ICONS
+===================== */
+
+.management-backlog-icon {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+
+.management-backlog-icon.blue {
+  color: #2f80ed;
+  background: rgba(47, 128, 237, .15);
+}
+
+
+.management-backlog-icon.red {
+  color: #ff4848;
+  background: rgba(255, 72, 72, .14);
+}
+
+
+.management-backlog-icon.amber {
+  color: #ffc156;
+  background: rgba(255, 193, 86, .14);
+}
+
+
+/* =====================
+   AGE
+===================== */
+
+.management-backlog-age {
+  padding: 13px 14px;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+}
+
+
+.management-backlog-section-title {
+  margin-bottom: 10px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #c9d1d9;
+}
+
+
+.management-backlog-age-row {
+  display: grid;
+
+  grid-template-columns:
+    72px 1fr 30px;
+
+  gap: 10px;
+
+  align-items: center;
+
+  min-height: 29px;
+}
+
+
+.management-backlog-age-label {
+  font-size: 10px;
+
+  color: #c9d1d9;
+}
+
+
+.management-backlog-track {
+  height: 8px;
+
+  overflow: hidden;
+
+  border-radius: 6px;
+
+  background: #1c2735;
+}
+
+
+.management-backlog-fill {
+  height: 100%;
+
+  border-radius: 6px;
+}
+
+
+.management-backlog-fill.age-1 {
+  background: #ffc156;
+}
+
+
+.management-backlog-fill.age-2 {
+  background: #ff8a3d;
+}
+
+
+.management-backlog-fill.age-3 {
+  background: #ff4848;
+}
+
+
+.management-backlog-age-row strong {
+  text-align: right;
+
+  font-size: 11px;
+
+  color: #f0f6fc;
+}
+
+
+/* =====================
+   SAFETY / QUALITY
+===================== */
+
+.management-backlog-exposure {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+}
+
+
+.management-backlog-exposure-card {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 66px;
+
+  padding: 11px 13px;
+
+  border: 1px solid #30363d;
+  border-radius: 10px;
+
+  background: #0d1117;
+}
+
+
+.management-backlog-exposure-card > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.management-backlog-exposure-card span {
+  font-size: 10px;
+
+  color: #8b949e;
+}
+
+
+.management-backlog-exposure-card strong {
+  margin-top: 2px;
+
+  font-size: 20px;
+
+  color: #f0f6fc;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .management-backlog-summary,
+  .management-backlog-exposure {
+    grid-template-columns: 1fr;
+  }
+
+}

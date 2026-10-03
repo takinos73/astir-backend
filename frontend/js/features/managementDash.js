@@ -339,6 +339,13 @@ const managementWidgetRegistry = {
     sizeClass: "management-widget-large"
   },
 
+    backlog_health: {
+    key: "backlog_health",
+    title: "Backlog Health",
+    subtitle: "Open overdue maintenance",
+    sizeClass: "management-widget-medium"
+    },
+
   downtime_by_line: {
     key: "downtime_by_line",
     title: "Downtime by Line",
@@ -606,6 +613,7 @@ function renderManagementWidgets() {
   renderManagementMaintenanceMix();
   renderManagementScheduleDelivery();
   renderManagementReliability();
+  renderManagementBacklogHealth();
 
 }
 
@@ -1056,7 +1064,8 @@ if (addWidgetBtn) {
     const managementDashboardData = {
     maintenance_mix: null,
     schedule_delivery: null,
-    reliability: null
+    reliability: null,
+    backlog_health: null
     };
 
 /* =========================================================
@@ -1133,9 +1142,13 @@ async function loadManagementDashboardData() {
     managementDashboardData.reliability =
         data?.reliability || null;
 
+    managementDashboardData.backlog_health =
+        data?.backlog_health || null;
+
     renderManagementMaintenanceMix();
     renderManagementScheduleDelivery();
     renderManagementReliability();
+    renderManagementBacklogHealth();
 
   } catch (err) {
 
@@ -2298,6 +2311,283 @@ function renderManagementReliability() {
           ${linesHtml}
 
         </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+/* =========================================================
+   BACKLOG HEALTH
+========================================================= */
+
+function renderManagementBacklogHealth() {
+
+  const container =
+    document.getElementById(
+      "management-widget-backlog_health"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const backlog =
+    managementDashboardData.backlog_health;
+
+
+  if (!backlog) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+  }
+
+
+  const overdueTasks =
+    Number(backlog.overdue_tasks) || 0;
+
+  const workloadMinutes =
+    Number(backlog.workload_minutes) || 0;
+
+  const days1to7 =
+    Number(backlog.age?.days_1_7) || 0;
+
+  const days8to30 =
+    Number(backlog.age?.days_8_30) || 0;
+
+  const over30 =
+    Number(backlog.age?.over_30) || 0;
+
+  const safetyOverdue =
+    Number(backlog.safety_overdue) || 0;
+
+  const qualityOverdue =
+    Number(backlog.quality_overdue) || 0;
+
+
+  /* =====================
+     WORKLOAD
+  ===================== */
+
+  const workloadHours =
+    workloadMinutes / 60;
+
+  const workloadLabel =
+    workloadHours >= 10
+      ? `${workloadHours.toFixed(1)} h`
+      : `${workloadHours.toFixed(1)} h`;
+
+
+  /* =====================
+     AGE BAR WIDTHS
+  ===================== */
+
+  const maxAge =
+    Math.max(
+      days1to7,
+      days8to30,
+      over30,
+      1
+    );
+
+
+  const pct1to7 =
+    days1to7 / maxAge * 100;
+
+  const pct8to30 =
+    days8to30 / maxAge * 100;
+
+  const pctOver30 =
+    over30 / maxAge * 100;
+
+
+  container.className =
+    "management-widget-body";
+
+
+  container.innerHTML = `
+
+    <div class="management-backlog-layout">
+
+
+      <!-- =====================
+           SUMMARY
+      ===================== -->
+
+      <div class="management-backlog-summary">
+
+        <div class="management-backlog-overdue">
+
+          <strong>
+            ${overdueTasks}
+          </strong>
+
+          <span>
+            OVERDUE TASKS
+          </span>
+
+        </div>
+
+
+        <div class="management-backlog-workload">
+
+          <div class="management-backlog-icon blue">
+            ◷
+          </div>
+
+          <div>
+
+            <span>
+              Estimated workload
+            </span>
+
+            <strong>
+              ${workloadLabel}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           AGE OF BACKLOG
+      ===================== -->
+
+      <div class="management-backlog-age">
+
+        <div class="management-backlog-section-title">
+          Age of Backlog
+        </div>
+
+
+        <div class="management-backlog-age-row">
+
+          <span class="management-backlog-age-label">
+            1–7 days
+          </span>
+
+          <div class="management-backlog-track">
+
+            <div
+              class="management-backlog-fill age-1"
+              style="width:${pct1to7}%"
+            ></div>
+
+          </div>
+
+          <strong>
+            ${days1to7}
+          </strong>
+
+        </div>
+
+
+        <div class="management-backlog-age-row">
+
+          <span class="management-backlog-age-label">
+            8–30 days
+          </span>
+
+          <div class="management-backlog-track">
+
+            <div
+              class="management-backlog-fill age-2"
+              style="width:${pct8to30}%"
+            ></div>
+
+          </div>
+
+          <strong>
+            ${days8to30}
+          </strong>
+
+        </div>
+
+
+        <div class="management-backlog-age-row">
+
+          <span class="management-backlog-age-label">
+            &gt;30 days
+          </span>
+
+          <div class="management-backlog-track">
+
+            <div
+              class="management-backlog-fill age-3"
+              style="width:${pctOver30}%"
+            ></div>
+
+          </div>
+
+          <strong>
+            ${over30}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           EXPOSURE
+      ===================== -->
+
+      <div class="management-backlog-exposure">
+
+
+        <div class="management-backlog-exposure-card">
+
+          <div class="management-backlog-icon red">
+            !
+          </div>
+
+          <div>
+
+            <span>
+              Safety overdue
+            </span>
+
+            <strong>
+              ${safetyOverdue}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-backlog-exposure-card">
+
+          <div class="management-backlog-icon amber">
+            ◆
+          </div>
+
+          <div>
+
+            <span>
+              Quality overdue
+            </span>
+
+            <strong>
+              ${qualityOverdue}
+            </strong>
+
+          </div>
+
+        </div>
+
 
       </div>
 
