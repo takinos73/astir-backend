@@ -543,6 +543,7 @@ async function setAllAssetsIdle() {
 
   }
 }
+
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("setAllAssetsIdleBtn");
 
