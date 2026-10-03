@@ -380,7 +380,7 @@ async function loadLoginTechnicians() {
     const technicians = await response.json();
 
     select.innerHTML = `
-      <option value="">Select technician</option>
+      <option value="">Select User</option>
     `;
 
     technicians
