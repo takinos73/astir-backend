@@ -41,56 +41,155 @@ body {
   font-weight: 400;
 }
 
-/* =====================
-   HEADER
-===================== */
+/* =========================================================
+   APP HEADER
+========================================================= */
+
 .app-header {
-  background: #10131a;
-  padding: 8px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+
+  grid-template-columns:
+    1fr auto auto;
+
   align-items: center;
+
+  gap: 22px;
+
+  padding: 10px 16px;
+
+  min-height: 64px;
+
+  border: 1px solid #30363d;
+  border-radius: 14px;
+
+  background: #0d1117;
 }
+
+
+/* =====================
+   BRAND
+===================== */
+
+.app-header-main {
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  min-width: 0;
+}
+
 
 .app-title {
-  font-size: 22px;
-  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+
+  gap: 9px;
+
+  color: #f0f6fc;
+
+  font-size: 22px;
+  font-weight: 700;
+
+  line-height: 1.1;
 }
+
 
 .logo-dot {
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
+  width: 12px;
+  height: 12px;
+
+  flex: 0 0 12px;
+
   border-radius: 50%;
+
+  background: #58a6ff;
 }
+
 
 .app-subtitle {
+  margin-top: 4px;
+
+  color: #8b949e;
+
   font-size: 12px;
-  color: var(--text-muted);
+
+  line-height: 1.2;
 }
 
-.pill {
-  padding: 4px 10px;
-  background: #141821;
-  border-radius: 15px;
-  border: 1px solid var(--border-subtle);
+
+/* =====================
+   LOGGED USER
+===================== */
+
+.logged-user-info {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  white-space: nowrap;
+
+  color: #8b949e;
+
   font-size: 12px;
 }
 
-.snapshot-note {
+
+.logged-user-info strong {
+  color: #f0f6fc;
+
   font-size: 12px;
-  color: var(--text-muted);
+  font-weight: 700;
 }
-.tiny {
-  font-size: 11px;
-  opacity: 0.7;
+
+
+.logged-user-separator {
+  margin: 0 4px;
+
+  color: #6e7681;
 }
+
+
+/* =====================
+   LOGOUT
+===================== */
+
+#logoutBtn {
+  padding: 7px 12px;
+
+  min-height: 34px;
+
+  white-space: nowrap;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .app-header {
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+
+  .logged-user-info {
+    flex-wrap: wrap;
+
+    white-space: normal;
+  }
+
+
+  #logoutBtn {
+    width: fit-content;
+  }
+
+}
+
 /* =====================
    LOGIN FORM
 ===================== */
