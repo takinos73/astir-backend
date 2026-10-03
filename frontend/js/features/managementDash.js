@@ -1081,7 +1081,7 @@ if (addWidgetBtn) {
    LOAD MANAGEMENT DASHBOARD DATA
 ========================================================= */
 
-async function loadManagementDashboardData() {
+async function loadManagementDashboardData({silent = false} = {}) {
 
   const range =
     getCurrentRange();
@@ -1099,18 +1099,21 @@ async function loadManagementDashboardData() {
       "management-widget-maintenance_mix"
     );
 
-  if (maintenanceMixBody) {
+    if (
+    maintenanceMixBody &&
+    !silent
+    ) {
 
     maintenanceMixBody.className =
-      "management-widget-body";
+        "management-widget-body";
 
     maintenanceMixBody.innerHTML = `
-      <div class="management-widget-loading">
+        <div class="management-widget-loading">
         Loading...
-      </div>
+        </div>
     `;
 
-  }
+    }
 
 
   try {
@@ -1183,6 +1186,122 @@ async function loadManagementDashboardData() {
   }
 
 }
+
+/* =========================================================
+   MANAGEMENT AUTO REFRESH
+========================================================= */
+
+const MANAGEMENT_REFRESH_INTERVAL =
+  60 * 1000; // 60 seconds
+
+
+let managementRefreshTimer =
+  null;
+
+
+/* =====================
+   CHECK IF MANAGEMENT
+   IS CURRENTLY VISIBLE
+===================== */
+
+function isManagementDashboardVisible() {
+
+  const panel =
+    document.getElementById(
+      "tab-management"
+    );
+
+
+  if (!panel) {
+    return false;
+  }
+
+
+  return (
+    panel.style.display !== "none" &&
+    !document.hidden
+  );
+
+}
+
+
+/* =====================
+   START AUTO REFRESH
+===================== */
+
+function startManagementAutoRefresh() {
+
+  /*
+    Prevent duplicate timers
+  */
+  if (managementRefreshTimer) {
+
+    clearInterval(
+      managementRefreshTimer
+    );
+
+  }
+
+
+  managementRefreshTimer =
+    setInterval(
+      () => {
+
+        if (
+          !isManagementDashboardVisible()
+        ) {
+          return;
+        }
+
+
+        loadManagementDashboardData({
+          silent: true
+        });
+
+      },
+      MANAGEMENT_REFRESH_INTERVAL
+    );
+
+}
+
+
+/* =====================
+   REFRESH WHEN USER
+   RETURNS TO BROWSER TAB
+===================== */
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (
+      document.hidden ||
+      !isManagementDashboardVisible()
+    ) {
+      return;
+    }
+
+
+    loadManagementDashboardData({
+      silent: true
+    });
+
+  }
+);
+
+
+/* =====================
+   INIT AUTO REFRESH
+===================== */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    startManagementAutoRefresh();
+
+  }
+);
 
 
 /* =========================================================
