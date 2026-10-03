@@ -3189,7 +3189,7 @@ document.addEventListener("click", async (e) => {
 // =====================
 // SNAPSHOT FILE LOAD LABEL
 // =====================
-document.getElementById("snapshotFile")?.addEventListener("change", e => {
+/*document.getElementById("snapshotFile")?.addEventListener("change", e => {
   const file = e.target.files?.[0];
   const statusEl = document.getElementById("snapshotStatus");
 
@@ -3203,7 +3203,7 @@ document.getElementById("snapshotFile")?.addEventListener("change", e => {
 
   statusEl.textContent = `Loaded: ${file.name}`;
   statusEl.classList.add("loaded");
-});
+});*/
 
 /* =====================
    SNAPSHOT RESTORE + VERIFY
