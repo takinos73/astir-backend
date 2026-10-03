@@ -2641,15 +2641,21 @@ function renderManagementMaintenanceEffort() {
   }
 
 
+  /* =====================
+     DATA
+  ===================== */
+
   const totalMinutes =
     Number(
       effort.total_minutes
     ) || 0;
 
+
   const totalExecutions =
     Number(
       effort.total_executions
     ) || 0;
+
 
   const avgDurationMinutes =
     Number(
@@ -2662,31 +2668,16 @@ function renderManagementMaintenanceEffort() {
       effort.preventive?.minutes
     ) || 0;
 
-  const preventiveExecutions =
-    Number(
-      effort.preventive?.executions
-    ) || 0;
-
 
   const plannedMinutes =
     Number(
       effort.planned?.minutes
     ) || 0;
 
-  const plannedExecutions =
-    Number(
-      effort.planned?.executions
-    ) || 0;
-
 
   const correctiveMinutes =
     Number(
       effort.corrective?.minutes
-    ) || 0;
-
-  const correctiveExecutions =
-    Number(
-      effort.corrective?.executions
     ) || 0;
 
 
@@ -2718,14 +2709,47 @@ function renderManagementMaintenanceEffort() {
   }
 
 
-  const preventivePct =
-    getPct(preventiveMinutes);
+  function getRatio(minutes) {
 
-  const plannedPct =
-    getPct(plannedMinutes);
+    if (totalMinutes <= 0) {
+      return 0;
+    }
 
-  const correctivePct =
-    getPct(correctiveMinutes);
+    return (
+      Number(minutes) /
+      totalMinutes
+    );
+
+  }
+
+
+  const effortItems = [
+
+    {
+      label: "Preventive",
+      minutes: preventiveMinutes,
+      pct: getPct(preventiveMinutes),
+      ratio: getRatio(preventiveMinutes),
+      color: "#2f80ed"
+    },
+
+    {
+      label: "Planned",
+      minutes: plannedMinutes,
+      pct: getPct(plannedMinutes),
+      ratio: getRatio(plannedMinutes),
+      color: "#ffc156"
+    },
+
+    {
+      label: "Corrective",
+      minutes: correctiveMinutes,
+      pct: getPct(correctiveMinutes),
+      ratio: getRatio(correctiveMinutes),
+      color: "#ff4848"
+    }
+
+  ];
 
 
   /* =====================
@@ -2742,14 +2766,14 @@ function renderManagementMaintenanceEffort() {
 
 
   function makeSegment(
-    pct,
+    ratio,
     color
   ) {
 
     const length =
       circumference *
-      pct /
-      100;
+      ratio;
+
 
     const segment = `
 
@@ -2770,33 +2794,121 @@ function renderManagementMaintenanceEffort() {
 
     `;
 
+
     offset += length;
+
 
     return segment;
   }
 
 
   const donutSegments =
+    effortItems
+      .filter(
+        item => item.ratio > 0
+      )
+      .map(
+        item =>
+          makeSegment(
+            item.ratio,
+            item.color
+          )
+      )
+      .join("");
 
-    makeSegment(
-      preventivePct,
-      "#2f80ed"
-    )
 
-    +
+  /* =====================
+     DONUT LABELS
+  ===================== */
 
-    makeSegment(
-      plannedPct,
-      "#ffc156"
-    )
+  let cumulativeRatio = 0;
 
-    +
 
-    makeSegment(
-      correctivePct,
-      "#ff4848"
-    );
+  const donutLabels =
+    effortItems
 
+      .filter(
+        item => item.ratio > 0
+      )
+
+      .map(item => {
+
+        const middleRatio =
+          cumulativeRatio +
+          item.ratio / 2;
+
+
+        cumulativeRatio +=
+          item.ratio;
+
+
+        const angle =
+          middleRatio *
+          360 -
+          90;
+
+
+        const labelRadius = 53;
+
+
+        const x =
+          70 +
+          labelRadius *
+          Math.cos(
+            angle *
+            Math.PI /
+            180
+          );
+
+
+        const y =
+          70 +
+          labelRadius *
+          Math.sin(
+            angle *
+            Math.PI /
+            180
+          );
+
+
+        return `
+
+          <g
+            text-anchor="middle"
+            style="pointer-events:none;"
+          >
+
+            <text
+              x="${x}"
+              y="${y - 2}"
+              class="management-effort-segment-hours"
+            >
+              ${formatHours(
+                item.minutes
+              )}
+            </text>
+
+
+            <text
+              x="${x}"
+              y="${y + 8}"
+              class="management-effort-segment-pct"
+            >
+              ${item.pct}%
+            </text>
+
+          </g>
+
+        `;
+
+      })
+
+      .join("");
+
+
+  /* =====================
+     RENDER
+  ===================== */
 
   container.className =
     "management-widget-body";
@@ -2816,6 +2928,8 @@ function renderManagementMaintenanceEffort() {
         <svg
           class="management-effort-donut"
           viewBox="0 0 140 140"
+          role="img"
+          aria-label="Maintenance Effort by Type"
         >
 
           <circle
@@ -2827,7 +2941,10 @@ function renderManagementMaintenanceEffort() {
             stroke-width="22"
           />
 
+
           ${donutSegments}
+
+          ${donutLabels}
 
 
           <text
@@ -2836,7 +2953,9 @@ function renderManagementMaintenanceEffort() {
             text-anchor="middle"
             class="management-effort-total"
           >
-            ${formatHours(totalMinutes)}
+            ${formatHours(
+              totalMinutes
+            )}
           </text>
 
 
@@ -2855,124 +2974,44 @@ function renderManagementMaintenanceEffort() {
 
 
       <!-- =====================
-           TYPE DETAILS
+           LEGEND
       ===================== -->
 
       <div class="management-effort-types">
 
 
-        <div class="management-effort-row">
+        <div class="management-effort-legend-item">
 
-          <div class="management-effort-type">
+          <span class="management-effort-dot preventive"></span>
 
-            <span class="management-effort-dot preventive"></span>
-
-            <div>
-
-              <strong>
-                Preventive
-              </strong>
-
-              <small>
-                ${preventiveExecutions} executions
-              </small>
-
-            </div>
-
-          </div>
-
-
-          <div class="management-effort-value">
-
-            <strong>
-              ${formatHours(
-                preventiveMinutes
-              )}
-            </strong>
-
-            <span>
-              ${preventivePct}%
-            </span>
-
-          </div>
+          <span>
+            Preventive
+          </span>
 
         </div>
 
 
-        <div class="management-effort-row">
+        <div class="management-effort-legend-item">
 
-          <div class="management-effort-type">
+          <span class="management-effort-dot planned"></span>
 
-            <span class="management-effort-dot planned"></span>
-
-            <div>
-
-              <strong>
-                Planned
-              </strong>
-
-              <small>
-                ${plannedExecutions} executions
-              </small>
-
-            </div>
-
-          </div>
-
-
-          <div class="management-effort-value">
-
-            <strong>
-              ${formatHours(
-                plannedMinutes
-              )}
-            </strong>
-
-            <span>
-              ${plannedPct}%
-            </span>
-
-          </div>
+          <span>
+            Planned
+          </span>
 
         </div>
 
 
-        <div class="management-effort-row">
+        <div class="management-effort-legend-item">
 
-          <div class="management-effort-type">
+          <span class="management-effort-dot corrective"></span>
 
-            <span class="management-effort-dot corrective"></span>
-
-            <div>
-
-              <strong>
-                Corrective
-              </strong>
-
-              <small>
-                ${correctiveExecutions} executions
-              </small>
-
-            </div>
-
-          </div>
-
-
-          <div class="management-effort-value">
-
-            <strong>
-              ${formatHours(
-                correctiveMinutes
-              )}
-            </strong>
-
-            <span>
-              ${correctivePct}%
-            </span>
-
-          </div>
+          <span>
+            Corrective
+          </span>
 
         </div>
+
 
       </div>
 
@@ -3017,9 +3056,7 @@ function renderManagementMaintenanceEffort() {
     </div>
 
   `;
-
 }
-
   /* =====================
      INIT
   ===================== */

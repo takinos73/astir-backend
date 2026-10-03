@@ -1882,3 +1882,54 @@
   }
 
 }
+
+.management-mix-content {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.management-mix-svg {
+  width: 220px;
+  height: 220px;
+}
+
+
+.management-mix-legend {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  gap: 20px;
+
+  width: 100%;
+}
+
+
+.management-mix-legend-row {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  font-size: 10px;
+}
+
+
+.management-mix-dot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+}
