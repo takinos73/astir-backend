@@ -339,10 +339,17 @@ const managementWidgetRegistry = {
     sizeClass: "management-widget-large"
   },
 
-    backlog_health: {
+  backlog_health: {
     key: "backlog_health",
     title: "Backlog Health",
     subtitle: "Open overdue maintenance",
+    sizeClass: "management-widget-medium"
+    },
+
+  maintenance_effort: {
+    key: "maintenance_effort",
+    title: "Maintenance Effort by Type",
+    subtitle: "Recorded maintenance time by type",
     sizeClass: "management-widget-medium"
     },
 
@@ -614,6 +621,7 @@ function renderManagementWidgets() {
   renderManagementScheduleDelivery();
   renderManagementReliability();
   renderManagementBacklogHealth();
+  renderManagementMaintenanceEffort();
 
 }
 
@@ -1065,7 +1073,8 @@ if (addWidgetBtn) {
     maintenance_mix: null,
     schedule_delivery: null,
     reliability: null,
-    backlog_health: null
+    backlog_health: null,
+    maintenance_effort: null
     };
 
 /* =========================================================
@@ -1144,11 +1153,14 @@ async function loadManagementDashboardData() {
 
     managementDashboardData.backlog_health =
         data?.backlog_health || null;
+    managementDashboardData.maintenance_effort =
+        data?.maintenance_effort || null;
 
     renderManagementMaintenanceMix();
     renderManagementScheduleDelivery();
     renderManagementReliability();
     renderManagementBacklogHealth();
+    renderManagementMaintenanceEffort();
 
   } catch (err) {
 
@@ -2597,6 +2609,417 @@ function renderManagementBacklogHealth() {
 
 }
 
+/* =========================================================
+   MAINTENANCE EFFORT BY TYPE
+========================================================= */
+
+function renderManagementMaintenanceEffort() {
+
+  const container =
+    document.getElementById(
+      "management-widget-maintenance_effort"
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const effort =
+    managementDashboardData.maintenance_effort;
+
+
+  if (!effort) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+  }
+
+
+  const totalMinutes =
+    Number(
+      effort.total_minutes
+    ) || 0;
+
+  const totalExecutions =
+    Number(
+      effort.total_executions
+    ) || 0;
+
+  const avgDurationMinutes =
+    Number(
+      effort.avg_duration_minutes
+    ) || 0;
+
+
+  const preventiveMinutes =
+    Number(
+      effort.preventive?.minutes
+    ) || 0;
+
+  const preventiveExecutions =
+    Number(
+      effort.preventive?.executions
+    ) || 0;
+
+
+  const plannedMinutes =
+    Number(
+      effort.planned?.minutes
+    ) || 0;
+
+  const plannedExecutions =
+    Number(
+      effort.planned?.executions
+    ) || 0;
+
+
+  const correctiveMinutes =
+    Number(
+      effort.corrective?.minutes
+    ) || 0;
+
+  const correctiveExecutions =
+    Number(
+      effort.corrective?.executions
+    ) || 0;
+
+
+  /* =====================
+     FORMATTERS
+  ===================== */
+
+  function formatHours(minutes) {
+
+    return (
+      Number(minutes) / 60
+    ).toFixed(1) + " h";
+
+  }
+
+
+  function getPct(minutes) {
+
+    if (totalMinutes <= 0) {
+      return 0;
+    }
+
+    return Math.round(
+      Number(minutes) *
+      100 /
+      totalMinutes
+    );
+
+  }
+
+
+  const preventivePct =
+    getPct(preventiveMinutes);
+
+  const plannedPct =
+    getPct(plannedMinutes);
+
+  const correctivePct =
+    getPct(correctiveMinutes);
+
+
+  /* =====================
+     DONUT
+  ===================== */
+
+  const radius = 54;
+
+  const circumference =
+    2 * Math.PI * radius;
+
+
+  let offset = 0;
+
+
+  function makeSegment(
+    pct,
+    color
+  ) {
+
+    const length =
+      circumference *
+      pct /
+      100;
+
+    const segment = `
+
+      <circle
+        cx="70"
+        cy="70"
+        r="${radius}"
+        fill="none"
+        stroke="${color}"
+        stroke-width="22"
+        stroke-dasharray="
+          ${length}
+          ${circumference - length}
+        "
+        stroke-dashoffset="${-offset}"
+        transform="rotate(-90 70 70)"
+      />
+
+    `;
+
+    offset += length;
+
+    return segment;
+  }
+
+
+  const donutSegments =
+
+    makeSegment(
+      preventivePct,
+      "#2f80ed"
+    )
+
+    +
+
+    makeSegment(
+      plannedPct,
+      "#ffc156"
+    )
+
+    +
+
+    makeSegment(
+      correctivePct,
+      "#ff4848"
+    );
+
+
+  container.className =
+    "management-widget-body";
+
+
+  container.innerHTML = `
+
+    <div class="management-effort-layout">
+
+
+      <!-- =====================
+           DONUT
+      ===================== -->
+
+      <div class="management-effort-donut-panel">
+
+        <svg
+          class="management-effort-donut"
+          viewBox="0 0 140 140"
+        >
+
+          <circle
+            cx="70"
+            cy="70"
+            r="${radius}"
+            fill="none"
+            stroke="#263241"
+            stroke-width="22"
+          />
+
+          ${donutSegments}
+
+
+          <text
+            x="70"
+            y="66"
+            text-anchor="middle"
+            class="management-effort-total"
+          >
+            ${formatHours(totalMinutes)}
+          </text>
+
+
+          <text
+            x="70"
+            y="84"
+            text-anchor="middle"
+            class="management-effort-total-label"
+          >
+            TOTAL EFFORT
+          </text>
+
+        </svg>
+
+      </div>
+
+
+      <!-- =====================
+           TYPE DETAILS
+      ===================== -->
+
+      <div class="management-effort-types">
+
+
+        <div class="management-effort-row">
+
+          <div class="management-effort-type">
+
+            <span class="management-effort-dot preventive"></span>
+
+            <div>
+
+              <strong>
+                Preventive
+              </strong>
+
+              <small>
+                ${preventiveExecutions} executions
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div class="management-effort-value">
+
+            <strong>
+              ${formatHours(
+                preventiveMinutes
+              )}
+            </strong>
+
+            <span>
+              ${preventivePct}%
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-effort-row">
+
+          <div class="management-effort-type">
+
+            <span class="management-effort-dot planned"></span>
+
+            <div>
+
+              <strong>
+                Planned
+              </strong>
+
+              <small>
+                ${plannedExecutions} executions
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div class="management-effort-value">
+
+            <strong>
+              ${formatHours(
+                plannedMinutes
+              )}
+            </strong>
+
+            <span>
+              ${plannedPct}%
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="management-effort-row">
+
+          <div class="management-effort-type">
+
+            <span class="management-effort-dot corrective"></span>
+
+            <div>
+
+              <strong>
+                Corrective
+              </strong>
+
+              <small>
+                ${correctiveExecutions} executions
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div class="management-effort-value">
+
+            <strong>
+              ${formatHours(
+                correctiveMinutes
+              )}
+            </strong>
+
+            <span>
+              ${correctivePct}%
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           FOOTER KPIs
+      ===================== -->
+
+      <div class="management-effort-footer">
+
+
+        <div>
+
+          <span>
+            Total Executions
+          </span>
+
+          <strong>
+            ${totalExecutions}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Avg. Duration
+          </span>
+
+          <strong>
+            ${Math.round(
+              avgDurationMinutes
+            )} min
+          </strong>
+
+        </div>
+
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
   /* =====================
      INIT
   ===================== */
@@ -2604,6 +3027,7 @@ function renderManagementBacklogHealth() {
     updateScopeLabel();
     renderManagementWidgets();
     loadManagementDashboardData();
+    
 
   /* =====================
      TEMPORARY GLOBAL ACCESS

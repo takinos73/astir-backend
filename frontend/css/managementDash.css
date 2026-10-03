@@ -1655,3 +1655,230 @@
   overflow-y: auto;
   padding-right: 4px;
 }
+
+/* =========================================================
+   MAINTENANCE EFFORT BY TYPE
+========================================================= */
+
+.management-effort-layout {
+  display: grid;
+
+  grid-template-columns:
+    155px 1fr;
+
+  gap: 18px;
+
+  align-items: center;
+}
+
+
+/* =====================
+   DONUT
+===================== */
+
+.management-effort-donut-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.management-effort-donut {
+  width: 150px;
+  height: 150px;
+}
+
+
+.management-effort-total {
+  fill: #f0f6fc;
+
+  font-size: 15px;
+  font-weight: 800;
+}
+
+
+.management-effort-total-label {
+  fill: #8b949e;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: .5px;
+}
+
+
+/* =====================
+   ROWS
+===================== */
+
+.management-effort-types {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.management-effort-row {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 10px 0;
+
+  border-bottom: 1px solid #21262d;
+}
+
+
+.management-effort-row:last-child {
+  border-bottom: 0;
+}
+
+
+.management-effort-type {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.management-effort-type > div {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.management-effort-type strong {
+  font-size: 11px;
+
+  color: #f0f6fc;
+}
+
+
+.management-effort-type small {
+  margin-top: 2px;
+
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-effort-dot {
+  width: 10px;
+  height: 10px;
+
+  flex: 0 0 10px;
+
+  border-radius: 50%;
+}
+
+
+.management-effort-dot.preventive {
+  background: #2f80ed;
+}
+
+
+.management-effort-dot.planned {
+  background: #ffc156;
+}
+
+
+.management-effort-dot.corrective {
+  background: #ff4848;
+}
+
+
+/* =====================
+   VALUES
+===================== */
+
+.management-effort-value {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-end;
+}
+
+
+.management-effort-value strong {
+  font-size: 12px;
+
+  color: #f0f6fc;
+}
+
+
+.management-effort-value span {
+  margin-top: 2px;
+
+  font-size: 10px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   FOOTER
+===================== */
+
+.management-effort-footer {
+  grid-column: 1 / -1;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  padding-top: 12px;
+
+  border-top: 1px solid #30363d;
+}
+
+
+.management-effort-footer > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-effort-footer span {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-effort-footer strong {
+  font-size: 14px;
+
+  color: #f0f6fc;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .management-effort-layout {
+    grid-template-columns: 1fr;
+  }
+
+
+  .management-effort-footer {
+    grid-column: auto;
+  }
+
+}
