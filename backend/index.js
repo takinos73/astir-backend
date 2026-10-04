@@ -10435,7 +10435,37 @@ for (
     minutes:
       Number(
         row.total_minutes
-      ) || 0
+      ) || 0,
+
+
+    preventive: {
+
+      tasks:
+        Number(
+          row.preventive_tasks
+        ) || 0,
+
+      minutes:
+        Number(
+          row.preventive_minutes
+        ) || 0
+
+    },
+
+
+    planned: {
+
+      tasks:
+        Number(
+          row.planned_tasks
+        ) || 0,
+
+      minutes:
+        Number(
+          row.planned_minutes
+        ) || 0
+
+    }
 
   });
 
