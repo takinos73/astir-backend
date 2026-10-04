@@ -10082,6 +10082,540 @@ const maintenanceEffort = {
 
 };
 
+/* =========================================================
+   6. MAINTENANCE WORKLOAD FORECAST
+
+   Next 7 calendar days
+   - Preventive + Planned only
+   - Corrective excluded
+   - Overdue backlog shown separately
+   - Overdue backlog NOT included in forecast
+========================================================= */
+
+
+/* =====================
+   FORECAST FILTERS
+===================== */
+
+const forecastParams = [];
+
+
+const forecastConditions = [
+
+  `mt.deleted_at IS NULL`,
+
+  `mt.status <> 'Done'`,
+
+  `mt.due_date IS NOT NULL`,
+
+  /*
+    Only work still due from now onward.
+    Overdue work is shown separately.
+  */
+  `mt.due_date >= NOW()`,
+
+  /*
+    Today + next 6 calendar days,
+    based on Athens local date.
+  */
+  `
+    mt.due_date < (
+      (
+        DATE_TRUNC(
+          'day',
+          NOW() AT TIME ZONE 'Europe/Athens'
+        )
+        + INTERVAL '7 days'
+      )
+      AT TIME ZONE 'Europe/Athens'
+    )
+  `,
+
+  /*
+    Corrective / Restoration excluded
+  */
+  `mt.breakdown_id IS NULL`,
+
+  /*
+    Preventive + Planned only.
+    Legacy is_planned=false excluded.
+  */
+  `
+    (
+      COALESCE(
+        mt.frequency_hours,
+        0
+      ) > 0
+
+      OR
+
+      (
+        COALESCE(
+          mt.frequency_hours,
+          0
+        ) <= 0
+
+        AND mt.is_planned
+          IS DISTINCT FROM false
+      )
+    )
+  `
+
+];
+
+
+if (areaLines) {
+
+  forecastParams.push(
+    areaLines
+  );
+
+
+  forecastConditions.push(
+
+    `UPPER(TRIM(l.name)) =
+      ANY($${forecastParams.length}::text[])`
+
+  );
+
+}
+
+
+const forecastWhereSql =
+  `WHERE ${forecastConditions.join(" AND ")}`;
+
+
+/* =====================
+   FORECAST QUERY
+===================== */
+
+const forecastSql = `
+
+  SELECT
+
+    (
+      mt.due_date
+      AT TIME ZONE 'Europe/Athens'
+    )::date
+      AS due_day,
+
+
+    COUNT(*)::int
+      AS total_tasks,
+
+
+    COALESCE(
+      SUM(
+        COALESCE(
+          mt.duration_min,
+          0
+        )
+      ),
+      0
+    )::int
+      AS total_minutes,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+
+        COALESCE(
+          mt.frequency_hours,
+          0
+        ) > 0
+
+    )::int
+      AS preventive_tasks,
+
+
+    COALESCE(
+
+      SUM(
+        COALESCE(
+          mt.duration_min,
+          0
+        )
+      ) FILTER (
+
+        WHERE
+
+          COALESCE(
+            mt.frequency_hours,
+            0
+          ) > 0
+
+      ),
+
+      0
+
+    )::int
+      AS preventive_minutes,
+
+
+    COUNT(*) FILTER (
+
+      WHERE
+
+        COALESCE(
+          mt.frequency_hours,
+          0
+        ) <= 0
+
+        AND mt.is_planned
+          IS DISTINCT FROM false
+
+    )::int
+      AS planned_tasks,
+
+
+    COALESCE(
+
+      SUM(
+        COALESCE(
+          mt.duration_min,
+          0
+        )
+      ) FILTER (
+
+        WHERE
+
+          COALESCE(
+            mt.frequency_hours,
+            0
+          ) <= 0
+
+          AND mt.is_planned
+            IS DISTINCT FROM false
+
+      ),
+
+      0
+
+    )::int
+      AS planned_minutes
+
+
+  FROM maintenance_tasks mt
+
+
+  JOIN assets a
+    ON a.id = mt.asset_id
+
+
+  LEFT JOIN lines l
+    ON l.id = a.line_id
+
+
+  ${forecastWhereSql}
+
+
+  GROUP BY
+
+    (
+      mt.due_date
+      AT TIME ZONE 'Europe/Athens'
+    )::date
+
+
+  ORDER BY
+
+    due_day ASC
+
+`;
+
+
+const forecastResult =
+  await pool.query(
+    forecastSql,
+    forecastParams
+  );
+
+
+/* =====================
+   BUILD 7 CALENDAR DAYS
+===================== */
+
+const athensDateFormatter =
+  new Intl.DateTimeFormat(
+    "en-CA",
+    {
+      timeZone: "Europe/Athens",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }
+  );
+
+
+const todayAthens =
+  athensDateFormatter.format(
+    new Date()
+  );
+
+
+const [
+  forecastYear,
+  forecastMonth,
+  forecastDay
+] =
+  todayAthens
+    .split("-")
+    .map(Number);
+
+
+/*
+  UTC is used only for safe
+  date arithmetic here.
+*/
+const forecastCalendarStart =
+  new Date(
+    Date.UTC(
+      forecastYear,
+      forecastMonth - 1,
+      forecastDay
+    )
+  );
+
+
+const forecastRowsByDate =
+  new Map(
+    forecastResult.rows.map(
+      row => [
+
+        String(
+          row.due_day
+        ),
+
+        row
+
+      ]
+    )
+  );
+
+
+const forecastDays = [];
+
+
+for (
+  let i = 0;
+  i < 7;
+  i++
+) {
+
+  const calendarDate =
+    new Date(
+      forecastCalendarStart.getTime()
+      +
+      i * 86400000
+    );
+
+
+  const date =
+    calendarDate
+      .toISOString()
+      .slice(0, 10);
+
+
+  const row =
+    forecastRowsByDate.get(
+      date
+    ) || {};
+
+
+  forecastDays.push({
+
+    date,
+
+    tasks:
+      Number(
+        row.total_tasks
+      ) || 0,
+
+    minutes:
+      Number(
+        row.total_minutes
+      ) || 0
+
+  });
+
+}
+
+
+/* =====================
+   FORECAST TOTALS
+===================== */
+
+const forecastTotalTasks =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.total_tasks
+        ) || 0
+      ),
+    0
+  );
+
+
+const forecastTotalMinutes =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.total_minutes
+        ) || 0
+      ),
+    0
+  );
+
+
+const forecastPreventiveTasks =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.preventive_tasks
+        ) || 0
+      ),
+    0
+  );
+
+
+const forecastPreventiveMinutes =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.preventive_minutes
+        ) || 0
+      ),
+    0
+  );
+
+
+const forecastPlannedTasks =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.planned_tasks
+        ) || 0
+      ),
+    0
+  );
+
+
+const forecastPlannedMinutes =
+  forecastResult.rows.reduce(
+    (sum, row) =>
+      sum +
+      (
+        Number(
+          row.planned_minutes
+        ) || 0
+      ),
+    0
+  );
+
+
+/* =====================
+   PEAK DAY
+===================== */
+
+const forecastPeakDay =
+  forecastDays.reduce(
+    (peak, day) => {
+
+      if (
+        !peak ||
+        day.minutes > peak.minutes
+      ) {
+
+        return day;
+
+      }
+
+
+      return peak;
+
+    },
+    null
+  );
+
+
+/* =====================
+   NORMALIZE
+===================== */
+
+const maintenanceWorkloadForecast = {
+
+  total_tasks:
+    forecastTotalTasks,
+
+  total_minutes:
+    forecastTotalMinutes,
+
+
+  preventive: {
+
+    tasks:
+      forecastPreventiveTasks,
+
+    minutes:
+      forecastPreventiveMinutes
+
+  },
+
+
+  planned: {
+
+    tasks:
+      forecastPlannedTasks,
+
+    minutes:
+      forecastPlannedMinutes
+
+  },
+
+
+  days:
+    forecastDays,
+
+
+  peak_day:
+    forecastPeakDay,
+
+
+  avg_minutes_per_day:
+    Math.round(
+      forecastTotalMinutes / 7
+    ),
+
+
+  /*
+    Current overdue scheduled workload.
+
+    This comes directly from Backlog Health
+    and is NOT included in forecast totals.
+  */
+  overdue_backlog: {
+
+    tasks:
+      backlogHealth.overdue_tasks,
+
+    minutes:
+      backlogHealth.workload_minutes
+
+  }
+
+};
+
 
     /* =====================================================
        RESPONSE
@@ -10128,7 +10662,10 @@ const maintenanceEffort = {
         backlogHealth,
 
       maintenance_effort:
-        maintenanceEffort
+        maintenanceEffort,
+
+      maintenance_workload_forecast:
+        maintenanceWorkloadForecast
 
     });
 
