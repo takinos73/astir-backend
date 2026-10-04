@@ -10193,11 +10193,11 @@ const forecastSql = `
 
   SELECT
 
-    (
+    TO_CHAR(
       mt.due_date
-      AT TIME ZONE 'Europe/Athens'
-    )::date
-      AS due_day,
+      AT TIME ZONE 'Europe/Athens',
+      'YYYY-MM-DD'
+    ) AS due_day,
 
 
     COUNT(*)::int
