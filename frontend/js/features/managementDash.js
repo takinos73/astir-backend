@@ -628,6 +628,7 @@ function renderManagementWidgets() {
   renderManagementReliability();
   renderManagementBacklogHealth();
   renderManagementMaintenanceEffort();
+  renderManagementWorkloadForecast();
 
 }
 
