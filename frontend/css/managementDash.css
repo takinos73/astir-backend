@@ -1986,3 +1986,410 @@
   }
 
 }
+
+/* =========================================================
+   MAINTENANCE WORKLOAD FORECAST
+========================================================= */
+
+.management-forecast-layout {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  width: 100%;
+}
+
+
+/* =====================
+   MAIN KPIs
+===================== */
+
+.management-forecast-summary {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  width: 100%;
+}
+
+
+.management-forecast-main-kpi {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-forecast-main-kpi span {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-forecast-main-kpi strong {
+  font-size: 20px;
+  font-weight: 800;
+
+  color: #f0f6fc;
+}
+
+
+/* =====================
+   TYPE SPLIT
+===================== */
+
+.management-forecast-types {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  width: 100%;
+}
+
+
+.management-forecast-type {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-forecast-type > div {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  color: #c9d1d9;
+}
+
+
+.management-forecast-type strong {
+  font-size: 13px;
+
+  color: #f0f6fc;
+}
+
+
+.management-forecast-type small {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-forecast-dot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 50%;
+}
+
+
+.management-forecast-dot.preventive {
+  background: #2f80ed;
+}
+
+
+.management-forecast-dot.planned {
+  background: #ffc156;
+}
+
+
+/* =====================
+   7 DAY CHART
+===================== */
+
+.management-forecast-chart {
+  display: grid;
+
+  grid-template-columns:
+    repeat(7, 1fr);
+
+  align-items: end;
+
+  gap: 6px;
+
+  width: 100%;
+
+  min-height: 150px;
+
+  padding: 14px 8px 8px;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-forecast-day {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  min-width: 0;
+}
+
+
+.management-forecast-bar-value {
+  min-height: 16px;
+
+  margin-bottom: 4px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: #8b949e;
+
+  white-space: nowrap;
+}
+
+
+.management-forecast-bar-track {
+  position: relative;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  width: 100%;
+  height: 82px;
+
+  overflow: hidden;
+
+  border-radius: 5px;
+
+  background: #161b22;
+}
+
+
+.management-forecast-bar {
+  width: 58%;
+
+  min-height: 0;
+
+  border-radius: 4px 4px 0 0;
+
+  background: #2f80ed;
+
+  transition:
+    height .25s ease;
+}
+
+
+.management-forecast-day.peak
+.management-forecast-bar {
+  background: #ffc156;
+}
+
+
+.management-forecast-day.peak
+.management-forecast-bar-value {
+  color: #ffc156;
+}
+
+
+.management-forecast-day-label {
+  margin-top: 6px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  color: #c9d1d9;
+}
+
+
+.management-forecast-day-tasks {
+  margin-top: 2px;
+
+  font-size: 7px;
+
+  color: #6e7681;
+
+  white-space: nowrap;
+}
+
+
+/* =====================
+   FOOTER KPIs
+===================== */
+
+.management-forecast-footer {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  width: 100%;
+
+  padding-top: 12px;
+
+  border-top: 1px solid #30363d;
+}
+
+
+.management-forecast-footer > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-forecast-footer span {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-forecast-footer strong {
+  font-size: 12px;
+
+  color: #f0f6fc;
+}
+
+
+.management-forecast-footer small {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+/* =====================
+   OVERDUE BACKLOG
+===================== */
+
+.management-forecast-backlog {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  width: 100%;
+
+  padding: 9px 11px;
+
+  border: 1px solid #30363d;
+
+  border-radius: 8px;
+
+  background: #0d1117;
+}
+
+
+.management-forecast-backlog > div {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+
+.management-forecast-backlog span {
+  font-size: 9px;
+
+  color: #8b949e;
+}
+
+
+.management-forecast-backlog strong {
+  font-size: 11px;
+
+  color: #f0f6fc;
+
+  white-space: nowrap;
+}
+
+
+.management-forecast-backlog small {
+  font-size: 8px;
+
+  color: #6e7681;
+
+  white-space: nowrap;
+}
+
+
+/* =====================
+   RESPONSIVE
+===================== */
+
+@media (max-width: 850px) {
+
+  .management-forecast-summary,
+  .management-forecast-types,
+  .management-forecast-footer {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .management-forecast-chart {
+    gap: 4px;
+  }
+
+
+  .management-forecast-bar-value {
+    font-size: 7px;
+  }
+
+
+  .management-forecast-day-label {
+    font-size: 8px;
+  }
+
+
+  .management-forecast-day-tasks {
+    display: none;
+  }
+
+
+  .management-forecast-backlog {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+}

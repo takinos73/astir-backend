@@ -312,7 +312,7 @@
 
   }
 
-  /* =========================================================
+/* =========================================================
    WIDGET REGISTRY
 ========================================================= */
 
@@ -344,14 +344,21 @@ const managementWidgetRegistry = {
     title: "Backlog Health",
     subtitle: "Open overdue maintenance",
     sizeClass: "management-widget-medium"
-    },
+  },
 
   maintenance_effort: {
     key: "maintenance_effort",
     title: "Maintenance Effort by Type",
     subtitle: "Recorded maintenance time by type",
     sizeClass: "management-widget-medium"
-    },
+  },
+
+  maintenance_workload_forecast: {
+    key: "maintenance_workload_forecast",
+    title: "Maintenance Workload Forecast",
+    subtitle: "Next 7 days",
+    sizeClass: "management-widget-medium"
+  },
 
   downtime_by_line: {
     key: "downtime_by_line",
@@ -368,7 +375,6 @@ const managementWidgetRegistry = {
   }
 
 };
-
 
 /* =========================================================
    DEFAULT DASHBOARD
@@ -1081,10 +1087,11 @@ if (addWidgetBtn) {
    LOAD MANAGEMENT DASHBOARD DATA
 ========================================================= */
 
-async function loadManagementDashboardData({silent = false} = {}) {
+async function loadManagementDashboardData({ silent = false } = {}) {
 
   const range =
     getCurrentRange();
+
 
   /*
     Custom selected but dates not applied yet.
@@ -1099,21 +1106,22 @@ async function loadManagementDashboardData({silent = false} = {}) {
       "management-widget-maintenance_mix"
     );
 
-    if (
+
+  if (
     maintenanceMixBody &&
     !silent
-    ) {
+  ) {
 
     maintenanceMixBody.className =
-        "management-widget-body";
+      "management-widget-body";
 
     maintenanceMixBody.innerHTML = `
-        <div class="management-widget-loading">
+      <div class="management-widget-loading">
         Loading...
-        </div>
+      </div>
     `;
 
-    }
+  }
 
 
   try {
@@ -1146,24 +1154,41 @@ async function loadManagementDashboardData({silent = false} = {}) {
 
 
     managementDashboardData.maintenance_mix =
-        data?.maintenance_mix || null;
+      data?.maintenance_mix || null;
+
 
     managementDashboardData.schedule_delivery =
-        data?.schedule_delivery || null;
+      data?.schedule_delivery || null;
+
 
     managementDashboardData.reliability =
-        data?.reliability || null;
+      data?.reliability || null;
+
 
     managementDashboardData.backlog_health =
-        data?.backlog_health || null;
+      data?.backlog_health || null;
+
+
     managementDashboardData.maintenance_effort =
-        data?.maintenance_effort || null;
+      data?.maintenance_effort || null;
+
+
+    managementDashboardData.maintenance_workload_forecast =
+      data?.maintenance_workload_forecast || null;
+
 
     renderManagementMaintenanceMix();
+
     renderManagementScheduleDelivery();
+
     renderManagementReliability();
+
     renderManagementBacklogHealth();
+
     renderManagementMaintenanceEffort();
+
+    renderManagementWorkloadForecast();
+
 
   } catch (err) {
 
@@ -3176,6 +3201,511 @@ function renderManagementMaintenanceEffort() {
 
   `;
 }
+
+/* =========================================================
+   MAINTENANCE WORKLOAD FORECAST
+========================================================= */
+
+function renderManagementWorkloadForecast() {
+
+  const container =
+    document.getElementById(
+      "management-widget-maintenance_workload_forecast"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const forecast =
+    managementDashboardData
+      .maintenance_workload_forecast;
+
+
+  if (!forecast) {
+
+    container.className =
+      "management-widget-body management-widget-placeholder";
+
+    container.textContent =
+      "Widget data will appear here";
+
+    return;
+  }
+
+
+  /* =====================
+     DATA
+  ===================== */
+
+  const totalTasks =
+    Number(
+      forecast.total_tasks
+    ) || 0;
+
+
+  const totalMinutes =
+    Number(
+      forecast.total_minutes
+    ) || 0;
+
+
+  const preventiveTasks =
+    Number(
+      forecast.preventive?.tasks
+    ) || 0;
+
+
+  const preventiveMinutes =
+    Number(
+      forecast.preventive?.minutes
+    ) || 0;
+
+
+  const plannedTasks =
+    Number(
+      forecast.planned?.tasks
+    ) || 0;
+
+
+  const plannedMinutes =
+    Number(
+      forecast.planned?.minutes
+    ) || 0;
+
+
+  const avgMinutesPerDay =
+    Number(
+      forecast.avg_minutes_per_day
+    ) || 0;
+
+
+  const overdueTasks =
+    Number(
+      forecast.overdue_backlog?.tasks
+    ) || 0;
+
+
+  const overdueMinutes =
+    Number(
+      forecast.overdue_backlog?.minutes
+    ) || 0;
+
+
+  const days =
+    Array.isArray(
+      forecast.days
+    )
+      ? forecast.days
+      : [];
+
+
+  const peakDay =
+    forecast.peak_day || null;
+
+
+  /* =====================
+     FORMATTERS
+  ===================== */
+
+  function formatHours(minutes) {
+
+    return (
+      Number(minutes) / 60
+    ).toFixed(1) + " h";
+
+  }
+
+
+  function formatDayLabel(
+    dateString
+  ) {
+
+    if (!dateString) {
+      return "—";
+    }
+
+
+    const date =
+      new Date(
+        dateString + "T12:00:00"
+      );
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return dateString;
+
+    }
+
+
+    return date.toLocaleDateString(
+      "en-GB",
+      {
+        weekday: "short"
+      }
+    );
+
+  }
+
+
+  function formatPeakDate(
+    dateString
+  ) {
+
+    if (!dateString) {
+      return "—";
+    }
+
+
+    const date =
+      new Date(
+        dateString + "T12:00:00"
+      );
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return dateString;
+
+    }
+
+
+    return date.toLocaleDateString(
+      "en-GB",
+      {
+        weekday: "short",
+        day: "2-digit",
+        month: "short"
+      }
+    );
+
+  }
+
+
+  /* =====================
+     DAILY BARS
+  ===================== */
+
+  const maxDailyMinutes =
+    Math.max(
+      1,
+      ...days.map(
+        day =>
+          Number(
+            day.minutes
+          ) || 0
+      )
+    );
+
+
+  const dailyBars =
+    days
+      .map(day => {
+
+        const minutes =
+          Number(
+            day.minutes
+          ) || 0;
+
+
+        const tasks =
+          Number(
+            day.tasks
+          ) || 0;
+
+
+        const height =
+          minutes > 0
+            ? Math.max(
+                8,
+                Math.round(
+                  minutes *
+                  100 /
+                  maxDailyMinutes
+                )
+              )
+            : 0;
+
+
+        const isPeak =
+          peakDay?.date &&
+          day.date === peakDay.date;
+
+
+        return `
+
+          <div
+            class="
+              management-forecast-day
+              ${isPeak ? "peak" : ""}
+            "
+          >
+
+            <div
+              class="management-forecast-bar-value"
+            >
+              ${
+                minutes > 0
+                  ? formatHours(minutes)
+                  : "0"
+              }
+            </div>
+
+
+            <div
+              class="management-forecast-bar-track"
+            >
+
+              <div
+                class="management-forecast-bar"
+                style="height:${height}%"
+                title="${tasks} tasks · ${formatHours(minutes)}"
+              ></div>
+
+            </div>
+
+
+            <div
+              class="management-forecast-day-label"
+            >
+              ${formatDayLabel(
+                day.date
+              )}
+            </div>
+
+
+            <div
+              class="management-forecast-day-tasks"
+            >
+              ${tasks} task${tasks === 1 ? "" : "s"}
+            </div>
+
+          </div>
+
+        `;
+
+      })
+      .join("");
+
+
+  /* =====================
+     RENDER
+  ===================== */
+
+  container.className =
+    "management-widget-body";
+
+
+  container.innerHTML = `
+
+    <div class="management-forecast-layout">
+
+
+      <!-- =====================
+           MAIN KPIs
+      ===================== -->
+
+      <div class="management-forecast-summary">
+
+
+        <div class="management-forecast-main-kpi">
+
+          <span>
+            Forecast Tasks
+          </span>
+
+          <strong>
+            ${totalTasks}
+          </strong>
+
+        </div>
+
+
+        <div class="management-forecast-main-kpi">
+
+          <span>
+            Forecast Effort
+          </span>
+
+          <strong>
+            ${formatHours(
+              totalMinutes
+            )}
+          </strong>
+
+        </div>
+
+
+      </div>
+
+
+      <!-- =====================
+           TYPE SPLIT
+      ===================== -->
+
+      <div class="management-forecast-types">
+
+
+        <div class="management-forecast-type preventive">
+
+          <div>
+
+            <span class="management-forecast-dot preventive"></span>
+
+            Preventive
+
+          </div>
+
+          <strong>
+            ${preventiveTasks} tasks
+          </strong>
+
+          <small>
+            ${formatHours(
+              preventiveMinutes
+            )}
+          </small>
+
+        </div>
+
+
+        <div class="management-forecast-type planned">
+
+          <div>
+
+            <span class="management-forecast-dot planned"></span>
+
+            Planned
+
+          </div>
+
+          <strong>
+            ${plannedTasks} tasks
+          </strong>
+
+          <small>
+            ${formatHours(
+              plannedMinutes
+            )}
+          </small>
+
+        </div>
+
+
+      </div>
+
+
+      <!-- =====================
+           7 DAY CHART
+      ===================== -->
+
+      <div class="management-forecast-chart">
+
+        ${dailyBars}
+
+      </div>
+
+
+      <!-- =====================
+           KPIs
+      ===================== -->
+
+      <div class="management-forecast-footer">
+
+
+        <div>
+
+          <span>
+            Peak Day
+          </span>
+
+          <strong>
+            ${
+              peakDay
+                ? formatPeakDate(
+                    peakDay.date
+                  )
+                : "—"
+            }
+          </strong>
+
+          <small>
+            ${
+              peakDay
+                ? formatHours(
+                    peakDay.minutes
+                  )
+                : "0.0 h"
+            }
+          </small>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Avg. / Day
+          </span>
+
+          <strong>
+            ${formatHours(
+              avgMinutesPerDay
+            )}
+          </strong>
+
+        </div>
+
+
+      </div>
+
+
+      <!-- =====================
+           OVERDUE BACKLOG
+      ===================== -->
+
+      <div class="management-forecast-backlog">
+
+        <div>
+
+          <span>
+            Overdue Backlog
+          </span>
+
+          <strong>
+            ${overdueTasks} tasks ·
+            ${formatHours(
+              overdueMinutes
+            )}
+          </strong>
+
+        </div>
+
+
+        <small>
+          Not included in 7-day forecast
+        </small>
+
+      </div>
+
+
+    </div>
+
+  `;
+
+}
+
   /* =====================
      INIT
   ===================== */
