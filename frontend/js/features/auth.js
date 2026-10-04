@@ -369,7 +369,7 @@ async function loadLoginTechnicians() {
   select.disabled = true;
 
   try {
-    const response = await fetch(`${API}/technicians`);
+    const response = await fetch( `${API}/technicians?include_managers=true`);
 
     if (!response.ok) {
       throw new Error(

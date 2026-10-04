@@ -458,33 +458,77 @@ app.post("/auth/update-credentials", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Update failed" });
   }
 });
+
 /* =====================
    GET TECHNICIANS
 ===================== */
+
 app.get("/technicians", async (req, res) => {
+
   try {
-    const result = await pool.query(
-      `
-      SELECT
-        id,
-        name,
-        role,
-        phone,
-        email,
-        active,
-        is_user
-      FROM technicians
-      WHERE active = true
-      ORDER BY name ASC
-      `
+
+    const includeManagers =
+      String(
+        req.query.include_managers || ""
+      )
+        .trim()
+        .toLowerCase() === "true";
+
+
+    const conditions = [
+      "active = true"
+    ];
+
+
+    if (!includeManagers) {
+
+      conditions.push(
+        "LOWER(TRIM(role)) <> 'manager'"
+      );
+
+    }
+
+
+    const result =
+      await pool.query(
+        `
+        SELECT
+          id,
+          name,
+          role,
+          phone,
+          email,
+          active,
+          is_user
+
+        FROM technicians
+
+        WHERE ${conditions.join(" AND ")}
+
+        ORDER BY name ASC
+        `
+      );
+
+
+    res.json(
+      result.rows
     );
 
-    res.json(result.rows);
 
   } catch (err) {
-    console.error("GET TECHNICIANS ERROR:", err);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "GET TECHNICIANS ERROR:",
+      err
+    );
+
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
+
 });
 
 /* =====================
