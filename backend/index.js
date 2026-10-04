@@ -10184,7 +10184,6 @@ if (areaLines) {
 const forecastWhereSql =
   `WHERE ${forecastConditions.join(" AND ")}`;
 
-
 /* =====================
    FORECAST QUERY
 ===================== */
@@ -10312,10 +10311,11 @@ const forecastSql = `
 
   GROUP BY
 
-    (
+    TO_CHAR(
       mt.due_date
-      AT TIME ZONE 'Europe/Athens'
-    )::date
+      AT TIME ZONE 'Europe/Athens',
+      'YYYY-MM-DD'
+    )
 
 
   ORDER BY
