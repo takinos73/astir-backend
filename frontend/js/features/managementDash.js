@@ -3395,110 +3395,182 @@ function renderManagementWorkloadForecast() {
 
 
   /* =====================
-     DAILY BARS
-  ===================== */
+   DAILY STACKED BARS
+===================== */
 
-  const maxDailyMinutes =
-    Math.max(
-      1,
-      ...days.map(
-        day =>
-          Number(
-            day.minutes
-          ) || 0
-      )
-    );
-
-
-  const dailyBars =
-    days
-      .map(day => {
-
-        const minutes =
-          Number(
-            day.minutes
-          ) || 0;
+const maxDailyMinutes =
+  Math.max(
+    1,
+    ...days.map(
+      day =>
+        Number(
+          day.minutes
+        ) || 0
+    )
+  );
 
 
-        const tasks =
-          Number(
-            day.tasks
-          ) || 0;
+const dailyBars =
+  days
+    .map(day => {
+
+      const totalMinutes =
+        Number(
+          day.minutes
+        ) || 0;
 
 
-        const height =
-          minutes > 0
-            ? Math.max(
-                8,
-                Math.round(
-                  minutes *
-                  100 /
-                  maxDailyMinutes
-                )
+      const totalTasks =
+        Number(
+          day.tasks
+        ) || 0;
+
+
+      const preventiveMinutes =
+        Number(
+          day.preventive?.minutes
+        ) || 0;
+
+
+      const preventiveTasks =
+        Number(
+          day.preventive?.tasks
+        ) || 0;
+
+
+      const plannedMinutes =
+        Number(
+          day.planned?.minutes
+        ) || 0;
+
+
+      const plannedTasks =
+        Number(
+          day.planned?.tasks
+        ) || 0;
+
+
+      const totalHeight =
+        totalMinutes > 0
+          ? Math.max(
+              8,
+              Math.round(
+                totalMinutes *
+                100 /
+                maxDailyMinutes
               )
-            : 0;
+            )
+          : 0;
 
 
-        const isPeak =
-          peakDay?.date &&
-          day.date === peakDay.date;
+      const preventiveShare =
+        totalMinutes > 0
+          ? (
+              preventiveMinutes /
+              totalMinutes
+            ) * 100
+          : 0;
 
 
-        return `
+      const plannedShare =
+        totalMinutes > 0
+          ? (
+              plannedMinutes /
+              totalMinutes
+            ) * 100
+          : 0;
+
+
+      const isPeak =
+        peakDay?.date &&
+        day.date === peakDay.date;
+
+
+      return `
+
+        <div
+          class="
+            management-forecast-day
+            ${isPeak ? "peak" : ""}
+          "
+        >
 
           <div
-            class="
-              management-forecast-day
-              ${isPeak ? "peak" : ""}
-            "
+            class="management-forecast-bar-value"
+          >
+            ${
+              totalMinutes > 0
+                ? formatHours(
+                    totalMinutes
+                  )
+                : "0"
+            }
+          </div>
+
+
+          <div
+            class="management-forecast-bar-track"
           >
 
             <div
-              class="management-forecast-bar-value"
+              class="management-forecast-stack"
+              style="height:${totalHeight}%"
+              title="
+                Total: ${totalTasks} tasks · ${formatHours(totalMinutes)}
+                | Preventive: ${preventiveTasks} tasks · ${formatHours(preventiveMinutes)}
+                | Planned: ${plannedTasks} tasks · ${formatHours(plannedMinutes)}
+              "
             >
+
               ${
-                minutes > 0
-                  ? formatHours(minutes)
-                  : "0"
+                preventiveMinutes > 0
+                  ? `
+                    <div
+                      class="management-forecast-bar-segment preventive"
+                      style="height:${preventiveShare}%"
+                    ></div>
+                  `
+                  : ""
               }
-            </div>
 
 
-            <div
-              class="management-forecast-bar-track"
-            >
+              ${
+                plannedMinutes > 0
+                  ? `
+                    <div
+                      class="management-forecast-bar-segment planned"
+                      style="height:${plannedShare}%"
+                    ></div>
+                  `
+                  : ""
+              }
 
-              <div
-                class="management-forecast-bar"
-                style="height:${height}%"
-                title="${tasks} tasks · ${formatHours(minutes)}"
-              ></div>
-
-            </div>
-
-
-            <div
-              class="management-forecast-day-label"
-            >
-              ${formatDayLabel(
-                day.date
-              )}
-            </div>
-
-
-            <div
-              class="management-forecast-day-tasks"
-            >
-              ${tasks} task${tasks === 1 ? "" : "s"}
             </div>
 
           </div>
 
-        `;
 
-      })
-      .join("");
+          <div
+            class="management-forecast-day-label"
+          >
+            ${formatDayLabel(
+              day.date
+            )}
+          </div>
 
+
+          <div
+            class="management-forecast-day-tasks"
+          >
+            ${totalTasks} task${totalTasks === 1 ? "" : "s"}
+          </div>
+
+        </div>
+
+      `;
+
+    })
+    .join("");
 
   /* =====================
      RENDER

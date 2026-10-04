@@ -2191,29 +2191,51 @@
 }
 
 
-.management-forecast-bar {
-  width: 58%;
+.management-forecast-stack {
+  display: flex;
+  flex-direction: column-reverse;
 
+  width: 58%;
   min-height: 0;
 
-  border-radius: 4px 4px 0 0;
+  overflow: hidden;
 
-  background: #2f80ed;
+  border-radius: 4px 4px 0 0;
 
   transition:
     height .25s ease;
 }
 
 
-.management-forecast-day.peak
-.management-forecast-bar {
+.management-forecast-bar-segment {
+  width: 100%;
+}
+
+
+.management-forecast-bar-segment.preventive {
+  background: #2f80ed;
+}
+
+
+.management-forecast-bar-segment.planned {
   background: #ffc156;
+}
+
+
+/* Peak day:
+   highlight only, without changing maintenance colors
+*/
+.management-forecast-day.peak
+.management-forecast-stack {
+  outline: 1px solid #7d8590;
+  outline-offset: 2px;
 }
 
 
 .management-forecast-day.peak
 .management-forecast-bar-value {
-  color: #ffc156;
+  color: #ffd2dc;
+  font-weight: 800;
 }
 
 
