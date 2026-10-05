@@ -956,6 +956,7 @@ function closeSmTaskModal() {
    - Add Task
    - Add Completed Task
    - Close Maintenance
+   - Print
 ========================================================= */
 
 function ensureSmActionBar() {
@@ -1075,6 +1076,51 @@ function ensureSmActionBar() {
 
     actionBar.appendChild(
       closeBtn
+    );
+
+  }
+
+
+  /* =====================
+     PRINT
+  ===================== */
+
+  let printBtn =
+    document.getElementById(
+      "printSmBtn"
+    );
+
+
+  if (!printBtn) {
+
+    printBtn =
+      document.createElement("button");
+
+    printBtn.id =
+      "printSmBtn";
+
+    printBtn.type =
+      "button";
+
+    printBtn.className =
+      "btn-table";
+
+    printBtn.textContent =
+      "🖨 Print";
+
+
+    printBtn.addEventListener(
+      "click",
+      () => {
+
+        printScheduledMaintenanceDetail();
+
+      }
+    );
+
+
+    actionBar.appendChild(
+      printBtn
     );
 
   }
@@ -4429,6 +4475,1096 @@ document.addEventListener(
 
   }
 );
+
+/* =========================================================
+   PRINT SCHEDULED MAINTENANCE DETAIL
+========================================================= */
+
+async function printScheduledMaintenanceDetail() {
+
+  if (
+    !currentScheduledMaintenance ||
+    !currentScheduledMaintenance.id
+  ) {
+
+    alert(
+      "Scheduled Maintenance not loaded."
+    );
+
+    return;
+
+  }
+
+
+  const smId =
+    Number(
+      currentScheduledMaintenance.id
+    );
+
+
+  try {
+
+    /* =====================
+       FRESH DATA
+    ===================== */
+
+    const [
+      smResponse,
+      tasksResponse
+    ] =
+      await Promise.all([
+
+        fetch(
+          `/scheduled-maintenance/${smId}`
+        ),
+
+        fetch(
+          `/scheduled-maintenance/${smId}/tasks`
+        )
+
+      ]);
+
+
+    if (
+      !smResponse.ok ||
+      !tasksResponse.ok
+    ) {
+
+      throw new Error(
+        "Failed to load Scheduled Maintenance print data"
+      );
+
+    }
+
+
+    const smResult =
+      await smResponse.json();
+
+
+    const tasksResult =
+      await tasksResponse.json();
+
+
+    const sm =
+      smResult.scheduled_maintenance;
+
+
+    const tasks =
+      Array.isArray(
+        tasksResult.tasks
+      )
+        ? tasksResult.tasks
+        : [];
+
+
+    if (!sm) {
+
+      throw new Error(
+        "Scheduled Maintenance not found"
+      );
+
+    }
+
+
+    /* =====================
+       HELPERS
+    ===================== */
+
+    const escapeHtml =
+      value =>
+        String(
+          value ?? ""
+        )
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+
+
+    const formatDate =
+      value => {
+
+        if (!value) {
+          return "-";
+        }
+
+
+        const date =
+          new Date(value);
+
+
+        if (
+          Number.isNaN(
+            date.getTime()
+          )
+        ) {
+
+          return "-";
+
+        }
+
+
+        return date.toLocaleString(
+          "en-GB"
+        );
+
+      };
+
+
+    const formatMinutes =
+      minutes => {
+
+        const total =
+          Number(minutes) || 0;
+
+
+        const hours =
+          Math.floor(
+            total / 60
+          );
+
+
+        const mins =
+          total % 60;
+
+
+        if (
+          hours > 0 &&
+          mins > 0
+        ) {
+
+          return `${hours} h ${mins} min`;
+
+        }
+
+
+        if (hours > 0) {
+
+          return `${hours} h`;
+
+        }
+
+
+        return `${mins} min`;
+
+      };
+
+
+    /* =====================
+       HEADER DATA
+    ===================== */
+
+    const code =
+      `SM-${String(
+        sm.id || ""
+      ).padStart(5, "0")}`;
+
+
+    const status =
+      String(
+        sm.status || "-"
+      ).toUpperCase();
+
+
+    const scheduledStart =
+      formatDate(
+        sm.scheduled_start_at
+      );
+
+
+    const scheduledEnd =
+      formatDate(
+        sm.scheduled_end_at
+      );
+
+
+    const actualStart =
+      formatDate(
+        sm.actual_started_at
+      );
+
+
+    const actualCompletion =
+      formatDate(
+        sm.actual_closed_at
+      );
+
+
+    /* =====================
+       TOTAL ACTUAL WORK
+    ===================== */
+
+    const completedTasks =
+      tasks.filter(task =>
+        String(
+          task.status || ""
+        )
+          .trim()
+          .toUpperCase() === "DONE"
+      );
+
+
+    const totalActualMinutes =
+      completedTasks.reduce(
+        (sum, task) =>
+          sum +
+          (
+            Number(
+              task.actual_duration_min
+            ) || 0
+          ),
+        0
+      );
+
+
+    /* =====================
+       TASK ROWS
+    ===================== */
+
+    const taskRows =
+      tasks.length
+
+        ? tasks
+            .map(task => {
+
+              const taskStatus =
+                String(
+                  task.status || "-"
+                ).toUpperCase();
+
+
+              const isDone =
+                taskStatus === "DONE";
+
+
+              const duration =
+                isDone
+                  ? (
+                      task.actual_duration_min != null
+                        ? formatMinutes(
+                            task.actual_duration_min
+                          )
+                        : "-"
+                    )
+                  : (
+                      task.duration_min != null
+                        ? `Est. ${formatMinutes(
+                            task.duration_min
+                          )}`
+                        : "-"
+                    );
+
+
+              const due =
+                task.due_date
+                  ? formatDate(
+                      task.due_date
+                    )
+                  : "-";
+
+
+              return `
+
+                <tr>
+
+                  <td>
+                    #${escapeHtml(
+                      task.id ?? ""
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      task.task || "-"
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      taskStatus
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      task.section || "-"
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      due
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      duration
+                    )}
+                  </td>
+
+                </tr>
+
+              `;
+
+            })
+            .join("")
+
+        : `
+
+            <tr>
+
+              <td
+                colspan="6"
+                class="empty"
+              >
+                No maintenance tasks recorded.
+              </td>
+
+            </tr>
+
+          `;
+
+
+    const printedAt =
+      new Date()
+        .toLocaleString(
+          "en-GB"
+        );
+
+
+    /* =====================
+       PRINT FRAME
+    ===================== */
+
+    const printFrame =
+      document.createElement(
+        "iframe"
+      );
+
+
+    printFrame.style.position =
+      "fixed";
+
+    printFrame.style.right =
+      "0";
+
+    printFrame.style.bottom =
+      "0";
+
+    printFrame.style.width =
+      "1px";
+
+    printFrame.style.height =
+      "1px";
+
+    printFrame.style.border =
+      "0";
+
+    printFrame.style.opacity =
+      "0";
+
+    printFrame.style.pointerEvents =
+      "none";
+
+
+    document.body.appendChild(
+      printFrame
+    );
+
+
+    const printDocument =
+      printFrame.contentDocument ||
+      printFrame.contentWindow.document;
+
+
+    printDocument.write(`
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+  ${escapeHtml(code)} - Scheduled Maintenance Report
+</title>
+
+<style>
+
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: #172033;
+  background: #ffffff;
+
+  font-size: 10px;
+}
+
+.report {
+  width: 100%;
+}
+
+
+/* =====================
+   HEADER
+===================== */
+
+.report-header {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+
+  border-bottom: 2px solid #d6dde8;
+}
+
+.brand {
+  font-size: 21px;
+  font-weight: 800;
+
+  color: #17233c;
+}
+
+.brand span {
+  color: #2588e8;
+}
+
+.brand-sub {
+  margin-top: 2px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: .7px;
+
+  color: #65738a;
+}
+
+.report-meta {
+  text-align: right;
+
+  font-size: 8px;
+  line-height: 1.4;
+
+  color: #59677d;
+}
+
+.report-meta strong {
+  display: block;
+
+  margin-bottom: 1px;
+
+  font-size: 11px;
+
+  color: #21304c;
+}
+
+
+/* =====================
+   SM HEADER
+===================== */
+
+.sm-heading {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-bottom: 2px;
+}
+
+.sm-code {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 12px;
+
+  border-radius: 20px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: #ffffff;
+
+  background:
+    ${
+      status === "CLOSED"
+        ? "#169c55"
+        : status === "IN_PROGRESS"
+          ? "#2588e8"
+          : "#d99b16"
+    };
+}
+
+.asset-line {
+  margin-bottom: 9px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #28354c;
+}
+
+
+/* =====================
+   GRID
+===================== */
+
+.grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 6px;
+
+  margin-bottom: 7px;
+}
+
+.card {
+  padding: 7px 8px;
+
+  border: 1px solid #d5dde8;
+  border-radius: 5px;
+
+  background: #fbfcfe;
+
+  break-inside: avoid;
+}
+
+.span-4 {
+  grid-column: span 4;
+}
+
+.label {
+  margin-bottom: 3px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  color: #63728b;
+}
+
+.value {
+  font-size: 10px;
+  font-weight: 600;
+
+  line-height: 1.3;
+
+  overflow-wrap: anywhere;
+}
+
+.value-large {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =====================
+   SUMMARY
+===================== */
+
+.summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 6px;
+
+  margin-bottom: 8px;
+}
+
+
+/* =====================
+   SECTION
+===================== */
+
+.section-title {
+  margin: 9px 0 5px 0;
+
+  padding-bottom: 4px;
+
+  border-bottom: 1px solid #d8e0ea;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  color: #263651;
+}
+
+
+/* =====================
+   TABLE
+===================== */
+
+table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 8px;
+
+  break-inside: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+th {
+  padding: 5px 6px;
+
+  text-align: left;
+
+  background: #eef2f7;
+
+  border: 1px solid #d6dee9;
+
+  color: #34425a;
+}
+
+td {
+  padding: 5px 6px;
+
+  border: 1px solid #dfe5ed;
+
+  vertical-align: top;
+}
+
+.empty {
+  text-align: center;
+
+  color: #748197;
+}
+
+
+/* =====================
+   FOOTER
+===================== */
+
+.footer {
+  display: flex;
+
+  justify-content: space-between;
+
+  margin-top: 10px;
+  padding-top: 5px;
+
+  border-top: 1px solid #cbd4df;
+
+  font-size: 7px;
+
+  color: #67758a;
+}
+
+
+@media print {
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .report-header,
+  .sm-heading,
+  .card,
+  .section-title {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="report">
+
+
+  <!-- HEADER -->
+
+  <div class="report-header">
+
+    <div>
+
+      <div class="brand">
+        ASTIR <span>CMMS</span>
+      </div>
+
+      <div class="brand-sub">
+        MAINTENANCE MANAGEMENT SYSTEM
+      </div>
+
+    </div>
+
+
+    <div class="report-meta">
+
+      <strong>
+        SCHEDULED MAINTENANCE REPORT
+      </strong>
+
+      Maintenance Detail<br>
+
+      Printed:
+      ${escapeHtml(
+        printedAt
+      )}
+
+    </div>
+
+  </div>
+
+
+  <!-- SM HEADER -->
+
+  <div class="sm-heading">
+
+    <div class="sm-code">
+      ${escapeHtml(
+        code
+      )}
+    </div>
+
+    <div class="status">
+      ${escapeHtml(
+        status
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="asset-line">
+
+    ${escapeHtml(
+      sm.asset_model || "-"
+    )}
+
+    • S/N
+
+    ${escapeHtml(
+      sm.asset_serial || "-"
+    )}
+
+    •
+
+    ${escapeHtml(
+      sm.line_name || "-"
+    )}
+
+  </div>
+
+
+  <!-- TITLE / DESCRIPTION -->
+
+  <div class="grid">
+
+    <div class="card span-4">
+
+      <div class="label">
+        Maintenance Title
+      </div>
+
+      <div class="value value-large">
+        ${escapeHtml(
+          sm.title || "-"
+        )}
+      </div>
+
+
+      <div
+        class="label"
+        style="margin-top:10px;"
+      >
+        Description
+      </div>
+
+      <div class="value">
+        ${escapeHtml(
+          sm.description || "-"
+        )}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- TIMING -->
+
+  <div class="grid">
+
+    <div class="card">
+
+      <div class="label">
+        Scheduled Start
+      </div>
+
+      <div class="value">
+        ${escapeHtml(
+          scheduledStart
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        Scheduled End
+      </div>
+
+      <div class="value">
+        ${escapeHtml(
+          scheduledEnd
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        Actual Start
+      </div>
+
+      <div class="value">
+        ${escapeHtml(
+          actualStart
+        )}
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        Actual Completion
+      </div>
+
+      <div class="value">
+        ${escapeHtml(
+          actualCompletion
+        )}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- WORK SUMMARY -->
+
+  <div class="summary">
+
+    <div class="card">
+
+      <div class="label">
+        Linked Tasks
+      </div>
+
+      <div class="value value-large">
+        ${tasks.length}
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        Completed Tasks
+      </div>
+
+      <div class="value value-large">
+        ${completedTasks.length}
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        Total Actual Work
+      </div>
+
+      <div class="value value-large">
+        ${escapeHtml(
+          formatMinutes(
+            totalActualMinutes
+          )
+        )}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- TASKS -->
+
+  <div class="section-title">
+    Maintenance Tasks
+  </div>
+
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th style="width:7%;">
+          ID
+        </th>
+
+        <th style="width:31%;">
+          Task
+        </th>
+
+        <th style="width:13%;">
+          Status
+        </th>
+
+        <th style="width:18%;">
+          Section
+        </th>
+
+        <th style="width:18%;">
+          Due
+        </th>
+
+        <th style="width:13%;">
+          Duration
+        </th>
+
+      </tr>
+
+    </thead>
+
+
+    <tbody>
+      ${taskRows}
+    </tbody>
+
+  </table>
+
+
+  <!-- FOOTER -->
+
+  <div class="footer">
+
+    <div>
+      ASTIR S.A. | CMMS
+    </div>
+
+    <div>
+      ${escapeHtml(
+        code
+      )}
+    </div>
+
+  </div>
+
+
+</div>
+
+
+<script>
+
+window.addEventListener(
+  "load",
+  () => {
+
+    setTimeout(
+      () => window.print(),
+      250
+    );
+
+  }
+);
+
+<\/script>
+
+
+</body>
+
+</html>
+
+    `);
+
+
+    printDocument.close();
+
+
+    printFrame.contentWindow.onafterprint =
+      () => {
+
+        printFrame.remove();
+
+      };
+
+
+  } catch (err) {
+
+    console.error(
+      "PRINT SCHEDULED MAINTENANCE ERROR:",
+      err
+    );
+
+
+    alert(
+      "Unable to print Scheduled Maintenance."
+    );
+
+  }
+
+}
 
 /* =========================================================
    SCHEDULED MAINTENANCE — CLOSE ACTION
