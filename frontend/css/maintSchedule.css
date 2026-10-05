@@ -1428,7 +1428,7 @@
 #completed-sm-reference {
   margin-top: 6px !important;
 
-  color: #8b949e;
+  color: #fbbf24 !important;
 
   font-size: 12px !important;
   font-weight: 600;
@@ -1773,4 +1773,28 @@
     width: 100%;
   }
 
+}
+
+/* =========================================================
+   SM TASK SUMMARY
+========================================================= */
+
+.sm-task-summary {
+  margin-top: 6px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  color: #c9d1d9;
+}
+
+
+.sm-task-summary::before {
+  content: "●";
+
+  margin-right: 6px;
+
+  color: #58a6ff;
+
+  font-size: 8px;
 }

@@ -377,6 +377,78 @@ async function openScheduledMaintenanceDetail(smId) {
         ? tasksResult.tasks
         : [];
 
+    /* =====================
+      TASK SUMMARY
+    ===================== */
+
+    const taskSummary =
+      document.getElementById(
+        "sm-task-summary"
+      );
+
+
+    const completedTasks =
+      tasks.filter(task =>
+        String(
+          task.status || ""
+        )
+          .trim()
+          .toUpperCase() === "DONE"
+      );
+
+
+    const totalActualMinutes =
+      completedTasks.reduce(
+        (sum, task) =>
+          sum +
+          (
+            Number(
+              task.actual_duration_min
+            ) || 0
+          ),
+        0
+      );
+
+
+    function formatTaskDuration(minutes) {
+
+      const total =
+        Number(minutes) || 0;
+
+
+      const hours =
+        Math.floor(
+          total / 60
+        );
+
+
+      const mins =
+        total % 60;
+
+
+      if (hours > 0 && mins > 0) {
+        return `${hours} h ${mins} min`;
+      }
+
+
+      if (hours > 0) {
+        return `${hours} h`;
+      }
+
+
+      return `${mins} min`;
+
+    }
+
+
+    if (taskSummary) {
+
+      taskSummary.textContent =
+        `${tasks.length} task${tasks.length === 1 ? "" : "s"} · ` +
+        `Actual Work: ${formatTaskDuration(totalActualMinutes)}`;
+
+    }
+
 
     taskContainer.replaceChildren();
 
