@@ -2804,7 +2804,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-breakdowns .breakdowns-table-scroll {
-  max-height: calc(100vh - 436px);
+  max-height: calc(100vh - 430px);
   overflow-y: auto;
   overflow-x: auto;
 }
