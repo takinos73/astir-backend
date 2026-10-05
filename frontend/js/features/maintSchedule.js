@@ -3151,6 +3151,7 @@ function ensureCompletedSmTaskModal() {
 
 
   overlay.innerHTML = `
+
     <div
       class="modal"
       style="
@@ -3166,7 +3167,9 @@ function ensureCompletedSmTaskModal() {
       "
     >
 
-      <!-- HEADER -->
+      <!-- =====================
+           HEADER
+      ===================== -->
 
       <div
         class="modal-header"
@@ -3209,14 +3212,18 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- ASSET -->
+      <!-- =====================
+           ASSET
+      ===================== -->
 
       <div
         class="addtask-block"
         style="margin-top:20px;"
       >
 
-        <label>Asset</label>
+        <label>
+          Asset
+        </label>
 
         <input
           id="completed-sm-asset"
@@ -3228,7 +3235,9 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- SECTION / UNIT -->
+      <!-- =====================
+           SECTION / UNIT
+      ===================== -->
 
       <div
         class="addtask-block addtask-grid"
@@ -3236,15 +3245,19 @@ function ensureCompletedSmTaskModal() {
 
         <div class="field">
 
-          <label>Section</label>
+          <label>
+            Section
+          </label>
 
           <select
             id="completed-sm-section"
             style="width:100%;"
           >
+
             <option value="">
               Select Section
             </option>
+
           </select>
 
         </div>
@@ -3252,16 +3265,20 @@ function ensureCompletedSmTaskModal() {
 
         <div class="field">
 
-          <label>Unit</label>
+          <label>
+            Unit
+          </label>
 
           <select
             id="completed-sm-unit"
             style="width:100%;"
             disabled
           >
+
             <option value="">
               Select Unit
             </option>
+
           </select>
 
         </div>
@@ -3269,11 +3286,15 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- TASK -->
+      <!-- =====================
+           TASK
+      ===================== -->
 
       <div class="addtask-block">
 
-        <label>Maintenance Task *</label>
+        <label>
+          Maintenance Task *
+        </label>
 
         <input
           id="completed-sm-task"
@@ -3285,7 +3306,9 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- IMPACT / TECHNICIAN -->
+      <!-- =====================
+           IMPACT / TECHNICIAN
+      ===================== -->
 
       <div
         class="addtask-block addtask-grid"
@@ -3293,13 +3316,19 @@ function ensureCompletedSmTaskModal() {
 
         <div class="field">
 
-          <label>Impact</label>
+          <label>
+            Impact
+          </label>
 
           <select
             id="completed-sm-impact"
             style="width:100%;"
           >
-            <option value="normal" selected>
+
+            <option
+              value="normal"
+              selected
+            >
               Normal
             </option>
 
@@ -3314,6 +3343,7 @@ function ensureCompletedSmTaskModal() {
             <option value="safety_quality">
               Safety &amp; Quality
             </option>
+
           </select>
 
         </div>
@@ -3321,15 +3351,19 @@ function ensureCompletedSmTaskModal() {
 
         <div class="field">
 
-          <label>Technician *</label>
+          <label>
+            Technician *
+          </label>
 
           <select
             id="completed-sm-technician"
             style="width:100%;"
           >
+
             <option value="">
               Select Technician
             </option>
+
           </select>
 
         </div>
@@ -3337,7 +3371,9 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- COMPLETION / DURATION -->
+      <!-- =====================
+           COMPLETION / DURATION
+      ===================== -->
 
       <div
         class="addtask-block addtask-grid"
@@ -3382,11 +3418,93 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- NOTES -->
+      <!-- =====================
+           DUE DATE
+      ===================== -->
 
       <div class="addtask-block">
 
-        <label>Notes</label>
+        <label>
+          Due Date
+        </label>
+
+
+        <div
+          class="completed-sm-due-options"
+        >
+
+          <label
+            class="completed-sm-radio"
+          >
+
+            <input
+              id="completed-sm-due-same"
+              type="radio"
+              name="completed-sm-due-mode"
+              value="same"
+              checked
+            />
+
+            <span>
+              Same as Actual Completion
+            </span>
+
+          </label>
+
+
+          <label
+            class="completed-sm-radio"
+          >
+
+            <input
+              id="completed-sm-due-custom"
+              type="radio"
+              name="completed-sm-due-mode"
+              value="custom"
+            />
+
+            <span>
+              Specify Due Date
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <div
+          id="completed-sm-due-custom-wrap"
+          style="
+            display:none;
+            margin-top:10px;
+          "
+        >
+
+          <input
+            id="completed-sm-due-date"
+            type="datetime-local"
+            style="width:100%;"
+          />
+
+        </div>
+
+
+        <small class="field-hint">
+          Used for Schedule Delivery reporting
+        </small>
+
+      </div>
+
+
+      <!-- =====================
+           NOTES
+      ===================== -->
+
+      <div class="addtask-block">
+
+        <label>
+          Notes
+        </label>
 
         <textarea
           id="completed-sm-notes"
@@ -3398,7 +3516,9 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- ACTIONS -->
+      <!-- =====================
+           ACTIONS
+      ===================== -->
 
       <div
         class="modal-actions"
@@ -3430,12 +3550,85 @@ function ensureCompletedSmTaskModal() {
       </div>
 
     </div>
+
   `;
 
 
   document.body.appendChild(
     overlay
   );
+
+
+  /* =====================
+     DUE DATE MODE
+  ===================== */
+
+  const dueSame =
+    document.getElementById(
+      "completed-sm-due-same"
+    );
+
+
+  const dueCustom =
+    document.getElementById(
+      "completed-sm-due-custom"
+    );
+
+
+  const dueCustomWrap =
+    document.getElementById(
+      "completed-sm-due-custom-wrap"
+    );
+
+
+  const dueDateInput =
+    document.getElementById(
+      "completed-sm-due-date"
+    );
+
+
+  function refreshCompletedSmDueMode() {
+
+    const useCustom =
+      dueCustom?.checked === true;
+
+
+    if (dueCustomWrap) {
+
+      dueCustomWrap.style.display =
+        useCustom
+          ? ""
+          : "none";
+
+    }
+
+
+    if (
+      !useCustom &&
+      dueDateInput
+    ) {
+
+      dueDateInput.value =
+        "";
+
+    }
+
+  }
+
+
+  dueSame?.addEventListener(
+    "change",
+    refreshCompletedSmDueMode
+  );
+
+
+  dueCustom?.addEventListener(
+    "change",
+    refreshCompletedSmDueMode
+  );
+
+
+  refreshCompletedSmDueMode();
 
 
   return overlay;
@@ -3982,7 +4175,6 @@ function closeCompletedSmTaskModal() {
 
 }
 
-
 /* =========================================================
    SAVE COMPLETED TASK
 ========================================================= */
@@ -4079,6 +4271,18 @@ async function saveCompletedSmTask() {
   const completionValue =
     document.getElementById(
       "completed-sm-date"
+    )?.value;
+
+
+  const dueMode =
+    document.querySelector(
+      'input[name="completed-sm-due-mode"]:checked'
+    )?.value || "same";
+
+
+  const customDueValue =
+    document.getElementById(
+      "completed-sm-due-date"
     )?.value;
 
 
@@ -4199,6 +4403,52 @@ async function saveCompletedSmTask() {
 
 
   /* =====================
+     RESOLVE / VALIDATE DUE DATE
+  ===================== */
+
+  let dueAt =
+    executedAt;
+
+
+  if (dueMode === "custom") {
+
+    if (!customDueValue) {
+
+      alert(
+        "Please specify Due Date."
+      );
+
+      document.getElementById(
+        "completed-sm-due-date"
+      )?.focus();
+
+      return;
+    }
+
+
+    dueAt =
+      new Date(
+        customDueValue
+      );
+
+
+    if (
+      Number.isNaN(
+        dueAt.getTime()
+      )
+    ) {
+
+      alert(
+        "Invalid Due Date."
+      );
+
+      return;
+    }
+
+  }
+
+
+  /* =====================
      VALIDATE DURATION
   ===================== */
 
@@ -4252,6 +4502,9 @@ async function saveCompletedSmTask() {
 
     executed_at:
       executedAt.toISOString(),
+
+    due_at:
+      dueAt.toISOString(),
 
     actual_duration_min:
       actualDurationMin,
@@ -4393,7 +4646,6 @@ async function saveCompletedSmTask() {
   }
 
 }
-
 
 /* =========================================================
    COMPLETED TASK MODAL EVENTS

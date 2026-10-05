@@ -1693,7 +1693,6 @@
   color: #f0f6fc;
 }
 
-
 /* =====================
    SAVE
 ===================== */
@@ -1721,7 +1720,6 @@
     transform .1s ease;
 }
 
-
 #saveCompletedSmTaskBtn:hover {
   border-color: #56d364;
 
@@ -1733,7 +1731,6 @@
   transform: translateY(1px);
 }
 
-
 /* =====================
    RESPONSIVE
 ===================== */
@@ -1744,7 +1741,6 @@
     padding: 10px;
   }
 
-
   #completedSmTaskOverlay .modal {
     width: calc(100vw - 20px) !important;
 
@@ -1753,13 +1749,11 @@
     border-radius: 12px !important;
   }
 
-
   #completedSmTaskOverlay .addtask-grid {
     grid-template-columns: 1fr;
 
     gap: 14px;
   }
-
 
   #completedSmTaskOverlay .modal-actions {
     flex-direction: column-reverse;
@@ -1785,9 +1779,8 @@
   font-size: 11px;
   font-weight: 700;
 
-  color: #87ff69 !important;
+  color: #ffee59 !important;
 }
-
 
 .sm-task-summary::before {
   content: "●";
