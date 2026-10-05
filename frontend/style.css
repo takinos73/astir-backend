@@ -2496,7 +2496,7 @@ tr.history-unplanned {
 }
 
 #tab-tasks .tasks-toolbar-secondary {
-  gap: 10px;
+  gap: 8px;
 }
 
 
@@ -2783,7 +2783,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-tasks .table-card {
-  max-height: calc(100vh - 462px);
+  max-height: calc(100vh - 458px);
   overflow-y: auto;
   overflow-x: auto;
 }
