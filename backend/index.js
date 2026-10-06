@@ -6128,6 +6128,254 @@ app.post("/breakdowns/:id/historical-restoration", async (req, res) => {
 );
 
 /* =========================================================
+   DELETE BREAKDOWN — ADMIN ONLY
+   DELETE /breakdowns/:id
+
+   HARD DELETE for WRONG / ACCIDENTAL BD ENTRY ONLY.
+
+   Deletes:
+   1. task_executions linked to Breakdown tasks
+   2. ALL maintenance_tasks linked to Breakdown
+   3. Breakdown itself
+
+   breakdown_state_history is removed automatically
+   by FK ON DELETE CASCADE.
+
+   IMPORTANT:
+   - Historical data is permanently changed
+   - Open AND completed Restoration Tasks are deleted
+   - This action cannot be undone
+========================================================= */
+
+app.delete("/breakdowns/:id", requireAdmin, async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      const breakdownId =
+        Number(req.params.id);
+
+
+      /* =====================
+         VALIDATE ID
+      ===================== */
+
+      if (
+        !Number.isInteger(breakdownId) ||
+        breakdownId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid breakdown id"
+        });
+
+      }
+
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOCK + VERIFY BD
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            status,
+            started_at
+          FROM breakdowns
+          WHERE id = $1
+          FOR UPDATE
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        breakdownResult.rows.length === 0
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Breakdown not found"
+        });
+
+      }
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         DELETE EXECUTIONS
+
+         Only executions belonging
+         to tasks linked to this BD.
+      ===================== */
+
+      const executionsResult =
+        await client.query(
+          `
+          DELETE FROM task_executions
+
+          WHERE task_id IN (
+
+            SELECT id
+
+            FROM maintenance_tasks
+
+            WHERE breakdown_id = $1
+
+          )
+
+          RETURNING id
+          `,
+          [breakdownId]
+        );
+
+
+      /* =====================
+         DELETE ALL BD TASKS
+
+         Includes:
+         - Planned/open
+         - Done
+         - Deleted/soft-deleted
+
+         Relationship is strictly:
+         breakdown_id = requested BD
+      ===================== */
+
+      const tasksResult =
+        await client.query(
+          `
+          DELETE FROM maintenance_tasks
+
+          WHERE breakdown_id = $1
+
+          RETURNING id
+          `,
+          [breakdownId]
+        );
+
+
+      /* =====================
+         DELETE BREAKDOWN
+
+         breakdown_state_history
+         will CASCADE automatically.
+      ===================== */
+
+      const deleteBreakdownResult =
+        await client.query(
+          `
+          DELETE FROM breakdowns
+
+          WHERE id = $1
+
+          RETURNING id
+          `,
+          [breakdownId]
+        );
+
+
+      if (
+        deleteBreakdownResult.rowCount !== 1
+      ) {
+
+        throw new Error(
+          "Breakdown could not be deleted"
+        );
+
+      }
+
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        success: true,
+
+        breakdown_id:
+          breakdownId,
+
+        deleted: {
+
+          breakdowns: 1,
+
+          tasks:
+            tasksResult.rowCount,
+
+          executions:
+            executionsResult.rowCount
+
+        },
+
+        breakdown: {
+
+          id:
+            breakdown.id,
+
+          asset_id:
+            breakdown.asset_id,
+
+          status:
+            breakdown.status
+
+        }
+
+      });
+
+
+    } catch (err) {
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {}
+
+
+      console.error(
+        "DELETE /breakdowns/:id error:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to permanently delete Breakdown"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    GET SCHEDULED MAINTENANCE
 
    Returns Scheduled Maintenance incidents.
