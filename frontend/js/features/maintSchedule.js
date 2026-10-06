@@ -3729,6 +3729,14 @@ function populateCompletedSmSections() {
 
   });
 
+
+  /* =====================
+     ENABLE / DISABLE
+  ===================== */
+
+  select.disabled =
+    sections.length === 0;
+
 }
 
 /* =========================================================
@@ -3782,7 +3790,8 @@ function populateCompletedSmUnits() {
     )
   );
 
-
+  unitSelect.disabled = true;
+ 
   unitSelect.style.display = "none";
 
   unitInput.style.display = "none";
@@ -3877,15 +3886,17 @@ function populateCompletedSmUnits() {
   });
 
 
-  unitSelect.add(
-    new Option(
-      "➕ New unit",
-      "__new__"
-    )
-  );
+unitSelect.add(
+  new Option(
+    "➕ New unit",
+    "__new__"
+  )
+);
 
 
-  unitSelect.style.display = "";
+unitSelect.disabled = false;
+
+unitSelect.style.display = "";
 
 
   /* =====================
