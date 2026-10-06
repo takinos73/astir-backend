@@ -14167,56 +14167,195 @@ app.post("/assets/:id/idle", async (req, res) => {
   }
 });
 
-/*RESUME ASSET FROM IDLE*/
+/* RESUME ASSET FROM IDLE */
+
 app.post("/assets/:id/resume", async (req, res) => {
-  const client = await pool.connect();
+
+  const client =
+    await pool.connect();
+
 
   try {
-    const { id } = req.params;
 
-    await client.query("BEGIN");
+    const { id } =
+      req.params;
 
-    const assetRes = await client.query(
-      `SELECT idle_since FROM assets WHERE id = $1`,
+
+    await client.query(
+      "BEGIN"
+    );
+
+
+    /* =====================
+       LOAD ASSET IDLE DATE
+    ===================== */
+
+    const assetRes =
+      await client.query(
+        `
+        SELECT
+          idle_since
+        FROM assets
+        WHERE id = $1
+        `,
+        [id]
+      );
+
+
+    const idleSince =
+      assetRes.rows[0]?.idle_since;
+
+
+    if (!idleSince) {
+
+      await client.query(
+        "ROLLBACK"
+      );
+
+
+      return res
+        .status(400)
+        .json({
+          error:
+            "Asset not idle"
+        });
+
+    }
+
+
+    /* =====================
+       CALCULATE IDLE TIME
+
+       SAME EXISTING LOGIC
+    ===================== */
+
+    const idleMs =
+      Date.now() -
+      new Date(
+        idleSince
+      ).getTime();
+
+
+    /* =====================
+       SHIFT ONLY OPEN TASKS
+
+       SAME EXISTING SHIFT.
+
+       NEW RULE ONLY:
+       If calculated Due falls
+       on Sunday in Athens time,
+       move it to Monday
+       at the same local time.
+    ===================== */
+
+    await client.query(
+      `
+      UPDATE maintenance_tasks
+
+      SET due_date =
+
+        CASE
+
+          WHEN EXTRACT(
+            DOW FROM (
+              (
+                due_date +
+                ($1 || ' milliseconds')::interval
+              )
+              AT TIME ZONE 'Europe/Athens'
+            )
+          ) = 0
+
+          THEN
+
+            (
+              (
+                (
+                  due_date +
+                  ($1 || ' milliseconds')::interval
+                )
+                AT TIME ZONE 'Europe/Athens'
+              )
+              +
+              INTERVAL '1 day'
+            )
+            AT TIME ZONE 'Europe/Athens'
+
+          ELSE
+
+            due_date +
+            ($1 || ' milliseconds')::interval
+
+        END
+
+      WHERE asset_id = $2
+
+        AND status != 'Done'
+
+        AND due_date IS NOT NULL
+      `,
+      [
+        idleMs,
+        id
+      ]
+    );
+
+
+    /* =====================
+       REACTIVATE ASSET
+
+       UNCHANGED
+    ===================== */
+
+    await client.query(
+      `
+      UPDATE assets
+
+      SET idle_since = NULL
+
+      WHERE id = $1
+      `,
       [id]
     );
 
-    const idleSince = assetRes.rows[0]?.idle_since;
-    if (!idleSince) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Asset not idle" });
-    }
 
-    const idleMs = Date.now() - new Date(idleSince).getTime();
+    await client.query(
+      "COMMIT"
+    );
 
-    // 🔁 SHIFT ONLY OPEN TASKS
-    await client.query(`
-      UPDATE maintenance_tasks
-      SET due_date = due_date + ($1 || ' milliseconds')::interval
-      WHERE asset_id = $2
-        AND status != 'Done'
-        AND due_date IS NOT NULL
-    `, [idleMs, id]);
 
-    // 🔄 Reactivate
-    await client.query(`
-      UPDATE assets
-      SET idle_since = NULL
-      WHERE id = $1
-    `, [id]);
+    res.json({
+      success: true
+    });
 
-    await client.query("COMMIT");
-
-    res.json({ success: true });
 
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("RESUME ERROR:", err.message);
-    res.status(500).json({ error: "Resume failed" });
+
+    await client.query(
+      "ROLLBACK"
+    );
+
+
+    console.error(
+      "RESUME ERROR:",
+      err.message
+    );
+
+
+    res.status(500).json({
+      error:
+        "Resume failed"
+    });
+
+
   } finally {
+
     client.release();
+
   }
+
 });
+
 /* =====================
    SET FILTERED ASSETS IDLE
 ===================== */
