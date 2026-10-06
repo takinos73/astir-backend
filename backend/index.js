@@ -14450,18 +14450,60 @@ app.post("/assets/resume-all", async (req, res) => {
         Date.now() -
         new Date(asset.idle_since).getTime();
 
-      // Shift ONLY open tasks for this asset
-      await client.query(
-        `
-        UPDATE maintenance_tasks
-        SET due_date =
-          due_date + ($1 || ' milliseconds')::interval
-        WHERE asset_id = $2
-          AND status != 'Done'
-          AND due_date IS NOT NULL
-        `,
-        [idleMs, asset.id]
-      );
+    // Shift ONLY open tasks for this asset
+    // If calculated Due falls on Sunday in Athens time,
+    // move it to Monday at the same local time.
+    await client.query(
+      `
+      UPDATE maintenance_tasks
+
+      SET due_date =
+
+        CASE
+
+          WHEN EXTRACT(
+            DOW FROM (
+              (
+                due_date +
+                ($1 || ' milliseconds')::interval
+              )
+              AT TIME ZONE 'Europe/Athens'
+            )
+          ) = 0
+
+          THEN
+
+            (
+              (
+                (
+                  due_date +
+                  ($1 || ' milliseconds')::interval
+                )
+                AT TIME ZONE 'Europe/Athens'
+              )
+              +
+              INTERVAL '1 day'
+            )
+            AT TIME ZONE 'Europe/Athens'
+
+          ELSE
+
+            due_date +
+            ($1 || ' milliseconds')::interval
+
+        END
+
+      WHERE asset_id = $2
+
+        AND status != 'Done'
+
+        AND due_date IS NOT NULL
+      `,
+      [
+        idleMs,
+        asset.id
+      ]
+    );
 
       // Reactivate asset
       await client.query(
