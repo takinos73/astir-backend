@@ -3726,6 +3726,9 @@ function populateCompletedSmSections() {
 
    Units are restricted to:
    SAME ASSET + SELECTED SECTION
+
+   Also allows:
+   + Insert New Unit
 ========================================================= */
 
 function populateCompletedSmUnits() {
@@ -3835,11 +3838,21 @@ function populateCompletedSmUnits() {
   });
 
 
-  unitSelect.disabled =
-    units.length === 0;
+  /* =====================
+     INSERT NEW UNIT OPTION
+  ===================== */
+
+  unitSelect.add(
+    new Option(
+      "+ Insert New Unit",
+      "__NEW_UNIT__"
+    )
+  );
+
+
+  unitSelect.disabled = false;
 
 }
-
 
 /* =========================================================
    POPULATE TECHNICIANS
@@ -4727,6 +4740,65 @@ document.addEventListener(
 
   }
 );
+
+document.getElementById("completed-sm-unit")
+  ?.addEventListener("change", function () {
+
+    if (this.value !== "__NEW_UNIT__") {
+      return;
+    }
+
+
+    const newUnit =
+      String(
+        window.prompt(
+          "Insert new Unit:"
+        ) || ""
+      ).trim();
+
+
+    if (!newUnit) {
+
+      this.value = "";
+
+      return;
+    }
+
+
+    const existingOption = [
+      ...this.options
+    ].find(option =>
+      String(option.value).trim() ===
+      newUnit
+    );
+
+
+    if (existingOption) {
+
+      this.value = newUnit;
+
+      return;
+    }
+
+
+    const option =
+      new Option(
+        newUnit,
+        newUnit
+      );
+
+
+    this.add(
+      option,
+      this.options[
+        this.options.length - 1
+      ]
+    );
+
+
+    this.value = newUnit;
+
+  });
 
 /* =========================================================
    PRINT SCHEDULED MAINTENANCE DETAIL
