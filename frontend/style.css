@@ -2783,7 +2783,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-tasks .table-card {
-  max-height: calc(100vh - 458px);
+  max-height: calc(100vh - 450px);
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -2804,7 +2804,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-breakdowns .breakdowns-table-scroll {
-  max-height: calc(100vh - 430px);
+  max-height: calc(100vh - 420px);
   overflow-y: auto;
   overflow-x: auto;
 }
