@@ -3648,6 +3648,90 @@ function ensureCompletedSmTaskModal() {
 
 
 /* =========================================================
+   POPULATE SECTIONS
+
+   Uses existing maintenance_tasks
+   already loaded in state.tasksData.
+========================================================= */
+
+function populateCompletedSmSections() {
+
+  const sm =
+    currentScheduledMaintenance;
+
+
+  const select =
+    document.getElementById(
+      "completed-sm-section"
+    );
+
+
+  if (!select || !sm) {
+    return;
+  }
+
+
+  const assetId =
+    Number(sm.asset_id);
+
+
+  const assetTasks =
+    (
+      Array.isArray(state.tasksData)
+        ? state.tasksData
+        : []
+    )
+      .filter(task =>
+        Number(task.asset_id) === assetId &&
+        task.deleted_at == null
+      );
+
+
+  const sections = [
+
+    ...new Set(
+
+      assetTasks
+        .map(task =>
+          String(
+            task.section || ""
+          ).trim()
+        )
+        .filter(Boolean)
+
+    )
+
+  ].sort((a, b) =>
+    a.localeCompare(
+      b,
+      "el",
+      { numeric: true }
+    )
+  );
+
+
+  select.replaceChildren(
+    new Option(
+      "Select Section",
+      ""
+    )
+  );
+
+
+  sections.forEach(section => {
+
+    select.add(
+      new Option(
+        section,
+        section
+      )
+    );
+
+  });
+
+}
+
+/* =========================================================
    POPULATE UNITS
 
    Uses:
@@ -3832,211 +3916,6 @@ function populateCompletedSmUnits() {
 
 }
 
-/* =========================================================
-   POPULATE UNITS
-
-   Units are restricted to:
-   SAME ASSET + SELECTED SECTION
-
-   Also allows:
-   + Insert New Unit
-========================================================= */
-
-function populateCompletedSmUnits() {
-
-  const sm =
-    currentScheduledMaintenance;
-
-
-  const sectionSelect =
-    document.getElementById(
-      "completed-sm-section"
-    );
-
-
-  const unitSelect =
-    document.getElementById(
-      "completed-sm-unit"
-    );
-
-
-  if (
-    !sm ||
-    !sectionSelect ||
-    !unitSelect
-  ) {
-    return;
-  }
-
-
-  const section =
-    String(
-      sectionSelect.value || ""
-    ).trim();
-
-
-  unitSelect.replaceChildren(
-    new Option(
-      "Select Unit",
-      ""
-    )
-  );
-
-
-  if (!section) {
-
-    unitSelect.disabled = true;
-
-    return;
-  }
-
-
-  const assetId =
-    Number(sm.asset_id);
-
-
-  const units = [
-
-    ...new Set(
-
-      (
-        Array.isArray(state.tasksData)
-          ? state.tasksData
-          : []
-      )
-
-        .filter(task =>
-
-          Number(task.asset_id) ===
-            assetId &&
-
-          task.deleted_at == null &&
-
-          String(
-            task.section || ""
-          ).trim() === section
-
-        )
-
-        .map(task =>
-          String(
-            task.unit || ""
-          ).trim()
-        )
-
-        .filter(Boolean)
-
-    )
-
-  ].sort((a, b) =>
-    a.localeCompare(
-      b,
-      "el",
-      { numeric: true }
-    )
-  );
-
-
-  units.forEach(unit => {
-
-    unitSelect.add(
-      new Option(
-        unit,
-        unit
-      )
-    );
-
-  });
-
-
-  /* =====================
-     INSERT NEW UNIT OPTION
-  ===================== */
-
-  unitSelect.add(
-    new Option(
-      "+ Insert New Unit",
-      "__NEW_UNIT__"
-    )
-  );
-
-
-  unitSelect.disabled = false;
-
-
-  /* =====================
-     NEW UNIT HANDLER
-  ===================== */
-
-  unitSelect.onchange = function () {
-
-    if (
-      this.value !== "__NEW_UNIT__"
-    ) {
-      return;
-    }
-
-
-    const newUnit =
-      String(
-        window.prompt(
-          "Enter new Unit:"
-        ) || ""
-      ).trim();
-
-
-    if (!newUnit) {
-
-      this.value = "";
-
-      return;
-    }
-
-
-    const existingOption =
-      [...this.options]
-        .find(option =>
-          String(
-            option.value || ""
-          ).trim()
-            .toLowerCase() ===
-          newUnit.toLowerCase()
-        );
-
-
-    if (existingOption) {
-
-      this.value =
-        existingOption.value;
-
-      return;
-    }
-
-
-    const newOption =
-      new Option(
-        newUnit,
-        newUnit
-      );
-
-
-    /*
-      Insert immediately BEFORE
-      "+ Insert New Unit"
-    */
-
-    this.add(
-      newOption,
-      this.options.length - 1
-    );
-
-
-    this.value =
-      newUnit;
-
-  };
-
-}
 
 /* =========================================================
    POPULATE TECHNICIANS
@@ -4352,7 +4231,6 @@ async function openCompletedSmTaskModal() {
   taskInput?.focus();
 
 }
-
 
 /* =========================================================
    CLOSE MODAL
