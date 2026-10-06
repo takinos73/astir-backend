@@ -3235,8 +3235,8 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-      <!-- =====================
-           SECTION / UNIT
+     <!-- =====================
+          SECTION / UNIT
       ===================== -->
 
       <div
@@ -3280,6 +3280,17 @@ function ensureCompletedSmTaskModal() {
             </option>
 
           </select>
+
+          <input
+            id="completed-sm-unit-input"
+            type="text"
+            placeholder="Enter new unit"
+            style="
+              width:100%;
+              display:none;
+              margin-top:10px;
+            "
+          />
 
         </div>
 
@@ -3637,25 +3648,71 @@ function ensureCompletedSmTaskModal() {
 
 
 /* =========================================================
-   POPULATE SECTIONS
+   POPULATE UNITS
 
-   Uses existing maintenance_tasks
-   already loaded in state.tasksData.
+   Uses:
+   SAME ASSET + SELECTED SECTION
+
+   Same behavior as Add Maintenance Task:
+   ➕ New unit -> show manual input
 ========================================================= */
 
-function populateCompletedSmSections() {
+function populateCompletedSmUnits() {
 
   const sm =
     currentScheduledMaintenance;
 
 
-  const select =
+  const sectionSelect =
     document.getElementById(
       "completed-sm-section"
     );
 
 
-  if (!select || !sm) {
+  const unitSelect =
+    document.getElementById(
+      "completed-sm-unit"
+    );
+
+
+  const unitInput =
+    document.getElementById(
+      "completed-sm-unit-input"
+    );
+
+
+  if (
+    !sm ||
+    !sectionSelect ||
+    !unitSelect ||
+    !unitInput
+  ) {
+    return;
+  }
+
+
+  unitSelect.replaceChildren(
+    new Option(
+      "Select Unit",
+      ""
+    )
+  );
+
+
+  unitSelect.style.display = "none";
+
+  unitInput.style.display = "none";
+
+  unitInput.value = "";
+
+
+  const section =
+    String(
+      sectionSelect.value || ""
+    ).trim();
+
+
+  if (!section) {
     return;
   }
 
@@ -3664,28 +3721,34 @@ function populateCompletedSmSections() {
     Number(sm.asset_id);
 
 
-  const assetTasks =
-    (
-      Array.isArray(state.tasksData)
-        ? state.tasksData
-        : []
-    )
-      .filter(task =>
-        Number(task.asset_id) === assetId &&
-        task.deleted_at == null
-      );
-
-
-  const sections = [
+  const units = [
 
     ...new Set(
 
-      assetTasks
-        .map(task =>
+      (
+        Array.isArray(state.tasksData)
+          ? state.tasksData
+          : []
+      )
+
+        .filter(task =>
+
+          Number(task.asset_id) === assetId &&
+
+          task.deleted_at == null &&
+
           String(
             task.section || ""
+          ).trim() === section
+
+        )
+
+        .map(task =>
+          String(
+            task.unit || ""
           ).trim()
         )
+
         .filter(Boolean)
 
     )
@@ -3699,24 +3762,73 @@ function populateCompletedSmSections() {
   );
 
 
-  select.replaceChildren(
-    new Option(
-      "Select Section",
-      ""
-    )
-  );
+  /* =====================
+     NO EXISTING UNITS
+
+     Open manual input
+     directly
+  ===================== */
+
+  if (units.length === 0) {
+
+    unitInput.style.display = "";
+
+    return;
+  }
 
 
-  sections.forEach(section => {
+  /* =====================
+     EXISTING UNITS
+  ===================== */
 
-    select.add(
+  units.forEach(unit => {
+
+    unitSelect.add(
       new Option(
-        section,
-        section
+        unit,
+        unit
       )
     );
 
   });
+
+
+  unitSelect.add(
+    new Option(
+      "➕ New unit",
+      "__new__"
+    )
+  );
+
+
+  unitSelect.style.display = "";
+
+
+  /* =====================
+     NEW UNIT SELECTION
+  ===================== */
+
+  unitSelect.onchange = function () {
+
+    if (
+      this.value === "__new__"
+    ) {
+
+      unitInput.style.display = "";
+
+      unitInput.value = "";
+
+      unitInput.focus();
+
+    } else {
+
+      unitInput.style.display = "none";
+
+      unitInput.value = "";
+
+    }
+
+  };
 
 }
 
@@ -4329,12 +4441,29 @@ async function saveCompletedSmTask() {
     ).trim();
 
 
+  const unitSelect =
+    document.getElementById(
+      "completed-sm-unit"
+    );
+
+
+  const unitInput =
+    document.getElementById(
+      "completed-sm-unit-input"
+    );
+
+
   const unit =
-    String(
-      document.getElementById(
-        "completed-sm-unit"
-      )?.value || ""
-    ).trim();
+    unitSelect?.value === "__new__" ||
+    unitSelect?.style.display === "none"
+
+      ? String(
+          unitInput?.value || ""
+        ).trim()
+
+      : String(
+          unitSelect?.value || ""
+        ).trim();
 
 
   const impact =
