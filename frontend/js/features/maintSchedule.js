@@ -3720,7 +3720,6 @@ function populateCompletedSmSections() {
 
 }
 
-
 /* =========================================================
    POPULATE UNITS
 
@@ -3851,6 +3850,79 @@ function populateCompletedSmUnits() {
 
 
   unitSelect.disabled = false;
+
+
+  /* =====================
+     NEW UNIT HANDLER
+  ===================== */
+
+  unitSelect.onchange = function () {
+
+    if (
+      this.value !== "__NEW_UNIT__"
+    ) {
+      return;
+    }
+
+
+    const newUnit =
+      String(
+        window.prompt(
+          "Enter new Unit:"
+        ) || ""
+      ).trim();
+
+
+    if (!newUnit) {
+
+      this.value = "";
+
+      return;
+    }
+
+
+    const existingOption =
+      [...this.options]
+        .find(option =>
+          String(
+            option.value || ""
+          ).trim()
+            .toLowerCase() ===
+          newUnit.toLowerCase()
+        );
+
+
+    if (existingOption) {
+
+      this.value =
+        existingOption.value;
+
+      return;
+    }
+
+
+    const newOption =
+      new Option(
+        newUnit,
+        newUnit
+      );
+
+
+    /*
+      Insert immediately BEFORE
+      "+ Insert New Unit"
+    */
+
+    this.add(
+      newOption,
+      this.options.length - 1
+    );
+
+
+    this.value =
+      newUnit;
+
+  };
 
 }
 
@@ -4741,64 +4813,6 @@ document.addEventListener(
   }
 );
 
-document.getElementById("completed-sm-unit")
-  ?.addEventListener("change", function () {
-
-    if (this.value !== "__NEW_UNIT__") {
-      return;
-    }
-
-
-    const newUnit =
-      String(
-        window.prompt(
-          "Insert new Unit:"
-        ) || ""
-      ).trim();
-
-
-    if (!newUnit) {
-
-      this.value = "";
-
-      return;
-    }
-
-
-    const existingOption = [
-      ...this.options
-    ].find(option =>
-      String(option.value).trim() ===
-      newUnit
-    );
-
-
-    if (existingOption) {
-
-      this.value = newUnit;
-
-      return;
-    }
-
-
-    const option =
-      new Option(
-        newUnit,
-        newUnit
-      );
-
-
-    this.add(
-      option,
-      this.options[
-        this.options.length - 1
-      ]
-    );
-
-
-    this.value = newUnit;
-
-  });
 
 /* =========================================================
    PRINT SCHEDULED MAINTENANCE DETAIL
