@@ -1075,6 +1075,20 @@ function renderBreakdownsTable(breakdowns) {
         isAdmin &&
         normalizedStatus === "CLOSED";
 
+      /* =====================
+        DELETE BREAKDOWN
+
+        Admin only.
+
+        Intended ONLY for:
+        wrong / accidental BD entries.
+
+        Backend also enforces Admin.
+      ===================== */
+
+      const canDeleteBreakdown =
+        isAdmin;
+
       return `
         <tr>
 
@@ -1182,6 +1196,22 @@ function renderBreakdownsTable(breakdowns) {
                     : ""
                 }
 
+                ${
+                  canDeleteBreakdown
+                    ? `
+                      <button
+                        class="btn-table breakdown-action-btn breakdown-delete-btn"
+                        type="button"
+                        data-breakdown-id="${id}"
+                        title="Permanently Delete Breakdown"
+                        aria-label="Permanently Delete Breakdown"
+                      >
+                        🗑 Delete
+                      </button>
+                    `
+                    : ""
+                }                
+
               </div>
 
             </td>
@@ -1192,6 +1222,7 @@ function renderBreakdownsTable(breakdowns) {
     }).join("");
 
 }
+
 
 /* =====================
    FORMAT BREAKDOWN DATE
@@ -2276,6 +2307,188 @@ async function saveEditBreakdown() {
 
 }
 
+/* =========================================================
+   DELETE BREAKDOWN — ADMIN ONLY
+
+   Permanent historical deletion.
+
+   Deletes through backend:
+   - Breakdown
+   - ALL linked Restoration Tasks
+   - ALL linked Task Executions
+   - Breakdown State History via FK CASCADE
+========================================================= */
+
+async function deleteBreakdownPermanently(
+  breakdownId
+) {
+
+  const id =
+    Number(breakdownId);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  const currentRole =
+    String(
+      localStorage.getItem(
+        "cmmsRole"
+      ) || ""
+    ).toLowerCase();
+
+
+  if (currentRole !== "admin") {
+
+    alert(
+      "Administrator access is required."
+    );
+
+    return;
+  }
+
+
+  const bdCode =
+    `BD-${String(id).padStart(5, "0")}`;
+
+
+  /* =====================
+     FIRST WARNING
+  ===================== */
+
+  const warningAccepted =
+    window.confirm(
+      `${bdCode}\n\n` +
+
+      `WARNING — HISTORICAL DATA WILL BE PERMANENTLY CHANGED.\n\n` +
+
+      `This action will permanently delete:\n` +
+      `• The Breakdown\n` +
+      `• All open linked Restoration Tasks\n` +
+      `• All completed linked Restoration Tasks\n` +
+      `• All linked execution history\n\n` +
+
+      `Use this function ONLY for an incorrect or accidental Breakdown entry.\n\n` +
+
+      `This action cannot be undone.\n\n` +
+
+      `Continue?`
+    );
+
+
+  if (!warningAccepted) {
+    return;
+  }
+
+
+  /* =====================
+     FINAL CONFIRMATION
+  ===================== */
+
+  const finalAccepted =
+    window.confirm(
+      `FINAL CONFIRMATION\n\n` +
+
+      `Permanently delete ${bdCode} and all its linked historical data?`
+    );
+
+
+  if (!finalAccepted) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/breakdowns/${id}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            /*
+              Keep this only if requireAdmin
+              currently uses x-cmms-role.
+            */
+            "x-cmms-role":
+              currentRole
+          }
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Breakdown could not be deleted."
+      );
+
+    }
+
+
+    const deletedTasks =
+      Number(
+        result?.deleted?.tasks || 0
+      );
+
+
+    const deletedExecutions =
+      Number(
+        result?.deleted?.executions || 0
+      );
+
+
+    alert(
+      `${bdCode} permanently deleted.\n\n` +
+
+      `Linked Tasks deleted: ${deletedTasks}\n` +
+      `Executions deleted: ${deletedExecutions}`
+    );
+
+
+    /*
+      Destructive Admin action:
+      full refresh guarantees every
+      historical widget/table reloads
+      from the database.
+    */
+
+    window.location.reload();
+
+
+  } catch (err) {
+
+    console.error(
+      "DELETE BREAKDOWN ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Breakdown could not be deleted."
+    );
+
+  }
+
+}
+
 /* =====================
    POPULATE ASSET DROPDOWN
 ===================== */
@@ -3031,6 +3244,34 @@ document
 
     }
   );
+
+  document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".breakdown-delete-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const breakdownId =
+      Number(
+        button.dataset.breakdownId
+      );
+
+
+    deleteBreakdownPermanently(
+      breakdownId
+    );
+
+  }
+);
 
   /* =========================================================
    BREAKDOWN DETAIL
