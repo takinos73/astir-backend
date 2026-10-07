@@ -4892,7 +4892,6 @@ async function printScheduledMaintenanceDetail() {
 
     }
 
-
     const smResult =
       await smResponse.json();
 
@@ -4920,7 +4919,6 @@ async function printScheduledMaintenanceDetail() {
       );
 
     }
-
 
     /* =====================
        HELPERS
@@ -4960,13 +4958,11 @@ async function printScheduledMaintenanceDetail() {
 
         }
 
-
         return date.toLocaleString(
           "en-GB"
         );
 
       };
-
 
     const formatMinutes =
       minutes => {
@@ -5000,7 +4996,6 @@ async function printScheduledMaintenanceDetail() {
           return `${hours} h`;
 
         }
-
 
         return `${mins} min`;
 
@@ -5110,7 +5105,6 @@ async function printScheduledMaintenanceDetail() {
                           )}`
                         : "-"
                     );
-
 
               const due =
                 task.due_date
