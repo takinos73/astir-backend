@@ -2253,3 +2253,32 @@ input[type="date"] {
 #addCompletedCorrectiveTaskBtn:hover {
   background: #805a18;
 }
+
+/* =========================================================
+   BREAKDOWN DELETE BUTTON
+   Admin destructive action
+========================================================= */
+
+.breakdown-delete-btn {
+  background: #3a1518 !important;
+  border: 1px solid #7a252c !important;
+  color: #ff6b73 !important;
+
+  font-weight: 700;
+}
+
+.breakdown-delete-btn:hover {
+  background: #5a1d22 !important;
+  border-color: #a6333c !important;
+  color: #ff8a91 !important;
+}
+
+.breakdown-delete-btn:active {
+  background: #711f27 !important;
+  border-color: #c13a46 !important;
+}
+
+.breakdown-delete-btn:focus-visible {
+  outline: 2px solid #ff5c66;
+  outline-offset: 2px;
+}
