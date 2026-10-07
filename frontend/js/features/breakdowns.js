@@ -4685,14 +4685,13 @@ function printBreakdownDetail() {
           .map(task => {
 
             const duration =
-              task.duration_min != null
+              task.actual_duration_min != null
                 ? formatBreakdownSeconds(
                     Number(
-                      task.duration_min
+                      task.actual_duration_min
                     ) * 60
                   )
                 : "-";
-
 
             const due =
               task.due_date
