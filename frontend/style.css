@@ -2815,3 +2815,93 @@ tr.history-unplanned {
   z-index: 5;
   background: #171e2a;
 }
+
+/* =========================================================
+   COMPLETED PLANNED TASK MODE
+========================================================= */
+
+.completed-planned-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #394554;
+  border-radius: 8px;
+
+  background: #171d25;
+
+  color: #e6edf3;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+.completed-planned-option:hover {
+  border-color: #4f6073;
+  background: #1b222c;
+}
+
+
+.completed-planned-option input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+
+  min-height: 0 !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  flex: 0 0 16px;
+
+  accent-color: #2f80ed;
+
+  cursor: pointer;
+}
+
+
+.completed-planned-option span {
+  line-height: 1.25;
+}
+
+
+/* Hint directly under checkbox */
+
+.completed-planned-option + .field-hint {
+  display: block;
+
+  margin-top: 7px;
+
+  color: #7f8ea3;
+
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+
+/* Completed execution block */
+
+#completedPlannedExecutionBlock {
+  margin-top: 4px;
+  padding-top: 14px;
+
+  border-top: 1px solid #303946;
+}
+
+
+/* Slight visual emphasis when active */
+
+#completedPlannedExecutionBlock .field label {
+  color: #dce5ef;
+}
+
+
+/* Actual Completion full width */
+
+#completedPlannedExecutionBlock .full-width {
+  grid-column: 1 / -1;
+}
