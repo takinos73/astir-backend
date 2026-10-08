@@ -1291,7 +1291,7 @@ td:last-child {
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
   gap: 2px;
-  width:500px ;               /* 👈 λίγο πιο σφιχτό */  
+  width:510px ;               /* 👈 λίγο πιο σφιχτό */  
 }
 #addTaskOverlay .modal-box {
   padding-top: 2px;   /* 👈 πριν ήταν ~20px */
@@ -1302,7 +1302,7 @@ td:last-child {
   #addTaskModal select,
   #addTaskModal textarea {
     width: 100%;
-    padding: 6px 8px;
+    padding: 7px 8px;
     font-size: 13px;
     border: 1px solid #ccc;
     border-radius: 6px;
