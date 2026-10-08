@@ -1927,6 +1927,7 @@ function applyCompletedPlannedUI() {
   ===================== */
 
   if (completed) {
+    populateCompletedPlannedTechnicians();
 
     if (dueInput) {
       dueInput.value = "";
@@ -1976,6 +1977,87 @@ function applyCompletedPlannedUI() {
     if (duration) {
       duration.value = "";
     }
+
+  }
+
+}
+
+/* =========================================================
+   POPULATE COMPLETED PLANNED TECHNICIANS
+========================================================= */
+
+async function populateCompletedPlannedTechnicians() {
+
+  const select =
+    document.getElementById(
+      "nt-completed-technician"
+    );
+
+
+  if (!select) {
+    return;
+  }
+
+
+  select.replaceChildren(
+    new Option(
+      "Select Technician",
+      ""
+    )
+  );
+
+
+  try {
+
+    const res =
+      await fetch(
+        `${API}/technicians`
+      );
+
+
+    if (!res.ok) {
+
+      throw new Error(
+        "Failed to load technicians"
+      );
+
+    }
+
+
+    const technicians =
+      await res.json();
+
+
+    if (
+      !Array.isArray(technicians)
+    ) {
+      return;
+    }
+
+
+    technicians
+      .filter(t =>
+        t &&
+        t.id != null
+      )
+      .forEach(t => {
+
+        select.add(
+          new Option(
+            t.name || `Technician ${t.id}`,
+            t.id
+          )
+        );
+
+      });
+
+
+  } catch (err) {
+
+    console.error(
+      "POPULATE COMPLETED PLANNED TECHNICIANS ERROR:",
+      err
+    );
 
   }
 
