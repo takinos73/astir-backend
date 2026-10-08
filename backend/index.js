@@ -11338,7 +11338,7 @@ app.post("/tasks", async (req, res) => {
 
 
     /* =====================
-       RESOLVE EXECUTION DATA
+      RESOLVE EXECUTION DATA
     ===================== */
 
     let executionAt = null;
@@ -11352,8 +11352,13 @@ app.post("/tasks", async (req, res) => {
     ) {
 
       executionAt =
-        new Date(execution_date);
+        new Date(
+          execution_date
+        );
 
+      /* =====================
+        VALIDATE EXECUTION DATE
+      ===================== */
 
       if (
         Number.isNaN(
@@ -11367,6 +11372,20 @@ app.post("/tasks", async (req, res) => {
 
       }
 
+      if (
+        executionAt.getTime() >
+        Date.now()
+      ) {
+
+        throw new Error(
+          "Execution date cannot be in the future"
+        );
+
+      }
+
+      /* =====================
+        LOAD TECHNICIAN
+      ===================== */
 
       const techRes =
         await client.query(
@@ -11374,9 +11393,12 @@ app.post("/tasks", async (req, res) => {
           SELECT
             id,
             name
+
           FROM technicians
+
           WHERE id = $1
             AND active = true
+
           LIMIT 1
           `,
           [technician_id]
@@ -11398,7 +11420,6 @@ app.post("/tasks", async (req, res) => {
         techRes.rows[0].name;
 
     }
-
 
     /* =====================
        RESOLVE TASK VALUES
@@ -11465,7 +11486,6 @@ app.post("/tasks", async (req, res) => {
 
     }
 
-
     /* LEGACY UNPLANNED */
 
     if (isLegacyUnplanned) {
@@ -11486,7 +11506,6 @@ app.post("/tasks", async (req, res) => {
         technicianName;
 
     }
-
 
     /* =====================
        INSERT TASK
