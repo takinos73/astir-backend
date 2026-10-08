@@ -1807,6 +1807,15 @@ document
     renderTable();
   });
 
+  document
+  .getElementById(
+    "nt-record-completed"
+  )
+  ?.addEventListener(
+    "change",
+    applyCompletedPlannedUI
+  );
+
 /* =====================
    ADD TASK TYPE LOGIC
    Planned vs Unplanned (SAFE TOGGLE)
@@ -1830,6 +1839,8 @@ function applyAddTaskTypeUI(isPlanned) {
   if (isPlanned) {
     document.querySelectorAll(".planned-only")
       .forEach(el => el.style.display = "block");
+
+      applyCompletedPlannedUI();
   } else {
     document.querySelectorAll(".unplanned-only")
       .forEach(el => el.style.display = "block");
@@ -1842,6 +1853,132 @@ function applyAddTaskTypeUI(isPlanned) {
   if (modal) {
     modal.classList.toggle("unplanned-mode", !isPlanned);
   }
+}
+
+/* =========================================================
+   COMPLETED PLANNED TASK UI
+
+   Normal Planned:
+   - Due Date visible
+   - Estimated Duration visible
+
+   Record as Completed:
+   - Planned scheduling hidden
+   - Technician visible
+   - Actual Completion visible
+   - Actual Service Time visible
+
+   Existing Unplanned / Breakdown UI is untouched.
+========================================================= */
+
+function applyCompletedPlannedUI() {
+
+  const checkbox =
+    document.getElementById(
+      "nt-record-completed"
+    );
+
+
+  const completedBlock =
+    document.getElementById(
+      "completedPlannedExecutionBlock"
+    );
+
+
+  const dueInput =
+    document.getElementById(
+      "nt-due"
+    );
+
+
+  const plannedSchedulingBlock =
+    dueInput?.closest(
+      ".addtask-block"
+    );
+
+
+  if (
+    !checkbox ||
+    !completedBlock ||
+    !plannedSchedulingBlock
+  ) {
+    return;
+  }
+
+
+  const completed =
+    checkbox.checked === true;
+
+
+  plannedSchedulingBlock.style.display =
+    completed
+      ? "none"
+      : "";
+
+
+  completedBlock.style.display =
+    completed
+      ? "grid"
+      : "none";
+
+
+  /* =====================
+     RESET INACTIVE MODE
+  ===================== */
+
+  if (completed) {
+
+    if (dueInput) {
+      dueInput.value = "";
+    }
+
+
+    const estimatedDuration =
+      document.getElementById(
+        "nt-duration"
+      );
+
+
+    if (estimatedDuration) {
+      estimatedDuration.value = "";
+    }
+
+  } else {
+
+    const technician =
+      document.getElementById(
+        "nt-completed-technician"
+      );
+
+
+    const completion =
+      document.getElementById(
+        "nt-completed-date"
+      );
+
+
+    const duration =
+      document.getElementById(
+        "nt-completed-duration"
+      );
+
+
+    if (technician) {
+      technician.value = "";
+    }
+
+
+    if (completion) {
+      completion.value = "";
+    }
+
+
+    if (duration) {
+      duration.value = "";
+    }
+
+  }
+
 }
 
 // 🔁 Change handler

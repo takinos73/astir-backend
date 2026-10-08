@@ -1025,6 +1025,31 @@
     </div>
 
     <!-- =====================
+        PLANNED TASK MODE
+    ===================== -->
+    <div class="addtask-block planned-only">
+
+      <label class="completed-planned-option">
+
+        <input
+          id="nt-record-completed"
+          type="checkbox"
+        />
+
+        <span>
+          Record as already completed
+        </span>
+
+      </label>
+
+      <small class="field-hint">
+        Use when the planned maintenance work has already been completed
+        and only needs to be recorded in CMMS.
+      </small>
+
+    </div>
+
+    <!-- =====================
         SCHEDULING (PLANNED)
     ===================== -->
     <div class="addtask-block addtask-grid planned-only">
@@ -1052,6 +1077,77 @@
       </div>
 
     </div>
+
+    <!-- =====================
+        COMPLETED PLANNED EXECUTION
+        Hidden by default
+    ===================== -->
+
+    <div
+      id="completedPlannedExecutionBlock"
+      class="addtask-block addtask-grid"
+      style="display:none;"
+    >
+
+      <div class="field">
+
+        <label>
+          Technician
+        </label>
+
+        <select
+          id="nt-completed-technician"
+          style="width:100%;"
+        >
+
+          <option value="">
+            Select Technician
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="field">
+
+        <label>
+          Actual Service Time (minutes)
+        </label>
+
+        <input
+          id="nt-completed-duration"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="e.g. 45"
+        />
+
+        <small class="field-hint">
+          Actual time spent on the maintenance work
+        </small>
+
+      </div>
+
+
+      <div class="field full-width">
+
+        <label>
+          Actual Completion
+        </label>
+
+        <input
+          id="nt-completed-date"
+          type="datetime-local"
+        />
+
+        <small class="field-hint">
+          Due Date will automatically be set equal to Actual Completion
+        </small>
+
+      </div>
+
+    </div>    
 
     <!-- =====================
         NOTES
