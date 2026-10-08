@@ -5088,7 +5088,6 @@ async function printScheduledMaintenanceDetail() {
               const isDone =
                 taskStatus === "DONE";
 
-
               const duration =
                 isDone
                   ? (

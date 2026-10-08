@@ -11203,10 +11203,16 @@ app.get("/tasks", async (req, res) => {
 });
 
 /*================================
-   Create task (Planned or Unplanned)
+   CREATE TASK
+
+   Modes:
+   1. Planned Open
+   2. Planned Completed
+   3. Legacy Unplanned Completed
 =================================*/
 
 app.post("/tasks", async (req, res) => {
+
   const {
     asset_id,
     section,
@@ -11217,90 +11223,337 @@ app.post("/tasks", async (req, res) => {
     due_date,
     notes,
     is_planned,
-    status,// executed_by,
-    technician_id,          // 🔥 NEW
 
-    // ⬇️ ΣΗΜΑΝΤΙΚΟ
-    duration_min,              // 👉 ESTIMATED (PLANNED ONLY)
-    execution_duration_min     // 👉 ACTUAL (BREAKDOWN ONLY)
+    technician_id,
+
+    // Estimated duration — normal Planned only
+    duration_min,
+
+    // Actual duration — completed task only
+    execution_duration_min,
+
+    // Actual execution time
+    execution_date,
+
+    // NEW:
+    // Planned task recorded directly as completed
+    record_completed
+
   } = req.body;
 
+
   if (!asset_id || !task) {
-    return res.status(400).json({ error: "Missing required fields" });
+
+    return res.status(400).json({
+      error: "Missing required fields"
+    });
+
   }
 
-  const client = await pool.connect();
+
+  const isPlanned =
+    is_planned === true;
+
+
+  const isCompletedPlanned =
+    isPlanned &&
+    record_completed === true;
+
+
+  const isLegacyUnplanned =
+    is_planned === false;
+
+
+  /* =====================
+     NORMAL PLANNED VALIDATION
+  ===================== */
+
+  if (
+    isPlanned &&
+    !isCompletedPlanned &&
+    !due_date
+  ) {
+
+    return res.status(400).json({
+      error:
+        "Due date is required for a planned task"
+    });
+
+  }
+
+
+  /* =====================
+     COMPLETED TASK VALIDATION
+  ===================== */
+
+  if (
+    isCompletedPlanned ||
+    isLegacyUnplanned
+  ) {
+
+    if (!technician_id) {
+
+      return res.status(400).json({
+        error:
+          "Technician is required for completed tasks"
+      });
+
+    }
+
+
+    if (!execution_date) {
+
+      return res.status(400).json({
+        error:
+          "Execution date is required for completed tasks"
+      });
+
+    }
+
+
+    if (
+      !Number.isFinite(
+        Number(execution_duration_min)
+      ) ||
+      Number(execution_duration_min) < 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Valid actual duration is required"
+      });
+
+    }
+
+  }
+
+
+  const client =
+    await pool.connect();
+
 
   try {
+
     await client.query("BEGIN");
 
-    /* =====================
-       1️⃣ INSERT TASK
-       (duration_min ONLY if planned)
-    ===================== */
-
-    const taskRes = await client.query(
-    `
-    INSERT INTO maintenance_tasks
-      (
-        asset_id,
-        section,
-        unit,
-        task,
-        type,
-        impact,
-        due_date,
-        status,
-        is_planned,
-        duration_min,
-        notes
-      )
-    VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-    RETURNING *
-    `,
-    [
-      asset_id,                                      // $1
-      section || null,                              // $2
-      unit || null,                                 // $3
-      task,                                         // $4
-      type || null,                                 // $5
-      impact || "normal",                           // $6
-      due_date ? new Date(due_date) : null,         // $7
-      status || "Planned",                          // $8
-      is_planned === true,                          // $9
-
-      // 🔑 ΜΟΝΟ PLANNED → estimated duration
-      is_planned === true && Number.isFinite(Number(duration_min))
-        ? Number(duration_min)
-        : null,                                     // $10
-
-      notes || null                                 // $11
-    ]
-  );
-
-    const newTask = taskRes.rows[0];
 
     /* =====================
-   2️⃣ BREAKDOWN → HISTORY
-   (ACTUAL SERVICE TIME + EXECUTION DATE)
+       RESOLVE EXECUTION DATA
     ===================== */
 
-  if (is_planned === false) {
+    let executionAt = null;
 
-      // 🔎 Fetch technician name safely
-      let technicianName = null;
+    let technicianName = null;
 
-      if (technician_id) {
-        const techRes = await client.query(
-          `SELECT name FROM technicians WHERE id = $1 AND active = true`,
+
+    if (
+      isCompletedPlanned ||
+      isLegacyUnplanned
+    ) {
+
+      executionAt =
+        new Date(execution_date);
+
+
+      if (
+        Number.isNaN(
+          executionAt.getTime()
+        )
+      ) {
+
+        throw new Error(
+          "Invalid execution date"
+        );
+
+      }
+
+
+      const techRes =
+        await client.query(
+          `
+          SELECT
+            id,
+            name
+          FROM technicians
+          WHERE id = $1
+            AND active = true
+          LIMIT 1
+          `,
           [technician_id]
         );
 
-        if (techRes.rows.length) {
-          technicianName = techRes.rows[0].name;
-        }
+
+      if (
+        techRes.rows.length === 0
+      ) {
+
+        throw new Error(
+          "Technician not found or inactive"
+        );
+
       }
+
+
+      technicianName =
+        techRes.rows[0].name;
+
+    }
+
+
+    /* =====================
+       RESOLVE TASK VALUES
+    ===================== */
+
+    let resolvedDueDate = null;
+
+    let resolvedStatus = "Planned";
+
+    let resolvedDurationMin = null;
+
+    let completedAt = null;
+
+    let completedBy = null;
+
+
+    /* NORMAL PLANNED */
+
+    if (
+      isPlanned &&
+      !isCompletedPlanned
+    ) {
+
+      resolvedDueDate =
+        new Date(due_date);
+
+      resolvedStatus =
+        "Planned";
+
+      resolvedDurationMin =
+        Number.isFinite(
+          Number(duration_min)
+        )
+          ? Number(duration_min)
+          : null;
+
+    }
+
+
+    /* COMPLETED PLANNED */
+
+    if (isCompletedPlanned) {
+
+      /*
+        Reporting rule:
+
+        Due = Actual Completion
+      */
+
+      resolvedDueDate =
+        executionAt;
+
+      resolvedStatus =
+        "Done";
+
+      resolvedDurationMin =
+        null;
+
+      completedAt =
+        executionAt;
+
+      completedBy =
+        technicianName;
+
+    }
+
+
+    /* LEGACY UNPLANNED */
+
+    if (isLegacyUnplanned) {
+
+      resolvedDueDate =
+        null;
+
+      resolvedStatus =
+        "Done";
+
+      resolvedDurationMin =
+        null;
+
+      completedAt =
+        executionAt;
+
+      completedBy =
+        technicianName;
+
+    }
+
+
+    /* =====================
+       INSERT TASK
+    ===================== */
+
+    const taskRes =
+      await client.query(
+        `
+        INSERT INTO maintenance_tasks
+          (
+            asset_id,
+            section,
+            unit,
+            task,
+            type,
+            impact,
+            due_date,
+            status,
+            is_planned,
+            duration_min,
+            notes,
+            completed_at,
+            completed_by
+          )
+
+        VALUES
+          (
+            $1,$2,$3,$4,$5,$6,$7,
+            $8,$9,$10,$11,$12,$13
+          )
+
+        RETURNING *
+        `,
+        [
+          asset_id,                // $1
+          section || null,         // $2
+          unit || null,            // $3
+          task,                    // $4
+          type || null,            // $5
+          impact || "normal",      // $6
+          resolvedDueDate,         // $7
+          resolvedStatus,          // $8
+          isPlanned,               // $9
+          resolvedDurationMin,     // $10
+          notes || null,           // $11
+          completedAt,             // $12
+          completedBy              // $13
+        ]
+      );
+
+
+    const newTask =
+      taskRes.rows[0];
+
+
+    /* =====================
+       CREATE EXECUTION
+
+       Only:
+       - Completed Planned
+       - Legacy Unplanned
+    ===================== */
+
+    if (
+      isCompletedPlanned ||
+      isLegacyUnplanned
+    ) {
 
       await client.query(
         `
@@ -11310,48 +11563,85 @@ app.post("/tasks", async (req, res) => {
             asset_id,
             technician_id,
             executed_by,
+            prev_due_date,
             executed_at,
             duration_minutes,
             notes
           )
+
         VALUES
-          ($1, $2, $3, $4, $5, $6, $7)
+          (
+            $1,$2,$3,$4,
+            $5,$6,$7,$8
+          )
         `,
         [
-          newTask.id,
-          asset_id,
-          technician_id || null,
-          technicianName,
-          req.body.execution_date
-            ? new Date(req.body.execution_date)
-            : new Date(),
-          Number.isFinite(Number(execution_duration_min))
-            ? Number(execution_duration_min)
-            : null,
-          notes || null
+          newTask.id,                         // $1
+          asset_id,                           // $2
+          technician_id,                      // $3
+          technicianName,                     // $4
+
+          /*
+            Completed Planned:
+            prev_due_date = execution time
+
+            Legacy Unplanned:
+            no artificial due
+          */
+          isCompletedPlanned
+            ? executionAt
+            : null,                           // $5
+
+          executionAt,                        // $6
+
+          Number(
+            execution_duration_min
+          ),                                  // $7
+
+          notes || null                       // $8
         ]
       );
+
     }
+
 
     await client.query("COMMIT");
 
-    res.json(newTask);
 
-    // 🧪 DEBUG (safe to remove later)
-    console.log("POST /tasks:", {
-      is_planned,
-      duration_min,
-      execution_duration_min
+    return res.json({
+      ...newTask,
+
+      record_completed:
+        isCompletedPlanned
     });
 
+
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("POST /tasks ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    await client.query(
+      "ROLLBACK"
+    );
+
+
+    console.error(
+      "POST /tasks ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error: err.message
+    });
+
+
   } finally {
+
     client.release();
+
   }
+
 });
+
 /* =====================
    CREATE PREVENTIVE (MANUAL)
 ===================== */
