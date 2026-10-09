@@ -7597,6 +7597,255 @@ app.patch("/scheduled-maintenance/:id/close", async (req, res) => {
 });
 
 /* =========================================================
+   DELETE SCHEDULED MAINTENANCE — ADMIN ONLY
+   DELETE /scheduled-maintenance/:id
+
+   HARD DELETE for WRONG / ACCIDENTAL SM ENTRY ONLY.
+
+   Deletes:
+   1. task_executions linked to SM tasks
+   2. ALL maintenance_tasks linked to SM
+   3. Scheduled Maintenance itself
+
+   IMPORTANT:
+   - Historical data is permanently changed
+   - Open AND completed SM Tasks are deleted
+   - Soft-deleted linked Tasks are also removed
+   - This action cannot be undone
+========================================================= */
+
+app.delete("/scheduled-maintenance/:id", requireAdmin,async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      const smId =
+        Number(req.params.id);
+
+
+      /* =====================
+         VALIDATE ID
+      ===================== */
+
+      if (
+        !Number.isInteger(smId) ||
+        smId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Scheduled Maintenance ID"
+        });
+
+      }
+
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOCK + VERIFY SM
+      ===================== */
+
+      const smResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            title,
+            status,
+            scheduled_start_at,
+            actual_started_at,
+            actual_closed_at
+          FROM scheduled_maintenance
+          WHERE id = $1
+          FOR UPDATE
+          `,
+          [smId]
+        );
+
+
+      if (
+        smResult.rows.length === 0
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Scheduled Maintenance not found"
+        });
+
+      }
+
+
+      const sm =
+        smResult.rows[0];
+
+
+      /* =====================
+         DELETE EXECUTIONS
+
+         Only executions belonging
+         to tasks linked to this SM.
+      ===================== */
+
+      const executionsResult =
+        await client.query(
+          `
+          DELETE FROM task_executions
+
+          WHERE task_id IN (
+
+            SELECT id
+
+            FROM maintenance_tasks
+
+            WHERE scheduled_maintenance_id = $1
+
+          )
+
+          RETURNING id
+          `,
+          [smId]
+        );
+
+
+      /* =====================
+         DELETE ALL SM TASKS
+
+         Includes:
+         - Planned/open
+         - Done
+         - Soft-deleted
+
+         Relationship is strictly:
+         scheduled_maintenance_id = requested SM
+      ===================== */
+
+      const tasksResult =
+        await client.query(
+          `
+          DELETE FROM maintenance_tasks
+
+          WHERE scheduled_maintenance_id = $1
+
+          RETURNING id
+          `,
+          [smId]
+        );
+
+
+      /* =====================
+         DELETE SM
+      ===================== */
+
+      const deleteSmResult =
+        await client.query(
+          `
+          DELETE FROM scheduled_maintenance
+
+          WHERE id = $1
+
+          RETURNING id
+          `,
+          [smId]
+        );
+
+
+      if (
+        deleteSmResult.rowCount !== 1
+      ) {
+
+        throw new Error(
+          "Scheduled Maintenance could not be deleted"
+        );
+
+      }
+
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        success: true,
+
+        scheduled_maintenance_id:
+          smId,
+
+        deleted: {
+
+          scheduled_maintenance: 1,
+
+          tasks:
+            tasksResult.rowCount,
+
+          executions:
+            executionsResult.rowCount
+
+        },
+
+        scheduled_maintenance: {
+
+          id:
+            sm.id,
+
+          asset_id:
+            sm.asset_id,
+
+          title:
+            sm.title,
+
+          status:
+            sm.status
+
+        }
+
+      });
+
+
+    } catch (err) {
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {}
+
+
+      console.error(
+        "DELETE /scheduled-maintenance/:id error:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to permanently delete Scheduled Maintenance"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    CREATE NEW & COMPLETE SCHEDULED MAINTENANCE TASK
    POST /scheduled-maintenance/:id/completed-task
 
