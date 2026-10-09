@@ -458,27 +458,17 @@ function buildAssetDropdown() {
 
 
     div.innerHTML = `
-      <div>
-        <strong>
-          ${a.name || "Unnamed Asset"}
-        </strong>
+      <div class="asset-option-line">
+        <strong>${a.name || "Unnamed Asset"}</strong>
+        <span class="asset-option-separator">|</span>
+        <span class="asset-option-serial">${a.serial || ""}</span>
       </div>
-
-      ${
-        a.serial
-          ? `
-            <small>
-              ${a.serial}
-            </small>
-          `
-          : ""
-      }
     `;
 
 
-    menu.appendChild(div);
+        menu.appendChild(div);
 
-  });
+      });
 
 }
 

@@ -201,3 +201,20 @@ tr.task-restoration {
   font-weight: 800;
   line-height: 1.2;
 }
+
+.asset-option-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.asset-option-separator {
+  color: #6b7280;
+}
+
+.asset-option-serial {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
+}
