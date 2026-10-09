@@ -321,58 +321,165 @@ function getUnitsForAssetSection(assetId, section) {
    FILTERS
 ===================== */
 function buildAssetDropdown() {
-  const menu = getEl("assetDropdownMenu");
-  const btn = getEl("assetDropdownBtn");
+
+  const menu =
+    getEl("assetDropdownMenu");
+
+  const btn =
+    getEl("assetDropdownBtn");
+
 
   if (!menu || !btn) return;
 
+
   menu.innerHTML = "";
 
-  const map = new Map();
+
+  const map =
+    new Map();
+
 
   state.tasksData.forEach(t => {
-    if (!t.machine_name || !t.serial_number) return;
 
-    const key = `${t.machine_name}||${t.serial_number}`;
-    if (map.has(key)) return;
+    const assetId =
+      Number(t.asset_id);
 
-    map.set(key, {
-      value: key,
-      line: t.line_code || t.line || "",
-      machine: t.machine_name,
-      serial: t.serial_number
+
+    if (
+      !Number.isInteger(assetId) ||
+      assetId <= 0
+    ) {
+      return;
+    }
+
+
+    if (map.has(assetId)) {
+      return;
+    }
+
+
+    map.set(assetId, {
+
+      value:
+        String(assetId),
+
+      name:
+        String(
+          t.asset_name ||
+          t.machine_name ||
+          ""
+        ).trim(),
+
+      serial:
+        String(
+          t.serial_number ||
+          ""
+        ).trim()
+
     });
+
   });
 
-  const assets = Array.from(map.values()).sort((a, b) => {
-    const la = `${a.line} ${a.machine} ${a.serial}`;
-    const lb = `${b.line} ${b.machine} ${b.serial}`;
-    return la.localeCompare(lb, "el", { sensitivity: "base" });
-  });
 
-  // All Machines option
-  const all = document.createElement("div");
-  all.className = "asset-option active";
-  all.textContent = "All Machines";
-  all.dataset.value = "all";
+  const assets =
+    Array.from(
+      map.values()
+    ).sort((a, b) => {
+
+      const la =
+        `${a.name} ${a.serial}`;
+
+      const lb =
+        `${b.name} ${b.serial}`;
+
+
+      return la.localeCompare(
+        lb,
+        "el",
+        {
+          sensitivity: "base"
+        }
+      );
+
+    });
+
+
+  /* =====================
+     ALL MACHINES
+  ===================== */
+
+  const all =
+    document.createElement(
+      "div"
+    );
+
+
+  all.className =
+    "asset-option active";
+
+
+  all.textContent =
+    "All Machines";
+
+
+  all.dataset.value =
+    "all";
+
+
   menu.appendChild(all);
 
-  btn.textContent = "All Machines";
-  state.activeAssetFilter = "all";
+
+  btn.textContent =
+    "All Machines";
+
+
+  state.activeAssetFilter =
+    "all";
+
+
+  /* =====================
+     ASSET OPTIONS
+  ===================== */
 
   assets.forEach(a => {
-    const div = document.createElement("div");
-    div.className = "asset-option";
-    div.dataset.value = a.value;
 
-    // 🔥 RICH LABEL
+    const div =
+      document.createElement(
+        "div"
+      );
+
+
+    div.className =
+      "asset-option";
+
+
+    div.dataset.value =
+      a.value;
+
+
     div.innerHTML = `
-      <div><strong>${a.line} | ${a.machine}</strong></div>
-      <small>SN: ${a.serial}</small>
+      <div>
+        <strong>
+          ${a.name || "Unnamed Asset"}
+        </strong>
+      </div>
+
+      ${
+        a.serial
+          ? `
+            <small>
+              ${a.serial}
+            </small>
+          `
+          : ""
+      }
     `;
 
+
     menu.appendChild(div);
+
   });
+
 }
 
 /* =====================
