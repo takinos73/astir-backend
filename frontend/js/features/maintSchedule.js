@@ -4751,6 +4751,176 @@ async function saveCompletedSmTask() {
 }
 
 /* =========================================================
+   DELETE SCHEDULED MAINTENANCE — ADMIN ONLY
+
+   Permanent historical deletion.
+
+   Deletes through backend:
+   - Scheduled Maintenance
+   - ALL linked Tasks
+   - ALL linked Task Executions
+========================================================= */
+
+async function deleteScheduledMaintenancePermanently(
+  smId
+) {
+
+  const id =
+    Number(smId);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  const currentRole =
+    String(
+      localStorage.getItem(
+        "cmmsRole"
+      ) || ""
+    ).toLowerCase();
+
+
+  if (currentRole !== "admin") {
+
+    alert(
+      "Administrator access is required."
+    );
+
+    return;
+  }
+
+
+  const smCode =
+    `SM-${String(id).padStart(5, "0")}`;
+
+
+  /* =====================
+     FIRST WARNING
+  ===================== */
+
+  const warningAccepted =
+    window.confirm(
+      `${smCode}\n\n` +
+
+      `WARNING — HISTORICAL DATA WILL BE PERMANENTLY CHANGED.\n\n` +
+
+      `This action will permanently delete:\n` +
+      `• The Scheduled Maintenance record\n` +
+      `• All open linked Tasks\n` +
+      `• All completed linked Tasks\n` +
+      `• All linked execution history\n\n` +
+
+      `Use this function ONLY for an incorrect or accidental Scheduled Maintenance entry.\n\n` +
+
+      `This action cannot be undone.\n\n` +
+
+      `Continue?`
+    );
+
+
+  if (!warningAccepted) {
+    return;
+  }
+
+
+  /* =====================
+     FINAL CONFIRMATION
+  ===================== */
+
+  const finalAccepted =
+    window.confirm(
+      `FINAL CONFIRMATION\n\n` +
+
+      `Permanently delete ${smCode} and all its linked historical data?`
+    );
+
+
+  if (!finalAccepted) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/scheduled-maintenance/${id}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "x-cmms-role":
+              currentRole
+          }
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        "Scheduled Maintenance could not be deleted."
+      );
+
+    }
+
+
+    const deletedTasks =
+      Number(
+        result?.deleted?.tasks || 0
+      );
+
+
+    const deletedExecutions =
+      Number(
+        result?.deleted?.executions || 0
+      );
+
+
+    alert(
+      `${smCode} permanently deleted.\n\n` +
+
+      `Linked Tasks deleted: ${deletedTasks}\n` +
+      `Executions deleted: ${deletedExecutions}`
+    );
+
+
+    window.location.reload();
+
+
+  } catch (err) {
+
+    console.error(
+      "DELETE SCHEDULED MAINTENANCE ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Scheduled Maintenance could not be deleted."
+    );
+
+  }
+
+}
+
+/* =========================================================
    COMPLETED TASK MODAL EVENTS
 ========================================================= */
 
@@ -4827,6 +4997,34 @@ document.addEventListener(
       closeCompletedSmTaskModal();
 
     }
+
+  }
+);
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".sm-delete-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const smId =
+      Number(
+        button.dataset.smId
+      );
+
+
+    deleteScheduledMaintenancePermanently(
+      smId
+    );
 
   }
 );

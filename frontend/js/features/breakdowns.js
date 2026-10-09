@@ -857,129 +857,178 @@ function renderBreakdownsTable(breakdowns) {
     return;
   }
 
-
   /* =====================
-     TABLE ROWS
+    TABLE ROWS
   ===================== */
 
   tbody.innerHTML =
     breakdowns.map(b => {
-            /* =====================
-              SCHEDULED MAINTENANCE ROW
 
-              Independent View and status.
+      /* =====================
+        SCHEDULED MAINTENANCE ROW
 
-              No Breakdown downtime.
-              No Reopen / Assign Restoration.
-            ===================== */
+        Independent View and status.
 
-            if (b.incident_type === "SM") {
+        No Breakdown downtime.
+        No Reopen / Assign Restoration.
+      ===================== */
 
-              const smId = Number(b.id);
+      if (b.incident_type === "SM") {
 
-              if (
-                !Number.isInteger(smId) ||
-                smId <= 0
-              ) {
-                return "";
+        const smId =
+          Number(b.id);
+
+
+        if (
+          !Number.isInteger(smId) ||
+          smId <= 0
+        ) {
+          return "";
+        }
+
+
+        const smCode =
+          `SM-${String(smId).padStart(5, "0")}`;
+
+
+        const smAsset =
+          b.asset_model || "-";
+
+
+        const smSerial =
+          b.asset_serial || "";
+
+
+        const smLine =
+          b.line_name || "-";
+
+
+        const smTitle =
+          b.title || "-";
+
+
+        const smStatus =
+          String(
+            b.status || "-"
+          );
+
+
+        const smDate =
+          formatBreakdownDate(
+            b.scheduled_start_at
+          );
+
+
+        /* =====================
+          DELETE SM
+
+          Admin only.
+        ===================== */
+
+        const canDeleteSm =
+          isAdmin;
+
+
+        return `
+          <tr class="sm-incident-row">
+
+            <td>
+              <span class="breakdown-id">
+                ${smCode}
+              </span>
+            </td>
+
+
+            <td>
+
+              <strong>
+                ${escapeBreakdownHtml(smAsset)}
+              </strong>
+
+              ${
+                smSerial
+                  ? `
+                    <div class="task-meta">
+                      ${escapeBreakdownHtml(smSerial)}
+                    </div>
+                  `
+                  : ""
               }
 
-              const smCode =
-                `SM-${String(smId).padStart(5, "0")}`;
-
-              const smAsset =
-                b.asset_model || "-";
-
-              const smSerial =
-                b.asset_serial || "";
-
-              const smLine =
-                b.line_name || "-";
-
-              const smTitle =
-                b.title || "-";
-
-              const smStatus =
-                String(b.status || "-");
-
-              const smDate =
-                formatBreakdownDate(
-                  b.scheduled_start_at
-                );
+            </td>
 
 
-              return `
-                <tr class="sm-incident-row">
+            <td>
+              ${escapeBreakdownHtml(smLine)}
+            </td>
 
-                  <td>
-                    <span class="breakdown-id">
-                      ${smCode}
-                    </span>
-                  </td>
 
-                  <td>
-                    <strong>
-                      ${escapeBreakdownHtml(smAsset)}
-                    </strong>
+            <td>
+              ${escapeBreakdownHtml(smTitle)}
+            </td>
 
-                    ${
-                      smSerial
-                        ? `
-                          <div class="task-meta">
-                            ${escapeBreakdownHtml(smSerial)}
-                          </div>
-                        `
-                        : ""
-                    }
-                  </td>
 
-                  <td>
-                    ${escapeBreakdownHtml(smLine)}
-                  </td>
+            <td>
 
-                  <td>
-                    ${escapeBreakdownHtml(smTitle)}
-                  </td>
+              <span class="breakdown-status">
 
-                  <td>
-                    <span class="breakdown-status">
-                      ${escapeBreakdownHtml(
-                        smStatus.replace("_", " ")
-                      )}
-                    </span>
-                  </td>
+                ${escapeBreakdownHtml(
+                  smStatus.replace("_", " ")
+                )}
 
-                  <td>
-                    ${escapeBreakdownHtml(smDate)}
-                  </td>
+              </span>
 
-                  <td>
-                    —
-                  </td>
+            </td>
 
-                  <td class="breakdown-actions-cell">
 
-                    <div class="breakdown-actions-row">
+            <td>
+              ${escapeBreakdownHtml(smDate)}
+            </td>
 
+
+            <td>
+              —
+            </td>
+
+
+            <td class="breakdown-actions-cell">
+
+              <div class="breakdown-actions-row">
+
+                <button
+                  class="btn-table breakdown-action-btn sm-view-btn"
+                  type="button"
+                  data-sm-id="${smId}"
+                  title="View Scheduled Maintenance"
+                  aria-label="View Scheduled Maintenance"
+                >
+                  👁 View
+                </button>
+
+                ${
+                  canDeleteSm
+                    ? `
                       <button
-                        class="btn-table breakdown-action-btn sm-view-btn"
+                        class="btn-table breakdown-action-btn sm-delete-btn"
                         type="button"
                         data-sm-id="${smId}"
-                        title="View Scheduled Maintenance"
-                        aria-label="View Scheduled Maintenance"
+                        title="Permanently Delete Scheduled Maintenance"
+                        aria-label="Permanently Delete Scheduled Maintenance"
                       >
-                        👁 View
+                        🗑 Delete
                       </button>
+                    `
+                    : ""
+                }
 
-                    </div>
+              </div>
 
-                  </td>
+            </td>
 
-                </tr>
-              `;
+          </tr>
+        `;
 
-            }
-
+      }
 
             /* =====================
               BREAKDOWN ROW
@@ -1222,7 +1271,6 @@ function renderBreakdownsTable(breakdowns) {
     }).join("");
 
 }
-
 
 /* =====================
    FORMAT BREAKDOWN DATE
