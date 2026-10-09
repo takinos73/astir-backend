@@ -11413,6 +11413,7 @@ app.get("/tasks", async (req, res) => {
         mt.notes,
         mt.impact,
 
+        a.name AS asset_name,
         a.model AS machine_name,
         a.serial_number,
         a.idle_since AS asset_idle_since,
