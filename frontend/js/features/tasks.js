@@ -486,53 +486,131 @@ function buildAssetDropdown() {
    ASSET DROPDOWN (INIT)
 ===================== */
 function initAssetDropdown() {
-  const btn = document.getElementById("assetDropdownBtn");
-  const menu = document.getElementById("assetDropdownMenu");
+
+  const btn =
+    document.getElementById(
+      "assetDropdownBtn"
+    );
+
+  const menu =
+    document.getElementById(
+      "assetDropdownMenu"
+    );
+
 
   if (!btn || !menu) return;
 
-  // 🔒 reset state κάθε φορά
-  menu.classList.remove("open");
 
-  // ❗ καθάρισε παλιούς handlers
+  /* =====================
+     RESET STATE
+  ===================== */
+
+  menu.classList.remove(
+    "open"
+  );
+
+
+  /* =====================
+     CLEAR OLD HANDLERS
+  ===================== */
+
   btn.onclick = null;
   menu.onclick = null;
   document.onclick = null;
 
-  // Toggle dropdown
-  btn.onclick = (e) => {
+
+  /* =====================
+     TOGGLE DROPDOWN
+  ===================== */
+
+  btn.onclick = e => {
+
     e.preventDefault();
     e.stopPropagation();
-    menu.classList.toggle("open");
+
+    menu.classList.toggle(
+      "open"
+    );
+
   };
 
-  // Options (event delegation)
-  menu.onclick = (e) => {
-    const opt = e.target.closest(".asset-option");
+
+  /* =====================
+     SELECT ASSET
+  ===================== */
+
+  menu.onclick = e => {
+
+    const opt =
+      e.target.closest(
+        ".asset-option"
+      );
+
+
     if (!opt) return;
 
-    menu.querySelectorAll(".asset-option")
-      .forEach(o => o.classList.remove("active"));
 
-    opt.classList.add("active");
+    menu
+      .querySelectorAll(
+        ".asset-option"
+      )
+      .forEach(o =>
+        o.classList.remove(
+          "active"
+        )
+      );
 
-    state.activeAssetFilter = opt.dataset.value;
 
-    // αν το label έχει HTML (line | machine | small SN)
-    btn.innerHTML = opt.innerHTML;
+    opt.classList.add(
+      "active"
+    );
 
-    menu.classList.remove("open");
+
+    state.activeAssetFilter =
+      opt.dataset.value;
+
+
+    /* Preserve rich label
+       Asset Name + Serial Number
+    */
+
+    btn.innerHTML =
+      opt.innerHTML;
+
+
+    menu.classList.remove(
+      "open"
+    );
+
+
     renderTable();
+
   };
 
-  // Close on outside click (ΜΟΝΟ ΕΝΑΣ)
+
+  /* =====================
+     CLOSE ON OUTSIDE CLICK
+  ===================== */
+
   document.onclick = () => {
-    menu.classList.remove("open");
+
+    menu.classList.remove(
+      "open"
+    );
+
   };
 
-  console.log("INIT DROPDOWN ✅", {
-    options: menu.querySelectorAll(".asset-option").length
-  });
+
+  console.log(
+    "INIT DROPDOWN ✅",
+    {
+      options:
+        menu.querySelectorAll(
+          ".asset-option"
+        ).length
+    }
+  );
+
 }
 
 /* =====================
@@ -1663,10 +1741,14 @@ const filtered = source
 })
 
 
-    // MACHINE FILTER
+    // ASSET FILTER
     .filter(t => {
       if (state.activeAssetFilter === "all") return true;
-      return `${t.machine_name}||${t.serial_number}` === state.activeAssetFilter;
+
+      return (
+        String(t.asset_id) ===
+        String(state.activeAssetFilter)
+      );
     })
 
     // =====================
