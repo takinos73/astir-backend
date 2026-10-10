@@ -3712,7 +3712,7 @@ function showMaintenanceReportBreakdownSection() {
 
   const plannedSection =
     document.getElementById(
-      "maintenanceReportPlannedSection"
+      "maintenanceReportPlannedConversionSection"
     );
 
 
@@ -3756,7 +3756,7 @@ function showMaintenanceReportPlannedSection() {
 
   const plannedSection =
     document.getElementById(
-      "maintenanceReportPlannedSection"
+      "maintenanceReportPlannedConversionSection"
     );
 
 
