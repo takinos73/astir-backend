@@ -1457,6 +1457,106 @@ function renderProductionReports(reports) {
 }
 
 /* =========================================================
+   LOAD NEW REPORT BADGE
+   Maintenance Team only
+========================================================= */
+
+async function loadMaintenanceReportsBadge() {
+
+  const badge =
+    document.getElementById(
+      "maintenanceReportsBadge"
+    );
+
+
+  if (!badge) {
+    return;
+  }
+
+
+  const role =
+    String(
+      localStorage.getItem(
+        ROLE_STORAGE_KEY
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const isMaintenanceTeam =
+    (
+      role === "admin" ||
+      role === "planner" ||
+      role === "technician"
+    );
+
+
+  if (!isMaintenanceTeam) {
+
+    badge.style.display =
+      "none";
+
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/new-count`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Maintenance Report count"
+      );
+
+    }
+
+
+    const count =
+      Number(
+        data?.new_count || 0
+      );
+
+
+    badge.textContent =
+      String(count);
+
+
+    badge.style.display =
+      count > 0
+        ? "inline-flex"
+        : "none";
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD MAINTENANCE REPORT BADGE ERROR:",
+      err
+    );
+
+
+    badge.style.display =
+      "none";
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
@@ -1521,6 +1621,34 @@ async function initMaintenanceReporting() {
       "true";
 
   }
+
+}
+
+let maintenanceReportsBadgeInterval =
+  null;
+
+
+function startMaintenanceReportsBadgeRefresh() {
+
+  loadMaintenanceReportsBadge();
+
+
+  if (
+    maintenanceReportsBadgeInterval
+  ) {
+
+    clearInterval(
+      maintenanceReportsBadgeInterval
+    );
+
+  }
+
+
+  maintenanceReportsBadgeInterval =
+    setInterval(
+      loadMaintenanceReportsBadge,
+      90000
+    );
 
 }
 
