@@ -2127,18 +2127,81 @@
 
     </div>
 
+    <div class="maintenance-reports-maintenance-panel">
 
-    <div class="panel">
+      <!-- =====================
+          SUMMARY
+      ===================== -->
+
+      <div class="maintenance-reports-summary">
+
+        <div class="maintenance-report-kpi">
+          <span
+            id="maintenanceReportsNewCount"
+            class="maintenance-report-kpi-value"
+          >
+            0
+          </span>
+
+          <span class="maintenance-report-kpi-label">
+            New
+          </span>
+        </div>
+
+
+        <div class="maintenance-report-kpi">
+          <span
+            id="maintenanceReportsReviewCount"
+            class="maintenance-report-kpi-value"
+          >
+            0
+          </span>
+
+          <span class="maintenance-report-kpi-label">
+            Under Review
+          </span>
+        </div>
+
+
+        <div class="maintenance-report-kpi urgent">
+          <span
+            id="maintenanceReportsUrgentCount"
+            class="maintenance-report-kpi-value"
+          >
+            0
+          </span>
+
+          <span class="maintenance-report-kpi-label">
+            Urgent Open
+          </span>
+        </div>
+
+
+        <div class="maintenance-report-kpi stopped">
+          <span
+            id="maintenanceReportsStoppedCount"
+            class="maintenance-report-kpi-value"
+          >
+            0
+          </span>
+
+          <span class="maintenance-report-kpi-label">
+            Production Stopped
+          </span>
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+          REPORT QUEUE
+      ===================== -->
 
       <div
         id="maintenanceReportsQueue"
-        style="
-          padding:20px;
-          text-align:center;
-          opacity:0.7;
-        "
+        class="maintenance-reports-queue"
       >
-        Maintenance Reports queue
+        Loading Production Reports...
       </div>
 
     </div>

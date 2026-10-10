@@ -1557,6 +1557,565 @@ async function loadMaintenanceReportsBadge() {
 }
 
 /* =========================================================
+   LOAD MAINTENANCE REPORTS QUEUE
+   Admin / Planner / Technician
+========================================================= */
+
+async function loadMaintenanceReportsQueue() {
+
+  const container =
+    document.getElementById(
+      "maintenanceReportsQueue"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const role =
+    String(
+      localStorage.getItem(
+        ROLE_STORAGE_KEY
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const isMaintenanceTeam =
+    (
+      role === "admin" ||
+      role === "planner" ||
+      role === "technician"
+    );
+
+
+  if (!isMaintenanceTeam) {
+    return;
+  }
+
+
+  container.textContent =
+    "Loading Production Reports...";
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Production Reports"
+      );
+
+    }
+
+
+    const reports =
+      Array.isArray(
+        data?.reports
+      )
+        ? data.reports
+        : [];
+
+
+    renderMaintenanceReportsQueue(
+      reports
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD MAINTENANCE REPORTS QUEUE ERROR:",
+      err
+    );
+
+
+    container.textContent =
+      "Could not load Production Reports.";
+
+  }
+
+}
+
+/* =========================================================
+   RENDER MAINTENANCE REPORTS QUEUE
+========================================================= */
+
+function renderMaintenanceReportsQueue(
+  reports
+) {
+
+  const container =
+    document.getElementById(
+      "maintenanceReportsQueue"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const safeReports =
+    Array.isArray(reports)
+      ? reports
+      : [];
+
+
+  container.replaceChildren();
+
+
+  /* =====================
+     SUMMARY
+  ===================== */
+
+  const newReports =
+    safeReports.filter(report =>
+      String(
+        report.status || ""
+      )
+        .trim()
+        .toUpperCase() ===
+      "NEW"
+    );
+
+
+  const underReview =
+    safeReports.filter(report =>
+      String(
+        report.status || ""
+      )
+        .trim()
+        .toUpperCase() ===
+      "UNDER_REVIEW"
+    );
+
+
+  const openReports =
+    safeReports.filter(report => {
+
+      const status =
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      return (
+        status === "NEW" ||
+        status === "UNDER_REVIEW"
+      );
+
+    });
+
+
+  const urgentOpen =
+    openReports.filter(report =>
+      String(
+        report.priority || ""
+      )
+        .trim()
+        .toUpperCase() ===
+      "URGENT"
+    );
+
+
+  const stoppedOpen =
+    openReports.filter(report =>
+      report.production_stopped ===
+      true
+    );
+
+
+  const newCount =
+    document.getElementById(
+      "maintenanceReportsNewCount"
+    );
+
+
+  const reviewCount =
+    document.getElementById(
+      "maintenanceReportsReviewCount"
+    );
+
+
+  const urgentCount =
+    document.getElementById(
+      "maintenanceReportsUrgentCount"
+    );
+
+
+  const stoppedCount =
+    document.getElementById(
+      "maintenanceReportsStoppedCount"
+    );
+
+
+  if (newCount) {
+    newCount.textContent =
+      String(newReports.length);
+  }
+
+
+  if (reviewCount) {
+    reviewCount.textContent =
+      String(underReview.length);
+  }
+
+
+  if (urgentCount) {
+    urgentCount.textContent =
+      String(urgentOpen.length);
+  }
+
+
+  if (stoppedCount) {
+    stoppedCount.textContent =
+      String(stoppedOpen.length);
+  }
+
+
+  /* =====================
+     EMPTY
+  ===================== */
+
+  if (safeReports.length === 0) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+
+    empty.className =
+      "maintenance-reports-empty";
+
+
+    empty.textContent =
+      "No Production Reports available.";
+
+
+    container.appendChild(
+      empty
+    );
+
+
+    return;
+  }
+
+
+  /* =====================
+     TABLE
+  ===================== */
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.className =
+    "maintenance-reports-table-wrap";
+
+
+  const table =
+    document.createElement(
+      "table"
+    );
+
+
+  table.className =
+    "maintenance-reports-table";
+
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Report</th>
+        <th>Asset</th>
+        <th>Issue</th>
+        <th>Reported By</th>
+        <th>Status</th>
+        <th>Reported</th>
+      </tr>
+    </thead>
+  `;
+
+
+  const tbody =
+    document.createElement(
+      "tbody"
+    );
+
+
+  safeReports.forEach(report => {
+
+    const tr =
+      document.createElement(
+        "tr"
+      );
+
+
+    const status =
+      String(
+        report.status ||
+        "NEW"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    const priority =
+      String(
+        report.priority ||
+        "NORMAL"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    if (
+      priority === "URGENT"
+    ) {
+
+      tr.classList.add(
+        "urgent"
+      );
+
+    }
+
+
+    if (
+      report.production_stopped ===
+      true
+    ) {
+
+      tr.classList.add(
+        "stopped"
+      );
+
+    }
+
+
+    const reportedDate =
+      report.reported_at
+        ? new Date(
+            report.reported_at
+          )
+        : null;
+
+
+    const reportCode =
+      report.report_code ||
+      `MR-${String(
+        report.id
+      ).padStart(5, "0")}`;
+
+
+    const asset =
+      report.asset_name ||
+      report.asset_model ||
+      "—";
+
+
+    const issueTags = [];
+
+
+    if (report.category) {
+
+      issueTags.push(
+        String(
+          report.category
+        ).replace(
+          /_/g,
+          " "
+        )
+      );
+
+    }
+
+
+    if (
+      priority === "URGENT"
+    ) {
+
+      issueTags.push(
+        "URGENT"
+      );
+
+    }
+
+
+    if (
+      report.production_stopped ===
+      true
+    ) {
+
+      issueTags.push(
+        "PRODUCTION STOPPED"
+      );
+
+    }
+
+
+    tr.innerHTML = `
+      <td>
+        <strong>
+          ${escapeMaintenanceReportHtml(reportCode)}
+        </strong>
+      </td>
+
+      <td>
+        <strong>
+          ${escapeMaintenanceReportHtml(asset)}
+        </strong>
+
+        <div class="maintenance-report-subtext">
+          ${
+            escapeMaintenanceReportHtml(
+              report.line_code || ""
+            )
+          }
+          ${
+            report.asset_serial
+              ? ` · SN ${escapeMaintenanceReportHtml(
+                  report.asset_serial
+                )}`
+              : ""
+          }
+        </div>
+      </td>
+
+      <td>
+        <div class="maintenance-report-description">
+          ${escapeMaintenanceReportHtml(
+            report.description || "—"
+          )}
+        </div>
+
+        <div class="maintenance-report-tags">
+          ${
+            issueTags
+              .map(tag => `
+                <span>
+                  ${escapeMaintenanceReportHtml(tag)}
+                </span>
+              `)
+              .join("")
+          }
+        </div>
+      </td>
+
+      <td>
+        ${escapeMaintenanceReportHtml(
+          report.reported_by || "—"
+        )}
+      </td>
+
+      <td>
+        <span
+          class="maintenance-report-status status-${status
+            .toLowerCase()
+            .replace(/_/g, "-")}"
+        >
+          ${escapeMaintenanceReportHtml(
+            status.replace(/_/g, " ")
+          )}
+        </span>
+      </td>
+
+      <td>
+        ${
+          reportedDate &&
+          !Number.isNaN(
+            reportedDate.getTime()
+          )
+            ? escapeMaintenanceReportHtml(
+                reportedDate.toLocaleString(
+                  "el-GR"
+                )
+              )
+            : "—"
+        }
+      </td>
+    `;
+
+
+    tbody.appendChild(
+      tr
+    );
+
+  });
+
+
+  table.appendChild(
+    tbody
+  );
+
+
+  wrapper.appendChild(
+    table
+  );
+
+
+  container.appendChild(
+    wrapper
+  );
+
+}
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function escapeMaintenanceReportHtml(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 

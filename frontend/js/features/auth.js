@@ -86,6 +86,7 @@ function applyRoleUI(role) {
   document.body.dataset.role =
     role;
 
+
   document.body.classList.add(
     "cmms-authenticated"
   );
@@ -372,8 +373,9 @@ function applyRoleUI(role) {
      - Assets
      - Tasks
      - Incidents
+     - Production Reports Maintenance Queue
      - Technicians
-     - Reports
+     - Audit Reports
      - Management
      - Library
      - Docs
@@ -472,6 +474,10 @@ function applyRoleUI(role) {
     }
 
 
+    /* ---------------------
+       OPEN REPORTING TAB
+    --------------------- */
+
     if (reportingTab) {
 
       reportingTab.click();
@@ -480,7 +486,8 @@ function applyRoleUI(role) {
 
 
     /* ---------------------
-      LOAD REPORTING DATA
+       LOAD FOREMAN
+       REPORTING DATA
     --------------------- */
 
     if (
@@ -494,6 +501,7 @@ function applyRoleUI(role) {
 
   }
 
+
   /* =====================================================
      NORMAL CMMS VIEW
 
@@ -502,6 +510,10 @@ function applyRoleUI(role) {
   ===================================================== */
 
   else {
+
+    /* ---------------------
+       SHOW NORMAL TABS
+    --------------------- */
 
     document
       .querySelectorAll(".main-tab")
@@ -514,7 +526,7 @@ function applyRoleUI(role) {
 
 
     /* ---------------------
-       REPORTING TAB
+       FOREMAN REPORTING TAB
 
        Reserved for
        Shift Foreman only.
@@ -566,6 +578,36 @@ function applyRoleUI(role) {
 
       topTools.style.display =
         "";
+
+    }
+
+
+    /* ---------------------
+       PRODUCTION REPORTS
+       BADGE AUTO REFRESH
+    --------------------- */
+
+    if (
+      typeof startMaintenanceReportsBadgeRefresh ===
+      "function"
+    ) {
+
+      startMaintenanceReportsBadgeRefresh();
+
+    }
+
+
+    /* ---------------------
+       LOAD MAINTENANCE
+       REPORTS QUEUE
+    --------------------- */
+
+    if (
+      typeof loadMaintenanceReportsQueue ===
+      "function"
+    ) {
+
+      loadMaintenanceReportsQueue();
 
     }
 
