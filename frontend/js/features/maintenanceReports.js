@@ -2358,9 +2358,7 @@ let currentMaintenanceReportReview =
    OPEN MAINTENANCE REPORT REVIEW
 ========================================================= */
 
-function openMaintenanceReportReview(
-  report
-) {
+function openMaintenanceReportReview(report) {
 
   if (!report) {
     return;
@@ -2491,6 +2489,18 @@ function openMaintenanceReportReview(
     comment.value =
       report.maintenance_comment ||
       "";
+
+  }
+
+    const breakdownTitle =
+    document.getElementById(
+      "maintenanceReportBreakdownTitle"
+    );
+
+
+  if (breakdownTitle) {
+
+    breakdownTitle.value = "";
 
   }
 
@@ -2805,6 +2815,263 @@ async function closeMaintenanceReportNoAction() {
 }
 
 /* =========================================================
+   CONVERT MAINTENANCE REPORT TO BREAKDOWN
+========================================================= */
+
+async function createBreakdownFromMaintenanceReport() {
+
+  const report =
+    currentMaintenanceReportReview;
+
+
+  if (!report) {
+    return;
+  }
+
+
+  const titleInput =
+    document.getElementById(
+      "maintenanceReportBreakdownTitle"
+    );
+
+
+  const commentInput =
+    document.getElementById(
+      "maintenanceReportReviewComment"
+    );
+
+
+  const breakdownTitle =
+    String(
+      titleInput?.value || ""
+    ).trim();
+
+
+  const maintenanceComment =
+    String(
+      commentInput?.value || ""
+    ).trim();
+
+
+  /* =====================
+     VALIDATE TITLE
+  ===================== */
+
+  if (!breakdownTitle) {
+
+    alert(
+      "Breakdown Title is required."
+    );
+
+    titleInput?.focus();
+
+    return;
+
+  }
+
+
+  /* =====================
+     MAINTENANCE USER
+  ===================== */
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+
+    alert(
+      "Logged Maintenance user information is missing."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     CONFIRM
+  ===================== */
+
+  const confirmed =
+    window.confirm(
+      "Create a Breakdown from this Production Report?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const button =
+    document.getElementById(
+      "createBreakdownFromReportBtn"
+    );
+
+
+  const originalText =
+    button?.textContent;
+
+
+  if (button) {
+
+    button.disabled = true;
+
+    button.textContent =
+      "Creating...";
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${report.id}/convert-to-breakdown`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            technician_id:
+              technicianId,
+
+            title:
+              breakdownTitle,
+
+            maintenance_comment:
+              maintenanceComment
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to create Breakdown"
+      );
+
+    }
+
+
+    /* =====================
+       CLOSE REVIEW MODAL
+    ===================== */
+
+    closeMaintenanceReportReview();
+
+
+    /* =====================
+       REFRESH REPORT QUEUE
+    ===================== */
+
+    await loadMaintenanceReportsQueue();
+
+
+    /* =====================
+       REFRESH BADGE
+    ===================== */
+
+    if (
+      typeof loadMaintenanceReportsBadge ===
+      "function"
+    ) {
+
+      await loadMaintenanceReportsBadge();
+
+    }
+
+
+    /* =====================
+       OPTIONAL:
+       REFRESH INCIDENT DATA
+    ===================== */
+
+    if (
+      typeof loadBreakdowns ===
+      "function"
+    ) {
+
+      loadBreakdowns();
+
+    }
+
+
+    /* =====================
+       SUCCESS
+    ===================== */
+
+    const breakdownId =
+      data?.breakdown?.id;
+
+
+    const breakdownCode =
+      breakdownId
+        ? `BD-${String(
+            breakdownId
+          ).padStart(5, "0")}`
+        : "Breakdown";
+
+
+    alert(
+      `${breakdownCode} created successfully.`
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "CREATE BREAKDOWN FROM MAINTENANCE REPORT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Breakdown could not be created."
+    );
+
+
+  } finally {
+
+    if (button) {
+
+      button.disabled = false;
+
+      button.textContent =
+        originalText ||
+        "Create Breakdown";
+
+    }
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
@@ -2993,6 +3260,15 @@ document.addEventListener(
       ?.addEventListener(
         "click",
         closeMaintenanceReportReview
+      );
+
+    document
+      .getElementById(
+        "createBreakdownFromReportBtn"
+      )
+      ?.addEventListener(
+        "click",
+        createBreakdownFromMaintenanceReport
       );
 
   }
