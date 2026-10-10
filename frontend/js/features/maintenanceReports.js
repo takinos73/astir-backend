@@ -2548,7 +2548,8 @@ function openMaintenanceReportReview(report) {
 
 
   /* =====================
-     RESET PLANNED TASK FIELDS
+     RESET PLANNED TASK
+     BASIC FIELDS
   ===================== */
 
   const plannedTask =
@@ -2566,18 +2567,6 @@ function openMaintenanceReportReview(report) {
   const plannedDuration =
     document.getElementById(
       "maintenanceReportPlannedDuration"
-    );
-
-
-  const plannedSectionInput =
-    document.getElementById(
-      "maintenanceReportPlannedSection"
-    );
-
-
-  const plannedUnit =
-    document.getElementById(
-      "maintenanceReportPlannedUnit"
     );
 
 
@@ -2617,22 +2606,6 @@ function openMaintenanceReportReview(report) {
   }
 
 
-  if (plannedSectionInput) {
-
-    plannedSectionInput.value =
-      "";
-
-  }
-
-
-  if (plannedUnit) {
-
-    plannedUnit.value =
-      "";
-
-  }
-
-
   if (plannedType) {
 
     plannedType.value =
@@ -2645,6 +2618,106 @@ function openMaintenanceReportReview(report) {
 
     plannedNotes.value =
       "";
+
+  }
+
+
+  /* =====================
+     RESET SECTION
+  ===================== */
+
+  const plannedSectionSelect =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+
+  const plannedSectionInput =
+    document.getElementById(
+      "maintenanceReportPlannedSectionInput"
+    );
+
+
+  if (plannedSectionSelect) {
+
+    plannedSectionSelect.innerHTML =
+      `<option value="">Select Section</option>`;
+
+    plannedSectionSelect.value =
+      "";
+
+    plannedSectionSelect.style.display =
+      "none";
+
+  }
+
+
+  if (plannedSectionInput) {
+
+    plannedSectionInput.value =
+      "";
+
+    plannedSectionInput.style.display =
+      "none";
+
+  }
+
+
+  /* =====================
+     RESET UNIT
+  ===================== */
+
+  const plannedUnitSelect =
+    document.getElementById(
+      "maintenanceReportPlannedUnit"
+    );
+
+
+  const plannedUnitInput =
+    document.getElementById(
+      "maintenanceReportPlannedUnitInput"
+    );
+
+
+  if (plannedUnitSelect) {
+
+    plannedUnitSelect.innerHTML =
+      `<option value="">Select Unit</option>`;
+
+    plannedUnitSelect.value =
+      "";
+
+    plannedUnitSelect.style.display =
+      "none";
+
+  }
+
+
+  if (plannedUnitInput) {
+
+    plannedUnitInput.value =
+      "";
+
+    plannedUnitInput.style.display =
+      "none";
+
+  }
+
+
+  /* =====================
+     POPULATE SECTIONS
+     FROM REPORT ASSET
+  ===================== */
+
+  if (
+    report.asset_id &&
+    typeof populateMaintenanceReportPlannedSections ===
+      "function"
+  ) {
+
+    populateMaintenanceReportPlannedSections(
+      report.asset_id
+    );
 
   }
 
@@ -3239,92 +3312,122 @@ async function createPlannedTaskFromMaintenanceReport() {
 
 
   const taskInput =
-    document.getElementById(
-      "maintenanceReportPlannedTask"
-    );
-
-  const dueInput =
-    document.getElementById(
-      "maintenanceReportPlannedDue"
-    );
-
-  const durationInput =
-    document.getElementById(
-      "maintenanceReportPlannedDuration"
-    );
-
-  const sectionInput =
-    document.getElementById(
-      "maintenanceReportPlannedSection"
-    );
-
-  const unitInput =
-    document.getElementById(
-      "maintenanceReportPlannedUnit"
-    );
-
-  const typeInput =
-    document.getElementById(
-      "maintenanceReportPlannedType"
-    );
-
-  const notesInput =
-    document.getElementById(
-      "maintenanceReportPlannedNotes"
-    );
-
-  const commentInput =
-    document.getElementById(
-      "maintenanceReportReviewComment"
-    );
+  document.getElementById(
+    "maintenanceReportPlannedTask"
+  );
 
 
-  const task =
-    String(
-      taskInput?.value || ""
-    ).trim();
+const dueInput =
+  document.getElementById(
+    "maintenanceReportPlannedDue"
+  );
 
 
-  const dueRaw =
-    String(
-      dueInput?.value || ""
-    ).trim();
+const durationInput =
+  document.getElementById(
+    "maintenanceReportPlannedDuration"
+  );
 
 
-  const durationRaw =
-    String(
-      durationInput?.value || ""
-    ).trim();
+const typeInput =
+  document.getElementById(
+    "maintenanceReportPlannedType"
+  );
 
 
-  const section =
-    String(
-      sectionInput?.value || ""
-    ).trim();
+const notesInput =
+  document.getElementById(
+    "maintenanceReportPlannedNotes"
+  );
 
 
-  const unit =
-    String(
-      unitInput?.value || ""
-    ).trim();
+const commentInput =
+  document.getElementById(
+    "maintenanceReportReviewComment"
+  );
 
 
-  const type =
-    String(
-      typeInput?.value || ""
-    ).trim();
+const sectionSelect =
+  document.getElementById(
+    "maintenanceReportPlannedSection"
+  );
 
 
-  const notes =
-    String(
-      notesInput?.value || ""
-    ).trim();
+const sectionCustomInput =
+  document.getElementById(
+    "maintenanceReportPlannedSectionInput"
+  );
 
 
-  const maintenanceComment =
-    String(
-      commentInput?.value || ""
-    ).trim();
+const unitSelect =
+  document.getElementById(
+    "maintenanceReportPlannedUnit"
+  );
+
+
+const unitCustomInput =
+  document.getElementById(
+    "maintenanceReportPlannedUnitInput"
+  );
+
+
+const task =
+  String(
+    taskInput?.value || ""
+  ).trim();
+
+
+const dueRaw =
+  String(
+    dueInput?.value || ""
+  ).trim();
+
+
+const durationRaw =
+  String(
+    durationInput?.value || ""
+  ).trim();
+
+
+const section =
+  sectionSelect &&
+  sectionSelect.style.display !== "none"
+    ? String(
+        sectionSelect.value || ""
+      ).trim()
+    : String(
+        sectionCustomInput?.value || ""
+      ).trim();
+
+
+const unit =
+  unitSelect &&
+  unitSelect.style.display !== "none" &&
+  unitSelect.value !== "__new__"
+    ? String(
+        unitSelect.value || ""
+      ).trim()
+    : String(
+        unitCustomInput?.value || ""
+      ).trim();
+
+
+const type =
+  String(
+    typeInput?.value || ""
+  ).trim();
+
+
+const notes =
+  String(
+    notesInput?.value || ""
+  ).trim();
+
+
+const maintenanceComment =
+  String(
+    commentInput?.value || ""
+  ).trim();
 
 
   /* =====================
@@ -3684,6 +3787,201 @@ function showMaintenanceReportPlannedSection() {
 }
 
 /* =========================================================
+   POPULATE PLANNED REPORT SECTIONS
+========================================================= */
+
+function populateMaintenanceReportPlannedSections(assetId) {
+
+  const sectionSelect =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "maintenanceReportPlannedSectionInput"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "maintenanceReportPlannedUnit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "maintenanceReportPlannedUnitInput"
+    );
+
+
+  if (
+    !sectionSelect ||
+    !sectionInput
+  ) {
+    return;
+  }
+
+
+  /* RESET UNIT */
+
+  if (unitSelect) {
+
+    unitSelect.innerHTML =
+      `<option value="">Select Unit</option>`;
+
+    unitSelect.style.display =
+      "none";
+
+  }
+
+
+  if (unitInput) {
+
+    unitInput.value =
+      "";
+
+    unitInput.style.display =
+      "none";
+
+  }
+
+
+  const sections =
+    getSectionsForAsset(
+      assetId
+    );
+
+
+  sectionSelect.innerHTML =
+    "";
+
+
+  if (
+    Array.isArray(sections) &&
+    sections.length > 0
+  ) {
+
+    sectionSelect.innerHTML =
+      `<option value="">Select Section</option>` +
+      sections
+        .map(
+          section =>
+            `<option value="${section}">${section}</option>`
+        )
+        .join("");
+
+
+    sectionSelect.style.display =
+      "block";
+
+
+    sectionInput.style.display =
+      "none";
+
+
+    sectionInput.value =
+      "";
+
+  } else {
+
+    sectionSelect.style.display =
+      "none";
+
+
+    sectionInput.style.display =
+      "block";
+
+
+    sectionInput.value =
+      "";
+
+  }
+
+}
+
+/* =========================================================
+   POPULATE PLANNED REPORT UNITS
+========================================================= */
+
+function populateMaintenanceReportPlannedUnits(
+  assetId,
+  section
+) {
+
+  const unitSelect =
+    document.getElementById(
+      "maintenanceReportPlannedUnit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "maintenanceReportPlannedUnitInput"
+    );
+
+
+  if (
+    !unitSelect ||
+    !unitInput
+  ) {
+    return;
+  }
+
+
+  unitSelect.innerHTML =
+    "";
+
+
+  const units =
+    getUnitsForAssetSection(
+      assetId,
+      section
+    );
+
+
+  if (
+    Array.isArray(units) &&
+    units.length > 0
+  ) {
+
+    unitSelect.innerHTML =
+      `<option value="">Select Unit</option>` +
+      units
+        .map(
+          unit =>
+            `<option value="${unit}">${unit}</option>`
+        )
+        .join("") +
+      `<option value="__new__">➕ New unit</option>`;
+
+
+    unitSelect.style.display =
+      "block";
+
+
+    unitInput.style.display =
+      "none";
+
+
+    unitInput.value =
+      "";
+
+  } else {
+
+    unitSelect.style.display =
+      "none";
+
+
+    unitInput.style.display =
+      "block";
+
+
+    unitInput.value =
+      "";
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
@@ -3875,6 +4173,118 @@ document.addEventListener(
         "click",
         showMaintenanceReportPlannedSection
       );
+
+      document
+        .getElementById(
+          "maintenanceReportPlannedSection"
+        )
+        ?.addEventListener(
+          "change",
+          event => {
+
+            const section =
+              String(
+                event.target.value ||
+                ""
+              ).trim();
+
+
+            const report =
+              currentMaintenanceReportReview;
+
+
+            if (
+              !report ||
+              !report.asset_id
+            ) {
+              return;
+            }
+
+
+            if (!section) {
+
+              const unitSelect =
+                document.getElementById(
+                  "maintenanceReportPlannedUnit"
+                );
+
+              const unitInput =
+                document.getElementById(
+                  "maintenanceReportPlannedUnitInput"
+                );
+
+
+              if (unitSelect) {
+
+                unitSelect.style.display =
+                  "none";
+
+              }
+
+
+              if (unitInput) {
+
+                unitInput.style.display =
+                  "none";
+
+              }
+
+
+              return;
+
+            }
+
+
+            populateMaintenanceReportPlannedUnits(
+              report.asset_id,
+              section
+            );
+
+          }
+        );
+
+        document
+          .getElementById(
+            "maintenanceReportPlannedUnit"
+          )
+          ?.addEventListener(
+            "change",
+            event => {
+
+              const unitInput =
+                document.getElementById(
+                  "maintenanceReportPlannedUnitInput"
+                );
+
+
+              if (!unitInput) {
+                return;
+              }
+
+
+              if (
+                event.target.value ===
+                "__new__"
+              ) {
+
+                event.target.style.display =
+                  "none";
+
+
+                unitInput.style.display =
+                  "block";
+
+
+                unitInput.value =
+                  "";
+
+
+                unitInput.focus();
+
+              }
+
+            }
+          );
 
 
     /* =====================

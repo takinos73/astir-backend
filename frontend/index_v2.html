@@ -6964,22 +6964,30 @@
 
           </div>
 
-
           <div class="field">
 
             <label for="maintenanceReportPlannedSection">
               Section
             </label>
 
-            <input
+            <select
               id="maintenanceReportPlannedSection"
+              style="display:none;"
+            >
+              <option value="">
+                Select Section
+              </option>
+            </select>
+
+            <input
+              id="maintenanceReportPlannedSectionInput"
               type="text"
               maxlength="150"
               placeholder="Section"
+              style="display:none;"
             >
 
           </div>
-
 
           <div class="field">
 
@@ -6987,15 +6995,24 @@
               Unit
             </label>
 
-            <input
+            <select
               id="maintenanceReportPlannedUnit"
+              style="display:none;"
+            >
+              <option value="">
+                Select Unit
+              </option>
+            </select>
+
+            <input
+              id="maintenanceReportPlannedUnitInput"
               type="text"
               maxlength="150"
               placeholder="Unit"
+              style="display:none;"
             >
 
           </div>
-
 
           <div class="field">
 
