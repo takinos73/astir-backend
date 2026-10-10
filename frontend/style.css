@@ -19,6 +19,7 @@
   --ok: #4fd18b;
 }
 
+
 /* =========================================================
    AUTH LOCK
 
@@ -3143,4 +3144,25 @@ tr.history-unplanned {
 
 #completedPlannedExecutionBlock .full-width {
   grid-column: 1 / -1;
+}
+
+/* =========================================================
+   TODO — ADMIN TOOLS REFACTORING
+
+   Temporary:
+   These legacy Admin tools are currently not used.
+
+   Future cleanup:
+   - Review whether Upload / Import / Snapshot functions
+     are still required.
+   - Remove unused HTML.
+   - Remove unused JS handlers/functions.
+   - Remove related CSS.
+   - Delete dead backend logic if no longer needed.
+
+   For now: hidden only, not deleted.
+========================================================= */
+
+.top-tools {
+  display: none !important;
 }
