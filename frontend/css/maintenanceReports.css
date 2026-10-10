@@ -319,6 +319,7 @@
 #tab-reporting .reporting-guidance-item {
   display: flex;
   align-items: flex-start;
+  font-size: 11px;
 
   gap: 10px;
 

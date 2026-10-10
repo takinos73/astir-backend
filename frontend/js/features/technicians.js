@@ -161,41 +161,134 @@ function openAddTechnician() {
 // OPEN EDIT MODAL
 // =====================
 function editTechnician(id) {
-  const tech = state.techniciansData.find(t => t.id === id);
+
+  const tech =
+    state.techniciansData.find(
+      t => t.id === id
+    );
+
 
   if (!tech) {
-    alert("Technician not found");
+
+    alert(
+      "Technician not found"
+    );
+
     return;
   }
 
-  state.currentEditingTechnician = id;
 
-  document.getElementById("technicianModalTitle").textContent =
+  state.currentEditingTechnician =
+    id;
+
+
+  document.getElementById(
+    "technicianModalTitle"
+  ).textContent =
     "Edit Technician";
 
-  document.getElementById("tech-name").value =
+
+  document.getElementById(
+    "tech-name"
+  ).value =
     tech.name || "";
 
-  document.getElementById("tech-role").value =
-    tech.role || "Technician";
 
-  document.getElementById("tech-is-user").value =
-    tech.is_user === true ? "true" : "false";
+  /* =====================
+     ROLE
+  ===================== */
 
-  document.getElementById("tech-status").value =
-    tech.active === false ? "inactive" : "active";
+  const role =
+    String(
+      tech.role || ""
+    )
+      .trim()
+      .toLowerCase();
 
-  document.getElementById("tech-phone").value =
+
+  const roleMap = {
+
+    technician:
+      "Technician",
+
+    supervisor:
+      "Planner",
+
+    planner:
+      "Planner",
+
+    admin:
+      "Admin",
+
+    manager:
+      "Manager",
+
+    shift_foreman:
+      "Shift Foreman",
+
+    "shift foreman":
+      "Shift Foreman"
+
+  };
+
+
+  document.getElementById(
+    "tech-role"
+  ).value =
+    roleMap[role] ||
+    "Technician";
+
+
+  /* =====================
+     USER
+  ===================== */
+
+  document.getElementById(
+    "tech-is-user"
+  ).value =
+    tech.is_user === true
+      ? "true"
+      : "false";
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  document.getElementById(
+    "tech-status"
+  ).value =
+    tech.active === false
+      ? "inactive"
+      : "active";
+
+
+  /* =====================
+     CONTACT
+  ===================== */
+
+  document.getElementById(
+    "tech-phone"
+  ).value =
     tech.phone || "";
 
-  document.getElementById("tech-email").value =
+
+  document.getElementById(
+    "tech-email"
+  ).value =
     tech.email || "";
+
+
+  /* =====================
+     OPEN MODAL
+  ===================== */
 
   document.getElementById(
     "technicianModalOverlay"
-  ).style.display = "flex";
-}
+  ).style.display =
+    "flex";
 
+}
 
 // =====================
 // CLOSE MODAL

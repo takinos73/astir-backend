@@ -42,6 +42,14 @@ const uploadDisk = multer({
   }),
 });
 
+const ALLOWED_TECHNICIAN_ROLES = [
+  "Technician",
+  "Planner",
+  "Admin",
+  "Manager",
+  "Shift Foreman"
+];
+
 // -------------------
 // Health
 // -------------------
@@ -549,52 +557,182 @@ app.get("/technicians", async (req, res) => {
 /* =====================
    CREATE TECHNICIAN
 ===================== */
-app.post("/technicians", async (req, res) => {
-  const {
-    name,
-    role,
-    phone,
-    email,
-    is_user
-  } = req.body;
 
-  if (!name) {
-    return res.status(400).json({
-      error: "Name is required"
-    });
-  }
+app.post("/technicians", requireAdmin, async (req, res) => {
 
-  const cleanName = name.trim();
+    const {
+      name,
+      role,
+      phone,
+      email,
+      is_user
+    } = req.body;
 
-  try {
+
     /* =====================
-       CHECK EXISTING TECHNICIAN
-    ====================== */
-    const existing = await pool.query(
-      `
-      SELECT
-        id,
-        active
-      FROM technicians
-      WHERE LOWER(name) = LOWER($1)
-      `,
-      [cleanName]
-    );
+       VALIDATE NAME
+    ===================== */
 
-    if (existing.rowCount > 0) {
-      const tech = existing.rows[0];
+    if (!name) {
 
-      if (!tech.active) {
-        const reactivate = await pool.query(
+      return res.status(400).json({
+        error:
+          "Name is required"
+      });
+
+    }
+
+
+    const cleanName =
+      String(name)
+        .trim();
+
+
+    if (!cleanName) {
+
+      return res.status(400).json({
+        error:
+          "Name is required"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE ROLE
+    ===================== */
+
+    const cleanRole =
+      String(
+        role || "Technician"
+      ).trim();
+
+
+    if (
+      !ALLOWED_TECHNICIAN_ROLES.includes(
+        cleanRole
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid technician role"
+      });
+
+    }
+
+
+    try {
+
+      /* =====================
+         CHECK EXISTING TECHNICIAN
+      ===================== */
+
+      const existing =
+        await pool.query(
           `
-          UPDATE technicians
-          SET
-            active = true,
-            role = $2,
-            phone = $3,
-            email = $4,
-            is_user = $5
-          WHERE id = $1
+          SELECT
+            id,
+            active
+
+          FROM technicians
+
+          WHERE LOWER(name) =
+                LOWER($1)
+          `,
+          [cleanName]
+        );
+
+
+      if (
+        existing.rowCount > 0
+      ) {
+
+        const tech =
+          existing.rows[0];
+
+
+        /* =====================
+           REACTIVATE INACTIVE
+        ===================== */
+
+        if (!tech.active) {
+
+          const reactivate =
+            await pool.query(
+              `
+              UPDATE technicians
+
+              SET
+                active = true,
+                role = $2,
+                phone = $3,
+                email = $4,
+                is_user = $5
+
+              WHERE id = $1
+
+              RETURNING
+                id,
+                name,
+                role,
+                phone,
+                email,
+                active,
+                is_user
+              `,
+              [
+                tech.id,
+                cleanRole,
+                phone || null,
+                email || null,
+                is_user === true
+              ]
+            );
+
+
+          return res.json(
+            reactivate.rows[0]
+          );
+
+        }
+
+
+        return res.status(409).json({
+          error:
+            "Technician already exists"
+        });
+
+      }
+
+
+      /* =====================
+         INSERT NEW TECHNICIAN
+      ===================== */
+
+      const result =
+        await pool.query(
+          `
+          INSERT INTO technicians
+            (
+              name,
+              role,
+              phone,
+              email,
+              active,
+              is_user
+            )
+
+          VALUES
+            (
+              $1,
+              $2,
+              $3,
+              $4,
+              true,
+              $5
+            )
+
           RETURNING
             id,
             name,
@@ -605,79 +743,64 @@ app.post("/technicians", async (req, res) => {
             is_user
           `,
           [
-            tech.id,
-            role || "Technician",
+            cleanName,
+            cleanRole,
             phone || null,
             email || null,
             is_user === true
           ]
         );
 
-        return res.json(reactivate.rows[0]);
-      }
 
-      return res.status(409).json({
-        error: "Technician already exists"
+      return res.json(
+        result.rows[0]
+      );
+
+
+    } catch (err) {
+
+      console.error(
+        "POST /technicians ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          err.message
       });
+
     }
 
-    /* =====================
-       INSERT NEW TECHNICIAN
-    ====================== */
-    const result = await pool.query(
-      `
-      INSERT INTO technicians
-        (
-          name,
-          role,
-          phone,
-          email,
-          active,
-          is_user
-        )
-      VALUES
-        (
-          $1,
-          $2,
-          $3,
-          $4,
-          true,
-          $5
-        )
-      RETURNING
-        id,
-        name,
-        role,
-        phone,
-        email,
-        active,
-        is_user
-      `,
-      [
-        cleanName,
-        role || "Technician",
-        phone || null,
-        email || null,
-        is_user === true
-      ]
-    );
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("POST /technicians ERROR:", err);
-    res.status(500).json({ error: err.message });
   }
-});
+);
 
 /* =====================
    UPDATE TECHNICIAN
 ===================== */
-app.patch(
-  "/technicians/:id",
-  requireAdmin,
-  async (req, res) => {
-    const { id } = req.params;
+
+app.patch("/technicians/:id", requireAdmin, async (req, res) => {
+
+    const technicianId =
+      Number(
+        req.params.id
+      );
+
+
+    if (
+      !Number.isInteger(
+        technicianId
+      ) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Technician ID"
+      });
+
+    }
+
 
     const {
       name,
@@ -688,62 +811,130 @@ app.patch(
       is_user
     } = req.body;
 
+
+    /* =====================
+       VALIDATE NAME
+    ===================== */
+
     if (!name) {
+
       return res.status(400).json({
-        error: "Name is required"
+        error:
+          "Name is required"
       });
+
     }
 
-    try {
-      const result = await pool.query(
-        `
-        UPDATE technicians
-        SET
-          name = $1,
-          role = $2,
-          phone = $3,
-          email = $4,
-          active = $5,
-          is_user = $6
-        WHERE id = $7
-        RETURNING
-          id,
-          name,
-          role,
-          phone,
-          email,
-          active,
-          is_user
-        `,
-        [
-          name.trim(),
-          role || "Technician",
-          phone || null,
-          email || null,
-          active !== false,
-          is_user === true,
-          id
-        ]
-      );
 
-      if (result.rowCount === 0) {
+    const cleanName =
+      String(name)
+        .trim();
+
+
+    if (!cleanName) {
+
+      return res.status(400).json({
+        error:
+          "Name is required"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE ROLE
+    ===================== */
+
+    const cleanRole =
+      String(
+        role || "Technician"
+      ).trim();
+
+
+    if (
+      !ALLOWED_TECHNICIAN_ROLES.includes(
+        cleanRole
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid technician role"
+      });
+
+    }
+
+
+    try {
+
+      const result =
+        await pool.query(
+          `
+          UPDATE technicians
+
+          SET
+            name = $1,
+            role = $2,
+            phone = $3,
+            email = $4,
+            active = $5,
+            is_user = $6
+
+          WHERE id = $7
+
+          RETURNING
+            id,
+            name,
+            role,
+            phone,
+            email,
+            active,
+            is_user
+          `,
+          [
+            cleanName,
+            cleanRole,
+            phone || null,
+            email || null,
+            active !== false,
+            is_user === true,
+            technicianId
+          ]
+        );
+
+
+      if (
+        result.rowCount === 0
+      ) {
+
         return res.status(404).json({
-          error: "Technician not found"
+          error:
+            "Technician not found"
         });
+
       }
 
-      res.json(result.rows[0]);
+
+      return res.json(
+        result.rows[0]
+      );
+
 
     } catch (err) {
+
       console.error(
         "PATCH /technicians/:id ERROR:",
         err
       );
 
-      res.status(500).json({
-        error: err.message
+
+      return res.status(500).json({
+        error:
+          err.message
       });
+
     }
+
   }
 );
 
