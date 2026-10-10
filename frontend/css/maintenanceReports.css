@@ -1438,3 +1438,124 @@
     #fcd34d;
 }
 
+/* =========================================================
+   MAINTENANCE REPORT REVIEW MODAL
+========================================================= */
+
+.maintenance-report-review-modal {
+  width: min(680px, 94vw);
+}
+
+.maintenance-report-review-header {
+  margin-bottom: 16px;
+}
+
+.maintenance-report-review-header h3 {
+  margin: 0 0 5px;
+}
+
+.maintenance-report-review-status {
+  display: inline-flex;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(245, 158, 11, 0.14);
+
+  color:
+    #fcd34d;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+
+.maintenance-report-review-info {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 16px;
+
+  padding: 12px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.14);
+
+  border-radius: 11px;
+
+  background:
+    rgba(15, 23, 42, 0.38);
+}
+
+
+.maintenance-report-review-info-item {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+
+.maintenance-report-review-info-item.full-width {
+  grid-column:
+    1 / -1;
+}
+
+
+.maintenance-report-review-label {
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.76);
+}
+
+
+.maintenance-report-review-issue {
+  line-height: 1.45;
+
+  color:
+    rgba(226, 232, 240, 0.92);
+}
+
+
+#maintenanceReportReviewComment {
+  width: 100%;
+
+  min-height: 130px;
+
+  resize: vertical;
+}
+
+
+.maintenance-report-review-meta {
+  margin-top: 8px;
+
+  font-size: 12px;
+
+  color:
+    rgba(148, 163, 184, 0.78);
+}
+
+
+.maintenance-report-review-actions {
+  margin-top: 16px;
+}
+
+
+.maintenance-report-close-btn {
+  background:
+    rgba(239, 68, 68, 0.12);
+
+  border-color:
+    rgba(248, 113, 113, 0.32);
+
+  color:
+    #fca5a5;
+}
+

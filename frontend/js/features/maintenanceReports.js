@@ -1677,6 +1677,9 @@ function renderMaintenanceReportsQueue(
       ? reports
       : [];
 
+window.currentMaintenanceReportsQueue =
+  safeReports;
+
 
   container.replaceChildren();
 
@@ -2006,26 +2009,30 @@ function renderMaintenanceReportsQueue(
 
     }
     else if (
-      status === "UNDER_REVIEW"
+    status === "UNDER_REVIEW"
     ) {
 
-      actionHtml = `
-        <div class="maintenance-report-reviewing">
-          Under Review
+    actionHtml = `
+        <button
+        type="button"
+        class="btn-table maintenance-report-open-review-btn"
+        data-report-id="${report.id}"
+        >
+        Review
+        </button>
 
-          ${
-            reviewedBy
-              ? `
-                <div class="maintenance-report-subtext">
-                  ${escapeMaintenanceReportHtml(
-                    reviewedBy
-                  )}
-                </div>
-              `
-              : ""
-          }
-        </div>
-      `;
+        ${
+        reviewedBy
+            ? `
+            <div class="maintenance-report-subtext">
+                ${escapeMaintenanceReportHtml(
+                reviewedBy
+                )}
+            </div>
+            `
+            : ""
+        }
+    `;
 
     }
     else {
@@ -2318,6 +2325,464 @@ function escapeMaintenanceReportHtml(
 }
 
 /* =========================================================
+   CURRENT MAINTENANCE REPORT REVIEW
+========================================================= */
+
+let currentMaintenanceReportReview =
+  null;
+
+
+/* =========================================================
+   OPEN MAINTENANCE REPORT REVIEW
+========================================================= */
+
+function openMaintenanceReportReview(
+  report
+) {
+
+  if (!report) {
+    return;
+  }
+
+
+  currentMaintenanceReportReview =
+    report;
+
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportReviewOverlay"
+    );
+
+
+  if (!overlay) {
+    return;
+  }
+
+
+  const code =
+    report.report_code ||
+    `MR-${String(
+      report.id
+    ).padStart(5, "0")}`;
+
+
+  const asset =
+    report.asset_name ||
+    report.asset_model ||
+    "—";
+
+
+  const title =
+    document.getElementById(
+      "maintenanceReportReviewTitle"
+    );
+
+
+  const status =
+    document.getElementById(
+      "maintenanceReportReviewStatus"
+    );
+
+
+  const assetEl =
+    document.getElementById(
+      "maintenanceReportReviewAsset"
+    );
+
+
+  const reporter =
+    document.getElementById(
+      "maintenanceReportReviewReporter"
+    );
+
+
+  const issue =
+    document.getElementById(
+      "maintenanceReportReviewIssue"
+    );
+
+
+  const comment =
+    document.getElementById(
+      "maintenanceReportReviewComment"
+    );
+
+
+  const meta =
+    document.getElementById(
+      "maintenanceReportReviewMeta"
+    );
+
+
+  if (title) {
+
+    title.textContent =
+      `${code} — Maintenance Review`;
+
+  }
+
+
+  if (status) {
+
+    status.textContent =
+      String(
+        report.status ||
+        "UNDER_REVIEW"
+      )
+        .replace(
+          /_/g,
+          " "
+        );
+
+  }
+
+
+  if (assetEl) {
+
+    assetEl.textContent =
+      asset;
+
+  }
+
+
+  if (reporter) {
+
+    reporter.textContent =
+      report.reported_by ||
+      "—";
+
+  }
+
+
+  if (issue) {
+
+    issue.textContent =
+      report.description ||
+      "—";
+
+  }
+
+
+  if (comment) {
+
+    comment.value =
+      report.maintenance_comment ||
+      "";
+
+  }
+
+
+  if (meta) {
+
+    const reviewedBy =
+      report.reviewed_by ||
+      "—";
+
+
+    const reviewedAt =
+      report.reviewed_at
+        ? new Date(
+            report.reviewed_at
+          )
+        : null;
+
+
+    const reviewedAtText =
+      reviewedAt &&
+      !Number.isNaN(
+        reviewedAt.getTime()
+      )
+        ? reviewedAt.toLocaleString(
+            "el-GR"
+          )
+        : "—";
+
+
+    meta.textContent =
+      `Reviewed by ${reviewedBy} · ${reviewedAtText}`;
+
+  }
+
+
+  overlay.style.display =
+    "flex";
+
+}
+
+/* =========================================================
+   CLOSE REVIEW MODAL
+========================================================= */
+
+function closeMaintenanceReportReview() {
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportReviewOverlay"
+    );
+
+
+  if (overlay) {
+
+    overlay.style.display =
+      "none";
+
+  }
+
+
+  currentMaintenanceReportReview =
+    null;
+
+}
+
+/* =========================================================
+   SAVE MAINTENANCE COMMENT
+========================================================= */
+
+async function saveMaintenanceReportComment() {
+
+  const report =
+    currentMaintenanceReportReview;
+
+
+  if (!report) {
+    return;
+  }
+
+
+  const commentInput =
+    document.getElementById(
+      "maintenanceReportReviewComment"
+    );
+
+
+  const comment =
+    String(
+      commentInput?.value || ""
+    ).trim();
+
+
+  if (!comment) {
+
+    alert(
+      "Maintenance Comment is required."
+    );
+
+    return;
+
+  }
+
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${report.id}/comment`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            technician_id:
+              technicianId,
+
+            maintenance_comment:
+              comment
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to save Maintenance Comment"
+      );
+
+    }
+
+
+    await loadMaintenanceReportsQueue();
+
+
+    currentMaintenanceReportReview =
+      data.report;
+
+
+    alert(
+      "Maintenance Comment saved."
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "SAVE MAINTENANCE COMMENT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Maintenance Comment could not be saved."
+    );
+
+  }
+
+}
+
+/* =========================================================
+   CLOSE REPORT — NO ACTION
+========================================================= */
+
+async function closeMaintenanceReportNoAction() {
+
+  const report =
+    currentMaintenanceReportReview;
+
+
+  if (!report) {
+    return;
+  }
+
+
+  const commentInput =
+    document.getElementById(
+      "maintenanceReportReviewComment"
+    );
+
+
+  const comment =
+    String(
+      commentInput?.value || ""
+    ).trim();
+
+
+  if (!comment) {
+
+    alert(
+      "Maintenance Comment is required before closing the Report."
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "Close this Production Report with no Maintenance action?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${report.id}/close-no-action`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            technician_id:
+              technicianId,
+
+            maintenance_comment:
+              comment
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to close Production Report"
+      );
+
+    }
+
+
+    closeMaintenanceReportReview();
+
+
+    await loadMaintenanceReportsQueue();
+
+
+    if (
+      typeof loadMaintenanceReportsBadge ===
+      "function"
+    ) {
+
+      await loadMaintenanceReportsBadge();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "CLOSE MAINTENANCE REPORT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Production Report could not be closed."
+    );
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
@@ -2470,6 +2935,97 @@ document.addEventListener(
 
     startMaintenanceReportReview(
       reportId
+    );
+
+  }
+);
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    document
+      .getElementById(
+        "saveMaintenanceReportCommentBtn"
+      )
+      ?.addEventListener(
+        "click",
+        saveMaintenanceReportComment
+      );
+
+
+    document
+      .getElementById(
+        "closeMaintenanceReportNoActionBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeMaintenanceReportNoAction
+      );
+
+
+    document
+      .getElementById(
+        "cancelMaintenanceReportReviewBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeMaintenanceReportReview
+      );
+
+  }
+);
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".maintenance-report-open-review-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const reportId =
+      Number(
+        button.dataset.reportId
+      );
+
+
+    if (
+      !Number.isInteger(reportId)
+    ) {
+      return;
+    }
+
+
+    const report =
+      window.currentMaintenanceReportsQueue
+        ?.find(
+          item =>
+            Number(item.id) ===
+            reportId
+        );
+
+
+    if (!report) {
+
+      console.error(
+        "Maintenance Report not found in queue:",
+        reportId
+      );
+
+      return;
+    }
+
+
+    openMaintenanceReportReview(
+      report
     );
 
   }
