@@ -67,60 +67,77 @@ async function loadReportingAssets() {
     `;
 
 
-    assets.forEach(asset => {
+    /* =====================
+       SORT BY ASSET NAME
+    ===================== */
 
-      const option =
-        document.createElement(
-          "option"
+    assets
+      .sort((a, b) => {
+
+        const nameA =
+          String(
+            a.name ||
+            a.model ||
+            ""
+          );
+
+        const nameB =
+          String(
+            b.name ||
+            b.model ||
+            ""
+          );
+
+
+        return nameA.localeCompare(
+          nameB,
+          "el",
+          {
+            sensitivity: "base"
+          }
         );
 
+      })
+      .forEach(asset => {
 
-      option.value =
-        String(
-          asset.id
-        );
-
-
-      const assetName =
-        String(
-          asset.name ||
-          asset.model ||
-          "Unnamed Asset"
-        ).trim();
+        const option =
+          document.createElement(
+            "option"
+          );
 
 
-      const serial =
-        String(
-          asset.serial_number ||
-          ""
-        ).trim();
+        option.value =
+          String(
+            asset.id
+          );
 
 
-      const line =
-        String(
-          asset.line_code ||
-          asset.line_name ||
-          ""
-        ).trim();
+        const assetName =
+          String(
+            asset.name ||
+            asset.model ||
+            "Unnamed Asset"
+          ).trim();
 
 
-      option.textContent =
-        [
-          line,
-          assetName,
+        const serial =
+          String(
+            asset.serial_number ||
+            ""
+          ).trim();
+
+
+        option.textContent =
           serial
-            ? `| ${serial}`
-            : ""
-        ]
-          .filter(Boolean)
-          .join(" ");
+            ? `${assetName} | ${serial}`
+            : assetName;
 
 
-      select.appendChild(
-        option
-      );
+        select.appendChild(
+          option
+        );
 
-    });
+      });
 
 
     select.disabled = false;
