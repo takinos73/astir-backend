@@ -1337,6 +1337,17 @@
     <!-- NEW BREAKDOWN MANAGEMENT -->
     <button class="main-tab" data-tab="breakdowns">Incidents</button>
 
+    <button id="maintenanceReportsTabBtn" class="main-tab maintenance-team-only" data-tab="maintenance-reports">
+      Production Reports
+      <span
+        id="maintenanceReportsBadge"
+        class="maintenance-reports-badge"
+        style="display:none;"
+      >
+        0
+      </span>
+    </button>
+
     <button class="main-tab" data-tab="technicians">👷Technicians</button>  
 
     <button class="main-tab" data-tab="reports">Reports</button>
@@ -2087,6 +2098,50 @@
 
     </section>
 
+
+  </div>
+
+  <!-- =========================================================
+      MAINTENANCE TEAM — PRODUCTION REPORTS
+  ========================================================= -->
+
+  <div
+    id="tab-maintenance-reports"
+    class="tab-panel"
+    style="display:none;"
+  >
+
+    <div class="management-header">
+
+      <div>
+
+        <h2 class="management-title">
+          Production Reports
+        </h2>
+
+        <div class="management-subtitle">
+          Reports submitted by Shift Foremen for Maintenance review
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="panel">
+
+      <div
+        id="maintenanceReportsQueue"
+        style="
+          padding:20px;
+          text-align:center;
+          opacity:0.7;
+        "
+      >
+        Maintenance Reports queue
+      </div>
+
+    </div>
 
   </div>
 

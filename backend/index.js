@@ -16234,6 +16234,58 @@ app.get( "/maintenance-reports/my", async (req, res) => {
   }
 );
 
+/* =========================================================
+   GET NEW MAINTENANCE REPORT COUNT
+   GET /maintenance-reports/new-count
+
+   Returns only the number of NEW Production Reports.
+
+   IMPORTANT:
+   - READ ONLY.
+   - Used for Maintenance Team tab badge.
+========================================================= */
+
+app.get("/maintenance-reports/new-count", async (req, res) => {
+
+    try {
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS new_count
+
+          FROM maintenance_reports
+
+          WHERE status = 'NEW'
+          `
+        );
+
+
+      return res.json({
+        new_count:
+          result.rows[0]?.new_count || 0
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /maintenance-reports/new-count ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to load new Maintenance Report count"
+      });
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
