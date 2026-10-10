@@ -3597,6 +3597,93 @@ async function createPlannedTaskFromMaintenanceReport() {
 }
 
 /* =========================================================
+   SHOW BREAKDOWN CONVERSION SECTION
+========================================================= */
+
+function showMaintenanceReportBreakdownSection() {
+
+  const breakdownSection =
+    document.getElementById(
+      "maintenanceReportBreakdownSection"
+    );
+
+  const plannedSection =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+
+  if (plannedSection) {
+
+    plannedSection.style.display =
+      "none";
+
+  }
+
+
+  if (breakdownSection) {
+
+    breakdownSection.style.display =
+      "block";
+
+
+    breakdownSection.scrollIntoView({
+      behavior:
+        "smooth",
+
+      block:
+        "nearest"
+    });
+
+  }
+
+}
+
+
+/* =========================================================
+   SHOW PLANNED TASK CONVERSION SECTION
+========================================================= */
+
+function showMaintenanceReportPlannedSection() {
+
+  const breakdownSection =
+    document.getElementById(
+      "maintenanceReportBreakdownSection"
+    );
+
+  const plannedSection =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+
+  if (breakdownSection) {
+
+    breakdownSection.style.display =
+      "none";
+
+  }
+
+
+  if (plannedSection) {
+
+    plannedSection.style.display =
+      "block";
+
+
+    plannedSection.scrollIntoView({
+      behavior:
+        "smooth",
+
+      block:
+        "nearest"
+    });
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
