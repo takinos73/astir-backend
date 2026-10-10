@@ -1092,7 +1092,8 @@ document.addEventListener(
   () => {
 
     loadReportingAssets();
-
+    
+    loadProductionReports();
 
     const submitBtn =
       document.getElementById(
