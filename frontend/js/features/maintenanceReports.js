@@ -1854,6 +1854,7 @@ function renderMaintenanceReportsQueue(
         <th>Reported By</th>
         <th>Status</th>
         <th>Reported</th>
+        <th>Action</th>
       </tr>
     </thead>
   `;
@@ -1975,6 +1976,73 @@ function renderMaintenanceReportsQueue(
     }
 
 
+    /* =====================
+       ACTION
+    ===================== */
+
+    const reviewedBy =
+      String(
+        report.reviewed_by || ""
+      ).trim();
+
+
+    let actionHtml =
+      "";
+
+
+    if (
+      status === "NEW"
+    ) {
+
+      actionHtml = `
+        <button
+          type="button"
+          class="btn-table maintenance-report-start-review-btn"
+          data-report-id="${report.id}"
+        >
+          Start Review
+        </button>
+      `;
+
+    }
+    else if (
+      status === "UNDER_REVIEW"
+    ) {
+
+      actionHtml = `
+        <div class="maintenance-report-reviewing">
+          Under Review
+
+          ${
+            reviewedBy
+              ? `
+                <div class="maintenance-report-subtext">
+                  ${escapeMaintenanceReportHtml(
+                    reviewedBy
+                  )}
+                </div>
+              `
+              : ""
+          }
+        </div>
+      `;
+
+    }
+    else {
+
+      actionHtml = `
+        <span class="maintenance-report-subtext">
+          —
+        </span>
+      `;
+
+    }
+
+
+    /* =====================
+       ROW HTML
+    ===================== */
+
     tr.innerHTML = `
       <td>
         <strong>
@@ -2055,6 +2123,10 @@ function renderMaintenanceReportsQueue(
             : "—"
         }
       </td>
+
+      <td class="maintenance-report-action-cell">
+        ${actionHtml}
+      </td>
     `;
 
 
@@ -2078,6 +2150,136 @@ function renderMaintenanceReportsQueue(
   container.appendChild(
     wrapper
   );
+
+}
+
+/* =========================================================
+   START MAINTENANCE REPORT REVIEW
+========================================================= */
+
+async function startMaintenanceReportReview(
+  reportId
+) {
+
+  const id =
+    Number(reportId);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return;
+  }
+
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+
+    alert(
+      "Unable to identify logged Maintenance user."
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `Start Maintenance review for MR-${String(
+        id
+      ).padStart(5, "0")}?`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${id}/start-review`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            technician_id:
+              technicianId
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to start review"
+      );
+
+    }
+
+
+    /* =====================
+       REFRESH QUEUE
+    ===================== */
+
+    await loadMaintenanceReportsQueue();
+
+
+    /* =====================
+       REFRESH TAB BADGE
+    ===================== */
+
+    if (
+      typeof loadMaintenanceReportsBadge ===
+      "function"
+    ) {
+
+      await loadMaintenanceReportsBadge();
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "START MAINTENANCE REPORT REVIEW ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Maintenance Report review could not be started."
+    );
+
+  }
 
 }
 
@@ -2241,6 +2443,34 @@ document.addEventListener(
       initMaintenanceReporting();
 
     }
+
+  }
+);
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".maintenance-report-start-review-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const reportId =
+      Number(
+        button.dataset.reportId
+      );
+
+
+    startMaintenanceReportReview(
+      reportId
+    );
 
   }
 );

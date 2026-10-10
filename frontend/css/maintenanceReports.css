@@ -1416,3 +1416,25 @@
   color:
     #cbd5e1;
 }
+
+#tab-maintenance-reports
+.maintenance-report-action-cell {
+  white-space: nowrap;
+}
+
+
+#tab-maintenance-reports
+.maintenance-report-start-review-btn {
+  min-width: 105px;
+}
+
+
+#tab-maintenance-reports
+.maintenance-report-reviewing {
+  font-size: 0.82rem;
+  font-weight: 650;
+
+  color:
+    #fcd34d;
+}
+
