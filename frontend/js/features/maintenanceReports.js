@@ -68,76 +68,153 @@ async function loadReportingAssets() {
 
 
     /* =====================
-       SORT BY ASSET NAME
+       GROUP BY LINE
     ===================== */
 
-    assets
-      .sort((a, b) => {
-
-        const nameA =
-          String(
-            a.name ||
-            a.model ||
-            ""
-          );
-
-        const nameB =
-          String(
-            b.name ||
-            b.model ||
-            ""
-          );
+    const groups =
+      new Map();
 
 
-        return nameA.localeCompare(
-          nameB,
-          "el",
-          {
-            sensitivity: "base"
-          }
+    assets.forEach(asset => {
+
+      const lineLabel =
+        String(
+          asset.line_code ||
+          asset.line_name ||
+          "Other"
+        ).trim();
+
+
+      if (!groups.has(lineLabel)) {
+
+        groups.set(
+          lineLabel,
+          []
         );
 
-      })
-      .forEach(asset => {
+      }
 
-        const option =
+
+      groups
+        .get(lineLabel)
+        .push(asset);
+
+    });
+
+
+    /* =====================
+       SORT LINE GROUPS
+    ===================== */
+
+    const sortedGroups =
+      Array.from(
+        groups.entries()
+      ).sort(
+        ([lineA], [lineB]) =>
+          lineA.localeCompare(
+            lineB,
+            "el",
+            {
+              sensitivity: "base",
+              numeric: true
+            }
+          )
+      );
+
+
+    /* =====================
+       BUILD OPTIONS
+    ===================== */
+
+    sortedGroups.forEach(
+      ([lineLabel, lineAssets]) => {
+
+        const optgroup =
           document.createElement(
-            "option"
+            "optgroup"
           );
 
 
-        option.value =
-          String(
-            asset.id
-          );
+        optgroup.label =
+          lineLabel;
 
 
-        const assetName =
-          String(
-            asset.name ||
-            asset.model ||
-            "Unnamed Asset"
-          ).trim();
+        lineAssets
+          .sort((a, b) => {
+
+            const nameA =
+              String(
+                a.name ||
+                a.model ||
+                ""
+              );
+
+            const nameB =
+              String(
+                b.name ||
+                b.model ||
+                ""
+              );
 
 
-        const serial =
-          String(
-            asset.serial_number ||
-            ""
-          ).trim();
+            return nameA.localeCompare(
+              nameB,
+              "el",
+              {
+                sensitivity: "base",
+                numeric: true
+              }
+            );
+
+          })
+          .forEach(asset => {
+
+            const option =
+              document.createElement(
+                "option"
+              );
 
 
-        option.textContent =
-          serial
-            ? `${assetName} | ${serial}`
-            : assetName;
+            option.value =
+              String(
+                asset.id
+              );
+
+
+            const assetName =
+              String(
+                asset.name ||
+                asset.model ||
+                "Unnamed Asset"
+              ).trim();
+
+
+            const serial =
+              String(
+                asset.serial_number ||
+                ""
+              ).trim();
+
+
+            option.textContent =
+              serial
+                ? `${assetName} | ${serial}`
+                : assetName;
+
+
+            optgroup.appendChild(
+              option
+            );
+
+          });
 
 
         select.appendChild(
-          option
+          optgroup
         );
 
-      });
+      }
+    );
 
 
     select.disabled = false;
@@ -163,7 +240,6 @@ async function loadReportingAssets() {
   }
 
 }
-
 
 /* =====================
    RESET REPORT FORM
