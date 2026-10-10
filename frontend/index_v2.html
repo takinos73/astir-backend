@@ -1639,7 +1639,13 @@
 
   <!-- =========================================================
       PRODUCTION REPORTING
-      Shift Foreman reporting view
+      Shift Foreman reporting workspace
+
+      IMPORTANT:
+      - Reporting only
+      - Does NOT create Breakdown automatically
+      - Does NOT create Maintenance Task automatically
+      - Maintenance reviews and classifies each Report
   ========================================================= -->
 
   <div
@@ -1648,19 +1654,19 @@
     style="display:none;"
   >
 
-    <!-- =====================
-        HEADER
-    ===================== -->
+    <!-- =====================================================
+        PAGE HEADER
+    ====================================================== -->
 
-    <div class="management-header">
+    <div class="reporting-page-header">
 
       <div>
 
-        <h2 class="management-title">
+        <h2 class="reporting-page-title">
           Production Reporting
         </h2>
 
-        <div class="management-subtitle">
+        <div class="reporting-page-subtitle">
           Report production issues to the Maintenance Department
         </div>
 
@@ -1669,154 +1675,383 @@
     </div>
 
 
-    <!-- =====================
-        REPORT FORM
-    ===================== -->
+    <!-- =====================================================
+        TOP WORKSPACE
+    ====================================================== -->
 
-    <div class="panel">
-
-      <div class="reporting-form-grid">
-
-        <!-- ASSET -->
-        <div class="field">
-
-          <label for="reportAsset">
-            Asset
-          </label>
-
-          <select
-            id="reportAsset"
-            style="width:100%;"
-          >
-            <option value="">
-              Select Asset
-            </option>
-          </select>
-
-        </div>
+    <div class="reporting-top-grid">
 
 
-        <!-- CATEGORY -->
-        <div class="field">
+      <!-- ===================================================
+          LEFT — NEW REPORT
+      ==================================================== -->
 
-          <label for="reportCategory">
-            Category
-          </label>
+      <section class="reporting-card reporting-form-card">
 
-          <select
-            id="reportCategory"
-            style="width:100%;"
-          >
-            <option value="">
-              Select Category
-            </option>
+        <div class="reporting-card-header">
 
-            <option value="MECHANICAL">
-              Mechanical
-            </option>
+          <div>
 
-            <option value="ELECTRICAL">
-              Electrical
-            </option>
+            <h3>
+              Report New Issue
+            </h3>
 
-            <option value="QUALITY">
-              Quality
-            </option>
+            <div class="reporting-card-subtitle">
+              Use this form only for new issues not already listed below.
+            </div>
 
-            <option value="OTHER">
-              Other
-            </option>
-          </select>
+          </div>
 
         </div>
 
 
-        <!-- PRIORITY -->
-        <div class="field">
+        <div class="reporting-form-grid">
 
-          <label for="reportPriority">
-            Priority
-          </label>
 
-          <select
-            id="reportPriority"
-            style="width:100%;"
-          >
-            <option value="NORMAL">
-              Normal
-            </option>
+          <!-- ASSET -->
 
-            <option value="URGENT">
-              Urgent
-            </option>
-          </select>
+          <div class="field">
+
+            <label for="reportAsset">
+              Asset
+              <span class="report-required">*</span>
+            </label>
+
+            <select
+              id="reportAsset"
+              style="width:100%;"
+            >
+              <option value="">
+                Select Asset
+              </option>
+            </select>
+
+          </div>
+
+
+          <!-- CATEGORY -->
+
+          <div class="field">
+
+            <label for="reportCategory">
+              Category
+              <span class="report-required">*</span>
+            </label>
+
+            <select
+              id="reportCategory"
+              style="width:100%;"
+            >
+
+              <option value="">
+                Select Category
+              </option>
+
+              <option value="MECHANICAL">
+                Mechanical
+              </option>
+
+              <option value="ELECTRICAL">
+                Electrical
+              </option>
+
+              <option value="QUALITY">
+                Quality
+              </option>
+
+              <option value="OTHER">
+                Other
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- PRIORITY -->
+
+          <div class="field">
+
+            <label for="reportPriority">
+              Priority
+              <span class="report-required">*</span>
+            </label>
+
+            <select
+              id="reportPriority"
+              style="width:100%;"
+            >
+
+              <option value="NORMAL">
+                Normal
+              </option>
+
+              <option value="URGENT">
+                Urgent
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- PRODUCTION STOPPED -->
+
+          <div class="field">
+
+            <label for="reportProductionStopped">
+              Production Stopped
+              <span class="report-required">*</span>
+            </label>
+
+            <select
+              id="reportProductionStopped"
+              style="width:100%;"
+            >
+
+              <option value="false">
+                No
+              </option>
+
+              <option value="true">
+                Yes
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- DESCRIPTION -->
+
+          <div class="field full-width">
+
+            <label for="reportDescription">
+              Description
+              <span class="report-required">*</span>
+            </label>
+
+            <textarea
+              id="reportDescription"
+              maxlength="1000"
+              rows="5"
+              placeholder="Describe what happened, what you observed, any error messages, abnormal noise, vibration, leakage, etc..."
+            ></textarea>
+
+            <div class="report-description-footer">
+
+              <span>
+                Describe the symptom — Maintenance will classify the issue.
+              </span>
+
+              <span id="reportDescriptionCount">
+                0 / 1000
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- SUBMIT -->
+
+          <div class="field full-width reporting-submit-row">
+
+            <button
+              id="submitMaintenanceReportBtn"
+              type="button"
+              class="btn-primary reporting-submit-btn"
+            >
+              Submit Report
+            </button>
+
+          </div>
+
 
         </div>
 
+      </section>
 
-        <!-- PRODUCTION STOPPED -->
-        <div class="field">
 
-          <label for="reportProductionStopped">
-            Production Stopped
-          </label>
+      <!-- ===================================================
+          RIGHT — GUIDANCE / SUMMARY
+      ==================================================== -->
 
-          <select
-            id="reportProductionStopped"
-            style="width:100%;"
-          >
-            <option value="false">
-              No
-            </option>
+      <div class="reporting-side-column">
 
-            <option value="true">
-              Yes
-            </option>
-          </select>
+
+        <!-- BEFORE YOU REPORT -->
+
+        <section class="reporting-card reporting-guidance-card">
+
+          <div class="reporting-card-header">
+
+            <div>
+
+              <h3>
+                Before You Report
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <div class="reporting-guidance-list">
+
+            <div class="reporting-guidance-item">
+
+              <span class="reporting-guidance-number">
+                1
+              </span>
+
+              <span>
+                Check if the issue is already open in the reports below.
+              </span>
+
+            </div>
+
+
+            <div class="reporting-guidance-item">
+
+              <span class="reporting-guidance-number">
+                2
+              </span>
+
+              <span>
+                Avoid creating a duplicate report for the same machine and issue.
+              </span>
+
+            </div>
+
+
+            <div class="reporting-guidance-item">
+
+              <span class="reporting-guidance-number">
+                3
+              </span>
+
+              <span>
+                Describe clearly what you observed. Maintenance will decide the final classification.
+              </span>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- SHIFT SUMMARY -->
+
+        <section class="reporting-card reporting-summary-card">
+
+          <div class="reporting-card-header">
+
+            <div>
+
+              <h3>
+                Shift Summary
+              </h3>
+
+              <div class="reporting-card-subtitle">
+                Current Production Reports
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="reporting-summary-grid">
+
+
+            <!-- OPEN -->
+
+            <div class="reporting-summary-item">
+
+              <div
+                id="reportSummaryOpen"
+                class="reporting-summary-value"
+              >
+                —
+              </div>
+
+              <div class="reporting-summary-label">
+                Open Reports
+              </div>
+
+            </div>
+
+
+            <!-- URGENT -->
+
+            <div class="reporting-summary-item urgent">
+
+              <div
+                id="reportSummaryUrgent"
+                class="reporting-summary-value"
+              >
+                —
+              </div>
+
+              <div class="reporting-summary-label">
+                Urgent
+              </div>
+
+            </div>
+
+
+            <!-- STOPPED -->
+
+            <div class="reporting-summary-item stopped">
+
+              <div
+                id="reportSummaryStopped"
+                class="reporting-summary-value"
+              >
+                —
+              </div>
+
+              <div class="reporting-summary-label">
+                Production Stopped
+              </div>
+
+            </div>
+
+
+          </div>
+
+        </section>
+
+
+        <!-- IMPORTANT INFO -->
+
+        <div class="reporting-info-note">
+
+          <strong>
+            Maintenance Review
+          </strong>
+
+          <span>
+            A Production Report does not create an Incident automatically.
+            The Maintenance team reviews each report and decides the required action.
+          </span>
 
         </div>
 
-
-        <!-- DESCRIPTION -->
-        <div class="field full-width">
-
-          <label for="reportDescription">
-            Description
-          </label>
-
-          <textarea
-            id="reportDescription"
-            rows="5"
-            placeholder="Describe what happened or what you observed..."
-            style="width:100%;"
-          ></textarea>
-
-        </div>
-
-
-        <!-- ACTION -->
-        <div class="field full-width">
-
-          <button
-            id="submitMaintenanceReportBtn"
-            type="button"
-            class="btn-primary"
-          >
-            Submit Report
-          </button>
-
-        </div>
 
       </div>
 
     </div>
 
-    <!-- =========================================================
-        PRODUCTION REPORTS
-        Shared Shift Foreman report history
-    ========================================================= -->
 
-    <div class="reporting-reports-section">
+    <!-- =====================================================
+        PRODUCTION REPORTS
+        Current renderer remains connected for now.
+    ====================================================== -->
+
+    <section class="reporting-card reporting-reports-section">
 
       <div class="reporting-reports-header">
 
@@ -1831,6 +2066,7 @@
           </div>
 
         </div>
+
 
         <div
           id="productionReportsCount"
@@ -1849,10 +2085,10 @@
         Loading reports...
       </div>
 
-    </div>
+    </section>
+
 
   </div>
-
 
 
   <!-- =====================
