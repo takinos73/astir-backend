@@ -1595,3 +1595,58 @@
     #86efac;
 }
 
+/* =========================================================
+   PLANNED TASK CONVERSION
+========================================================= */
+
+.maintenance-report-planned-section {
+  margin-top: 16px;
+  padding-top: 14px;
+
+  border-top:
+    1px solid rgba(148, 163, 184, 0.14);
+}
+
+
+.maintenance-report-planned-heading {
+  margin-bottom: 10px;
+
+  font-size: 12px;
+  font-weight: 750;
+
+  color:
+    rgba(226, 232, 240, 0.92);
+}
+
+
+.maintenance-report-planned-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+
+.maintenance-report-planned-btn {
+  background:
+    rgba(59, 130, 246, 0.14);
+
+  border-color:
+    rgba(96, 165, 250, 0.34);
+
+  color:
+    #93c5fd;
+}
+
+
+@media (max-width: 700px) {
+
+  .maintenance-report-planned-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+}
+

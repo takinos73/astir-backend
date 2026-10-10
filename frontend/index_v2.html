@@ -6883,6 +6883,130 @@
 
       </div>
 
+      <!-- =====================
+          PLANNED TASK CONVERSION
+      ===================== -->
+
+      <div class="maintenance-report-planned-section">
+
+        <div class="maintenance-report-planned-heading">
+          Convert to Planned Task
+        </div>
+
+
+        <div class="field">
+
+          <label for="maintenanceReportPlannedTask">
+            Task
+          </label>
+
+          <input
+            id="maintenanceReportPlannedTask"
+            type="text"
+            maxlength="500"
+            placeholder="Enter planned maintenance task..."
+          >
+
+        </div>
+
+
+        <div class="maintenance-report-planned-grid">
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedDue">
+              Due Date
+            </label>
+
+            <input
+              id="maintenanceReportPlannedDue"
+              type="datetime-local"
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedDuration">
+              Estimated Duration (min)
+            </label>
+
+            <input
+              id="maintenanceReportPlannedDuration"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="e.g. 30"
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedSection">
+              Section
+            </label>
+
+            <input
+              id="maintenanceReportPlannedSection"
+              type="text"
+              maxlength="150"
+              placeholder="Section"
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedUnit">
+              Unit
+            </label>
+
+            <input
+              id="maintenanceReportPlannedUnit"
+              type="text"
+              maxlength="150"
+              placeholder="Unit"
+            >
+
+          </div>
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedType">
+              Type
+            </label>
+
+            <input
+              id="maintenanceReportPlannedType"
+              type="text"
+              maxlength="100"
+              placeholder="e.g. CHECK"
+            >
+
+          </div>
+
+        </div>
+
+        <div class="field">
+
+          <label for="maintenanceReportPlannedNotes">
+            Notes
+          </label>
+
+          <textarea
+            id="maintenanceReportPlannedNotes"
+            rows="3"
+            placeholder="Optional notes..."
+          ></textarea>
+
+        </div>
+
+      </div>
+
 
       <!-- =====================
           REVIEW META
@@ -6909,7 +7033,6 @@
           Save Comment
         </button>
 
-
         <button
           id="createBreakdownFromReportBtn"
           class="btn-table maintenance-report-breakdown-btn"
@@ -6917,7 +7040,6 @@
         >
           Create Breakdown
         </button>
-
 
         <button
           id="closeMaintenanceReportNoActionBtn"
@@ -6927,6 +7049,13 @@
           Close / No Action
         </button>
 
+        <button
+          id="createPlannedTaskFromReportBtn"
+          class="btn-table maintenance-report-planned-btn"
+          type="button"
+        >
+          Create Planned Task
+        </button>
 
         <button
           id="cancelMaintenanceReportReviewBtn"

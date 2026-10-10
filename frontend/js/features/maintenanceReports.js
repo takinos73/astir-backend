@@ -2492,7 +2492,7 @@ function openMaintenanceReportReview(report) {
 
   }
 
-    const breakdownTitle =
+  const breakdownTitle =
     document.getElementById(
       "maintenanceReportBreakdownTitle"
     );
@@ -2502,6 +2502,70 @@ function openMaintenanceReportReview(report) {
 
     breakdownTitle.value = "";
 
+  }
+
+  const plannedTask =
+    document.getElementById(
+      "maintenanceReportPlannedTask"
+    );
+
+  const plannedDue =
+    document.getElementById(
+      "maintenanceReportPlannedDue"
+    );
+
+  const plannedDuration =
+    document.getElementById(
+      "maintenanceReportPlannedDuration"
+    );
+
+  const plannedSection =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+  const plannedUnit =
+    document.getElementById(
+      "maintenanceReportPlannedUnit"
+    );
+
+  const plannedType =
+    document.getElementById(
+      "maintenanceReportPlannedType"
+    );
+
+  const plannedNotes =
+    document.getElementById(
+      "maintenanceReportPlannedNotes"
+    );
+
+
+  if (plannedTask) {
+    plannedTask.value = "";
+  }
+
+  if (plannedDue) {
+    plannedDue.value = "";
+  }
+
+  if (plannedDuration) {
+    plannedDuration.value = "";
+  }
+
+  if (plannedSection) {
+    plannedSection.value = "";
+  }
+
+  if (plannedUnit) {
+    plannedUnit.value = "";
+  }
+
+  if (plannedType) {
+    plannedType.value = "";
+  }
+
+  if (plannedNotes) {
+    plannedNotes.value = "";
   }
 
 
@@ -3072,6 +3136,379 @@ async function createBreakdownFromMaintenanceReport() {
 }
 
 /* =========================================================
+   CONVERT MAINTENANCE REPORT TO PLANNED TASK
+========================================================= */
+
+async function createPlannedTaskFromMaintenanceReport() {
+
+  const report =
+    currentMaintenanceReportReview;
+
+
+  if (!report) {
+    return;
+  }
+
+
+  const taskInput =
+    document.getElementById(
+      "maintenanceReportPlannedTask"
+    );
+
+  const dueInput =
+    document.getElementById(
+      "maintenanceReportPlannedDue"
+    );
+
+  const durationInput =
+    document.getElementById(
+      "maintenanceReportPlannedDuration"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "maintenanceReportPlannedUnit"
+    );
+
+  const typeInput =
+    document.getElementById(
+      "maintenanceReportPlannedType"
+    );
+
+  const notesInput =
+    document.getElementById(
+      "maintenanceReportPlannedNotes"
+    );
+
+  const commentInput =
+    document.getElementById(
+      "maintenanceReportReviewComment"
+    );
+
+
+  const task =
+    String(
+      taskInput?.value || ""
+    ).trim();
+
+
+  const dueRaw =
+    String(
+      dueInput?.value || ""
+    ).trim();
+
+
+  const durationRaw =
+    String(
+      durationInput?.value || ""
+    ).trim();
+
+
+  const section =
+    String(
+      sectionInput?.value || ""
+    ).trim();
+
+
+  const unit =
+    String(
+      unitInput?.value || ""
+    ).trim();
+
+
+  const type =
+    String(
+      typeInput?.value || ""
+    ).trim();
+
+
+  const notes =
+    String(
+      notesInput?.value || ""
+    ).trim();
+
+
+  const maintenanceComment =
+    String(
+      commentInput?.value || ""
+    ).trim();
+
+
+  /* =====================
+     VALIDATION
+  ===================== */
+
+  if (!task) {
+
+    alert(
+      "Task description is required."
+    );
+
+    taskInput?.focus();
+
+    return;
+
+  }
+
+
+  if (!dueRaw) {
+
+    alert(
+      "Due Date is required."
+    );
+
+    dueInput?.focus();
+
+    return;
+
+  }
+
+
+  const dueDate =
+    new Date(dueRaw);
+
+
+  if (
+    Number.isNaN(
+      dueDate.getTime()
+    )
+  ) {
+
+    alert(
+      "Invalid Due Date."
+    );
+
+    return;
+
+  }
+
+
+  let durationMin =
+    null;
+
+
+  if (durationRaw !== "") {
+
+    durationMin =
+      Number(
+        durationRaw
+      );
+
+
+    if (
+      !Number.isFinite(durationMin) ||
+      durationMin < 0
+    ) {
+
+      alert(
+        "Estimated Duration must be a valid positive number."
+      );
+
+      durationInput?.focus();
+
+      return;
+
+    }
+
+  }
+
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+
+    alert(
+      "Logged Maintenance user information is missing."
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "Create a Planned Task from this Production Report?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const button =
+    document.getElementById(
+      "createPlannedTaskFromReportBtn"
+    );
+
+
+  const originalText =
+    button?.textContent;
+
+
+  if (button) {
+
+    button.disabled = true;
+
+    button.textContent =
+      "Creating...";
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${report.id}/convert-to-planned-task`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            technician_id:
+              technicianId,
+
+            task,
+
+            section:
+              section || null,
+
+            unit:
+              unit || null,
+
+            type:
+              type || null,
+
+            impact:
+              "normal",
+
+            due_date:
+              dueDate.toISOString(),
+
+            duration_min:
+              durationMin,
+
+            notes:
+              notes || null,
+
+            maintenance_comment:
+              maintenanceComment
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to create Planned Task"
+      );
+
+    }
+
+
+    closeMaintenanceReportReview();
+
+
+    await loadMaintenanceReportsQueue();
+
+
+    if (
+      typeof loadMaintenanceReportsBadge ===
+      "function"
+    ) {
+
+      await loadMaintenanceReportsBadge();
+
+    }
+
+
+    if (
+      typeof renderTable ===
+      "function"
+    ) {
+
+      renderTable();
+
+    }
+
+
+    const taskId =
+      data?.task?.id;
+
+
+    const message =
+      taskId
+        ? `Planned Task #${taskId} created successfully.`
+        : "Planned Task created successfully.";
+
+
+    alert(
+      message
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "CREATE PLANNED TASK FROM MAINTENANCE REPORT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Planned Task could not be created."
+    );
+
+
+  } finally {
+
+    if (button) {
+
+      button.disabled = false;
+
+      button.textContent =
+        originalText ||
+        "Create Planned Task";
+
+    }
+
+  }
+
+}
+
+/* =========================================================
    INIT MAINTENANCE REPORTING
 ========================================================= */
 
@@ -3262,6 +3699,7 @@ document.addEventListener(
         closeMaintenanceReportReview
       );
 
+
     document
       .getElementById(
         "createBreakdownFromReportBtn"
@@ -3269,6 +3707,16 @@ document.addEventListener(
       ?.addEventListener(
         "click",
         createBreakdownFromMaintenanceReport
+      );
+
+
+    document
+      .getElementById(
+        "createPlannedTaskFromReportBtn"
+      )
+      ?.addEventListener(
+        "click",
+        createPlannedTaskFromMaintenanceReport
       );
 
   }
