@@ -15901,6 +15901,75 @@ app.get("/maintenance-reports", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET REPORTING ASSETS
+   GET /maintenance-reports/assets
+
+   Minimal Asset list for Production Reporting.
+
+   IMPORTANT:
+   - READ ONLY.
+   - Returns only active Assets.
+   - Does NOT expose maintenance data.
+   - Does NOT expose Tasks / Breakdowns / KPIs.
+========================================================= */
+
+app.get("/maintenance-reports/assets", async (req, res) => {
+
+    try {
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            a.id,
+            a.name,
+            a.model,
+            a.serial_number,
+
+            l.id AS line_id,
+            l.code AS line_code,
+            l.name AS line_name
+
+          FROM assets a
+
+          LEFT JOIN lines l
+            ON l.id = a.line_id
+
+          WHERE a.active = true
+
+          ORDER BY
+            COALESCE(l.code, ''),
+            COALESCE(a.name, ''),
+            a.model,
+            a.serial_number
+          `
+        );
+
+
+      return res.json({
+        assets: result.rows
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /maintenance-reports/assets ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to load Reporting Assets"
+      });
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
