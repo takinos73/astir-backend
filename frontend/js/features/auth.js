@@ -472,20 +472,27 @@ function applyRoleUI(role) {
     }
 
 
-    /* ---------------------
-       LOAD REPORTING TAB
-       THROUGH EXISTING
-       TAB LOGIC
-    --------------------- */
-
     if (reportingTab) {
 
       reportingTab.click();
 
     }
 
-  }
 
+    /* ---------------------
+      LOAD REPORTING DATA
+    --------------------- */
+
+    if (
+      typeof initMaintenanceReporting ===
+      "function"
+    ) {
+
+      initMaintenanceReporting();
+
+    }
+
+  }
 
   /* =====================================================
      NORMAL CMMS VIEW

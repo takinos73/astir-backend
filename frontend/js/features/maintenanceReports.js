@@ -1456,30 +1456,102 @@ function renderProductionReports(reports) {
 
 }
 
-/* =====================
-   INIT REPORTING
-===================== */
+/* =========================================================
+   INIT MAINTENANCE REPORTING
+========================================================= */
+
+async function initMaintenanceReporting() {
+
+  const role =
+    String(
+      localStorage.getItem(
+        ROLE_STORAGE_KEY
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  /* =====================
+     SHIFT FOREMAN ONLY
+  ===================== */
+
+  if (
+    role !==
+    "shift_foreman"
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     LOAD REPORTING DATA
+  ===================== */
+
+  await loadReportingAssets();
+
+  await loadProductionReports();
+
+
+  /* =====================
+     SUBMIT BUTTON
+
+     Bind only once.
+  ===================== */
+
+  const submitBtn =
+    document.getElementById(
+      "submitMaintenanceReportBtn"
+    );
+
+
+  if (
+    submitBtn &&
+    submitBtn.dataset.reportHandlerBound !==
+      "true"
+  ) {
+
+    submitBtn.addEventListener(
+      "click",
+      submitMaintenanceReport
+    );
+
+
+    submitBtn.dataset.reportHandlerBound =
+      "true";
+
+  }
+
+}
+
+
+/* =========================================================
+   PAGE LOAD
+
+   Useful only if a valid Shift Foreman
+   session already exists.
+========================================================= */
 
 document.addEventListener(
   "DOMContentLoaded",
   () => {
 
-    loadReportingAssets();
-    
-    loadProductionReports();
+    const role =
+      String(
+        localStorage.getItem(
+          ROLE_STORAGE_KEY
+        ) || ""
+      )
+        .trim()
+        .toLowerCase();
 
-    const submitBtn =
-      document.getElementById(
-        "submitMaintenanceReportBtn"
-      );
 
+    if (
+      role ===
+      "shift_foreman"
+    ) {
 
-    if (submitBtn) {
-
-      submitBtn.addEventListener(
-        "click",
-        submitMaintenanceReport
-      );
+      initMaintenanceReporting();
 
     }
 
