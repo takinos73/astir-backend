@@ -303,7 +303,6 @@ function resetMaintenanceReportForm() {
 
 }
 
-
 /* =====================
    SUBMIT MAINTENANCE REPORT
 ===================== */
@@ -570,6 +569,519 @@ async function submitMaintenanceReport() {
 
 }
 
+/* =========================================================
+   LOAD PRODUCTION REPORTS
+   Shared between all Shift Foremen
+========================================================= */
+
+async function loadProductionReports() {
+
+  const container =
+    document.getElementById(
+      "productionReportsList"
+    );
+
+
+  const count =
+    document.getElementById(
+      "productionReportsCount"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  if (
+    !Number.isInteger(technicianId) ||
+    technicianId <= 0
+  ) {
+
+    container.textContent =
+      "Unable to identify logged user.";
+
+    return;
+
+  }
+
+
+  container.textContent =
+    "Loading reports...";
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/my?technician_id=${technicianId}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Production Reports"
+      );
+
+    }
+
+
+    const reports =
+      Array.isArray(
+        data?.reports
+      )
+        ? data.reports
+        : [];
+
+
+    renderProductionReports(
+      reports
+    );
+
+
+    if (count) {
+
+      count.textContent =
+        `${reports.length} Report${reports.length === 1 ? "" : "s"}`;
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD PRODUCTION REPORTS ERROR:",
+      err
+    );
+
+
+    container.textContent =
+      "Could not load Production Reports.";
+
+  }
+
+}
+
+/* =========================================================
+   RENDER PRODUCTION REPORTS
+========================================================= */
+
+function renderProductionReports(
+  reports
+) {
+
+  const container =
+    document.getElementById(
+      "productionReportsList"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  container.replaceChildren();
+
+
+  if (
+    !Array.isArray(reports) ||
+    reports.length === 0
+  ) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+
+    empty.className =
+      "production-reports-empty";
+
+
+    empty.textContent =
+      "No Production Reports have been submitted yet.";
+
+
+    container.appendChild(
+      empty
+    );
+
+
+    return;
+
+  }
+
+
+  reports.forEach(report => {
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+
+    card.className =
+      "production-report-card";
+
+
+    /* =====================
+       URGENT
+    ===================== */
+
+    if (
+      String(
+        report.priority || ""
+      ).toUpperCase() ===
+      "URGENT"
+    ) {
+
+      card.classList.add(
+        "is-urgent"
+      );
+
+    }
+
+
+    /* =====================
+       PRODUCTION STOPPED
+    ===================== */
+
+    if (
+      report.production_stopped ===
+      true
+    ) {
+
+      card.classList.add(
+        "production-stopped"
+      );
+
+    }
+
+
+    /* =====================
+       TOP ROW
+    ===================== */
+
+    const top =
+      document.createElement(
+        "div"
+      );
+
+
+    top.className =
+      "production-report-top";
+
+
+    const identity =
+      document.createElement(
+        "div"
+      );
+
+
+    identity.className =
+      "production-report-identity";
+
+
+    const code =
+      document.createElement(
+        "span"
+      );
+
+
+    code.className =
+      "production-report-code";
+
+
+    code.textContent =
+      report.report_code ||
+      `MR-${String(
+        report.id
+      ).padStart(5, "0")}`;
+
+
+    const asset =
+      document.createElement(
+        "span"
+      );
+
+
+    asset.className =
+      "production-report-asset";
+
+
+    asset.textContent =
+      report.asset_name ||
+      report.asset_model ||
+      "Unknown Asset";
+
+
+    identity.append(
+      code,
+      asset
+    );
+
+
+    /* =====================
+       STATUS
+    ===================== */
+
+    const status =
+      document.createElement(
+        "span"
+      );
+
+
+    const statusValue =
+      String(
+        report.status ||
+        "NEW"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    status.className =
+      "production-report-status";
+
+
+    status.classList.add(
+      `status-${statusValue
+        .toLowerCase()
+        .replace(/_/g, "-")}`
+    );
+
+
+    status.textContent =
+      statusValue.replace(
+        /_/g,
+        " "
+      );
+
+
+    top.append(
+      identity,
+      status
+    );
+
+
+    /* =====================
+       BADGES
+    ===================== */
+
+    const badges =
+      document.createElement(
+        "div"
+      );
+
+
+    badges.className =
+      "production-report-badges";
+
+
+    if (report.category) {
+
+      const category =
+        document.createElement(
+          "span"
+        );
+
+
+      category.className =
+        "production-report-badge";
+
+
+      category.textContent =
+        String(
+          report.category
+        ).replace(
+          /_/g,
+          " "
+        );
+
+
+      badges.appendChild(
+        category
+      );
+
+    }
+
+
+    if (
+      String(
+        report.priority || ""
+      ).toUpperCase() ===
+      "URGENT"
+    ) {
+
+      const urgent =
+        document.createElement(
+          "span"
+        );
+
+
+      urgent.className =
+        "production-report-badge urgent";
+
+
+      urgent.textContent =
+        "URGENT";
+
+
+      badges.appendChild(
+        urgent
+      );
+
+    }
+
+
+    if (
+      report.production_stopped ===
+      true
+    ) {
+
+      const stopped =
+        document.createElement(
+          "span"
+        );
+
+
+      stopped.className =
+        "production-report-badge stopped";
+
+
+      stopped.textContent =
+        "PRODUCTION STOPPED";
+
+
+      badges.appendChild(
+        stopped
+      );
+
+    }
+
+
+    /* =====================
+       DESCRIPTION
+    ===================== */
+
+    const description =
+      document.createElement(
+        "div"
+      );
+
+
+    description.className =
+      "production-report-description";
+
+
+    description.textContent =
+      report.description ||
+      "—";
+
+
+    /* =====================
+       META
+    ===================== */
+
+    const meta =
+      document.createElement(
+        "div"
+      );
+
+
+    meta.className =
+      "production-report-meta";
+
+
+    const reportedBy =
+      document.createElement(
+        "span"
+      );
+
+
+    reportedBy.textContent =
+      `Reported by ${report.reported_by || "—"}`;
+
+
+    const separator =
+      document.createElement(
+        "span"
+      );
+
+
+    separator.textContent =
+      "•";
+
+
+    const reportedAt =
+      document.createElement(
+        "span"
+      );
+
+
+    const date =
+      report.reported_at
+        ? new Date(
+            report.reported_at
+          )
+        : null;
+
+
+    reportedAt.textContent =
+      date &&
+      !Number.isNaN(
+        date.getTime()
+      )
+        ? date.toLocaleString(
+            "el-GR"
+          )
+        : "—";
+
+
+    meta.append(
+      reportedBy,
+      separator,
+      reportedAt
+    );
+
+
+    /* =====================
+       MAINTENANCE FEEDBACK
+       Later becomes useful after review
+    ===================== */
+
+    card.append(
+      top,
+      badges,
+      description,
+      meta
+    );
+
+
+    container.appendChild(
+      card
+    );
+
+  });
+
+}
 
 /* =====================
    INIT REPORTING
