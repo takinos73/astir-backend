@@ -16848,6 +16848,580 @@ app.patch("/maintenance-reports/:id/start-review", async (req, res) => {
   }
 );
 
+/* =========================================================
+   UPDATE MAINTENANCE REPORT COMMENT
+   PATCH /maintenance-reports/:id/comment
+
+   Maintenance Team:
+   - Admin
+   - Planner
+   - Technician
+
+   RULES:
+   - Report must exist.
+   - Report must be UNDER_REVIEW.
+   - Comment cannot be empty.
+   - Does NOT close the Report.
+   - Does NOT create Breakdown or Task.
+========================================================= */
+
+app.patch("/maintenance-reports/:id/comment", async (req, res) => {
+
+    const reportId =
+      Number(
+        req.params.id
+      );
+
+
+    const technicianId =
+      Number(
+        req.body?.technician_id
+      );
+
+
+    const maintenanceComment =
+      String(
+        req.body?.maintenance_comment || ""
+      ).trim();
+
+
+    /* =====================
+       VALIDATE INPUT
+    ===================== */
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance Report ID"
+      });
+
+    }
+
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance User ID"
+      });
+
+    }
+
+
+    if (!maintenanceComment) {
+
+      return res.status(400).json({
+        error:
+          "Maintenance Comment is required"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOAD MAINTENANCE USER
+      ===================== */
+
+      const userResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (!userResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance user not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      const role =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const roleMap = {
+        technician: "technician",
+        supervisor: "planner",
+        planner: "planner",
+        admin: "admin"
+      };
+
+
+      const normalizedRole =
+        roleMap[role];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true ||
+        ![
+          "technician",
+          "planner",
+          "admin"
+        ].includes(normalizedRole)
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(403).json({
+          error:
+            "Maintenance Team access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOCK REPORT
+      ===================== */
+
+      const reportResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            status
+
+          FROM maintenance_reports
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [reportId]
+        );
+
+
+      if (!reportResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      if (
+        String(
+          reportResult.rows[0].status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "UNDER_REVIEW"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Maintenance Comment can only be added while Report is UNDER_REVIEW"
+        });
+
+      }
+
+
+      /* =====================
+         SAVE COMMENT
+      ===================== */
+
+      const updateResult =
+        await client.query(
+          `
+          UPDATE maintenance_reports
+
+          SET
+            maintenance_comment = $2,
+            reviewed_by = $3,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+
+          WHERE id = $1
+
+          RETURNING *
+          `,
+          [
+            reportId,
+            maintenanceComment,
+            user.name
+          ]
+        );
+
+
+      await client.query("COMMIT");
+
+
+      return res.json({
+        success: true,
+        message:
+          "Maintenance Comment saved",
+        report:
+          updateResult.rows[0]
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+
+      console.error(
+        "UPDATE MAINTENANCE REPORT COMMENT ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to update Maintenance Report Comment"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
+   CLOSE MAINTENANCE REPORT — NO ACTION
+   PATCH /maintenance-reports/:id/close-no-action
+
+   Maintenance Team:
+   - Admin
+   - Planner
+   - Technician
+
+   RESULT:
+   status = CLOSED
+   resolution_type = NO_ACTION
+
+   IMPORTANT:
+   - Requires Maintenance Comment.
+   - Does NOT create Breakdown.
+   - Does NOT create Maintenance Task.
+========================================================= */
+
+app.patch("/maintenance-reports/:id/close-no-action", async (req, res) => {
+
+    const reportId =
+      Number(
+        req.params.id
+      );
+
+
+    const technicianId =
+      Number(
+        req.body?.technician_id
+      );
+
+
+    const maintenanceComment =
+      String(
+        req.body?.maintenance_comment || ""
+      ).trim();
+
+
+    /* =====================
+       VALIDATE INPUT
+    ===================== */
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance Report ID"
+      });
+
+    }
+
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance User ID"
+      });
+
+    }
+
+
+    if (!maintenanceComment) {
+
+      return res.status(400).json({
+        error:
+          "Maintenance Comment is required before closing the Report"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         LOAD MAINTENANCE USER
+      ===================== */
+
+      const userResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (!userResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance user not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      const role =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const roleMap = {
+        technician: "technician",
+        supervisor: "planner",
+        planner: "planner",
+        admin: "admin"
+      };
+
+
+      const normalizedRole =
+        roleMap[role];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true ||
+        ![
+          "technician",
+          "planner",
+          "admin"
+        ].includes(normalizedRole)
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(403).json({
+          error:
+            "Maintenance Team access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOCK REPORT
+      ===================== */
+
+      const reportResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            status
+
+          FROM maintenance_reports
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [reportId]
+        );
+
+
+      if (!reportResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      if (
+        String(
+          reportResult.rows[0].status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "UNDER_REVIEW"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Only Reports UNDER_REVIEW can be closed"
+        });
+
+      }
+
+
+      /* =====================
+         CLOSE REPORT
+      ===================== */
+
+      const updateResult =
+        await client.query(
+          `
+          UPDATE maintenance_reports
+
+          SET
+            status = 'CLOSED',
+            resolution_type = 'NO_ACTION',
+            maintenance_comment = $2,
+            reviewed_by = $3,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+
+          WHERE id = $1
+
+          RETURNING *
+          `,
+          [
+            reportId,
+            maintenanceComment,
+            user.name
+          ]
+        );
+
+
+      await client.query("COMMIT");
+
+
+      return res.json({
+        success: true,
+        message:
+          "Maintenance Report closed",
+        report:
+          updateResult.rows[0]
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+
+      console.error(
+        "CLOSE MAINTENANCE REPORT ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to close Maintenance Report"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
