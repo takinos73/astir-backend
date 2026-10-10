@@ -15971,15 +15971,22 @@ app.get("/maintenance-reports/assets", async (req, res) => {
 );
 
 /* =========================================================
-   GET MY MAINTENANCE REPORTS
+   GET SHIFT FOREMAN MAINTENANCE REPORTS
    GET /maintenance-reports/my?technician_id=123
 
-   Shift Foreman personal report history.
+   Shared Production Reporting queue.
+
+   All active Shift Foremen can see ALL Production Reports,
+   regardless of which Shift Foreman created them.
+
+   PURPOSE:
+   - Avoid duplicate reporting between shifts.
+   - Give incoming Shift Foremen visibility of existing issues.
 
    IMPORTANT:
    - READ ONLY.
-   - Returns only reports created by this user.
-   - Does NOT expose the full Maintenance Reports queue.
+   - Shift Foreman access only.
+   - Does NOT expose normal CMMS data.
    - Does NOT create / modify Breakdown or Tasks.
 ========================================================= */
 
@@ -16090,7 +16097,11 @@ app.get( "/maintenance-reports/my", async (req, res) => {
 
 
       /* =====================
-         LOAD MY REPORTS
+         LOAD ALL PRODUCTION
+         REPORTS
+
+         Shared between all
+         Shift Foremen.
       ===================== */
 
       const result =
@@ -16134,14 +16145,37 @@ app.get( "/maintenance-reports/my", async (req, res) => {
           LEFT JOIN lines l
             ON l.id = a.line_id
 
-          WHERE mr.reported_by = $1
-
           ORDER BY
+
+            CASE mr.status
+
+              WHEN 'NEW'
+                THEN 1
+
+              WHEN 'UNDER_REVIEW'
+                THEN 2
+
+              WHEN 'CONVERTED'
+                THEN 3
+
+              WHEN 'CLOSED'
+                THEN 4
+
+              ELSE 9
+
+            END,
+
+            CASE mr.priority
+
+              WHEN 'URGENT'
+                THEN 1
+
+              ELSE 2
+
+            END,
+
             mr.reported_at DESC
-          `,
-          [
-            user.name
-          ]
+          `
         );
 
 
@@ -16164,12 +16198,17 @@ app.get( "/maintenance-reports/my", async (req, res) => {
 
       return res.json({
 
-        reporter: {
+        viewer: {
+
           id:
             user.id,
 
           name:
-            user.name
+            user.name,
+
+          role:
+            "shift_foreman"
+
         },
 
         reports
@@ -16187,7 +16226,7 @@ app.get( "/maintenance-reports/my", async (req, res) => {
 
       return res.status(500).json({
         error:
-          "Failed to load personal Maintenance Reports"
+          "Failed to load Production Reports"
       });
 
     }
