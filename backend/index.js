@@ -15461,6 +15461,300 @@ app.get('/assets/:id/locations', async (req, res) => {
   }
 });
 
+/* =========================================================
+   CREATE MAINTENANCE REPORT
+   POST /maintenance-reports
+
+   Production → Maintenance reporting layer.
+
+   IMPORTANT:
+   - Creates ONLY a Maintenance Report.
+   - Does NOT create Breakdown.
+   - Does NOT create Maintenance Task.
+   - Does NOT calculate downtime.
+   - Initial status is always NEW.
+========================================================= */
+
+app.post("/maintenance-reports", async (req, res) => {
+
+  try {
+
+    const {
+      asset_id,
+      category,
+      priority,
+      production_stopped,
+      description,
+      reported_by
+    } = req.body;
+
+
+    /* =====================
+       VALIDATE ASSET
+    ===================== */
+
+    const assetId =
+      Number(asset_id);
+
+
+    if (
+      !Number.isInteger(assetId) ||
+      assetId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Asset ID"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE DESCRIPTION
+    ===================== */
+
+    const reportDescription =
+      String(
+        description || ""
+      ).trim();
+
+
+    if (!reportDescription) {
+
+      return res.status(400).json({
+        error:
+          "Description is required"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE REPORTER
+    ===================== */
+
+    const reporter =
+      String(
+        reported_by || ""
+      ).trim();
+
+
+    if (!reporter) {
+
+      return res.status(400).json({
+        error:
+          "Reporter is required"
+      });
+
+    }
+
+
+    /* =====================
+       NORMALIZE CATEGORY
+    ===================== */
+
+    const reportCategory =
+      String(
+        category || ""
+      ).trim() || null;
+
+
+    /* =====================
+       NORMALIZE PRIORITY
+    ===================== */
+
+    const reportPriority =
+      String(
+        priority || "NORMAL"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    if (
+      ![
+        "NORMAL",
+        "URGENT"
+      ].includes(
+        reportPriority
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid priority"
+      });
+
+    }
+
+
+    /* =====================
+       NORMALIZE PRODUCTION STOP
+    ===================== */
+
+    const productionStopped =
+      production_stopped === true;
+
+
+    /* =====================
+       VERIFY ASSET EXISTS
+       AND IS ACTIVE
+    ===================== */
+
+    const assetResult =
+      await pool.query(
+        `
+        SELECT
+          id,
+          model,
+          serial_number,
+          name,
+          active
+        FROM assets
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [assetId]
+      );
+
+
+    if (
+      assetResult.rows.length === 0
+    ) {
+
+      return res.status(404).json({
+        error:
+          "Asset not found"
+      });
+
+    }
+
+
+    const asset =
+      assetResult.rows[0];
+
+
+    if (asset.active !== true) {
+
+      return res.status(409).json({
+        error:
+          "Report cannot be created for an inactive Asset"
+      });
+
+    }
+
+
+    /* =====================
+       CREATE REPORT
+    ===================== */
+
+    const result =
+      await pool.query(
+        `
+        INSERT INTO maintenance_reports (
+          asset_id,
+          category,
+          priority,
+          production_stopped,
+          description,
+          reported_by,
+          status
+        )
+
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          $6,
+          'NEW'
+        )
+
+        RETURNING
+          id,
+          asset_id,
+          category,
+          priority,
+          production_stopped,
+          description,
+          reported_by,
+          reported_at,
+          status,
+          created_at
+        `,
+        [
+          assetId,
+          reportCategory,
+          reportPriority,
+          productionStopped,
+          reportDescription,
+          reporter
+        ]
+      );
+
+
+    const report =
+      result.rows[0];
+
+
+    /* =====================
+       RESPONSE
+    ===================== */
+
+    return res.status(201).json({
+
+      success: true,
+
+      message:
+        "Maintenance Report created successfully",
+
+      report: {
+
+        ...report,
+
+        report_code:
+          `MR-${String(
+            report.id
+          ).padStart(5, "0")}`,
+
+        asset: {
+          id:
+            asset.id,
+
+          name:
+            asset.name,
+
+          model:
+            asset.model,
+
+          serial_number:
+            asset.serial_number
+        }
+
+      }
+
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "POST /maintenance-reports ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error:
+        "Failed to create Maintenance Report"
+    });
+
+  }
+
+});
+
 
 /* =====================================================
    IMPORT HELPERS
