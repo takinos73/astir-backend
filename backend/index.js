@@ -15755,6 +15755,136 @@ app.post("/maintenance-reports", async (req, res) => {
 
 });
 
+/* =========================================================
+   GET MAINTENANCE REPORTS
+   GET /maintenance-reports
+
+   Returns Production → Maintenance Reports.
+
+   IMPORTANT:
+   - READ ONLY.
+   - Does NOT create Breakdown.
+   - Does NOT create Tasks.
+   - Does NOT modify Report status.
+   - Returns Asset + Line information ready for frontend.
+========================================================= */
+
+app.get("/maintenance-reports", async (req, res) => {
+
+  try {
+
+    const result =
+      await pool.query(
+        `
+        SELECT
+          mr.id,
+          mr.asset_id,
+
+          mr.category,
+          mr.priority,
+          mr.production_stopped,
+          mr.description,
+
+          mr.reported_by,
+          mr.reported_at,
+
+          mr.status,
+
+          mr.reviewed_by,
+          mr.reviewed_at,
+          mr.maintenance_comment,
+
+          mr.resolution_type,
+
+          mr.breakdown_id,
+          mr.maintenance_task_id,
+
+          mr.created_at,
+          mr.updated_at,
+
+          a.name AS asset_name,
+          a.model AS asset_model,
+          a.serial_number AS asset_serial,
+
+          l.id AS line_id,
+          l.code AS line_code,
+          l.name AS line_name
+
+        FROM maintenance_reports mr
+
+        JOIN assets a
+          ON a.id = mr.asset_id
+
+        LEFT JOIN lines l
+          ON l.id = a.line_id
+
+        ORDER BY
+          CASE mr.status
+
+            WHEN 'NEW'
+              THEN 1
+
+            WHEN 'UNDER_REVIEW'
+              THEN 2
+
+            WHEN 'CONVERTED'
+              THEN 3
+
+            WHEN 'CLOSED'
+              THEN 4
+
+            ELSE 9
+
+          END,
+
+          CASE mr.priority
+
+            WHEN 'URGENT'
+              THEN 1
+
+            ELSE 2
+
+          END,
+
+          mr.reported_at DESC
+        `
+      );
+
+
+    const reports =
+      result.rows.map(row => ({
+
+        ...row,
+
+        report_code:
+          `MR-${String(
+            row.id
+          ).padStart(5, "0")}`
+
+      }));
+
+
+    return res.json({
+      reports
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "GET /maintenance-reports ERROR:",
+      err
+    );
+
+
+    return res.status(500).json({
+      error:
+        "Failed to load Maintenance Reports"
+    });
+
+  }
+
+});
 
 /* =====================================================
    IMPORT HELPERS
