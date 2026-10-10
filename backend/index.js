@@ -17967,6 +17967,512 @@ app.patch("/maintenance-reports/:id/convert-to-breakdown",
   }
 );
 
+/* =========================================================
+   CONVERT MAINTENANCE REPORT TO PLANNED TASK
+   PATCH /maintenance-reports/:id/convert-to-planned-task
+
+   IMPORTANT:
+   - Report must be UNDER_REVIEW.
+   - Creates ONE normal Planned/Open Maintenance Task.
+   - Does NOT create Task Execution.
+   - Does NOT create Breakdown.
+   - Keeps Maintenance Report as audit trail.
+   - Entire operation runs in ONE transaction.
+========================================================= */
+
+app.patch("/maintenance-reports/:id/convert-to-planned-task",
+  async (req, res) => {
+
+    const reportId =
+      Number(req.params.id);
+
+
+    const technicianId =
+      Number(
+        req.body?.technician_id
+      );
+
+
+    const taskText =
+      String(
+        req.body?.task || ""
+      ).trim();
+
+
+    const section =
+      String(
+        req.body?.section || ""
+      ).trim() || null;
+
+
+    const unit =
+      String(
+        req.body?.unit || ""
+      ).trim() || null;
+
+
+    const type =
+      String(
+        req.body?.type || ""
+      ).trim() || null;
+
+
+    const impact =
+      String(
+        req.body?.impact || "normal"
+      ).trim() || "normal";
+
+
+    const notes =
+      String(
+        req.body?.notes || ""
+      ).trim() || null;
+
+
+    const maintenanceComment =
+      String(
+        req.body?.maintenance_comment || ""
+      ).trim();
+
+
+    const dueDateRaw =
+      req.body?.due_date;
+
+
+    const estimatedDuration =
+      req.body?.duration_min !== undefined &&
+      req.body?.duration_min !== null &&
+      req.body?.duration_min !== ""
+        ? Number(req.body.duration_min)
+        : null;
+
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance Report ID"
+      });
+
+    }
+
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance User ID"
+      });
+
+    }
+
+
+    if (!taskText) {
+
+      return res.status(400).json({
+        error:
+          "Task description is required"
+      });
+
+    }
+
+
+    if (!dueDateRaw) {
+
+      return res.status(400).json({
+        error:
+          "Due date is required"
+      });
+
+    }
+
+
+    const dueDate =
+      new Date(
+        dueDateRaw
+      );
+
+
+    if (
+      Number.isNaN(
+        dueDate.getTime()
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Due Date"
+      });
+
+    }
+
+
+    if (
+      estimatedDuration !== null &&
+      (
+        !Number.isFinite(
+          estimatedDuration
+        ) ||
+        estimatedDuration < 0
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid estimated duration"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         VERIFY MAINTENANCE USER
+      ===================== */
+
+      const userResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (!userResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance user not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      const rawRole =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_");
+
+
+      const roleMap = {
+        technician:
+          "technician",
+
+        supervisor:
+          "planner",
+
+        planner:
+          "planner",
+
+        admin:
+          "admin"
+      };
+
+
+      const normalizedRole =
+        roleMap[rawRole];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true ||
+        ![
+          "technician",
+          "planner",
+          "admin"
+        ].includes(
+          normalizedRole
+        )
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(403).json({
+          error:
+            "Maintenance Team access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOCK REPORT
+      ===================== */
+
+      const reportResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            description,
+            status,
+            breakdown_id,
+            maintenance_task_id
+
+          FROM maintenance_reports
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [reportId]
+        );
+
+
+      if (!reportResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      const report =
+        reportResult.rows[0];
+
+
+      /* =====================
+         MUST BE UNDER REVIEW
+      ===================== */
+
+      if (
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "UNDER_REVIEW"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Only Reports UNDER_REVIEW can be converted to Planned Task"
+        });
+
+      }
+
+
+      /* =====================
+         SAFETY:
+         MUST NOT ALREADY BE LINKED
+      ===================== */
+
+      if (
+        report.breakdown_id ||
+        report.maintenance_task_id
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Maintenance Report is already connected to Maintenance activity"
+        });
+
+      }
+
+
+      /* =====================
+         CREATE PLANNED TASK
+      ===================== */
+
+      const taskResult =
+        await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            asset_id,
+            section,
+            unit,
+            task,
+            type,
+            impact,
+            due_date,
+            status,
+            is_planned,
+            duration_min,
+            notes
+          )
+
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7,
+            'Planned',
+            true,
+            $8,
+            $9
+          )
+
+          RETURNING *
+          `,
+          [
+            report.asset_id,
+            section,
+            unit,
+            taskText,
+            type,
+            impact,
+            dueDate,
+            estimatedDuration,
+            notes
+          ]
+        );
+
+
+      const newTask =
+        taskResult.rows[0];
+
+
+      /* =====================
+         UPDATE REPORT
+      ===================== */
+
+      const convertedReportResult =
+        await client.query(
+          `
+          UPDATE maintenance_reports
+
+          SET
+            status = 'CONVERTED',
+            resolution_type = 'PLANNED_TASK',
+            breakdown_id = NULL,
+            maintenance_task_id = $2,
+
+            maintenance_comment =
+              CASE
+                WHEN $3::text <> ''
+                  THEN $3::text
+                ELSE maintenance_comment
+              END,
+
+            reviewed_by = $4,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+
+          WHERE id = $1
+
+          RETURNING *
+          `,
+          [
+            reportId,
+            newTask.id,
+            maintenanceComment,
+            user.name
+          ]
+        );
+
+
+      const convertedReport =
+        convertedReportResult.rows[0];
+
+
+      await client.query("COMMIT");
+
+
+      return res.status(201).json({
+
+        success: true,
+
+        message:
+          "Maintenance Report converted to Planned Task successfully",
+
+        report: {
+
+          ...convertedReport,
+
+          report_code:
+            `MR-${String(
+              convertedReport.id
+            ).padStart(5, "0")}`
+
+        },
+
+        task:
+          newTask
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch (_) {}
+
+
+      console.error(
+        "CONVERT MAINTENANCE REPORT TO PLANNED TASK ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to convert Maintenance Report to Planned Task"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
