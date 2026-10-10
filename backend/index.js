@@ -16477,6 +16477,377 @@ app.get("/maintenance-reports/new-count", async (req, res) => {
   }
 );
 
+/* =========================================================
+   START MAINTENANCE REPORT REVIEW
+   PATCH /maintenance-reports/:id/start-review
+
+   Maintenance Team:
+   - Admin
+   - Planner
+   - Technician
+
+   RULES:
+   - Report must exist.
+   - Only NEW reports can start review.
+   - Shift Foreman cannot review.
+   - Does NOT create Breakdown.
+   - Does NOT create Maintenance Task.
+========================================================= */
+
+app.patch("/maintenance-reports/:id/start-review", async (req, res) => {
+
+    const reportId =
+      Number(
+        req.params.id
+      );
+
+
+    const technicianId =
+      Number(
+        req.body?.technician_id
+      );
+
+
+    /* =====================
+       VALIDATE REPORT ID
+    ===================== */
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance Report ID"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE USER ID
+    ===================== */
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance User ID"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      /* =====================
+         LOAD MAINTENANCE USER
+      ===================== */
+
+      const userResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (
+        userResult.rows.length === 0
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(404).json({
+          error:
+            "Maintenance user not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(403).json({
+          error:
+            "Maintenance user is not active"
+        });
+
+      }
+
+
+      /* =====================
+         VALIDATE MAINTENANCE ROLE
+      ===================== */
+
+      const role =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const roleMap = {
+
+        technician:
+          "technician",
+
+        supervisor:
+          "planner",
+
+        planner:
+          "planner",
+
+        admin:
+          "admin"
+
+      };
+
+
+      const normalizedRole =
+        roleMap[role];
+
+
+      if (
+        ![
+          "technician",
+          "planner",
+          "admin"
+        ].includes(
+          normalizedRole
+        )
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(403).json({
+          error:
+            "Maintenance Team access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD + LOCK REPORT
+      ===================== */
+
+      const reportResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            status,
+            asset_id,
+            description,
+            reported_by,
+            reported_at
+
+          FROM maintenance_reports
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [reportId]
+        );
+
+
+      if (
+        reportResult.rows.length === 0
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      const report =
+        reportResult.rows[0];
+
+
+      /* =====================
+         STATUS GUARD
+      ===================== */
+
+      if (
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "NEW"
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(409).json({
+          error:
+            "Only NEW Maintenance Reports can start review"
+        });
+
+      }
+
+
+      /* =====================
+         START REVIEW
+      ===================== */
+
+      const updateResult =
+        await client.query(
+          `
+          UPDATE maintenance_reports
+
+          SET
+            status = 'UNDER_REVIEW',
+            reviewed_by = $2,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+
+          WHERE id = $1
+
+          RETURNING
+            id,
+            asset_id,
+            category,
+            priority,
+            production_stopped,
+            description,
+            reported_by,
+            reported_at,
+            status,
+            reviewed_by,
+            reviewed_at,
+            maintenance_comment,
+            resolution_type,
+            breakdown_id,
+            maintenance_task_id,
+            updated_at
+          `,
+          [
+            reportId,
+            user.name
+          ]
+        );
+
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      const updatedReport =
+        updateResult.rows[0];
+
+
+      return res.json({
+
+        success: true,
+
+        message:
+          "Maintenance Report review started",
+
+        report: {
+
+          ...updatedReport,
+
+          report_code:
+            `MR-${String(
+              updatedReport.id
+            ).padStart(5, "0")}`
+
+        }
+
+      });
+
+
+    } catch (err) {
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {}
+
+
+      console.error(
+        "START MAINTENANCE REPORT REVIEW ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to start Maintenance Report review"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
