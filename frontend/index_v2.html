@@ -1325,6 +1325,8 @@
 
     <button id="managementTabBtn" class="main-tab" data-tab="management" /*style="display:none;"*/>Management</button>
 
+    <button id="reportingTabBtn" class="main-tab" data-tab="reporting" style="display:none;"> Production Reporting</button>
+
     <button class="main-tab active" data-tab="dashboard">Dashboard</button>
 
     <button class="main-tab" data-tab="assets">Assets</button>
@@ -1632,7 +1634,69 @@
 
     </div>
 
-  </div>  
+  </div>
+
+  <!-- =========================================================
+      PRODUCTION REPORTING
+      Shift Foreman reporting view
+
+      IMPORTANT:
+      - Reporting only.
+      - Does NOT create Breakdown.
+      - Does NOT create Maintenance Task.
+      - Maintenance decides the final classification.
+  ========================================================= -->
+
+  <div
+    id="tab-reporting"
+    class="tab-panel"
+    style="display:none;"
+  >
+
+    <!-- =====================
+        HEADER
+    ===================== -->
+
+    <div class="management-header">
+
+      <div>
+
+        <h2 class="management-title">
+          Production Reporting
+        </h2>
+
+        <div class="management-subtitle">
+          Report production issues to the Maintenance Department
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+        REPORTING CONTENT
+        Form / My Reports
+        will be added next.
+    ===================== -->
+
+    <div class="panel">
+
+      <div
+        style="
+          padding:20px;
+          text-align:center;
+          opacity:0.75;
+        "
+      >
+        Production reporting workspace
+      </div>
+
+    </div>
+
+  </div>
+
+
 
   <!-- =====================
       MAINTENANCE INCIDENTS TAB
