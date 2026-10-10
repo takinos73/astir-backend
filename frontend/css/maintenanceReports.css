@@ -1,0 +1,87 @@
+/* =========================================================
+   PRODUCTION REPORTING
+========================================================= */
+
+#tab-reporting .reporting-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
+
+  max-width: 900px;
+}
+
+
+#tab-reporting .reporting-form-grid .field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+
+#tab-reporting .reporting-form-grid .full-width {
+  grid-column:
+    1 / -1;
+}
+
+
+#tab-reporting label {
+  font-size: 0.88rem;
+  font-weight: 600;
+
+  color:
+    rgba(226, 232, 240, 0.88);
+}
+
+
+#tab-reporting select,
+#tab-reporting textarea {
+  border:
+    1px solid rgba(148, 163, 184, 0.18);
+
+  border-radius: 10px;
+
+  background:
+    rgba(15, 23, 42, 0.46);
+
+  color: inherit;
+
+  padding: 10px 12px;
+}
+
+
+#tab-reporting textarea {
+  resize: vertical;
+
+  min-height: 120px;
+}
+
+
+#tab-reporting select:focus,
+#tab-reporting textarea:focus {
+  outline: none;
+
+  border-color:
+    rgba(96, 165, 250, 0.52);
+
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+
+@media (max-width: 800px) {
+
+  #tab-reporting .reporting-form-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  #tab-reporting .reporting-form-grid .full-width {
+    grid-column:
+      auto;
+  }
+
+}
