@@ -1639,12 +1639,6 @@
   <!-- =========================================================
       PRODUCTION REPORTING
       Shift Foreman reporting view
-
-      IMPORTANT:
-      - Reporting only.
-      - Does NOT create Breakdown.
-      - Does NOT create Maintenance Task.
-      - Maintenance decides the final classification.
   ========================================================= -->
 
   <div
@@ -1675,21 +1669,143 @@
 
 
     <!-- =====================
-        REPORTING CONTENT
-        Form / My Reports
-        will be added next.
+        REPORT FORM
     ===================== -->
 
     <div class="panel">
 
-      <div
-        style="
-          padding:20px;
-          text-align:center;
-          opacity:0.75;
-        "
-      >
-        Production reporting workspace
+      <div class="reporting-form-grid">
+
+        <!-- ASSET -->
+        <div class="field">
+
+          <label for="reportAsset">
+            Asset
+          </label>
+
+          <select
+            id="reportAsset"
+            style="width:100%;"
+          >
+            <option value="">
+              Select Asset
+            </option>
+          </select>
+
+        </div>
+
+
+        <!-- CATEGORY -->
+        <div class="field">
+
+          <label for="reportCategory">
+            Category
+          </label>
+
+          <select
+            id="reportCategory"
+            style="width:100%;"
+          >
+            <option value="">
+              Select Category
+            </option>
+
+            <option value="MECHANICAL">
+              Mechanical
+            </option>
+
+            <option value="ELECTRICAL">
+              Electrical
+            </option>
+
+            <option value="QUALITY">
+              Quality
+            </option>
+
+            <option value="OTHER">
+              Other
+            </option>
+          </select>
+
+        </div>
+
+
+        <!-- PRIORITY -->
+        <div class="field">
+
+          <label for="reportPriority">
+            Priority
+          </label>
+
+          <select
+            id="reportPriority"
+            style="width:100%;"
+          >
+            <option value="NORMAL">
+              Normal
+            </option>
+
+            <option value="URGENT">
+              Urgent
+            </option>
+          </select>
+
+        </div>
+
+
+        <!-- PRODUCTION STOPPED -->
+        <div class="field">
+
+          <label for="reportProductionStopped">
+            Production Stopped
+          </label>
+
+          <select
+            id="reportProductionStopped"
+            style="width:100%;"
+          >
+            <option value="false">
+              No
+            </option>
+
+            <option value="true">
+              Yes
+            </option>
+          </select>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+        <div class="field full-width">
+
+          <label for="reportDescription">
+            Description
+          </label>
+
+          <textarea
+            id="reportDescription"
+            rows="5"
+            placeholder="Describe what happened or what you observed..."
+            style="width:100%;"
+          ></textarea>
+
+        </div>
+
+
+        <!-- ACTION -->
+        <div class="field full-width">
+
+          <button
+            id="submitMaintenanceReportBtn"
+            type="button"
+            class="btn-primary"
+          >
+            Submit Report
+          </button>
+
+        </div>
+
       </div>
 
     </div>
