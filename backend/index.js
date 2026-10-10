@@ -17511,6 +17511,462 @@ app.patch("/maintenance-reports/:id/close-no-action", async (req, res) => {
   }
 );
 
+/* =========================================================
+   CONVERT MAINTENANCE REPORT TO BREAKDOWN
+   PATCH /maintenance-reports/:id/convert-to-breakdown
+
+   IMPORTANT:
+   - Report must be UNDER_REVIEW.
+   - Creates ONE Breakdown.
+   - Does NOT create Maintenance Task.
+   - Does NOT create Task Execution.
+   - Does NOT create Machine State.
+   - Breakdown reported_by / reported_by_id come from Foreman.
+   - Breakdown started_at = Report reported_at.
+   - Report remains as audit trail and becomes CONVERTED.
+
+   Entire operation runs in ONE transaction.
+========================================================= */
+
+app.patch("/maintenance-reports/:id/convert-to-breakdown",
+  async (req, res) => {
+
+    const reportId =
+      Number(
+        req.params.id
+      );
+
+
+    const technicianId =
+      Number(
+        req.body?.technician_id
+      );
+
+
+    const breakdownTitle =
+      String(
+        req.body?.title || ""
+      ).trim();
+
+
+    const maintenanceComment =
+      String(
+        req.body?.maintenance_comment || ""
+      ).trim();
+
+
+    /* =====================
+       VALIDATE INPUT
+    ===================== */
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance Report ID"
+      });
+
+    }
+
+
+    if (
+      !Number.isInteger(technicianId) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Maintenance User ID"
+      });
+
+    }
+
+
+    if (!breakdownTitle) {
+
+      return res.status(400).json({
+        error:
+          "Breakdown title is required"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query("BEGIN");
+
+
+      /* =====================
+         VERIFY MAINTENANCE USER
+      ===================== */
+
+      const userResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (!userResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance user not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      const rawRole =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_");
+
+
+      const roleMap = {
+        technician:
+          "technician",
+
+        supervisor:
+          "planner",
+
+        planner:
+          "planner",
+
+        admin:
+          "admin"
+      };
+
+
+      const normalizedRole =
+        roleMap[rawRole];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true ||
+        ![
+          "technician",
+          "planner",
+          "admin"
+        ].includes(
+          normalizedRole
+        )
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(403).json({
+          error:
+            "Maintenance Team access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOCK MAINTENANCE REPORT
+      ===================== */
+
+      const reportResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            asset_id,
+            description,
+            reported_by,
+            reported_by_id,
+            reported_at,
+            status,
+            maintenance_comment,
+            resolution_type,
+            breakdown_id,
+            maintenance_task_id
+
+          FROM maintenance_reports
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [reportId]
+        );
+
+
+      if (!reportResult.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      const report =
+        reportResult.rows[0];
+
+
+      /* =====================
+         REPORT MUST BE
+         UNDER REVIEW
+      ===================== */
+
+      if (
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase() !==
+        "UNDER_REVIEW"
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Only Reports UNDER_REVIEW can be converted to Breakdown"
+        });
+
+      }
+
+
+      /* =====================
+         SAFETY:
+         REPORT MUST NOT ALREADY
+         BE CONNECTED
+      ===================== */
+
+      if (
+        report.breakdown_id ||
+        report.maintenance_task_id
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Maintenance Report is already connected to Maintenance activity"
+        });
+
+      }
+
+
+      /* =====================
+         FOREMAN INFORMATION
+         MUST EXIST
+      ===================== */
+
+      if (
+        !report.reported_by ||
+        !report.reported_at
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Maintenance Report has incomplete reporter information"
+        });
+
+      }
+
+
+      /* =====================
+         CREATE BREAKDOWN
+
+         IMPORTANT:
+         started_at = Foreman Report time
+
+         reported_by =
+           Foreman name
+
+         reported_by_id =
+           Foreman technician ID
+      ===================== */
+
+      const breakdownResult =
+        await client.query(
+          `
+          INSERT INTO breakdowns (
+            asset_id,
+            title,
+            description,
+            status,
+            started_at,
+            reported_by,
+            reported_by_id,
+            created_at,
+            updated_at
+          )
+
+          VALUES (
+            $1,
+            $2,
+            $3,
+            'OPEN',
+            $4,
+            $5,
+            $6,
+            NOW(),
+            NOW()
+          )
+
+          RETURNING *
+          `,
+          [
+            report.asset_id,
+            breakdownTitle,
+            report.description,
+            report.reported_at,
+            report.reported_by,
+            report.reported_by_id
+          ]
+        );
+
+
+      const breakdown =
+        breakdownResult.rows[0];
+
+
+      /* =====================
+         UPDATE REPORT
+      ===================== */
+
+      const convertedReportResult =
+        await client.query(
+          `
+          UPDATE maintenance_reports
+
+          SET
+            status = 'CONVERTED',
+            resolution_type = 'BREAKDOWN',
+            breakdown_id = $2,
+            maintenance_task_id = NULL,
+
+            maintenance_comment =
+              CASE
+                WHEN $3::text <> ''
+                  THEN $3::text
+                ELSE maintenance_comment
+              END,
+
+            reviewed_by = $4,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+
+          WHERE id = $1
+
+          RETURNING *
+          `,
+          [
+            reportId,
+            breakdown.id,
+            maintenanceComment,
+            user.name
+          ]
+        );
+
+
+      const convertedReport =
+        convertedReportResult.rows[0];
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query("COMMIT");
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.status(201).json({
+
+        success: true,
+
+        message:
+          "Maintenance Report converted to Breakdown successfully",
+
+        report: {
+
+          ...convertedReport,
+
+          report_code:
+            `MR-${String(
+              convertedReport.id
+            ).padStart(5, "0")}`
+
+        },
+
+        breakdown
+
+      });
+
+
+    } catch (err) {
+
+      try {
+        await client.query("ROLLBACK");
+      } catch (_) {}
+
+
+      console.error(
+        "CONVERT MAINTENANCE REPORT TO BREAKDOWN ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to convert Maintenance Report to Breakdown"
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */

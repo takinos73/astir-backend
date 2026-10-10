@@ -456,7 +456,6 @@ async function submitMaintenanceReport() {
 
   }
 
-
   if (!reporterName) {
 
     alert(
@@ -479,7 +478,6 @@ async function submitMaintenanceReport() {
     return;
 
   }
-
 
   /* =====================
      SUBMIT
