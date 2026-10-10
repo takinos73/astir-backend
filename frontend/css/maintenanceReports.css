@@ -786,3 +786,351 @@
   }
 
 }
+
+/* =========================================================
+   PRODUCTION REPORTS TABLE
+========================================================= */
+
+#tab-reporting .production-reports-table-wrap {
+  width: 100%;
+
+  overflow-x: auto;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.16);
+
+  border-radius: 12px;
+
+  background:
+    rgba(15, 23, 42, 0.34);
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+#tab-reporting .production-reports-table {
+  width: 100%;
+
+  min-width: 1050px;
+
+  border-collapse: collapse;
+
+  table-layout: fixed;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+#tab-reporting .production-reports-table thead {
+  background:
+    rgba(30, 41, 59, 0.74);
+}
+
+
+#tab-reporting .production-reports-table th {
+  padding: 11px 12px;
+
+  border-bottom:
+    1px solid rgba(148, 163, 184, 0.18);
+
+  text-align: left;
+
+  font-size: 0.76rem;
+  font-weight: 700;
+
+  color:
+    rgba(203, 213, 225, 0.76);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.035em;
+}
+
+
+/* =========================================================
+   COLUMN WIDTHS
+========================================================= */
+
+#tab-reporting .production-reports-table th:nth-child(1),
+#tab-reporting .production-reports-table td:nth-child(1) {
+  width: 155px;
+}
+
+#tab-reporting .production-reports-table th:nth-child(2),
+#tab-reporting .production-reports-table td:nth-child(2) {
+  width: 130px;
+}
+
+#tab-reporting .production-reports-table th:nth-child(3),
+#tab-reporting .production-reports-table td:nth-child(3) {
+  width: 30%;
+}
+
+#tab-reporting .production-reports-table th:nth-child(4),
+#tab-reporting .production-reports-table td:nth-child(4) {
+  width: 27%;
+}
+
+#tab-reporting .production-reports-table th:nth-child(5),
+#tab-reporting .production-reports-table td:nth-child(5) {
+  width: 125px;
+}
+
+#tab-reporting .production-reports-table th:nth-child(6),
+#tab-reporting .production-reports-table td:nth-child(6) {
+  width: 145px;
+}
+
+
+/* =========================================================
+   ROWS
+========================================================= */
+
+#tab-reporting .production-reports-table tbody tr {
+  position: relative;
+
+  transition:
+    background 0.14s ease;
+}
+
+
+#tab-reporting .production-reports-table tbody tr:hover {
+  background:
+    rgba(51, 65, 85, 0.26);
+}
+
+
+#tab-reporting .production-reports-table td {
+  padding: 12px;
+
+  border-bottom:
+    1px solid rgba(148, 163, 184, 0.10);
+
+  vertical-align: top;
+
+  color:
+    rgba(226, 232, 240, 0.90);
+}
+
+
+#tab-reporting .production-reports-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+
+/* =========================================================
+   URGENT / STOPPED ROW MARKERS
+========================================================= */
+
+#tab-reporting .production-reports-table tbody tr.report-row-urgent td:first-child {
+  box-shadow:
+    inset 3px 0 0 rgba(245, 158, 11, 0.78);
+}
+
+
+#tab-reporting .production-reports-table tbody tr.report-row-stopped td:first-child {
+  box-shadow:
+    inset 3px 0 0 rgba(239, 68, 68, 0.90);
+}
+
+
+#tab-reporting .production-reports-table tbody tr.report-row-urgent.report-row-stopped td:first-child {
+  box-shadow:
+    inset 3px 0 0 rgba(239, 68, 68, 0.95);
+}
+
+
+/* =========================================================
+   REPORT NUMBER
+========================================================= */
+
+#tab-reporting .report-table-code {
+  margin-bottom: 4px;
+
+  font-weight: 760;
+
+  color:
+    #f1f5f9;
+}
+
+
+#tab-reporting .report-table-code-cell {
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   ASSET
+========================================================= */
+
+#tab-reporting .report-table-asset {
+  margin-bottom: 4px;
+
+  font-weight: 720;
+
+  color:
+    #e2e8f0;
+}
+
+
+/* =========================================================
+   ISSUE
+========================================================= */
+
+#tab-reporting .report-table-description {
+  line-height: 1.42;
+
+  color:
+    rgba(226, 232, 240, 0.92);
+
+  overflow-wrap: anywhere;
+}
+
+
+#tab-reporting .report-table-tags {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 5px;
+
+  margin-top: 7px;
+}
+
+
+#tab-reporting .report-table-tag {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 7px;
+
+  border-radius: 7px;
+
+  background:
+    rgba(100, 116, 139, 0.14);
+
+  border:
+    1px solid rgba(148, 163, 184, 0.12);
+
+  color:
+    rgba(203, 213, 225, 0.82);
+
+  font-size: 10px;
+  font-weight: 650;
+
+  line-height: 1.2;
+}
+
+
+#tab-reporting .report-table-tag.urgent {
+  background:
+    rgba(245, 158, 11, 0.14);
+
+  border-color:
+    rgba(245, 158, 11, 0.20);
+
+  color:
+    #fcd34d;
+}
+
+
+#tab-reporting .report-table-tag.stopped {
+  background:
+    rgba(239, 68, 68, 0.14);
+
+  border-color:
+    rgba(239, 68, 68, 0.22);
+
+  color:
+    #fca5a5;
+}
+
+
+/* =========================================================
+   MAINTENANCE RESPONSE
+========================================================= */
+
+#tab-reporting .report-table-response {
+  line-height: 1.42;
+
+  color:
+    rgba(226, 232, 240, 0.88);
+
+  overflow-wrap: anywhere;
+}
+
+
+#tab-reporting .report-table-response-cell {
+  background:
+    rgba(16, 185, 129, 0.025);
+}
+
+
+/* =========================================================
+   SUBTEXT
+========================================================= */
+
+#tab-reporting .report-table-subtext {
+  margin-top: 2px;
+
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.74);
+}
+
+
+/* =========================================================
+   UPDATED
+========================================================= */
+
+#tab-reporting .report-table-updated {
+  font-size: 12px;
+
+  color:
+    rgba(203, 213, 225, 0.76);
+
+  white-space: normal;
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+#tab-reporting .production-reports-table .production-report-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 76px;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 760;
+
+  letter-spacing: 0.03em;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  #tab-reporting .production-reports-table {
+    min-width: 960px;
+  }
+
+}

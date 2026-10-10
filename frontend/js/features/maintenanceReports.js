@@ -681,11 +681,10 @@ async function loadProductionReports() {
 
 /* =========================================================
    RENDER PRODUCTION REPORTS
+   Compact shared Shift Foreman table
 ========================================================= */
 
-function renderProductionReports(
-  reports
-) {
+function renderProductionReports(reports) {
 
   const container =
     document.getElementById(
@@ -698,13 +697,102 @@ function renderProductionReports(
   }
 
 
+  const safeReports =
+    Array.isArray(reports)
+      ? reports
+      : [];
+
+
   container.replaceChildren();
 
 
-  if (
-    !Array.isArray(reports) ||
-    reports.length === 0
-  ) {
+  /* =====================================================
+     SHIFT SUMMARY
+
+     OPEN =
+     NEW + UNDER_REVIEW
+
+     Urgent / Stopped counters refer only
+     to currently OPEN reports.
+  ===================================================== */
+
+  const openReports =
+    safeReports.filter(report => {
+
+      const status =
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      return (
+        status === "NEW" ||
+        status === "UNDER_REVIEW"
+      );
+
+    });
+
+
+  const urgentOpen =
+    openReports.filter(report =>
+      String(
+        report.priority || ""
+      )
+        .trim()
+        .toUpperCase() ===
+      "URGENT"
+    ).length;
+
+
+  const stoppedOpen =
+    openReports.filter(report =>
+      report.production_stopped === true
+    ).length;
+
+
+  const summaryOpen =
+    document.getElementById(
+      "reportSummaryOpen"
+    );
+
+
+  const summaryUrgent =
+    document.getElementById(
+      "reportSummaryUrgent"
+    );
+
+
+  const summaryStopped =
+    document.getElementById(
+      "reportSummaryStopped"
+    );
+
+
+  if (summaryOpen) {
+    summaryOpen.textContent =
+      String(openReports.length);
+  }
+
+
+  if (summaryUrgent) {
+    summaryUrgent.textContent =
+      String(urgentOpen);
+  }
+
+
+  if (summaryStopped) {
+    summaryStopped.textContent =
+      String(stoppedOpen);
+  }
+
+
+  /* =====================================================
+     EMPTY STATE
+  ===================================================== */
+
+  if (safeReports.length === 0) {
 
     const empty =
       document.createElement(
@@ -726,88 +814,166 @@ function renderProductionReports(
 
 
     return;
-
   }
 
 
-  reports.forEach(report => {
+  /* =====================================================
+     TABLE WRAPPER
+  ===================================================== */
 
-    const card =
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.className =
+    "production-reports-table-wrap";
+
+
+  const table =
+    document.createElement(
+      "table"
+    );
+
+
+  table.className =
+    "production-reports-table";
+
+
+  /* =====================================================
+     TABLE HEADER
+  ===================================================== */
+
+  const thead =
+    document.createElement(
+      "thead"
+    );
+
+
+  const headerRow =
+    document.createElement(
+      "tr"
+    );
+
+
+  [
+    "Report No",
+    "Asset",
+    "Issue",
+    "Maintenance Response",
+    "Status",
+    "Updated"
+  ].forEach(label => {
+
+    const th =
       document.createElement(
-        "div"
+        "th"
       );
 
 
-    card.className =
-      "production-report-card";
+    th.textContent =
+      label;
+
+
+    headerRow.appendChild(
+      th
+    );
+
+  });
+
+
+  thead.appendChild(
+    headerRow
+  );
+
+
+  table.appendChild(
+    thead
+  );
+
+
+  /* =====================================================
+     TABLE BODY
+  ===================================================== */
+
+  const tbody =
+    document.createElement(
+      "tbody"
+    );
+
+
+  safeReports.forEach(report => {
+
+    const row =
+      document.createElement(
+        "tr"
+      );
+
+
+    const statusValue =
+      String(
+        report.status || "NEW"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    const priority =
+      String(
+        report.priority || "NORMAL"
+      )
+        .trim()
+        .toUpperCase();
 
 
     /* =====================
-       URGENT
+       ROW STATE
     ===================== */
 
-    if (
-      String(
-        report.priority || ""
-      ).toUpperCase() ===
-      "URGENT"
-    ) {
+    if (priority === "URGENT") {
 
-      card.classList.add(
-        "is-urgent"
+      row.classList.add(
+        "report-row-urgent"
       );
 
     }
 
-
-    /* =====================
-       PRODUCTION STOPPED
-    ===================== */
 
     if (
       report.production_stopped ===
       true
     ) {
 
-      card.classList.add(
-        "production-stopped"
+      row.classList.add(
+        "report-row-stopped"
       );
 
     }
 
 
-    /* =====================
-       TOP ROW
-    ===================== */
+    /* ===================================================
+       REPORT NUMBER
+    =================================================== */
 
-    const top =
+    const reportCell =
       document.createElement(
-        "div"
+        "td"
       );
 
 
-    top.className =
-      "production-report-top";
-
-
-    const identity =
-      document.createElement(
-        "div"
-      );
-
-
-    identity.className =
-      "production-report-identity";
+    reportCell.className =
+      "report-table-code-cell";
 
 
     const code =
       document.createElement(
-        "span"
+        "div"
       );
 
 
     code.className =
-      "production-report-code";
+      "report-table-code";
 
 
     code.textContent =
@@ -817,98 +983,177 @@ function renderProductionReports(
       ).padStart(5, "0")}`;
 
 
-    const asset =
-      document.createElement(
-        "span"
-      );
-
-
-    asset.className =
-      "production-report-asset";
-
-
-    asset.textContent =
-      report.asset_name ||
-      report.asset_model ||
-      "Unknown Asset";
-
-
-    identity.append(
-      code,
-      asset
-    );
-
-
-    /* =====================
-       STATUS
-    ===================== */
-
-    const status =
-      document.createElement(
-        "span"
-      );
-
-
-    const statusValue =
-      String(
-        report.status ||
-        "NEW"
-      )
-        .trim()
-        .toUpperCase();
-
-
-    status.className =
-      "production-report-status";
-
-
-    status.classList.add(
-      `status-${statusValue
-        .toLowerCase()
-        .replace(/_/g, "-")}`
-    );
-
-
-    status.textContent =
-      statusValue.replace(
-        /_/g,
-        " "
-      );
-
-
-    top.append(
-      identity,
-      status
-    );
-
-
-    /* =====================
-       BADGES
-    ===================== */
-
-    const badges =
+    const reportedMeta =
       document.createElement(
         "div"
       );
 
 
-    badges.className =
-      "production-report-badges";
+    reportedMeta.className =
+      "report-table-subtext";
+
+
+    const reportedDate =
+      report.reported_at
+        ? new Date(
+            report.reported_at
+          )
+        : null;
+
+
+    reportedMeta.textContent =
+      reportedDate &&
+      !Number.isNaN(
+        reportedDate.getTime()
+      )
+        ? reportedDate.toLocaleString(
+            "el-GR"
+          )
+        : "—";
+
+
+    const reporter =
+      document.createElement(
+        "div"
+      );
+
+
+    reporter.className =
+      "report-table-subtext";
+
+
+    reporter.textContent =
+      report.reported_by
+        ? `By ${report.reported_by}`
+        : "";
+
+
+    reportCell.append(
+      code,
+      reportedMeta,
+      reporter
+    );
+
+
+    /* ===================================================
+       ASSET
+    =================================================== */
+
+    const assetCell =
+      document.createElement(
+        "td"
+      );
+
+
+    const assetName =
+      document.createElement(
+        "div"
+      );
+
+
+    assetName.className =
+      "report-table-asset";
+
+
+    assetName.textContent =
+      report.asset_name ||
+      report.asset_model ||
+      "—";
+
+
+    const assetMeta =
+      document.createElement(
+        "div"
+      );
+
+
+    assetMeta.className =
+      "report-table-subtext";
+
+
+    const assetParts = [];
+
+
+    if (report.line_code) {
+
+      assetParts.push(
+        report.line_code
+      );
+
+    }
+
+
+    if (report.asset_serial) {
+
+      assetParts.push(
+        `SN ${report.asset_serial}`
+      );
+
+    }
+
+
+    assetMeta.textContent =
+      assetParts.join(" · ");
+
+
+    assetCell.append(
+      assetName,
+      assetMeta
+    );
+
+
+    /* ===================================================
+       ISSUE
+    =================================================== */
+
+    const issueCell =
+      document.createElement(
+        "td"
+      );
+
+
+    issueCell.className =
+      "report-table-issue-cell";
+
+
+    const description =
+      document.createElement(
+        "div"
+      );
+
+
+    description.className =
+      "report-table-description";
+
+
+    description.textContent =
+      report.description ||
+      "—";
+
+
+    const tags =
+      document.createElement(
+        "div"
+      );
+
+
+    tags.className =
+      "report-table-tags";
 
 
     if (report.category) {
 
-      const category =
+      const categoryBadge =
         document.createElement(
           "span"
         );
 
 
-      category.className =
-        "production-report-badge";
+      categoryBadge.className =
+        "report-table-tag";
 
 
-      category.textContent =
+      categoryBadge.textContent =
         String(
           report.category
         ).replace(
@@ -917,36 +1162,31 @@ function renderProductionReports(
         );
 
 
-      badges.appendChild(
-        category
+      tags.appendChild(
+        categoryBadge
       );
 
     }
 
 
-    if (
-      String(
-        report.priority || ""
-      ).toUpperCase() ===
-      "URGENT"
-    ) {
+    if (priority === "URGENT") {
 
-      const urgent =
+      const urgentBadge =
         document.createElement(
           "span"
         );
 
 
-      urgent.className =
-        "production-report-badge urgent";
+      urgentBadge.className =
+        "report-table-tag urgent";
 
 
-      urgent.textContent =
+      urgentBadge.textContent =
         "URGENT";
 
 
-      badges.appendChild(
-        urgent
+      tags.appendChild(
+        urgentBadge
       );
 
     }
@@ -957,130 +1197,262 @@ function renderProductionReports(
       true
     ) {
 
-      const stopped =
+      const stoppedBadge =
         document.createElement(
           "span"
         );
 
 
-      stopped.className =
-        "production-report-badge stopped";
+      stoppedBadge.className =
+        "report-table-tag stopped";
 
 
-      stopped.textContent =
+      stoppedBadge.textContent =
         "PRODUCTION STOPPED";
 
 
-      badges.appendChild(
-        stopped
+      tags.appendChild(
+        stoppedBadge
       );
 
     }
 
 
-    /* =====================
-       DESCRIPTION
-    ===================== */
+    issueCell.append(
+      description,
+      tags
+    );
 
-    const description =
+
+    /* ===================================================
+       MAINTENANCE RESPONSE
+    =================================================== */
+
+    const responseCell =
+      document.createElement(
+        "td"
+      );
+
+
+    responseCell.className =
+      "report-table-response-cell";
+
+
+    const responseText =
       document.createElement(
         "div"
       );
 
 
-    description.className =
-      "production-report-description";
+    responseText.className =
+      "report-table-response";
 
 
-    description.textContent =
-      report.description ||
-      "—";
+    if (
+      report.maintenance_comment
+    ) {
+
+      responseText.textContent =
+        report.maintenance_comment;
+
+    } else if (
+      statusValue ===
+      "UNDER_REVIEW"
+    ) {
+
+      responseText.textContent =
+        "Under review by Maintenance";
+
+    } else if (
+      statusValue ===
+      "CONVERTED"
+    ) {
+
+      if (
+        report.resolution_type ===
+        "BREAKDOWN"
+      ) {
+
+        responseText.textContent =
+          report.breakdown_id
+            ? `Converted to Breakdown BD-${String(
+                report.breakdown_id
+              ).padStart(5, "0")}`
+            : "Converted to Breakdown";
+
+      } else if (
+        report.resolution_type ===
+        "PLANNED_TASK"
+      ) {
+
+        responseText.textContent =
+          "Converted to Planned Maintenance";
+
+      } else {
+
+        responseText.textContent =
+          "Maintenance action created";
+
+      }
+
+    } else if (
+      statusValue ===
+      "CLOSED"
+    ) {
+
+      responseText.textContent =
+        report.resolution_type ===
+        "NO_ACTION"
+          ? "Reviewed — no maintenance action required"
+          : "Reviewed by Maintenance";
+
+    } else {
+
+      responseText.textContent =
+        "Awaiting Maintenance review";
+
+    }
 
 
-    /* =====================
-       META
-    ===================== */
+    responseCell.appendChild(
+      responseText
+    );
 
-    const meta =
+
+    if (report.reviewed_by) {
+
+      const reviewedBy =
+        document.createElement(
+          "div"
+        );
+
+
+      reviewedBy.className =
+        "report-table-subtext";
+
+
+      reviewedBy.textContent =
+        `Reviewed by ${report.reviewed_by}`;
+
+
+      responseCell.appendChild(
+        reviewedBy
+      );
+
+    }
+
+
+    /* ===================================================
+       STATUS
+    =================================================== */
+
+    const statusCell =
       document.createElement(
-        "div"
+        "td"
       );
 
 
-    meta.className =
-      "production-report-meta";
-
-
-    const reportedBy =
+    const statusBadge =
       document.createElement(
         "span"
       );
 
 
-    reportedBy.textContent =
-      `Reported by ${report.reported_by || "—"}`;
+    statusBadge.className =
+      "production-report-status";
 
 
-    const separator =
-      document.createElement(
-        "span"
+    statusBadge.classList.add(
+      `status-${statusValue
+        .toLowerCase()
+        .replace(/_/g, "-")}`
+    );
+
+
+    statusBadge.textContent =
+      statusValue.replace(
+        /_/g,
+        " "
       );
 
 
-    separator.textContent =
-      "•";
+    statusCell.appendChild(
+      statusBadge
+    );
 
 
-    const reportedAt =
+    /* ===================================================
+       UPDATED
+    =================================================== */
+
+    const updatedCell =
       document.createElement(
-        "span"
+        "td"
       );
 
 
-    const date =
-      report.reported_at
+    updatedCell.className =
+      "report-table-updated";
+
+
+    const updatedAt =
+      report.reviewed_at ||
+      report.reported_at;
+
+
+    const updatedDate =
+      updatedAt
         ? new Date(
-            report.reported_at
+            updatedAt
           )
         : null;
 
 
-    reportedAt.textContent =
-      date &&
+    updatedCell.textContent =
+      updatedDate &&
       !Number.isNaN(
-        date.getTime()
+        updatedDate.getTime()
       )
-        ? date.toLocaleString(
+        ? updatedDate.toLocaleString(
             "el-GR"
           )
         : "—";
 
 
-    meta.append(
-      reportedBy,
-      separator,
-      reportedAt
+    /* ===================================================
+       APPEND ROW
+    =================================================== */
+
+    row.append(
+      reportCell,
+      assetCell,
+      issueCell,
+      responseCell,
+      statusCell,
+      updatedCell
     );
 
 
-    /* =====================
-       MAINTENANCE FEEDBACK
-       Later becomes useful after review
-    ===================== */
-
-    card.append(
-      top,
-      badges,
-      description,
-      meta
-    );
-
-
-    container.appendChild(
-      card
+    tbody.appendChild(
+      row
     );
 
   });
+
+
+  table.appendChild(
+    tbody
+  );
+
+
+  wrapper.appendChild(
+    table
+  );
+
+
+  container.appendChild(
+    wrapper
+  );
 
 }
 
