@@ -16,20 +16,34 @@ function normalizeTechnicianRole(dbRole) {
 
   const roleMap = {
 
-    technician: "technician",
+    technician:
+      "technician",
 
-    supervisor: "planner",
+    supervisor:
+      "planner",
 
-    planner: "planner",
+    planner:
+      "planner",
 
-    admin: "admin",
+    admin:
+      "admin",
 
-    manager: "manager"
+    manager:
+      "manager",
+
+    shift_foreman:
+      "shift_foreman",
+
+    "shift foreman":
+      "shift_foreman"
 
   };
 
 
-  return roleMap[role] || "technician";
+  return (
+    roleMap[role] ||
+    "technician"
+  );
 
 }
 
