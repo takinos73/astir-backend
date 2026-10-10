@@ -19,6 +19,20 @@
   --ok: #4fd18b;
 }
 
+/* =========================================================
+   AUTH LOCK
+
+   Before successful login:
+   hide the entire CMMS workspace.
+
+   Login overlay remains visible.
+========================================================= */
+
+body:not(.cmms-authenticated) .main-tabs,
+body:not(.cmms-authenticated) .tab-panel {
+  display: none !important;
+}
+
 * { box-sizing: border-box; }
 
 body {

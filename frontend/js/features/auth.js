@@ -51,6 +51,13 @@ function normalizeTechnicianRole(dbRole) {
    LOGIN OVERLAY HELPERS
 ===================== */
 function showLogin() {
+
+document.body.classList.remove(
+  "cmms-authenticated"
+);
+
+delete document.body.dataset.role;
+
   const overlay = document.getElementById("loginOverlay");
 
   if (overlay) {
@@ -78,6 +85,10 @@ function applyRoleUI(role) {
 
   document.body.dataset.role =
     role;
+
+  document.body.classList.add(
+    "cmms-authenticated"
+  );
 
 
   const isAdmin =
