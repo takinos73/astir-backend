@@ -15691,7 +15691,8 @@ app.post("/maintenance-reports", async (req, res) => {
       priority,
       production_stopped,
       description,
-      reported_by
+      reported_by,
+      reported_by_id
     } = req.body;
 
 
@@ -15737,7 +15738,7 @@ app.post("/maintenance-reports", async (req, res) => {
 
 
     /* =====================
-       VALIDATE REPORTER
+       VALIDATE REPORTER NAME
     ===================== */
 
     const reporter =
@@ -15751,6 +15752,29 @@ app.post("/maintenance-reports", async (req, res) => {
       return res.status(400).json({
         error:
           "Reporter is required"
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE REPORTER ID
+    ===================== */
+
+    const reporterId =
+      Number(
+        reported_by_id
+      );
+
+
+    if (
+      !Number.isInteger(reporterId) ||
+      reporterId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Reporter ID"
       });
 
     }
@@ -15852,6 +15876,67 @@ app.post("/maintenance-reports", async (req, res) => {
 
 
     /* =====================
+       VERIFY REPORTER EXISTS
+       AND IS ACTIVE SHIFT FOREMAN
+    ===================== */
+
+    const reporterResult =
+      await pool.query(
+        `
+        SELECT
+          id,
+          name,
+          role,
+          active,
+          is_user
+        FROM technicians
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [reporterId]
+      );
+
+
+    if (
+      reporterResult.rows.length === 0
+    ) {
+
+      return res.status(404).json({
+        error:
+          "Reporter user not found"
+      });
+
+    }
+
+
+    const reporterUser =
+      reporterResult.rows[0];
+
+
+    const reporterRole =
+      String(
+        reporterUser.role || ""
+      )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_");
+
+
+    if (
+      reporterUser.active !== true ||
+      reporterUser.is_user !== true ||
+      reporterRole !== "shift_foreman"
+    ) {
+
+      return res.status(403).json({
+        error:
+          "Reporter must be an active Shift Foreman user"
+      });
+
+    }
+
+
+    /* =====================
        CREATE REPORT
     ===================== */
 
@@ -15865,6 +15950,7 @@ app.post("/maintenance-reports", async (req, res) => {
           production_stopped,
           description,
           reported_by,
+          reported_by_id,
           status
         )
 
@@ -15875,6 +15961,7 @@ app.post("/maintenance-reports", async (req, res) => {
           $4,
           $5,
           $6,
+          $7,
           'NEW'
         )
 
@@ -15886,6 +15973,7 @@ app.post("/maintenance-reports", async (req, res) => {
           production_stopped,
           description,
           reported_by,
+          reported_by_id,
           reported_at,
           status,
           created_at
@@ -15896,7 +15984,8 @@ app.post("/maintenance-reports", async (req, res) => {
           reportPriority,
           productionStopped,
           reportDescription,
-          reporter
+          reporter,
+          reporterId
         ]
       );
 

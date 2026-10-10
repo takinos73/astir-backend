@@ -409,6 +409,14 @@ async function submitMaintenanceReport() {
     ).trim();
 
 
+  const reporterId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
   /* =====================
      VALIDATION
   ===================== */
@@ -453,6 +461,19 @@ async function submitMaintenanceReport() {
 
     alert(
       "Logged user information is missing."
+    );
+
+    return;
+
+  }
+
+  if (
+    !Number.isInteger(reporterId) ||
+    reporterId <= 0
+  ) {
+
+    alert(
+      "Logged user ID is missing."
     );
 
     return;
@@ -506,7 +527,10 @@ async function submitMaintenanceReport() {
               reportDescription,
 
             reported_by:
-              reporterName
+              reporterName,
+
+            reported_by_id:
+              reporterId
 
           })
 
