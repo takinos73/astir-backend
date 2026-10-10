@@ -3516,6 +3516,8 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
     [
       "management",
+      "reporting",
+      "maintenance-reports",
       "dashboard",
       "tasks",
       "assets",
@@ -3599,6 +3601,15 @@ document.querySelectorAll(".main-tab").forEach(tab => {
 
       breakdownCurrentPage = 1;
       loadBreakdowns();
+
+    }
+
+    if (
+      sel === "maintenance-reports" &&
+      typeof loadMaintenanceReportsQueue === "function"
+    ) {
+
+      loadMaintenanceReportsQueue();
 
     }
 
