@@ -2353,7 +2353,6 @@ function escapeMaintenanceReportHtml(
 let currentMaintenanceReportReview =
   null;
 
-
 /* =========================================================
    OPEN MAINTENANCE REPORT REVIEW
 ========================================================= */
@@ -2435,6 +2434,10 @@ function openMaintenanceReportReview(report) {
     );
 
 
+  /* =====================
+     BASIC REPORT DATA
+  ===================== */
+
   if (title) {
 
     title.textContent =
@@ -2492,6 +2495,44 @@ function openMaintenanceReportReview(report) {
 
   }
 
+
+  /* =====================
+     HIDE CONVERSION SECTIONS
+     BY DEFAULT
+  ===================== */
+
+  const breakdownSection =
+    document.getElementById(
+      "maintenanceReportBreakdownSection"
+    );
+
+
+  const plannedSection =
+    document.getElementById(
+      "maintenanceReportPlannedSection"
+    );
+
+
+  if (breakdownSection) {
+
+    breakdownSection.style.display =
+      "none";
+
+  }
+
+
+  if (plannedSection) {
+
+    plannedSection.style.display =
+      "none";
+
+  }
+
+
+  /* =====================
+     RESET BREAKDOWN FIELDS
+  ===================== */
+
   const breakdownTitle =
     document.getElementById(
       "maintenanceReportBreakdownTitle"
@@ -2500,39 +2541,51 @@ function openMaintenanceReportReview(report) {
 
   if (breakdownTitle) {
 
-    breakdownTitle.value = "";
+    breakdownTitle.value =
+      "";
 
   }
+
+
+  /* =====================
+     RESET PLANNED TASK FIELDS
+  ===================== */
 
   const plannedTask =
     document.getElementById(
       "maintenanceReportPlannedTask"
     );
 
+
   const plannedDue =
     document.getElementById(
       "maintenanceReportPlannedDue"
     );
+
 
   const plannedDuration =
     document.getElementById(
       "maintenanceReportPlannedDuration"
     );
 
-  const plannedSection =
+
+  const plannedSectionInput =
     document.getElementById(
       "maintenanceReportPlannedSection"
     );
+
 
   const plannedUnit =
     document.getElementById(
       "maintenanceReportPlannedUnit"
     );
 
+
   const plannedType =
     document.getElementById(
       "maintenanceReportPlannedType"
     );
+
 
   const plannedNotes =
     document.getElementById(
@@ -2541,33 +2594,64 @@ function openMaintenanceReportReview(report) {
 
 
   if (plannedTask) {
-    plannedTask.value = "";
+
+    plannedTask.value =
+      "";
+
   }
+
 
   if (plannedDue) {
-    plannedDue.value = "";
+
+    plannedDue.value =
+      "";
+
   }
+
 
   if (plannedDuration) {
-    plannedDuration.value = "";
+
+    plannedDuration.value =
+      "";
+
   }
 
-  if (plannedSection) {
-    plannedSection.value = "";
+
+  if (plannedSectionInput) {
+
+    plannedSectionInput.value =
+      "";
+
   }
+
 
   if (plannedUnit) {
-    plannedUnit.value = "";
+
+    plannedUnit.value =
+      "";
+
   }
+
 
   if (plannedType) {
-    plannedType.value = "";
+
+    plannedType.value =
+      "";
+
   }
+
 
   if (plannedNotes) {
-    plannedNotes.value = "";
+
+    plannedNotes.value =
+      "";
+
   }
 
+
+  /* =====================
+     REVIEW META
+  ===================== */
 
   if (meta) {
 
@@ -2600,6 +2684,10 @@ function openMaintenanceReportReview(report) {
 
   }
 
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
 
   overlay.style.display =
     "flex";
@@ -3604,7 +3692,6 @@ function startMaintenanceReportsBadgeRefresh() {
 
 }
 
-
 /* =========================================================
    PAGE LOAD
 
@@ -3615,6 +3702,10 @@ function startMaintenanceReportsBadgeRefresh() {
 document.addEventListener(
   "DOMContentLoaded",
   () => {
+
+    /* =====================
+       SHIFT FOREMAN INIT
+    ===================== */
 
     const role =
       String(
@@ -3635,40 +3726,11 @@ document.addEventListener(
 
     }
 
-  }
-);
 
-document.addEventListener(
-  "click",
-  event => {
-
-    const button =
-      event.target.closest(
-        ".maintenance-report-start-review-btn"
-      );
-
-
-    if (!button) {
-      return;
-    }
-
-
-    const reportId =
-      Number(
-        button.dataset.reportId
-      );
-
-
-    startMaintenanceReportReview(
-      reportId
-    );
-
-  }
-);
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+    /* =====================
+       MAINTENANCE REVIEW
+       ACTION BUTTONS
+    ===================== */
 
     document
       .getElementById(
@@ -3700,6 +3762,38 @@ document.addEventListener(
       );
 
 
+    /* =====================
+       SHOW BREAKDOWN SECTION
+    ===================== */
+
+    document
+      .getElementById(
+        "showBreakdownConversionBtn"
+      )
+      ?.addEventListener(
+        "click",
+        showMaintenanceReportBreakdownSection
+      );
+
+
+    /* =====================
+       SHOW PLANNED TASK SECTION
+    ===================== */
+
+    document
+      .getElementById(
+        "showPlannedConversionBtn"
+      )
+      ?.addEventListener(
+        "click",
+        showMaintenanceReportPlannedSection
+      );
+
+
+    /* =====================
+       CREATE BREAKDOWN
+    ===================== */
+
     document
       .getElementById(
         "createBreakdownFromReportBtn"
@@ -3710,6 +3804,10 @@ document.addEventListener(
       );
 
 
+    /* =====================
+       CREATE PLANNED TASK
+    ===================== */
+
     document
       .getElementById(
         "createPlannedTaskFromReportBtn"
@@ -3718,6 +3816,48 @@ document.addEventListener(
         "click",
         createPlannedTaskFromMaintenanceReport
       );
+
+  }
+);
+
+
+/* =========================================================
+   START REVIEW
+   Delegated because Queue rows are rendered dynamically.
+========================================================= */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        ".maintenance-report-start-review-btn"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const reportId =
+      Number(
+        button.dataset.reportId
+      );
+
+
+    if (
+      !Number.isInteger(reportId) ||
+      reportId <= 0
+    ) {
+      return;
+    }
+
+
+    startMaintenanceReportReview(
+      reportId
+    );
 
   }
 );

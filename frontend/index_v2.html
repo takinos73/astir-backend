@@ -6856,11 +6856,15 @@
 
       </div>
 
-      <!-- =====================
+     <!-- =====================
           BREAKDOWN CONVERSION
       ===================== -->
 
-      <div class="maintenance-report-breakdown-section">
+      <div
+        id="maintenanceReportBreakdownSection"
+        class="maintenance-report-breakdown-section"
+        style="display:none;"
+      >
 
         <div class="maintenance-report-breakdown-heading">
           Convert to Breakdown
@@ -6881,13 +6885,31 @@
 
         </div>
 
+
+        <div class="maintenance-report-conversion-actions">
+
+          <button
+            id="createBreakdownFromReportBtn"
+            class="btn-table maintenance-report-breakdown-btn"
+            type="button"
+          >
+            Create Breakdown
+          </button>
+
+        </div>
+
       </div>
+
 
       <!-- =====================
           PLANNED TASK CONVERSION
       ===================== -->
 
-      <div class="maintenance-report-planned-section">
+      <div
+        id="maintenanceReportPlannedSection"
+        class="maintenance-report-planned-section"
+        style="display:none;"
+      >
 
         <div class="maintenance-report-planned-heading">
           Convert to Planned Task
@@ -6974,6 +6996,7 @@
 
           </div>
 
+
           <div class="field">
 
             <label for="maintenanceReportPlannedType">
@@ -6991,6 +7014,7 @@
 
         </div>
 
+
         <div class="field">
 
           <label for="maintenanceReportPlannedNotes">
@@ -7002,6 +7026,19 @@
             rows="3"
             placeholder="Optional notes..."
           ></textarea>
+
+        </div>
+
+
+        <div class="maintenance-report-conversion-actions">
+
+          <button
+            id="createPlannedTaskFromReportBtn"
+            class="btn-table maintenance-report-planned-btn"
+            type="button"
+          >
+            Create Planned Task
+          </button>
 
         </div>
 

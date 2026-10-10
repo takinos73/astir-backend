@@ -1444,6 +1444,12 @@
 
 .maintenance-report-review-modal {
   width: min(680px, 94vw);
+
+  max-height: 88vh;
+
+  overflow-y: auto;
+
+  overflow-x: hidden;
 }
 
 .maintenance-report-review-header {
