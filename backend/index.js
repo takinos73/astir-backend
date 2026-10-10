@@ -15970,6 +15970,231 @@ app.get("/maintenance-reports/assets", async (req, res) => {
   }
 );
 
+/* =========================================================
+   GET MY MAINTENANCE REPORTS
+   GET /maintenance-reports/my?technician_id=123
+
+   Shift Foreman personal report history.
+
+   IMPORTANT:
+   - READ ONLY.
+   - Returns only reports created by this user.
+   - Does NOT expose the full Maintenance Reports queue.
+   - Does NOT create / modify Breakdown or Tasks.
+========================================================= */
+
+app.get( "/maintenance-reports/my", async (req, res) => {
+
+    try {
+
+      /* =====================
+         VALIDATE USER
+      ===================== */
+
+      const technicianId =
+        Number(
+          req.query.technician_id
+        );
+
+
+      if (
+        !Number.isInteger(technicianId) ||
+        technicianId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Technician ID"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD USER
+      ===================== */
+
+      const userResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [technicianId]
+        );
+
+
+      if (
+        userResult.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          error:
+            "User not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      if (
+        user.active !== true ||
+        user.is_user !== true
+      ) {
+
+        return res.status(403).json({
+          error:
+            "User is not active"
+        });
+
+      }
+
+
+      /* =====================
+         VALIDATE ROLE
+      ===================== */
+
+      const role =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_");
+
+
+      if (
+        role !==
+        "shift_foreman"
+      ) {
+
+        return res.status(403).json({
+          error:
+            "Shift Foreman access required"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD MY REPORTS
+      ===================== */
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            mr.id,
+            mr.asset_id,
+
+            mr.category,
+            mr.priority,
+            mr.production_stopped,
+            mr.description,
+
+            mr.reported_by,
+            mr.reported_at,
+
+            mr.status,
+
+            mr.reviewed_by,
+            mr.reviewed_at,
+            mr.maintenance_comment,
+
+            mr.resolution_type,
+
+            mr.breakdown_id,
+            mr.maintenance_task_id,
+
+            a.name AS asset_name,
+            a.model AS asset_model,
+            a.serial_number AS asset_serial,
+
+            l.code AS line_code,
+            l.name AS line_name
+
+          FROM maintenance_reports mr
+
+          JOIN assets a
+            ON a.id = mr.asset_id
+
+          LEFT JOIN lines l
+            ON l.id = a.line_id
+
+          WHERE mr.reported_by = $1
+
+          ORDER BY
+            mr.reported_at DESC
+          `,
+          [
+            user.name
+          ]
+        );
+
+
+      /* =====================
+         FORMAT RESPONSE
+      ===================== */
+
+      const reports =
+        result.rows.map(row => ({
+
+          ...row,
+
+          report_code:
+            `MR-${String(
+              row.id
+            ).padStart(5, "0")}`
+
+        }));
+
+
+      return res.json({
+
+        reporter: {
+          id:
+            user.id,
+
+          name:
+            user.name
+        },
+
+        reports
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /maintenance-reports/my ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to load personal Maintenance Reports"
+      });
+
+    }
+
+  }
+);
+
 /* =====================================================
    IMPORT HELPERS
 ===================================================== */
