@@ -72,19 +72,28 @@ function hideLogin() {
 
 function applyRoleUI(role) {
 
-  window.currentUserRole = role;
+  window.currentUserRole =
+    role;
 
-  document.body.dataset.role = role;
+
+  document.body.dataset.role =
+    role;
 
 
   const isAdmin =
     role === "admin";
 
+
   const isPlanner =
     role === "planner";
 
+
   const isManager =
     role === "manager";
+
+
+  const isShiftForeman =
+    role === "shift_foreman";
 
 
   /* =====================
@@ -166,7 +175,28 @@ function applyRoleUI(role) {
 
   if (roleText) {
 
+    const roleLabels = {
+
+      technician:
+        "Technician",
+
+      planner:
+        "Planner",
+
+      admin:
+        "Admin",
+
+      manager:
+        "Manager",
+
+      shift_foreman:
+        "Shift Foreman"
+
+    };
+
+
     roleText.textContent =
+      roleLabels[role] ||
       role;
 
   }
@@ -206,9 +236,13 @@ function applyRoleUI(role) {
   }
 
 
-  /* =====================
+  /* =====================================================
      MANAGER VIEW
-  ===================== */
+
+     Manager sees ONLY:
+     - Management tab
+     - Management panel
+  ===================================================== */
 
   if (isManager) {
 
@@ -304,7 +338,6 @@ function applyRoleUI(role) {
 
     /* ---------------------
        LOAD MANAGEMENT
-       THROUGH EXISTING TAB LOGIC
     --------------------- */
 
     if (managementTab) {
@@ -316,11 +349,139 @@ function applyRoleUI(role) {
   }
 
 
-  /* =====================
+  /* =====================================================
+     SHIFT FOREMAN VIEW
+
+     Shift Foreman sees ONLY:
+     - Production Reporting tab
+     - Production Reporting panel
+
+     NO access to:
+     - Dashboard
+     - Assets
+     - Tasks
+     - Incidents
+     - Technicians
+     - Reports
+     - Management
+     - Library
+     - Docs
+     - Admin tools
+  ===================================================== */
+
+  else if (isShiftForeman) {
+
+    /* ---------------------
+       HIDE ALL MAIN TABS
+    --------------------- */
+
+    document
+      .querySelectorAll(".main-tab")
+      .forEach(tab => {
+
+        tab.style.display =
+          "none";
+
+        tab.classList.remove(
+          "active"
+        );
+
+      });
+
+
+    /* ---------------------
+       SHOW REPORTING TAB
+    --------------------- */
+
+    const reportingTab =
+      document.querySelector(
+        '.main-tab[data-tab="reporting"]'
+      );
+
+
+    if (reportingTab) {
+
+      reportingTab.style.display =
+        "";
+
+      reportingTab.classList.add(
+        "active"
+      );
+
+    }
+
+
+    /* ---------------------
+       HIDE TOP TOOLS
+    --------------------- */
+
+    const topTools =
+      document.querySelector(
+        ".top-tools"
+      );
+
+
+    if (topTools) {
+
+      topTools.style.display =
+        "none";
+
+    }
+
+
+    /* ---------------------
+       HIDE ALL PANELS
+    --------------------- */
+
+    document
+      .querySelectorAll(".tab-panel")
+      .forEach(panel => {
+
+        panel.style.display =
+          "none";
+
+      });
+
+
+    /* ---------------------
+       SHOW REPORTING PANEL
+    --------------------- */
+
+    const reportingPanel =
+      document.getElementById(
+        "tab-reporting"
+      );
+
+
+    if (reportingPanel) {
+
+      reportingPanel.style.display =
+        "block";
+
+    }
+
+
+    /* ---------------------
+       LOAD REPORTING TAB
+       THROUGH EXISTING
+       TAB LOGIC
+    --------------------- */
+
+    if (reportingTab) {
+
+      reportingTab.click();
+
+    }
+
+  }
+
+
+  /* =====================================================
      NORMAL CMMS VIEW
+
      ADMIN / PLANNER /
      TECHNICIAN
-  ===================== */
+  ===================================================== */
 
   else {
 
@@ -333,6 +494,49 @@ function applyRoleUI(role) {
 
       });
 
+
+    /* ---------------------
+       REPORTING TAB
+
+       Reserved for
+       Shift Foreman only.
+    --------------------- */
+
+    const reportingTab =
+      document.querySelector(
+        '.main-tab[data-tab="reporting"]'
+      );
+
+
+    if (reportingTab) {
+
+      reportingTab.style.display =
+        "none";
+
+      reportingTab.classList.remove(
+        "active"
+      );
+
+    }
+
+
+    const reportingPanel =
+      document.getElementById(
+        "tab-reporting"
+      );
+
+
+    if (reportingPanel) {
+
+      reportingPanel.style.display =
+        "none";
+
+    }
+
+
+    /* ---------------------
+       TOP TOOLS
+    --------------------- */
 
     const topTools =
       document.querySelector(
@@ -352,17 +556,27 @@ function applyRoleUI(role) {
 
   /* =====================
      REFRESH ASSET CARDS
+
+     Never needed for:
+     - Manager
+     - Shift Foreman
   ===================== */
 
   if (
     !isManager &&
-    typeof renderAssetsCards === "function"
+    !isShiftForeman &&
+    typeof renderAssetsCards ===
+      "function"
   ) {
 
     renderAssetsCards();
 
   }
 
+
+  /* =====================
+     CLOSE LOGIN
+  ===================== */
 
   hideLogin();
 
