@@ -279,15 +279,26 @@ app.post("/auth/login-v2", async (req, res) => {
 
     const roleMap = {
 
-      technician: "technician",
+      technician:
+        "technician",
 
-      supervisor: "planner",
+      supervisor:
+        "planner",
 
-      planner: "planner",
+      planner:
+        "planner",
 
-      admin: "admin",
+      admin:
+        "admin",
 
-      manager: "manager"
+      manager:
+        "manager",
+
+      shift_foreman:
+        "shift_foreman",
+
+      "shift foreman":
+        "shift_foreman"
 
     };
 
@@ -316,7 +327,8 @@ app.post("/auth/login-v2", async (req, res) => {
           admin_password,
           planner_password,
           technician_password,
-          manager_password
+          manager_password,
+          shift_foreman_password
 
         FROM roles_config
 
@@ -356,7 +368,10 @@ app.post("/auth/login-v2", async (req, res) => {
         cfg.admin_password,
 
       manager:
-        cfg.manager_password
+        cfg.manager_password,
+
+      shift_foreman:
+        cfg.shift_foreman_password
 
     };
 
