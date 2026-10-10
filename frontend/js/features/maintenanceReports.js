@@ -541,6 +541,7 @@ async function submitMaintenanceReport() {
 
 
     resetMaintenanceReportForm();
+    await loadProductionReports();
 
 
   } catch (err) {
