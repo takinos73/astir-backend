@@ -2266,6 +2266,97 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     rgba(59, 130, 246, 0.06);
 }
 
+/* =========================================================
+   HEADER ALIGNMENT
+========================================================= */
+
+.reporting-reports-header {
+  display: grid;
+
+  grid-template-columns:
+    minmax(280px, 1fr)
+    auto
+    auto;
+
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 14px;
+}
+
+
+/* =========================================================
+   FILTER BAR
+========================================================= */
+
+.production-reports-filter-bar {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  flex-wrap: nowrap;
+
+  gap: 10px;
+
+  min-width: 0;
+
+  margin-left: auto;
+}
+
+
+/* =========================================================
+   PERIOD
+========================================================= */
+
+.production-reports-period-btn {
+  min-width: 260px;
+
+  justify-content: flex-start;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.production-reports-status-filter {
+  width: 175px;
+  min-width: 175px;
+  max-width: 175px;
+
+  flex: 0 0 175px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   CLEAR
+========================================================= */
+
+.production-reports-clear-btn {
+  min-width: 92px;
+
+  flex: 0 0 auto;
+
+  justify-content: center;
+}
+
+
+/* =========================================================
+   REPORT COUNT
+========================================================= */
+
+.reporting-reports-count {
+  justify-self: end;
+
+  min-width: 90px;
+
+  white-space: nowrap;
+}
+
 
 /* =========================================================
    MEDIUM SCREENS
