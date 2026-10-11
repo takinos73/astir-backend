@@ -238,21 +238,22 @@
     translateY(-1px);
 }
 
-
 /* =========================================================
    NEW SCHEDULED MAINTENANCE BUTTON
 ========================================================= */
 
 #chooseNewSmBtn {
   background:
-    rgba(59, 130, 246, 0.08);
+    rgba(249, 115, 22, 0.08);
 
   border:
-    1px solid rgba(96, 165, 250, 0.24);
-  border-radius:6px;
-  
+    1px solid rgba(251, 146, 60, 0.26);
+
+  border-radius:
+    6px;
+
   color:
-    #93c5fd;
+    #fdba74;
 
   font-weight:
     700;
@@ -264,16 +265,15 @@
     transform 0.15s ease;
 }
 
-
 #chooseNewSmBtn:hover {
   background:
-    rgba(59, 130, 246, 0.14);
+    rgba(249, 115, 22, 0.14);
 
   border-color:
-    rgba(96, 165, 250, 0.42);
+    rgba(251, 146, 60, 0.44);
 
   color:
-    #bfdbfe;
+    #fed7aa;
 
   transform:
     translateY(-1px);
