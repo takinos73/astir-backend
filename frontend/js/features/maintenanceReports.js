@@ -1086,6 +1086,9 @@ async function loadReportingAssets() {
 
     /* =====================
        GROUP BY LINE
+
+       Line is used ONLY for grouping/sorting.
+       It is NOT displayed in the dropdown.
     ===================== */
 
     const groups =
@@ -1141,20 +1144,47 @@ async function loadReportingAssets() {
 
     /* =====================
        BUILD OPTIONS
+
+       No Line labels shown.
+       Add visual separator between groups.
     ===================== */
 
     sortedGroups.forEach(
-      ([lineLabel, lineAssets]) => {
+      (
+        [lineLabel, lineAssets],
+        groupIndex
+      ) => {
 
-        const optgroup =
-          document.createElement(
-            "optgroup"
+        /* =====================
+           SEPARATOR BETWEEN LINES
+        ===================== */
+
+        if (groupIndex > 0) {
+
+          const separator =
+            document.createElement(
+              "option"
+            );
+
+
+          separator.disabled =
+            true;
+
+
+          separator.textContent =
+            "────────────────────────";
+
+
+          select.appendChild(
+            separator
           );
 
+        }
 
-        optgroup.label =
-          lineLabel;
 
+        /* =====================
+           SORT ASSETS IN GROUP
+        ===================== */
 
         lineAssets
           .sort((a, b) => {
@@ -1165,6 +1195,7 @@ async function loadReportingAssets() {
                 a.model ||
                 ""
               );
+
 
             const nameB =
               String(
@@ -1219,16 +1250,11 @@ async function loadReportingAssets() {
                 : assetName;
 
 
-            optgroup.appendChild(
+            select.appendChild(
               option
             );
 
           });
-
-
-        select.appendChild(
-          optgroup
-        );
 
       }
     );
