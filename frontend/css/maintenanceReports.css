@@ -1839,21 +1839,20 @@
 }
 
 /* =========================================================
-   PRODUCTION REPORTS HEADER
-   SINGLE-LINE DESKTOP LAYOUT
+   PRODUCTION REPORTS HEADER + FILTERS
 ========================================================= */
 
 .reporting-reports-header {
   display: grid;
 
   grid-template-columns:
-    minmax(240px, 1fr)
+    minmax(250px, 1fr)
     auto
     auto;
 
   align-items: center;
 
-  gap: 18px;
+  gap: 16px;
 
   margin-bottom: 14px;
 }
@@ -1861,6 +1860,26 @@
 
 .reporting-reports-title-block {
   min-width: 0;
+}
+
+
+.reporting-reports-title-block h3 {
+  margin: 0;
+
+  font-size: 16px;
+  font-weight: 750;
+
+  color: #f8fafc;
+}
+
+
+.reporting-reports-subtitle {
+  margin-top: 3px;
+
+  font-size: 12px;
+
+  color:
+    rgba(148, 163, 184, 0.82);
 }
 
 
@@ -1883,7 +1902,57 @@
 
 
 /* =========================================================
-   FILTER CONTROL SIZING
+   COMMON FILTER CONTROL
+========================================================= */
+
+.production-reports-filter-control {
+  height: 38px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.20);
+
+  border-radius: 9px;
+
+  background:
+    #111827;
+
+  color:
+    #e5e7eb;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  line-height: 1;
+
+  box-sizing: border-box;
+}
+
+
+button.production-reports-filter-control {
+  cursor: pointer;
+}
+
+
+button.production-reports-filter-control:hover {
+  background:
+    #182235;
+
+  border-color:
+    rgba(96, 165, 250, 0.40);
+}
+
+
+/* =========================================================
+   PERIOD
 ========================================================= */
 
 .production-reports-period-wrap {
@@ -1897,29 +1966,244 @@
   min-width: 245px;
 
   justify-content: flex-start;
+
+  text-align: left;
 }
 
+
+.production-reports-filter-icon {
+  flex: 0 0 auto;
+
+  font-size: 13px;
+}
+
+
+.production-reports-filter-label {
+  color:
+    #93a4bd;
+
+  font-weight: 650;
+}
+
+
+.production-reports-period-text {
+  color:
+    #f8fafc;
+
+  white-space: nowrap;
+
+  font-weight: 700;
+}
+
+
+.production-reports-filter-arrow {
+  margin-left: auto;
+
+  color:
+    #93a4bd;
+}
+
+
+/* =========================================================
+   PERIOD PICKER POPOVER
+========================================================= */
+
+.production-reports-period-picker {
+  position: absolute;
+
+  top:
+    calc(100% + 8px);
+
+  left: 0;
+
+  z-index: 1000;
+
+  width: 360px;
+
+  padding: 14px;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.22);
+
+  border-radius: 12px;
+
+  background:
+    #111827;
+
+  box-shadow:
+    0 18px 45px
+    rgba(0, 0, 0, 0.46);
+}
+
+
+.production-reports-period-picker-title {
+  margin-bottom: 12px;
+
+  font-size: 13px;
+  font-weight: 750;
+
+  color:
+    #f8fafc;
+}
+
+
+.production-reports-period-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+
+.production-reports-period-picker .field {
+  margin: 0;
+}
+
+
+.production-reports-period-picker label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  font-size: 11px;
+  font-weight: 650;
+
+  color:
+    #94a3b8;
+}
+
+
+/* =========================================================
+   DATE INPUTS
+========================================================= */
+
+.production-reports-period-picker input[type="date"] {
+  width: 100%;
+  height: 38px;
+
+  box-sizing: border-box;
+
+  padding:
+    0 9px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.22);
+
+  border-radius: 8px;
+
+  background:
+    #0b1220;
+
+  color:
+    #f8fafc;
+
+  font-size: 12px;
+
+  color-scheme: dark;
+}
+
+
+.production-reports-period-picker input[type="date"]:focus {
+  outline: none;
+
+  border-color:
+    rgba(96, 165, 250, 0.70);
+
+  box-shadow:
+    0 0 0 2px
+    rgba(59, 130, 246, 0.14);
+}
+
+
+.production-reports-period-picker
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+
+  opacity: 0.82;
+}
+
+
+/* =========================================================
+   PERIOD NOTE
+========================================================= */
+
+.production-reports-period-note {
+  margin-top: 9px;
+
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.76);
+}
+
+
+/* =========================================================
+   PERIOD ACTIONS
+========================================================= */
+
+.production-reports-period-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  margin-top: 12px;
+}
+
+
+.production-reports-period-actions button {
+  min-height: 32px;
+
+  padding:
+    0 12px;
+}
+
+
+/* =========================================================
+   STATUS FILTER
+========================================================= */
 
 .production-reports-status-filter {
   min-width: 165px;
-
   width: auto;
 
   flex: 0 0 auto;
+
+  cursor: pointer;
+
+  appearance: auto;
 }
 
 
-.production-reports-sort-btn {
-  min-width: 125px;
-
-  flex: 0 0 auto;
-}
-
+/* =========================================================
+   CLEAR FILTERS
+========================================================= */
 
 .production-reports-clear-btn {
   min-width: 82px;
 
   flex: 0 0 auto;
+
+  justify-content: center;
+
+  color:
+    #cbd5e1;
+}
+
+
+/* =========================================================
+   REMOVE REDUNDANT UPDATED BUTTON
+
+   Sorting is handled by UPDATED table header.
+========================================================= */
+
+#productionReportsUpdatedSortBtn {
+  display: none !important;
 }
 
 
@@ -1932,8 +2216,60 @@
 
   min-width: 82px;
 
+  padding:
+    7px 11px;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.18);
+
+  border-radius: 9px;
+
+  background:
+    #111827;
+
+  color:
+    #f8fafc;
+
+  font-size: 12px;
+  font-weight: 750;
+
+  text-align: center;
+
   white-space: nowrap;
 }
+
+
+/* =========================================================
+   UPDATED TABLE HEADER SORT
+========================================================= */
+
+.production-report-updated-header {
+  cursor: pointer;
+
+  user-select: none;
+
+  white-space: nowrap;
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+.production-report-updated-header:hover {
+  color:
+    #bfdbfe;
+
+  background:
+    rgba(59, 130, 246, 0.06);
+}
+
+
+/* =========================================================
+   MEDIUM SCREENS
+========================================================= */
 
 @media (max-width: 1250px) {
 
@@ -1947,6 +2283,66 @@
     justify-content: flex-start;
 
     flex-wrap: wrap;
+  }
+
+
+  .reporting-reports-count {
+    justify-self: start;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .production-reports-filter-bar {
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+
+    width: 100%;
+  }
+
+
+  .production-reports-period-wrap {
+    grid-column:
+      1 / -1;
+
+    width: 100%;
+  }
+
+
+  .production-reports-period-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  .production-reports-status-filter,
+  .production-reports-clear-btn {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+
+  .production-reports-period-picker {
+    left: 0;
+    right: auto;
+
+    width:
+      min(360px, 92vw);
+  }
+
+
+  .production-reports-period-grid {
+    grid-template-columns:
+      1fr;
   }
 
 
