@@ -320,6 +320,7 @@ function getUnitsForAssetSection(assetId, section) {
 /* =====================
    FILTERS
 ===================== */
+
 function buildAssetDropdown() {
 
   const menu =
@@ -329,7 +330,9 @@ function buildAssetDropdown() {
     getEl("assetDropdownBtn");
 
 
-  if (!menu || !btn) return;
+  if (!menu || !btn) {
+    return;
+  }
 
 
   menu.innerHTML = "";
@@ -374,6 +377,13 @@ function buildAssetDropdown() {
         String(
           t.serial_number ||
           ""
+        ).trim(),
+
+      line:
+        String(
+          t.line_code ||
+          t.line_name ||
+          ""
         ).trim()
 
     });
@@ -384,24 +394,59 @@ function buildAssetDropdown() {
   const assets =
     Array.from(
       map.values()
-    ).sort((a, b) => {
-
-      const la =
-        `${a.name} ${a.serial}`;
-
-      const lb =
-        `${b.name} ${b.serial}`;
+    );
 
 
-      return la.localeCompare(
-        lb,
-        "el",
-        {
-          sensitivity: "base"
-        }
+  /* =====================
+     GROUP BY LINE
+  ===================== */
+
+  const grouped =
+    new Map();
+
+
+  assets.forEach(asset => {
+
+    const line =
+      asset.line ||
+      "OTHER";
+
+
+    if (!grouped.has(line)) {
+
+      grouped.set(
+        line,
+        []
       );
 
-    });
+    }
+
+
+    grouped
+      .get(line)
+      .push(asset);
+
+  });
+
+
+  /* =====================
+     SORT LINES
+  ===================== */
+
+  const sortedGroups =
+    Array.from(
+      grouped.entries()
+    ).sort(
+      ([lineA], [lineB]) =>
+        lineA.localeCompare(
+          lineB,
+          "en",
+          {
+            numeric: true,
+            sensitivity: "base"
+          }
+        )
+    );
 
 
   /* =====================
@@ -439,36 +484,103 @@ function buildAssetDropdown() {
 
   /* =====================
      ASSET OPTIONS
+     GROUPED BY LINE
+     LINE NAME HIDDEN
   ===================== */
 
-  assets.forEach(a => {
+  sortedGroups.forEach(
+    ([line, lineAssets], groupIndex) => {
 
-    const div =
-      document.createElement(
-        "div"
+      /* =====================
+         SEPARATOR BETWEEN LINES
+      ===================== */
+
+      if (groupIndex > 0) {
+
+        const separator =
+          document.createElement(
+            "div"
+          );
+
+
+        separator.className =
+          "asset-line-separator";
+
+
+        menu.appendChild(
+          separator
+        );
+
+      }
+
+
+      /* =====================
+         SORT ASSETS WITHIN LINE
+      ===================== */
+
+      lineAssets.sort(
+        (a, b) => {
+
+          const la =
+            `${a.name} ${a.serial}`;
+
+          const lb =
+            `${b.name} ${b.serial}`;
+
+
+          return la.localeCompare(
+            lb,
+            "el",
+            {
+              sensitivity:
+                "base",
+
+              numeric:
+                true
+            }
+          );
+
+        }
       );
 
 
-    div.className =
-      "asset-option";
+      /* =====================
+         RENDER ASSETS
+      ===================== */
+
+      lineAssets.forEach(a => {
+
+        const div =
+          document.createElement(
+            "div"
+          );
 
 
-    div.dataset.value =
-      a.value;
+        div.className =
+          "asset-option";
 
 
-    div.innerHTML = `
-      <div class="asset-option-line">
-        <strong>${a.name || "Unnamed Asset"}</strong>
-        <span class="asset-option-separator">|</span>
-        <span class="asset-option-serial">${a.serial || ""}</span>
-      </div>
-    `;
+        div.dataset.value =
+          a.value;
 
 
-        menu.appendChild(div);
+        div.innerHTML = `
+          <div class="asset-option-line">
+            <strong>${a.name || "Unnamed Asset"}</strong>
+            <span class="asset-option-separator">|</span>
+            <span class="asset-option-serial">${a.serial || ""}</span>
+          </div>
+        `;
+
+
+        menu.appendChild(
+          div
+        );
 
       });
+
+    }
+  );
 
 }
 

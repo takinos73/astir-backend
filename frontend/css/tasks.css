@@ -218,3 +218,14 @@ tr.task-restoration {
   font-size: 12px;
   font-weight: 500;
 }
+
+.asset-line-separator {
+  height: 1px;
+
+  margin: 5px 8px;
+
+  background:
+    rgba(148, 163, 184, 0.12);
+
+  pointer-events: none;
+}
