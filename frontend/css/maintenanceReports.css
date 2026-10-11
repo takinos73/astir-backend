@@ -316,6 +316,8 @@
 
   font-weight: 700;
 
+  height: 18px;
+
   border-radius: 6px;
 
   transition:
@@ -2815,7 +2817,6 @@ textarea {
     rgba(148, 163, 184, 0.74);
 }
 
-
 /* =========================================================
    COMPACT GUIDANCE
 ========================================================= */
@@ -2835,7 +2836,6 @@ textarea {
     rgba(15, 23, 42, 0.34);
 }
 
-
 .reporting-modal-guidance-title {
   margin-bottom: 7px;
 
@@ -2845,7 +2845,6 @@ textarea {
   color:
     rgba(226, 232, 240, 0.88);
 }
-
 
 .reporting-modal-guidance-list {
   display: flex;
@@ -2861,7 +2860,6 @@ textarea {
     rgba(148, 163, 184, 0.86);
 }
 
-
 /* =========================================================
    COMPACT SHIFT SUMMARY
 ========================================================= */
@@ -2876,7 +2874,6 @@ textarea {
 
   margin-top: 10px;
 }
-
 
 .reporting-modal-summary-item {
   display: flex;
@@ -2905,7 +2902,6 @@ textarea {
   font-size: 11px;
 }
 
-
 .reporting-modal-summary-item strong {
   font-size: 16px;
 
@@ -2913,30 +2909,25 @@ textarea {
     #f8fafc;
 }
 
-
 .reporting-modal-summary-item.urgent {
   border-color:
     rgba(249, 115, 22, 0.20);
 }
-
 
 .reporting-modal-summary-item.urgent strong {
   color:
     #fdba74;
 }
 
-
 .reporting-modal-summary-item.stopped {
   border-color:
     rgba(239, 68, 68, 0.20);
 }
 
-
 .reporting-modal-summary-item.stopped strong {
   color:
     #fca5a5;
 }
-
 
 /* =========================================================
    MAINTENANCE REVIEW INFO
@@ -2979,7 +2970,6 @@ textarea {
     rgba(191, 219, 254, 0.95);
 }
 
-
 /* =========================================================
    MODAL ACTIONS
 ========================================================= */
@@ -2990,22 +2980,20 @@ textarea {
   justify-content: flex-end;
   align-items: center;
 
-  gap: 9px;
+  gap: 9px; 
 
-  margin-top: 16px;
+  padding-top: 16px;
 
-  padding-top: 14px;
+  margin:4px 1px;
 
   border-top:
     1px solid rgba(148, 163, 184, 0.12);
 }
 
-
 .reporting-modal-actions
 .reporting-submit-btn {
   min-width: 130px;
 }
-
 
 /* =========================================================
    MOBILE
@@ -3021,13 +3009,11 @@ textarea {
       92vh;
   }
 
-
   .reporting-new-report-modal
   .reporting-form-grid {
     grid-template-columns:
       1fr;
   }
-
 
   .reporting-new-report-modal
   .field.full-width {
@@ -3035,27 +3021,22 @@ textarea {
       auto;
   }
 
-
   .reporting-modal-summary {
     grid-template-columns:
       1fr;
   }
 
-
   .reporting-modal-guidance-list {
     flex-direction: column;
   }
-
 
   .reporting-modal-info {
     flex-direction: column;
   }
 
-
   .reporting-modal-actions {
     align-items: stretch;
   }
-
 
   .reporting-modal-actions button {
     flex:
@@ -3079,7 +3060,6 @@ textarea {
   margin-bottom: 18px;
 }
 
-
 .reporting-page-header h2 {
   margin: 0;
 
@@ -3089,7 +3069,6 @@ textarea {
   color: #f8fafc;
 }
 
-
 .reporting-page-subtitle {
   margin-top: 5px;
 
@@ -3098,7 +3077,6 @@ textarea {
   color:
     rgba(148, 163, 184, 0.84);
 }
-
 
 /* =========================================================
    REPORT NEW ISSUE BUTTON
@@ -3134,7 +3112,6 @@ textarea {
     color 0.15s ease;
 }
 
-
 .reporting-open-report-btn:hover {
   background:
     rgba(34, 197, 94, 0.18);
@@ -3153,7 +3130,6 @@ textarea {
     align-items: stretch;
     flex-direction: column;
   }
-
 
   .reporting-open-report-btn {
     width: 100%;
