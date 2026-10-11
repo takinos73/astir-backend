@@ -361,146 +361,162 @@ function applyRoleUI(role) {
   }
 
 
-  /* =====================================================
-     SHIFT FOREMAN VIEW
+/* =====================================================
+   SHIFT FOREMAN VIEW
 
-     Shift Foreman sees ONLY:
-     - Production Reporting tab
-     - Production Reporting panel
+   Shift Foreman sees ONLY:
+   - Production Reporting tab
+   - Production Reporting panel
+===================================================== */
 
-     NO access to:
-     - Dashboard
-     - Assets
-     - Tasks
-     - Incidents
-     - Production Reports Maintenance Queue
-     - Technicians
-     - Audit Reports
-     - Management
-     - Library
-     - Docs
-     - Admin tools
-  ===================================================== */
+else if (isShiftForeman) {
 
-  else if (isShiftForeman) {
+  /* ---------------------
+     HIDE ALL MAIN TABS
+  --------------------- */
 
-    /* ---------------------
-       HIDE ALL MAIN TABS
-    --------------------- */
+  document
+    .querySelectorAll(".main-tab")
+    .forEach(tab => {
 
-    document
-      .querySelectorAll(".main-tab")
-      .forEach(tab => {
+      tab.style.display =
+        "none";
 
-        tab.style.display =
-          "none";
-
-        tab.classList.remove(
-          "active"
-        );
-
-      });
-
-
-    /* ---------------------
-       SHOW REPORTING TAB
-    --------------------- */
-
-    const reportingTab =
-      document.querySelector(
-        '.main-tab[data-tab="reporting"]'
-      );
-
-
-    if (reportingTab) {
-
-      reportingTab.style.display =
-        "";
-
-      reportingTab.classList.add(
+      tab.classList.remove(
         "active"
       );
 
-    }
+    });
 
 
-    /* ---------------------
-       HIDE TOP TOOLS
-    --------------------- */
+  /* ---------------------
+     SHOW REPORTING TAB
+  --------------------- */
 
-    const topTools =
-      document.querySelector(
-        ".top-tools"
+  const reportingTab =
+    document.querySelector(
+      '.main-tab[data-tab="reporting"]'
+    );
+
+
+  if (reportingTab) {
+
+    reportingTab.style.display =
+      "";
+
+    reportingTab.classList.add(
+      "active"
+    );
+
+  }
+
+
+  /* ---------------------
+     HIDE TOP TOOLS
+  --------------------- */
+
+  const topTools =
+    document.querySelector(
+      ".top-tools"
+    );
+
+
+  if (topTools) {
+
+    topTools.style.display =
+      "none";
+
+  }
+
+
+  /* ---------------------
+     HARD HIDE ALL CMMS PANELS
+
+     Do not rely only on
+     .tab-panel class during
+     initial / hard refresh.
+  --------------------- */
+
+  [
+    "tab-management",
+    "tab-dashboard",
+    "tab-assets",
+    "tab-tasks",
+    "tab-breakdowns",
+    "tab-maintenance-reports",
+    "tab-technicians",
+    "tab-reports",
+    "tab-library",
+    "tab-docs"
+  ].forEach(id => {
+
+    const panel =
+      document.getElementById(
+        id
       );
 
 
-    if (topTools) {
+    if (panel) {
 
-      topTools.style.display =
+      panel.style.display =
         "none";
 
     }
 
-
-    /* ---------------------
-       HIDE ALL PANELS
-    --------------------- */
-
-    document
-      .querySelectorAll(".tab-panel")
-      .forEach(panel => {
-
-        panel.style.display =
-          "none";
-
-      });
+  });
 
 
-    /* ---------------------
-       SHOW REPORTING PANEL
-    --------------------- */
+  /* ---------------------
+     ALSO HIDE ANY PANEL
+     USING .tab-panel
+  --------------------- */
 
-    const reportingPanel =
-      document.getElementById(
-        "tab-reporting"
-      );
+  document
+    .querySelectorAll(".tab-panel")
+    .forEach(panel => {
 
+      panel.style.display =
+        "none";
 
-    if (reportingPanel) {
-
-      reportingPanel.style.display =
-        "block";
-
-    }
+    });
 
 
-    /* ---------------------
-       OPEN REPORTING TAB
-    --------------------- */
+  /* ---------------------
+     SHOW ONLY REPORTING
+  --------------------- */
 
-    if (reportingTab) {
+  const reportingPanel =
+    document.getElementById(
+      "tab-reporting"
+    );
 
-      reportingTab.click();
 
-    }
+  if (reportingPanel) {
 
-
-    /* ---------------------
-       LOAD FOREMAN
-       REPORTING DATA
-    --------------------- */
-
-    if (
-      typeof initMaintenanceReporting ===
-      "function"
-    ) {
-
-      initMaintenanceReporting();
-
-    }
+    reportingPanel.style.display =
+      "block";
 
   }
 
+
+  /* ---------------------
+     LOAD FOREMAN DATA
+
+     IMPORTANT:
+     No artificial .click()
+     required.
+  --------------------- */
+
+  if (
+    typeof initMaintenanceReporting ===
+      "function"
+  ) {
+
+    initMaintenanceReporting();
+
+  }
+
+}
 
   /* =====================================================
      NORMAL CMMS VIEW
