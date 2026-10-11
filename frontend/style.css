@@ -3166,3 +3166,39 @@ tr.history-unplanned {
 .top-tools {
   display: none !important;
 }
+
+/* =========================================================
+   SHIFT FOREMAN — HARD UI LOCK
+
+   Shift Foreman must NEVER see any CMMS panel
+   except Production Reporting.
+========================================================= */
+
+body.cmms-authenticated[data-role="shift_foreman"]
+.tab-panel {
+  display: none !important;
+}
+
+
+/* Production Reporting is the ONLY allowed panel */
+
+body.cmms-authenticated[data-role="shift_foreman"]
+#tab-reporting {
+  display: block !important;
+}
+
+
+/* Hide all normal CMMS main tabs */
+
+body.cmms-authenticated[data-role="shift_foreman"]
+.main-tab:not([data-tab="reporting"]) {
+  display: none !important;
+}
+
+
+/* Keep Production Reporting tab visible */
+
+body.cmms-authenticated[data-role="shift_foreman"]
+.main-tab[data-tab="reporting"] {
+  display: inline-flex !important;
+}
