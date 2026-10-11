@@ -661,68 +661,227 @@ else if (isShiftForeman) {
 /* =====================
    LOAD LOGIN TECHNICIANS
 ===================== */
-async function loadLoginTechnicians() {
-  const select = document.getElementById("loginTechnician");
 
-  if (!select) return;
+async function loadLoginTechnicians() {
+
+  const select =
+    document.getElementById(
+      "loginTechnician"
+    );
+
+
+  if (!select) {
+    return;
+  }
+
 
   select.innerHTML = `
-    <option value="">Loading technicians...</option>
+    <option value="">
+      Loading users...
+    </option>
   `;
 
-  select.disabled = true;
+
+  select.disabled =
+    true;
+
 
   try {
-    const response = await fetch( `${API}/technicians?include_managers=true`);
+
+    const response =
+      await fetch(
+        `${API}/technicians?include_managers=true`
+      );
+
 
     if (!response.ok) {
+
       throw new Error(
-        `Failed to load technicians: ${response.status}`
+        `Failed to load users: ${response.status}`
       );
+
     }
 
-    const technicians = await response.json();
+
+    const technicians =
+      await response.json();
+
 
     select.innerHTML = `
-      <option value="">Select User</option>
+      <option value="">
+        Select User
+      </option>
     `;
 
-    technicians
-      .filter(
+
+    /* =====================
+       ACTIVE LOGIN USERS ONLY
+    ===================== */
+
+    const users =
+      technicians
+        .filter(
           technician =>
-          technician.active !== false &&
-          technician.is_user === true
-      )
-      .sort((a, b) =>
-        String(a.name || "").localeCompare(
-          String(b.name || ""),
-          "el"
+            technician.active !== false &&
+            technician.is_user === true
         )
-      )
-      .forEach(technician => {
-        const option = document.createElement("option");
+        .map(
+          technician => ({
+            ...technician,
 
-        option.value = technician.id;
-        option.textContent = technician.name;
+            normalizedRole:
+              normalizeTechnicianRole(
+                technician.role
+              )
+          })
+        );
+
+
+    /* =====================
+       GROUP CONFIG
+    ===================== */
+
+    const groups = [
+      {
+        label:
+          "MANAGERS",
+
+        roles: [
+          "manager"
+        ]
+      },
+
+      {
+        label:
+          "TECHNICIANS",
+
+        roles: [
+          "admin",
+          "planner",
+          "technician"
+        ]
+      },
+
+      {
+        label:
+          "SHIFT FOREMEN",
+
+        roles: [
+          "shift_foreman"
+        ]
+      }
+    ];
+
+
+    /* =====================
+       BUILD GROUPS
+    ===================== */
+
+    groups.forEach(group => {
+
+      const groupUsers =
+        users
+          .filter(
+            user =>
+              group.roles.includes(
+                user.normalizedRole
+              )
+          )
+          .sort(
+            (a, b) =>
+              String(
+                a.name || ""
+              ).localeCompare(
+                String(
+                  b.name || ""
+                ),
+                "el",
+                {
+                  sensitivity:
+                    "base",
+
+                  numeric:
+                    true
+                }
+              )
+          );
+
+
+      if (
+        groupUsers.length === 0
+      ) {
+        return;
+      }
+
+
+      const optgroup =
+        document.createElement(
+          "optgroup"
+        );
+
+
+      optgroup.label =
+        group.label;
+
+
+      groupUsers.forEach(user => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+
+        option.value =
+          user.id;
+
+
+        option.textContent =
+          user.name;
+
+
         option.dataset.role =
-          normalizeTechnicianRole(technician.role);
+          user.normalizedRole;
 
-        select.appendChild(option);
+
+        optgroup.appendChild(
+          option
+        );
+
       });
 
-    select.disabled = false;
+
+      select.appendChild(
+        optgroup
+      );
+
+    });
+
+
+    select.disabled =
+      false;
+
+
   } catch (error) {
+
     console.error(
       "LOAD LOGIN TECHNICIANS ERROR:",
       error
     );
 
+
     select.innerHTML = `
-      <option value="">Unable to load technicians</option>
+      <option value="">
+        Unable to load users
+      </option>
     `;
 
-    select.disabled = true;
+
+    select.disabled =
+      true;
+
   }
+
 }
 
 /* =====================
