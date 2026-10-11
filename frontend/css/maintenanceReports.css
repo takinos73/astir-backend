@@ -316,7 +316,7 @@
 
   font-weight: 700;
 
-  border-radius: 9px;
+  border-radius: 6px;
 
   transition:
     background 0.15s ease,
@@ -333,7 +333,7 @@
     rgba(74, 131, 222, 0.46);
 
   color:
-    #bbf7d0;
+    #c4f6ff;
 }
 
 
