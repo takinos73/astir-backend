@@ -2062,42 +2062,251 @@
         Current renderer remains connected for now.
     ====================================================== -->
 
-    <section class="reporting-card reporting-reports-section">
+  <section class="reporting-card reporting-reports-section">
 
-      <div class="reporting-reports-header">
+    <!-- =====================================================
+        PRODUCTION REPORTS HEADER + FILTERS
+    ====================================================== -->
 
-        <div>
+    <div class="reporting-reports-header">
 
-          <h3>
-            Production Reports
-          </h3>
+      <!-- =====================
+          TITLE
+      ===================== -->
 
-          <div class="reporting-reports-subtitle">
-            Issues reported by all Shift Foremen
+      <div class="reporting-reports-title-block">
+
+        <h3>
+          Production Reports
+        </h3>
+
+        <div class="reporting-reports-subtitle">
+          Issues reported by all Shift Foremen
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+          FILTER BAR
+      ===================== -->
+
+      <div class="production-reports-filter-bar">
+
+        <!-- =====================
+            PERIOD RANGE PICKER
+        ===================== -->
+
+        <div class="production-reports-period-wrap">
+
+          <button
+            id="productionReportsPeriodBtn"
+            class="production-reports-filter-control production-reports-period-btn"
+            type="button"          >
+
+            <span class="production-reports-filter-icon">
+              📅
+            </span>
+
+            <span class="production-reports-filter-label">
+              Period
+            </span>
+
+            <span
+              id="productionReportsPeriodText"
+              class="production-reports-period-text"
+            >
+              All dates
+            </span>
+
+            <span class="production-reports-filter-arrow">
+              ▾
+            </span>
+
+          </button>
+
+          <!-- =====================
+              PERIOD POPOVER
+          ===================== -->
+
+          <div
+            id="productionReportsPeriodPicker"
+            class="production-reports-period-picker"
+            style="display:none;"
+          >
+
+            <div class="production-reports-period-picker-title">
+              Select Period
+            </div>
+
+            <div class="production-reports-period-grid">
+
+              <div class="field">
+
+                <label for="productionReportsDateFrom">
+                  From
+                </label>
+
+                <input
+                  id="productionReportsDateFrom"
+                  type="date"
+                >
+
+              </div>
+
+              <div class="field">
+
+                <label for="productionReportsDateTo">
+                  To
+                </label>
+
+                <input
+                  id="productionReportsDateTo"
+                  type="date"
+                >
+
+              </div>
+
+            </div>
+
+
+            <div class="production-reports-period-note">
+              Future dates are not allowed.
+            </div>
+
+
+            <div class="production-reports-period-actions">
+
+              <button
+                id="productionReportsPeriodClearBtn"
+                class="btn-cancel"
+                type="button"
+              >
+                Clear
+              </button>
+
+
+              <button
+                id="productionReportsPeriodApplyBtn"
+                class="btn-table"
+                type="button"
+              >
+                Apply
+              </button>
+
+            </div>
+
           </div>
 
         </div>
 
+        <!-- =====================
+            STATUS FILTER
+        ===================== -->
 
-        <div
-          id="productionReportsCount"
-          class="reporting-reports-count"
+        <select
+          id="productionReportsStatusFilter"
+          class="production-reports-filter-control production-reports-status-filter"
         >
-          0 Reports
-        </div>
+
+          <option value="ALL">
+            Status: All
+          </option>
+
+          <option value="NEW">
+            Status: New
+          </option>
+
+          <option value="UNDER_REVIEW">
+            Status: Under Review
+          </option>
+
+          <option value="CONVERTED">
+            Status: Converted
+          </option>
+
+          <option value="CLOSED">
+            Status: Closed
+          </option>
+
+        </select>
+
+        <!-- =====================
+            UPDATED SORT
+        ===================== -->
+
+        <button
+          id="productionReportsUpdatedSortBtn"
+          class="production-reports-filter-control production-reports-sort-btn"
+          type="button"
+          title="Sort by last update"
+        >
+
+          <span class="production-reports-sort-icon">
+            ⇅
+          </span>
+
+          <span>
+            Updated
+          </span>
+
+          <span
+            id="productionReportsUpdatedSortArrow"
+            class="production-reports-sort-arrow"
+          >
+            ↓
+          </span>
+
+        </button>
+
+        <!-- =====================
+            CLEAR ALL FILTERS
+        ===================== -->
+
+        <button
+          id="productionReportsClearFiltersBtn"
+          class="production-reports-filter-control production-reports-clear-btn"
+          type="button"
+        >
+
+          <span>
+            ↻
+          </span>
+
+          <span>
+            Clear
+          </span>
+
+        </button>
 
       </div>
 
+
+      <!-- =====================
+          REPORT COUNT
+      ===================== -->
 
       <div
-        id="productionReportsList"
-        class="reporting-reports-list"
+        id="productionReportsCount"
+        class="reporting-reports-count"
       >
-        Loading reports...
+        0 Reports
       </div>
 
-    </section>
+    </div>
 
+    <!-- =====================================================
+        REPORT TABLE
+    ====================================================== -->
+
+    <div
+      id="productionReportsList"
+      class="reporting-reports-list"
+    >
+      Loading reports...
+    </div>
+
+  </section>
 
   </div>
 
@@ -7120,7 +7329,7 @@
           class="btn-cancel"
           type="button"
         >
-          Cancel
+          Close
         </button>
 
       </div>

@@ -3,6 +3,1023 @@
    Production → Maintenance reporting layer
 ========================================================= */
 
+/* =========================================================
+   PRODUCTION REPORT FILTER / SORT STATE
+========================================================= */
+
+let productionReportsData = [];
+
+
+const productionReportsViewState = {
+
+  dateFrom: null,
+  dateTo: null,
+
+  status:
+    "ALL",
+
+  updatedSort:
+    "DESC"
+
+};
+
+/* =========================================================
+   RESOLVE UPDATED DATE
+========================================================= */
+
+function getProductionReportUpdatedDate(report) {
+
+  const raw =
+    report?.updated_at ||
+    report?.reviewed_at ||
+    report?.reported_at ||
+    null;
+
+
+  if (!raw) {
+    return null;
+  }
+
+
+  const date =
+    new Date(raw);
+
+
+  return Number.isNaN(
+    date.getTime()
+  )
+    ? null
+    : date;
+
+}
+
+/* =========================================================
+   APPLY FILTERS + SORT
+========================================================= */
+
+function getFilteredProductionReports() {
+
+  let reports =
+    Array.isArray(productionReportsData)
+      ? [...productionReportsData]
+      : [];
+
+
+  /* =====================
+     PERIOD FILTER
+
+     Period is based on when the
+     Foreman submitted the Report.
+  ===================== */
+
+  if (
+    productionReportsViewState.dateFrom
+  ) {
+
+    const from =
+      new Date(
+        `${productionReportsViewState.dateFrom}T00:00:00`
+      );
+
+
+    reports =
+      reports.filter(report => {
+
+        const reported =
+          report.reported_at
+            ? new Date(
+                report.reported_at
+              )
+            : null;
+
+
+        return (
+          reported &&
+          !Number.isNaN(
+            reported.getTime()
+          ) &&
+          reported >= from
+        );
+
+      });
+
+  }
+
+
+  if (
+    productionReportsViewState.dateTo
+  ) {
+
+    const to =
+      new Date(
+        `${productionReportsViewState.dateTo}T23:59:59.999`
+      );
+
+
+    reports =
+      reports.filter(report => {
+
+        const reported =
+          report.reported_at
+            ? new Date(
+                report.reported_at
+              )
+            : null;
+
+
+        return (
+          reported &&
+          !Number.isNaN(
+            reported.getTime()
+          ) &&
+          reported <= to
+        );
+
+      });
+
+  }
+
+
+  /* =====================
+     STATUS FILTER
+  ===================== */
+
+  if (
+    productionReportsViewState.status !==
+    "ALL"
+  ) {
+
+    reports =
+      reports.filter(report =>
+
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase() ===
+        productionReportsViewState.status
+
+      );
+
+  }
+
+
+  /* =====================
+     UPDATED SORT
+  ===================== */
+
+  reports.sort(
+    (a, b) => {
+
+      const dateA =
+        getProductionReportUpdatedDate(a);
+
+
+      const dateB =
+        getProductionReportUpdatedDate(b);
+
+
+      const timeA =
+        dateA
+          ? dateA.getTime()
+          : 0;
+
+
+      const timeB =
+        dateB
+          ? dateB.getTime()
+          : 0;
+
+
+      return (
+        productionReportsViewState.updatedSort ===
+        "ASC"
+      )
+        ? timeA - timeB
+        : timeB - timeA;
+
+    }
+  );
+
+
+  return reports;
+
+}
+
+/* =========================================================
+   REFRESH PRODUCTION REPORT VIEW
+========================================================= */
+
+function refreshProductionReportsView() {
+
+  const reports =
+    getFilteredProductionReports();
+
+
+  renderProductionReports(
+    reports
+  );
+
+
+  const count =
+    document.getElementById(
+      "productionReportsCount"
+    );
+
+
+  if (count) {
+
+    count.textContent =
+      `${reports.length} Report${reports.length === 1 ? "" : "s"}`;
+
+  }
+
+
+  updateProductionReportsFilterUI();
+
+}
+
+/* =========================================================
+   PRODUCTION REPORTS FILTER UI
+========================================================= */
+
+
+/* =========================================================
+   LOCAL TODAY — YYYY-MM-DD
+
+   IMPORTANT:
+   Uses local browser date.
+   Avoids UTC date shift.
+========================================================= */
+
+function getProductionReportsLocalToday() {
+
+  const now =
+    new Date();
+
+
+  const year =
+    now.getFullYear();
+
+
+  const month =
+    String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  const day =
+    String(
+      now.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  return `${year}-${month}-${day}`;
+
+}
+
+/* =========================================================
+   FORMAT PERIOD DATE
+========================================================= */
+
+function formatProductionReportsPeriodDate(
+  value
+) {
+
+  if (!value) {
+    return "";
+  }
+
+
+  const parts =
+    String(value)
+      .split("-");
+
+
+  if (parts.length !== 3) {
+    return value;
+  }
+
+
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+
+}
+
+/* =========================================================
+   UPDATE FILTER UI
+========================================================= */
+
+function updateProductionReportsFilterUI() {
+
+  const periodText =
+    document.getElementById(
+      "productionReportsPeriodText"
+    );
+
+
+  const statusFilter =
+    document.getElementById(
+      "productionReportsStatusFilter"
+    );
+
+
+  const sortArrow =
+    document.getElementById(
+      "productionReportsUpdatedSortArrow"
+    );
+
+
+  const dateFrom =
+    productionReportsViewState.dateFrom;
+
+
+  const dateTo =
+    productionReportsViewState.dateTo;
+
+
+  /* =====================
+     PERIOD LABEL
+  ===================== */
+
+  if (periodText) {
+
+    if (
+      dateFrom &&
+      dateTo
+    ) {
+
+      periodText.textContent =
+        `${formatProductionReportsPeriodDate(
+          dateFrom
+        )} – ${formatProductionReportsPeriodDate(
+          dateTo
+        )}`;
+
+    } else {
+
+      periodText.textContent =
+        "All dates";
+
+    }
+
+  }
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  if (statusFilter) {
+
+    statusFilter.value =
+      productionReportsViewState.status;
+
+  }
+
+
+  /* =====================
+     SORT ARROW
+  ===================== */
+
+  if (sortArrow) {
+
+    sortArrow.textContent =
+      productionReportsViewState.updatedSort ===
+        "ASC"
+        ? "↑"
+        : "↓";
+
+  }
+
+}
+
+/* =========================================================
+   OPEN / CLOSE PERIOD PICKER
+========================================================= */
+
+function setProductionReportsPeriodPickerOpen(
+  isOpen
+) {
+
+  const picker =
+    document.getElementById(
+      "productionReportsPeriodPicker"
+    );
+
+
+  if (!picker) {
+    return;
+  }
+
+
+  picker.style.display =
+    isOpen
+      ? "block"
+      : "none";
+
+}
+
+/* =========================================================
+   INITIALIZE PRODUCTION REPORT FILTERS
+========================================================= */
+
+function initProductionReportsFilters() {
+
+  const periodBtn =
+    document.getElementById(
+      "productionReportsPeriodBtn"
+    );
+
+
+  const picker =
+    document.getElementById(
+      "productionReportsPeriodPicker"
+    );
+
+
+  const fromInput =
+    document.getElementById(
+      "productionReportsDateFrom"
+    );
+
+
+  const toInput =
+    document.getElementById(
+      "productionReportsDateTo"
+    );
+
+
+  const periodApplyBtn =
+    document.getElementById(
+      "productionReportsPeriodApplyBtn"
+    );
+
+
+  const periodClearBtn =
+    document.getElementById(
+      "productionReportsPeriodClearBtn"
+    );
+
+
+  const statusFilter =
+    document.getElementById(
+      "productionReportsStatusFilter"
+    );
+
+
+  const sortBtn =
+    document.getElementById(
+      "productionReportsUpdatedSortBtn"
+    );
+
+
+  const clearFiltersBtn =
+    document.getElementById(
+      "productionReportsClearFiltersBtn"
+    );
+
+
+  const today =
+    getProductionReportsLocalToday();
+
+
+  /* =====================
+     DISABLE FUTURE DATES
+  ===================== */
+
+  if (fromInput) {
+
+    fromInput.max =
+      today;
+
+  }
+
+
+  if (toInput) {
+
+    toInput.max =
+      today;
+
+  }
+
+
+  /* =====================
+     PERIOD BUTTON
+  ===================== */
+
+  periodBtn
+    ?.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+
+        if (!picker) {
+          return;
+        }
+
+
+        const isOpen =
+          picker.style.display !==
+          "none";
+
+
+        if (!isOpen) {
+
+          if (fromInput) {
+
+            fromInput.value =
+              productionReportsViewState.dateFrom ||
+              "";
+
+          }
+
+
+          if (toInput) {
+
+            toInput.value =
+              productionReportsViewState.dateTo ||
+              "";
+
+          }
+
+        }
+
+
+        setProductionReportsPeriodPickerOpen(
+          !isOpen
+        );
+
+      }
+    );
+
+
+  /* =====================
+     PREVENT PICKER CLICK
+     FROM CLOSING POPOVER
+  ===================== */
+
+  picker
+    ?.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+      }
+    );
+
+
+  /* =====================
+     FROM CHANGE
+
+     Restrict To >= From
+  ===================== */
+
+  fromInput
+    ?.addEventListener(
+      "change",
+      () => {
+
+        const fromValue =
+          String(
+            fromInput.value ||
+            ""
+          );
+
+
+        if (
+          fromValue &&
+          fromValue > today
+        ) {
+
+          fromInput.value =
+            today;
+
+        }
+
+
+        if (toInput) {
+
+          toInput.min =
+            fromInput.value ||
+            "";
+
+        }
+
+      }
+    );
+
+
+  /* =====================
+     TO CHANGE
+
+     Restrict From <= To
+  ===================== */
+
+  toInput
+    ?.addEventListener(
+      "change",
+      () => {
+
+        const toValue =
+          String(
+            toInput.value ||
+            ""
+          );
+
+
+        if (
+          toValue &&
+          toValue > today
+        ) {
+
+          toInput.value =
+            today;
+
+        }
+
+
+        if (fromInput) {
+
+          fromInput.max =
+            toInput.value ||
+            today;
+
+        }
+
+      }
+    );
+
+
+  /* =====================
+     APPLY PERIOD
+  ===================== */
+
+  periodApplyBtn
+    ?.addEventListener(
+      "click",
+      () => {
+
+        const from =
+          String(
+            fromInput?.value ||
+            ""
+          ).trim();
+
+
+        const to =
+          String(
+            toInput?.value ||
+            ""
+          ).trim();
+
+
+        /* =====================
+           BOTH REQUIRED
+           OR BOTH EMPTY
+        ===================== */
+
+        if (
+          (from && !to) ||
+          (!from && to)
+        ) {
+
+          alert(
+            "Please select both From and To dates."
+          );
+
+          return;
+
+        }
+
+
+        /* =====================
+           FUTURE PROTECTION
+        ===================== */
+
+        if (
+          from > today ||
+          to > today
+        ) {
+
+          alert(
+            "Future dates are not allowed."
+          );
+
+          return;
+
+        }
+
+
+        /* =====================
+           RANGE VALIDATION
+        ===================== */
+
+        if (
+          from &&
+          to &&
+          from > to
+        ) {
+
+          alert(
+            "From date cannot be after To date."
+          );
+
+          return;
+
+        }
+
+
+        productionReportsViewState.dateFrom =
+          from || null;
+
+
+        productionReportsViewState.dateTo =
+          to || null;
+
+
+        setProductionReportsPeriodPickerOpen(
+          false
+        );
+
+
+        refreshProductionReportsView();
+
+      }
+    );
+
+
+  /* =====================
+     CLEAR PERIOD ONLY
+  ===================== */
+
+  periodClearBtn
+    ?.addEventListener(
+      "click",
+      () => {
+
+        productionReportsViewState.dateFrom =
+          null;
+
+
+        productionReportsViewState.dateTo =
+          null;
+
+
+        if (fromInput) {
+
+          fromInput.value =
+            "";
+
+          fromInput.max =
+            today;
+
+        }
+
+
+        if (toInput) {
+
+          toInput.value =
+            "";
+
+          toInput.min =
+            "";
+
+          toInput.max =
+            today;
+
+        }
+
+
+        setProductionReportsPeriodPickerOpen(
+          false
+        );
+
+
+        refreshProductionReportsView();
+
+      }
+    );
+
+
+  /* =====================
+     STATUS FILTER
+  ===================== */
+
+  statusFilter
+    ?.addEventListener(
+      "change",
+      () => {
+
+        const status =
+          String(
+            statusFilter.value ||
+            "ALL"
+          )
+            .trim()
+            .toUpperCase();
+
+
+        const allowedStatuses = [
+          "ALL",
+          "NEW",
+          "UNDER_REVIEW",
+          "CONVERTED",
+          "CLOSED"
+        ];
+
+
+        productionReportsViewState.status =
+          allowedStatuses.includes(
+            status
+          )
+            ? status
+            : "ALL";
+
+
+        refreshProductionReportsView();
+
+      }
+    );
+
+
+  /* =====================
+     UPDATED SORT BUTTON
+  ===================== */
+
+  sortBtn
+    ?.addEventListener(
+      "click",
+      () => {
+
+        productionReportsViewState.updatedSort =
+          productionReportsViewState.updatedSort ===
+            "DESC"
+            ? "ASC"
+            : "DESC";
+
+
+        refreshProductionReportsView();
+
+      }
+    );
+
+
+  /* =====================
+     CLEAR ALL FILTERS
+  ===================== */
+
+  clearFiltersBtn
+    ?.addEventListener(
+      "click",
+      () => {
+
+        productionReportsViewState.dateFrom =
+          null;
+
+
+        productionReportsViewState.dateTo =
+          null;
+
+
+        productionReportsViewState.status =
+          "ALL";
+
+
+        /*
+          Restore default:
+          newest report first
+        */
+
+        productionReportsViewState.updatedSort =
+          "DESC";
+
+
+        if (fromInput) {
+
+          fromInput.value =
+            "";
+
+          fromInput.max =
+            today;
+
+        }
+
+
+        if (toInput) {
+
+          toInput.value =
+            "";
+
+          toInput.min =
+            "";
+
+          toInput.max =
+            today;
+
+        }
+
+
+        if (statusFilter) {
+
+          statusFilter.value =
+            "ALL";
+
+        }
+
+
+        setProductionReportsPeriodPickerOpen(
+          false
+        );
+
+
+        refreshProductionReportsView();
+
+      }
+    );
+
+
+  /* =====================
+     CLICK OUTSIDE
+     CLOSE PERIOD PICKER
+  ===================== */
+
+  document.addEventListener(
+    "click",
+    event => {
+
+      if (
+        picker &&
+        periodBtn &&
+        !picker.contains(
+          event.target
+        ) &&
+        !periodBtn.contains(
+          event.target
+        )
+      ) {
+
+        setProductionReportsPeriodPickerOpen(
+          false
+        );
+
+      }
+
+    }
+  );
+
+
+  /* =====================
+     ESC CLOSES PICKER
+  ===================== */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Escape"
+      ) {
+
+        setProductionReportsPeriodPickerOpen(
+          false
+        );
+
+      }
+
+    }
+  );
+
+
+  /* =====================
+     INITIAL UI STATE
+  ===================== */
+
+  updateProductionReportsFilterUI();
+
+}
+
+/* =========================================================
+   FILTER INIT
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    initProductionReportsFilters();
+
+  }
+);
 
 /* =====================
    LOAD REPORTING ASSETS
@@ -672,19 +1689,10 @@ async function loadProductionReports() {
         ? data.reports
         : [];
 
+    productionReportsData =
+      reports;
 
-    renderProductionReports(
-      reports
-    );
-
-
-    if (count) {
-
-      count.textContent =
-        `${reports.length} Report${reports.length === 1 ? "" : "s"}`;
-
-    }
-
+    refreshProductionReportsView();
 
   } catch (err) {
 
@@ -692,7 +1700,6 @@ async function loadProductionReports() {
       "LOAD PRODUCTION REPORTS ERROR:",
       err
     );
-
 
     container.textContent =
       "Could not load Production Reports.";
@@ -878,14 +1885,12 @@ function renderProductionReports(reports) {
       "tr"
     );
 
-
   [
     "Report No",
     "Asset",
     "Issue",
     "Maintenance Response",
-    "Status",
-    "Updated"
+    "Status"
   ].forEach(label => {
 
     const th =
@@ -903,6 +1908,53 @@ function renderProductionReports(reports) {
     );
 
   });
+
+
+  /* =====================
+    UPDATED SORT HEADER
+  ===================== */
+
+  const updatedHeader =
+    document.createElement(
+      "th"
+    );
+
+
+  updatedHeader.className =
+    "production-report-updated-header";
+
+
+  updatedHeader.title =
+    "Sort by last update";
+
+
+  updatedHeader.textContent =
+    productionReportsViewState.updatedSort ===
+      "ASC"
+      ? "Updated ↑"
+      : "Updated ↓";
+
+
+  updatedHeader.addEventListener(
+    "click",
+    () => {
+
+      productionReportsViewState.updatedSort =
+        productionReportsViewState.updatedSort ===
+          "DESC"
+          ? "ASC"
+          : "DESC";
+
+
+      refreshProductionReportsView();
+
+    }
+  );
+
+
+  headerRow.appendChild(
+    updatedHeader
+  );
 
 
   thead.appendChild(
@@ -1418,9 +2470,9 @@ function renderProductionReports(reports) {
 
 
     const updatedAt =
+      report.updated_at ||
       report.reviewed_at ||
       report.reported_at;
-
 
     const updatedDate =
       updatedAt
@@ -1428,7 +2480,6 @@ function renderProductionReports(reports) {
             updatedAt
           )
         : null;
-
 
     updatedCell.textContent =
       updatedDate &&
@@ -1439,7 +2490,6 @@ function renderProductionReports(reports) {
             "el-GR"
           )
         : "—";
-
 
     /* ===================================================
        APPEND ROW
@@ -3741,7 +4791,6 @@ function showMaintenanceReportBreakdownSection() {
   }
 
 }
-
 
 /* =========================================================
    SHOW PLANNED TASK CONVERSION SECTION
