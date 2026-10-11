@@ -7109,21 +7109,24 @@
 
       </div>
 
-
       <!-- =====================
           PLANNED TASK CONVERSION
       ===================== -->
 
-        <div
-          id="maintenanceReportPlannedConversionSection"
-          class="maintenance-report-planned-section"
-          style="display:none;"
-        >
+      <div
+        id="maintenanceReportPlannedConversionSection"
+        class="maintenance-report-planned-section"
+        style="display:none;"
+      >
 
         <div class="maintenance-report-planned-heading">
           Convert to Planned Task
         </div>
 
+
+        <!-- =====================
+            TASK
+        ===================== -->
 
         <div class="field">
 
@@ -7141,7 +7144,13 @@
         </div>
 
 
+        <!-- =====================
+            PLANNED TASK GRID
+        ===================== -->
+
         <div class="maintenance-report-planned-grid">
+
+          <!-- Due Date -->
 
           <div class="field">
 
@@ -7156,6 +7165,8 @@
 
           </div>
 
+
+          <!-- Estimated Duration -->
 
           <div class="field">
 
@@ -7173,6 +7184,9 @@
 
           </div>
 
+
+          <!-- Section -->
+
           <div class="field">
 
             <label for="maintenanceReportPlannedSection">
@@ -7183,10 +7197,13 @@
               id="maintenanceReportPlannedSection"
               style="display:none;"
             >
+
               <option value="">
                 Select Section
               </option>
+
             </select>
+
 
             <input
               id="maintenanceReportPlannedSectionInput"
@@ -7198,6 +7215,9 @@
 
           </div>
 
+
+          <!-- Unit -->
+
           <div class="field">
 
             <label for="maintenanceReportPlannedUnit">
@@ -7208,10 +7228,13 @@
               id="maintenanceReportPlannedUnit"
               style="display:none;"
             >
+
               <option value="">
                 Select Unit
               </option>
+
             </select>
+
 
             <input
               id="maintenanceReportPlannedUnitInput"
@@ -7222,6 +7245,9 @@
             >
 
           </div>
+
+
+          <!-- Type -->
 
           <div class="field">
 
@@ -7238,23 +7264,29 @@
 
           </div>
 
+
+          <!-- Notes -->
+
+          <div class="field">
+
+            <label for="maintenanceReportPlannedNotes">
+              Notes
+            </label>
+
+            <textarea
+              id="maintenanceReportPlannedNotes"
+              rows="3"
+              placeholder="Optional notes..."
+            ></textarea>
+
+          </div>
+
         </div>
 
 
-        <div class="field">
-
-          <label for="maintenanceReportPlannedNotes">
-            Notes
-          </label>
-
-          <textarea
-            id="maintenanceReportPlannedNotes"
-            rows="3"
-            placeholder="Optional notes..."
-          ></textarea>
-
-        </div>
-
+        <!-- =====================
+            ACTION
+        ===================== -->
 
         <div class="maintenance-report-conversion-actions">
 

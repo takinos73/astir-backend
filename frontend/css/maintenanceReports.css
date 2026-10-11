@@ -1601,77 +1601,6 @@
     #86efac;
 }
 
-/* =========================================================
-   PLANNED TASK CONVERSION
-========================================================= */
-
-.maintenance-report-planned-section {
-  margin-top: 16px;
-  padding-top: 14px;
-
-  border-top:
-    1px solid rgba(148, 163, 184, 0.14);
-}
-
-
-.maintenance-report-planned-heading {
-  margin-bottom: 10px;
-
-  font-size: 12px;
-  font-weight: 750;
-
-  color:
-    rgba(226, 232, 240, 0.92);
-}
-
-
-.maintenance-report-planned-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 10px;
-}
-
-
-.maintenance-report-planned-btn {
-  background:
-    rgba(59, 130, 246, 0.14);
-
-  border-color:
-    rgba(96, 165, 250, 0.34);
-
-  color:
-    #93c5fd;
-}
-
-
-@media (max-width: 700px) {
-
-  .maintenance-report-planned-grid {
-    grid-template-columns:
-      1fr;
-  }
-
-}
-
-/* =========================================================
-   MAINTENANCE REPORT REVIEW MODAL
-========================================================= */
-
-.maintenance-report-review-modal {
-  width: min(680px, 94vw);
-  max-height: 88vh;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-
-/* =========================================================
-   BREAKDOWN CONVERSION
-========================================================= */
 
 .maintenance-report-breakdown-section {
   margin-top: 16px;
@@ -1704,7 +1633,6 @@
     #86efac;
 }
 
-
 /* =========================================================
    PLANNED TASK CONVERSION
 ========================================================= */
@@ -1718,16 +1646,24 @@
 }
 
 
+/* =========================================================
+   HEADING
+========================================================= */
+
 .maintenance-report-planned-heading {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 
   font-size: 12px;
   font-weight: 750;
 
   color:
-    rgba(226, 232, 240, 0.92);
+    rgba(226, 232, 240, 0.94);
 }
 
+
+/* =========================================================
+   FORM LAYOUT
+========================================================= */
 
 .maintenance-report-planned-grid {
   display: grid;
@@ -1735,11 +1671,105 @@
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 
-  gap: 10px;
+  gap:
+    12px 14px;
+
+  align-items: end;
 }
 
 
+/* =========================================================
+   FIELDS
+========================================================= */
+
+.maintenance-report-planned-section .field {
+  margin-bottom: 0;
+}
+
+
+.maintenance-report-planned-section label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  color:
+    rgba(226, 232, 240, 0.92);
+}
+
+
+/* =========================================================
+   INPUTS / SELECTS / TEXTAREA
+========================================================= */
+
+.maintenance-report-planned-section input,
+.maintenance-report-planned-section select,
+.maintenance-report-planned-section textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+}
+
+
+.maintenance-report-planned-section input,
+.maintenance-report-planned-section select {
+  min-height: 36px;
+}
+
+
+.maintenance-report-planned-section textarea {
+  min-height: 72px;
+
+  resize: vertical;
+}
+
+
+/* =========================================================
+   SECTION / UNIT
+========================================================= */
+
+#maintenanceReportPlannedSection,
+#maintenanceReportPlannedUnit,
+#maintenanceReportPlannedSectionInput,
+#maintenanceReportPlannedUnitInput {
+  width: 100%;
+}
+
+
+/* =========================================================
+   NOTES
+========================================================= */
+
+#maintenanceReportPlannedNotes {
+  min-height: 72px;
+}
+
+
+/* =========================================================
+   CREATE BUTTON AREA
+========================================================= */
+
+.maintenance-report-conversion-actions {
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 14px;
+}
+
+
+/* =========================================================
+   CREATE PLANNED TASK BUTTON
+========================================================= */
+
 .maintenance-report-planned-btn {
+  min-width: 150px;
+
   background:
     rgba(59, 130, 246, 0.14);
 
@@ -1748,6 +1778,68 @@
 
   color:
     #93c5fd;
+}
+
+
+.maintenance-report-planned-btn:hover {
+  background:
+    rgba(59, 130, 246, 0.20);
+
+  border-color:
+    rgba(96, 165, 250, 0.52);
+}
+
+
+/* =========================================================
+   BETTER VISUAL BALANCE
+========================================================= */
+
+.maintenance-report-planned-section
+> .field {
+  margin-top: 12px;
+}
+
+
+.maintenance-report-planned-grid
++ .field {
+  margin-top: 12px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .maintenance-report-planned-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .maintenance-report-conversion-actions {
+    justify-content: stretch;
+  }
+
+
+  .maintenance-report-conversion-actions
+  .maintenance-report-planned-btn {
+    width: 100%;
+  }
+
+}
+
+/* =========================================================
+   MAINTENANCE REPORT REVIEW MODAL
+========================================================= */
+
+.maintenance-report-review-modal {
+  width: min(680px, 94vw);
+  max-height: 88vh;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 
