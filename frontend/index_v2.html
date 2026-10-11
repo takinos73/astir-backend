@@ -6153,66 +6153,66 @@
     </div>
     
 <!-- TAB: ASSETS --> 
- 
-<div id="tab-assets" style="display:none;">
 
-  <section class="assets-header">
-    <h2>Assets Management</h2>
-    <p class="docs-subtitle">
-      Διαχείριση μηχανών ανά γραμμή
-    </p>
-  </section>
+ <div id="tab-assets" class="tab-panel" style="display:none;">
 
-  <div class="filter-group">
-    <label for="assetLineFilter">Line:</label>
-    <select id="assetLineFilter">
-      <option value="all">All</option>
-    </select>
-
-    <section class="controls-row">
-      <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
+    <section class="assets-header">
+      <h2>Assets Management</h2>
+      <p class="docs-subtitle">
+        Διαχείριση μηχανών ανά γραμμή
+      </p>
     </section>
 
-    <button
-      id="setAllAssetsIdleBtn"
-      class="btn-table planner-admin-only btn-idle-all"
-      type="button"
-      title="Set visible assets to idle"
-    >
-      ⏸ Set Idle
-    </button>
+    <div class="filter-group">
+      <label for="assetLineFilter">Line:</label>
+      <select id="assetLineFilter">
+        <option value="all">All</option>
+      </select>
 
-    <button
-      id="resumeAllAssetsBtn"
-      class="btn-table planner-admin-only btn-resume-all"
-      type="button"
-      title="Resume visible idle assets"
-    >
-      ▶ Resume
-    </button>
+      <section class="controls-row">
+        <button class="btn-secondary" id="addAssetBtn">➕ Add Asset</button>
+      </section>
 
-  </div>
+      <button
+        id="setAllAssetsIdleBtn"
+        class="btn-table planner-admin-only btn-idle-all"
+        type="button"
+        title="Set visible assets to idle"
+      >
+        ⏸ Set Idle
+      </button>
 
-  <!-- 🔴 Legacy table (kept, but hidden by cards renderer) -->
-  <div class="table-card assets-scroll">
-    <table id="assetsTable">
-      <thead>
-        <tr>
-          <th>Line</th>
-          <th>Machine</th>
-          <th>Serial Number</th>
-          <th>Last Activity</th>
-          <th style="width:14%">Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+      <button
+        id="resumeAllAssetsBtn"
+        class="btn-table planner-admin-only btn-resume-all"
+        type="button"
+        title="Resume visible idle assets"
+      >
+        ▶ Resume
+      </button>
 
-  <!-- 🟢 NEW: Asset Cards View -->
-  <div id="assetsCardsView" class="assets-cards"></div>
+    </div>
 
-</div>
+    <!-- 🔴 Legacy table (kept, but hidden by cards renderer) -->
+    <div class="table-card assets-scroll">
+      <table id="assetsTable">
+        <thead>
+          <tr>
+            <th>Line</th>
+            <th>Machine</th>
+            <th>Serial Number</th>
+            <th>Last Activity</th>
+            <th style="width:14%">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- 🟢 NEW: Asset Cards View -->
+    <div id="assetsCardsView" class="assets-cards"></div>
+
+ </div>
     
     <!-- ===================== 
       TAB: REPORTS
