@@ -3039,12 +3039,8 @@ tr.history-unplanned {
    BREAKDOWNS – SCROLLABLE TABLE
 ========================================================= */
 
-/* =========================================================
-   BREAKDOWNS – SCROLLABLE TABLE
-========================================================= */
-
 #tab-breakdowns .breakdowns-table-scroll {
-  max-height: calc(100vh - 416px);
+  max-height: calc(100vh - 412px);
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -3080,12 +3076,10 @@ tr.history-unplanned {
   cursor: pointer;
 }
 
-
 .completed-planned-option:hover {
   border-color: #4f6073;
   background: #1b222c;
 }
-
 
 .completed-planned-option input[type="checkbox"] {
   width: 16px !important;
@@ -3108,7 +3102,6 @@ tr.history-unplanned {
   line-height: 1.25;
 }
 
-
 /* Hint directly under checkbox */
 
 .completed-planned-option + .field-hint {
@@ -3122,7 +3115,6 @@ tr.history-unplanned {
   line-height: 1.35;
 }
 
-
 /* Completed execution block */
 
 #completedPlannedExecutionBlock {
@@ -3132,13 +3124,11 @@ tr.history-unplanned {
   border-top: 1px solid #303946;
 }
 
-
 /* Slight visual emphasis when active */
 
 #completedPlannedExecutionBlock .field label {
   color: #dce5ef;
 }
-
 
 /* Actual Completion full width */
 
