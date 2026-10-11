@@ -2543,3 +2543,478 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
 }
+
+/* =========================================================
+   NEW PRODUCTION REPORT TOOLBAR
+========================================================= */
+
+.reporting-new-report-toolbar {
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: center;
+
+  margin-bottom: 14px;
+}
+
+
+.reporting-open-report-btn {
+  min-width: 160px;
+
+  padding:
+    9px 16px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   NEW PRODUCTION REPORT MODAL
+========================================================= */
+
+.reporting-new-report-modal {
+  width:
+    min(720px, 94vw);
+
+  max-height:
+    90vh;
+
+  overflow-y:
+    auto;
+
+  overflow-x:
+    hidden;
+}
+
+
+/* =========================================================
+   MODAL HEADER
+========================================================= */
+
+.reporting-modal-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+}
+
+
+.reporting-modal-header h3 {
+  margin: 0;
+
+  font-size: 17px;
+  font-weight: 750;
+
+  color:
+    #f8fafc;
+}
+
+
+.reporting-modal-header
+.reporting-card-subtitle {
+  margin-top: 4px;
+
+  font-size: 12px;
+
+  color:
+    rgba(148, 163, 184, 0.82);
+}
+
+
+/* =========================================================
+   CLOSE X BUTTON
+========================================================= */
+
+.reporting-modal-close-btn {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  flex:
+    0 0 30px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.18);
+
+  border-radius: 8px;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+
+  color:
+    rgba(203, 213, 225, 0.88);
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+
+.reporting-modal-close-btn:hover {
+  background:
+    rgba(239, 68, 68, 0.10);
+
+  border-color:
+    rgba(248, 113, 113, 0.30);
+
+  color:
+    #fecaca;
+}
+
+
+/* =========================================================
+   REPORT FORM GRID
+========================================================= */
+
+.reporting-new-report-modal
+.reporting-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap:
+    12px 14px;
+}
+
+
+.reporting-new-report-modal
+.field {
+  margin: 0;
+}
+
+
+.reporting-new-report-modal
+.field.full-width {
+  grid-column:
+    1 / -1;
+}
+
+
+.reporting-new-report-modal
+label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  color:
+    rgba(226, 232, 240, 0.92);
+}
+
+
+.reporting-new-report-modal
+input,
+.reporting-new-report-modal
+select,
+.reporting-new-report-modal
+textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+}
+
+
+.reporting-new-report-modal
+select,
+.reporting-new-report-modal
+input {
+  min-height: 38px;
+}
+
+
+.reporting-new-report-modal
+textarea {
+  min-height: 105px;
+
+  resize: vertical;
+}
+
+
+/* =========================================================
+   DESCRIPTION FOOTER
+========================================================= */
+
+.reporting-new-report-modal
+.report-description-footer {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 5px;
+
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.74);
+}
+
+
+/* =========================================================
+   COMPACT GUIDANCE
+========================================================= */
+
+.reporting-modal-guidance {
+  margin-top: 16px;
+
+  padding:
+    11px 12px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 10px;
+
+  background:
+    rgba(15, 23, 42, 0.34);
+}
+
+
+.reporting-modal-guidance-title {
+  margin-bottom: 7px;
+
+  font-size: 11px;
+  font-weight: 750;
+
+  color:
+    rgba(226, 232, 240, 0.88);
+}
+
+
+.reporting-modal-guidance-list {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap:
+    6px 16px;
+
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.86);
+}
+
+
+/* =========================================================
+   COMPACT SHIFT SUMMARY
+========================================================= */
+
+.reporting-modal-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 8px;
+
+  margin-top: 10px;
+}
+
+
+.reporting-modal-summary-item {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 38px;
+
+  padding:
+    7px 10px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 9px;
+
+  background:
+    rgba(15, 23, 42, 0.30);
+
+  color:
+    rgba(203, 213, 225, 0.90);
+
+  font-size: 11px;
+}
+
+
+.reporting-modal-summary-item strong {
+  font-size: 16px;
+
+  color:
+    #f8fafc;
+}
+
+
+.reporting-modal-summary-item.urgent {
+  border-color:
+    rgba(249, 115, 22, 0.20);
+}
+
+
+.reporting-modal-summary-item.urgent strong {
+  color:
+    #fdba74;
+}
+
+
+.reporting-modal-summary-item.stopped {
+  border-color:
+    rgba(239, 68, 68, 0.20);
+}
+
+
+.reporting-modal-summary-item.stopped strong {
+  color:
+    #fca5a5;
+}
+
+
+/* =========================================================
+   MAINTENANCE REVIEW INFO
+========================================================= */
+
+.reporting-modal-info {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  margin-top: 10px;
+
+  padding:
+    9px 11px;
+
+  border-left:
+    3px solid rgba(96, 165, 250, 0.50);
+
+  border-radius: 6px;
+
+  background:
+    rgba(59, 130, 246, 0.06);
+
+  font-size: 11px;
+
+  line-height: 1.45;
+
+  color:
+    rgba(148, 163, 184, 0.88);
+}
+
+
+.reporting-modal-info strong {
+  flex:
+    0 0 auto;
+
+  color:
+    rgba(191, 219, 254, 0.95);
+}
+
+
+/* =========================================================
+   MODAL ACTIONS
+========================================================= */
+
+.reporting-modal-actions {
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-top: 16px;
+
+  padding-top: 14px;
+
+  border-top:
+    1px solid rgba(148, 163, 184, 0.12);
+}
+
+
+.reporting-modal-actions
+.reporting-submit-btn {
+  min-width: 130px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .reporting-new-report-modal {
+    width:
+      95vw;
+
+    max-height:
+      92vh;
+  }
+
+
+  .reporting-new-report-modal
+  .reporting-form-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .reporting-new-report-modal
+  .field.full-width {
+    grid-column:
+      auto;
+  }
+
+
+  .reporting-modal-summary {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .reporting-modal-guidance-list {
+    flex-direction: column;
+  }
+
+
+  .reporting-modal-info {
+    flex-direction: column;
+  }
+
+
+  .reporting-modal-actions {
+    align-items: stretch;
+  }
+
+
+  .reporting-modal-actions button {
+    flex:
+      1 1 auto;
+  }
+
+}

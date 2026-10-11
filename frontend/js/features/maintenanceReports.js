@@ -1607,7 +1607,7 @@ async function submitMaintenanceReport() {
 
     resetMaintenanceReportForm();
     await loadProductionReports();
-
+    closeMaintenanceReportModal();
 
   } catch (err) {
 
@@ -5153,6 +5153,46 @@ function startMaintenanceReportsBadgeRefresh() {
 }
 
 /* =========================================================
+   OPEN / CLOSE NEW REPORT MODAL
+========================================================= */
+
+function openMaintenanceReportModal() {
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportModalOverlay"
+    );
+
+
+  if (!overlay) {
+    return;
+  }
+
+
+  overlay.style.display =
+    "flex";
+
+}
+
+function closeMaintenanceReportModal() {
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportModalOverlay"
+    );
+
+
+  if (!overlay) {
+    return;
+  }
+
+
+  overlay.style.display =
+    "none";
+
+}
+
+/* =========================================================
    PAGE LOAD
 
    Useful only if a valid Shift Foreman
@@ -5185,6 +5225,35 @@ document.addEventListener(
       initMaintenanceReporting();
 
     }
+
+    document
+      .getElementById(
+        "openMaintenanceReportModalBtn"
+      )
+      ?.addEventListener(
+        "click",
+        openMaintenanceReportModal
+      );
+
+
+    document
+      .getElementById(
+        "closeMaintenanceReportModalBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeMaintenanceReportModal
+      );
+
+
+    document
+      .getElementById(
+        "cancelMaintenanceReportModalBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeMaintenanceReportModal
+      );
 
 
     /* =====================
