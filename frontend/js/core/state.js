@@ -30,10 +30,7 @@ window.state = {
   historyDateTo: null,
   historyTypeFilters: new Set(["preventive", "planned", "breakdown"]),
 
-  // SNAPSHOT / IMPORT
-  pendingSnapshotJson: null,
-  loadedSnapshotName: null,
-  
+ 
   // BREAKDOWN EDIT
   editingBreakdownId: null,
 
