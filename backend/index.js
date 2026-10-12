@@ -1,7 +1,13 @@
 // index.js — ASTIR CMMS Backend (Render) ✅
+// Supports: Tasks, Assets (line_id + serial), Import Excel (Preview + Commit overwrite), Snapshots, Documentation PDF, Frontend SPA
 
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import pool from "./db.js";
+import path from "path";
 import multer from "multer";
-
+import XLSX from "xlsx";
 import fs from "fs";
 
 const WORKING_HOURS_PER_WEEK = 120;
@@ -18517,6 +18523,7 @@ async function findAssetId(client, lineCode, model, serial) {
   );
   return r.rows[0]?.id || null;
 }
+
 
 /* =====================================================
    DOCUMENTATION (MasterPlan PDF)
