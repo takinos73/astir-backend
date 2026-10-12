@@ -7,8 +7,11 @@ import dotenv from "dotenv";
 import pool from "./db.js";
 import path from "path";
 import multer from "multer";
-import XLSX from "xlsx";
 import fs from "fs";
+import {
+  S3Client,
+  ListObjectsV2Command
+} from "@aws-sdk/client-s3";
 
 const WORKING_HOURS_PER_WEEK = 120;
 
@@ -42,6 +45,27 @@ const uploadDisk = multer({
   }),
 });
 
+/* =====================================================
+   CLOUDFLARE R2 CLIENT
+===================================================== */
+
+const r2Client =
+  new S3Client({
+    region:
+      process.env.R2_REGION || "auto",
+
+    endpoint:
+      `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+
+    credentials: {
+      accessKeyId:
+        process.env.R2_ACCESS_KEY_ID,
+
+      secretAccessKey:
+        process.env.R2_SECRET_ACCESS_KEY
+    }
+  });
+
 const ALLOWED_TECHNICIAN_ROLES = [
   "Technician",
   "Planner",
@@ -56,6 +80,68 @@ const ALLOWED_TECHNICIAN_ROLES = [
 app.get("/api", (req, res) => {
   res.send("ASTIR Backend API Running!");
 });
+
+/* =====================================================
+   R2 CONNECTION TEST
+===================================================== */
+
+app.get("/r2-test", async (req, res) => {
+
+    try {
+
+      const result =
+        await r2Client.send(
+          new ListObjectsV2Command({
+            Bucket:
+              process.env.R2_BUCKET,
+
+            MaxKeys:
+              5
+          })
+        );
+
+
+      res.json({
+        ok: true,
+
+        bucket:
+          process.env.R2_BUCKET,
+
+        objectCount:
+          result.KeyCount || 0,
+
+        objects:
+          (result.Contents || [])
+            .map(
+              item => ({
+                key:
+                  item.Key,
+
+                size:
+                  item.Size
+              })
+            )
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "R2 TEST ERROR:",
+        error
+      );
+
+
+      res.status(500).json({
+        ok: false,
+        error:
+          error.message
+      });
+
+    }
+
+  }
+);
 
 // =====================
 // AUTH: LOGIN

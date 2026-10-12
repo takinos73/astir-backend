@@ -2,7 +2,6 @@
 
 const API = "https://astir-backend.onrender.com";
 
-
 flatpickr("#historyDateRange", {
   mode: "range",
   dateFormat: "d-m-Y",
@@ -661,7 +660,6 @@ function viewHistoryEntry(executionId) {
 function closeHistoryView() {
   document.getElementById("historyViewOverlay").style.display = "none";
 }
-
 
 /* =====================
    HISTORY FILTER HANDLERS (FIXED)
@@ -2275,38 +2273,126 @@ function populateAssetSelectForLine(line) {
   assetSel.disabled = false;
 }
 
+/* =========================================================
+   NEW TASK — LINE CHANGE
 
-document.getElementById("nt-line")?.addEventListener("change", e => {
-  const line = e.target.value;
-  const assetSel = document.getElementById("nt-asset");
+   When the selected line changes:
+   - Reset Section selection
+   - Reload Assets for the selected line
+   - Keep Asset selector disabled until a line is selected
+========================================================= */
 
-  const sectionSelect = document.getElementById("nt-section");
-  const sectionInput  = document.getElementById("nt-section-input");
+document.getElementById("nt-line") ?.addEventListener("change", e => {
 
-  // RESET section όταν αλλάζει line
-  if (sectionSelect && sectionInput) {
-    sectionSelect.innerHTML = "";
-    sectionSelect.style.display = "none";
-    sectionInput.style.display = "block";
-    sectionInput.value = "";
-  }
+    const line =
+      e.target.value;
 
-  assetSel.innerHTML = `<option value="">Select Asset</option>`;
-  assetSel.disabled = true;
+    const assetSel =
+      document.getElementById(
+        "nt-asset"
+      );
 
-  if (!line) return;
+    const sectionSelect =
+      document.getElementById(
+        "nt-section"
+      );
 
-  const filtered = state.assetsData.filter(a => a.line === line);
+    const sectionInput =
+      document.getElementById(
+        "nt-section-input"
+      );
 
-  filtered.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a.id; // ✅ asset_id
-    opt.textContent = `${a.model} (${a.serial_number})`;
-    assetSel.appendChild(opt);
+    /* =====================
+       RESET SECTION
+       WHEN LINE CHANGES
+    ===================== */
+
+    if (
+      sectionSelect &&
+      sectionInput
+    ) {
+
+      sectionSelect.innerHTML =
+        "";
+
+
+      sectionSelect.style.display =
+        "none";
+
+
+      sectionInput.style.display =
+        "block";
+
+
+      sectionInput.value =
+        "";
+
+    }
+
+    /* =====================
+       RESET ASSET SELECT
+    ===================== */
+
+    assetSel.innerHTML = `
+      <option value="">
+        Select Asset
+      </option>
+    `;
+
+    assetSel.disabled =
+      true;
+
+    /* =====================
+       STOP IF NO LINE
+       IS SELECTED
+    ===================== */
+
+    if (!line) {
+      return;
+    }
+
+    /* =====================
+       FILTER ASSETS
+       BY SELECTED LINE
+    ===================== */
+
+    const filtered =
+      state.assetsData.filter(
+        asset =>
+          asset.line === line
+      );
+
+    /* =====================
+       BUILD ASSET OPTIONS
+    ===================== */
+
+    filtered.forEach(asset => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        asset.id;
+
+      option.textContent =
+        `${asset.model} (${asset.serial_number})`;
+
+      assetSel.appendChild(
+        option
+      );
+
+    });
+
+    /* =====================
+       ENABLE ASSET SELECT
+    ===================== */
+
+    assetSel.disabled =
+      false;
+
   });
-
-  assetSel.disabled = false;
-});
 
   /* =====================
     CANCEL ADD TASK
