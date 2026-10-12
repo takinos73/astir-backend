@@ -33,8 +33,7 @@ window.state = {
   // SNAPSHOT / IMPORT
   pendingSnapshotJson: null,
   loadedSnapshotName: null,
-  importExcelFile: null,
-
+  
   // BREAKDOWN EDIT
   editingBreakdownId: null,
 

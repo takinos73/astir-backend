@@ -207,7 +207,6 @@
   </div>
 </div>
 
-
 <!-- =====================
      HISTORY MODAL
 ===================== -->
@@ -1232,43 +1231,6 @@
   
 <div class="app-shell">
 
-  <!-- IMPORT PREVIEW MODAL -->
-    
-  <div id="importPreviewOverlay" class="modal-overlay" style="display:none;">
-  <div class="modal-box modal-wide import-modal">
-
-    <h3>Excel Import Preview</h3>
-    <div id="importSummary" class="docs-subtitle"></div>
-
-    <!-- SCROLLABLE BODY -->
-    <div class="import-modal-body">
-      <div class="table-card">
-        <table id="importPreviewTable">
-          <thead>
-            <tr>
-              <th>Excel Row</th>
-              <th>Line</th>
-              <th>Machine</th>
-              <th>S.N</th>
-              <th>Task</th>
-              <th>Status</th>
-              <th>Error</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- FIXED FOOTER -->
-    <div class="import-modal-footer">
-      <button id="confirmImportBtn" class="btn-table">✅ Confirm Import</button>
-      <button id="closeImportPreviewBtn" class="btn-cancel">Close</button>
-    </div>
-
-  </div>
-</div>
-
 <!-- HEADER -->
 <header class="app-header">
 
@@ -1356,20 +1318,6 @@
 
     <button class="main-tab" data-tab="docs">Docs</button>
 
-    <!-- 🔧 ADMIN / TOOLS -->
-    <div class="top-tools">
-      <label class="btn-secondary admin-only">
-        📂 Upload
-        <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" hidden />
-      </label>
-      <button class="btn-secondary admin-only" id="importExcelBtn">📥 Import</button>
-      <button class="btn-secondary admin-only" id="exportSnapshot">📦 Export Snapshot</button>
-      <label class="btn-secondary admin-only">
-        ♻ Load Snapshot
-        <input type="file" id="snapshotFile" accept="application/json" hidden />
-      </label>
-      <button class="btn-secondary admin-only" id="restoreSnapshot">Restore</button>
-    </div>
   </section>
 
   <!-- =========================================================
@@ -7338,7 +7286,6 @@
   <script src="./js/features/analytics.js" defer></script>
   <script src="./js/features/printPreventiveLibrary.js" defer></script>
   <script src="js/features/technicians.js" defer></script>
-  <script src="./js/features/importExcel.js" defer></script>
   <script src="./js/features/reports.js" defer></script>
   <script src="./js/features/printWorkOrder.js" defer></script>
   <script src="./js/features/assets.js" defer></script>

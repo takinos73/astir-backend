@@ -3762,8 +3762,6 @@ function applyRoleVisibility() {
   const addTaskBtn = document.getElementById("addTaskBtn");
   if (addTaskBtn) addTaskBtn.style.display = isAdmin ? "" : "none";
 
-  const importBtn = document.getElementById("importExcelBtn");
-  if (importBtn) importBtn.style.display = isAdmin ? "" : "none";
 }
 
 applyRoleVisibility();

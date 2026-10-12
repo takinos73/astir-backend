@@ -2558,7 +2558,6 @@ tr.history-unplanned {
     box-shadow 0.16s ease;
 }
 
-
 #tab-tasks .tasks-toolbar-panel .btn-secondary:hover,
 #tab-tasks .tasks-toolbar-panel .asset-dropdown-btn:hover {
   background:
@@ -2571,24 +2570,20 @@ tr.history-unplanned {
     0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-
 #tab-tasks .tasks-toolbar-panel .btn-secondary:active,
 #tab-tasks .tasks-toolbar-panel .asset-dropdown-btn:active {
   transform: translateY(1px);
 }
-
 
 #tab-tasks .task-type-btn {
   font-weight: 650;
   letter-spacing: 0.01em;
 }
 
-
 #tab-tasks .date-filter-btn {
   min-width: 70px;
   text-align: center;
 }
-
 
 #tab-tasks .date-filter-btn.active {
   background:
