@@ -1132,6 +1132,173 @@ app.post( "/attachments/:entityType/:entityId",
 );
 
 /* =====================================================
+   CMMS ATTACHMENTS — SECURE OPEN
+
+   GET:
+   /attachments/:attachmentId/open
+
+   Returns a temporary signed URL
+   for the private R2 object.
+===================================================== */
+
+app.get( "/attachments/:attachmentId/open",
+  async (req, res) => {
+
+    try {
+
+      /* =====================
+         VALIDATE ATTACHMENT ID
+      ===================== */
+
+      const attachmentId =
+        Number(
+          req.params.attachmentId
+        );
+
+
+      if (
+        !Number.isInteger(
+          attachmentId
+        ) ||
+        attachmentId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid attachment ID"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD ATTACHMENT
+      ===================== */
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            entity_type,
+            entity_id,
+            file_key,
+            file_name,
+            mime_type,
+            file_size
+
+          FROM attachments
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [
+            attachmentId
+          ]
+        );
+
+
+      if (
+        result.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          error:
+            "Attachment not found"
+        });
+
+      }
+
+
+      const attachment =
+        result.rows[0];
+
+
+      /* =====================
+         CREATE SIGNED URL
+
+         Valid for 5 minutes.
+      ===================== */
+
+      const command =
+        new GetObjectCommand({
+          Bucket:
+            process.env.R2_BUCKET,
+
+          Key:
+            attachment.file_key,
+
+          ResponseContentType:
+            attachment.mime_type,
+
+          ResponseContentDisposition:
+            `inline; filename="${String(
+              attachment.file_name || "attachment"
+            ).replace(/"/g, "")}"`
+        });
+
+
+      const signedUrl =
+        await getSignedUrl(
+          r2Client,
+          command,
+          {
+            expiresIn:
+              300
+          }
+        );
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      return res.json({
+
+        attachment: {
+          id:
+            attachment.id,
+
+          fileName:
+            attachment.file_name,
+
+          mimeType:
+            attachment.mime_type,
+
+          fileSize:
+            attachment.file_size
+        },
+
+        url:
+          signedUrl,
+
+        expiresIn:
+          300
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /attachments/:attachmentId/open ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          err.message ||
+          "Failed to open attachment"
+      });
+
+    }
+
+  }
+);
+
+/* =====================================================
    CMMS ATTACHMENTS — GET ENTITY ATTACHMENTS
 
    GET:
@@ -1299,172 +1466,7 @@ app.get( "/attachments/:entityType/:entityId",
   }
 );
 
-/* =====================================================
-   CMMS ATTACHMENTS — SECURE OPEN
 
-   GET:
-   /attachments/:attachmentId/open
-
-   Returns a temporary signed URL
-   for the private R2 object.
-===================================================== */
-
-app.get( "/attachments/:attachmentId/open",
-  async (req, res) => {
-
-    try {
-
-      /* =====================
-         VALIDATE ATTACHMENT ID
-      ===================== */
-
-      const attachmentId =
-        Number(
-          req.params.attachmentId
-        );
-
-
-      if (
-        !Number.isInteger(
-          attachmentId
-        ) ||
-        attachmentId <= 0
-      ) {
-
-        return res.status(400).json({
-          error:
-            "Invalid attachment ID"
-        });
-
-      }
-
-
-      /* =====================
-         LOAD ATTACHMENT
-      ===================== */
-
-      const result =
-        await pool.query(
-          `
-          SELECT
-            id,
-            entity_type,
-            entity_id,
-            file_key,
-            file_name,
-            mime_type,
-            file_size
-
-          FROM attachments
-
-          WHERE id = $1
-
-          LIMIT 1
-          `,
-          [
-            attachmentId
-          ]
-        );
-
-
-      if (
-        result.rows.length === 0
-      ) {
-
-        return res.status(404).json({
-          error:
-            "Attachment not found"
-        });
-
-      }
-
-
-      const attachment =
-        result.rows[0];
-
-
-      /* =====================
-         CREATE SIGNED URL
-
-         Valid for 5 minutes.
-      ===================== */
-
-      const command =
-        new GetObjectCommand({
-          Bucket:
-            process.env.R2_BUCKET,
-
-          Key:
-            attachment.file_key,
-
-          ResponseContentType:
-            attachment.mime_type,
-
-          ResponseContentDisposition:
-            `inline; filename="${String(
-              attachment.file_name || "attachment"
-            ).replace(/"/g, "")}"`
-        });
-
-
-      const signedUrl =
-        await getSignedUrl(
-          r2Client,
-          command,
-          {
-            expiresIn:
-              300
-          }
-        );
-
-
-      /* =====================
-         RESPONSE
-      ===================== */
-
-      return res.json({
-
-        attachment: {
-          id:
-            attachment.id,
-
-          fileName:
-            attachment.file_name,
-
-          mimeType:
-            attachment.mime_type,
-
-          fileSize:
-            attachment.file_size
-        },
-
-        url:
-          signedUrl,
-
-        expiresIn:
-          300
-
-      });
-
-
-    } catch (err) {
-
-      console.error(
-        "GET /attachments/:attachmentId/open ERROR:",
-        err
-      );
-
-
-      return res.status(500).json({
-        error:
-          err.message ||
-          "Failed to open attachment"
-      });
-
-    }
-
-  }
-);
 
 // -------------------
 // ALLOWED ROLES
