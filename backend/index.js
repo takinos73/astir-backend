@@ -1,5 +1,6 @@
 // index.js — ASTIR CMMS Backend (Render) ✅
-// Supports: Tasks, Assets (line_id + serial), Import Excel (Preview + Commit overwrite), Snapshots, Documentation PDF, Frontend SPA
+// Supports: Tasks, Assets, Breakdowns, Scheduled Maintenance,
+// Production Reporting, Attachments, Documentation PDF, Frontend SPA
 
 import express from "express";
 import cors from "cors";
@@ -8,14 +9,19 @@ import pool from "./db.js";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
+import { randomUUID } from "crypto";
+
 import {
   S3Client,
   ListObjectsV2Command,
   PutObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  GetObjectCommand
 } from "@aws-sdk/client-s3";
 
-import { randomUUID } from "crypto";
+import {
+  getSignedUrl
+} from "@aws-sdk/s3-request-presigner";
 
 const WORKING_HOURS_PER_WEEK = 120;
 
