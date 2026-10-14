@@ -10,8 +10,12 @@ import multer from "multer";
 import fs from "fs";
 import {
   S3Client,
-  ListObjectsV2Command
+  ListObjectsV2Command,
+  PutObjectCommand,
+  DeleteObjectCommand
 } from "@aws-sdk/client-s3";
+
+import { randomUUID } from "crypto";
 
 const WORKING_HOURS_PER_WEEK = 120;
 
@@ -65,6 +69,1069 @@ const r2Client =
         process.env.R2_SECRET_ACCESS_KEY
     }
   });
+
+
+/* =====================================================
+   CMMS ATTACHMENTS — CONFIG
+===================================================== */
+
+const ATTACHMENT_MAX_FILES = 3;
+
+
+const ATTACHMENT_MAX_TOTAL_BYTES = 10 * 1024 * 1024;
+
+
+const ATTACHMENT_ALLOWED_MIME_TYPES =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf"
+  ]);
+
+
+const ATTACHMENT_ENTITY_CONFIG = {
+
+  TASK: {
+    table:
+      "maintenance_tasks",
+
+    folder:
+      "tasks"
+  },
+
+
+  BREAKDOWN: {
+    table:
+      "breakdowns",
+
+    folder:
+      "breakdowns"
+  },
+
+
+  SCHEDULED_MAINTENANCE: {
+    table:
+      "scheduled_maintenance",
+
+    folder:
+      "scheduled-maintenance"
+  },
+
+
+  MAINTENANCE_REPORT: {
+    table:
+      "maintenance_reports",
+
+    folder:
+      "maintenance-reports"
+  }
+
+};
+
+
+/* =====================================================
+   CMMS ATTACHMENTS — MULTER
+===================================================== */
+
+const attachmentUpload =
+  multer({
+    storage:
+      multer.memoryStorage(),
+
+    limits: {
+      files:
+        ATTACHMENT_MAX_FILES,
+
+      /*
+        Individual safety ceiling.
+
+        The real rule is:
+        MAX 10 MB TOTAL per entity.
+      */
+      fileSize:
+        ATTACHMENT_MAX_TOTAL_BYTES
+    },
+
+    fileFilter: (
+      req,
+      file,
+      cb
+    ) => {
+
+      if (
+        !ATTACHMENT_ALLOWED_MIME_TYPES.has(
+          file.mimetype
+        )
+      ) {
+
+        return cb(
+          new Error(
+            "Only JPG, PNG, WEBP and PDF files are allowed"
+          )
+        );
+
+      }
+
+
+      cb(
+        null,
+        true
+      );
+
+    }
+  });
+
+
+/* =====================================================
+   CMMS ATTACHMENTS — GENERIC HELPERS
+===================================================== */
+
+
+/* =====================
+   NORMALIZE ENTITY TYPE
+===================== */
+
+function normalizeAttachmentEntityType(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toUpperCase()
+    .replace(
+      /[\s-]+/g,
+      "_"
+    );
+
+}
+
+
+/* =====================
+   GET ENTITY CONFIG
+
+   Only entity types defined in
+   ATTACHMENT_ENTITY_CONFIG are accepted.
+===================== */
+
+function getAttachmentEntityConfig(
+  entityType
+) {
+
+  const normalizedType =
+    normalizeAttachmentEntityType(
+      entityType
+    );
+
+
+  const config =
+    ATTACHMENT_ENTITY_CONFIG[
+      normalizedType
+    ];
+
+
+  if (!config) {
+
+    throw new Error(
+      "Unsupported attachment entity type"
+    );
+
+  }
+
+
+  return {
+    entityType:
+      normalizedType,
+
+    ...config
+  };
+
+}
+
+
+/* =====================
+   VALIDATE ENTITY ID
+===================== */
+
+function normalizeAttachmentEntityId(
+  value
+) {
+
+  const entityId =
+    Number(value);
+
+
+  if (
+    !Number.isInteger(entityId) ||
+    entityId <= 0
+  ) {
+
+    throw new Error(
+      "Invalid attachment entity ID"
+    );
+
+  }
+
+
+  return entityId;
+
+}
+
+
+/* =====================
+   CHECK ENTITY EXISTS
+
+   db can be:
+   - pool
+   - transaction client
+===================== */
+
+async function assertAttachmentEntityExists(
+  db,
+  entityType,
+  entityId
+) {
+
+  const config =
+    getAttachmentEntityConfig(
+      entityType
+    );
+
+
+  const normalizedId =
+    normalizeAttachmentEntityId(
+      entityId
+    );
+
+
+  /*
+    Table name is safe here because it
+    comes ONLY from our internal config,
+    never directly from user input.
+  */
+
+  const result =
+    await db.query(
+      `
+      SELECT id
+
+      FROM ${config.table}
+
+      WHERE id = $1
+
+      LIMIT 1
+      `,
+      [
+        normalizedId
+      ]
+    );
+
+
+  if (
+    result.rows.length === 0
+  ) {
+
+    throw new Error(
+      `${config.entityType} not found`
+    );
+
+  }
+
+
+  return {
+    entityType:
+      config.entityType,
+
+    entityId:
+      normalizedId,
+
+    table:
+      config.table,
+
+    folder:
+      config.folder
+  };
+
+}
+
+
+/* =====================
+   LOAD CURRENT USAGE
+
+   Returns:
+   - file count
+   - total bytes already stored
+===================== */
+
+async function getAttachmentUsage(
+  db,
+  entityType,
+  entityId
+) {
+
+  const normalizedType =
+    normalizeAttachmentEntityType(
+      entityType
+    );
+
+
+  const normalizedId =
+    normalizeAttachmentEntityId(
+      entityId
+    );
+
+
+  const result =
+    await db.query(
+      `
+      SELECT
+        COUNT(*)::int
+          AS file_count,
+
+        COALESCE(
+          SUM(file_size),
+          0
+        )::bigint
+          AS total_bytes
+
+      FROM attachments
+
+      WHERE entity_type = $1
+        AND entity_id = $2
+      `,
+      [
+        normalizedType,
+        normalizedId
+      ]
+    );
+
+
+  return {
+    fileCount:
+      Number(
+        result.rows[0]
+          ?.file_count || 0
+      ),
+
+    totalBytes:
+      Number(
+        result.rows[0]
+          ?.total_bytes || 0
+      )
+  };
+
+}
+
+
+/* =====================
+   VALIDATE ATTACHMENT LIMITS
+
+   Business rules:
+   - Max 3 files per entity
+   - Max 10 MB TOTAL per entity
+===================== */
+
+function validateAttachmentCapacity(
+  existingUsage,
+  files
+) {
+
+  const incomingFiles =
+    Array.isArray(files)
+      ? files
+      : [];
+
+
+  if (
+    incomingFiles.length === 0
+  ) {
+
+    throw new Error(
+      "No attachment files provided"
+    );
+
+  }
+
+
+  const incomingBytes =
+    incomingFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
+
+
+  const finalFileCount =
+    Number(
+      existingUsage.fileCount || 0
+    ) +
+    incomingFiles.length;
+
+
+  const finalTotalBytes =
+    Number(
+      existingUsage.totalBytes || 0
+    ) +
+    incomingBytes;
+
+
+  if (
+    finalFileCount >
+    ATTACHMENT_MAX_FILES
+  ) {
+
+    throw new Error(
+      `Maximum ${ATTACHMENT_MAX_FILES} attachments allowed`
+    );
+
+  }
+
+
+  if (
+    finalTotalBytes >
+    ATTACHMENT_MAX_TOTAL_BYTES
+  ) {
+
+    throw new Error(
+      "Maximum total attachment size is 10 MB"
+    );
+
+  }
+
+
+  return {
+    incomingFiles:
+      incomingFiles.length,
+
+    incomingBytes,
+
+    finalFileCount,
+
+    finalTotalBytes
+  };
+
+}
+
+
+/* =====================
+   SAFE FILE EXTENSION
+
+   Extension is used only for
+   R2 object naming.
+===================== */
+
+function getAttachmentExtension(
+  fileName
+) {
+
+  const extension =
+    path
+      .extname(
+        String(
+          fileName || ""
+        )
+      )
+      .toLowerCase();
+
+
+  const allowedExtensions =
+    new Set([
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".webp",
+      ".pdf"
+    ]);
+
+
+  if (
+    !allowedExtensions.has(
+      extension
+    )
+  ) {
+
+    return "";
+  }
+
+
+  return extension;
+
+}
+
+
+/* =====================
+   BUILD R2 OBJECT KEY
+
+   Examples:
+
+   tasks/2014/<uuid>.jpg
+   breakdowns/317/<uuid>.pdf
+===================== */
+
+function buildAttachmentFileKey(
+  entityType,
+  entityId,
+  originalFileName
+) {
+
+  const config =
+    getAttachmentEntityConfig(
+      entityType
+    );
+
+
+  const normalizedId =
+    normalizeAttachmentEntityId(
+      entityId
+    );
+
+
+  const extension =
+    getAttachmentExtension(
+      originalFileName
+    );
+
+
+  const fileId =
+    randomUUID();
+
+
+  return (
+    `${config.folder}/` +
+    `${normalizedId}/` +
+    `${fileId}${extension}`
+  );
+
+}
+
+/* =====================
+   CLEAN ORIGINAL FILE NAME
+
+   Used for display only.
+   The original name is NOT
+   used as the R2 object key.
+===================== */
+
+function cleanAttachmentFileName(
+  fileName
+) {
+
+  const baseName =
+    path.basename(
+      String(
+        fileName ||
+        "attachment"
+      )
+    );
+
+
+  return baseName
+    .replace(
+      /[\u0000-\u001F\u007F]/g,
+      ""
+    )
+    .trim()
+    .slice(
+      0,
+      255
+    );
+
+}
+/* =====================================================
+   CMMS ATTACHMENTS — GENERIC UPLOAD
+
+   POST:
+   /attachments/:entityType/:entityId
+
+   Multipart field:
+   files
+
+   Optional:
+   uploaded_by_id
+
+   Rules:
+   - Maximum 3 files per entity
+   - Maximum 10 MB TOTAL per entity
+   - JPG / JPEG / PNG / WEBP / PDF
+===================================================== */
+
+app.post(
+  "/attachments/:entityType/:entityId",
+
+  attachmentUpload.array(
+    "files",
+    ATTACHMENT_MAX_FILES
+  ),
+
+  async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+
+    /*
+      R2 objects successfully uploaded
+      during this request.
+
+      If something fails later,
+      these objects will be deleted.
+    */
+    const uploadedR2Keys =
+      [];
+
+
+    try {
+
+      /* =====================
+         NORMALIZE ENTITY
+      ===================== */
+
+      const entityType =
+        normalizeAttachmentEntityType(
+          req.params.entityType
+        );
+
+
+      const entityId =
+        normalizeAttachmentEntityId(
+          req.params.entityId
+        );
+
+
+      const files =
+        Array.isArray(req.files)
+          ? req.files
+          : [];
+
+
+      /* =====================
+         FILES REQUIRED
+      ===================== */
+
+      if (
+        files.length === 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "No attachment files provided"
+        });
+
+      }
+
+
+      /* =====================
+         START TRANSACTION
+      ===================== */
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      /* =====================
+         VERIFY PARENT ENTITY
+      ===================== */
+
+      const entity =
+        await assertAttachmentEntityExists(
+          client,
+          entityType,
+          entityId
+        );
+
+
+      /* =====================
+         CURRENT ATTACHMENT USAGE
+      ===================== */
+
+      const currentUsage =
+        await getAttachmentUsage(
+          client,
+          entity.entityType,
+          entity.entityId
+        );
+
+
+      /* =====================
+         VALIDATE LIMITS
+
+         Existing files
+         +
+         incoming files
+      ===================== */
+
+      const capacity =
+        validateAttachmentCapacity(
+          currentUsage,
+          files
+        );
+
+
+      /* =====================
+         RESOLVE UPLOADER
+      ===================== */
+
+      let uploadedById =
+        null;
+
+
+      let uploadedBy =
+        null;
+
+
+      const requestedUploaderId =
+        Number(
+          req.body
+            ?.uploaded_by_id
+        );
+
+
+      if (
+        Number.isInteger(
+          requestedUploaderId
+        ) &&
+        requestedUploaderId > 0
+      ) {
+
+        const technicianResult =
+          await client.query(
+            `
+            SELECT
+              id,
+              name
+
+            FROM technicians
+
+            WHERE id = $1
+              AND active = true
+
+            LIMIT 1
+            `,
+            [
+              requestedUploaderId
+            ]
+          );
+
+
+        if (
+          technicianResult.rows.length === 0
+        ) {
+
+          throw new Error(
+            "Uploader not found or inactive"
+          );
+
+        }
+
+
+        uploadedById =
+          technicianResult.rows[0].id;
+
+
+        uploadedBy =
+          technicianResult.rows[0].name;
+
+      }
+
+
+      /* =====================
+         UPLOAD FILES
+      ===================== */
+
+      const insertedAttachments =
+        [];
+
+
+      for (
+        const file
+        of files
+      ) {
+
+        /* =====================
+           BUILD SAFE R2 KEY
+        ===================== */
+
+        const fileKey =
+          buildAttachmentFileKey(
+            entity.entityType,
+            entity.entityId,
+            file.originalname
+          );
+
+
+        const cleanFileName =
+          cleanAttachmentFileName(
+            file.originalname
+          );
+
+
+        /* =====================
+           UPLOAD TO R2
+        ===================== */
+
+        await r2Client.send(
+          new PutObjectCommand({
+            Bucket:
+              process.env.R2_BUCKET,
+
+            Key:
+              fileKey,
+
+            Body:
+              file.buffer,
+
+            ContentType:
+              file.mimetype
+          })
+        );
+
+
+        /*
+          Remember this immediately.
+
+          If DB insert or another upload
+          fails later, we remove it.
+        */
+        uploadedR2Keys.push(
+          fileKey
+        );
+
+
+        /* =====================
+           SAVE METADATA TO DB
+        ===================== */
+
+        const insertResult =
+          await client.query(
+            `
+            INSERT INTO attachments
+              (
+                entity_type,
+                entity_id,
+                file_key,
+                file_name,
+                mime_type,
+                file_size,
+                uploaded_by_id,
+                uploaded_by
+              )
+
+            VALUES
+              (
+                $1,$2,$3,$4,
+                $5,$6,$7,$8
+              )
+
+            RETURNING
+              id,
+              entity_type,
+              entity_id,
+              file_key,
+              file_name,
+              mime_type,
+              file_size,
+              uploaded_by_id,
+              uploaded_by,
+              uploaded_at
+            `,
+            [
+              entity.entityType,     // $1
+              entity.entityId,       // $2
+              fileKey,               // $3
+              cleanFileName,         // $4
+              file.mimetype,         // $5
+              Number(file.size),     // $6
+              uploadedById,          // $7
+              uploadedBy             // $8
+            ]
+          );
+
+
+        insertedAttachments.push(
+          insertResult.rows[0]
+        );
+
+      }
+
+
+      /* =====================
+         COMMIT DB
+      ===================== */
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      /* =====================
+         SUCCESS
+      ===================== */
+
+      return res.status(201).json({
+
+        message:
+          "Attachments uploaded successfully",
+
+        entity: {
+          type:
+            entity.entityType,
+
+          id:
+            entity.entityId
+        },
+
+        uploaded:
+          insertedAttachments,
+
+        usage: {
+          fileCount:
+            capacity.finalFileCount,
+
+          totalBytes:
+            capacity.finalTotalBytes,
+
+          maxFiles:
+            ATTACHMENT_MAX_FILES,
+
+          maxTotalBytes:
+            ATTACHMENT_MAX_TOTAL_BYTES
+        }
+
+      });
+
+
+    } catch (err) {
+
+      /* =====================
+         ROLLBACK DB
+      ===================== */
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (rollbackErr) {
+
+        console.error(
+          "ATTACHMENT DB ROLLBACK ERROR:",
+          rollbackErr
+        );
+
+      }
+
+
+      /* =====================
+         CLEAN R2 ORPHANS
+
+         Anything uploaded during this
+         failed request is removed.
+      ===================== */
+
+      for (
+        const fileKey
+        of uploadedR2Keys
+      ) {
+
+        try {
+
+          await r2Client.send(
+            new DeleteObjectCommand({
+              Bucket:
+                process.env.R2_BUCKET,
+
+              Key:
+                fileKey
+            })
+          );
+
+        } catch (deleteErr) {
+
+          console.error(
+            "ATTACHMENT R2 CLEANUP ERROR:",
+            fileKey,
+            deleteErr
+          );
+
+        }
+
+      }
+
+
+      console.error(
+        "POST /attachments ERROR:",
+        err
+      );
+
+
+      /* =====================
+         FRIENDLY ERRORS
+      ===================== */
+
+      if (
+        err instanceof
+        multer.MulterError
+      ) {
+
+        return res.status(400).json({
+          error:
+            err.message
+        });
+
+      }
+
+
+      const message =
+        err.message ||
+        "Attachment upload failed";
+
+
+      const isValidationError =
+        message.includes("Maximum") ||
+        message.includes("not found") ||
+        message.includes("Invalid") ||
+        message.includes("Unsupported") ||
+        message.includes("Only JPG") ||
+        message.includes("No attachment");
+
+
+      return res
+        .status(
+          isValidationError
+            ? 400
+            : 500
+        )
+        .json({
+          error:
+            message
+        });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+
+
+
+// -------------------
+// ALLOWED ROLES
+// -------------------
 
 const ALLOWED_TECHNICIAN_ROLES = [
   "Technician",
