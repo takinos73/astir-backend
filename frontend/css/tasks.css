@@ -376,3 +376,96 @@ tr.task-restoration {
   color:
     #bfdbfe;
 }
+
+/* =========================================================
+   TASK ATTACHMENT PREVIEW
+========================================================= */
+
+.task-attachment-preview {
+  width: 58px;
+  height: 58px;
+
+  flex:
+    0 0 58px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius:
+    7px;
+
+  overflow:
+    hidden;
+
+  background:
+    rgba(15, 23, 42, 0.50);
+
+  border:
+    1px solid rgba(148, 163, 184, 0.12);
+}
+
+
+.task-attachment-thumbnail {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+
+.task-attachment-thumbnail:hover {
+  transform:
+    scale(1.04);
+
+  opacity:
+    0.92;
+}
+
+
+.task-attachment-pdf-badge {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    38px;
+
+  height:
+    38px;
+
+  border-radius:
+    6px;
+
+  background:
+    rgba(239, 68, 68, 0.10);
+
+  border:
+    1px solid rgba(248, 113, 113, 0.24);
+
+  color:
+    #fca5a5;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+}

@@ -2408,8 +2408,7 @@ window.addEventListener("resize", () => {
    TASK VIEW — LOAD ATTACHMENTS
 ========================================================= */
 
-async function loadTaskAttachments(
-  taskId
+async function loadTaskAttachments(taskId
 ) {
 
   const section =
@@ -2529,179 +2528,307 @@ async function loadTaskAttachments(
        RENDER ATTACHMENTS
     ===================== */
 
-    attachments.forEach(
-      attachment => {
+   attachments.forEach(
+  async attachment => {
 
-        const item =
-          document.createElement(
-            "div"
+    const item =
+      document.createElement(
+        "div"
+      );
+
+
+    item.className =
+      "task-attachment-view-item";
+
+
+    /* =====================
+       PREVIEW
+    ===================== */
+
+    const preview =
+      document.createElement(
+        "div"
+      );
+
+
+    preview.className =
+      "task-attachment-preview";
+
+
+    if (
+      String(
+        attachment.mime_type || ""
+      ).startsWith(
+        "image/"
+      )
+    ) {
+
+      try {
+
+        const previewRes =
+          await fetch(
+            `${API}/attachments/${attachment.id}/open`
           );
 
 
-        item.className =
-          "task-attachment-view-item";
-
-
-        const main =
-          document.createElement(
-            "div"
-          );
-
-
-        main.className =
-          "task-attachment-view-main";
-
-
-        const name =
-          document.createElement(
-            "div"
-          );
-
-
-        name.className =
-          "task-attachment-view-name";
-
-
-        name.textContent =
-          attachment.file_name ||
-          "Attachment";
-
-
-        const meta =
-          document.createElement(
-            "div"
-          );
-
-
-        meta.className =
-          "task-attachment-view-meta";
-
-
-        const metaParts =
-          [];
-
-
-        metaParts.push(
-          formatAttachmentSize(
-            attachment.file_size
-          )
-        );
-
-
-        if (
-          attachment.uploaded_by
-        ) {
-
-          metaParts.push(
-            `Uploaded by ${attachment.uploaded_by}`
-          );
-
-        }
-
-
-        if (
-          attachment.uploaded_at
-        ) {
-
-          metaParts.push(
-            new Date(
-              attachment.uploaded_at
-            ).toLocaleString(
-              "el-GR",
-              {
-                day:
-                  "2-digit",
-
-                month:
-                  "2-digit",
-
-                year:
-                  "numeric",
-
-                hour:
-                  "2-digit",
-
-                minute:
-                  "2-digit",
-
-                hour12:
-                  false
-              }
-            )
-          );
-
-        }
-
-
-        meta.textContent =
-          metaParts.join(
-            " · "
-          );
-
-
-        main.appendChild(
-          name
-        );
-
-
-        main.appendChild(
-          meta
-        );
-
-
-        /* =====================
-           OPEN BUTTON
-        ===================== */
-
-        const openBtn =
-          document.createElement(
-            "button"
-          );
-
-
-        openBtn.type =
-          "button";
-
-
-        openBtn.className =
-          "task-attachment-open-btn";
-
-
-        openBtn.textContent =
-          attachment.mime_type ===
-          "application/pdf"
-            ? "Open PDF"
-            : "Open";
-
-
-        openBtn.addEventListener(
-          "click",
-          () => {
-
-            openTaskAttachment(
-              attachment.id
+        const previewData =
+          await previewRes
+            .json()
+            .catch(
+              () => ({})
             );
 
+
+        if (
+          previewRes.ok &&
+          previewData?.url
+        ) {
+
+          const img =
+            document.createElement(
+              "img"
+            );
+
+
+          img.src =
+            previewData.url;
+
+
+          img.alt =
+            attachment.file_name ||
+            "Attachment";
+
+
+          img.className =
+            "task-attachment-thumbnail";
+
+
+          img.addEventListener(
+            "click",
+            () => {
+
+              openTaskAttachment(
+                attachment.id
+              );
+
+            }
+          );
+
+
+          preview.appendChild(
+            img
+          );
+
+        }
+
+      } catch (err) {
+
+        console.error(
+          "ATTACHMENT PREVIEW ERROR:",
+          err
+        );
+
+      }
+
+    } else if (
+      attachment.mime_type ===
+      "application/pdf"
+    ) {
+
+      const pdfBadge =
+        document.createElement(
+          "div"
+        );
+
+
+      pdfBadge.className =
+        "task-attachment-pdf-badge";
+
+
+      pdfBadge.textContent =
+        "PDF";
+
+
+      preview.appendChild(
+        pdfBadge
+      );
+
+    }
+
+
+    /* =====================
+       MAIN INFO
+    ===================== */
+
+    const main =
+      document.createElement(
+        "div"
+      );
+
+
+    main.className =
+      "task-attachment-view-main";
+
+
+    const name =
+      document.createElement(
+        "div"
+      );
+
+
+    name.className =
+      "task-attachment-view-name";
+
+
+    name.textContent =
+      attachment.file_name ||
+      "Attachment";
+
+
+    const meta =
+      document.createElement(
+        "div"
+      );
+
+
+    meta.className =
+      "task-attachment-view-meta";
+
+
+    const metaParts =
+      [];
+
+
+    metaParts.push(
+      formatAttachmentSize(
+        attachment.file_size
+      )
+    );
+
+
+    if (
+      attachment.uploaded_by
+    ) {
+
+      metaParts.push(
+        `Uploaded by ${attachment.uploaded_by}`
+      );
+
+    }
+
+
+    if (
+      attachment.uploaded_at
+    ) {
+
+      metaParts.push(
+        new Date(
+          attachment.uploaded_at
+        ).toLocaleString(
+          "el-GR",
+          {
+            day:
+              "2-digit",
+
+            month:
+              "2-digit",
+
+            year:
+              "numeric",
+
+            hour:
+              "2-digit",
+
+            minute:
+              "2-digit",
+
+            hour12:
+              false
           }
-        );
+        )
+      );
+
+    }
 
 
-        item.appendChild(
-          main
-        );
+    meta.textContent =
+      metaParts.join(
+        " · "
+      );
 
 
-        item.appendChild(
-          openBtn
-        );
+    main.appendChild(
+      name
+    );
 
 
-        list.appendChild(
-          item
+    main.appendChild(
+      meta
+    );
+
+
+    /* =====================
+       OPEN BUTTON
+    ===================== */
+
+    const openBtn =
+      document.createElement(
+        "button"
+      );
+
+
+    openBtn.type =
+      "button";
+
+
+    openBtn.className =
+      "task-attachment-open-btn";
+
+
+    openBtn.textContent =
+      attachment.mime_type ===
+      "application/pdf"
+        ? "Open PDF"
+        : "Open";
+
+
+    openBtn.addEventListener(
+      "click",
+      () => {
+
+        openTaskAttachment(
+          attachment.id
         );
 
       }
     );
+
+
+    /* =====================
+       BUILD ITEM
+    ===================== */
+
+    item.appendChild(
+      preview
+    );
+
+
+    item.appendChild(
+      main
+    );
+
+
+    item.appendChild(
+      openBtn
+    );
+
+
+    list.appendChild(
+      item
+    );
+
+  }
+);
 
 
     /* =====================
