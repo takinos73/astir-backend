@@ -1162,6 +1162,58 @@
     </div>
 
     <!-- =====================
+        ATTACHMENTS
+    ===================== -->
+
+    <div class="addtask-block">
+
+      <label>
+        Attachments
+      </label>
+
+      <div class="task-attachment-upload">
+
+        <input
+          id="nt-attachments"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          hidden
+        />
+
+
+        <button
+          id="nt-attachments-btn"
+          type="button"
+          class="btn-secondary task-attachment-select-btn"
+        >
+          📎 Add Photo or PDF
+        </button>
+
+
+        <span
+          id="nt-attachments-summary"
+          class="task-attachment-summary"
+        >
+          No files selected
+        </span>
+
+      </div>
+
+
+      <div
+        id="nt-attachments-list"
+        class="task-attachment-list"
+      ></div>
+
+
+      <small class="field-hint">
+        Optional · Up to 3 files · Max 10 MB total · JPG, PNG, WEBP or PDF
+      </small>
+
+    </div>
+
+    <!-- =====================
          ACTIONS
     ====================== -->
     <div class="modal-actions">

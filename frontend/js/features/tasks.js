@@ -2394,3 +2394,4 @@ window.addEventListener("resize", () => {
     renderTable();
   }, 150);
 });
+

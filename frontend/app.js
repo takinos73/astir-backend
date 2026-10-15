@@ -1165,6 +1165,287 @@ function closeEditBreakdown() {
   document.getElementById("editBreakdownOverlay").style.display = "none";
 }
 
+/* =========================================================
+   ADD TASK — ATTACHMENT SELECTION
+
+   Rules:
+   - Maximum 3 files
+   - Maximum 10 MB total
+   - JPG / JPEG / PNG / WEBP / PDF
+========================================================= */
+
+const TASK_ATTACHMENT_MAX_FILES =
+  3;
+
+
+const TASK_ATTACHMENT_MAX_TOTAL_BYTES =
+  10 * 1024 * 1024;
+
+
+function formatAttachmentSize(
+  bytes
+) {
+
+  const size =
+    Number(bytes) || 0;
+
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+
+  if (
+    size <
+    1024 * 1024
+  ) {
+
+    return (
+      `${(
+        size / 1024
+      ).toFixed(1)} KB`
+    );
+
+  }
+
+
+  return (
+    `${(
+      size /
+      (1024 * 1024)
+    ).toFixed(1)} MB`
+  );
+
+}
+
+
+/* =====================
+   OPEN FILE PICKER
+===================== */
+
+document
+  .getElementById(
+    "nt-attachments-btn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      document
+        .getElementById(
+          "nt-attachments"
+        )
+        ?.click();
+
+    }
+  );
+
+
+/* =====================
+   FILE SELECTION
+===================== */
+
+document
+  .getElementById(
+    "nt-attachments"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const input =
+        event.target;
+
+
+      const files =
+        Array.from(
+          input.files || []
+        );
+
+
+      const summary =
+        document.getElementById(
+          "nt-attachments-summary"
+        );
+
+
+      const list =
+        document.getElementById(
+          "nt-attachments-list"
+        );
+
+
+      if (!summary || !list) {
+        return;
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      /* =====================
+         FILE COUNT
+      ===================== */
+
+      if (
+        files.length >
+        TASK_ATTACHMENT_MAX_FILES
+      ) {
+
+        alert(
+          "Maximum 3 attachments per task."
+        );
+
+
+        input.value =
+          "";
+
+
+        summary.textContent =
+          "No files selected";
+
+
+        return;
+
+      }
+
+
+      /* =====================
+         TOTAL SIZE
+      ===================== */
+
+      const totalBytes =
+        files.reduce(
+          (
+            total,
+            file
+          ) =>
+            total +
+            Number(
+              file.size || 0
+            ),
+          0
+        );
+
+
+      if (
+        totalBytes >
+        TASK_ATTACHMENT_MAX_TOTAL_BYTES
+      ) {
+
+        alert(
+          "Maximum total attachment size is 10 MB."
+        );
+
+
+        input.value =
+          "";
+
+
+        summary.textContent =
+          "No files selected";
+
+
+        return;
+
+      }
+
+
+      /* =====================
+         EMPTY
+      ===================== */
+
+      if (
+        files.length === 0
+      ) {
+
+        summary.textContent =
+          "No files selected";
+
+
+        return;
+
+      }
+
+
+      /* =====================
+         SUMMARY
+      ===================== */
+
+      summary.textContent =
+        `${files.length} file${
+          files.length === 1
+            ? ""
+            : "s"
+        } · ${formatAttachmentSize(
+          totalBytes
+        )}`;
+
+
+      /* =====================
+         FILE LIST
+      ===================== */
+
+      files.forEach(
+        file => {
+
+          const item =
+            document.createElement(
+              "div"
+            );
+
+
+          item.className =
+            "task-attachment-item";
+
+
+          const name =
+            document.createElement(
+              "span"
+            );
+
+
+          name.textContent =
+            file.name;
+
+
+          const size =
+            document.createElement(
+              "span"
+            );
+
+
+          size.className =
+            "task-attachment-item-size";
+
+
+          size.textContent =
+            formatAttachmentSize(
+              file.size
+            );
+
+
+          item.appendChild(
+            name
+          );
+
+
+          item.appendChild(
+            size
+          );
+
+
+          list.appendChild(
+            item
+          );
+
+        }
+      );
+
+    }
+  );
+
 /* =====================
    SAVE TASK
 
@@ -1798,6 +2079,128 @@ document.getElementById("saveTaskBtn") ?.addEventListener(
             result?.error ||
             "Failed to save task"
           );
+
+        }
+
+        /* =====================
+          UPLOAD ATTACHMENTS
+
+          Task has already been created.
+          Attachments are linked using result.id.
+        ===================== */
+
+        const attachmentInput =
+          document.getElementById(
+            "nt-attachments"
+          );
+
+
+        const attachmentFiles =
+          Array.from(
+            attachmentInput?.files || []
+          );
+
+
+        if (
+          attachmentFiles.length > 0
+        ) {
+
+          try {
+
+            const formData =
+              new FormData();
+
+
+            attachmentFiles.forEach(
+              file => {
+
+                formData.append(
+                  "files",
+                  file
+                );
+
+              }
+            );
+
+            const loggedInTechnicianId =
+              localStorage.getItem(
+                TECHNICIAN_ID_STORAGE_KEY
+              );
+
+
+            if (loggedInTechnicianId) {
+
+              formData.append(
+                "uploaded_by_id",
+                loggedInTechnicianId
+              );
+
+            }
+
+            const attachmentRes =
+              await fetch(
+                `${API}/attachments/TASK/${result.id}`,
+                {
+                  method:
+                    "POST",
+
+                  body:
+                    formData
+                }
+              );
+
+
+            const attachmentResult =
+              await attachmentRes
+                .json()
+                .catch(
+                  () => ({})
+                );
+
+
+            if (
+              !attachmentRes.ok
+            ) {
+
+              throw new Error(
+                attachmentResult?.error ||
+                "Attachment upload failed"
+              );
+
+            }
+
+
+            console.log(
+              "TASK ATTACHMENTS UPLOADED:",
+              attachmentResult
+            );
+
+
+          } catch (
+            attachmentErr
+          ) {
+
+            console.error(
+              "TASK ATTACHMENT UPLOAD ERROR:",
+              attachmentErr
+            );
+
+
+            /*
+              IMPORTANT:
+
+              The Task already exists at this point.
+
+              Do NOT throw here, otherwise the user
+              may try Create again and duplicate
+              the Task.
+            */
+
+            alert(
+              `Task was created successfully, but the attachment upload failed:\n\n${attachmentErr.message}`
+            );
+
+          }
 
         }
 
