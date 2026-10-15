@@ -1372,6 +1372,15 @@ function viewTask(taskId) {
   } else if (followupBtn) {
     followupBtn.style.display = "none";
   }
+
+  /* =====================
+    LOAD TASK ATTACHMENTS
+  ===================== */
+
+  loadTaskAttachments(
+    task.id
+  );
+
 }
 
 /* =========================================================
@@ -2394,4 +2403,395 @@ window.addEventListener("resize", () => {
     renderTable();
   }, 150);
 });
+
+/* =========================================================
+   TASK VIEW — LOAD ATTACHMENTS
+========================================================= */
+
+async function loadTaskAttachments(
+  taskId
+) {
+
+  const section =
+    document.getElementById(
+      "taskAttachmentsSection"
+    );
+
+
+  const list =
+    document.getElementById(
+      "taskAttachmentsList"
+    );
+
+
+  const usage =
+    document.getElementById(
+      "taskAttachmentsUsage"
+    );
+
+
+  if (
+    !section ||
+    !list ||
+    !usage
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET
+  ===================== */
+
+  section.style.display =
+    "none";
+
+
+  list.innerHTML =
+    "";
+
+
+  usage.textContent =
+    "";
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/attachments/TASK/${taskId}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load attachments"
+      );
+
+    }
+
+
+    const attachments =
+      Array.isArray(
+        data.attachments
+      )
+        ? data.attachments
+        : [];
+
+
+    /* =====================
+       NO ATTACHMENTS
+    ===================== */
+
+    if (
+      attachments.length === 0
+    ) {
+
+      section.style.display =
+        "none";
+
+
+      return;
+
+    }
+
+
+    /* =====================
+       USAGE
+    ===================== */
+
+    const totalBytes =
+      Number(
+        data.usage
+          ?.totalBytes || 0
+      );
+
+
+    usage.textContent =
+      `${attachments.length} file${
+        attachments.length === 1
+          ? ""
+          : "s"
+      } · ${formatAttachmentSize(
+        totalBytes
+      )}`;
+
+
+    /* =====================
+       RENDER ATTACHMENTS
+    ===================== */
+
+    attachments.forEach(
+      attachment => {
+
+        const item =
+          document.createElement(
+            "div"
+          );
+
+
+        item.className =
+          "task-attachment-view-item";
+
+
+        const main =
+          document.createElement(
+            "div"
+          );
+
+
+        main.className =
+          "task-attachment-view-main";
+
+
+        const name =
+          document.createElement(
+            "div"
+          );
+
+
+        name.className =
+          "task-attachment-view-name";
+
+
+        name.textContent =
+          attachment.file_name ||
+          "Attachment";
+
+
+        const meta =
+          document.createElement(
+            "div"
+          );
+
+
+        meta.className =
+          "task-attachment-view-meta";
+
+
+        const metaParts =
+          [];
+
+
+        metaParts.push(
+          formatAttachmentSize(
+            attachment.file_size
+          )
+        );
+
+
+        if (
+          attachment.uploaded_by
+        ) {
+
+          metaParts.push(
+            `Uploaded by ${attachment.uploaded_by}`
+          );
+
+        }
+
+
+        if (
+          attachment.uploaded_at
+        ) {
+
+          metaParts.push(
+            new Date(
+              attachment.uploaded_at
+            ).toLocaleString(
+              "el-GR",
+              {
+                day:
+                  "2-digit",
+
+                month:
+                  "2-digit",
+
+                year:
+                  "numeric",
+
+                hour:
+                  "2-digit",
+
+                minute:
+                  "2-digit",
+
+                hour12:
+                  false
+              }
+            )
+          );
+
+        }
+
+
+        meta.textContent =
+          metaParts.join(
+            " · "
+          );
+
+
+        main.appendChild(
+          name
+        );
+
+
+        main.appendChild(
+          meta
+        );
+
+
+        /* =====================
+           OPEN BUTTON
+        ===================== */
+
+        const openBtn =
+          document.createElement(
+            "button"
+          );
+
+
+        openBtn.type =
+          "button";
+
+
+        openBtn.className =
+          "task-attachment-open-btn";
+
+
+        openBtn.textContent =
+          attachment.mime_type ===
+          "application/pdf"
+            ? "Open PDF"
+            : "Open";
+
+
+        openBtn.addEventListener(
+          "click",
+          () => {
+
+            openTaskAttachment(
+              attachment.id
+            );
+
+          }
+        );
+
+
+        item.appendChild(
+          main
+        );
+
+
+        item.appendChild(
+          openBtn
+        );
+
+
+        list.appendChild(
+          item
+        );
+
+      }
+    );
+
+
+    /* =====================
+       SHOW SECTION
+    ===================== */
+
+    section.style.display =
+      "block";
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD TASK ATTACHMENTS ERROR:",
+      err
+    );
+
+
+    section.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* =========================================================
+   TASK VIEW — OPEN ATTACHMENT
+
+   Backend returns a temporary signed
+   URL for the private R2 object.
+========================================================= */
+
+async function openTaskAttachment(
+  attachmentId
+) {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/attachments/${attachmentId}/open`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to open attachment"
+      );
+
+    }
+
+
+    if (!data?.url) {
+
+      throw new Error(
+        "Attachment URL not available"
+      );
+
+    }
+
+
+    window.open(
+      data.url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "OPEN TASK ATTACHMENT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message
+    );
+
+  }
+
+}
 

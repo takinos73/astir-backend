@@ -230,3 +230,149 @@ tr.task-restoration {
   pointer-events: none;
 }
 
+/* =========================================================
+   TASK VIEW — ATTACHMENTS
+========================================================= */
+
+.task-attachments-section {
+  margin-top: 14px;
+
+  padding: 12px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.14);
+
+  border-radius: 9px;
+
+  background:
+    rgba(15, 23, 42, 0.28);
+}
+
+
+.task-attachments-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 9px;
+}
+
+
+.task-attachments-header h4 {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color:
+    #e2e8f0;
+}
+
+
+.task-attachments-usage {
+  font-size: 11px;
+
+  color:
+    rgba(148, 163, 184, 0.78);
+}
+
+
+.task-attachments-view-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+.task-attachment-view-item {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 8px 10px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.12);
+
+  border-radius: 7px;
+
+  background:
+    rgba(15, 23, 42, 0.36);
+}
+
+
+.task-attachment-view-main {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.task-attachment-view-name {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  color:
+    #e2e8f0;
+}
+
+
+.task-attachment-view-meta {
+  font-size: 10px;
+
+  color:
+    rgba(148, 163, 184, 0.76);
+}
+
+
+.task-attachment-open-btn {
+  flex-shrink: 0;
+
+  padding: 6px 10px;
+
+  border:
+    1px solid rgba(96, 165, 250, 0.24);
+
+  border-radius: 6px;
+
+  background:
+    rgba(59, 130, 246, 0.08);
+
+  color:
+    #93c5fd;
+
+  font-size: 11px;
+  font-weight: 650;
+
+  cursor: pointer;
+}
+
+
+.task-attachment-open-btn:hover {
+  background:
+    rgba(59, 130, 246, 0.14);
+
+  border-color:
+    rgba(96, 165, 250, 0.42);
+
+  color:
+    #bfdbfe;
+}
