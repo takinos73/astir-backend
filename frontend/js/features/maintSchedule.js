@@ -584,27 +584,44 @@ async function openScheduledMaintenanceDetail(smId) {
         durationText;
 
 
-      /* =====================
-         DUE DATE
-      ===================== */
+    /* =====================
+      TASK DATE
 
-      const due =
-        document.createElement(
-          "div"
-        );
+      DONE:
+      → show actual completion date/time
 
+      PLANNED / OVERDUE:
+      → show due date/time
+    ===================== */
 
-      due.style.marginTop =
-        "4px";
-
-
-      due.style.fontSize =
-        "12px";
+    const due =
+      document.createElement(
+        "div"
+      );
 
 
-      due.style.color =
-        "#9ca3af";
+    due.style.marginTop =
+      "4px";
 
+
+    due.style.fontSize =
+      "12px";
+
+
+    due.style.color =
+      "#9ca3af";
+
+
+    if (isDone) {
+
+      due.textContent =
+        task.execution_executed_at
+          ? `Done: ${formatDate(
+              task.execution_executed_at
+            )}`
+          : "Done: —";
+
+    } else {
 
       due.textContent =
         task.due_date
@@ -613,6 +630,7 @@ async function openScheduledMaintenanceDetail(smId) {
             )}`
           : "Due: —";
 
+    }
 
       /* =====================
          APPEND TASK INFO
