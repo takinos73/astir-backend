@@ -690,3 +690,100 @@ tr.task-restoration {
   cursor:
     pointer;
 }
+
+/* =========================================================
+   ADD TASK — ATTACHMENT BUTTON
+========================================================= */
+
+#nt-attachments-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  padding: 7px 12px;
+
+  border:
+    1px solid rgba(
+      96,
+      165,
+      250,
+      0.24
+    );
+
+  border-radius: 8px;
+
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.08
+    );
+
+  color: #93c5fd;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+
+#nt-attachments-btn:hover {
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.14
+    );
+
+  border-color:
+    rgba(
+      96,
+      165,
+      250,
+      0.38
+    );
+
+  color: #bfdbfe;
+}
+
+
+#nt-attachments-btn:active {
+  transform: translateY(1px);
+}
+
+
+#nt-attachments-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   ADD TASK — ATTACHMENT SUMMARY
+========================================================= */
+
+#nt-attachments-summary {
+  margin-top: 6px;
+
+  font-size: 11px;
+
+  line-height: 1.4;
+
+  color:
+    rgba(
+      148,
+      163,
+      184,
+      0.82
+    );
+}
