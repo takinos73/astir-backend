@@ -1393,55 +1393,101 @@ document.addEventListener("change", event => {
 
 async function createSmTask() {
 
-  const sm = currentScheduledMaintenance;
+  const sm =
+    currentScheduledMaintenance;
+
 
   const saveBtn =
-    document.getElementById("saveSmTaskBtn");
+    document.getElementById(
+      "saveSmTaskBtn"
+    );
+
 
   const taskInput =
-    document.getElementById("sm-task");
+    document.getElementById(
+      "sm-task"
+    );
+
 
   const sectionSelect =
-    document.getElementById("sm-section");
+    document.getElementById(
+      "sm-section"
+    );
+
 
   const sectionInput =
-    document.getElementById("sm-section-input");
+    document.getElementById(
+      "sm-section-input"
+    );
+
 
   const unitSelect =
-    document.getElementById("sm-unit");
+    document.getElementById(
+      "sm-unit"
+    );
+
 
   const unitInput =
-    document.getElementById("sm-unit-input");
+    document.getElementById(
+      "sm-unit-input"
+    );
+
 
   const dueDateInput =
-    document.getElementById("sm-due-date");
+    document.getElementById(
+      "sm-due-date"
+    );
+
 
   const durationInput =
-    document.getElementById("sm-duration");
+    document.getElementById(
+      "sm-duration"
+    );
+
 
   const notesInput =
-    document.getElementById("sm-notes");
+    document.getElementById(
+      "sm-notes"
+    );
 
 
   /* =====================
      VALIDATE SELECTED SM
   ===================== */
 
-  const smId = Number(sm?.id);
+  const smId =
+    Number(
+      sm?.id
+    );
+
 
   if (
     !Number.isInteger(smId) ||
     smId <= 0
   ) {
-    alert("No Scheduled Maintenance selected.");
+
+    alert(
+      "No Scheduled Maintenance selected."
+    );
+
     return;
+
   }
 
+
   if (
-    String(sm.status || "").toUpperCase() === "CLOSED"
+    String(
+      sm.status || ""
+    ).toUpperCase() ===
+    "CLOSED"
   ) {
-    alert("This Scheduled Maintenance is closed.");
+
+    alert(
+      "This Scheduled Maintenance is closed."
+    );
+
     return;
+
   }
 
 
@@ -1450,12 +1496,23 @@ async function createSmTask() {
   ===================== */
 
   const task =
-    String(taskInput?.value || "").trim();
+    String(
+      taskInput?.value || ""
+    ).trim();
+
 
   if (!task) {
-    alert("Please enter the Maintenance Task.");
+
+    alert(
+      "Please enter the Maintenance Task."
+    );
+
+
     taskInput?.focus();
+
+
     return;
+
   }
 
 
@@ -1469,36 +1526,61 @@ async function createSmTask() {
     sectionSelect?.style.display !== "none" &&
     sectionSelect?.value !== "__new__"
 
-      ? String(sectionSelect?.value || "").trim()
+      ? String(
+          sectionSelect?.value || ""
+        ).trim()
 
-      : String(sectionInput?.value || "").trim();
+      : String(
+          sectionInput?.value || ""
+        ).trim();
 
 
   const unit =
     unitSelect?.style.display !== "none" &&
     unitSelect?.value !== "__new__"
 
-      ? String(unitSelect?.value || "").trim()
+      ? String(
+          unitSelect?.value || ""
+        ).trim()
 
-      : String(unitInput?.value || "").trim();
+      : String(
+          unitInput?.value || ""
+        ).trim();
 
 
   if (
     sectionSelect?.value === "__new__" &&
     !section
   ) {
-    alert("Please enter the new Section.");
+
+    alert(
+      "Please enter the new Section."
+    );
+
+
     sectionInput?.focus();
+
+
     return;
+
   }
+
 
   if (
     unitSelect?.value === "__new__" &&
     !unit
   ) {
-    alert("Please enter the new Unit.");
+
+    alert(
+      "Please enter the new Unit."
+    );
+
+
     unitInput?.focus();
+
+
     return;
+
   }
 
 
@@ -1506,23 +1588,42 @@ async function createSmTask() {
      DUE DATE
   ===================== */
 
-  let dueDate = null;
+  let dueDate =
+    null;
 
-  if (dueDateInput?.value) {
+
+  if (
+    dueDateInput?.value
+  ) {
 
     const parsedDueDate =
-      new Date(dueDateInput.value);
+      new Date(
+        dueDateInput.value
+      );
+
 
     if (
-      Number.isNaN(parsedDueDate.getTime())
+      Number.isNaN(
+        parsedDueDate.getTime()
+      )
     ) {
-      alert("Invalid Due Date.");
+
+      alert(
+        "Invalid Due Date."
+      );
+
+
       dueDateInput.focus();
+
+
       return;
+
     }
+
 
     dueDate =
       parsedDueDate.toISOString();
+
   }
 
 
@@ -1530,21 +1631,39 @@ async function createSmTask() {
      ESTIMATED DURATION
   ===================== */
 
-  let durationMin = null;
+  let durationMin =
+    null;
 
-  if (durationInput?.value !== "") {
+
+  if (
+    durationInput?.value !== ""
+  ) {
 
     durationMin =
-      Number(durationInput.value);
+      Number(
+        durationInput.value
+      );
+
 
     if (
-      !Number.isFinite(durationMin) ||
+      !Number.isFinite(
+        durationMin
+      ) ||
       durationMin < 0
     ) {
-      alert("Invalid Estimated Duration.");
+
+      alert(
+        "Invalid Estimated Duration."
+      );
+
+
       durationInput.focus();
+
+
       return;
+
     }
+
   }
 
 
@@ -1556,16 +1675,22 @@ async function createSmTask() {
 
     task,
 
-    section: section || null,
+    section:
+      section || null,
 
-    unit: unit || null,
+    unit:
+      unit || null,
 
-    due_date: dueDate,
+    due_date:
+      dueDate,
 
-    duration_min: durationMin,
+    duration_min:
+      durationMin,
 
     notes:
-      String(notesInput?.value || "").trim() || null
+      String(
+        notesInput?.value || ""
+      ).trim() || null
 
   };
 
@@ -1574,43 +1699,75 @@ async function createSmTask() {
      CREATE TASK
   ===================== */
 
-  if (saveBtn?.disabled) return;
+  if (
+    saveBtn?.disabled
+  ) {
+    return;
+  }
 
-  let taskCreated = false;
+
+  let taskCreated =
+    false;
+
 
   try {
 
     if (saveBtn) {
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Adding...";
+
+      saveBtn.disabled =
+        true;
+
+
+      saveBtn.textContent =
+        "Adding...";
+
     }
 
-    const response = await fetch(
-      `/scheduled-maintenance/${smId}/tasks`,
-      {
-        method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+    const response =
+      await fetch(
+        `/scheduled-maintenance/${smId}/tasks`,
+        {
+          method:
+            "POST",
 
-        body: JSON.stringify(payload)
-      }
-    );
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-    const result = await response.json();
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
 
-    if (!response.ok) {
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (
+      !response.ok
+    ) {
+
       throw new Error(
         result?.error ||
         "Failed to create Maintenance Task"
       );
+
     }
 
-    taskCreated = true;
+
+    taskCreated =
+      true;
+
 
     /* =====================
-      UPLOAD ATTACHMENTS
+       UPLOAD ATTACHMENTS
     ===================== */
 
     if (
@@ -1641,7 +1798,9 @@ async function createSmTask() {
           );
 
 
-        if (uploadedById) {
+        if (
+          uploadedById
+        ) {
 
           formData.append(
             "uploaded_by_id",
@@ -1655,8 +1814,11 @@ async function createSmTask() {
           await fetch(
             `/attachments/TASK/${result.id}`,
             {
-              method: "POST",
-              body: formData
+              method:
+                "POST",
+
+              body:
+                formData
             }
           );
 
@@ -1678,7 +1840,9 @@ async function createSmTask() {
 
         }
 
-      } catch (attachmentErr) {
+      } catch (
+        attachmentErr
+      ) {
 
         console.error(
           "SM TASK ATTACHMENT UPLOAD ERROR:",
@@ -1692,11 +1856,22 @@ async function createSmTask() {
 
       }
 
-    } 
-    
+    }
+
+
+    /* =====================
+       RESET ATTACHMENTS
+    ===================== */
+
     resetSmTaskAttachments();
 
+
+    /* =====================
+       CLOSE TASK MODAL
+    ===================== */
+
     closeSmTaskModal();
+
 
     /* =====================
        REFRESH
@@ -1706,9 +1881,20 @@ async function createSmTask() {
        another task creation.
     ===================== */
 
-    await openScheduledMaintenanceDetail(smId);
+    await openScheduledMaintenanceDetail(
+      smId
+    );
 
-    await loadTasks();
+
+    if (
+      typeof loadTasks ===
+      "function"
+    ) {
+
+      await loadTasks();
+
+    }
+
 
   } catch (err) {
 
@@ -1717,18 +1903,28 @@ async function createSmTask() {
       err
     );
 
+
     alert(
       taskCreated
         ? "Task created, but refresh failed. Please reload the page. Do not save it again."
-        : err.message || "Could not create Maintenance Task."
+        : err.message ||
+          "Could not create Maintenance Task."
     );
+
 
   } finally {
 
     if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Add Task";
+
+      saveBtn.disabled =
+        false;
+
+
+      saveBtn.textContent =
+        "Add Task";
+
     }
+
   }
 
 }
