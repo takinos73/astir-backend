@@ -1306,7 +1306,7 @@ td:last-child {
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
   gap: 2px;
-  width:560px ;               /* 👈 λίγο πιο σφιχτό */  
+  width: 620px;          
 }
 
 /* Inputs, selects, textarea same look */
