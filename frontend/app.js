@@ -1349,122 +1349,248 @@ function renderTaskAttachments() {
     )}`;
 
 
-  taskAttachmentFiles.forEach(
-    (
-      file,
-      index
-    ) => {
+ taskAttachmentFiles.forEach(
+  (
+    file,
+    index
+  ) => {
 
-      const item =
+    /* =====================
+       ATTACHMENT CHIP
+    ===================== */
+
+    const item =
+      document.createElement(
+        "div"
+      );
+
+
+    item.className =
+      "task-attachment-chip";
+
+
+    /* =====================
+       PREVIEW / FILE ICON
+    ===================== */
+
+    const preview =
+      document.createElement(
+        "div"
+      );
+
+
+    preview.className =
+      "task-attachment-chip-preview";
+
+
+    if (
+      String(
+        file.type || ""
+      ).startsWith(
+        "image/"
+      )
+    ) {
+
+      const img =
         document.createElement(
-          "div"
+          "img"
         );
 
 
-      item.className =
-        "task-attachment-item";
-
-
-      const name =
-        document.createElement(
-          "span"
+      const objectUrl =
+        URL.createObjectURL(
+          file
         );
 
 
-      name.textContent =
+      img.src =
+        objectUrl;
+
+
+      img.alt =
         file.name;
 
 
-      const right =
-        document.createElement(
-          "div"
-        );
+      img.className =
+        "task-attachment-chip-thumb";
 
 
-      right.className =
-        "task-attachment-item-actions";
+      /*
+        Release temporary browser URL
+        after the image has loaded.
+      */
 
-
-      const size =
-        document.createElement(
-          "span"
-        );
-
-
-      size.className =
-        "task-attachment-item-size";
-
-
-      size.textContent =
-        formatAttachmentSize(
-          file.size
-        );
-
-
-      const removeBtn =
-        document.createElement(
-          "button"
-        );
-
-
-      removeBtn.type =
-        "button";
-
-
-      removeBtn.className =
-        "task-attachment-remove-btn";
-
-
-      removeBtn.textContent =
-        "×";
-
-
-      removeBtn.title =
-        "Remove attachment";
-
-
-      removeBtn.addEventListener(
-        "click",
+      img.addEventListener(
+        "load",
         () => {
 
-          taskAttachmentFiles.splice(
-            index,
-            1
+          URL.revokeObjectURL(
+            objectUrl
           );
 
-
-          renderTaskAttachments();
-
+        },
+        {
+          once:
+            true
         }
       );
 
 
-      right.appendChild(
-        size
+      preview.appendChild(
+        img
       );
 
+    } else if (
+      file.type ===
+      "application/pdf"
+    ) {
 
-      right.appendChild(
-        removeBtn
-      );
-
-
-      item.appendChild(
-        name
-      );
-
-
-      item.appendChild(
-        right
-      );
+      const pdf =
+        document.createElement(
+          "span"
+        );
 
 
-      list.appendChild(
-        item
+      pdf.className =
+        "task-attachment-chip-pdf";
+
+
+      pdf.textContent =
+        "PDF";
+
+
+      preview.appendChild(
+        pdf
       );
 
     }
-  );
+
+
+    /* =====================
+       FILE INFORMATION
+    ===================== */
+
+    const info =
+      document.createElement(
+        "div"
+      );
+
+
+    info.className =
+      "task-attachment-chip-info";
+
+
+    const name =
+      document.createElement(
+        "div"
+      );
+
+
+    name.className =
+      "task-attachment-chip-name";
+
+
+    name.textContent =
+      file.name;
+
+
+    name.title =
+      file.name;
+
+
+    const size =
+      document.createElement(
+        "div"
+      );
+
+
+    size.className =
+      "task-attachment-chip-size";
+
+
+    size.textContent =
+      formatAttachmentSize(
+        file.size
+      );
+
+
+    info.appendChild(
+      name
+    );
+
+
+    info.appendChild(
+      size
+    );
+
+
+    /* =====================
+       REMOVE BUTTON
+    ===================== */
+
+    const removeBtn =
+      document.createElement(
+        "button"
+      );
+
+
+    removeBtn.type =
+      "button";
+
+
+    removeBtn.className =
+      "task-attachment-remove-btn";
+
+
+    removeBtn.textContent =
+      "×";
+
+
+    removeBtn.title =
+      "Remove attachment";
+
+
+    removeBtn.addEventListener(
+      "click",
+      () => {
+
+        taskAttachmentFiles.splice(
+          index,
+          1
+        );
+
+
+        renderTaskAttachments();
+
+      }
+    );
+
+
+    /* =====================
+       BUILD CHIP
+    ===================== */
+
+    item.appendChild(
+      preview
+    );
+
+
+    item.appendChild(
+      info
+    );
+
+
+    item.appendChild(
+      removeBtn
+    );
+
+
+    list.appendChild(
+      item
+    );
+
+  }
+);
 
 }
 
@@ -2418,7 +2544,7 @@ document.getElementById("saveTaskBtn") ?.addEventListener(
         ===================== */
 
         resetTaskAttachments();
-        
+
         /* =====================
            CLOSE MODAL
         ===================== */

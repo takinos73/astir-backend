@@ -515,3 +515,178 @@ tr.task-restoration {
   color:
     #fecaca;
 }
+
+/* =========================================================
+   ADD TASK — ATTACHMENT RIBBON
+========================================================= */
+
+.task-attachment-list {
+  display: flex;
+
+  flex-direction: row;
+
+  gap: 8px;
+
+  margin-top: 8px;
+
+  overflow-x: auto;
+
+  overflow-y: hidden;
+
+  padding-bottom: 3px;
+}
+
+
+.task-attachment-chip {
+  flex:
+    0 0 210px;
+
+  min-width:
+    210px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding:
+    6px 7px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.12);
+
+  border-radius:
+    8px;
+
+  background:
+    rgba(15, 23, 42, 0.30);
+}
+
+
+.task-attachment-chip-preview {
+  width:
+    38px;
+
+  height:
+    38px;
+
+  flex:
+    0 0 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius:
+    6px;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+
+  border:
+    1px solid rgba(148, 163, 184, 0.10);
+}
+
+
+.task-attachment-chip-thumb {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+}
+
+
+.task-attachment-chip-pdf {
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  color:
+    #fca5a5;
+}
+
+
+.task-attachment-chip-info {
+  min-width:
+    0;
+
+  flex:
+    1;
+}
+
+
+.task-attachment-chip-name {
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  font-size:
+    11px;
+
+  font-weight:
+    650;
+
+  color:
+    #e2e8f0;
+}
+
+
+.task-attachment-chip-size {
+  margin-top:
+    2px;
+
+  font-size:
+    10px;
+
+  color:
+    rgba(148, 163, 184, 0.72);
+}
+
+
+.task-attachment-remove-btn {
+  width:
+    22px;
+
+  height:
+    22px;
+
+  flex:
+    0 0 22px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border:
+    1px solid rgba(248, 113, 113, 0.18);
+
+  border-radius:
+    5px;
+
+  background:
+    rgba(239, 68, 68, 0.06);
+
+  color:
+    #fca5a5;
+
+  cursor:
+    pointer;
+}
