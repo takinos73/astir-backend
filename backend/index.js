@@ -8586,27 +8586,36 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
             AND t.deleted_at IS NULL
 
-
         ORDER BY
 
           /* =====================
-            1. DONE TASKS FIRST
+            1. OPEN TASKS FIRST
           ===================== */
 
           CASE
             WHEN UPPER(TRIM(COALESCE(t.status, ''))) = 'DONE'
-              THEN 0
-            ELSE 1
+              THEN 1
+            ELSE 0
           END ASC,
 
 
           /* =====================
-            2. DONE TASKS
+            2. OPEN TASKS
 
-            Latest completion first.
+            Earliest due first
+          ===================== */
 
-            Prefer actual execution time.
-            completed_at is fallback only.
+          CASE
+            WHEN UPPER(TRIM(COALESCE(t.status, ''))) <> 'DONE'
+              THEN t.due_date
+            ELSE NULL
+          END ASC NULLS LAST,
+
+
+          /* =====================
+            3. DONE TASKS
+
+            Latest executed first
           ===================== */
 
           CASE
@@ -8617,19 +8626,6 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
               )
             ELSE NULL
           END DESC NULLS LAST,
-
-
-          /* =====================
-            3. OPEN TASKS
-
-            Earliest due first.
-          ===================== */
-
-          CASE
-            WHEN UPPER(TRIM(COALESCE(t.status, ''))) <> 'DONE'
-              THEN t.due_date
-            ELSE NULL
-          END ASC NULLS LAST,
 
 
           /* =====================
