@@ -3917,6 +3917,376 @@ function toSmLocalDateTimeValue(value) {
 
 }
 
+/* =========================================================
+   COMPLETED SM TASK — ATTACHMENTS
+
+   Rules:
+   - Maximum 3 files
+   - Maximum 10 MB total
+   - JPG / JPEG / PNG / WEBP / PDF
+========================================================= */
+
+const COMPLETED_SM_ATTACHMENT_MAX_FILES =
+  3;
+
+
+const COMPLETED_SM_ATTACHMENT_MAX_TOTAL_BYTES =
+  10 * 1024 * 1024;
+
+
+let completedSmTaskAttachmentFiles =
+  [];
+
+
+/* =====================
+   RESET
+===================== */
+
+function resetCompletedSmTaskAttachments() {
+
+  completedSmTaskAttachmentFiles =
+    [];
+
+
+  const input =
+    document.getElementById(
+      "completed-sm-attachments"
+    );
+
+
+  const summary =
+    document.getElementById(
+      "completed-sm-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "completed-sm-attachments-list"
+    );
+
+
+  if (input) {
+
+    input.value =
+      "";
+
+  }
+
+
+  if (summary) {
+
+    summary.textContent =
+      "No files selected";
+
+  }
+
+
+  if (list) {
+
+    list.innerHTML =
+      "";
+
+  }
+
+}
+
+
+/* =====================
+   RENDER
+===================== */
+
+function renderCompletedSmTaskAttachments() {
+
+  const summary =
+    document.getElementById(
+      "completed-sm-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "completed-sm-attachments-list"
+    );
+
+
+  if (
+    !summary ||
+    !list
+  ) {
+    return;
+  }
+
+
+  list.innerHTML =
+    "";
+
+
+  if (
+    completedSmTaskAttachmentFiles.length ===
+    0
+  ) {
+
+    summary.textContent =
+      "No files selected";
+
+    return;
+
+  }
+
+
+  const totalBytes =
+    completedSmTaskAttachmentFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
+
+
+  summary.textContent =
+    `${completedSmTaskAttachmentFiles.length} file${
+      completedSmTaskAttachmentFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
+
+
+  completedSmTaskAttachmentFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-chip";
+
+
+      /* =====================
+         PREVIEW
+      ===================== */
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-chip-preview";
+
+
+      if (
+        String(
+          file.type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
+
+
+        img.src =
+          objectUrl;
+
+
+        img.alt =
+          file.name;
+
+
+        img.className =
+          "task-attachment-chip-thumb";
+
+
+        img.addEventListener(
+          "load",
+          () => {
+
+            URL.revokeObjectURL(
+              objectUrl
+            );
+
+          },
+          {
+            once: true
+          }
+        );
+
+
+        preview.appendChild(
+          img
+        );
+
+      } else {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-chip-pdf";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      /* =====================
+         FILE INFO
+      ===================== */
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      info.className =
+        "task-attachment-chip-info";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-chip-name";
+
+
+      name.textContent =
+        file.name;
+
+
+      name.title =
+        file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+
+      size.className =
+        "task-attachment-chip-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      info.appendChild(
+        name
+      );
+
+
+      info.appendChild(
+        size
+      );
+
+
+      /* =====================
+         REMOVE
+      ===================== */
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          completedSmTaskAttachmentFiles.splice(
+            index,
+            1
+          );
+
+
+          renderCompletedSmTaskAttachments();
+
+        }
+      );
+
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        info
+      );
+
+
+      item.appendChild(
+        removeBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
 
 /* =========================================================
    CREATE COMPLETED TASK MODAL
@@ -3937,17 +4307,22 @@ function ensureCompletedSmTaskModal() {
 
 
   overlay =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
 
   overlay.id =
     "completedSmTaskOverlay";
 
+
   overlay.className =
     "modal-overlay";
 
+
   overlay.style.display =
     "none";
+
 
   overlay.style.zIndex =
     "1300";
@@ -4038,8 +4413,8 @@ function ensureCompletedSmTaskModal() {
       </div>
 
 
-     <!-- =====================
-          SECTION / UNIT
+      <!-- =====================
+           SECTION / UNIT
       ===================== -->
 
       <div
@@ -4331,6 +4706,56 @@ function ensureCompletedSmTaskModal() {
 
 
       <!-- =====================
+           ATTACHMENTS
+      ===================== -->
+
+      <div class="addtask-block">
+
+        <label>
+          Attachments
+        </label>
+
+
+        <input
+          id="completed-sm-attachments"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          hidden
+        />
+
+
+        <button
+          id="completed-sm-attachments-btn"
+          class="btn-table task-attachment-select-btn"
+          type="button"
+        >
+          📎 Add Photo or PDF
+        </button>
+
+
+        <div
+          id="completed-sm-attachments-summary"
+          class="task-attachments-summary"
+        >
+          No files selected
+        </div>
+
+
+        <div
+          id="completed-sm-attachments-list"
+          class="task-attachment-list"
+        ></div>
+
+
+        <small class="field-hint">
+          Optional · Up to 3 files · Max 10 MB total · JPG, PNG, WEBP or PDF
+        </small>
+
+      </div>
+
+
+      <!-- =====================
            ACTIONS
       ===================== -->
 
@@ -4404,7 +4829,8 @@ function ensureCompletedSmTaskModal() {
   function refreshCompletedSmDueMode() {
 
     const useCustom =
-      dueCustom?.checked === true;
+      dueCustom?.checked ===
+      true;
 
 
     if (dueCustomWrap) {
@@ -4443,6 +4869,169 @@ function ensureCompletedSmTaskModal() {
 
 
   refreshCompletedSmDueMode();
+
+
+  /* =====================
+     ATTACHMENT PICKER
+  ===================== */
+
+  const attachmentInput =
+    document.getElementById(
+      "completed-sm-attachments"
+    );
+
+
+  const attachmentBtn =
+    document.getElementById(
+      "completed-sm-attachments-btn"
+    );
+
+
+  attachmentBtn?.addEventListener(
+    "click",
+    () => {
+
+      if (!attachmentInput) {
+        return;
+      }
+
+
+      attachmentInput.value =
+        "";
+
+
+      attachmentInput.click();
+
+    }
+  );
+
+
+  /* =====================
+     ATTACHMENT SELECTION
+  ===================== */
+
+  attachmentInput?.addEventListener(
+    "change",
+    event => {
+
+      const newFiles =
+        Array.from(
+          event.target.files || []
+        );
+
+
+      if (
+        newFiles.length === 0
+      ) {
+        return;
+      }
+
+
+      const combinedFiles =
+        [
+          ...completedSmTaskAttachmentFiles
+        ];
+
+
+      newFiles.forEach(
+        file => {
+
+          const alreadyExists =
+            combinedFiles.some(
+              existing =>
+                existing.name ===
+                  file.name &&
+                existing.size ===
+                  file.size &&
+                existing.lastModified ===
+                  file.lastModified
+            );
+
+
+          if (!alreadyExists) {
+
+            combinedFiles.push(
+              file
+            );
+
+          }
+
+        }
+      );
+
+
+      /* =====================
+         MAX FILE COUNT
+      ===================== */
+
+      if (
+        combinedFiles.length >
+        COMPLETED_SM_ATTACHMENT_MAX_FILES
+      ) {
+
+        alert(
+          "Maximum 3 attachments per task."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      /* =====================
+         MAX TOTAL SIZE
+      ===================== */
+
+      const totalBytes =
+        combinedFiles.reduce(
+          (
+            total,
+            file
+          ) =>
+            total +
+            Number(
+              file.size || 0
+            ),
+          0
+        );
+
+
+      if (
+        totalBytes >
+        COMPLETED_SM_ATTACHMENT_MAX_TOTAL_BYTES
+      ) {
+
+        alert(
+          "Maximum total attachment size is 10 MB."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      completedSmTaskAttachmentFiles =
+        combinedFiles;
+
+
+      event.target.value =
+        "";
+
+
+      renderCompletedSmTaskAttachments();
+
+    }
+  );
 
 
   return overlay;
@@ -4951,6 +5540,12 @@ async function openCompletedSmTaskModal() {
   if (notesInput) {
     notesInput.value = "";
   }
+
+  /* =====================
+    RESET ATTACHMENTS
+  ===================== */
+
+  resetCompletedSmTaskAttachments();
 
 
   /* =====================
@@ -5490,8 +6085,106 @@ async function saveCompletedSmTask() {
       true;
 
 
-    closeCompletedSmTaskModal();
+    /* =====================
+       UPLOAD ATTACHMENTS
+    ===================== */
 
+    if (
+      completedSmTaskAttachmentFiles.length > 0
+    ) {
+
+      try {
+
+        const formData =
+          new FormData();
+
+
+        completedSmTaskAttachmentFiles.forEach(
+          file => {
+
+            formData.append(
+              "files",
+              file
+            );
+
+          }
+        );
+
+
+        const uploadedById =
+          localStorage.getItem(
+            TECHNICIAN_ID_STORAGE_KEY
+          );
+
+
+        if (
+          uploadedById
+        ) {
+
+          formData.append(
+            "uploaded_by_id",
+            uploadedById
+          );
+
+        }
+
+
+        const attachmentResponse =
+          await fetch(
+            `/attachments/TASK/${result.id}`,
+            {
+              method: "POST",
+              body: formData
+            }
+          );
+
+
+        const attachmentResult =
+          await attachmentResponse
+            .json()
+            .catch(() => ({}));
+
+
+        if (
+          !attachmentResponse.ok
+        ) {
+
+          throw new Error(
+            attachmentResult?.error ||
+            "Attachment upload failed."
+          );
+
+        }
+
+      } catch (attachmentErr) {
+
+        console.error(
+          "COMPLETED SM TASK ATTACHMENT UPLOAD ERROR:",
+          attachmentErr
+        );
+
+
+        alert(
+          "Completed Task was saved successfully, but attachment upload failed. Do not save the task again."
+        );
+
+      }
+
+    }
+
+
+    /* =====================
+       RESET ATTACHMENTS
+    ===================== */
+
+    resetCompletedSmTaskAttachments();
+
+
+    /* =====================
+       CLOSE MODAL
+    ===================== */
+
+    closeCompletedSmTaskModal();
 
     /* =====================
        REFRESH SM DETAIL
