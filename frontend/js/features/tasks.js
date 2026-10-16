@@ -2408,8 +2408,7 @@ window.addEventListener("resize", () => {
    TASK VIEW — LOAD ATTACHMENTS
 ========================================================= */
 
-async function loadTaskAttachments(taskId
-) {
+async function loadTaskAttachments(taskId) {
 
   const section =
     document.getElementById(

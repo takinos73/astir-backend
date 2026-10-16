@@ -1306,10 +1306,7 @@ td:last-child {
   flex-direction: column;
   align-items: stretch;   /* 👈 ΟΧΙ center */
   gap: 2px;
-  width:510px ;               /* 👈 λίγο πιο σφιχτό */  
-}
-#addTaskOverlay .modal-box {
-  padding-top: 2px;   /* 👈 πριν ήταν ~20px */
+  width:560px ;               /* 👈 λίγο πιο σφιχτό */  
 }
 
 /* Inputs, selects, textarea same look */

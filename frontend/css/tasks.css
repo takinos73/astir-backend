@@ -469,3 +469,49 @@ tr.task-restoration {
   font-weight:
     800;
 }
+
+.task-attachment-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.task-attachment-remove-btn {
+  width: 23px;
+  height: 23px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border:
+    1px solid rgba(248, 113, 113, 0.20);
+
+  border-radius: 5px;
+
+  background:
+    rgba(239, 68, 68, 0.06);
+
+  color:
+    #fca5a5;
+
+  font-size: 16px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.task-attachment-remove-btn:hover {
+  background:
+    rgba(239, 68, 68, 0.12);
+
+  border-color:
+    rgba(248, 113, 113, 0.36);
+
+  color:
+    #fecaca;
+}

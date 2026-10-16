@@ -1172,6 +1172,7 @@ function closeEditBreakdown() {
    - Maximum 3 files
    - Maximum 10 MB total
    - JPG / JPEG / PNG / WEBP / PDF
+   - Additional selections are accumulated
 ========================================================= */
 
 const TASK_ATTACHMENT_MAX_FILES =
@@ -1182,9 +1183,19 @@ const TASK_ATTACHMENT_MAX_TOTAL_BYTES =
   10 * 1024 * 1024;
 
 
-function formatAttachmentSize(
-  bytes
-) {
+/*
+  Files currently selected for the
+  new Task being created.
+*/
+let taskAttachmentFiles =
+  [];
+
+
+/* =====================
+   FORMAT FILE SIZE
+===================== */
+
+function formatAttachmentSize(bytes) {
 
   const size =
     Number(bytes) || 0;
@@ -1220,6 +1231,244 @@ function formatAttachmentSize(
 
 
 /* =====================
+   RESET ATTACHMENTS
+===================== */
+
+function resetTaskAttachments() {
+
+  taskAttachmentFiles =
+    [];
+
+
+  const input =
+    document.getElementById(
+      "nt-attachments"
+    );
+
+
+  const summary =
+    document.getElementById(
+      "nt-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "nt-attachments-list"
+    );
+
+
+  if (input) {
+
+    input.value =
+      "";
+
+  }
+
+
+  if (summary) {
+
+    summary.textContent =
+      "No files selected";
+
+  }
+
+
+  if (list) {
+
+    list.innerHTML =
+      "";
+
+  }
+
+}
+
+/* =====================
+   RENDER SELECTED FILES
+===================== */
+
+function renderTaskAttachments() {
+
+  const summary =
+    document.getElementById(
+      "nt-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "nt-attachments-list"
+    );
+
+
+  if (
+    !summary ||
+    !list
+  ) {
+    return;
+  }
+
+
+  list.innerHTML =
+    "";
+
+
+  if (
+    taskAttachmentFiles.length === 0
+  ) {
+
+    summary.textContent =
+      "No files selected";
+
+    return;
+
+  }
+
+
+  const totalBytes =
+    taskAttachmentFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
+
+
+  summary.textContent =
+    `${taskAttachmentFiles.length} file${
+      taskAttachmentFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
+
+
+  taskAttachmentFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-item";
+
+
+      const name =
+        document.createElement(
+          "span"
+        );
+
+
+      name.textContent =
+        file.name;
+
+
+      const right =
+        document.createElement(
+          "div"
+        );
+
+
+      right.className =
+        "task-attachment-item-actions";
+
+
+      const size =
+        document.createElement(
+          "span"
+        );
+
+
+      size.className =
+        "task-attachment-item-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          taskAttachmentFiles.splice(
+            index,
+            1
+          );
+
+
+          renderTaskAttachments();
+
+        }
+      );
+
+
+      right.appendChild(
+        size
+      );
+
+
+      right.appendChild(
+        removeBtn
+      );
+
+
+      item.appendChild(
+        name
+      );
+
+
+      item.appendChild(
+        right
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+/* =====================
    OPEN FILE PICKER
 ===================== */
 
@@ -1231,18 +1480,36 @@ document
     "click",
     () => {
 
-      document
-        .getElementById(
+      /*
+        Clear native input before opening.
+
+        This allows selecting the same
+        file again after removing it.
+      */
+
+      const input =
+        document.getElementById(
           "nt-attachments"
-        )
-        ?.click();
+        );
+
+
+      if (!input) {
+        return;
+      }
+
+
+      input.value =
+        "";
+
+
+      input.click();
 
     }
   );
 
 
 /* =====================
-   FILE SELECTION
+   ADD SELECTED FILES
 ===================== */
 
 document
@@ -1253,43 +1520,62 @@ document
     "change",
     event => {
 
-      const input =
-        event.target;
-
-
-      const files =
+      const newFiles =
         Array.from(
-          input.files || []
+          event.target.files || []
         );
 
 
-      const summary =
-        document.getElementById(
-          "nt-attachments-summary"
-        );
-
-
-      const list =
-        document.getElementById(
-          "nt-attachments-list"
-        );
-
-
-      if (!summary || !list) {
+      if (
+        newFiles.length === 0
+      ) {
         return;
       }
 
 
-      list.innerHTML =
-        "";
+      /* =====================
+         AVOID DUPLICATES
+      ===================== */
+
+      const combinedFiles =
+        [
+          ...taskAttachmentFiles
+        ];
+
+
+      newFiles.forEach(
+        file => {
+
+          const alreadyExists =
+            combinedFiles.some(
+              existing =>
+                existing.name ===
+                  file.name &&
+                existing.size ===
+                  file.size &&
+                existing.lastModified ===
+                  file.lastModified
+            );
+
+
+          if (!alreadyExists) {
+
+            combinedFiles.push(
+              file
+            );
+
+          }
+
+        }
+      );
 
 
       /* =====================
-         FILE COUNT
+         MAX FILE COUNT
       ===================== */
 
       if (
-        files.length >
+        combinedFiles.length >
         TASK_ATTACHMENT_MAX_FILES
       ) {
 
@@ -1298,12 +1584,8 @@ document
         );
 
 
-        input.value =
+        event.target.value =
           "";
-
-
-        summary.textContent =
-          "No files selected";
 
 
         return;
@@ -1312,11 +1594,11 @@ document
 
 
       /* =====================
-         TOTAL SIZE
+         MAX TOTAL SIZE
       ===================== */
 
       const totalBytes =
-        files.reduce(
+        combinedFiles.reduce(
           (
             total,
             file
@@ -1339,111 +1621,44 @@ document
         );
 
 
-        input.value =
+        event.target.value =
           "";
 
 
-        summary.textContent =
-          "No files selected";
-
-
         return;
 
       }
 
 
       /* =====================
-         EMPTY
+         ACCEPT SELECTION
       ===================== */
 
-      if (
-        files.length === 0
-      ) {
-
-        summary.textContent =
-          "No files selected";
+      taskAttachmentFiles =
+        combinedFiles;
 
 
-        return;
-
-      }
-
-
-      /* =====================
-         SUMMARY
-      ===================== */
-
-      summary.textContent =
-        `${files.length} file${
-          files.length === 1
-            ? ""
-            : "s"
-        } · ${formatAttachmentSize(
-          totalBytes
-        )}`;
+      event.target.value =
+        "";
 
 
-      /* =====================
-         FILE LIST
-      ===================== */
-
-      files.forEach(
-        file => {
-
-          const item =
-            document.createElement(
-              "div"
-            );
-
-
-          item.className =
-            "task-attachment-item";
-
-
-          const name =
-            document.createElement(
-              "span"
-            );
-
-
-          name.textContent =
-            file.name;
-
-
-          const size =
-            document.createElement(
-              "span"
-            );
-
-
-          size.className =
-            "task-attachment-item-size";
-
-
-          size.textContent =
-            formatAttachmentSize(
-              file.size
-            );
-
-
-          item.appendChild(
-            name
-          );
-
-
-          item.appendChild(
-            size
-          );
-
-
-          list.appendChild(
-            item
-          );
-
-        }
-      );
+      renderTaskAttachments();
 
     }
+  );
+
+
+/* =====================
+   RESET ON CANCEL
+===================== */
+
+document
+  .getElementById(
+    "cancelAddTask"
+  )
+  ?.addEventListener(
+    "click",
+    resetTaskAttachments
   );
 
 /* =====================
@@ -2089,16 +2304,10 @@ document.getElementById("saveTaskBtn") ?.addEventListener(
           Attachments are linked using result.id.
         ===================== */
 
-        const attachmentInput =
-          document.getElementById(
-            "nt-attachments"
-          );
-
-
         const attachmentFiles =
-          Array.from(
-            attachmentInput?.files || []
-          );
+          [
+            ...taskAttachmentFiles
+          ];
 
 
         if (
@@ -2204,7 +2413,12 @@ document.getElementById("saveTaskBtn") ?.addEventListener(
 
         }
 
+        /* =====================
+          RESET ATTACHMENTS
+        ===================== */
 
+        resetTaskAttachments();
+        
         /* =====================
            CLOSE MODAL
         ===================== */
