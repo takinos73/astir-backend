@@ -6811,7 +6811,120 @@ function renderRestorationTasks(tasks) {
   }
 
 
-  container.innerHTML =
+  /* =====================
+     TOTAL RESTORATION SERVICE TIME
+
+     Sum only actual execution duration
+     from completed Restoration Tasks.
+  ===================== */
+
+  const completedTasks =
+    tasks.filter(task => {
+
+      return (
+        String(
+          task.status || ""
+        ).toUpperCase() === "DONE"
+      );
+
+    });
+
+
+  const totalServiceMinutes =
+    completedTasks.reduce(
+      (sum, task) => {
+
+        const minutes =
+          Number(
+            task.actual_duration_min
+          );
+
+
+        return (
+          sum +
+          (
+            Number.isFinite(minutes)
+              ? minutes
+              : 0
+          )
+        );
+
+      },
+      0
+    );
+
+
+  function formatRestorationServiceTime(
+    minutes
+  ) {
+
+    const total =
+      Math.max(
+        0,
+        Number(minutes) || 0
+      );
+
+
+    const hours =
+      Math.floor(
+        total / 60
+      );
+
+
+    const mins =
+      total % 60;
+
+
+    if (
+      hours > 0 &&
+      mins > 0
+    ) {
+
+      return `${hours} h ${mins} min`;
+
+    }
+
+
+    if (
+      hours > 0
+    ) {
+
+      return `${hours} h`;
+
+    }
+
+
+    return `${mins} min`;
+
+  }
+
+
+  /* =====================
+     SUMMARY
+  ===================== */
+
+  const summaryHtml = `
+
+    <div class="restoration-service-summary">
+
+      <div class="restoration-service-summary-label">
+        Total Restoration Service Time
+      </div>
+
+      <div class="restoration-service-summary-value">
+        ${escapeBreakdownHtml(
+          formatRestorationServiceTime(
+            totalServiceMinutes
+          )
+        )}
+      </div>
+
+    </div>
+
+  `;
+
+
+  const tasksHtml =
     tasks.map(task => {
 
       const id =
@@ -6839,22 +6952,9 @@ function renderRestorationTasks(tasks) {
       const notes =
         task.notes || "";
 
+
       /* =====================
-        RESTORATION TASK TIME DATA
-
-        OPEN TASK:
-        - Show planned Due Date.
-        - Show estimated duration.
-
-        COMPLETED TASK:
-        - Show actual completion date/time.
-        - Show actual execution duration,
-          only when available.
-
-        IMPORTANT:
-        - Estimated duration is NOT actual duration.
-        - Due Date is NOT completion date.
-        - No task or execution data is modified.
+         RESTORATION TASK TIME DATA
       ===================== */
 
       const isDone =
@@ -6877,13 +6977,9 @@ function renderRestorationTasks(tasks) {
             )
           : null;
 
+
       /* =====================
-        ACTUAL RESTORATION EXECUTION
-
-        These values come from the recorded
-        task execution, not from planned data.
-
-        Missing values remain hidden.
+         ACTUAL RESTORATION EXECUTION
       ===================== */
 
       const actualDuration =
@@ -6891,6 +6987,7 @@ function renderRestorationTasks(tasks) {
 
       const completedBy =
         task.completed_by || "";
+
 
       return `
         <div
@@ -6977,81 +7074,66 @@ function renderRestorationTasks(tasks) {
                 : ""
             }
 
-          ${
-            isDone
-              ? `
+            ${
+              isDone
+                ? `
 
-                <!-- =====================
-                    COMPLETED RESTORATION
+                  ${
+                    completed
+                      ? `
+                        <div>
+                          <strong>Completed:</strong>
+                          ${escapeBreakdownHtml(completed)}
+                        </div>
+                      `
+                      : ""
+                  }
 
-                    Display actual completion details.
-                    Never display Due / Estimated time
-                    as completed execution values.
-                ===================== -->
+                  ${
+                    completedBy
+                      ? `
+                        <div>
+                          <strong>Completed By:</strong>
+                          ${escapeBreakdownHtml(completedBy)}
+                        </div>
+                      `
+                      : ""
+                  }
 
-                ${
-                  completed
-                    ? `
-                      <div>
-                        <strong>Completed:</strong>
-                        ${escapeBreakdownHtml(completed)}
-                      </div>
-                    `
-                    : ""
-                                }
+                  ${
+                    actualDuration !== null &&
+                    actualDuration !== undefined
+                      ? `
+                        <div>
+                          <strong>Actual Service Time:</strong>
+                          ${escapeBreakdownHtml(actualDuration)} min
+                        </div>
+                      `
+                      : ""
+                  }
 
-                ${
-                  completedBy
-                    ? `
-                      <div>
-                        <strong>Completed By:</strong>
-                        ${escapeBreakdownHtml(completedBy)}
-                      </div>
-                    `
-                    : ""
-                }
+                `
+                : `
 
-                ${
-                  actualDuration !== null &&
-                  actualDuration !== undefined
-                    ? `
-                      <div>
-                        <strong>Actual Service Time:</strong>
-                        ${escapeBreakdownHtml(actualDuration)} min
-                      </div>
-                    `
-                    : ""
-                }
+                  <div>
+                    <strong>Due:</strong>
+                    ${escapeBreakdownHtml(due)}
+                  </div>
 
-              `
-              : `
+                  ${
+                    estimatedDuration !== null &&
+                    estimatedDuration !== undefined
+                      ? `
+                        <div>
+                          <strong>Est.:</strong>
+                          ${escapeBreakdownHtml(estimatedDuration)} min
+                        </div>
+                      `
+                      : ""
+                  }
 
-                <!-- =====================
-                    OPEN RESTORATION
-
-                    Display planned schedule
-                    and estimated work duration.
-                ===================== -->
-
-                <div>
-                  <strong>Due:</strong>
-                  ${escapeBreakdownHtml(due)}
-                </div>
-
-                ${
-                  estimatedDuration !== null &&
-                  estimatedDuration !== undefined
-                    ? `
-                      <div>
-                        <strong>Est.:</strong>
-                        ${escapeBreakdownHtml(estimatedDuration)} min
-                      </div>
-                    `
-                    : ""
-                }
-
-              `
-          }
+                `
+            }
 
           </div>
 
@@ -7069,6 +7151,11 @@ function renderRestorationTasks(tasks) {
       `;
 
     }).join("");
+
+
+  container.innerHTML =
+    summaryHtml +
+    tasksHtml;
 
 }
 
