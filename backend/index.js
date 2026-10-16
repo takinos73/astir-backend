@@ -6661,96 +6661,96 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
 
     const result = await pool.query(
       `
+    SELECT
+      t.id,
+      t.asset_id,
+      t.task,
+      t.section,
+      t.unit,
+      t.type,
+      t.impact,
+      t.status,
+      t.due_date,
+      t.frequency_hours,
+      t.duration_min,
+      t.notes,
+      t.is_planned,
+      t.breakdown_id,
+
+      e.executed_at AS completed_at,
+      e.executed_by AS completed_by,
+      e.duration_minutes AS actual_duration_min,
+
+      COALESCE(
+        att.attachment_count,
+        0
+      ) AS attachment_count,
+
+      a.model AS asset_model,
+      a.serial_number AS asset_serial,
+      a.line_id,
+
+      l.name AS line_name
+
+    FROM maintenance_tasks t
+
+    JOIN assets a
+      ON a.id = t.asset_id
+
+    LEFT JOIN lines l
+      ON l.id = a.line_id
+
+    LEFT JOIN LATERAL (
+
       SELECT
-        t.id,
-        t.asset_id,
-        t.task,
-        t.section,
-        t.unit,
-        t.type,
-        t.impact,
-        t.status,
-        t.due_date,
-        t.frequency_hours,
-        t.duration_min,
-        t.notes,
-        t.is_planned,
-        t.breakdown_id,
+        te.executed_at,
+        te.executed_by,
+        te.duration_minutes
 
-        /* ===============================================
-          ACTUAL RESTORATION EXECUTION
+      FROM task_executions te
 
-          For completed tasks, display actual recorded
-          execution data instead of planned values.
+      WHERE te.task_id = t.id
 
-          If no execution exists, these fields are NULL.
-          Estimated duration is never used as actual time.
-        =============================================== */
+      ORDER BY
+        te.executed_at DESC,
+        te.id DESC
 
-        e.executed_at AS completed_at,
-        e.executed_by AS completed_by,
-        e.duration_minutes AS actual_duration_min,
+      LIMIT 1
 
-        a.model AS asset_model,
-        a.serial_number AS asset_serial,
-        a.line_id,
+    ) e ON TRUE
 
-        l.name AS line_name
+    LEFT JOIN LATERAL (
 
-      FROM maintenance_tasks t
+      SELECT
+        COUNT(*)::int AS attachment_count
 
-      JOIN assets a
-        ON a.id = t.asset_id
+      FROM attachments
 
-      LEFT JOIN lines l
-        ON l.id = a.line_id
+      WHERE
+        entity_type = 'TASK'
+        AND entity_id = t.id
 
-
-      /* ===============================================
-        LOAD ACTUAL TASK EXECUTION
-
-        Read the latest recorded execution for each task.
-
-        LEFT JOIN LATERAL preserves Restoration Tasks
-        that have not been completed yet.
-
-        IMPORTANT:
-        - Does NOT create or modify executions.
-        - Does NOT use estimated duration as actual time.
-        - Does NOT change Breakdown status or downtime.
-      =============================================== */
-
-      LEFT JOIN LATERAL (
-
-        SELECT
-          te.executed_at,
-          te.executed_by,
-          te.duration_minutes
-
-        FROM task_executions te
-
-        WHERE te.task_id = t.id
-
-        ORDER BY
-          te.executed_at DESC,
-          te.id DESC
-
-        LIMIT 1
-
-      ) e ON TRUE
-
+    ) att ON TRUE
 
       WHERE t.breakdown_id = $1
       AND t.deleted_at IS NULL
 
       ORDER BY
-        CASE t.status
-          WHEN 'Overdue' THEN 1
-          WHEN 'Planned' THEN 2
-          WHEN 'Done' THEN 3
+        CASE
+          WHEN UPPER(TRIM(COALESCE(t.status, ''))) = 'OVERDUE'
+            THEN 1
+
+          WHEN UPPER(TRIM(COALESCE(t.status, ''))) = 'PLANNED'
+            THEN 2
+
+          WHEN UPPER(TRIM(COALESCE(t.status, ''))) = 'DONE'
+            THEN 3
+
           ELSE 4
         END,
+
         t.due_date ASC NULLS LAST,
+
         t.id ASC
       `,
       [breakdownId]

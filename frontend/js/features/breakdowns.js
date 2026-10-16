@@ -6813,9 +6813,6 @@ function renderRestorationTasks(tasks) {
 
   /* =====================
      TOTAL RESTORATION SERVICE TIME
-
-     Sum only actual execution duration
-     from completed Restoration Tasks.
   ===================== */
 
   const completedTasks =
@@ -6943,6 +6940,9 @@ function renderRestorationTasks(tasks) {
         normalizedStatus === "PLANNED" ||
         normalizedStatus === "OVERDUE";
 
+      const isDone =
+        normalizedStatus === "DONE";
+
       const section =
         task.section || "";
 
@@ -6954,11 +6954,8 @@ function renderRestorationTasks(tasks) {
 
 
       /* =====================
-         RESTORATION TASK TIME DATA
+         TIME DATA
       ===================== */
-
-      const isDone =
-        normalizedStatus === "DONE";
 
       const estimatedDuration =
         task.duration_min;
@@ -6977,16 +6974,31 @@ function renderRestorationTasks(tasks) {
             )
           : null;
 
-
-      /* =====================
-         ACTUAL RESTORATION EXECUTION
-      ===================== */
-
       const actualDuration =
         task.actual_duration_min;
 
       const completedBy =
         task.completed_by || "";
+
+
+      /* =====================
+         ATTACHMENT DATA
+      ===================== */
+
+      const attachmentCount =
+        Number(
+          task.attachment_count || 0
+        );
+
+
+      const attachmentLabel =
+        attachmentCount > 0
+          ? `📎 ${attachmentCount} Attachment${
+              attachmentCount === 1
+                ? ""
+                : "s"
+            }`
+          : "📎 Add Attachment";
 
 
       return `
@@ -7010,10 +7022,27 @@ function renderRestorationTasks(tasks) {
 
             </div>
 
-            ${
-              isOpen
-                ? `
-                  <div class="restoration-task-actions">
+
+            <div class="restoration-task-actions">
+
+              <!-- =====================
+                   ATTACHMENTS
+              ===================== -->
+
+              <button
+                class="btn-table restoration-attachment-btn"
+                type="button"
+                data-task-id="${id}"
+              >
+                ${escapeBreakdownHtml(
+                  attachmentLabel
+                )}
+              </button>
+
+
+              ${
+                isOpen
+                  ? `
 
                     <button
                       class="btn-table restoration-edit-btn"
@@ -7039,16 +7068,18 @@ function renderRestorationTasks(tasks) {
                       Complete
                     </button>
 
-                  </div>
-                `
-                : `
-                  <span class="restoration-task-done">
-                    ✓ Done
-                  </span>
-                `
-            }
+                  `
+                  : `
+                    <span class="restoration-task-done">
+                      ✓ Done
+                    </span>
+                  `
+              }
+
+            </div>
 
           </div>
+
 
           <div class="restoration-task-meta">
 
@@ -7073,6 +7104,7 @@ function renderRestorationTasks(tasks) {
                 `
                 : ""
             }
+
 
             ${
               isDone
@@ -7137,6 +7169,7 @@ function renderRestorationTasks(tasks) {
 
           </div>
 
+
           ${
             notes
               ? `
@@ -7156,6 +7189,57 @@ function renderRestorationTasks(tasks) {
   container.innerHTML =
     summaryHtml +
     tasksHtml;
+
+
+  /* =====================
+     ATTACHMENT BUTTONS
+  ===================== */
+
+  container
+    .querySelectorAll(
+      ".restoration-attachment-btn"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const taskId =
+            Number(
+              button.dataset.taskId
+            );
+
+
+          if (
+            !Number.isInteger(taskId) ||
+            taskId <= 0
+          ) {
+            return;
+          }
+
+
+          if (
+            typeof openTaskAttachmentsManager !==
+            "function"
+          ) {
+
+            console.error(
+              "Task attachment manager is not available"
+            );
+
+            return;
+          }
+
+
+          openTaskAttachmentsManager(
+            taskId
+          );
+
+        }
+      );
+
+    });
 
 }
 
