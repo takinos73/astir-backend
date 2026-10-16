@@ -4853,6 +4853,50 @@
 
     </div>
 
+    <!-- =====================
+          ATTACHMENTS
+      ===================== -->
+
+      <div class="field">
+
+        <label>
+          Attachments
+        </label>
+
+        <input
+          id="sm-task-attachments"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          hidden
+        />
+
+        <button
+          id="sm-task-attachments-btn"
+          class="btn-table task-attachment-select-btn"
+          type="button"
+        >
+          📎 Add Photo or PDF
+        </button>
+
+        <div
+          id="sm-task-attachments-summary"
+          class="task-attachments-summary"
+        >
+          No files selected
+        </div>
+
+        <div
+          id="sm-task-attachments-list"
+          class="task-attachment-list"
+        ></div>
+
+        <div class="field-hint">
+          Optional · Up to 3 files · Max 10 MB total · JPG, PNG, WEBP or PDF
+        </div>
+
+      </div>
+
 
     <!-- =====================
          ACTIONS

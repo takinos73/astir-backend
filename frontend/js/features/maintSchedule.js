@@ -1609,6 +1609,93 @@ async function createSmTask() {
 
     taskCreated = true;
 
+    /* =====================
+      UPLOAD ATTACHMENTS
+    ===================== */
+
+    if (
+      smTaskAttachmentFiles.length > 0
+    ) {
+
+      try {
+
+        const formData =
+          new FormData();
+
+
+        smTaskAttachmentFiles.forEach(
+          file => {
+
+            formData.append(
+              "files",
+              file
+            );
+
+          }
+        );
+
+
+        const uploadedById =
+          localStorage.getItem(
+            TECHNICIAN_ID_STORAGE_KEY
+          );
+
+
+        if (uploadedById) {
+
+          formData.append(
+            "uploaded_by_id",
+            uploadedById
+          );
+
+        }
+
+
+        const attachmentResponse =
+          await fetch(
+            `/attachments/TASK/${result.id}`,
+            {
+              method: "POST",
+              body: formData
+            }
+          );
+
+
+        const attachmentResult =
+          await attachmentResponse
+            .json()
+            .catch(() => ({}));
+
+
+        if (
+          !attachmentResponse.ok
+        ) {
+
+          throw new Error(
+            attachmentResult?.error ||
+            "Attachment upload failed."
+          );
+
+        }
+
+      } catch (attachmentErr) {
+
+        console.error(
+          "SM TASK ATTACHMENT UPLOAD ERROR:",
+          attachmentErr
+        );
+
+
+        alert(
+          "Task was created successfully, but attachment upload failed. Do not create the task again."
+        );
+
+      }
+
+    } 
+    
+    resetSmTaskAttachments();
+
     closeSmTaskModal();
 
     /* =====================
@@ -1645,6 +1732,508 @@ async function createSmTask() {
   }
 
 }
+
+/* =========================================================
+   SM PLANNED TASK — ATTACHMENT SELECTION
+
+   Rules:
+   - Maximum 3 files
+   - Maximum 10 MB total
+   - JPG / JPEG / PNG / WEBP / PDF
+========================================================= */
+
+const SM_TASK_ATTACHMENT_MAX_FILES =
+  3;
+
+
+const SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES =
+  10 * 1024 * 1024;
+
+
+let smTaskAttachmentFiles =
+  [];
+
+
+/* =====================
+   RESET
+===================== */
+
+function resetSmTaskAttachments() {
+
+  smTaskAttachmentFiles =
+    [];
+
+
+  const input =
+    document.getElementById(
+      "sm-task-attachments"
+    );
+
+
+  const summary =
+    document.getElementById(
+      "sm-task-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "sm-task-attachments-list"
+    );
+
+
+  if (input) {
+    input.value = "";
+  }
+
+
+  if (summary) {
+    summary.textContent =
+      "No files selected";
+  }
+
+
+  if (list) {
+    list.innerHTML = "";
+  }
+
+}
+
+
+/* =====================
+   RENDER
+===================== */
+
+function renderSmTaskAttachments() {
+
+  const summary =
+    document.getElementById(
+      "sm-task-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "sm-task-attachments-list"
+    );
+
+
+  if (
+    !summary ||
+    !list
+  ) {
+    return;
+  }
+
+
+  list.innerHTML =
+    "";
+
+
+  if (
+    smTaskAttachmentFiles.length === 0
+  ) {
+
+    summary.textContent =
+      "No files selected";
+
+    return;
+
+  }
+
+
+  const totalBytes =
+    smTaskAttachmentFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
+
+
+  summary.textContent =
+    `${smTaskAttachmentFiles.length} file${
+      smTaskAttachmentFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
+
+
+  smTaskAttachmentFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-chip";
+
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-chip-preview";
+
+
+      if (
+        String(
+          file.type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
+
+
+        img.src =
+          objectUrl;
+
+
+        img.alt =
+          file.name;
+
+
+        img.className =
+          "task-attachment-chip-thumb";
+
+
+        img.addEventListener(
+          "load",
+          () => {
+
+            URL.revokeObjectURL(
+              objectUrl
+            );
+
+          },
+          {
+            once: true
+          }
+        );
+
+
+        preview.appendChild(
+          img
+        );
+
+      } else {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-chip-pdf";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      info.className =
+        "task-attachment-chip-info";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-chip-name";
+
+
+      name.textContent =
+        file.name;
+
+
+      name.title =
+        file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+
+      size.className =
+        "task-attachment-chip-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      info.appendChild(
+        name
+      );
+
+
+      info.appendChild(
+        size
+      );
+
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          smTaskAttachmentFiles.splice(
+            index,
+            1
+          );
+
+
+          renderSmTaskAttachments();
+
+        }
+      );
+
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        info
+      );
+
+
+      item.appendChild(
+        removeBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+/* =====================
+   OPEN PICKER
+===================== */
+
+document
+  .getElementById(
+    "sm-task-attachments-btn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      const input =
+        document.getElementById(
+          "sm-task-attachments"
+        );
+
+
+      if (!input) {
+        return;
+      }
+
+
+      input.value =
+        "";
+
+
+      input.click();
+
+    }
+  );
+
+
+/* =====================
+   ADD FILES
+===================== */
+
+document
+  .getElementById(
+    "sm-task-attachments"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const newFiles =
+        Array.from(
+          event.target.files || []
+        );
+
+
+      if (
+        newFiles.length === 0
+      ) {
+        return;
+      }
+
+
+      const combinedFiles =
+        [
+          ...smTaskAttachmentFiles
+        ];
+
+
+      newFiles.forEach(
+        file => {
+
+          const alreadyExists =
+            combinedFiles.some(
+              existing =>
+                existing.name === file.name &&
+                existing.size === file.size &&
+                existing.lastModified === file.lastModified
+            );
+
+
+          if (!alreadyExists) {
+
+            combinedFiles.push(
+              file
+            );
+
+          }
+
+        }
+      );
+
+
+      if (
+        combinedFiles.length >
+        SM_TASK_ATTACHMENT_MAX_FILES
+      ) {
+
+        alert(
+          "Maximum 3 attachments per task."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      const totalBytes =
+        combinedFiles.reduce(
+          (
+            total,
+            file
+          ) =>
+            total +
+            Number(
+              file.size || 0
+            ),
+          0
+        );
+
+
+      if (
+        totalBytes >
+        SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES
+      ) {
+
+        alert(
+          "Maximum total attachment size is 10 MB."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      smTaskAttachmentFiles =
+        combinedFiles;
+
+
+      event.target.value =
+        "";
+
+
+      renderSmTaskAttachments();
+
+    }
+  );
 
 
 /* =====================
