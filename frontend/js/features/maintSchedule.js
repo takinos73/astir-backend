@@ -668,6 +668,68 @@ async function openScheduledMaintenanceDetail(smId) {
       actions.style.marginTop =
         "10px";
 
+      /* =====================
+        ATTACHMENTS
+      ===================== */
+
+      const attachmentCount =
+        Number(
+          task.attachment_count || 0
+        );
+
+
+      const attachmentBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      attachmentBtn.type =
+        "button";
+
+
+      attachmentBtn.className =
+        "btn-table sm-task-attachment-btn";
+
+
+      attachmentBtn.textContent =
+        attachmentCount > 0
+          ? `📎 ${attachmentCount} Attachment${
+              attachmentCount === 1
+                ? ""
+                : "s"
+            }`
+          : "📎 Add Attachment";
+
+
+      attachmentBtn.addEventListener(
+        "click",
+        () => {
+
+          if (
+            typeof openTaskAttachmentsManager !==
+            "function"
+          ) {
+
+            console.error(
+              "Task attachment manager is not available"
+            );
+
+            return;
+          }
+
+
+          openTaskAttachmentsManager(
+            task.id
+          );
+
+        }
+      );
+
+
+      actions.appendChild(
+        attachmentBtn
+      );
 
       /* =====================
          OPEN TASK
@@ -680,7 +742,6 @@ async function openScheduledMaintenanceDetail(smId) {
           document.createElement(
             "button"
           );
-
 
         completeBtn.type =
           "button";
@@ -865,6 +926,1343 @@ async function openScheduledMaintenanceDetail(smId) {
 }
 
 /* =========================================================
+   TASK ATTACHMENT MANAGER
+
+   Generic manager for TASK attachments.
+
+   - Loads existing attachments
+   - Opens image / PDF
+   - Allows adding more attachments
+   - Maximum 3 files total
+   - Maximum 10 MB total
+========================================================= */
+
+let taskAttachmentManagerTaskId =
+  null;
+
+
+let taskAttachmentManagerPendingFiles =
+  [];
+
+
+function ensureTaskAttachmentManagerModal() {
+
+  let overlay =
+    document.getElementById(
+      "taskAttachmentManagerOverlay"
+    );
+
+
+  if (overlay) {
+    return overlay;
+  }
+
+
+  overlay =
+    document.createElement(
+      "div"
+    );
+
+
+  overlay.id =
+    "taskAttachmentManagerOverlay";
+
+
+  overlay.className =
+    "modal-overlay";
+
+
+  overlay.style.display =
+    "none";
+
+
+  overlay.style.zIndex =
+    "1400";
+
+
+  overlay.innerHTML = `
+
+    <div
+      class="modal"
+      style="
+        width:min(680px, calc(100vw - 32px));
+        max-height:90vh;
+        overflow-y:auto;
+      "
+    >
+
+      <!-- =====================
+           HEADER
+      ===================== -->
+
+      <div class="modal-header">
+
+        <div>
+
+          <h2 style="margin:0;">
+            Task Attachments
+          </h2>
+
+          <div
+            id="task-attachment-manager-reference"
+            class="section-subtitle"
+          >
+            Task
+          </div>
+
+        </div>
+
+        <button
+          id="closeTaskAttachmentManagerBtn"
+          class="modal-close"
+          type="button"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <!-- =====================
+           EXISTING ATTACHMENTS
+      ===================== -->
+
+      <div
+        id="task-attachment-manager-existing"
+        class="task-attachments-section"
+        style="
+          display:block;
+          margin-top:18px;
+        "
+      >
+
+        <div class="task-attachments-header">
+
+          <h4 style="margin:0;">
+            Existing Attachments
+          </h4>
+
+          <span
+            id="task-attachment-manager-usage"
+            class="task-attachments-usage"
+          >
+          </span>
+
+        </div>
+
+
+        <div
+          id="task-attachment-manager-list"
+          class="task-attachments-view-list"
+        >
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           ADD ATTACHMENTS
+      ===================== -->
+
+      <div
+        class="addtask-block"
+        style="margin-top:20px;"
+      >
+
+        <label>
+          Add Attachments
+        </label>
+
+
+        <input
+          id="task-attachment-manager-input"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          hidden
+        />
+
+
+        <button
+          id="task-attachment-manager-add-btn"
+          type="button"
+          class="btn-table task-attachment-select-btn"
+        >
+          📎 Add Photo or PDF
+        </button>
+
+
+        <div
+          id="task-attachment-manager-summary"
+          class="task-attachments-summary"
+        >
+          No new files selected
+        </div>
+
+
+        <div
+          id="task-attachment-manager-pending-list"
+          class="task-attachment-list"
+        >
+        </div>
+
+
+        <small class="field-hint">
+          Up to 3 files total · Max 10 MB total
+        </small>
+
+      </div>
+
+
+      <!-- =====================
+           ACTIONS
+      ===================== -->
+
+      <div class="modal-actions">
+
+        <button
+          id="saveTaskAttachmentManagerBtn"
+          class="btn-table"
+          type="button"
+        >
+          Upload
+        </button>
+
+        <button
+          id="cancelTaskAttachmentManagerBtn"
+          class="btn-cancel"
+          type="button"
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  /* =====================
+     CLOSE
+  ===================== */
+
+  const closeManager = () => {
+
+    overlay.style.display =
+      "none";
+
+
+    taskAttachmentManagerTaskId =
+      null;
+
+
+    taskAttachmentManagerPendingFiles =
+      [];
+
+  };
+
+
+  document
+    .getElementById(
+      "closeTaskAttachmentManagerBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeManager
+    );
+
+
+  document
+    .getElementById(
+      "cancelTaskAttachmentManagerBtn"
+    )
+    ?.addEventListener(
+      "click",
+      closeManager
+    );
+
+
+  overlay.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target === overlay
+      ) {
+
+        closeManager();
+
+      }
+
+    }
+  );
+
+
+  /* =====================
+     OPEN PICKER
+  ===================== */
+
+  const input =
+    document.getElementById(
+      "task-attachment-manager-input"
+    );
+
+
+  document
+    .getElementById(
+      "task-attachment-manager-add-btn"
+    )
+    ?.addEventListener(
+      "click",
+      () => {
+
+        if (!input) {
+          return;
+        }
+
+
+        input.value =
+          "";
+
+
+        input.click();
+
+      }
+    );
+
+
+  /* =====================
+     FILE SELECTION
+  ===================== */
+
+  input?.addEventListener(
+    "change",
+    async event => {
+
+      const newFiles =
+        Array.from(
+          event.target.files || []
+        );
+
+
+      if (
+        newFiles.length === 0
+      ) {
+        return;
+      }
+
+
+      const combinedFiles =
+        [
+          ...taskAttachmentManagerPendingFiles
+        ];
+
+
+      newFiles.forEach(
+        file => {
+
+          const exists =
+            combinedFiles.some(
+              existing =>
+                existing.name === file.name &&
+                existing.size === file.size &&
+                existing.lastModified === file.lastModified
+            );
+
+
+          if (!exists) {
+
+            combinedFiles.push(
+              file
+            );
+
+          }
+
+        }
+      );
+
+
+      let existingCount =
+        0;
+
+
+      let existingBytes =
+        0;
+
+
+      if (
+        Number.isInteger(
+          taskAttachmentManagerTaskId
+        )
+      ) {
+
+        try {
+
+          const response =
+            await fetch(
+              `/attachments/TASK/${taskAttachmentManagerTaskId}`
+            );
+
+
+          const result =
+            await response
+              .json()
+              .catch(() => ({}));
+
+
+          if (response.ok) {
+
+            existingCount =
+              Number(
+                result?.usage?.count || 0
+              );
+
+
+            existingBytes =
+              Number(
+                result?.usage?.total_bytes || 0
+              );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "ATTACHMENT USAGE LOAD ERROR:",
+            err
+          );
+
+        }
+
+      }
+
+
+      if (
+        existingCount +
+        combinedFiles.length >
+        3
+      ) {
+
+        alert(
+          "Maximum 3 attachments per task."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      const pendingBytes =
+        combinedFiles.reduce(
+          (
+            total,
+            file
+          ) =>
+            total +
+            Number(
+              file.size || 0
+            ),
+          0
+        );
+
+
+      if (
+        existingBytes +
+        pendingBytes >
+        10 * 1024 * 1024
+      ) {
+
+        alert(
+          "Maximum total attachment size is 10 MB."
+        );
+
+
+        event.target.value =
+          "";
+
+
+        return;
+
+      }
+
+
+      taskAttachmentManagerPendingFiles =
+        combinedFiles;
+
+
+      renderTaskAttachmentManagerPendingFiles();
+
+    }
+  );
+
+
+  /* =====================
+     UPLOAD
+  ===================== */
+
+  document
+    .getElementById(
+      "saveTaskAttachmentManagerBtn"
+    )
+    ?.addEventListener(
+      "click",
+      uploadTaskAttachmentManagerFiles
+    );
+
+
+  return overlay;
+
+}
+
+
+/* =========================================================
+   OPEN MANAGER
+========================================================= */
+
+async function openTaskAttachmentsManager(
+  taskId
+) {
+
+  const id =
+    Number(
+      taskId
+    );
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+
+    alert(
+      "Invalid Task ID."
+    );
+
+    return;
+
+  }
+
+
+  taskAttachmentManagerTaskId =
+    id;
+
+
+  taskAttachmentManagerPendingFiles =
+    [];
+
+
+  const overlay =
+    ensureTaskAttachmentManagerModal();
+
+
+  const reference =
+    document.getElementById(
+      "task-attachment-manager-reference"
+    );
+
+
+  if (reference) {
+
+    reference.textContent =
+      `Task #${id}`;
+
+  }
+
+
+  renderTaskAttachmentManagerPendingFiles();
+
+
+  overlay.style.display =
+    "flex";
+
+
+  await loadTaskAttachmentManagerExisting();
+
+}
+
+
+/* =========================================================
+   LOAD EXISTING
+========================================================= */
+
+async function loadTaskAttachmentManagerExisting() {
+
+  const taskId =
+    Number(
+      taskAttachmentManagerTaskId
+    );
+
+
+  if (
+    !Number.isInteger(taskId)
+  ) {
+    return;
+  }
+
+
+  const list =
+    document.getElementById(
+      "task-attachment-manager-list"
+    );
+
+
+  const usage =
+    document.getElementById(
+      "task-attachment-manager-usage"
+    );
+
+
+  if (!list) {
+    return;
+  }
+
+
+  list.textContent =
+    "Loading...";
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/attachments/TASK/${taskId}`
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        result?.error ||
+        "Could not load attachments."
+      );
+
+    }
+
+
+    const attachments =
+      Array.isArray(
+        result.attachments
+      )
+        ? result.attachments
+        : [];
+
+
+    list.replaceChildren();
+
+
+    if (usage) {
+
+      usage.textContent =
+        `${attachments.length}/3 · ${formatAttachmentSize(
+          result?.usage?.total_bytes || 0
+        )} / 10 MB`;
+
+    }
+
+
+    if (
+      attachments.length === 0
+    ) {
+
+      list.textContent =
+        "No attachments.";
+
+      return;
+
+    }
+
+
+    for (
+      const attachment of attachments
+    ) {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-view-item";
+
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-preview";
+
+
+      if (
+        String(
+          attachment.mime_type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        try {
+
+          const openResponse =
+            await fetch(
+              `/attachments/${attachment.id}/open`
+            );
+
+
+          const openResult =
+            await openResponse
+              .json()
+              .catch(() => ({}));
+
+
+          if (
+            openResponse.ok &&
+            openResult?.url
+          ) {
+
+            const img =
+              document.createElement(
+                "img"
+              );
+
+
+            img.src =
+              openResult.url;
+
+
+            img.alt =
+              attachment.file_name;
+
+
+            img.className =
+              "task-attachment-thumbnail";
+
+
+            img.addEventListener(
+              "click",
+              () => {
+
+                openTaskAttachment(
+                  attachment.id
+                );
+
+              }
+            );
+
+
+            preview.appendChild(
+              img
+            );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "ATTACHMENT THUMBNAIL ERROR:",
+            err
+          );
+
+        }
+
+      } else {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-pdf-badge";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      const main =
+        document.createElement(
+          "div"
+        );
+
+
+      main.className =
+        "task-attachment-main";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-name";
+
+
+      name.textContent =
+        attachment.file_name;
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.className =
+        "task-attachment-meta";
+
+
+      meta.textContent =
+        `${formatAttachmentSize(
+          attachment.file_size
+        )}${
+          attachment.uploaded_by
+            ? ` · ${attachment.uploaded_by}`
+            : ""
+        }`;
+
+
+      main.append(
+        name,
+        meta
+      );
+
+
+      const openBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      openBtn.type =
+        "button";
+
+
+      openBtn.className =
+        "btn-table";
+
+
+      openBtn.textContent =
+        "Open";
+
+
+      openBtn.addEventListener(
+        "click",
+        () => {
+
+          openTaskAttachment(
+            attachment.id
+          );
+
+        }
+      );
+
+
+      item.append(
+        preview,
+        main,
+        openBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD TASK ATTACHMENTS MANAGER ERROR:",
+      err
+    );
+
+
+    list.textContent =
+      "Could not load attachments.";
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER PENDING FILES
+========================================================= */
+
+function renderTaskAttachmentManagerPendingFiles() {
+
+  const summary =
+    document.getElementById(
+      "task-attachment-manager-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "task-attachment-manager-pending-list"
+    );
+
+
+  if (
+    !summary ||
+    !list
+  ) {
+    return;
+  }
+
+
+  list.replaceChildren();
+
+
+  if (
+    taskAttachmentManagerPendingFiles.length ===
+    0
+  ) {
+
+    summary.textContent =
+      "No new files selected";
+
+    return;
+
+  }
+
+
+  const totalBytes =
+    taskAttachmentManagerPendingFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
+
+
+  summary.textContent =
+    `${taskAttachmentManagerPendingFiles.length} new file${
+      taskAttachmentManagerPendingFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
+
+
+  taskAttachmentManagerPendingFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-chip";
+
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-chip-preview";
+
+
+      if (
+        String(
+          file.type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
+
+
+        img.src =
+          objectUrl;
+
+
+        img.alt =
+          file.name;
+
+
+        img.className =
+          "task-attachment-chip-thumb";
+
+
+        img.addEventListener(
+          "load",
+          () => {
+
+            URL.revokeObjectURL(
+              objectUrl
+            );
+
+          },
+          {
+            once: true
+          }
+        );
+
+
+        preview.appendChild(
+          img
+        );
+
+      } else {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-chip-pdf";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      info.className =
+        "task-attachment-chip-info";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-chip-name";
+
+
+      name.textContent =
+        file.name;
+
+
+      name.title =
+        file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+
+      size.className =
+        "task-attachment-chip-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      info.append(
+        name,
+        size
+      );
+
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          taskAttachmentManagerPendingFiles.splice(
+            index,
+            1
+          );
+
+
+          renderTaskAttachmentManagerPendingFiles();
+
+        }
+      );
+
+
+      item.append(
+        preview,
+        info,
+        removeBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   UPLOAD PENDING FILES
+========================================================= */
+
+async function uploadTaskAttachmentManagerFiles() {
+
+  const taskId =
+    Number(
+      taskAttachmentManagerTaskId
+    );
+
+
+  if (
+    !Number.isInteger(taskId) ||
+    taskId <= 0
+  ) {
+    return;
+  }
+
+
+  if (
+    taskAttachmentManagerPendingFiles.length ===
+    0
+  ) {
+
+    alert(
+      "No new files selected."
+    );
+
+    return;
+
+  }
+
+
+  const saveBtn =
+    document.getElementById(
+      "saveTaskAttachmentManagerBtn"
+    );
+
+
+  try {
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        true;
+
+
+      saveBtn.textContent =
+        "Uploading...";
+
+    }
+
+
+    const formData =
+      new FormData();
+
+
+    taskAttachmentManagerPendingFiles.forEach(
+      file => {
+
+        formData.append(
+          "files",
+          file
+        );
+
+      }
+    );
+
+
+    const uploadedById =
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      );
+
+
+    if (uploadedById) {
+
+      formData.append(
+        "uploaded_by_id",
+        uploadedById
+      );
+
+    }
+
+
+    const response =
+      await fetch(
+        `/attachments/TASK/${taskId}`,
+        {
+          method:
+            "POST",
+
+          body:
+            formData
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        result?.error ||
+        "Attachment upload failed."
+      );
+
+    }
+
+
+    taskAttachmentManagerPendingFiles =
+      [];
+
+
+    renderTaskAttachmentManagerPendingFiles();
+
+
+    await loadTaskAttachmentManagerExisting();
+
+
+    /*
+      Refresh SM Detail so attachment_count
+      is updated on the task card.
+    */
+    if (
+      currentScheduledMaintenance?.id &&
+      typeof openScheduledMaintenanceDetail ===
+        "function"
+    ) {
+
+      await openScheduledMaintenanceDetail(
+        currentScheduledMaintenance.id
+      );
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "TASK ATTACHMENT MANAGER UPLOAD ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not upload attachment."
+    );
+
+
+  } finally {
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        false;
+
+
+      saveBtn.textContent =
+        "Upload";
+
+    }
+
+  }
+
+}
+
+/* =========================================================
    SCHEDULED MAINTENANCE — ADD TASK MODAL
 
    OPEN / CLOSE ONLY.
@@ -964,6 +2362,8 @@ function closeSmTaskModal() {
   if (overlay) {
     overlay.style.display = "none";
   }
+
+  resetSmTaskAttachments();
 
 }
 

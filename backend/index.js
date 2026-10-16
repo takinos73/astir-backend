@@ -8554,7 +8554,13 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
               AS execution_executed_by,
 
             te.technician_id
-              AS execution_technician_id
+              AS execution_technician_id,
+
+            COALESCE(
+              att.attachment_count,
+              0
+            )
+              AS attachment_count
 
           FROM maintenance_tasks t
 
@@ -8579,6 +8585,21 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
             LIMIT 1
 
           ) te ON true
+
+
+          LEFT JOIN LATERAL (
+
+            SELECT
+              COUNT(*)::int
+                AS attachment_count
+
+            FROM attachments
+
+            WHERE
+              entity_type = 'TASK'
+              AND entity_id = t.id
+
+          ) att ON true
 
 
           WHERE
