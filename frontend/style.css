@@ -1309,147 +1309,331 @@ td:last-child {
   box-shadow: 0 0 0 1px rgba(59,130,246,0.6);
 }
 
+/* =========================================================
+   ADD TASK MODAL — COMPACT / SAFE SCOPED STYLING
+
+   IMPORTANT:
+   - Applies ONLY inside #addTaskModal
+   - Does not change HTML structure
+   - Does not affect other modals
+========================================================= */
+
+
 /* =====================
-  ADD TASK MODAL FORM – COMPACT
+   MODAL LAYOUT
 ===================== */
 
-/* Ensure vertical form layout */
 #addTaskModal {
   display: flex;
   flex-direction: column;
-  align-items: stretch;   /* 👈 ΟΧΙ center */
-  gap: 2px;
+  align-items: stretch;
+
   width: 640px;
-  padding:2px 12px;          
+  max-width: calc(100vw - 32px);
+
+  padding: 8px 16px 14px;
+
+  gap: 3px;
 }
 
-/* Inputs, selects, textarea same look */
-  #addTaskModal input,
-  #addTaskModal select,
-  #addTaskModal textarea {
-    width: 100%;
-    padding: 7px 8px;
-    font-size: 13px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    max-height: 56px;
-    resize: vertical;
-    margin-top: 3px;
-}
 
-/* Field wrapper alignment */
+/* =====================
+   FIELD WRAPPER
+===================== */
+
 #addTaskModal .field {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;   /* 👈 αριστερά */
-  margin-bottom: 1px;        /* 👈 λιγότερο vertical air */
+  align-items: stretch;
+
+  min-width: 0;
+
+  margin: 0 0 4px;
 }
 
-/* Labels */
-#addTaskModal label {
-  font-size: 10px;           /* 👈 πιο μικρό label */
-  margin-bottom: 1px;
-  color: #d0cfcf;
-  align-self: flex-start;   /* 👈 αριστερά */
-  text-align: left; 
-  padding-left: 4px;
-}
+
+/* =====================
+   LABELS
+===================== */
+
+#addTaskModal label,
 #addTaskModal .field > label {
+  display: block;
+
   align-self: flex-start;
-}
-/* Prevent selects from centering text */
-#addTaskModal select {
+
+  margin: 0 0 3px;
+  padding-left: 3px;
+
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+
+  color: #c5ccd6;
+
   text-align: left;
 }
 
+
 /* =====================
-   Add Task – Planned Scheduling Grid Fix
+   INPUTS / SELECTS
 ===================== */
+
+#addTaskModal input,
+#addTaskModal select {
+  width: 100%;
+  height: 36px;
+
+  box-sizing: border-box;
+
+  padding: 6px 9px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+
+  background: #151c26;
+  color: #f4f7fb;
+
+  font-size: 13px;
+  line-height: 1.2;
+
+  outline: none;
+
+  text-align: left;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* =====================
+   TEXTAREA
+===================== */
+
+#addTaskModal textarea {
+  width: 100%;
+  min-height: 42px;
+  max-height: 90px;
+
+  box-sizing: border-box;
+
+  padding: 7px 9px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+
+  background: #151c26;
+  color: #f4f7fb;
+
+  font-size: 13px;
+  line-height: 1.35;
+
+  outline: none;
+
+  resize: vertical;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* =====================
+   FOCUS
+===================== */
+
+#addTaskModal input:focus,
+#addTaskModal select:focus,
+#addTaskModal textarea:focus {
+  border-color: rgba(76, 145, 255, 0.70);
+  background: #18212d;
+}
+
+
+/* =====================
+   PLACEHOLDER
+===================== */
+
+#addTaskModal input::placeholder,
+#addTaskModal textarea::placeholder {
+  color: #7f8a99;
+}
+
+
+/* =====================
+   SELECT
+===================== */
+
+#addTaskModal select {
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   PLANNED SCHEDULING GRID
+========================================================= */
 
 #addTaskModal .addtask-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px 16px;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px 14px;
+
+  width: 100%;
 }
+
 
 #addTaskModal .addtask-grid .field {
   grid-column: auto;
+
+  min-width: 0;
+
+  margin-bottom: 0;
 }
+
+
+/* =====================
+   FIELD HINT
+===================== */
 
 #addTaskModal .addtask-grid .field-hint {
   display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  opacity: 0.75;
-}
-/* ================================
-   Add Task – UNPLANNED FIELDS POLISH
-===================== */
 
-.addtask-grid.unplanned-only {
-  align-items: flex-start;
+  margin-top: 3px;
+  padding-left: 3px;
+
+  font-size: 10px;
+  line-height: 1.3;
+
+  color: #8f9aaa;
 }
 
-.addtask-grid.unplanned-only .field {
+
+/* =========================================================
+   UNPLANNED / EXECUTION FIELDS
+========================================================= */
+
+#addTaskModal .addtask-grid.unplanned-only {
+  align-items: start;
+}
+
+
+#addTaskModal .addtask-grid.unplanned-only .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+
+  gap: 2px;
 }
 
-.addtask-grid.unplanned-only .field-hint {
+
+#addTaskModal .addtask-grid.unplanned-only .field-hint {
   margin-top: 2px;
-  font-size: 11px;
-  color: #9aa4b2;
+
+  font-size: 10px;
   line-height: 1.3;
+
+  color: #8f9aaa;
 }
 
-/* spacing between execution fields */
-.addtask-grid.unplanned-only .field + .field {
-  margin-top: 4px;
-}
 
-/* ✅ FULL WIDTH FIELD (Breakdown Date, future fields) */
-.addtask-grid.unplanned-only .field.full-width {
+/*
+  FULL WIDTH FIELD
+  Example:
+  Breakdown Date or future fields.
+*/
+
+#addTaskModal .addtask-grid.unplanned-only .field.full-width {
   grid-column: 1 / -1;
 }
 
 
-/* =====================
-   ADD TASK – HEADER COMPACT
-===================== */
+/* =========================================================
+   HEADER — COMPACT
+========================================================= */
 
-.addtask-header {
-  margin:2px;
+#addTaskModal .addtask-header {
+  margin: 0 0 5px;
   padding-top: 1px;
 }
 
-/* Title */
-.addtask-header h3 {
-  margin: 1px;              /* 👈 αφαιρεί default h3 margin */
-  font-size: 1.15em;     /* ελαφρώς πιο compact */
+
+#addTaskModal .addtask-header h3 {
+  margin: 0;
+
+  font-size: 1.15em;
   font-weight: 600;
+  line-height: 1.25;
 }
 
-/* Context line */
-.addtask-context {
-  margin-top: 2px;       /* 👈 κοντά στον τίτλο */
-  font-size: 0.8em;
-  color: #9aa4b2;
 
+/* =====================
+   CONTEXT LINE
+===================== */
+
+#addTaskModal .addtask-context {
   display: flex;
-  gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
+
+  gap: 4px 7px;
+
+  margin-top: 3px;
+
+  font-size: 11px;
+  line-height: 1.3;
+
+  color: #929dac;
 }
 
-/* Optional: ελαφρύ icon alignment */
-.addtask-context span {
+
+#addTaskModal .addtask-context span {
   display: inline-flex;
   align-items: center;
+
   gap: 4px;
 }
 
 
+/* =========================================================
+   MODAL ACTIONS
+
+   Keeps buttons compact and separated from fields.
+========================================================= */
+
+#addTaskModal .modal-actions {
+  margin-top: 8px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+
+   Preserve the two-column desktop layout.
+   Collapse only on narrow screens.
+========================================================= */
+
+@media (max-width: 700px) {
+
+  #addTaskModal {
+    width: calc(100vw - 24px);
+    padding: 8px 12px 12px;
+  }
+
+
+  #addTaskModal .addtask-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  #addTaskModal .addtask-grid .field.full-width,
+  #addTaskModal .addtask-grid.unplanned-only .field.full-width {
+    grid-column: auto;
+  }
+
+}
 
 /* =====================
    TASK TYPE COLOR CODING
