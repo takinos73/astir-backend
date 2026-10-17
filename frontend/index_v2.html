@@ -3041,6 +3041,291 @@
 
     </div>
 
+        <!-- =====================================================
+            INITIAL RESTORATION TASK
+
+            LIVE Breakdown:
+            - Planned
+            - Already Completed
+
+            HISTORICAL Breakdown:
+            - Already Completed only
+        ====================================================== -->
+
+        <div id="bd-restoration-task-section">
+
+          <!-- =====================
+              SECTION TITLE
+          ===================== -->
+
+          <div class="field">
+
+            <div class="section-subtitle">
+              Restoration Task
+            </div>
+
+          </div>
+
+
+          <!-- =====================
+              TASK
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-task">
+              Task *
+            </label>
+
+            <input
+              id="bd-restoration-task"
+              type="text"
+              placeholder="Describe the restoration work..."
+              maxlength="200"
+              autocomplete="off"
+            />
+
+          </div>
+
+
+          <!-- =====================
+              TASK MODE
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-task-mode">
+              Task Status *
+            </label>
+
+            <select id="bd-restoration-task-mode">
+
+              <option value="PLANNED">
+                Planned
+              </option>
+
+              <option value="DONE">
+                Already Completed
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- =====================
+              SECTION
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-section">
+              Section
+            </label>
+
+            <input
+              id="bd-restoration-section"
+              type="text"
+              placeholder="Section"
+              autocomplete="off"
+            />
+
+          </div>
+
+
+          <!-- =====================
+              UNIT
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-unit">
+              Unit
+            </label>
+
+            <input
+              id="bd-restoration-unit"
+              type="text"
+              placeholder="Unit / Component"
+              autocomplete="off"
+            />
+
+          </div>
+
+
+          <!-- =====================
+              IMPACT
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-impact">
+              Impact
+            </label>
+
+            <select id="bd-restoration-impact">
+
+              <option value="normal">
+                Normal
+              </option>
+
+              <option value="safety">
+                Safety
+              </option>
+
+              <option value="quality">
+                Quality
+              </option>
+
+              <option value="safety_quality">
+                Safety & Quality
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- =================================================
+              PLANNED TASK FIELDS
+          ================================================== -->
+
+          <div id="bd-restoration-planned-fields">
+
+            <!-- =====================
+                DUE DATE
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-due-date">
+                Due Date
+              </label>
+
+              <input
+                id="bd-restoration-due-date"
+                type="datetime-local"
+              />
+
+            </div>
+
+
+            <!-- =====================
+                ESTIMATED DURATION
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-duration">
+                Estimated Duration (min)
+              </label>
+
+              <input
+                id="bd-restoration-duration"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Minutes"
+              />
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+              COMPLETED TASK FIELDS
+
+              Hidden when task is PLANNED.
+          ================================================== -->
+
+          <div
+            id="bd-restoration-done-fields"
+            style="display:none;"
+          >
+
+            <!-- =====================
+                TECHNICIAN
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-technician">
+                Technician *
+              </label>
+
+              <select id="bd-restoration-technician">
+
+                <option value="">
+                  Select technician...
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- =====================
+                ACTUAL COMPLETION
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-executed-at">
+                Completed At *
+              </label>
+
+              <input
+                id="bd-restoration-executed-at"
+                type="datetime-local"
+              />
+
+            </div>
+
+
+            <!-- =====================
+                ACTUAL DURATION
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-actual-duration">
+                Actual Service Time (min) *
+              </label>
+
+              <input
+                id="bd-restoration-actual-duration"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Minutes"
+              />
+
+            </div>
+
+          </div>
+
+
+          <!-- =====================
+              NOTES
+          ===================== -->
+
+          <div class="field">
+
+            <label for="bd-restoration-notes">
+              Task Notes
+            </label>
+
+            <textarea
+              id="bd-restoration-notes"
+              rows="2"
+              placeholder="Additional information about the restoration work..."
+            ></textarea>
+
+          </div>
+
+        </div>
+
 
     <!-- =====================
          ACTIONS
