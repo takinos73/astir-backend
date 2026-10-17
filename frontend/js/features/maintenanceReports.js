@@ -2722,7 +2722,6 @@ async function loadMaintenanceReportsQueue() {
 
     }
 
-
     const reports =
       Array.isArray(
         data?.reports
@@ -2731,9 +2730,41 @@ async function loadMaintenanceReportsQueue() {
         : [];
 
 
-    renderMaintenanceReportsQueue(
-      reports
+    /*
+      Keep the complete dataset.
+
+      Filters work client-side without
+      requesting the backend again.
+    */
+
+    maintenanceReportsAllData =
+      reports;
+
+
+    /*
+      Build Line choices from the
+      available Production Reports.
+    */
+
+    populateMaintenanceReportsLineFilter(
+      maintenanceReportsAllData
     );
+
+
+    /*
+      Initialise filter controls once.
+    */
+
+    setupMaintenanceReportsFilters();
+
+
+    /*
+      Apply the current filters.
+
+      This also renders the queue.
+    */
+
+    applyMaintenanceReportsFilters();
 
 
   } catch (err) {
@@ -2748,6 +2779,558 @@ async function loadMaintenanceReportsQueue() {
       "Could not load Production Reports.";
 
   }
+
+}
+
+/* =========================================================
+   MAINTENANCE REPORTS — FILTER STATE
+========================================================= */
+
+let maintenanceReportsAllData = [];
+
+let maintenanceReportsDateFrom = null;
+let maintenanceReportsDateTo = null;
+
+let maintenanceReportsPeriodPicker = null;
+
+
+/* =========================================================
+   POPULATE LINE FILTER
+
+   Lines are taken directly from the loaded reports.
+========================================================= */
+
+function populateMaintenanceReportsLineFilter(
+  reports
+) {
+
+  const select =
+    document.getElementById(
+      "maintenanceReportsLineFilter"
+    );
+
+
+  if (!select) {
+    return;
+  }
+
+
+  const currentValue =
+    select.value;
+
+
+  select.replaceChildren(
+    new Option(
+      "All Lines",
+      ""
+    )
+  );
+
+
+  const lineMap =
+    new Map();
+
+
+  (
+    Array.isArray(reports)
+      ? reports
+      : []
+  ).forEach(report => {
+
+    const lineCode =
+      String(
+        report?.line_code || ""
+      ).trim();
+
+
+    if (!lineCode) {
+      return;
+    }
+
+
+    const key =
+      lineCode.toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+    if (!lineMap.has(key)) {
+
+      lineMap.set(
+        key,
+        lineCode
+      );
+
+    }
+
+  });
+
+
+  const lines =
+    Array
+      .from(
+        lineMap.values()
+      )
+      .sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "el",
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          )
+      );
+
+
+  lines.forEach(line => {
+
+    select.add(
+      new Option(
+        line,
+        line
+      )
+    );
+
+  });
+
+
+  if (
+    lines.includes(
+      currentValue
+    )
+  ) {
+
+    select.value =
+      currentValue;
+
+  }
+
+}
+
+
+/* =========================================================
+   APPLY MAINTENANCE REPORT FILTERS
+========================================================= */
+
+function applyMaintenanceReportsFilters() {
+
+  const lineFilter =
+    String(
+      document.getElementById(
+        "maintenanceReportsLineFilter"
+      )?.value || ""
+    ).trim();
+
+
+  const statusFilter =
+    String(
+      document.getElementById(
+        "maintenanceReportsStatusFilter"
+      )?.value || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const searchText =
+    String(
+      document.getElementById(
+        "maintenanceReportsSearch"
+      )?.value || ""
+    )
+      .trim()
+      .toLocaleLowerCase(
+        "el-GR"
+      );
+
+
+  const filteredReports =
+    maintenanceReportsAllData.filter(
+      report => {
+
+        /* =====================
+           LINE
+        ===================== */
+
+        if (lineFilter) {
+
+          const reportLine =
+            String(
+              report?.line_code || ""
+            ).trim();
+
+
+          if (
+            reportLine !==
+            lineFilter
+          ) {
+
+            return false;
+
+          }
+
+        }
+
+
+        /* =====================
+           STATUS
+        ===================== */
+
+        if (statusFilter) {
+
+          const reportStatus =
+            String(
+              report?.status || ""
+            )
+              .trim()
+              .toUpperCase();
+
+
+          if (
+            reportStatus !==
+            statusFilter
+          ) {
+
+            return false;
+
+          }
+
+        }
+
+
+        /* =====================
+           PERIOD
+
+           Filters by reported_at.
+        ===================== */
+
+        if (
+          maintenanceReportsDateFrom ||
+          maintenanceReportsDateTo
+        ) {
+
+          if (!report?.reported_at) {
+
+            return false;
+
+          }
+
+
+          const reportedDate =
+            new Date(
+              report.reported_at
+            );
+
+
+          if (
+            Number.isNaN(
+              reportedDate.getTime()
+            )
+          ) {
+
+            return false;
+
+          }
+
+
+          if (
+            maintenanceReportsDateFrom &&
+            reportedDate <
+              maintenanceReportsDateFrom
+          ) {
+
+            return false;
+
+          }
+
+
+          if (
+            maintenanceReportsDateTo &&
+            reportedDate >
+              maintenanceReportsDateTo
+          ) {
+
+            return false;
+
+          }
+
+        }
+
+
+        /* =====================
+           SEARCH
+        ===================== */
+
+        if (searchText) {
+
+          const searchSource = [
+            report?.report_code,
+            report?.id,
+            report?.asset_name,
+            report?.asset_model,
+            report?.asset_serial,
+            report?.line_code,
+            report?.description,
+            report?.category,
+            report?.priority,
+            report?.reported_by,
+            report?.reviewed_by,
+            report?.status
+          ]
+            .map(value =>
+              String(
+                value ?? ""
+              )
+            )
+            .join(" ")
+            .toLocaleLowerCase(
+              "el-GR"
+            );
+
+
+          if (
+            !searchSource.includes(
+              searchText
+            )
+          ) {
+
+            return false;
+
+          }
+
+        }
+
+
+        return true;
+
+      }
+    );
+
+
+  renderMaintenanceReportsQueue(
+    filteredReports
+  );
+
+}
+
+
+/* =========================================================
+   SETUP MAINTENANCE REPORT FILTERS
+========================================================= */
+
+function setupMaintenanceReportsFilters() {
+
+  const lineFilter =
+    document.getElementById(
+      "maintenanceReportsLineFilter"
+    );
+
+  const statusFilter =
+    document.getElementById(
+      "maintenanceReportsStatusFilter"
+    );
+
+  const searchInput =
+    document.getElementById(
+      "maintenanceReportsSearch"
+    );
+
+  const periodInput =
+    document.getElementById(
+      "maintenanceReportsPeriodFilter"
+    );
+
+
+  /* =====================
+     LINE
+  ===================== */
+
+  lineFilter?.addEventListener(
+    "change",
+    applyMaintenanceReportsFilters
+  );
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  statusFilter?.addEventListener(
+    "change",
+    applyMaintenanceReportsFilters
+  );
+
+
+  /* =====================
+     SEARCH
+  ===================== */
+
+  searchInput?.addEventListener(
+    "input",
+    applyMaintenanceReportsFilters
+  );
+
+
+  /* =====================
+     PERIOD
+  ===================== */
+
+  if (
+    periodInput &&
+    typeof flatpickr === "function" &&
+    !maintenanceReportsPeriodPicker
+  ) {
+
+    maintenanceReportsPeriodPicker =
+      flatpickr(
+        periodInput,
+        {
+          mode:
+            "range",
+
+          dateFormat:
+            "d-m-Y",
+
+          allowInput:
+            true,
+
+          onClose:
+            function(selectedDates) {
+
+              /*
+                Two dates selected:
+                use full inclusive period.
+              */
+
+              if (
+                selectedDates.length ===
+                2
+              ) {
+
+                maintenanceReportsDateFrom =
+                  new Date(
+                    selectedDates[0]
+                  );
+
+                maintenanceReportsDateTo =
+                  new Date(
+                    selectedDates[1]
+                  );
+
+
+                maintenanceReportsDateFrom
+                  .setHours(
+                    0,
+                    0,
+                    0,
+                    0
+                  );
+
+
+                maintenanceReportsDateTo
+                  .setHours(
+                    23,
+                    59,
+                    59,
+                    999
+                  );
+
+
+                applyMaintenanceReportsFilters();
+
+                return;
+
+              }
+
+
+              /*
+                Picker cleared:
+                remove Period filter.
+              */
+
+              if (
+                selectedDates.length ===
+                0
+              ) {
+
+                maintenanceReportsDateFrom =
+                  null;
+
+                maintenanceReportsDateTo =
+                  null;
+
+
+                applyMaintenanceReportsFilters();
+
+              }
+
+            }
+        }
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   RESET MAINTENANCE REPORT FILTERS
+
+   Useful when needed later.
+========================================================= */
+
+function resetMaintenanceReportsFilters() {
+
+  const lineFilter =
+    document.getElementById(
+      "maintenanceReportsLineFilter"
+    );
+
+  const statusFilter =
+    document.getElementById(
+      "maintenanceReportsStatusFilter"
+    );
+
+  const searchInput =
+    document.getElementById(
+      "maintenanceReportsSearch"
+    );
+
+
+  if (lineFilter) {
+    lineFilter.value = "";
+  }
+
+
+  if (statusFilter) {
+    statusFilter.value = "";
+  }
+
+
+  if (searchInput) {
+    searchInput.value = "";
+  }
+
+
+  maintenanceReportsDateFrom =
+    null;
+
+  maintenanceReportsDateTo =
+    null;
+
+
+  if (
+    maintenanceReportsPeriodPicker
+  ) {
+
+    maintenanceReportsPeriodPicker.clear();
+
+  }
+
+
+  applyMaintenanceReportsFilters();
 
 }
 
