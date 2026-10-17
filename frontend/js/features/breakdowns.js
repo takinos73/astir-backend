@@ -6784,32 +6784,57 @@ document
 
   updateNewBreakdownRestorationUI();
 
-  /* =========================================================
-   CREATE BREAKDOWN
-   POST /breakdowns
+/* =========================================================
+   CREATE BREAKDOWN + INITIAL RESTORATION TASK
 
-   Creates the Breakdown incident.
+   LIVE:
+     POST /breakdowns
 
-   REQUIRED:
-   - Asset
-   - Fault / Title
-   - Started At
+     Creates:
+     - OPEN Breakdown
+     - One initial Restoration Task
 
-   OPTIONAL:
-   - Description
-   - Reported By
+     Initial task may be:
+     - PLANNED
+     - DONE + actual task execution
+
+   HISTORICAL:
+     POST /breakdowns/historical
+
+     Creates:
+     - CLOSED Breakdown
+     - Historical DOWN machine-state period
+     - One DONE Restoration Task
+     - Actual task execution
+
+   TIME RULES:
+
+   LIVE + PLANNED
+   - due_date cannot be earlier than Breakdown started_at
+
+   LIVE + DONE
+   - executed_at must be:
+       >= Breakdown started_at
+       <= NOW
+
+   HISTORICAL + DONE
+   - executed_at must be:
+       >= Breakdown started_at
+       <= Breakdown restored_at
 
    IMPORTANT:
-   - Creates Breakdown only
-   - Does NOT create Correction Tasks
-   - Backend creates it as OPEN
+   - Section / Unit are taken from the selected Asset
+     location catalogue.
+   - New Unit manual entry is supported.
+   - Backend performs the same validations again.
+   - Breakdown + initial task are created atomically.
 ========================================================= */
 
 async function createBreakdown() {
 
-  /* =====================
-     ELEMENTS
-  ===================== */
+  /* =====================================================
+     BREAKDOWN ELEMENTS
+  ===================================================== */
 
   const saveBtn =
     document.getElementById(
@@ -6842,9 +6867,9 @@ async function createBreakdown() {
     );
 
 
-  /* =====================
-     HISTORICAL ELEMENTS
-  ===================== */
+  /* =====================================================
+     HISTORICAL BREAKDOWN ELEMENTS
+  ===================================================== */
 
   const historicalCheckbox =
     document.getElementById(
@@ -6872,20 +6897,92 @@ async function createBreakdown() {
     );
 
 
-  /* =====================
-     MODE
-  ===================== */
+  /* =====================================================
+     INITIAL RESTORATION TASK ELEMENTS
+  ===================================================== */
+
+  const taskInput =
+    document.getElementById(
+      "bd-restoration-task"
+    );
+
+  const taskModeSelect =
+    document.getElementById(
+      "bd-restoration-task-mode"
+    );
+
+  const sectionSelect =
+    document.getElementById(
+      "bd-restoration-section"
+    );
+
+  const sectionInput =
+    document.getElementById(
+      "bd-restoration-section-input"
+    );
+
+  const unitSelect =
+    document.getElementById(
+      "bd-restoration-unit"
+    );
+
+  const unitInput =
+    document.getElementById(
+      "bd-restoration-unit-input"
+    );
+
+  const impactSelect =
+    document.getElementById(
+      "bd-restoration-impact"
+    );
+
+  const dueDateInput =
+    document.getElementById(
+      "bd-restoration-due-date"
+    );
+
+  const estimatedDurationInput =
+    document.getElementById(
+      "bd-restoration-duration"
+    );
+
+  const technicianSelect =
+    document.getElementById(
+      "bd-restoration-technician"
+    );
+
+  const executedAtInput =
+    document.getElementById(
+      "bd-restoration-executed-at"
+    );
+
+  const actualDurationInput =
+    document.getElementById(
+      "bd-restoration-actual-duration"
+    );
+
+  const taskNotesInput =
+    document.getElementById(
+      "bd-restoration-notes"
+    );
+
+
+  /* =====================================================
+     BREAKDOWN MODE
+  ===================================================== */
 
   const isHistorical =
     historicalCheckbox?.checked === true;
 
 
-  /* =====================
-     READ VALUES
-  ===================== */
+  /* =====================================================
+     READ BREAKDOWN VALUES
+  ===================================================== */
 
   const assetId =
-    Number(assetSelect?.value);
+    Number(
+      assetSelect?.value
+    );
 
   const title =
     String(
@@ -6906,9 +7003,9 @@ async function createBreakdown() {
     ).trim();
 
 
-  /* =====================
-     BASIC VALIDATION
-  ===================== */
+  /* =====================================================
+     BASIC BREAKDOWN VALIDATION
+  ===================================================== */
 
   if (
     !Number.isInteger(assetId) ||
@@ -6949,9 +7046,9 @@ async function createBreakdown() {
   }
 
 
-  /* =====================
-     START DATETIME
-  ===================== */
+  /* =====================================================
+     BREAKDOWN START DATETIME
+  ===================================================== */
 
   const startedDate =
     new Date(startedAt);
@@ -6973,11 +7070,9 @@ async function createBreakdown() {
   }
 
 
-  /* =====================
-     BASE PAYLOAD
-
-     Used by BOTH modes.
-  ===================== */
+  /* =====================================================
+     BASE BREAKDOWN PAYLOAD
+  ===================================================== */
 
   const payload = {
 
@@ -6999,10 +7094,17 @@ async function createBreakdown() {
 
 
   /* =====================================================
-     HISTORICAL MODE
+     HISTORICAL BREAKDOWN
 
-     Additional validation + fields.
+     The Breakdown has already been restored.
+
+     Historical Breakdown itself must satisfy:
+     started_at <= restored_at <= NOW
   ===================================================== */
+
+  let restoredDate =
+    null;
+
 
   if (isHistorical) {
 
@@ -7022,8 +7124,10 @@ async function createBreakdown() {
     }
 
 
-    const restoredDate =
-      new Date(restoredAt);
+    restoredDate =
+      new Date(
+        restoredAt
+      );
 
 
     if (
@@ -7096,7 +7200,7 @@ async function createBreakdown() {
 
 
     /* =====================
-       HISTORICAL VALUES
+       HISTORICAL DETAILS
     ===================== */
 
     const failureCause =
@@ -7130,15 +7234,549 @@ async function createBreakdown() {
   }
 
 
-  /* =====================
+  /* =====================================================
+     INITIAL RESTORATION TASK
+
+     One initial Restoration Task is created together
+     with the Breakdown.
+  ===================================================== */
+
+  const taskName =
+    String(
+      taskInput?.value || ""
+    ).trim();
+
+
+  if (!taskName) {
+
+    alert(
+      "Please enter the Restoration Task."
+    );
+
+    taskInput?.focus();
+
+    return;
+  }
+
+
+  /* =====================================================
+     TASK MODE
+
+     Historical:
+       always DONE
+
+     Live:
+       PLANNED or DONE
+  ===================================================== */
+
+  const taskMode =
+    isHistorical
+      ? "DONE"
+      : String(
+          taskModeSelect?.value ||
+          "PLANNED"
+        )
+          .trim()
+          .toUpperCase();
+
+
+  if (
+    taskMode !== "PLANNED" &&
+    taskMode !== "DONE"
+  ) {
+
+    alert(
+      "Please select a valid Restoration Task status."
+    );
+
+    taskModeSelect?.focus();
+
+    return;
+  }
+
+
+  /* =====================================================
+     SECTION
+
+     Existing catalogue Section:
+       bd-restoration-section
+
+     Manual fallback:
+       bd-restoration-section-input
+  ===================================================== */
+
+  let section =
+    "";
+
+
+  if (
+    sectionSelect &&
+    sectionSelect.style.display !== "none"
+  ) {
+
+    section =
+      String(
+        sectionSelect.value || ""
+      ).trim();
+
+  } else {
+
+    section =
+      String(
+        sectionInput?.value || ""
+      ).trim();
+
+  }
+
+
+  /* =====================================================
+     UNIT
+
+     Existing Unit:
+       dropdown value
+
+     New Unit:
+       dropdown = "__new__"
+       manual value is used instead
+  ===================================================== */
+
+  let unit =
+    "";
+
+
+  if (
+    unitSelect &&
+    unitSelect.style.display !== "none"
+  ) {
+
+    const selectedUnit =
+      String(
+        unitSelect.value || ""
+      ).trim();
+
+
+    if (
+      selectedUnit === "__new__"
+    ) {
+
+      unit =
+        String(
+          unitInput?.value || ""
+        ).trim();
+
+
+      if (!unit) {
+
+        alert(
+          "Please enter the new Unit."
+        );
+
+        unitInput?.focus();
+
+        return;
+      }
+
+
+    } else {
+
+      unit =
+        selectedUnit;
+
+    }
+
+
+  } else {
+
+    unit =
+      String(
+        unitInput?.value || ""
+      ).trim();
+
+  }
+
+
+  /* =====================================================
+     TASK COMMON VALUES
+  ===================================================== */
+
+  const taskNotes =
+    String(
+      taskNotesInput?.value || ""
+    ).trim();
+
+
+  const impact =
+    String(
+      impactSelect?.value ||
+      "normal"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const restorationTask = {
+
+    mode:
+      taskMode,
+
+    task:
+      taskName,
+
+    section:
+      section || null,
+
+    unit:
+      unit || null,
+
+    impact,
+
+    notes:
+      taskNotes || null
+
+  };
+
+
+  /* =====================================================
+     LIVE + PLANNED TASK
+  ===================================================== */
+
+  if (
+    taskMode === "PLANNED"
+  ) {
+
+    const dueAt =
+      dueDateInput?.value || "";
+
+
+    /*
+      Due Date remains optional, as in the
+      existing Restoration Task flow.
+
+      But when entered, it cannot be earlier
+      than the Breakdown start.
+    */
+
+    if (dueAt) {
+
+      const dueDate =
+        new Date(
+          dueAt
+        );
+
+
+      if (
+        Number.isNaN(
+          dueDate.getTime()
+        )
+      ) {
+
+        alert(
+          "Invalid Restoration Task Due Date."
+        );
+
+        dueDateInput?.focus();
+
+        return;
+      }
+
+
+      if (
+        dueDate.getTime() <
+        startedDate.getTime()
+      ) {
+
+        alert(
+          "Restoration Task Due Date cannot be earlier than Breakdown Start."
+        );
+
+        dueDateInput?.focus();
+
+        return;
+      }
+
+
+      restorationTask.due_date =
+        dueDate.toISOString();
+
+
+    } else {
+
+      restorationTask.due_date =
+        null;
+
+    }
+
+
+    /* =====================
+       ESTIMATED DURATION
+    ===================== */
+
+    const estimatedDurationRaw =
+      estimatedDurationInput?.value ?? "";
+
+
+    if (
+      estimatedDurationRaw !== ""
+    ) {
+
+      const estimatedDuration =
+        Number(
+          estimatedDurationRaw
+        );
+
+
+      if (
+        !Number.isFinite(
+          estimatedDuration
+        ) ||
+        estimatedDuration < 0
+      ) {
+
+        alert(
+          "Estimated Duration must be a non-negative number."
+        );
+
+        estimatedDurationInput?.focus();
+
+        return;
+      }
+
+
+      restorationTask.duration_min =
+        estimatedDuration;
+
+
+    } else {
+
+      restorationTask.duration_min =
+        null;
+
+    }
+
+  }
+
+
+  /* =====================================================
+     DONE TASK
+
+     Used for:
+     - Live Already Completed
+     - Historical Restoration
+  ===================================================== */
+
+  if (
+    taskMode === "DONE"
+  ) {
+
+    /* =====================
+       TECHNICIAN
+    ===================== */
+
+    const technicianId =
+      Number(
+        technicianSelect?.value
+      );
+
+
+    if (
+      !Number.isInteger(
+        technicianId
+      ) ||
+      technicianId <= 0
+    ) {
+
+      alert(
+        "Please select the Technician who completed the work."
+      );
+
+      technicianSelect?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       ACTUAL COMPLETION
+    ===================== */
+
+    const executedAt =
+      executedAtInput?.value || "";
+
+
+    if (!executedAt) {
+
+      alert(
+        "Please enter the actual completion date and time."
+      );
+
+      executedAtInput?.focus();
+
+      return;
+    }
+
+
+    const executedDate =
+      new Date(
+        executedAt
+      );
+
+
+    if (
+      Number.isNaN(
+        executedDate.getTime()
+      )
+    ) {
+
+      alert(
+        "Invalid actual completion date and time."
+      );
+
+      executedAtInput?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       BEFORE BREAKDOWN START
+    ===================== */
+
+    if (
+      executedDate.getTime() <
+      startedDate.getTime()
+    ) {
+
+      alert(
+        "Actual completion time cannot be earlier than Breakdown Start."
+      );
+
+      executedAtInput?.focus();
+
+      return;
+    }
+
+
+    /* =================================================
+       HISTORICAL TIME WINDOW
+
+       started_at
+          <= executed_at
+          <= restored_at
+    ================================================= */
+
+    if (
+      isHistorical &&
+      restoredDate &&
+      executedDate.getTime() >
+        restoredDate.getTime()
+    ) {
+
+      alert(
+        "Actual completion time must be within the Breakdown period."
+      );
+
+      executedAtInput?.focus();
+
+      return;
+    }
+
+
+    /* =================================================
+       LIVE DONE TASK
+
+       executed_at cannot be in the future.
+    ================================================= */
+
+    if (
+      !isHistorical &&
+      executedDate.getTime() >
+        Date.now()
+    ) {
+
+      alert(
+        "Actual completion time cannot be in the future."
+      );
+
+      executedAtInput?.focus();
+
+      return;
+    }
+
+
+    /* =====================
+       ACTUAL DURATION
+    ===================== */
+
+    const actualDurationRaw =
+      actualDurationInput?.value ?? "";
+
+
+    if (
+      actualDurationRaw === ""
+    ) {
+
+      alert(
+        "Please enter the Actual Service Time."
+      );
+
+      actualDurationInput?.focus();
+
+      return;
+    }
+
+
+    const actualDuration =
+      Number(
+        actualDurationRaw
+      );
+
+
+    if (
+      !Number.isInteger(
+        actualDuration
+      ) ||
+      actualDuration < 0
+    ) {
+
+      alert(
+        "Actual Service Time must be a non-negative whole number."
+      );
+
+      actualDurationInput?.focus();
+
+      return;
+    }
+
+
+    restorationTask.technician_id =
+      technicianId;
+
+    restorationTask.executed_at =
+      executedDate.toISOString();
+
+    restorationTask.actual_duration_min =
+      actualDuration;
+
+  }
+
+
+  /* =====================================================
+     ADD INITIAL TASK TO BREAKDOWN PAYLOAD
+  ===================================================== */
+
+  payload.restoration_task =
+    restorationTask;
+
+
+  /* =====================================================
      ENDPOINT
 
-     LIVE
+     LIVE:
        POST /breakdowns
 
-     HISTORICAL
+     HISTORICAL:
        POST /breakdowns/historical
-  ===================== */
+  ===================================================== */
 
   const endpoint =
     isHistorical
@@ -7146,15 +7784,20 @@ async function createBreakdown() {
       : "/breakdowns";
 
 
-  /* =====================
+  /* =====================================================
      SAVE
-  ===================== */
+
+     Backend transaction guarantees that Breakdown,
+     Restoration Task and Task Execution (when DONE)
+     are either all created successfully or rolled back.
+  ===================================================== */
 
   try {
 
     if (saveBtn) {
 
-      saveBtn.disabled = true;
+      saveBtn.disabled =
+        true;
 
       saveBtn.textContent =
         isHistorical
@@ -7168,7 +7811,8 @@ async function createBreakdown() {
       await fetch(
         endpoint,
         {
-          method: "POST",
+          method:
+            "POST",
 
           headers: {
             "Content-Type":
@@ -7176,7 +7820,9 @@ async function createBreakdown() {
           },
 
           body:
-            JSON.stringify(payload)
+            JSON.stringify(
+              payload
+            )
         }
       );
 
@@ -7199,15 +7845,24 @@ async function createBreakdown() {
     }
 
 
-    /* =====================
+    /* =====================================================
        SUCCESS
-    ===================== */
+
+       LIVE:
+       Breakdown remains OPEN.
+
+       HISTORICAL:
+       Breakdown is already CLOSED.
+
+       Initial Restoration Task has already been
+       created inside the same backend transaction.
+    ===================================================== */
 
     closeNewBreakdownModal();
 
 
     /*
-      Reload Breakdown list only.
+      Reload Breakdown list.
     */
 
     await loadBreakdowns();
@@ -7237,7 +7892,8 @@ async function createBreakdown() {
 
     if (saveBtn) {
 
-      saveBtn.disabled = false;
+      saveBtn.disabled =
+        false;
 
       saveBtn.textContent =
         "Create Breakdown";

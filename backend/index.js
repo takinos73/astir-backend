@@ -3632,6 +3632,39 @@ app.post( "/breakdowns/historical", async (req, res) => {
 
         }
 
+        /* =====================
+          IMPACT
+        ===================== */
+
+        const resolvedImpact =
+          String(
+            restoration_task.impact ||
+            "normal"
+          )
+            .trim()
+            .toLowerCase();
+
+
+        const validImpacts = [
+          "normal",
+          "safety",
+          "quality",
+          "safety_quality"
+        ];
+
+
+        if (
+          !validImpacts.includes(
+            resolvedImpact
+          )
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Invalid Restoration Task Impact"
+          });
+
+        }
 
         /* =====================
           TECHNICIAN
@@ -3769,6 +3802,9 @@ app.post( "/breakdowns/historical", async (req, res) => {
             String(
               restoration_task.unit || ""
             ).trim() || null,
+
+          impact:
+            resolvedImpact,
 
           technician_id:
             technicianId,
@@ -3992,16 +4028,16 @@ app.post( "/breakdowns/historical", async (req, res) => {
                 $3,
                 $4,
                 'Restoration',
-                'normal',
+                $5,
                 'Done',
                 NULL,
                 0,
                 NULL,
-                $5,
-                true,
                 $6,
+                true,
                 $7,
-                $8
+                $8,
+                $9
               )
               RETURNING *
             `,
@@ -4013,6 +4049,8 @@ app.post( "/breakdowns/historical", async (req, res) => {
               initialRestorationTask.section,
 
               initialRestorationTask.unit,
+
+              initialRestorationTask.impact,
 
               initialRestorationTask.notes,
 
@@ -4027,7 +4065,6 @@ app.post( "/breakdowns/historical", async (req, res) => {
 
         createdRestorationTask =
           taskResult.rows[0];
-
 
         /* =====================
           CREATE ACTUAL EXECUTION
