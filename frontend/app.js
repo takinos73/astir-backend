@@ -1175,13 +1175,9 @@ function closeEditBreakdown() {
    - Additional selections are accumulated
 ========================================================= */
 
-const TASK_ATTACHMENT_MAX_FILES =
-  3;
+const TASK_ATTACHMENT_MAX_FILES = 3;
 
-
-const TASK_ATTACHMENT_MAX_TOTAL_BYTES =
-  10 * 1024 * 1024;
-
+const TASK_ATTACHMENT_MAX_TOTAL_BYTES = 8 * 1024 * 1024;
 
 /*
   Files currently selected for the

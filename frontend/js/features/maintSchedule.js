@@ -1380,11 +1380,11 @@ function ensureTaskAttachmentManagerModal() {
       if (
         existingBytes +
         pendingBytes >
-        10 * 1024 * 1024
+        8 * 1024 * 1024
       ) {
 
         alert(
-          "Maximum total attachment size is 10 MB."
+          "Maximum total attachment size is 8 MB."
         );
 
 
@@ -3363,7 +3363,7 @@ const SM_TASK_ATTACHMENT_MAX_FILES =
 
 
 const SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES =
-  10 * 1024 * 1024;
+  8 * 1024 * 1024;
 
 
 let smTaskAttachmentFiles =
@@ -5351,7 +5351,7 @@ const COMPLETED_SM_ATTACHMENT_MAX_FILES =
 
 
 const COMPLETED_SM_ATTACHMENT_MAX_TOTAL_BYTES =
-  10 * 1024 * 1024;
+  8 * 1024 * 1024;
 
 
 let completedSmTaskAttachmentFiles =

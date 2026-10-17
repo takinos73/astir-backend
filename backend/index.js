@@ -84,7 +84,7 @@ const r2Client =
 const ATTACHMENT_MAX_FILES = 3;
 
 
-const ATTACHMENT_MAX_TOTAL_BYTES = 10 * 1024 * 1024;
+const ATTACHMENT_MAX_TOTAL_BYTES = 8 * 1024 * 1024;
 
 
 const ATTACHMENT_ALLOWED_MIME_TYPES =
@@ -507,7 +507,7 @@ function validateAttachmentCapacity(
   ) {
 
     throw new Error(
-      "Maximum total attachment size is 10 MB"
+      "Maximum total attachment size is 8 MB"
     );
 
   }
