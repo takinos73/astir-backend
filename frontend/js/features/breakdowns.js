@@ -1480,6 +1480,382 @@ function escapeBreakdownHtml(value) {
 }
 
 /* =========================================================
+   RESET NEW BREAKDOWN FORM
+
+   Clears:
+   - Breakdown fields
+   - Historical fields
+   - Initial Restoration Task fields
+   - Section / Unit location state
+
+   Restores default mode:
+   - LIVE Breakdown
+   - Initial Restoration Task = PLANNED
+========================================================= */
+
+function resetNewBreakdownForm() {
+
+  /* =====================
+     BREAKDOWN
+  ===================== */
+
+  const assetSelect =
+    document.getElementById(
+      "bd-asset"
+    );
+
+  if (assetSelect) {
+    assetSelect.value = "";
+  }
+
+
+  const titleInput =
+    document.getElementById(
+      "bd-title"
+    );
+
+  if (titleInput) {
+    titleInput.value = "";
+  }
+
+
+  const descriptionInput =
+    document.getElementById(
+      "bd-description"
+    );
+
+  if (descriptionInput) {
+    descriptionInput.value = "";
+  }
+
+
+  const startedInput =
+    document.getElementById(
+      "bd-started-at"
+    );
+
+  if (startedInput) {
+    startedInput.value = "";
+  }
+
+
+  const reportedByInput =
+    document.getElementById(
+      "bd-reported-by"
+    );
+
+  if (reportedByInput) {
+    reportedByInput.value = "";
+  }
+
+
+  /* =====================
+     HISTORICAL MODE
+  ===================== */
+
+  const historicalCheckbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  if (historicalCheckbox) {
+    historicalCheckbox.checked = false;
+  }
+
+
+  const historicalFields =
+    document.getElementById(
+      "bd-historical-fields"
+    );
+
+  if (historicalFields) {
+    historicalFields.style.display = "none";
+  }
+
+
+  const restoredInput =
+    document.getElementById(
+      "bd-restored-at"
+    );
+
+  if (restoredInput) {
+    restoredInput.value = "";
+  }
+
+
+  const failureCauseInput =
+    document.getElementById(
+      "bd-historical-failure-cause"
+    );
+
+  if (failureCauseInput) {
+    failureCauseInput.value = "";
+  }
+
+
+  const rootCauseInput =
+    document.getElementById(
+      "bd-historical-root-cause"
+    );
+
+  if (rootCauseInput) {
+    rootCauseInput.value = "";
+  }
+
+
+  const correctiveActionInput =
+    document.getElementById(
+      "bd-historical-corrective-action"
+    );
+
+  if (correctiveActionInput) {
+    correctiveActionInput.value = "";
+  }
+
+
+  /* =====================
+     RESTORATION TASK
+  ===================== */
+
+  const taskInput =
+    document.getElementById(
+      "bd-restoration-task"
+    );
+
+  if (taskInput) {
+    taskInput.value = "";
+  }
+
+
+  const modeSelect =
+    document.getElementById(
+      "bd-restoration-task-mode"
+    );
+
+  if (modeSelect) {
+    modeSelect.value = "PLANNED";
+  }
+
+
+  const modeField =
+    document.getElementById(
+      "bd-restoration-mode-field"
+    );
+
+  if (modeField) {
+    modeField.style.display = "";
+  }
+
+
+  const impactSelect =
+    document.getElementById(
+      "bd-restoration-impact"
+    );
+
+  if (impactSelect) {
+    impactSelect.value = "normal";
+  }
+
+
+  /* =====================
+     SECTION
+  ===================== */
+
+  const sectionSelect =
+    document.getElementById(
+      "bd-restoration-section"
+    );
+
+  if (sectionSelect) {
+
+    sectionSelect.replaceChildren(
+      new Option(
+        "Select section",
+        ""
+      )
+    );
+
+    sectionSelect.value = "";
+    sectionSelect.style.display = "none";
+  }
+
+
+  const sectionInput =
+    document.getElementById(
+      "bd-restoration-section-input"
+    );
+
+  if (sectionInput) {
+    sectionInput.value = "";
+    sectionInput.style.display = "none";
+  }
+
+
+  /* =====================
+     UNIT
+  ===================== */
+
+  const unitSelect =
+    document.getElementById(
+      "bd-restoration-unit"
+    );
+
+  if (unitSelect) {
+
+    unitSelect.replaceChildren(
+      new Option(
+        "Select unit",
+        ""
+      )
+    );
+
+    unitSelect.value = "";
+    unitSelect.style.display = "none";
+  }
+
+
+  const unitInput =
+    document.getElementById(
+      "bd-restoration-unit-input"
+    );
+
+  if (unitInput) {
+    unitInput.value = "";
+    unitInput.style.display = "none";
+  }
+
+
+  /* =====================
+     LOCATION CATALOGUE
+  ===================== */
+
+  newBreakdownRestorationLocations = [];
+
+  newBreakdownRestorationLocationsAssetId =
+    null;
+
+
+  /* =====================
+     PLANNED TASK
+  ===================== */
+
+  const dueDateInput =
+    document.getElementById(
+      "bd-restoration-due-date"
+    );
+
+  if (dueDateInput) {
+    dueDateInput.value = "";
+  }
+
+
+  const estimatedDurationInput =
+    document.getElementById(
+      "bd-restoration-duration"
+    );
+
+  if (estimatedDurationInput) {
+    estimatedDurationInput.value = "";
+  }
+
+
+  /* =====================
+     COMPLETED TASK
+  ===================== */
+
+  const technicianSelect =
+    document.getElementById(
+      "bd-restoration-technician"
+    );
+
+  if (technicianSelect) {
+
+    technicianSelect.replaceChildren(
+      new Option(
+        "Select technician...",
+        ""
+      )
+    );
+
+  }
+
+
+  const executedAtInput =
+    document.getElementById(
+      "bd-restoration-executed-at"
+    );
+
+  if (executedAtInput) {
+    executedAtInput.value = "";
+  }
+
+
+  const actualDurationInput =
+    document.getElementById(
+      "bd-restoration-actual-duration"
+    );
+
+  if (actualDurationInput) {
+    actualDurationInput.value = "";
+  }
+
+
+  /* =====================
+     TASK NOTES
+  ===================== */
+
+  const notesInput =
+    document.getElementById(
+      "bd-restoration-notes"
+    );
+
+  if (notesInput) {
+    notesInput.value = "";
+  }
+
+
+  /* =====================
+     RESTORE DEFAULT UI
+  ===================== */
+
+  const plannedFields =
+    document.getElementById(
+      "bd-restoration-planned-fields"
+    );
+
+  if (plannedFields) {
+    plannedFields.style.display = "";
+  }
+
+
+  const doneFields =
+    document.getElementById(
+      "bd-restoration-done-fields"
+    );
+
+  if (doneFields) {
+    doneFields.style.display = "none";
+  }
+
+
+  /* =====================
+     SAVE BUTTON
+  ===================== */
+
+  const saveBtn =
+    document.getElementById(
+      "saveBreakdownBtn"
+    );
+
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.textContent =
+      "Create Breakdown";
+  }
+
+}
+
+/* =========================================================
    NEW BREAKDOWN MODAL
    UI ONLY
 
@@ -1500,6 +1876,8 @@ function escapeBreakdownHtml(value) {
 ===================== */
 
 async function openNewBreakdownModal() {
+
+  resetNewBreakdownForm();
 
   const overlay =
     document.getElementById("newBreakdownOverlay");
@@ -1687,6 +2065,8 @@ function closeNewBreakdownModal() {
   if (!overlay) return;
 
   overlay.style.display = "none";
+
+  resetNewBreakdownForm();
 
 }
 
@@ -2511,13 +2891,14 @@ async function deleteBreakdownPermanently(
 
 
     /*
-      Destructive Admin action:
-      full refresh guarantees every
-      historical widget/table reloads
-      from the database.
+      Refresh affected CMMS data only.
+
+      Keep the user inside the Incidents tab
+      while refreshing both Breakdown and Task data.
     */
 
-    window.location.reload();
+    await loadBreakdowns();
+    await loadTasks();
 
 
   } catch (err) {
