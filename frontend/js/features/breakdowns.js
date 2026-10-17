@@ -5898,6 +5898,135 @@ document
   );
 
   /* =========================================================
+   NEW BREAKDOWN
+   RESTORATION TASK UI MODE
+========================================================= */
+
+function updateNewBreakdownRestorationUI() {
+
+  const historicalCheckbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  const modeSelect =
+    document.getElementById(
+      "bd-restoration-task-mode"
+    );
+
+  const plannedFields =
+    document.getElementById(
+      "bd-restoration-planned-fields"
+    );
+
+  const doneFields =
+    document.getElementById(
+      "bd-restoration-done-fields"
+    );
+
+
+  if (
+    !historicalCheckbox ||
+    !modeSelect ||
+    !plannedFields ||
+    !doneFields
+  ) {
+    return;
+  }
+
+
+  const isHistorical =
+    historicalCheckbox.checked === true;
+
+
+  /* =====================================================
+     HISTORICAL BREAKDOWN
+
+     Historical Restoration Task must always be DONE.
+  ===================================================== */
+
+  if (isHistorical) {
+
+    modeSelect.value =
+      "DONE";
+
+    modeSelect.disabled =
+      true;
+
+  } else {
+
+    modeSelect.disabled =
+      false;
+
+  }
+
+
+  /* =====================================================
+     SHOW CORRECT TASK FIELDS
+  ===================================================== */
+
+  const mode =
+    String(
+      modeSelect.value || "PLANNED"
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const isDone =
+    mode === "DONE";
+
+
+  plannedFields.style.display =
+    isDone
+      ? "none"
+      : "";
+
+
+  doneFields.style.display =
+    isDone
+      ? ""
+      : "none";
+
+}
+
+/* =========================================================
+   NEW BREAKDOWN
+   RESTORATION TASK UI EVENTS
+========================================================= */
+
+const bdHistoricalCheckbox =
+  document.getElementById(
+    "bd-already-restored"
+  );
+
+
+const bdRestorationModeSelect =
+  document.getElementById(
+    "bd-restoration-task-mode"
+  );
+
+
+bdHistoricalCheckbox?.addEventListener(
+  "change",
+  updateNewBreakdownRestorationUI
+);
+
+
+bdRestorationModeSelect?.addEventListener(
+  "change",
+  updateNewBreakdownRestorationUI
+);
+
+
+/*
+  Initial state:
+  LIVE Breakdown + PLANNED Restoration Task
+*/
+
+updateNewBreakdownRestorationUI();
+
+  /* =========================================================
    CREATE BREAKDOWN
    POST /breakdowns
 
