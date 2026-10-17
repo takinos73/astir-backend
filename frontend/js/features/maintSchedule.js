@@ -2230,6 +2230,26 @@ async function uploadTaskAttachmentManagerFiles() {
 
     }
 
+    /*
+      Refresh Breakdown Detail so attachment_count
+      is updated on the Restoration Task card.
+    */
+
+    if (
+      Number.isInteger(
+        Number(currentBreakdownId)
+      ) &&
+      Number(currentBreakdownId) > 0 &&
+      typeof openBreakdownDetail ===
+        "function"
+    ) {
+
+      await openBreakdownDetail(
+        Number(currentBreakdownId)
+      );
+
+    }
+
 
   } catch (err) {
 
