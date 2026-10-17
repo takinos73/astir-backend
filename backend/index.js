@@ -2529,14 +2529,15 @@ app.post("/breakdowns", async (req, res) => {
 
   try {
 
-    const {
-      asset_id,
-      title,
-      description,
-      started_at,
-      reported_by,
-      reported_by_id
-    } = req.body;
+const {
+  asset_id,
+  title,
+  description,
+  started_at,
+  reported_by,
+  reported_by_id,
+  restoration_task
+} = req.body || {};
 
 
     /* =====================
@@ -2555,6 +2556,414 @@ app.post("/breakdowns", async (req, res) => {
       });
     }
 
+    /* =========================================================
+   OPTIONAL INITIAL RESTORATION TASK
+
+   LIVE Breakdown supports:
+
+   PLANNED
+   - Creates one open Restoration Task.
+   - due_date cannot be earlier than Breakdown start.
+
+   DONE
+   - Creates one completed Restoration Task.
+   - Creates one actual task execution.
+   - executed_at must be between Breakdown start and NOW.
+
+   No restoration_task:
+   - Existing Breakdown-only behavior remains unchanged.
+========================================================= */
+
+let initialRestorationTask =
+  null;
+
+
+if (
+  restoration_task &&
+  typeof restoration_task === "object"
+) {
+
+  const mode =
+    String(
+      restoration_task.mode || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  if (
+    mode !== "PLANNED" &&
+    mode !== "DONE"
+  ) {
+
+    return res.status(400).json({
+      error:
+        "Restoration Task mode must be PLANNED or DONE"
+    });
+
+  }
+
+
+  const taskName =
+    String(
+      restoration_task.task || ""
+    ).trim();
+
+
+  if (!taskName) {
+
+    return res.status(400).json({
+      error:
+        "Restoration Task is required"
+    });
+
+  }
+
+
+  /* =====================
+     BREAKDOWN START
+  ===================== */
+
+  const breakdownStartedAt =
+    started_at
+      ? new Date(started_at)
+      : new Date();
+
+
+  if (
+    Number.isNaN(
+      breakdownStartedAt.getTime()
+    )
+  ) {
+
+    return res.status(400).json({
+      error:
+        "Invalid Breakdown start time"
+    });
+
+  }
+
+
+  /* =====================
+     IMPACT
+  ===================== */
+
+  const resolvedImpact =
+    String(
+      restoration_task.impact ||
+      "normal"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const validImpacts = [
+    "normal",
+    "safety",
+    "quality",
+    "safety_quality"
+  ];
+
+
+  if (
+    !validImpacts.includes(
+      resolvedImpact
+    )
+  ) {
+
+    return res.status(400).json({
+      error:
+        "Invalid Restoration Task Impact"
+    });
+
+  }
+
+
+  /* =====================================================
+     PLANNED
+  ===================================================== */
+
+  if (
+    mode === "PLANNED"
+  ) {
+
+    let dueDate =
+      null;
+
+
+    if (
+      restoration_task.due_date
+    ) {
+
+      dueDate =
+        new Date(
+          restoration_task.due_date
+        );
+
+
+      if (
+        Number.isNaN(
+          dueDate.getTime()
+        )
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Restoration Task Due Date"
+        });
+
+      }
+
+
+      if (
+        dueDate <
+        breakdownStartedAt
+      ) {
+
+        return res.status(409).json({
+          error:
+            "Restoration Task Due Date cannot be earlier than Breakdown Start"
+        });
+
+      }
+
+    }
+
+
+    let estimatedDuration =
+      null;
+
+
+    if (
+      restoration_task.duration_min !== undefined &&
+      restoration_task.duration_min !== null &&
+      restoration_task.duration_min !== ""
+    ) {
+
+      estimatedDuration =
+        Number(
+          restoration_task.duration_min
+        );
+
+
+      if (
+        !Number.isFinite(
+          estimatedDuration
+        ) ||
+        estimatedDuration < 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid estimated duration"
+        });
+
+      }
+
+    }
+
+
+    initialRestorationTask = {
+
+      mode:
+        "PLANNED",
+
+      task:
+        taskName,
+
+      section:
+        String(
+          restoration_task.section || ""
+        ).trim() || null,
+
+      unit:
+        String(
+          restoration_task.unit || ""
+        ).trim() || null,
+
+      impact:
+        resolvedImpact,
+
+      due_date:
+        dueDate
+          ? dueDate.toISOString()
+          : null,
+
+      duration_min:
+        estimatedDuration,
+
+      notes:
+        String(
+          restoration_task.notes || ""
+        ).trim() || null
+
+    };
+
+  }
+
+
+  /* =====================================================
+     DONE
+  ===================================================== */
+
+  if (
+    mode === "DONE"
+  ) {
+
+    const technicianId =
+      Number(
+        restoration_task.technician_id
+      );
+
+
+    if (
+      !Number.isInteger(
+        technicianId
+      ) ||
+      technicianId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Technician is required"
+      });
+
+    }
+
+
+    if (
+      !restoration_task.executed_at
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual completion time is required"
+      });
+
+    }
+
+
+    const executedAt =
+      new Date(
+        restoration_task.executed_at
+      );
+
+
+    if (
+      Number.isNaN(
+        executedAt.getTime()
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid actual completion time"
+      });
+
+    }
+
+
+    if (
+      executedAt <
+      breakdownStartedAt
+    ) {
+
+      return res.status(409).json({
+        error:
+          "Actual completion time cannot be earlier than Breakdown start"
+      });
+
+    }
+
+
+    if (
+      executedAt.getTime() >
+      Date.now()
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual completion time cannot be in the future"
+      });
+
+    }
+
+
+    if (
+      restoration_task.actual_duration_min === null ||
+      restoration_task.actual_duration_min === undefined ||
+      restoration_task.actual_duration_min === ""
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual Duration is required"
+      });
+
+    }
+
+
+    const actualDuration =
+      Number(
+        restoration_task.actual_duration_min
+      );
+
+
+    if (
+      !Number.isInteger(
+        actualDuration
+      ) ||
+      actualDuration < 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Actual Duration must be a non-negative integer"
+      });
+
+    }
+
+
+    initialRestorationTask = {
+
+      mode:
+        "DONE",
+
+      task:
+        taskName,
+
+      section:
+        String(
+          restoration_task.section || ""
+        ).trim() || null,
+
+      unit:
+        String(
+          restoration_task.unit || ""
+        ).trim() || null,
+
+      impact:
+        resolvedImpact,
+
+      technician_id:
+        technicianId,
+
+      executed_at:
+        executedAt,
+
+      actual_duration_min:
+        actualDuration,
+
+      notes:
+        String(
+          restoration_task.notes || ""
+        ).trim() || null
+
+    };
+
+  }
+
+}
 
     /* =====================
        VERIFY ASSET
@@ -2636,6 +3045,279 @@ app.post("/breakdowns", async (req, res) => {
     const breakdown =
       result.rows[0];
 
+    /* =========================================================
+   CREATE OPTIONAL INITIAL RESTORATION TASK
+
+   PLANNED:
+   - Creates one Planned Restoration Task.
+   - No execution is created.
+
+   DONE:
+   - Creates one completed Restoration Task.
+   - Creates its actual execution.
+
+   IMPORTANT:
+   - Breakdown remains OPEN.
+   - All records are inside the same transaction.
+========================================================= */
+
+let createdRestorationTask =
+  null;
+
+
+let createdRestorationExecution =
+  null;
+
+
+if (initialRestorationTask) {
+
+  /* =====================================================
+     PLANNED RESTORATION TASK
+  ===================================================== */
+
+  if (
+    initialRestorationTask.mode ===
+    "PLANNED"
+  ) {
+
+    const taskResult =
+      await client.query(
+        `
+          INSERT INTO maintenance_tasks (
+            asset_id,
+            task,
+            section,
+            unit,
+            type,
+            impact,
+            status,
+            due_date,
+            frequency_hours,
+            duration_min,
+            notes,
+            is_planned,
+            breakdown_id
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            'Restoration',
+            $5,
+            'Planned',
+            $6,
+            0,
+            $7,
+            $8,
+            true,
+            $9
+          )
+          RETURNING *
+        `,
+        [
+          breakdown.asset_id,
+
+          initialRestorationTask.task,
+
+          initialRestorationTask.section,
+
+          initialRestorationTask.unit,
+
+          initialRestorationTask.impact,
+
+          initialRestorationTask.due_date,
+
+          initialRestorationTask.duration_min,
+
+          initialRestorationTask.notes,
+
+          breakdown.id
+        ]
+      );
+
+
+    createdRestorationTask =
+      taskResult.rows[0];
+
+  }
+
+
+  /* =====================================================
+     COMPLETED RESTORATION TASK
+  ===================================================== */
+
+  if (
+    initialRestorationTask.mode ===
+    "DONE"
+  ) {
+
+    /* =====================
+       VERIFY TECHNICIAN
+    ===================== */
+
+    const technicianResult =
+      await client.query(
+        `
+          SELECT
+            id,
+            name
+
+          FROM technicians
+
+          WHERE
+            id = $1
+            AND active = true
+
+          LIMIT 1
+        `,
+        [
+          initialRestorationTask
+            .technician_id
+        ]
+      );
+
+
+    if (
+      !technicianResult.rows.length
+    ) {
+
+      throw new Error(
+        "Active Technician not found"
+      );
+
+    }
+
+
+    const technician =
+      technicianResult.rows[0];
+
+
+    /* =====================
+       CREATE DONE TASK
+    ===================== */
+
+    const taskResult =
+      await client.query(
+        `
+          INSERT INTO maintenance_tasks (
+            asset_id,
+            task,
+            section,
+            unit,
+            type,
+            impact,
+            status,
+            due_date,
+            frequency_hours,
+            duration_min,
+            notes,
+            is_planned,
+            breakdown_id,
+            scheduled_maintenance_id,
+            completed_by,
+            completed_at
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            'Restoration',
+            $5,
+            'Done',
+            NULL,
+            0,
+            NULL,
+            $6,
+            true,
+            $7,
+            NULL,
+            $8,
+            $9
+          )
+          RETURNING *
+        `,
+        [
+          breakdown.asset_id,
+
+          initialRestorationTask.task,
+
+          initialRestorationTask.section,
+
+          initialRestorationTask.unit,
+
+          initialRestorationTask.impact,
+
+          initialRestorationTask.notes,
+
+          breakdown.id,
+
+          technician.name,
+
+          initialRestorationTask.executed_at
+        ]
+      );
+
+
+    createdRestorationTask =
+      taskResult.rows[0];
+
+
+    /* =====================
+       CREATE EXECUTION
+    ===================== */
+
+    const executionResult =
+      await client.query(
+        `
+          INSERT INTO task_executions (
+            task_id,
+            asset_id,
+            executed_by,
+            technician_id,
+            prev_due_date,
+            executed_at,
+            duration_minutes,
+            notes
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            NULL,
+            $5,
+            $6,
+            $7
+          )
+          RETURNING *
+        `,
+        [
+          createdRestorationTask.id,
+
+          breakdown.asset_id,
+
+          technician.name,
+
+          technician.id,
+
+          initialRestorationTask.executed_at,
+
+          initialRestorationTask
+            .actual_duration_min,
+
+          initialRestorationTask.notes
+        ]
+      );
+
+
+    createdRestorationExecution =
+      executionResult.rows[0];
+
+  }
+
+}
 
     /* =====================
        COMMIT TRANSACTION
@@ -2652,16 +3334,23 @@ app.post("/breakdowns", async (req, res) => {
        by the technician.
     ===================== */
 
-    return res.status(201).json({
+  return res.status(201).json({
 
-      message:
-        "Breakdown created successfully",
+    message:
+      "Breakdown created successfully",
 
-      breakdown,
+    breakdown,
 
-      machine_state: null
+    machine_state:
+      null,
 
-    });
+    restoration_task:
+      createdRestorationTask,
+
+    restoration_execution:
+      createdRestorationExecution
+
+  });
 
 
   } catch (err) {
@@ -2735,18 +3424,19 @@ app.post( "/breakdowns/historical", async (req, res) => {
 
     try {
 
-      const {
-        asset_id,
-        title,
-        description,
-        started_at,
-        restored_at,
-        reported_by,
-        reported_by_id,
-        failure_cause,
-        root_cause,
-        corrective_action
-      } = req.body;
+    const {
+      asset_id,
+      title,
+      description,
+      started_at,
+      restored_at,
+      reported_by,
+      reported_by_id,
+      failure_cause,
+      root_cause,
+      corrective_action,
+      restoration_task
+    } = req.body || {};
 
 
       /* =====================
@@ -2881,6 +3571,223 @@ app.post( "/breakdowns/historical", async (req, res) => {
 
       }
 
+      /* =========================================================
+        OPTIONAL INITIAL HISTORICAL RESTORATION TASK
+
+        Historical Breakdown supports only a DONE task.
+
+        The actual completion must be inside:
+        Breakdown started_at -> restored_at
+      ========================================================= */
+
+      let initialRestorationTask =
+        null;
+
+
+      if (
+        restoration_task &&
+        typeof restoration_task === "object"
+      ) {
+
+        const mode =
+          String(
+            restoration_task.mode || ""
+          )
+            .trim()
+            .toUpperCase();
+
+
+        /* =====================
+          HISTORICAL = DONE ONLY
+        ===================== */
+
+        if (
+          mode !== "DONE"
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Historical Breakdown Restoration Task must be DONE"
+          });
+
+        }
+
+
+        /* =====================
+          TASK NAME
+        ===================== */
+
+        const taskName =
+          String(
+            restoration_task.task || ""
+          ).trim();
+
+
+        if (!taskName) {
+
+          return res.status(400).json({
+            error:
+              "Restoration Task is required"
+          });
+
+        }
+
+
+        /* =====================
+          TECHNICIAN
+        ===================== */
+
+        const technicianId =
+          Number(
+            restoration_task.technician_id
+          );
+
+
+        if (
+          !Number.isInteger(
+            technicianId
+          ) ||
+          technicianId <= 0
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Technician is required"
+          });
+
+        }
+
+
+        /* =====================
+          ACTUAL COMPLETION TIME
+        ===================== */
+
+        if (
+          !restoration_task.executed_at
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Actual completion time is required"
+          });
+
+        }
+
+
+        const executedAt =
+          new Date(
+            restoration_task.executed_at
+          );
+
+
+        if (
+          Number.isNaN(
+            executedAt.getTime()
+          )
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Invalid actual completion time"
+          });
+
+        }
+
+
+        /* =====================
+          BREAKDOWN TIME WINDOW
+        ===================== */
+
+        if (
+          executedAt <
+            startedDate ||
+          executedAt >
+            restoredDate
+        ) {
+
+          return res.status(409).json({
+            error:
+              "Actual completion time must be within the Breakdown period"
+          });
+
+        }
+
+
+        /* =====================
+          ACTUAL DURATION
+        ===================== */
+
+        if (
+          restoration_task.actual_duration_min === null ||
+          restoration_task.actual_duration_min === undefined ||
+          restoration_task.actual_duration_min === ""
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Actual Duration is required"
+          });
+
+        }
+
+
+        const actualDuration =
+          Number(
+            restoration_task.actual_duration_min
+          );
+
+
+        if (
+          !Number.isInteger(
+            actualDuration
+          ) ||
+          actualDuration < 0
+        ) {
+
+          return res.status(400).json({
+            error:
+              "Actual Duration must be a non-negative integer"
+          });
+
+        }
+
+
+        initialRestorationTask = {
+
+          mode:
+            "DONE",
+
+          task:
+            taskName,
+
+          section:
+            String(
+              restoration_task.section || ""
+            ).trim() || null,
+
+          unit:
+            String(
+              restoration_task.unit || ""
+            ).trim() || null,
+
+          technician_id:
+            technicianId,
+
+          executed_at:
+            executedAt,
+
+          actual_duration_min:
+            actualDuration,
+
+          notes:
+            String(
+              restoration_task.notes || ""
+            ).trim() || null
+
+        };
+
+      }
+
 
       /* =====================
          VERIFY ASSET
@@ -2988,6 +3895,193 @@ app.post( "/breakdowns/historical", async (req, res) => {
       const breakdown =
         breakdownResult.rows[0];
 
+      /* =========================================================
+        CREATE OPTIONAL COMPLETED RESTORATION TASK
+
+        Historical Breakdown:
+        - Task = DONE
+        - due_date = NULL
+        - frequency_hours = 0
+        - prev_due_date = NULL
+        - Actual execution is recorded
+      ========================================================= */
+
+      let createdRestorationTask =
+        null;
+
+      let createdRestorationExecution =
+        null;
+
+
+      if (initialRestorationTask) {
+
+        /* =====================
+          VERIFY TECHNICIAN
+
+          Historical work may belong to a
+          technician who is no longer active.
+        ===================== */
+
+        const technicianResult =
+          await client.query(
+            `
+              SELECT
+                id,
+                name
+
+              FROM technicians
+
+              WHERE id = $1
+
+              LIMIT 1
+            `,
+            [
+              initialRestorationTask
+                .technician_id
+            ]
+          );
+
+
+        if (
+          !technicianResult.rows.length
+        ) {
+
+          await client.query(
+            "ROLLBACK"
+          );
+
+          return res.status(404).json({
+            error:
+              "Technician not found"
+          });
+
+        }
+
+
+        const technician =
+          technicianResult.rows[0];
+
+
+        /* =====================
+          CREATE DONE TASK
+        ===================== */
+
+        const taskResult =
+          await client.query(
+            `
+              INSERT INTO maintenance_tasks (
+                asset_id,
+                task,
+                section,
+                unit,
+                type,
+                impact,
+                status,
+                due_date,
+                frequency_hours,
+                duration_min,
+                notes,
+                is_planned,
+                breakdown_id,
+                completed_by,
+                completed_at
+              )
+              VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                'Restoration',
+                'normal',
+                'Done',
+                NULL,
+                0,
+                NULL,
+                $5,
+                true,
+                $6,
+                $7,
+                $8
+              )
+              RETURNING *
+            `,
+            [
+              breakdown.asset_id,
+
+              initialRestorationTask.task,
+
+              initialRestorationTask.section,
+
+              initialRestorationTask.unit,
+
+              initialRestorationTask.notes,
+
+              breakdown.id,
+
+              technician.name,
+
+              initialRestorationTask.executed_at
+            ]
+          );
+
+
+        createdRestorationTask =
+          taskResult.rows[0];
+
+
+        /* =====================
+          CREATE ACTUAL EXECUTION
+        ===================== */
+
+        const executionResult =
+          await client.query(
+            `
+              INSERT INTO task_executions (
+                task_id,
+                asset_id,
+                executed_by,
+                technician_id,
+                prev_due_date,
+                executed_at,
+                duration_minutes,
+                notes
+              )
+              VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                NULL,
+                $5,
+                $6,
+                $7
+              )
+              RETURNING *
+            `,
+            [
+              createdRestorationTask.id,
+
+              breakdown.asset_id,
+
+              technician.name,
+
+              technician.id,
+
+              initialRestorationTask.executed_at,
+
+              initialRestorationTask
+                .actual_duration_min,
+
+              initialRestorationTask.notes
+            ]
+          );
+
+
+        createdRestorationExecution =
+          executionResult.rows[0];
+
+      }
+
 
       /* =====================================================
          CREATE HISTORICAL MACHINE STATE
@@ -3060,10 +4154,15 @@ app.post( "/breakdowns/historical", async (req, res) => {
           breakdown,
 
           machine_state:
-            machineStateResult.rows[0]
+            machineStateResult.rows[0],
+
+          restoration_task:
+            createdRestorationTask,
+
+          restoration_execution:
+            createdRestorationExecution
 
         });
-
 
     } catch (err) {
 
