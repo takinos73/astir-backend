@@ -203,18 +203,20 @@
 
 #chooseNewBreakdownBtn {
   background:
-    rgba(239, 68, 68, 0.08);
+    rgba(239, 68, 68, 0.12);
 
   border:
     1px solid rgba(248, 113, 113, 0.24);
 
   border-radius:6px;
 
+  padding:8px 10px;
+
   color:
     #fca5a5;
 
   font-weight:
-    700;
+    600;
 
   transition:
     background 0.15s ease,
@@ -244,13 +246,14 @@
 
 #chooseNewSmBtn {
   background:
-    rgba(249, 115, 22, 0.08);
+    rgba(249, 115, 22, 0.12);
 
   border:
     1px solid rgba(251, 146, 60, 0.26);
 
-  border-radius:
-    6px;
+  border-radius:6px;
+
+  padding:8px 10px;
 
   color:
     #fdba74;
@@ -582,7 +585,7 @@
   border: 1px solid transparent;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   letter-spacing: .45px;
   text-transform: uppercase;
@@ -612,7 +615,7 @@
 
 .breakdown-id {
   display: inline-block;
-  padding: 3px 7px;
+  padding: 4px 7px;
   border-radius: 5px;
   background: rgba(239, 83, 80, 0.10);
   border: 1px solid rgba(239, 83, 80, 0.22);
@@ -632,9 +635,9 @@
   min-width: 92px;
   padding: 4px 9px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   letter-spacing: .45px;
   text-transform: uppercase;
