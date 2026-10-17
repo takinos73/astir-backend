@@ -1108,7 +1108,7 @@ function ensureTaskAttachmentManagerModal() {
 
 
         <small class="field-hint">
-          Up to 3 files total · Max 10 MB total
+          Up to 3 files total · Max 8 MB total
         </small>
 
       </div>
@@ -6169,7 +6169,7 @@ function ensureCompletedSmTaskModal() {
 
 
         <small class="field-hint">
-          Optional · Up to 3 files · Max 10 MB total · JPG, PNG, WEBP or PDF
+          Optional · Up to 3 files · Max 8 MB total · JPG, PNG, WEBP or PDF
         </small>
 
       </div>
