@@ -1638,11 +1638,8 @@ document
    ADD SELECTED FILES
 ===================== */
 
-document
-  .getElementById(
-    "nt-attachments"
-  )
-  ?.addEventListener(
+document.getElementById("nt-attachments")
+   ?.addEventListener(
     "change",
     event => {
 
@@ -1695,7 +1692,6 @@ document
         }
       );
 
-
       /* =====================
          MAX FILE COUNT
       ===================== */
@@ -1717,7 +1713,6 @@ document
         return;
 
       }
-
 
       /* =====================
          MAX TOTAL SIZE
@@ -1755,7 +1750,6 @@ document
 
       }
 
-
       /* =====================
          ACCEPT SELECTION
       ===================== */
@@ -1786,6 +1780,54 @@ document
     "click",
     resetTaskAttachments
   );
+
+  /* =========================================================
+   COMPLETED PLANNED TASK — MAX COMPLETION DATETIME
+
+   Prevents selecting a future Actual Completion time
+   in the datetime-local input.
+
+   IMPORTANT:
+   Save-side validation already exists separately.
+========================================================= */
+
+function setCompletedPlannedMaxDate() {
+
+  const input =
+    document.getElementById(
+      "nt-completed-date"
+    );
+
+
+  if (!input) {
+    return;
+  }
+
+
+  const now =
+    new Date();
+
+
+  const pad =
+    value =>
+      String(value).padStart(
+        2,
+        "0"
+      );
+
+
+  const localNow =
+    `${now.getFullYear()}-` +
+    `${pad(now.getMonth() + 1)}-` +
+    `${pad(now.getDate())}T` +
+    `${pad(now.getHours())}:` +
+    `${pad(now.getMinutes())}`;
+
+
+  input.max =
+    localNow;
+
+}
 
 /* =====================
    SAVE TASK

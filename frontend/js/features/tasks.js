@@ -2227,7 +2227,10 @@ function applyCompletedPlannedUI() {
   ===================== */
 
   if (completed) {
+
     populateCompletedPlannedTechnicians();
+    
+    setCompletedPlannedMaxDate();
 
     if (dueInput) {
       dueInput.value = "";
