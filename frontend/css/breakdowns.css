@@ -581,11 +581,11 @@
   align-items: center;
   justify-content: center;
   min-width: 92px;
-  padding: 4px 9px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid #ffffff36;
+  border-radius: 8px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 6000;
   line-height: 1.25;
   letter-spacing: .45px;
   text-transform: uppercase;
@@ -633,7 +633,7 @@
   align-items: center;
   justify-content: center;
   min-width: 92px;
-  padding: 4px 9px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 8px;
   font-size: 10px;

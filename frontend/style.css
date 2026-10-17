@@ -1132,22 +1132,12 @@ tbody tr:hover { background: #131520; }
   letter-spacing: 0.3px;
 
   border:
-    1px solid rgba(
-      220,
-      53,
-      69,
-      0.28
-    );
+    1px solid rgba( 220, 53, 69, 0.28);
 
   border-radius: 5px;
 
   background:
-    rgba(
-      220,
-      53,
-      69,
-      0.05
-    );
+    rgba( 220, 53, 69, 0.05);
 }
 
 /* =====================
@@ -3053,7 +3043,7 @@ tr.history-unplanned {
 ========================================================= */
 
 #tab-breakdowns .breakdowns-table-scroll {
-  max-height: calc(100vh - 412px);
+  max-height: calc(100vh - 410px);
   overflow-y: auto;
   overflow-x: auto;
 }
