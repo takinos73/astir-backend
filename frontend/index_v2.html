@@ -3092,7 +3092,10 @@
               TASK MODE
           ===================== -->
 
-          <div class="field">
+          <div
+            id="bd-restoration-mode-field"
+            class="field"
+          >
 
             <label for="bd-restoration-task-mode">
               Task Status *
@@ -3113,42 +3116,79 @@
           </div>
 
 
-          <!-- =====================
-              SECTION
-          ===================== -->
+          <!-- =====================================================
+              SECTION / UNIT
 
-          <div class="field">
+              Uses:
+              GET /assets/:id/locations
 
-            <label for="bd-restoration-section">
-              Section
-            </label>
+              Same behaviour as Restoration assignment:
+              - Existing Sections → dropdown
+              - No Sections → manual input
+              - Existing Units → dropdown
+              - New Unit → manual input
+          ===================================================== -->
 
-            <input
-              id="bd-restoration-section"
-              type="text"
-              placeholder="Section"
-              autocomplete="off"
-            />
+          <div class="restoration-form-grid">
 
-          </div>
+            <!-- =====================
+                SECTION
+            ===================== -->
+
+            <div class="field">
+
+              <label for="bd-restoration-section">
+                Section
+              </label>
+
+              <select
+                id="bd-restoration-section"
+                style="display:none;"
+              >
+                <option value="">
+                  Select section
+                </option>
+              </select>
+
+              <input
+                id="bd-restoration-section-input"
+                type="text"
+                placeholder="Enter section"
+                autocomplete="off"
+                style="display:none;"
+              />
+
+            </div>
 
 
-          <!-- =====================
-              UNIT
-          ===================== -->
+            <!-- =====================
+                UNIT
+            ===================== -->
 
-          <div class="field">
+            <div class="field">
 
-            <label for="bd-restoration-unit">
-              Unit
-            </label>
+              <label for="bd-restoration-unit">
+                Unit
+              </label>
 
-            <input
-              id="bd-restoration-unit"
-              type="text"
-              placeholder="Unit / Component"
-              autocomplete="off"
-            />
+              <select
+                id="bd-restoration-unit"
+                style="display:none;"
+              >
+                <option value="">
+                  Select unit
+                </option>
+              </select>
+
+              <input
+                id="bd-restoration-unit-input"
+                type="text"
+                placeholder="Enter new unit"
+                autocomplete="off"
+                style="display:none;"
+              />
+
+            </div>
 
           </div>
 

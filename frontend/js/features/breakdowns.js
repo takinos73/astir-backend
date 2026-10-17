@@ -5898,133 +5898,891 @@ document
   );
 
   /* =========================================================
-   NEW BREAKDOWN
-   RESTORATION TASK UI MODE
-========================================================= */
+    NEW BREAKDOWN — INITIAL RESTORATION TASK UI
+  ========================================================= */
 
-function updateNewBreakdownRestorationUI() {
 
-  const historicalCheckbox =
-    document.getElementById(
-      "bd-already-restored"
+  /* =========================================================
+    LOCATION CATALOGUE
+
+    Independent catalogue used only by
+    New Breakdown → Initial Restoration Task.
+  ========================================================= */
+
+  let newBreakdownRestorationLocations = [];
+
+  let newBreakdownRestorationLocationsAssetId =
+    null;
+
+
+  /* =========================================================
+    TECHNICIANS
+  ========================================================= */
+
+  function populateNewBreakdownRestorationTechnicians() {
+
+    const select =
+      document.getElementById(
+        "bd-restoration-technician"
+      );
+
+
+    if (!select) return;
+
+
+    select.replaceChildren();
+
+
+    const defaultOption =
+      document.createElement("option");
+
+
+    defaultOption.value = "";
+
+    defaultOption.textContent =
+      "Select technician";
+
+
+    select.appendChild(
+      defaultOption
     );
 
-  const modeSelect =
-    document.getElementById(
-      "bd-restoration-task-mode"
-    );
 
-  const plannedFields =
-    document.getElementById(
-      "bd-restoration-planned-fields"
-    );
+    /*
+      Same active-technician source
+      used by the existing completion flow.
+    */
 
-  const doneFields =
-    document.getElementById(
-      "bd-restoration-done-fields"
-    );
+    if (
+      !Array.isArray(
+        state.techniciansData
+      )
+    ) {
+
+      console.warn(
+        "NEW BREAKDOWN: Technician data not loaded."
+      );
+
+      return;
+
+    }
 
 
-  if (
-    !historicalCheckbox ||
-    !modeSelect ||
-    !plannedFields ||
-    !doneFields
+    state.techniciansData
+      .filter(
+        technician =>
+          technician.active !== false
+      )
+      .sort(
+        (a, b) =>
+          a.name.localeCompare(
+            b.name,
+            "el"
+          )
+      )
+      .forEach(
+        technician => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            String(
+              technician.id
+            );
+
+
+          option.textContent =
+            technician.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+  }
+
+
+  /* =========================================================
+    LOAD SECTIONS FOR BREAKDOWN ASSET
+  ========================================================= */
+
+  async function populateNewBreakdownRestorationSections(
+    assetId
   ) {
-    return;
+
+    const sectionSelect =
+      document.getElementById(
+        "bd-restoration-section"
+      );
+
+    const sectionInput =
+      document.getElementById(
+        "bd-restoration-section-input"
+      );
+
+    const unitSelect =
+      document.getElementById(
+        "bd-restoration-unit"
+      );
+
+    const unitInput =
+      document.getElementById(
+        "bd-restoration-unit-input"
+      );
+
+
+    if (
+      !sectionSelect ||
+      !sectionInput ||
+      !unitSelect ||
+      !unitInput
+    ) {
+      return;
+    }
+
+
+    /* =====================
+      RESET
+    ===================== */
+
+    newBreakdownRestorationLocations = [];
+
+    newBreakdownRestorationLocationsAssetId =
+      null;
+
+
+    sectionSelect.replaceChildren(
+      new Option(
+        "Select section",
+        ""
+      )
+    );
+
+    sectionSelect.value = "";
+
+    sectionInput.value = "";
+
+
+    unitSelect.replaceChildren(
+      new Option(
+        "Select unit",
+        ""
+      )
+    );
+
+    unitSelect.value = "";
+
+    unitSelect.style.display =
+      "none";
+
+
+    unitInput.value = "";
+
+    unitInput.style.display =
+      "none";
+
+
+    /* =====================
+      VALIDATE ASSET
+    ===================== */
+
+    const resolvedAssetId =
+      Number(assetId);
+
+
+    if (
+      !Number.isInteger(
+        resolvedAssetId
+      ) ||
+      resolvedAssetId <= 0
+    ) {
+
+      sectionSelect.style.display =
+        "none";
+
+      sectionInput.style.display =
+        "block";
+
+      return;
+
+    }
+
+
+    /* =====================
+      LOAD LOCATIONS
+    ===================== */
+
+    try {
+
+      const response =
+        await fetch(
+          `/assets/${resolvedAssetId}/locations`
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          `HTTP ${response.status}`
+        );
+
+      }
+
+
+      const data =
+        await response.json();
+
+
+      newBreakdownRestorationLocations =
+        Array.isArray(
+          data.locations
+        )
+          ? data.locations
+          : [];
+
+
+      newBreakdownRestorationLocationsAssetId =
+        resolvedAssetId;
+
+
+      /* =====================
+        UNIQUE SECTIONS
+      ===================== */
+
+      const sectionMap =
+        new Map();
+
+
+      for (
+        const location
+        of newBreakdownRestorationLocations
+      ) {
+
+        const section =
+          String(
+            location?.section || ""
+          ).trim();
+
+
+        if (!section) continue;
+
+
+        const key =
+          section.toLocaleLowerCase(
+            "el-GR"
+          );
+
+
+        if (
+          !sectionMap.has(key)
+        ) {
+
+          sectionMap.set(
+            key,
+            section
+          );
+
+        }
+
+      }
+
+
+      const sections =
+        Array
+          .from(
+            sectionMap.values()
+          )
+          .sort(
+            (a, b) =>
+              a.localeCompare(
+                b,
+                "el",
+                {
+                  sensitivity:
+                    "base"
+                }
+              )
+          );
+
+
+      /* =====================
+        EXISTING SECTIONS
+      ===================== */
+
+      if (
+        sections.length > 0
+      ) {
+
+        for (
+          const section
+          of sections
+        ) {
+
+          sectionSelect.add(
+            new Option(
+              section,
+              section
+            )
+          );
+
+        }
+
+
+        sectionSelect.style.display =
+          "block";
+
+        sectionInput.style.display =
+          "none";
+
+        return;
+
+      }
+
+
+      /* =====================
+        NO EXISTING SECTIONS
+      ===================== */
+
+      sectionSelect.style.display =
+        "none";
+
+      sectionInput.style.display =
+        "block";
+
+
+    } catch (err) {
+
+      console.error(
+        "NEW BREAKDOWN RESTORATION SECTIONS ERROR:",
+        err
+      );
+
+
+      /*
+        Safe manual fallback.
+      */
+
+      newBreakdownRestorationLocations = [];
+
+      newBreakdownRestorationLocationsAssetId =
+        null;
+
+
+      sectionSelect.style.display =
+        "none";
+
+      sectionInput.style.display =
+        "block";
+
+    }
+
   }
 
 
-  const isHistorical =
-    historicalCheckbox.checked === true;
+  /* =========================================================
+    POPULATE UNITS FOR SECTION
+  ========================================================= */
+
+  function populateNewBreakdownRestorationUnits(
+    section
+  ) {
+
+    const unitSelect =
+      document.getElementById(
+        "bd-restoration-unit"
+      );
+
+    const unitInput =
+      document.getElementById(
+        "bd-restoration-unit-input"
+      );
 
 
-  /* =====================================================
-     HISTORICAL BREAKDOWN
+    if (
+      !unitSelect ||
+      !unitInput
+    ) {
+      return;
+    }
 
-     Historical Restoration Task must always be DONE.
-  ===================================================== */
 
-  if (isHistorical) {
+    /* =====================
+      RESET
+    ===================== */
 
-    modeSelect.value =
-      "DONE";
+    unitSelect.replaceChildren(
+      new Option(
+        "Select unit",
+        ""
+      )
+    );
 
-    modeSelect.disabled =
-      true;
+    unitSelect.value = "";
 
-  } else {
+    unitInput.value = "";
 
-    modeSelect.disabled =
-      false;
+
+    /* =====================
+      SECTION
+    ===================== */
+
+    const resolvedSection =
+      String(
+        section || ""
+      ).trim();
+
+
+    if (!resolvedSection) {
+
+      unitSelect.style.display =
+        "none";
+
+      unitInput.style.display =
+        "none";
+
+      return;
+
+    }
+
+
+    /* =====================
+      NO CATALOGUE
+    ===================== */
+
+    if (
+      newBreakdownRestorationLocationsAssetId ===
+        null ||
+      !Array.isArray(
+        newBreakdownRestorationLocations
+      )
+    ) {
+
+      unitSelect.style.display =
+        "none";
+
+      unitInput.style.display =
+        "block";
+
+      return;
+
+    }
+
+
+    /* =====================
+      FIND UNITS
+    ===================== */
+
+    const normalizedSection =
+      resolvedSection
+        .toLocaleLowerCase(
+          "el-GR"
+        );
+
+
+    const unitMap =
+      new Map();
+
+
+    for (
+      const location
+      of newBreakdownRestorationLocations
+    ) {
+
+      const locationSection =
+        String(
+          location?.section || ""
+        ).trim();
+
+      const unit =
+        String(
+          location?.unit || ""
+        ).trim();
+
+
+      if (
+        !locationSection ||
+        !unit
+      ) {
+        continue;
+      }
+
+
+      if (
+        locationSection
+          .toLocaleLowerCase(
+            "el-GR"
+          ) !==
+        normalizedSection
+      ) {
+        continue;
+      }
+
+
+      const key =
+        unit.toLocaleLowerCase(
+          "el-GR"
+        );
+
+
+      if (
+        !unitMap.has(key)
+      ) {
+
+        unitMap.set(
+          key,
+          unit
+        );
+
+      }
+
+    }
+
+
+    const units =
+      Array
+        .from(
+          unitMap.values()
+        )
+        .sort(
+          (a, b) =>
+            a.localeCompare(
+              b,
+              "el",
+              {
+                sensitivity:
+                  "base"
+              }
+            )
+        );
+
+
+    /* =====================
+      EXISTING UNITS
+    ===================== */
+
+    if (
+      units.length > 0
+    ) {
+
+      for (
+        const unit
+        of units
+      ) {
+
+        unitSelect.add(
+          new Option(
+            unit,
+            unit
+          )
+        );
+
+      }
+
+
+      unitSelect.add(
+        new Option(
+          "➕ New unit",
+          "__new__"
+        )
+      );
+
+
+      unitSelect.style.display =
+        "block";
+
+      unitInput.style.display =
+        "none";
+
+      return;
+
+    }
+
+
+    /* =====================
+      NO EXISTING UNITS
+    ===================== */
+
+    unitSelect.style.display =
+      "none";
+
+    unitInput.style.display =
+      "block";
 
   }
 
 
-  /* =====================================================
-     SHOW CORRECT TASK FIELDS
-  ===================================================== */
+  /* =========================================================
+    TASK MODE UI
+  ========================================================= */
 
-  const mode =
-    String(
-      modeSelect.value || "PLANNED"
+  function updateNewBreakdownRestorationUI() {
+
+    const historicalCheckbox =
+      document.getElementById(
+        "bd-already-restored"
+      );
+
+    const modeField =
+      document.getElementById(
+        "bd-restoration-mode-field"
+      );
+
+    const modeSelect =
+      document.getElementById(
+        "bd-restoration-task-mode"
+      );
+
+    const plannedFields =
+      document.getElementById(
+        "bd-restoration-planned-fields"
+      );
+
+    const doneFields =
+      document.getElementById(
+        "bd-restoration-done-fields"
+      );
+
+
+    if (
+      !historicalCheckbox ||
+      !modeSelect ||
+      !plannedFields ||
+      !doneFields
+    ) {
+      return;
+    }
+
+
+    const isHistorical =
+      historicalCheckbox.checked ===
+        true;
+
+
+    /* =====================================================
+      HISTORICAL
+
+      DONE is mandatory.
+      User does not need to see Task Status.
+    ===================================================== */
+
+    if (isHistorical) {
+
+      modeSelect.value =
+        "DONE";
+
+      if (modeField) {
+
+        modeField.style.display =
+          "none";
+
+      }
+
+    } else {
+
+      if (modeField) {
+
+        modeField.style.display =
+          "";
+
+      }
+
+    }
+
+
+    /* =====================
+      PLANNED / DONE FIELDS
+    ===================== */
+
+    const mode =
+      String(
+        modeSelect.value ||
+        "PLANNED"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    const isDone =
+      mode === "DONE";
+
+
+    plannedFields.style.display =
+      isDone
+        ? "none"
+        : "";
+
+
+    doneFields.style.display =
+      isDone
+        ? ""
+        : "none";
+
+
+    /*
+      Populate technicians only
+      when they are actually needed.
+    */
+
+    if (isDone) {
+
+      populateNewBreakdownRestorationTechnicians();
+
+    }
+
+  }
+
+
+  /* =========================================================
+    EVENTS
+  ========================================================= */
+
+
+  /* =====================
+    BREAKDOWN ASSET
+  ===================== */
+
+  document
+    .getElementById(
+      "bd-asset"
     )
-      .trim()
-      .toUpperCase();
+    ?.addEventListener(
+      "change",
+      event => {
+
+        populateNewBreakdownRestorationSections(
+          event.target.value
+        );
+
+      }
+    );
 
 
-  const isDone =
-    mode === "DONE";
+  /* =====================
+    HISTORICAL MODE
+  ===================== */
+
+  document
+    .getElementById(
+      "bd-already-restored"
+    )
+    ?.addEventListener(
+      "change",
+      updateNewBreakdownRestorationUI
+    );
 
 
-  plannedFields.style.display =
-    isDone
-      ? "none"
-      : "";
+  /* =====================
+    TASK MODE
+  ===================== */
+
+  document
+    .getElementById(
+      "bd-restoration-task-mode"
+    )
+    ?.addEventListener(
+      "change",
+      updateNewBreakdownRestorationUI
+    );
 
 
-  doneFields.style.display =
-    isDone
-      ? ""
-      : "none";
+  /* =====================
+    EXISTING SECTION
+  ===================== */
 
-}
+  document
+    .getElementById(
+      "bd-restoration-section"
+    )
+    ?.addEventListener(
+      "change",
+      event => {
 
-/* =========================================================
-   NEW BREAKDOWN
-   RESTORATION TASK UI EVENTS
-========================================================= */
+        populateNewBreakdownRestorationUnits(
+          event.target.value
+        );
 
-const bdHistoricalCheckbox =
-  document.getElementById(
-    "bd-already-restored"
-  );
-
-
-const bdRestorationModeSelect =
-  document.getElementById(
-    "bd-restoration-task-mode"
-  );
+      }
+    );
 
 
-bdHistoricalCheckbox?.addEventListener(
-  "change",
-  updateNewBreakdownRestorationUI
-);
+  /* =====================
+    MANUAL SECTION
+  ===================== */
+
+  document
+    .getElementById(
+      "bd-restoration-section-input"
+    )
+    ?.addEventListener(
+      "input",
+      event => {
+
+        populateNewBreakdownRestorationUnits(
+          event.target.value.trim()
+        );
+
+      }
+    );
 
 
-bdRestorationModeSelect?.addEventListener(
-  "change",
-  updateNewBreakdownRestorationUI
-);
+  /* =====================
+    UNIT → NEW UNIT
+  ===================== */
+
+  document
+    .getElementById(
+      "bd-restoration-unit"
+    )
+    ?.addEventListener(
+      "change",
+      event => {
+
+        const unitInput =
+          document.getElementById(
+            "bd-restoration-unit-input"
+          );
 
 
-/*
-  Initial state:
-  LIVE Breakdown + PLANNED Restoration Task
-*/
+        if (!unitInput) return;
 
-updateNewBreakdownRestorationUI();
+
+        if (
+          event.target.value ===
+          "__new__"
+        ) {
+
+          unitInput.style.display =
+            "block";
+
+          unitInput.value = "";
+
+          unitInput.focus();
+
+        } else {
+
+          unitInput.style.display =
+            "none";
+
+          unitInput.value = "";
+
+        }
+
+      }
+    );
+
+
+  /* =====================
+    INITIAL UI STATE
+  ===================== */
+
+  updateNewBreakdownRestorationUI();
 
   /* =========================================================
    CREATE BREAKDOWN
