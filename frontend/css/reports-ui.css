@@ -703,3 +703,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   margin-top: -2px;
 }
+
+#reportDateRange {
+  width: 100%;
+  min-width: 320px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #2b3442;
+  border-radius: 9px;
+
+  background: #0f141c;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+#reportDateRange::placeholder {
+  color: #7f8ba0;
+}
+
+#reportDateRange:hover {
+  border-color: #40516a;
+}
+
+#reportDateRange:focus {
+  outline: none;
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(37, 99, 235, 0.18);
+}
