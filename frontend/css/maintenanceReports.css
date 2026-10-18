@@ -1334,6 +1334,10 @@
 }
 
 
+/* =========================================================
+   TABLE WRAPPER
+========================================================= */
+
 #tab-maintenance-reports
 .maintenance-reports-table-wrap {
   overflow-x: auto;
@@ -1345,11 +1349,17 @@
 }
 
 
+/* =========================================================
+   TABLE
+========================================================= */
+
 #tab-maintenance-reports
 .maintenance-reports-table {
   width: 100%;
 
-  min-width: 1000px;
+  min-width: 1100px;
+
+  table-layout: fixed;
 
   border-collapse: collapse;
 }
@@ -1382,6 +1392,96 @@
 }
 
 
+/* =========================================================
+   COLUMN WIDTHS
+========================================================= */
+
+/* REPORT ID */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(1),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(1) {
+  width: 100px;
+
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+
+/* REPORT ID - INNER ELEMENTS */
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(1) * {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+
+/* ASSET */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(2),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(2) {
+  width: 120px;
+}
+
+
+/* ISSUE */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(3),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(3) {
+  width: auto;
+
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+
+  line-height: 1.4;
+}
+
+
+/* REPORTED BY */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(4),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(4) {
+  width: 185px;
+}
+
+
+/* STATUS */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(5),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(5) {
+  width: 135px;
+}
+
+
+/* REPORTED */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(6),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(6) {
+  width: 170px;
+}
+
+
+/* ACTION */
+#tab-maintenance-reports
+.maintenance-reports-table th:nth-child(7),
+#tab-maintenance-reports
+.maintenance-reports-table td:nth-child(7) {
+  width: 170px;
+}
+
+
+/* =========================================================
+   TABLE ROWS
+========================================================= */
+
 #tab-maintenance-reports
 .maintenance-reports-table tbody tr:hover {
   background:
@@ -1403,6 +1503,10 @@
 }
 
 
+/* =========================================================
+   CONTENT
+========================================================= */
+
 #tab-maintenance-reports
 .maintenance-report-subtext {
   margin-top: 3px;
@@ -1417,6 +1521,10 @@
 #tab-maintenance-reports
 .maintenance-report-description {
   line-height: 1.4;
+
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 
@@ -1444,6 +1552,10 @@
   font-size: 10px;
 }
 
+
+/* =========================================================
+   STATUS
+========================================================= */
 
 #tab-maintenance-reports
 .maintenance-report-status {
@@ -1496,6 +1608,11 @@
   color:
     #cbd5e1;
 }
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
 
 #tab-maintenance-reports
 .maintenance-report-action-cell {
