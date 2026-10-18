@@ -426,8 +426,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .reports-grid {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr;
-  gap: 20px;
+  grid-template-columns:
+    minmax(280px, 1.35fr)
+    minmax(590px, 2.7fr)
+    minmax(180px, 0.9fr)
+    minmax(160px, 0.8fr);
+
+  gap: 16px;
   align-items: end;
 }
 
@@ -436,23 +441,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 ========================================================= */
 
 .report-period-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  width: 100%;
   min-width: 0;
 }
 
-.report-period-field > label {
-  font-size: 13px;
-  color: #d6dbe3;
-  font-weight: 500;
+.report-period-controls {
+  width: 100%;
 }
 
-.report-period-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.report-period-presets {
+  width: 100%;
+}
+
+.report-period-btn {
+  flex: 1 1 auto;
+  text-align: center;
 }
 
 
@@ -480,7 +483,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 0;
   outline: 0;
 
-  padding: 8px 12px;
+  padding: 8px 10px;
 
   border-radius: 7px;
 

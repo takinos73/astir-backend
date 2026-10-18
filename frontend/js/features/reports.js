@@ -3030,11 +3030,6 @@ document.addEventListener(
         "reportCustomPeriod"
       );
 
-    const resetBtn =
-      document.getElementById(
-        "reportPeriodReset"
-      );
-
     const dateFrom =
       document.getElementById(
         "dateFrom"
@@ -3368,23 +3363,6 @@ document.addEventListener(
             );
 
           }
-        );
-
-      }
-    );
-
-
-    /* =========================
-       RESET
-       Default = This Month
-    ========================= */
-
-    resetBtn?.addEventListener(
-      "click",
-      () => {
-
-        applyReportPeriod(
-          "this_month"
         );
 
       }
