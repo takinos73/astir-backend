@@ -658,3 +658,48 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
 }
+
+.reports-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(280px, 1.25fr)
+    minmax(620px, 2.7fr)
+    minmax(180px, 0.85fr)
+    minmax(160px, 0.75fr);
+
+  grid-template-areas:
+    "type period line status"
+    ". custom custom custom";
+
+  column-gap: 16px;
+  row-gap: 10px;
+
+  align-items: end;
+}
+
+.reports-grid > .field:first-child {
+  grid-area: type;
+}
+
+.report-period-field {
+  grid-area: period;
+}
+
+.reports-grid .field-right:nth-of-type(3) {
+  grid-area: line;
+}
+
+.reports-grid .field-right:nth-of-type(4) {
+  grid-area: status;
+}
+
+.report-custom-period {
+  grid-area: custom;
+
+  justify-self: start;
+
+  min-width: 360px;
+
+  margin-top: -2px;
+}

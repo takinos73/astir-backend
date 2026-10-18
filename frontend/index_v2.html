@@ -6246,10 +6246,10 @@
 
   </div>
     
-    <!-- ===================== -->
-    <!-- TAB: DOCUMENTATION -->
-    <!-- ===================== -->
-    <div id="tab-docs" style="display: none;">
+<!-- ===================== -->
+<!-- TAB: DOCUMENTATION -->
+<!-- ===================== -->
+<div id="tab-docs" style="display: none;">
 
       <section class="docs-header">
         <h2>
@@ -6275,7 +6275,7 @@
         ></iframe>
       </section>
 
-    </div>
+</div>
     
 <!-- TAB: ASSETS --> 
 
@@ -6376,98 +6376,58 @@
           Period
         </label>
 
+        <div
+          class="report-period-presets"
+          id="reportPeriodPresets"
+        >
 
-        <div class="report-period-controls">
-
-          <div
-            class="report-period-presets"
-            id="reportPeriodPresets"
+          <button
+            type="button"
+            class="report-period-btn"
+            data-period="this_week"
           >
+            This Week
+          </button>
 
-            <button
-              type="button"
-              class="report-period-btn"
-              data-period="this_week"
-            >
-              This Week
-            </button>
-
-
-            <button
-              type="button"
-              class="report-period-btn"
-              data-period="last_week"
-            >
-              Last Week
-            </button>
-
-
-            <button
-              type="button"
-              class="report-period-btn active"
-              data-period="this_month"
-            >
-              This Month
-            </button>
-
-
-            <button
-              type="button"
-              class="report-period-btn"
-              data-period="last_month"
-            >
-              Last Month
-            </button>
-
-
-            <button
-              type="button"
-              class="report-period-btn"
-              data-period="last_30_days"
-            >
-              Last 30 Days
-            </button>
-
-
-            <button
-              type="button"
-              class="report-period-btn"
-              data-period="custom"
-            >
-              Custom
-            </button>
-
-          </div>
-
-
-          <div
-            class="report-custom-period"
-            id="reportCustomPeriod"
-            style="display:none;"
+          <button
+            type="button"
+            class="report-period-btn"
+            data-period="last_week"
           >
+            Last Week
+          </button>
 
-            <span class="date-range-label">
-              📅
-            </span>
+          <button
+            type="button"
+            class="report-period-btn active"
+            data-period="this_month"
+          >
+            This Month
+          </button>
 
+          <button
+            type="button"
+            class="report-period-btn"
+            data-period="last_month"
+          >
+            Last Month
+          </button>
 
-            <input
-              id="dateFrom"
-              type="date"
-            />
+          <button
+            type="button"
+            class="report-period-btn"
+            data-period="last_30_days"
+          >
+            Last 30 Days
+          </button>
 
-
-            <span class="date-range-sep">
-              →
-            </span>
-
-
-            <input
-              id="dateTo"
-              type="date"
-            />
-
-          </div>
+          <button
+            type="button"
+            class="report-period-btn"
+            data-period="custom"
+          >
+            Custom
+          </button>
 
         </div>
 
@@ -6518,6 +6478,32 @@
           <option value="planned_manual">Planned_manual</option>
           <option value="overdue">Overdue</option>
         </select>
+      </div>
+      <!-- CUSTOM PERIOD-->
+      <div
+  class="report-custom-period"
+  id="reportCustomPeriod"
+  style="display:none;"
+>
+
+  <span class="date-range-label">
+    📅
+  </span>
+
+  <input
+    id="dateFrom"
+    type="date"
+  />
+
+  <span class="date-range-sep">
+    →
+  </span>
+
+  <input
+    id="dateTo"
+    type="date"
+  />
+
       </div>
 
       <!-- Technician (hidden for now; θα το ενεργοποιήσουμε στο STEP B) -->
