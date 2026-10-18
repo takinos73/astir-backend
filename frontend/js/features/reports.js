@@ -3012,6 +3012,122 @@ document.getElementById("resetReportBtn")?.addEventListener("click", () => {
   document.getElementById("previewStatus").innerText = "Status: ALL";
 });
 
+/*-- =====================================================
+     REPORT PERIOD FILTER
+====================================================== --*/
+
+<div class="report-period-field">
+
+  <label>
+    Period
+  </label>
+
+
+  <div class="report-period-controls">
+
+    <div
+      class="report-period-presets"
+      id="reportPeriodPresets"
+    >
+
+      <button
+        type="button"
+        class="report-period-btn"
+        data-period="this_week"
+      >
+        This Week
+      </button>
+
+
+      <button
+        type="button"
+        class="report-period-btn"
+        data-period="last_week"
+      >
+        Last Week
+      </button>
+
+
+      <button
+        type="button"
+        class="report-period-btn active"
+        data-period="this_month"
+      >
+        This Month
+      </button>
+
+
+      <button
+        type="button"
+        class="report-period-btn"
+        data-period="last_month"
+      >
+        Last Month
+      </button>
+
+
+      <button
+        type="button"
+        class="report-period-btn"
+        data-period="last_30_days"
+      >
+        Last 30 Days
+      </button>
+
+
+      <button
+        type="button"
+        class="report-period-btn"
+        data-period="custom"
+      >
+        Custom
+      </button>
+
+    </div>
+
+
+    <div
+      class="report-custom-period"
+      id="reportCustomPeriod"
+      style="display:none;"
+    >
+
+      <span class="date-range-label">
+        📅
+      </span>
+
+
+      <input
+        id="dateFrom"
+        type="date"
+      />
+
+
+      <span class="date-range-sep">
+        →
+      </span>
+
+
+      <input
+        id="dateTo"
+        type="date"
+      />
+
+    </div>
+
+
+    <button
+      type="button"
+      class="report-period-reset"
+      id="reportPeriodReset"
+    >
+      Reset
+    </button>
+
+  </div>
+
+</div>
+
 /* =====================
    NON-PLANNED REPORT – DATA
 ===================== */
