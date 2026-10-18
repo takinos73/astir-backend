@@ -31,17 +31,6 @@
   max-width: 99%
 }
 
-
-/* Grid */
-
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-
 /* Fields */
 
 .reports-card .field {
@@ -358,313 +347,16 @@
   filter: grayscale(0.2);
 }
 
-
-/* =====================
-   REPORT DATE RANGE – FINAL
-===================== */
-
-.report-date-range-pill {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  min-height: 38px;
-  padding: 6px 12px;
-  margin-top: 22px;
-  align-self: end;
-
-  background: linear-gradient(180deg, #121826, #0f1520);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.02),
-    0 6px 18px rgba(0,0,0,0.35);
-
-  overflow: hidden;
-}
-
-.report-date-range-pill .date-range-label,
-.report-date-range-pill .date-range-sep {
-  flex-shrink: 0;
-  pointer-events: none;
-}
-
-.report-date-range-pill input[type="date"] {
-  position: relative;
-  z-index: 2;
-
-  background: transparent;
-  border: none;
-  color: #e6eaf0;
-  font-size: 13px;
-
-  padding: 2px 28px 2px 4px;
-  width: 130px;
-  flex-shrink: 0;
-}
-
-.report-date-range-pill input[type="date"]:focus {
-  outline: none;
-}
-
-.report-date-range-pill
-input[type="date"]::-webkit-calendar-picker-indicator {
-  position: relative;
-  z-index: 3;
-  margin-left: auto;
-  filter: invert(1) opacity(0.6);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-
-/* =====================
-   REPORTS GRID ALIGNMENT
-===================== */
-
-.reports-grid {
-  display: grid;
-  grid-template-columns:
-    minmax(280px, 1.35fr)
-    minmax(590px, 2.7fr)
-    minmax(180px, 0.9fr)
-    minmax(160px, 0.8fr);
-
-  gap: 16px;
-  align-items: end;
-}
-
 /* =========================================================
-   REPORT PERIOD FILTER
+   REPORTS LAYOUT
 ========================================================= */
-
-.report-period-field {
-  width: 100%;
-  min-width: 0;
-}
-
-.report-period-controls {
-  width: 100%;
-}
-
-.report-period-presets {
-  width: 100%;
-}
-
-.report-period-btn {
-  flex: 1 1 auto;
-  text-align: center;
-}
-
-
-/* =========================================================
-   PRESET BUTTON GROUP
-========================================================= */
-
-.report-period-presets {
-  display: inline-flex;
-  align-items: center;
-
-  padding: 3px;
-
-  background: #0f141c;
-
-  border: 1px solid #2b3442;
-  border-radius: 10px;
-
-  gap: 2px;
-}
-
-.report-period-btn {
-  appearance: none;
-
-  border: 0;
-  outline: 0;
-
-  padding: 8px 10px;
-
-  border-radius: 7px;
-
-  background: transparent;
-
-  color: #aeb7c5;
-
-  font-size: 12px;
-  font-weight: 600;
-
-  line-height: 1;
-
-  cursor: pointer;
-
-  white-space: nowrap;
-
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.report-period-btn:hover {
-  background: #182231;
-  color: #ffffff;
-}
-
-.report-period-btn.active {
-  background: #2563eb;
-
-  color: #ffffff;
-
-  box-shadow:
-    0 0 0 1px rgba(96, 165, 250, 0.25),
-    0 3px 8px rgba(0, 0, 0, 0.22);
-}
-
-
-/* =========================================================
-   CUSTOM DATE RANGE
-========================================================= */
-
-.report-custom-period {
-  display: flex;
-  align-items: center;
-
-  gap: 8px;
-
-  min-height: 38px;
-
-  padding: 4px 9px;
-
-  background: #0f141c;
-
-  border: 1px solid #2b3442;
-  border-radius: 9px;
-}
-
-.report-custom-period .date-range-label {
-  display: inline-flex;
-
-  align-items: center;
-  justify-content: center;
-
-  opacity: 0.8;
-}
-
-.report-custom-period input[type="date"] {
-  min-width: 135px;
-
-  padding: 6px 7px;
-
-  border: 0;
-  outline: 0;
-
-  background: transparent;
-
-  color: #ffffff;
-
-  font-size: 12px;
-  font-weight: 600;
-
-  color-scheme: dark;
-}
-
-.report-custom-period input[type="date"]:focus {
-  background: #151d29;
-  border-radius: 5px;
-}
-
-.report-custom-period .date-range-sep {
-  color: #77849a;
-
-  font-size: 12px;
-  font-weight: 600;
-}
-
-
-/* =========================================================
-   RESET BUTTON
-========================================================= */
-
-.report-period-reset {
-  appearance: none;
-
-  min-height: 38px;
-
-  padding: 0 13px;
-
-  border: 1px solid #2b3442;
-  border-radius: 8px;
-
-  background: #111720;
-
-  color: #c8d0dc;
-
-  font-size: 12px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease;
-}
-
-.report-period-reset:hover {
-  background: #182231;
-
-  border-color: #40516a;
-
-  color: #ffffff;
-}
-
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-
-@media (max-width: 1250px) {
-
-  .report-period-controls {
-    align-items: flex-start;
-  }
-
-  .report-period-presets {
-    flex-wrap: wrap;
-  }
-
-}
-
-
-@media (max-width: 760px) {
-
-  .report-period-presets {
-    width: 100%;
-  }
-
-  .report-period-btn {
-    flex: 1 1 auto;
-  }
-
-  .report-custom-period {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .report-custom-period input[type="date"] {
-    flex: 1;
-    min-width: 120px;
-  }
-
-}
 
 .reports-grid {
   display: grid;
 
   grid-template-columns:
     minmax(280px, 1.25fr)
-    minmax(620px, 2.7fr)
+    minmax(600px, 2.7fr)
     minmax(180px, 0.85fr)
     minmax(160px, 0.75fr);
 
@@ -676,39 +368,134 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   row-gap: 10px;
 
   align-items: end;
+
+  margin-bottom: 20px;
 }
 
-.reports-grid > .field:first-child {
+
+/* =========================================================
+   GRID AREAS
+========================================================= */
+
+.report-type-field {
   grid-area: type;
 }
 
 .report-period-field {
   grid-area: period;
+
+  width: 100%;
+  min-width: 0;
 }
 
-.reports-grid .field-right:nth-of-type(3) {
+.report-line-field {
   grid-area: line;
 }
 
-.reports-grid .field-right:nth-of-type(4) {
+.report-status-field {
   grid-area: status;
 }
+
+
+/* =========================================================
+   PERIOD PRESETS
+========================================================= */
+
+.report-period-presets {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  padding: 3px;
+  gap: 2px;
+
+  background: #0f141c;
+
+  border: 1px solid #2b3442;
+  border-radius: 10px;
+}
+
+
+.report-period-btn {
+  appearance: none;
+
+  flex: 1 1 0;
+
+  min-width: 0;
+
+  padding: 9px 8px;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #aeb7c5;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+
+  text-align: center;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+
+.report-period-btn:hover {
+  background: #182231;
+  color: #ffffff;
+}
+
+
+.report-period-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, 0.25),
+    0 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+
+/* =========================================================
+   CUSTOM PERIOD
+========================================================= */
 
 .report-custom-period {
   grid-area: custom;
 
+  display: flex;
+  align-items: center;
+
   justify-self: start;
 
-  min-width: 360px;
+  width: 100%;
+  max-width: 420px;
 
-  margin-top: -2px;
+  min-height: 38px;
+
+  margin-top: -1px;
 }
+
+
+/* =========================================================
+   FLATPICKR RANGE INPUT
+========================================================= */
 
 #reportDateRange {
   width: 100%;
-  min-width: 320px;
 
-  padding: 10px 12px;
+  min-height: 38px;
+
+  padding: 9px 12px;
 
   border: 1px solid #2b3442;
   border-radius: 9px;
@@ -720,21 +507,118 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
 
   cursor: pointer;
+
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
+
 
 #reportDateRange::placeholder {
   color: #7f8ba0;
 }
 
+
 #reportDateRange:hover {
   border-color: #40516a;
+  background: #121925;
 }
+
 
 #reportDateRange:focus {
   outline: none;
+
   border-color: #2563eb;
 
   box-shadow:
-    0 0 0 2px
-    rgba(37, 99, 235, 0.18);
+    0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+
+/* =========================================================
+   LINE / STATUS
+========================================================= */
+
+.report-line-field,
+.report-status-field {
+  width: 100%;
+  max-width: none;
+
+  justify-self: stretch;
+}
+
+
+.report-line-field .multi-select {
+  width: 100%;
+}
+
+
+.report-status-field select {
+  width: 100%;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1250px) {
+
+  .reports-grid {
+    grid-template-columns:
+      minmax(240px, 1fr)
+      minmax(450px, 2fr)
+      minmax(160px, 0.8fr)
+      minmax(150px, 0.75fr);
+  }
+
+  .report-period-btn {
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+
+}
+
+
+@media (max-width: 980px) {
+
+  .reports-grid {
+    grid-template-columns: 1fr 1fr;
+
+    grid-template-areas:
+      "type type"
+      "period period"
+      "custom custom"
+      "line status";
+  }
+
+  .report-custom-period {
+    max-width: 100%;
+  }
+
+}
+
+
+@media (max-width: 640px) {
+
+  .reports-grid {
+    grid-template-columns: 1fr;
+
+    grid-template-areas:
+      "type"
+      "period"
+      "custom"
+      "line"
+      "status";
+  }
+
+  .report-period-presets {
+    flex-wrap: wrap;
+  }
+
+  .report-period-btn {
+    flex: 1 1 30%;
+  }
+
 }

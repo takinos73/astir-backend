@@ -6339,35 +6339,61 @@
 
  </div>
     
-    <!-- ===================== 
-      TAB: REPORTS
-    ===================== -->
+<!-- ===================== 
+     TAB: REPORTS
+===================== -->
 
 <div id="tab-reports" style="display: none;">
+
   <section class="reports-header">
     <h2>Reports</h2>
+
     <p class="reports-subtitle">
       Δημιουργία αναφορών συντήρησης και export σε PDF.
     </p>
   </section>
 
   <section class="reports-card">
+
     <div class="reports-grid">
 
-      <!-- Report Type -->
-      <div class="field">
-        <label for="reportType">Report Type</label>
+
+      <!-- =====================
+           REPORT TYPE
+      ====================== -->
+
+      <div class="field report-type-field">
+
+        <label for="reportType">
+          Report Type
+        </label>
+
         <select id="reportType">
-          <option value="status">Maintenance Status Report</option>
-          <option value="overdue">Overdue Tasks Report</option>
-          <option value="technician">Completed by Technician</option>
-          <option value="nonplanned">Breakdowns Report</option>
-          <option value="kpi">Maintenance KPI Report</option>
+          <option value="status">
+            Maintenance Status Report
+          </option>
+
+          <option value="overdue">
+            Overdue Tasks Report
+          </option>
+
+          <option value="technician">
+            Completed by Technician
+          </option>
+
+          <option value="nonplanned">
+            Breakdowns Report
+          </option>
+
+          <option value="kpi">
+            Maintenance KPI Report
+          </option>
         </select>
+
       </div>
 
       <!-- =====================================================
-          REPORT PERIOD FILTER
+           REPORT PERIOD FILTER
       ====================================================== -->
 
       <div class="report-period-field">
@@ -6380,7 +6406,6 @@
           class="report-period-presets"
           id="reportPeriodPresets"
         >
-
           <button
             type="button"
             class="report-period-btn"
@@ -6432,13 +6457,21 @@
         </div>
 
       </div>
-      
-      <!-- Line -->
-      <div class="field field-right">
-        <label>Line</label>
 
-        <div class="multi-select" id="reportLineMulti">
+      <!-- =====================
+           LINE
+      ====================== -->
 
+      <div class="field field-right report-line-field">
+
+        <label>
+          Line
+        </label>
+
+        <div
+          class="multi-select"
+          id="reportLineMulti"
+        >
           <button
             type="button"
             id="reportLineBtn"
@@ -6452,7 +6485,9 @@
             class="multi-select-menu"
             style="display:none;"
           >
+
             <label class="multi-select-option">
+
               <input
                 type="checkbox"
                 value="all"
@@ -6465,77 +6500,185 @@
             <div id="reportLineOptions">
               <!-- populated dynamically -->
             </div>
+
           </div>
 
         </div>
-      </div>
-      <!-- Status -->
-      <div class="field field-right">
-        <label for="reportStatus">Status</label>
-        <select id="reportStatus">
-          <option value="all">ALL</option>
-          <option value="planned">Preventive</option>
-          <option value="planned_manual">Planned_manual</option>
-          <option value="overdue">Overdue</option>
-        </select>
+
       </div>
 
-      <!-- CUSTOM PERIOD-->
-        <div
-          class="report-custom-period"
-          id="reportCustomPeriod"
-          style="display:none;"
+      <!-- =====================
+           STATUS
+      ====================== -->
+
+      <div class="field field-right report-status-field">
+
+        <label for="reportStatus">
+          Status
+        </label>
+
+        <select id="reportStatus">
+
+          <option value="all">
+            ALL
+          </option>
+
+          <option value="planned">
+            Preventive
+          </option>
+
+          <option value="planned_manual">
+            Planned_manual
+          </option>
+
+          <option value="overdue">
+            Overdue
+          </option>
+
+        </select>
+
+      </div>
+
+      <!-- =====================
+           CUSTOM PERIOD
+      ====================== -->
+
+      <div
+        class="report-custom-period"
+        id="reportCustomPeriod"
+        style="display:none;"
+      >
+
+        <input
+          id="reportDateRange"
+          type="text"
+          placeholder="Select period"
+          readonly
+        />
+
+        <input
+          id="dateFrom"
+          type="hidden"
+        />
+
+        <input
+          id="dateTo"
+          type="hidden"
+        />
+
+      </div>
+
+      <!-- =====================
+           TECHNICIAN
+           Hidden for now
+      ====================== -->
+
+      <div
+        class="field field-hidden"
+        id="fieldTechnician"
+      >
+
+        <label for="reportTechnician">
+          Technician
+        </label>
+
+        <select id="reportTechnician">
+
+          <option value="all">
+            All Technicians
+          </option>
+
+        </select>
+
+        <label
+          style="
+            display:block;
+            margin-top:8px;
+          "
         >
 
           <input
-            id="reportDateRange"
-            type="text"
-            placeholder="Select period"
-            readonly
+            type="checkbox"
+            id="reportIncludeDetails"
           />
 
-          <input
-            id="dateFrom"
-            type="hidden"
-          />
+          Include detailed completed tasks
 
-          <input
-            id="dateTo"
-            type="hidden"
-          />
+        </label>
 
-        </div>
-
-            <!-- Technician (hidden for now; θα το ενεργοποιήσουμε στο STEP B) -->
-            <div class="field field-hidden" id="fieldTechnician">
-              <label for="reportTechnician">Technician</label>
-              <select id="reportTechnician">
-                <option value="all">All Technicians</option>
-              </select>
-              <label style="display:block; margin-top:8px;">
-                <input type="checkbox" id="reportIncludeDetails">
-                Include detailed completed tasks
-              </label>
-            </div>
-          </div>
-
-          <!-- Preview -->
-          <div class="reports-preview" id="reportsPreview">
-            <div class="preview-title">Preview</div>
-            <div class="preview-lines" id="previewLines">Lines: ALL</div>
-            <div class="preview-dates" id="previewDates">Period: —</div>
-            <div class="preview-type" id="previewType">Report: Maintenance Status Report</div>
-            <div class="preview-status" id="previewStatus">Status: ALL</div>
-          </div>
-
-          <!-- Actions -->
-          <div class="reports-actions">
-            <button class="btn-primary" id="generatePdfBtn">📄 Generate PDF</button>
-            <button class="btn-secondary" id="resetReportBtn">Reset</button>
-          </div>
-        </section>
       </div>
+
+    </div>
+
+    <!-- =====================
+         PREVIEW
+    ====================== -->
+
+    <div
+      class="reports-preview"
+      id="reportsPreview"
+    >
+
+      <div class="preview-title">
+        Preview
       </div>
+
+      <div
+        class="preview-lines"
+        id="previewLines"
+      >
+        Lines: ALL
+      </div>
+
+      <div
+        class="preview-dates"
+        id="previewDates"
+      >
+        Period: —
+      </div>
+
+      <div
+        class="preview-type"
+        id="previewType"
+      >
+        Report: Maintenance Status Report
+      </div>
+
+      <div
+        class="preview-status"
+        id="previewStatus"
+      >
+        Status: ALL
+      </div>
+
+    </div>
+
+    <!-- =====================
+         ACTIONS
+    ====================== -->
+
+    <div class="reports-actions">
+
+      <button
+        class="btn-primary"
+        id="generatePdfBtn"
+      >
+        📄 Generate PDF
+      </button>
+
+
+      <button
+        class="btn-secondary"
+        id="resetReportBtn"
+      >
+        Reset
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
    
 <!-- =====================
      ASSET VIEW MODAL
