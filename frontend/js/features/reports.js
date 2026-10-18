@@ -1111,193 +1111,78 @@ async function generateStatusReportPdf() {
       `;
     }
 
-  // =========================
-  // FILL TEMPLATE
-  // =========================
 
-  template = template
-
-    /* =====================
-      REPORT HEADER
-    ===================== */
-
-    .replaceAll(
-      "{{GENERATED_DATE}}",
-      generatedDate
-    )
-
-    .replaceAll(
-      "{{PERIOD}}",
-      periodLabel
-    )
-
-    .replaceAll(
-      "{{SCOPE}}",
-      scopeLabel
-    )
+    // =========================
+    // FILL TEMPLATE
+    // =========================
+    const generatedDate =
+      new Date().toLocaleDateString("el-GR");
 
 
-    /* =====================
-      EXECUTIVE KPIs
-    ===================== */
+    template = template
 
-    .replaceAll(
-      "{{FULFILLMENT_RATE}}",
-      String(
-        Math.max(
-          0,
-          Math.min(
-            100,
-            fulfillmentRate
-          )
-        )
+      .replace(
+        "{{GENERATED_DATE}}",
+        generatedDate
       )
-    )
 
-    .replaceAll(
-      "{{FULFILLED}}",
-      String(fulfilled)
-    )
-
-    .replaceAll(
-      "{{SCHEDULED_DUE}}",
-      String(scheduledDue)
-    )
-
-    .replaceAll(
-      "{{OVERDUE_COUNT}}",
-      String(overdueCount)
-    )
-
-    .replaceAll(
-      "{{CORRECTIVE_PCT}}",
-      String(breakdownPct)
-    )
-
-    .replaceAll(
-      "{{CORRECTIVE_COUNT}}",
-      String(correctiveCount)
-    )
-
-    .replaceAll(
-      "{{MTTR_VALUE}}",
-      mttrClosedIncidents > 0
-        ? formatDowntimeSeconds(
-            mttrSeconds
-          )
-        : "—"
-    )
-
-    .replaceAll(
-      "{{MTTR_INCIDENTS}}",
-      String(
-        mttrClosedIncidents
+      .replace(
+        "{{GENERATED_DATE}}",
+        generatedDate
       )
-    )
 
-
-    /* =====================
-      SCHEDULE DELIVERY
-    ===================== */
-
-    .replaceAll(
-      "{{OUTSTANDING}}",
-      String(outstanding)
-    )
-
-    .replaceAll(
-      "{{BACKLOG_RECOVERED}}",
-      String(backlogRecovered)
-    )
-
-
-    /* =====================
-      MAINTENANCE MIX
-    ===================== */
-
-    .replaceAll(
-      "{{PREVENTIVE_COUNT}}",
-      String(preventiveCount)
-    )
-
-    .replaceAll(
-      "{{PLANNED_COUNT}}",
-      String(plannedCount)
-    )
-
-    .replaceAll(
-      "{{PREV_PCT}}",
-      String(prevPct)
-    )
-
-    .replaceAll(
-      "{{PLANNED_PCT}}",
-      String(plannedPct)
-    )
-
-
-    /* =====================
-      MAINTENANCE EFFORT
-    ===================== */
-
-    .replaceAll(
-      "{{TOTAL_SERVICE_TIME}}",
-      formatDuration(
-        totalServiceMin
+      .replace(
+        "{{FROM}}",
+        from
       )
-    )
 
-    .replaceAll(
-      "{{EXEC_TOTAL}}",
-      String(execTotal)
-    )
-
-    .replaceAll(
-      "{{AVG_SERVICE_MIN}}",
-      String(avgServiceMin)
-    )
-
-
-    /* =====================
-      RELIABILITY
-    ===================== */
-
-    .replaceAll(
-      "{{EFFECTIVE_DOWN}}",
-      formatDowntimeSeconds(
-        safeNum(
-          managementReliability
-            .effective_down_seconds
-        )
+      .replace(
+        "{{TO}}",
+        to
       )
-    )
 
-
-    /* =====================
-      TOP LINE IMPACT
-    ===================== */
-
-    .replaceAll(
-      "{{TOP_LINE}}",
-      safe(topLine)
-    )
-
-    .replaceAll(
-      "{{TOP_LINE_TIME}}",
-      formatDuration(
-        topLineMin
+      .replace(
+        "{{LINE_FILTER}}",
+        lineFilterLabel
       )
-    )
 
+      .replace(
+        "{{STATUS}}",
+        status.toUpperCase()
+      )
 
-    /* =====================
-      MANAGEMENT ATTENTION
-    ===================== */
+      .replace(
+        "{{TASK_COUNT}}",
+        String(tasks.length)
+      )
 
-    .replace(
-      "{{INSIGHTS}}",
-      insightsHtml
-    );
+      .replace(
+        "{{PREVENTIVE_COUNT}}",
+        String(preventiveCount)
+      )
+
+      .replace(
+        "{{PLANNED_COUNT}}",
+        String(plannedCount)
+      )
+
+      .replace(
+        "{{OVERDUE_COUNT}}",
+        String(overdueCount)
+      )
+
+      .replace(
+        "{{TOTAL_DURATION}}",
+        totalDurationLabel
+          ? ` • Estimated duration: ${totalDurationLabel}`
+          : ""
+      )
+
+      .replace(
+        "{{REPORT_CONTENT}}",
+        reportContent
+      );
+
 
     // =========================
     // PRINT
@@ -7554,166 +7439,193 @@ const managementEffort =
           "el-GR"
         );
 
-    // =========================
-    // FILL TEMPLATE
-    // =========================
-    template = template
+   // =========================
+// FILL TEMPLATE
+// =========================
 
-      .replaceAll(
-        "{{GENERATED_DATE}}",
-        generatedDate
-      )
+template = template
 
-      .replaceAll(
-        "{{PERIOD}}",
-        periodLabel
-      )
+  /* =====================
+     REPORT HEADER
+  ===================== */
 
-      .replaceAll(
-        "{{SCOPE}}",
-        scopeLabel
-      )
+  .replaceAll(
+    "{{GENERATED_DATE}}",
+    generatedDate
+  )
 
-      .replaceAll(
-        "{{EXEC_TOTAL}}",
-        String(execTotal)
-      )
+  .replaceAll(
+    "{{PERIOD}}",
+    periodLabel
+  )
 
-      .replaceAll(
-        "{{OVERDUE_COUNT}}",
-        String(overdueCount)
-      )
+  .replaceAll(
+    "{{SCOPE}}",
+    scopeLabel
+  )
 
-      .replaceAll(
-        "{{OVERDUE_RATE}}",
-        String(overdueRate)
-      )
 
-      .replace(
-        "{{OVERDUE_STATUS}}",
-        overdueStatus
-      )
+  /* =====================
+     EXECUTIVE KPIs
+  ===================== */
 
-      .replaceAll(
-        "{{ACTIVE_DUE_TASKS}}",
-        String(
-          activeTasksWithDue.length
+  .replaceAll(
+    "{{FULFILLMENT_RATE}}",
+    String(
+      Math.max(
+        0,
+        Math.min(
+          100,
+          fulfillmentRate
         )
       )
+    )
+  )
 
-      .replaceAll(
-        "{{PREV_COMPLIANCE}}",
-        String(prevCompliance)
-      )
+  .replaceAll(
+    "{{FULFILLED}}",
+    String(fulfilled)
+  )
 
-      .replaceAll(
-        "{{COMPLIANCE_STATUS}}",
-        complianceStatus
-      )
+  .replaceAll(
+    "{{SCHEDULED_DUE}}",
+    String(scheduledDue)
+  )
 
-      .replaceAll(
-        "{{BREAKDOWN_PCT}}",
-        String(breakdownPct)
-      )
+  .replaceAll(
+    "{{OVERDUE_COUNT}}",
+    String(overdueCount)
+  )
 
-      .replaceAll(
-        "{{BREAKDOWN_STATUS}}",
-        breakdownStatus
-      )
+  .replaceAll(
+    "{{CORRECTIVE_PCT}}",
+    String(breakdownPct)
+  )
 
-      .replaceAll(
-        "{{MATURITY_SCORE}}",
-        String(maturityScore)
-      )
+  .replaceAll(
+    "{{CORRECTIVE_COUNT}}",
+    String(correctiveCount)
+  )
 
-      .replaceAll(
-        "{{MATURITY_LEVEL}}",
-        maturityLevel
-      )
-
-      .replaceAll(
-        "{{PREV_DUE_COUNT}}",
-        String(prevDueCount)
-      )
-
-      .replaceAll(
-        "{{PREV_COMPLETED_COUNT}}",
-        String(prevCompletedCount)
-      )
-
-      .replaceAll(
-        "{{PREV_COMPLETED_COMPLIANCE}}",
-        String(
-          prevCompletedForComplianceCount
+  .replaceAll(
+    "{{MTTR_VALUE}}",
+    mttrClosedIncidents > 0
+      ? formatDowntimeSeconds(
+          mttrSeconds
         )
-      )
+      : "—"
+  )
 
-      .replace(
-        "{{OUT_OF_PERIOD_ROW}}",
-        outOfPeriodRow
-      )
+  .replaceAll(
+    "{{MTTR_INCIDENTS}}",
+    String(
+      mttrClosedIncidents
+    )
+  )
 
-      .replaceAll(
-        "{{PREV_PCT}}",
-        String(prevPct)
-      )
 
-      .replaceAll(
-        "{{PLANNED_PCT}}",
-        String(plannedPct)
-      )
+  /* =====================
+     SCHEDULE DELIVERY
+  ===================== */
 
-      .replaceAll(
-        "{{TOTAL_SERVICE_TIME}}",
-        formatDuration(
-          totalServiceMin
-        )
-      )
+  .replaceAll(
+    "{{OUTSTANDING}}",
+    String(outstanding)
+  )
 
-      .replaceAll(
-        "{{AVG_SERVICE_MIN}}",
-        String(avgServiceMin)
-      )
+  .replaceAll(
+    "{{BACKLOG_RECOVERED}}",
+    String(backlogRecovered)
+  )
 
-      .replaceAll(
-        "{{TOP_LINE}}",
-        safe(topLine)
-      )
 
-      .replaceAll(
-        "{{TOP_LINE_TIME}}",
-        formatDuration(
-          topLineMin
-        )
-      )
+  /* =====================
+     MAINTENANCE MIX
+  ===================== */
 
-      .replaceAll(
-        "{{BREAKDOWN_COUNT}}",
-        String(breakdownCount)
-      )
+  .replaceAll(
+    "{{PREVENTIVE_COUNT}}",
+    String(preventiveCount)
+  )
 
-      .replaceAll(
-        "{{NON_BREAKDOWN_COUNT}}",
-        String(
-          execTotal -
-          breakdownCount
-        )
-      )
+  .replaceAll(
+    "{{PLANNED_COUNT}}",
+    String(plannedCount)
+  )
 
-      .replace(
-        "{{MTTR_SECTION}}",
-        mttrSection
-      )
+  .replaceAll(
+    "{{PREV_PCT}}",
+    String(prevPct)
+  )
 
-      .replace(
-        "{{BREAKDOWN_BY_LINE_SECTION}}",
-        breakdownByLineSection
-      )
+  .replaceAll(
+    "{{PLANNED_PCT}}",
+    String(plannedPct)
+  )
 
-      .replace(
-        "{{INSIGHTS}}",
-        insightsHtml
-      );
+
+  /* =====================
+     MAINTENANCE EFFORT
+  ===================== */
+
+  .replaceAll(
+    "{{TOTAL_SERVICE_TIME}}",
+    formatDuration(
+      totalServiceMin
+    )
+  )
+
+  .replaceAll(
+    "{{EXEC_TOTAL}}",
+    String(execTotal)
+  )
+
+  .replaceAll(
+    "{{AVG_SERVICE_MIN}}",
+    String(avgServiceMin)
+  )
+
+
+  /* =====================
+     RELIABILITY
+  ===================== */
+
+  .replaceAll(
+    "{{EFFECTIVE_DOWN}}",
+    formatDowntimeSeconds(
+      safeNum(
+        managementReliability
+          .effective_down_seconds
+      )
+    )
+  )
+
+
+  /* =====================
+     TOP LINE IMPACT
+  ===================== */
+
+  .replaceAll(
+    "{{TOP_LINE}}",
+    safe(topLine)
+  )
+
+  .replaceAll(
+    "{{TOP_LINE_TIME}}",
+    formatDuration(
+      topLineMin
+    )
+  )
+
+
+  /* =====================
+     MANAGEMENT ATTENTION
+  ===================== */
+
+  .replace(
+    "{{INSIGHTS}}",
+    insightsHtml
+  );
 
 
     // =========================
