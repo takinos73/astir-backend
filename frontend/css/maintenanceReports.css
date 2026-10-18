@@ -3301,3 +3301,15 @@ textarea {
   }
 
 }
+
+/* =========================================================
+   REPORT ID - FORCE SINGLE LINE
+========================================================= */
+
+#tab-reporting .production-reports-table th:nth-child(1),
+#tab-reporting .production-reports-table td:nth-child(1),
+#tab-reporting .production-reports-table td:nth-child(1) * {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
