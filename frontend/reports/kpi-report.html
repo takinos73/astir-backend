@@ -400,157 +400,334 @@
 
   </div>
 
+<!-- =====================================================
+     MAINTENANCE PERFORMANCE
+====================================================== -->
 
-  <!-- =====================================================
-       PERFORMANCE
-  ====================================================== -->
-
-  <h3>
-    Maintenance Performance
-  </h3>
-
-
-  <div class="kpi-detail-grid">
+<h3>
+  Maintenance Performance
+</h3>
 
 
-    <!-- EFFORT -->
-
-    <div class="kpi-detail-card">
-
-      <div class="kpi-detail-title">
-        Maintenance Effort
-      </div>
+<div class="kpi-detail-grid">
 
 
-      <div class="kpi-detail-row">
+  <!-- ===================================================
+       MAINTENANCE EFFORT
+  ==================================================== -->
 
-        <span>
-          Service Time
-        </span>
+  <div class="kpi-detail-card">
 
-        <strong>
-          {{TOTAL_SERVICE_TIME}}
-        </strong>
-
-      </div>
+    <div class="kpi-detail-title">
+      Maintenance Effort
+    </div>
 
 
-      <div class="kpi-detail-row">
+    <div
+      style="
+        font-size:24px;
+        font-weight:800;
+        line-height:1;
+        margin:8px 0 4px 0;
+        color:#172033;
+      "
+    >
+      {{TOTAL_SERVICE_TIME}}
+    </div>
 
-        <span>
-          Executions
-        </span>
 
-        <strong>
+    <div
+      class="small"
+      style="
+        margin-bottom:10px;
+      "
+    >
+      Total Service Time
+    </div>
+
+
+    <div
+      style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        margin-bottom:12px;
+      "
+    >
+
+      <div
+        style="
+          padding:7px 8px;
+          border:1px solid #e1e6ed;
+          border-radius:6px;
+          background:#fafbfc;
+        "
+      >
+
+        <div
+          style="
+            font-size:15px;
+            font-weight:800;
+          "
+        >
           {{EXEC_TOTAL}}
-        </strong>
+        </div>
+
+        <div class="small">
+          Executions
+        </div>
 
       </div>
 
 
-      <div class="kpi-detail-row">
+      <div
+        style="
+          padding:7px 8px;
+          border:1px solid #e1e6ed;
+          border-radius:6px;
+          background:#fafbfc;
+        "
+      >
 
-        <span>
-          Avg / Execution
-        </span>
-
-        <strong>
+        <div
+          style="
+            font-size:15px;
+            font-weight:800;
+          "
+        >
           {{AVG_SERVICE_MIN}} min
-        </strong>
+        </div>
+
+        <div class="small">
+          Avg / Execution
+        </div>
 
       </div>
 
     </div>
 
 
-    <!-- RELIABILITY -->
+    <!-- EFFORT MIX -->
 
-    <div class="kpi-detail-card">
+    <div class="kpi-detail-row">
 
-      <div class="kpi-detail-title">
-        Reliability
-      </div>
+      <span>
+        Preventive
+      </span>
 
-
-      <div class="kpi-detail-row">
-
-        <span>
-          MTTR
-        </span>
-
-        <strong>
-          {{MTTR_VALUE}}
-        </strong>
-
-      </div>
-
-
-      <div class="kpi-detail-row">
-
-        <span>
-          Closed Incidents
-        </span>
-
-        <strong>
-          {{MTTR_INCIDENTS}}
-        </strong>
-
-      </div>
-
-
-      <div class="kpi-detail-row">
-
-        <span>
-          Effective DOWN
-        </span>
-
-        <strong>
-          {{EFFECTIVE_DOWN}}
-        </strong>
-
-      </div>
+      <strong>
+        {{EFFORT_PREVENTIVE_TIME}}
+      </strong>
 
     </div>
 
 
-    <!-- TOP LINE -->
+    <div
+      style="
+        width:100%;
+        height:7px;
+        background:#e9edf2;
+        border-radius:4px;
+        overflow:hidden;
+        margin:2px 0 7px 0;
+      "
+    >
 
-    <div class="kpi-detail-card">
+      <div
+        style="
+          width:{{EFFORT_PREVENTIVE_PCT}}%;
+          height:100%;
+          background:#2f80ed;
+        "
+      ></div>
 
-      <div class="kpi-detail-title">
-        Top Line Impact
-      </div>
-
-
-      <div class="kpi-detail-row">
-
-        <span>
-          Line
-        </span>
-
-        <strong>
-          {{TOP_LINE}}
-        </strong>
-
-      </div>
+    </div>
 
 
-      <div class="kpi-detail-row">
+    <div class="kpi-detail-row">
 
-        <span>
-          Service Time
-        </span>
+      <span>
+        Planned
+      </span>
 
-        <strong>
-          {{TOP_LINE_TIME}}
-        </strong>
+      <strong>
+        {{EFFORT_PLANNED_TIME}}
+      </strong>
 
-      </div>
+    </div>
+
+
+    <div
+      style="
+        width:100%;
+        height:7px;
+        background:#e9edf2;
+        border-radius:4px;
+        overflow:hidden;
+        margin:2px 0 7px 0;
+      "
+    >
+
+      <div
+        style="
+          width:{{EFFORT_PLANNED_PCT}}%;
+          height:100%;
+          background:#ffc156;
+        "
+      ></div>
+
+    </div>
+
+
+    <div class="kpi-detail-row">
+
+      <span>
+        Corrective
+      </span>
+
+      <strong>
+        {{EFFORT_CORRECTIVE_TIME}}
+      </strong>
+
+    </div>
+
+
+    <div
+      style="
+        width:100%;
+        height:7px;
+        background:#e9edf2;
+        border-radius:4px;
+        overflow:hidden;
+        margin:2px 0 2px 0;
+      "
+    >
+
+      <div
+        style="
+          width:{{EFFORT_CORRECTIVE_PCT}}%;
+          height:100%;
+          background:#ff4848;
+        "
+      ></div>
 
     </div>
 
   </div>
 
+
+  <!-- ===================================================
+       RELIABILITY
+  ==================================================== -->
+
+  <div class="kpi-detail-card">
+
+    <div class="kpi-detail-title">
+      Reliability
+    </div>
+
+
+    <div
+      style="
+        font-size:24px;
+        font-weight:800;
+        line-height:1;
+        margin:8px 0 4px 0;
+        color:#172033;
+      "
+    >
+      {{EFFECTIVE_DOWN}}
+    </div>
+
+
+    <div
+      class="small"
+      style="
+        margin-bottom:12px;
+      "
+    >
+      Effective DOWN
+    </div>
+
+
+    <div class="kpi-detail-row">
+
+      <span>
+        MTTR
+      </span>
+
+      <strong>
+        {{MTTR_VALUE}}
+      </strong>
+
+    </div>
+
+
+    <div class="kpi-detail-row">
+
+      <span>
+        Closed Incidents
+      </span>
+
+      <strong>
+        {{MTTR_INCIDENTS}}
+      </strong>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================
+       TOP LINE IMPACT
+  ==================================================== -->
+
+  <div class="kpi-detail-card">
+
+    <div class="kpi-detail-title">
+      Top Line Impact
+    </div>
+
+
+    <div
+      style="
+        font-size:28px;
+        font-weight:800;
+        line-height:1;
+        margin:10px 0 5px 0;
+        color:#172033;
+      "
+    >
+      {{TOP_LINE}}
+    </div>
+
+
+    <div
+      class="small"
+      style="
+        margin-bottom:12px;
+      "
+    >
+      Highest maintenance effort
+    </div>
+
+
+    <div class="kpi-detail-row">
+
+      <span>
+        Service Time
+      </span>
+
+      <strong>
+        {{TOP_LINE_TIME}}
+      </strong>
+
+    </div>
+
+  </div>
+
+
+</div>  
 
   <!-- =====================================================
        MANAGEMENT ATTENTION

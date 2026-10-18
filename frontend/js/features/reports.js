@@ -6607,6 +6607,48 @@ const managementEffort =
       )
     );
 
+    /* =========================================================
+      MAINTENANCE EFFORT MIX
+    ========================================================= */
+
+    const effortPreventiveMin =
+      safeNum(
+        managementEffort.preventive?.minutes
+      );
+
+
+    const effortPlannedMin =
+      safeNum(
+        managementEffort.planned?.minutes
+      );
+
+
+    const effortCorrectiveMin =
+      safeNum(
+        managementEffort.corrective?.minutes
+      );
+
+
+    const effortPreventivePct =
+      pct(
+        effortPreventiveMin,
+        totalServiceMin
+      );
+
+
+    const effortPlannedPct =
+      pct(
+        effortPlannedMin,
+        totalServiceMin
+      );
+
+
+    const effortCorrectivePct =
+      pct(
+        effortCorrectiveMin,
+        totalServiceMin
+      );
+
 
   /* =========================================================
     BACKLOG
@@ -7192,6 +7234,52 @@ template = template
     "{{AVG_SERVICE_MIN}}",
     String(avgServiceMin)
   )
+
+  /* =====================
+   EFFORT MIX
+===================== */
+
+.replaceAll(
+  "{{EFFORT_PREVENTIVE_TIME}}",
+  formatDuration(
+    effortPreventiveMin
+  )
+)
+
+.replaceAll(
+  "{{EFFORT_PREVENTIVE_PCT}}",
+  String(
+    effortPreventivePct
+  )
+)
+
+.replaceAll(
+  "{{EFFORT_PLANNED_TIME}}",
+  formatDuration(
+    effortPlannedMin
+  )
+)
+
+.replaceAll(
+  "{{EFFORT_PLANNED_PCT}}",
+  String(
+    effortPlannedPct
+  )
+)
+
+.replaceAll(
+  "{{EFFORT_CORRECTIVE_TIME}}",
+  formatDuration(
+    effortCorrectiveMin
+  )
+)
+
+.replaceAll(
+  "{{EFFORT_CORRECTIVE_PCT}}",
+  String(
+    effortCorrectivePct
+  )
+)
 
 
   /* =====================
