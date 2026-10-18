@@ -864,6 +864,10 @@ async function loadHistoryTaskAttachments(
 
   try {
 
+    // =========================
+    // LOAD ATTACHMENT LIST
+    // =========================
+
     const response =
       await fetch(
         `/attachments/task/${taskId}`
@@ -907,6 +911,71 @@ async function loadHistoryTaskAttachments(
     }
 
 
+    // =========================
+    // GET SIGNED URLS
+    // =========================
+
+    const attachmentsWithUrls =
+      await Promise.all(
+
+        attachments.map(
+          async attachment => {
+
+            try {
+
+              const openResponse =
+                await fetch(
+                  `/attachments/${attachment.id}/open`
+                );
+
+
+              if (!openResponse.ok) {
+
+                return {
+                  ...attachment,
+                  signedUrl: null
+                };
+
+              }
+
+
+              const openData =
+                await openResponse.json();
+
+
+              return {
+                ...attachment,
+                signedUrl:
+                  openData.url || null
+              };
+
+            }
+            catch (err) {
+
+              console.error(
+                "Failed to load attachment URL:",
+                attachment.id,
+                err
+              );
+
+
+              return {
+                ...attachment,
+                signedUrl: null
+              };
+
+            }
+
+          }
+        )
+
+      );
+
+
+    // =========================
+    // SAFE HTML
+    // =========================
+
     const escapeHtml =
       value =>
         String(
@@ -934,16 +1003,17 @@ async function loadHistoryTaskAttachments(
           );
 
 
+    // =========================
+    // RENDER
+    // =========================
+
     container.innerHTML =
-      attachments
+      attachmentsWithUrls
         .map(
           attachment => {
 
-            const id =
-              attachment.id;
-
-
             const fileName =
+              attachment.fileName ||
               attachment.original_name ||
               attachment.original_filename ||
               attachment.file_name ||
@@ -953,11 +1023,16 @@ async function loadHistoryTaskAttachments(
 
             const mimeType =
               String(
+                attachment.mimeType ||
                 attachment.mime_type ||
                 attachment.content_type ||
                 ""
               )
                 .toLowerCase();
+
+
+            const signedUrl =
+              attachment.signedUrl;
 
 
             const isImage =
@@ -978,9 +1053,44 @@ async function loadHistoryTaskAttachments(
                 );
 
 
-            const openUrl =
-              `/attachments/${id}/open`;
+            // =====================
+            // FAILED URL
+            // =====================
 
+            if (!signedUrl) {
+
+              return `
+
+                <div class="history-attachment-card">
+
+                  <div class="history-file-preview">
+                    📎
+                  </div>
+
+                  <div class="history-attachment-footer">
+
+                    <div
+                      class="history-attachment-name"
+                      title="${escapeHtml(fileName)}"
+                    >
+                      ${escapeHtml(fileName)}
+                    </div>
+
+                    <div class="history-attachments-error">
+                      Preview unavailable
+                    </div>
+
+                  </div>
+
+                </div>
+              `;
+
+            }
+
+
+            // =====================
+            // IMAGE
+            // =====================
 
             if (isImage) {
 
@@ -989,7 +1099,7 @@ async function loadHistoryTaskAttachments(
                 <div class="history-attachment-card">
 
                   <a
-                    href="${openUrl}"
+                    href="${signedUrl}"
                     target="_blank"
                     rel="noopener"
                     class="history-attachment-preview"
@@ -997,7 +1107,7 @@ async function loadHistoryTaskAttachments(
                   >
 
                     <img
-                      src="${openUrl}"
+                      src="${signedUrl}"
                       alt="${escapeHtml(fileName)}"
                       loading="lazy"
                     />
@@ -1016,7 +1126,7 @@ async function loadHistoryTaskAttachments(
 
 
                     <a
-                      href="${openUrl}"
+                      href="${signedUrl}"
                       target="_blank"
                       rel="noopener"
                       class="history-attachment-open"
@@ -1028,8 +1138,13 @@ async function loadHistoryTaskAttachments(
 
                 </div>
               `;
+
             }
 
+
+            // =====================
+            // PDF
+            // =====================
 
             if (isPdf) {
 
@@ -1043,7 +1158,7 @@ async function loadHistoryTaskAttachments(
                 >
 
                   <a
-                    href="${openUrl}"
+                    href="${signedUrl}"
                     target="_blank"
                     rel="noopener"
                     class="history-attachment-preview"
@@ -1075,7 +1190,7 @@ async function loadHistoryTaskAttachments(
 
 
                     <a
-                      href="${openUrl}"
+                      href="${signedUrl}"
                       target="_blank"
                       rel="noopener"
                       class="history-attachment-open"
@@ -1087,8 +1202,13 @@ async function loadHistoryTaskAttachments(
 
                 </div>
               `;
+
             }
 
+
+            // =====================
+            // GENERIC FILE
+            // =====================
 
             return `
 
@@ -1110,7 +1230,7 @@ async function loadHistoryTaskAttachments(
 
 
                   <a
-                    href="${openUrl}"
+                    href="${signedUrl}"
                     target="_blank"
                     rel="noopener"
                     class="history-attachment-open"
