@@ -6479,63 +6479,63 @@
           <option value="overdue">Overdue</option>
         </select>
       </div>
+
       <!-- CUSTOM PERIOD-->
-      <div
-  class="report-custom-period"
-  id="reportCustomPeriod"
-  style="display:none;"
->
+        <div
+          class="report-custom-period"
+          id="reportCustomPeriod"
+          style="display:none;"
+        >
 
-  <span class="date-range-label">
-    📅
-  </span>
+          <input
+            id="reportDateRange"
+            type="text"
+            placeholder="Select period"
+            readonly
+          />
 
-  <input
-    id="dateFrom"
-    type="date"
-  />
+          <input
+            id="dateFrom"
+            type="hidden"
+          />
 
-  <span class="date-range-sep">
-    →
-  </span>
+          <input
+            id="dateTo"
+            type="hidden"
+          />
 
-  <input
-    id="dateTo"
-    type="date"
-  />
+        </div>
 
+            <!-- Technician (hidden for now; θα το ενεργοποιήσουμε στο STEP B) -->
+            <div class="field field-hidden" id="fieldTechnician">
+              <label for="reportTechnician">Technician</label>
+              <select id="reportTechnician">
+                <option value="all">All Technicians</option>
+              </select>
+              <label style="display:block; margin-top:8px;">
+                <input type="checkbox" id="reportIncludeDetails">
+                Include detailed completed tasks
+              </label>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="reports-preview" id="reportsPreview">
+            <div class="preview-title">Preview</div>
+            <div class="preview-lines" id="previewLines">Lines: ALL</div>
+            <div class="preview-dates" id="previewDates">Period: —</div>
+            <div class="preview-type" id="previewType">Report: Maintenance Status Report</div>
+            <div class="preview-status" id="previewStatus">Status: ALL</div>
+          </div>
+
+          <!-- Actions -->
+          <div class="reports-actions">
+            <button class="btn-primary" id="generatePdfBtn">📄 Generate PDF</button>
+            <button class="btn-secondary" id="resetReportBtn">Reset</button>
+          </div>
+        </section>
       </div>
-
-      <!-- Technician (hidden for now; θα το ενεργοποιήσουμε στο STEP B) -->
-      <div class="field field-hidden" id="fieldTechnician">
-        <label for="reportTechnician">Technician</label>
-        <select id="reportTechnician">
-          <option value="all">All Technicians</option>
-        </select>
-        <label style="display:block; margin-top:8px;">
-          <input type="checkbox" id="reportIncludeDetails">
-          Include detailed completed tasks
-        </label>
       </div>
-    </div>
-
-    <!-- Preview -->
-    <div class="reports-preview" id="reportsPreview">
-      <div class="preview-title">Preview</div>
-      <div class="preview-lines" id="previewLines">Lines: ALL</div>
-      <div class="preview-dates" id="previewDates">Period: —</div>
-      <div class="preview-type" id="previewType">Report: Maintenance Status Report</div>
-      <div class="preview-status" id="previewStatus">Status: ALL</div>
-    </div>
-
-    <!-- Actions -->
-    <div class="reports-actions">
-      <button class="btn-primary" id="generatePdfBtn">📄 Generate PDF</button>
-      <button class="btn-secondary" id="resetReportBtn">Reset</button>
-    </div>
-  </section>
- </div>
-</div>
    
 <!-- =====================
      ASSET VIEW MODAL

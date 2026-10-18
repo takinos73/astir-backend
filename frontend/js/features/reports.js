@@ -7728,3 +7728,106 @@ async function loadReportTemplate(templateName) {
 
   return await response.text();
 }
+/* =========================================================
+   REPORT CUSTOM DATE RANGE
+========================================================= */
+
+flatpickr( "#reportDateRange",
+   {
+    mode: "range",
+
+    dateFormat: "d-m-Y",
+
+    allowInput: false,
+
+    clickOpens: true,
+
+    onClose:
+      function(selectedDates) {
+
+        if (
+          selectedDates.length !== 2
+        ) {
+          return;
+        }
+
+
+        const from =
+          new Date(
+            selectedDates[0]
+          );
+
+        const to =
+          new Date(
+            selectedDates[1]
+          );
+
+
+        from.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        to.setHours(
+          23,
+          59,
+          59,
+          999
+        );
+
+
+        const dateFrom =
+          document.getElementById(
+            "dateFrom"
+          );
+
+        const dateTo =
+          document.getElementById(
+            "dateTo"
+          );
+
+
+        const toInputDate =
+          date =>
+            `${date.getFullYear()}-` +
+            `${String(
+              date.getMonth() + 1
+            ).padStart(2, "0")}-` +
+            `${String(
+              date.getDate()
+            ).padStart(2, "0")}`;
+
+
+        dateFrom.value =
+          toInputDate(from);
+
+        dateTo.value =
+          toInputDate(to);
+
+
+        dateFrom.dispatchEvent(
+          new Event(
+            "change",
+            {
+              bubbles: true
+            }
+          )
+        );
+
+
+        dateTo.dispatchEvent(
+          new Event(
+            "change",
+            {
+              bubbles: true
+            }
+          )
+        );
+
+      }
+
+  }
+);
