@@ -6406,6 +6406,7 @@
           class="report-period-presets"
           id="reportPeriodPresets"
         >
+
           <button
             type="button"
             class="report-period-btn"
@@ -6446,15 +6447,25 @@
             Last 30 Days
           </button>
 
-          <button
-            type="button"
-            class="report-period-btn"
-            data-period="custom"
-          >
-            Custom
-          </button>
+          <input
+            id="reportDateRange"
+            class="report-period-custom-input"
+            type="text"
+            placeholder="Custom"
+            readonly
+          />
 
         </div>
+
+        <input
+          id="dateFrom"
+          type="hidden"
+        />
+
+        <input
+          id="dateTo"
+          type="hidden"
+        />
 
       </div>
 
@@ -6536,35 +6547,6 @@
           </option>
 
         </select>
-
-      </div>
-
-      <!-- =====================
-           CUSTOM PERIOD
-      ====================== -->
-
-      <div
-        class="report-custom-period"
-        id="reportCustomPeriod"
-        style="display:none;"
-      >
-
-        <input
-          id="reportDateRange"
-          type="text"
-          placeholder="Select period"
-          readonly
-        />
-
-        <input
-          id="dateFrom"
-          type="hidden"
-        />
-
-        <input
-          id="dateTo"
-          type="hidden"
-        />
 
       </div>
 

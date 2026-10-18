@@ -3100,9 +3100,17 @@ document.addEventListener(
 
       };
 
-
     const setActivePreset =
       selectedPeriod => {
+
+        document
+          .getElementById(
+            "reportDateRange"
+          )
+          ?.classList.remove(
+            "active"
+          );
+
 
         presetButtons.forEach(
           btn => {
@@ -7731,26 +7739,46 @@ async function loadReportTemplate(templateName) {
 /* =========================================================
    REPORT CUSTOM DATE RANGE
 ========================================================= */
+const reportDateRangePicker = flatpickr(
+    "#reportDateRange",
+    {
+      mode: "range",
 
-flatpickr( "#reportDateRange",
-   {
-    mode: "range",
+      dateFormat: "d-m-Y",
 
-    dateFormat: "d-m-Y",
+      allowInput: false,
 
-    allowInput: false,
+      clickOpens: true,
 
-    clickOpens: true,
+      onOpen: function() {
 
-    onClose:
-      function(selectedDates) {
+        document
+          .querySelectorAll(
+            ".report-period-btn"
+          )
+          .forEach(
+            btn =>
+              btn.classList.remove(
+                "active"
+              )
+          );
+
+        document
+          .getElementById(
+            "reportDateRange"
+          )
+          ?.classList.add(
+            "active"
+          );
+      },
+
+      onClose: function(selectedDates) {
 
         if (
           selectedDates.length !== 2
         ) {
           return;
         }
-
 
         const from =
           new Date(
@@ -7762,7 +7790,6 @@ flatpickr( "#reportDateRange",
             selectedDates[1]
           );
 
-
         from.setHours(
           0,
           0,
@@ -7770,14 +7797,12 @@ flatpickr( "#reportDateRange",
           0
         );
 
-
         to.setHours(
           23,
           59,
           59,
           999
         );
-
 
         const dateFrom =
           document.getElementById(
@@ -7789,7 +7814,6 @@ flatpickr( "#reportDateRange",
             "dateTo"
           );
 
-
         const toInputDate =
           date =>
             `${date.getFullYear()}-` +
@@ -7800,13 +7824,11 @@ flatpickr( "#reportDateRange",
               date.getDate()
             ).padStart(2, "0")}`;
 
-
         dateFrom.value =
           toInputDate(from);
 
         dateTo.value =
           toInputDate(to);
-
 
         dateFrom.dispatchEvent(
           new Event(
@@ -7817,7 +7839,6 @@ flatpickr( "#reportDateRange",
           )
         );
 
-
         dateTo.dispatchEvent(
           new Event(
             "change",
@@ -7826,8 +7847,6 @@ flatpickr( "#reportDateRange",
             }
           )
         );
-
       }
-
-  }
-);
+    }
+  );
