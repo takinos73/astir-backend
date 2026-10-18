@@ -3012,121 +3012,396 @@ document.getElementById("resetReportBtn")?.addEventListener("click", () => {
   document.getElementById("previewStatus").innerText = "Status: ALL";
 });
 
-/*-- =====================================================
-     REPORT PERIOD FILTER
-====================================================== --*/
+/* =========================================================
+   REPORT PERIOD FILTER
+========================================================= */
 
-<div class="report-period-field">
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
-  <label>
-    Period
-  </label>
+    const presetButtons =
+      document.querySelectorAll(
+        ".report-period-btn"
+      );
 
+    const customPeriod =
+      document.getElementById(
+        "reportCustomPeriod"
+      );
 
-  <div class="report-period-controls">
+    const resetBtn =
+      document.getElementById(
+        "reportPeriodReset"
+      );
 
-    <div
-      class="report-period-presets"
-      id="reportPeriodPresets"
-    >
+    const dateFrom =
+      document.getElementById(
+        "dateFrom"
+      );
 
-      <button
-        type="button"
-        class="report-period-btn"
-        data-period="this_week"
-      >
-        This Week
-      </button>
-
-
-      <button
-        type="button"
-        class="report-period-btn"
-        data-period="last_week"
-      >
-        Last Week
-      </button>
+    const dateTo =
+      document.getElementById(
+        "dateTo"
+      );
 
 
-      <button
-        type="button"
-        class="report-period-btn active"
-        data-period="this_month"
-      >
-        This Month
-      </button>
+    if (
+      !presetButtons.length ||
+      !dateFrom ||
+      !dateTo
+    ) {
+      return;
+    }
 
 
-      <button
-        type="button"
-        class="report-period-btn"
-        data-period="last_month"
-      >
-        Last Month
-      </button>
+    /* =========================
+       HELPERS
+    ========================= */
+
+    const pad2 =
+      value =>
+        String(value).padStart(
+          2,
+          "0"
+        );
 
 
-      <button
-        type="button"
-        class="report-period-btn"
-        data-period="last_30_days"
-      >
-        Last 30 Days
-      </button>
+    const toInputDate =
+      date =>
+        `${date.getFullYear()}-` +
+        `${pad2(date.getMonth() + 1)}-` +
+        `${pad2(date.getDate())}`;
 
 
-      <button
-        type="button"
-        class="report-period-btn"
-        data-period="custom"
-      >
-        Custom
-      </button>
+    const setDates =
+      (from, to) => {
 
-    </div>
+        dateFrom.value =
+          toInputDate(from);
 
-
-    <div
-      class="report-custom-period"
-      id="reportCustomPeriod"
-      style="display:none;"
-    >
-
-      <span class="date-range-label">
-        📅
-      </span>
+        dateTo.value =
+          toInputDate(to);
 
 
-      <input
-        id="dateFrom"
-        type="date"
-      />
+        dateFrom.dispatchEvent(
+          new Event(
+            "change",
+            {
+              bubbles: true
+            }
+          )
+        );
 
 
-      <span class="date-range-sep">
-        →
-      </span>
+        dateTo.dispatchEvent(
+          new Event(
+            "change",
+            {
+              bubbles: true
+            }
+          )
+        );
+
+      };
 
 
-      <input
-        id="dateTo"
-        type="date"
-      />
+    const setActivePreset =
+      selectedPeriod => {
 
-    </div>
+        presetButtons.forEach(
+          btn => {
+
+            btn.classList.toggle(
+              "active",
+              btn.dataset.period ===
+                selectedPeriod
+            );
+
+          }
+        );
+
+      };
 
 
-    <button
-      type="button"
-      class="report-period-reset"
-      id="reportPeriodReset"
-    >
-      Reset
-    </button>
+    /* =========================
+       PERIOD CALCULATION
+    ========================= */
 
-  </div>
+    const applyReportPeriod =
+      period => {
 
-</div>
+        const now =
+          new Date();
+
+        now.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        let from = null;
+        let to = null;
+
+
+        switch (period) {
+
+
+          /* -------------------------
+             THIS WEEK
+             Monday -> Today
+          ------------------------- */
+
+          case "this_week": {
+
+            const day =
+              now.getDay();
+
+            const mondayOffset =
+              day === 0
+                ? -6
+                : 1 - day;
+
+            from =
+              new Date(now);
+
+            from.setDate(
+              now.getDate() +
+              mondayOffset
+            );
+
+            to =
+              new Date(now);
+
+            break;
+          }
+
+
+          /* -------------------------
+             LAST WEEK
+             Previous Mon -> Sun
+          ------------------------- */
+
+          case "last_week": {
+
+            const day =
+              now.getDay();
+
+            const mondayOffset =
+              day === 0
+                ? -6
+                : 1 - day;
+
+            const thisMonday =
+              new Date(now);
+
+            thisMonday.setDate(
+              now.getDate() +
+              mondayOffset
+            );
+
+
+            from =
+              new Date(
+                thisMonday
+              );
+
+            from.setDate(
+              thisMonday.getDate() -
+              7
+            );
+
+
+            to =
+              new Date(
+                thisMonday
+              );
+
+            to.setDate(
+              thisMonday.getDate() -
+              1
+            );
+
+            break;
+          }
+
+
+          /* -------------------------
+             THIS MONTH
+             1st -> Today
+          ------------------------- */
+
+          case "this_month": {
+
+            from =
+              new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1
+              );
+
+            to =
+              new Date(now);
+
+            break;
+          }
+
+
+          /* -------------------------
+             LAST MONTH
+             Full previous month
+          ------------------------- */
+
+          case "last_month": {
+
+            from =
+              new Date(
+                now.getFullYear(),
+                now.getMonth() - 1,
+                1
+              );
+
+
+            to =
+              new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                0
+              );
+
+            break;
+          }
+
+
+          /* -------------------------
+             LAST 30 DAYS
+             Today + previous 29 days
+          ------------------------- */
+
+          case "last_30_days": {
+
+            from =
+              new Date(now);
+
+            from.setDate(
+              now.getDate() -
+              29
+            );
+
+
+            to =
+              new Date(now);
+
+            break;
+          }
+
+
+          /* -------------------------
+             CUSTOM
+          ------------------------- */
+
+          case "custom": {
+
+            setActivePreset(
+              "custom"
+            );
+
+            if (customPeriod) {
+
+              customPeriod.style.display =
+                "flex";
+
+            }
+
+            return;
+          }
+
+
+          default:
+            return;
+        }
+
+
+        /* =========================
+           NORMAL PRESET
+        ========================= */
+
+        setActivePreset(
+          period
+        );
+
+
+        if (customPeriod) {
+
+          customPeriod.style.display =
+            "none";
+
+        }
+
+
+        setDates(
+          from,
+          to
+        );
+
+      };
+
+
+    /* =========================
+       PRESET BUTTONS
+    ========================= */
+
+    presetButtons.forEach(
+      btn => {
+
+        btn.addEventListener(
+          "click",
+          () => {
+
+            const period =
+              btn.dataset.period;
+
+            applyReportPeriod(
+              period
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    /* =========================
+       RESET
+       Default = This Month
+    ========================= */
+
+    resetBtn?.addEventListener(
+      "click",
+      () => {
+
+        applyReportPeriod(
+          "this_month"
+        );
+
+      }
+    );
+
+
+    /* =========================
+       INITIAL STATE
+       Default = This Month
+    ========================= */
+
+    applyReportPeriod(
+      "this_month"
+    );
+
+  }
+);
 
 /* =====================
    NON-PLANNED REPORT – DATA
