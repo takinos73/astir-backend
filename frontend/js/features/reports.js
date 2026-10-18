@@ -7458,30 +7458,30 @@ const managementEffort =
           "el-GR"
         );
 
-   // =========================
-// FILL TEMPLATE
-// =========================
+    // =========================
+    // FILL TEMPLATE
+    // =========================
 
-template = template
+    template = template
 
-  /* =====================
-     REPORT HEADER
-  ===================== */
+      /* =====================
+        REPORT HEADER
+      ===================== */
 
-  .replaceAll(
-    "{{GENERATED_DATE}}",
-    generatedDate
-  )
+      .replaceAll(
+        "{{GENERATED_DATE}}",
+        generatedDate
+      )
 
-  .replaceAll(
-    "{{PERIOD}}",
-    periodLabel
-  )
+      .replaceAll(
+        "{{PERIOD}}",
+        periodLabel
+      )
 
-  .replaceAll(
-    "{{SCOPE}}",
-    scopeLabel
-  )
+      .replaceAll(
+        "{{SCOPE}}",
+        scopeLabel
+      )
 
 
   /* =====================
