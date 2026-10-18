@@ -425,7 +425,7 @@
 
     <div
       style="
-        font-size:24px;
+        font: size 18px;
         font-weight:800;
         line-height:1;
         margin:8px 0 4px 0;
@@ -466,7 +466,7 @@
 
         <div
           style="
-            font-size:15px;
+            font-size:14px;
             font-weight:800;
           "
         >
@@ -491,7 +491,7 @@
 
         <div
           style="
-            font-size:15px;
+            font-size:14px;
             font-weight:800;
           "
         >
@@ -615,38 +615,80 @@
 
   </div>
 
-
   <!-- ===================================================
-       RELIABILITY
+      RELIABILITY & LINE IMPACT
   ==================================================== -->
 
   <div class="kpi-detail-card">
 
     <div class="kpi-detail-title">
-      Reliability
+      Reliability & Line Impact
     </div>
 
 
     <div
       style="
-        font-size:24px;
-        font-weight:800;
-        line-height:1;
-        margin:8px 0 4px 0;
-        color:#172033;
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+        margin-top:8px;
+        margin-bottom:10px;
       "
     >
-      {{EFFECTIVE_DOWN}}
-    </div>
+
+      <!-- EFFECTIVE DOWN -->
+
+      <div>
+
+        <div
+          style="
+            font-size:19px;
+            font-weight:800;
+            line-height:1;
+            color:#172033;
+          "
+        >
+          {{EFFECTIVE_DOWN}}
+        </div>
+
+        <div
+          class="small"
+          style="
+            margin-top:3px;
+          "
+        >
+          Effective DOWN
+        </div>
+
+      </div>
 
 
-    <div
-      class="small"
-      style="
-        margin-bottom:12px;
-      "
-    >
-      Effective DOWN
+      <!-- TOP LINE -->
+
+      <div>
+
+        <div
+          style="
+            font-size:19px;
+            font-weight:800;
+            line-height:1;
+            color:#172033;
+          "
+        >
+          {{TOP_LINE}}
+        </div>
+
+        <div
+          class="small"
+          style="
+            margin-top:3px;
+          "
+        >
+          Top Line Impact
+        </div>
+
+      </div>
+
     </div>
 
 
@@ -675,47 +717,11 @@
 
     </div>
 
-  </div>
-
-
-  <!-- ===================================================
-       TOP LINE IMPACT
-  ==================================================== -->
-
-  <div class="kpi-detail-card">
-
-    <div class="kpi-detail-title">
-      Top Line Impact
-    </div>
-
-
-    <div
-      style="
-        font-size:28px;
-        font-weight:800;
-        line-height:1;
-        margin:10px 0 5px 0;
-        color:#172033;
-      "
-    >
-      {{TOP_LINE}}
-    </div>
-
-
-    <div
-      class="small"
-      style="
-        margin-bottom:12px;
-      "
-    >
-      Highest maintenance effort
-    </div>
-
 
     <div class="kpi-detail-row">
 
       <span>
-        Service Time
+        Top Line Service Time
       </span>
 
       <strong>
