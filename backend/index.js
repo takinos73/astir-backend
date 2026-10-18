@@ -11684,11 +11684,12 @@ app.get("/management-dashboard", async (req, res) => {
 
   try {
 
-    const {
-      from,
-      to,
-      area = "all"
-    } = req.query;
+  const {
+    from,
+    to,
+    area = "all",
+    lines
+  } = req.query;
 
 
     /* =====================
@@ -11756,6 +11757,25 @@ app.get("/management-dashboard", async (req, res) => {
 
     }
 
+    /* =====================================================
+      OPTIONAL EXPLICIT LINE FILTER
+
+      Used by Reports.
+
+      If explicit lines are supplied, they override
+      the Management area filter.
+    ===================================================== */
+
+    const explicitLines =
+      String(lines || "")
+        .split(",")
+        .map(line =>
+          String(line)
+            .trim()
+            .toUpperCase()
+        )
+        .filter(Boolean);
+
 
     /* =====================================================
        AREA HELPER
@@ -11794,10 +11814,10 @@ app.get("/management-dashboard", async (req, res) => {
 
     }
 
-
-    const areaLines =
-      getAreaLines();
-
+  const areaLines =
+    explicitLines.length > 0
+      ? explicitLines
+      : getAreaLines();
 
     /* =====================================================
        1. MAINTENANCE MIX

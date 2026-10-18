@@ -1111,78 +1111,193 @@ async function generateStatusReportPdf() {
       `;
     }
 
+  // =========================
+  // FILL TEMPLATE
+  // =========================
 
-    // =========================
-    // FILL TEMPLATE
-    // =========================
-    const generatedDate =
-      new Date().toLocaleDateString("el-GR");
+  template = template
+
+    /* =====================
+      REPORT HEADER
+    ===================== */
+
+    .replaceAll(
+      "{{GENERATED_DATE}}",
+      generatedDate
+    )
+
+    .replaceAll(
+      "{{PERIOD}}",
+      periodLabel
+    )
+
+    .replaceAll(
+      "{{SCOPE}}",
+      scopeLabel
+    )
 
 
-    template = template
+    /* =====================
+      EXECUTIVE KPIs
+    ===================== */
 
-      .replace(
-        "{{GENERATED_DATE}}",
-        generatedDate
+    .replaceAll(
+      "{{FULFILLMENT_RATE}}",
+      String(
+        Math.max(
+          0,
+          Math.min(
+            100,
+            fulfillmentRate
+          )
+        )
       )
+    )
 
-      .replace(
-        "{{GENERATED_DATE}}",
-        generatedDate
+    .replaceAll(
+      "{{FULFILLED}}",
+      String(fulfilled)
+    )
+
+    .replaceAll(
+      "{{SCHEDULED_DUE}}",
+      String(scheduledDue)
+    )
+
+    .replaceAll(
+      "{{OVERDUE_COUNT}}",
+      String(overdueCount)
+    )
+
+    .replaceAll(
+      "{{CORRECTIVE_PCT}}",
+      String(breakdownPct)
+    )
+
+    .replaceAll(
+      "{{CORRECTIVE_COUNT}}",
+      String(correctiveCount)
+    )
+
+    .replaceAll(
+      "{{MTTR_VALUE}}",
+      mttrClosedIncidents > 0
+        ? formatDowntimeSeconds(
+            mttrSeconds
+          )
+        : "—"
+    )
+
+    .replaceAll(
+      "{{MTTR_INCIDENTS}}",
+      String(
+        mttrClosedIncidents
       )
+    )
 
-      .replace(
-        "{{FROM}}",
-        from
+
+    /* =====================
+      SCHEDULE DELIVERY
+    ===================== */
+
+    .replaceAll(
+      "{{OUTSTANDING}}",
+      String(outstanding)
+    )
+
+    .replaceAll(
+      "{{BACKLOG_RECOVERED}}",
+      String(backlogRecovered)
+    )
+
+
+    /* =====================
+      MAINTENANCE MIX
+    ===================== */
+
+    .replaceAll(
+      "{{PREVENTIVE_COUNT}}",
+      String(preventiveCount)
+    )
+
+    .replaceAll(
+      "{{PLANNED_COUNT}}",
+      String(plannedCount)
+    )
+
+    .replaceAll(
+      "{{PREV_PCT}}",
+      String(prevPct)
+    )
+
+    .replaceAll(
+      "{{PLANNED_PCT}}",
+      String(plannedPct)
+    )
+
+
+    /* =====================
+      MAINTENANCE EFFORT
+    ===================== */
+
+    .replaceAll(
+      "{{TOTAL_SERVICE_TIME}}",
+      formatDuration(
+        totalServiceMin
       )
+    )
 
-      .replace(
-        "{{TO}}",
-        to
+    .replaceAll(
+      "{{EXEC_TOTAL}}",
+      String(execTotal)
+    )
+
+    .replaceAll(
+      "{{AVG_SERVICE_MIN}}",
+      String(avgServiceMin)
+    )
+
+
+    /* =====================
+      RELIABILITY
+    ===================== */
+
+    .replaceAll(
+      "{{EFFECTIVE_DOWN}}",
+      formatDowntimeSeconds(
+        safeNum(
+          managementReliability
+            .effective_down_seconds
+        )
       )
+    )
 
-      .replace(
-        "{{LINE_FILTER}}",
-        lineFilterLabel
+
+    /* =====================
+      TOP LINE IMPACT
+    ===================== */
+
+    .replaceAll(
+      "{{TOP_LINE}}",
+      safe(topLine)
+    )
+
+    .replaceAll(
+      "{{TOP_LINE_TIME}}",
+      formatDuration(
+        topLineMin
       )
+    )
 
-      .replace(
-        "{{STATUS}}",
-        status.toUpperCase()
-      )
 
-      .replace(
-        "{{TASK_COUNT}}",
-        String(tasks.length)
-      )
+    /* =====================
+      MANAGEMENT ATTENTION
+    ===================== */
 
-      .replace(
-        "{{PREVENTIVE_COUNT}}",
-        String(preventiveCount)
-      )
-
-      .replace(
-        "{{PLANNED_COUNT}}",
-        String(plannedCount)
-      )
-
-      .replace(
-        "{{OVERDUE_COUNT}}",
-        String(overdueCount)
-      )
-
-      .replace(
-        "{{TOTAL_DURATION}}",
-        totalDurationLabel
-          ? ` • Estimated duration: ${totalDurationLabel}`
-          : ""
-      )
-
-      .replace(
-        "{{REPORT_CONTENT}}",
-        reportContent
-      );
-
+    .replace(
+      "{{INSIGHTS}}",
+      insightsHtml
+    );
 
     // =========================
     // PRINT
@@ -5970,6 +6085,130 @@ async function generateKpiReportPdf() {
       );
     }
 
+    /* =========================================================
+      KPI REPORT
+      LOAD MANAGEMENT DASHBOARD DATA
+
+      Uses the same calculations as Management Dashboard.
+
+      Existing Reports multi-line selector is preserved.
+
+      ALL:
+        area=all
+
+      Selected lines:
+        lines=L1,L2,...
+    ========================================================= */
+
+    if (
+      !fromDate ||
+      !toDate
+    ) {
+
+      alert(
+        "Please select both From and To dates for the KPI Report."
+      );
+
+      return;
+
+    }
+
+
+    const managementParams =
+      new URLSearchParams();
+
+
+    managementParams.set(
+      "from",
+      fromDate.toISOString()
+    );
+
+
+    managementParams.set(
+      "to",
+      toDate.toISOString()
+    );
+
+
+    /* =====================
+      REPORT SCOPE
+    ===================== */
+
+    if (isAllLines) {
+
+      managementParams.set(
+        "area",
+        "all"
+      );
+
+    } else {
+
+      managementParams.set(
+        "lines",
+        selectedLines
+          .map(line =>
+            String(line)
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+          .join(",")
+      );
+
+    }
+
+
+    /* =====================
+      LOAD DATA
+    ===================== */
+
+    const managementResponse =
+      await fetch(
+        `/management-dashboard?${managementParams.toString()}`
+      );
+
+
+    const managementData =
+  await managementResponse
+    .json()
+    .catch(
+      () => ({})
+    );
+
+
+if (!managementResponse.ok) {
+
+  throw new Error(
+    managementData?.error ||
+    "Failed to load Management KPI data"
+  );
+
+}
+
+
+/* =====================
+   MANAGEMENT DATASETS
+===================== */
+
+const managementMix =
+  managementData.maintenance_mix || {};
+
+
+const managementScheduleDelivery =
+  managementData.schedule_delivery || {};
+
+
+const managementReliability =
+  managementData.reliability || {};
+
+
+const managementBacklog =
+  managementData.backlog_health || {};
+
+
+const managementEffort =
+  managementData.maintenance_effort || {};
+
 
     const today =
       new Date();
@@ -6283,217 +6522,323 @@ async function generateKpiReportPdf() {
     }
 
 
-    // =========================
-    // PREVENTIVE COMPLETED
-    // =========================
-    const preventiveCompletedPeriod =
-      scopedExecPeriod.filter(
-        e =>
-          getExecType(e) ===
-          "preventive"
-      );
+  /* =========================================================
+    MANAGEMENT KPI VALUES
+
+    Core KPI values come directly from the same
+    /management-dashboard calculations used by
+    the Management Dashboard.
+  ========================================================= */
 
 
-    const preventiveCompletedForCompliance =
-      preventiveExpectedExecutions.filter(
-        e =>
-          e.executed_at &&
-          inRange(
-            e.executed_at
-          )
-      );
+  /* =========================================================
+    SCHEDULE DELIVERY
+  ========================================================= */
+
+  const deliveryTotal =
+    managementScheduleDelivery.total || {};
 
 
-    // =========================
-    // MIX
-    // =========================
-    const breakdownExec =
-      scopedExecPeriod.filter(
-        e =>
-          getExecType(e) ===
-          "restoration"
-      );
+  const deliveryPreventive =
+    managementScheduleDelivery.preventive || {};
 
 
-    const plannedExec =
-      scopedExecPeriod.filter(
-        e =>
-          getExecType(e) ===
-          "planned"
-      );
+  const deliveryPlanned =
+    managementScheduleDelivery.planned || {};
 
-    // =========================
-    // SERVICE TIME
-    // =========================
-    const totalServiceMin =
-      scopedExecPeriod.reduce(
 
-        (sum, e) =>
-          sum +
+  /* ----- TOTAL DELIVERY ----- */
+
+  const scheduledDue =
+    safeNum(
+      deliveryTotal.scheduledDue
+    );
+
+
+  const completedScheduled =
+    safeNum(
+      deliveryTotal.completedScheduled
+    );
+
+
+  const completedBeforePeriod =
+    safeNum(
+      deliveryTotal.completedBeforePeriod
+    );
+
+
+  const outstanding =
+    safeNum(
+      deliveryTotal.outstanding
+    );
+
+
+  const backlogRecovered =
+    safeNum(
+      deliveryTotal.backlogRecovered
+    );
+
+
+  const earlyCompleted =
+    safeNum(
+      deliveryTotal.earlyCompleted
+    );
+
+
+  const fulfilled =
+    safeNum(
+      deliveryTotal.fulfilled
+    );
+
+
+  const deliveryRate =
+    safeNum(
+      deliveryTotal.deliveryRate
+    );
+
+
+  const fulfillmentRate =
+    safeNum(
+      deliveryTotal.fulfillmentRate
+    );
+
+
+  const totalDelivered =
+    safeNum(
+      deliveryTotal.totalDelivered
+    );
+
+
+  /* =========================================================
+    PREVENTIVE DELIVERY
+
+    These variables are kept temporarily because
+    the current HTML template still uses the old
+    Preventive Compliance placeholders.
+
+    We will remove them when the new KPI layout
+    is connected.
+  ========================================================= */
+
+  const prevDueCount =
+    safeNum(
+      deliveryPreventive.scheduledDue
+    );
+
+
+  const prevCompletedForComplianceCount =
+    safeNum(
+      deliveryPreventive.completedScheduled
+    );
+
+
+  const prevCompletedCount =
+    safeNum(
+      deliveryPreventive.totalDelivered
+    );
+
+
+  const prevCompliance =
+    safeNum(
+      deliveryPreventive.deliveryRate
+    );
+
+
+  const preventiveOutOfPeriodDueCount =
+    Math.max(
+      0,
+      prevCompletedCount -
+      prevCompletedForComplianceCount
+    );
+
+
+  /* =========================================================
+    MAINTENANCE MIX
+  ========================================================= */
+
+  const execTotal =
+    safeNum(
+      managementMix.total
+    );
+
+
+  const preventiveCount =
+    safeNum(
+      managementMix.preventive
+    );
+
+
+  const plannedCount =
+    safeNum(
+      managementMix.planned
+    );
+
+
+  const correctiveCount =
+    safeNum(
+      managementMix.corrective
+    );
+
+
+  const prevPct =
+    pct(
+      preventiveCount,
+      execTotal
+    );
+
+
+  const plannedPct =
+    pct(
+      plannedCount,
+      execTotal
+    );
+
+
+  const breakdownPct =
+    pct(
+      correctiveCount,
+      execTotal
+    );
+
+
+  const breakdownCount =
+    correctiveCount;
+
+
+  /* =========================================================
+    MAINTENANCE EFFORT
+  ========================================================= */
+
+  const totalServiceMin =
+    safeNum(
+      managementEffort.total_minutes
+    );
+
+
+  const avgServiceMin =
+    Math.round(
+      safeNum(
+        managementEffort.avg_duration_minutes
+      )
+    );
+
+
+  /* =========================================================
+    BACKLOG
+  ========================================================= */
+
+  const overdueCount =
+    safeNum(
+      managementBacklog.overdue_tasks
+    );
+
+
+  /*
+    The current Management Backlog dataset gives us
+    the official overdue task count.
+
+    The old HTML still needs an overdue percentage,
+    so temporarily retain the existing active-due
+    denominator.
+
+    This percentage will be reconsidered when the
+    new compact HTML is connected.
+  */
+
+  const overdueRate =
+    pct(
+      overdueCount,
+      activeTasksWithDue.length
+    );
+
+
+  /* =========================================================
+    TOP LINE IMPACT
+
+    Kept temporarily from the existing KPI Report.
+
+    The total effort above comes from Management.
+    Line distribution still comes from the current
+    report execution dataset.
+  ========================================================= */
+
+  let topLine =
+    "—";
+
+
+  let topLineMin =
+    0;
+
+
+  if (
+    isAllLines ||
+    selectedLines.length > 1
+  ) {
+
+    const map =
+      new Map();
+
+
+    scopedExecPeriod.forEach(
+      e => {
+
+        const line =
+          String(
+            e.line ||
+            e.line_code ||
+            "—"
+          );
+
+
+        map.set(
+          line,
+          (
+            map.get(line) || 0
+          ) +
           safeNum(
             e.duration_min
-          ),
-
-        0
-      );
-
-    const avgServiceMin =
-      scopedExecPeriod.length
-        ? Math.round(
-            totalServiceMin /
-            scopedExecPeriod.length
           )
-        : 0;
+        );
+
+      }
+    );
 
 
-    // =========================
-    // TOP LINE IMPACT
-    // =========================
-    let topLine =
-      "—";
-
-    let topLineMin =
-      0;
-
-
-    if (
-      isAllLines ||
-      selectedLines.length > 1
+    for (
+      const [line, minutes]
+      of map.entries()
     ) {
 
-      const map =
-        new Map();
-
-
-      scopedExecPeriod.forEach(
-        e => {
-
-          const line =
-            String(
-              e.line || "—"
-            );
-
-
-          map.set(
-            line,
-            (
-              map.get(line) || 0
-            ) +
-            safeNum(
-              e.duration_min
-            )
-          );
-        }
-      );
-
-
-      for (
-        const [line, minutes]
-        of map.entries()
+      if (
+        minutes >
+        topLineMin
       ) {
 
-        if (
-          minutes >
-          topLineMin
-        ) {
+        topLineMin =
+          minutes;
 
-          topLineMin =
-            minutes;
 
-          topLine =
-            line;
-        }
+        topLine =
+          line;
+
       }
 
-    } else if (
-      selectedLines.length === 1
-    ) {
-
-      topLine =
-        selectedLines[0]
-          .toUpperCase();
-
-
-      topLineMin =
-        totalServiceMin;
     }
 
 
-    // =========================
-    // KPIs
-    // =========================
-    const overdueCount =
-      overdueTasks.length;
+  } else if (
+    selectedLines.length === 1
+  ) {
+
+    topLine =
+      selectedLines[0]
+        .toUpperCase();
 
 
-    const overdueRate =
-      pct(
-        overdueCount,
-        activeTasksWithDue.length
-      );
+    topLineMin =
+      totalServiceMin;
 
-
-    const prevDueCount =
-      preventiveExpectedCount;
-
-
-    const prevCompletedCount =
-      preventiveCompletedPeriod.length;
-
-
-    const prevCompletedForComplianceCount =
-      preventiveCompletedForCompliance.length;
-
-
-    const prevComplianceRaw =
-      pct(
-        prevCompletedForComplianceCount,
-        prevDueCount
-      );
-
-
-    const prevCompliance =
-      Math.min(
-        100,
-        prevComplianceRaw
-      );
-
-
-    const preventiveOutOfPeriodDueCount =
-      Math.max(
-        0,
-        prevCompletedCount -
-        prevCompletedForComplianceCount
-      );
-
-
-    const execTotal =
-      scopedExecPeriod.length;
-
-
-    const breakdownCount =
-      breakdownExec.length;
-
-
-    const prevPct =
-      pct(
-        prevCompletedCount,
-        execTotal
-      );
-
-
-    const plannedPct =
-      pct(
-        plannedExec.length,
-        execTotal
-      );
-
-
-    const breakdownPct =
-      pct(
-        breakdownCount,
-        execTotal
-      );
+  }
     
     // =========================
     // INSIGHTS
