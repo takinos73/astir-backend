@@ -526,104 +526,197 @@ function highlightHistoryText(value) {
 }
 
 // ====================================================
-// VIEW HISTORY ENTRY – ASSET HEADER FIRST– WITH TYPE COLOR
+// VIEW HISTORY ENTRY
+// ASSET HEADER FIRST – WITH TYPE COLOR + ATTACHMENTS
 // ======================================================
 
-function viewHistoryEntry(executionId) {
-  const h = state.executionsData.find(e => e.id === executionId);
+async function viewHistoryEntry(executionId) {
+
+  const h =
+    state.executionsData.find(
+      e => e.id === executionId
+    );
+
   if (!h) return;
 
-  const el = document.getElementById("historyViewContent");
 
-  // 🎨 TYPE CLASS
-  const execType = getExecutionType(h);
+  const el =
+    document.getElementById(
+      "historyViewContent"
+    );
 
-  let typeClass = "history-type-planned";
+  if (!el) return;
+
+
+  // =========================
+  // TYPE CLASS
+  // =========================
+
+  const execType =
+    getExecutionType(h);
+
+
+  let typeClass =
+    "history-type-planned";
+
 
   if (
     execType === "restoration" ||
     execType === "unplanned"
   ) {
-    typeClass = "history-type-breakdown";
+
+    typeClass =
+      "history-type-breakdown";
+
   }
-  else if (execType === "preventive") {
-    typeClass = "history-type-preventive";
+  else if (
+    execType === "preventive"
+  ) {
+
+    typeClass =
+      "history-type-preventive";
+
   }
 
+
+  // =========================
+  // DURATION
+  // =========================
+
   const durationLabel =
-    Number.isFinite(Number(h.duration_min))
+    Number.isFinite(
+      Number(
+        h.duration_min
+      )
+    )
       ? `${h.duration_min} min`
       : "—";
 
+
+  // =========================
+  // BASE CONTENT
+  // =========================
+
   el.innerHTML = `
+
     <!-- =====================
          ASSET HEADER
     ====================== -->
+
     <div class="history-asset-header ${typeClass}">
 
       ${
-        execType === "restoration" && h.breakdown_id
+        execType === "restoration" &&
+        h.breakdown_id
           ? `
             <div class="history-breakdown-id">
-              BD-${String(h.breakdown_id).padStart(5, "0")}
+              BD-${String(
+                h.breakdown_id
+              ).padStart(5, "0")}
             </div>
           `
           : ""
       }
 
+
       <div class="history-asset-main">
         ${h.machine}
       </div>
 
+
       <div class="history-asset-sub">
-        SN: ${h.serial_number} • Line ${h.line}
+        SN: ${h.serial_number}
+        • Line ${h.line}
       </div>
 
     </div>
 
+
     <!-- =====================
          EXECUTION DETAILS
     ====================== -->
+
     <div class="history-view-grid">
 
+
       <div class="history-view-section">
-        <strong>Date / Time</strong>
+
+        <strong>
+          Date / Time
+        </strong>
+
         <div>
           ${
             h.executed_at
-              ? new Date(h.executed_at).toLocaleString("el-GR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false
-                })
+              ? new Date(
+                  h.executed_at
+                ).toLocaleString(
+                  "el-GR",
+                  {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                  }
+                )
               : "—"
           }
         </div>
+
       </div>
 
+
       <div class="history-view-section">
-        <strong>Service Time</strong>
-        <div class="history-emphasis">${durationLabel}</div>
+
+        <strong>
+          Service Time
+        </strong>
+
+        <div class="history-emphasis">
+          ${durationLabel}
+        </div>
+
       </div>
 
+
       <div class="history-view-section">
-        <strong>Executed By</strong>
-        <div>${h.executed_by || "-"}</div>
+
+        <strong>
+          Executed By
+        </strong>
+
+        <div>
+          ${h.executed_by || "-"}
+        </div>
+
       </div>
 
-      <div class="history-view-section">
-        <strong>Task</strong>
 
-        <div>${h.task}</div>
+      <div class="history-view-section">
+
+        <strong>
+          Task
+        </strong>
+
+        <div>
+          ${h.task}
+        </div>
+
 
         ${
-          h.impact && h.impact !== "normal"
+          h.impact &&
+          h.impact !== "normal"
             ? `
               <div class="task-impact-wrap">
-                <span class="task-impact-badge task-impact-${h.impact}">
+
+                <span
+                  class="
+                    task-impact-badge
+                    task-impact-${h.impact}
+                  "
+                >
                   ${
                     h.impact === "safety"
                       ? "SAFETY"
@@ -632,28 +725,426 @@ function viewHistoryEntry(executionId) {
                       : "S + Q"
                   }
                 </span>
+
               </div>
             `
             : ""
         }
+
       </div>
 
-      <div class="history-view-section full-width">
-        <strong>Section / Unit</strong>
+
+      <div
+        class="
+          history-view-section
+          full-width
+        "
+      >
+
+        <strong>
+          Section / Unit
+        </strong>
+
         <div>
-          ${h.section || "-"}${h.unit ? " / " + h.unit : ""}
+          ${h.section || "-"}
+          ${
+            h.unit
+              ? " / " + h.unit
+              : ""
+          }
         </div>
+
       </div>
 
-      <div class="history-view-section full-width">
-        <strong>Notes</strong>
-        <div>${h.notes || "—"}</div>
+
+      <div
+        class="
+          history-view-section
+          full-width
+        "
+      >
+
+        <strong>
+          Notes
+        </strong>
+
+        <div>
+          ${h.notes || "—"}
+        </div>
+
       </div>
+
+
+      <!-- =====================
+           ATTACHMENTS
+      ====================== -->
+
+      <div
+        class="
+          history-view-section
+          history-attachments-section
+          full-width
+        "
+      >
+
+        <strong>
+          Attachments
+        </strong>
+
+        <div
+          id="historyAttachmentsContent"
+          class="history-attachments-content"
+        >
+
+          <div class="history-attachments-loading">
+            Loading attachments...
+          </div>
+
+        </div>
+
+      </div>
+
 
     </div>
   `;
 
-  document.getElementById("historyViewOverlay").style.display = "flex";
+
+  // =========================
+  // OPEN MODAL
+  // =========================
+
+  document
+    .getElementById(
+      "historyViewOverlay"
+    )
+    .style.display =
+      "flex";
+
+
+  // =========================
+  // LOAD TASK ATTACHMENTS
+  // =========================
+
+  await loadHistoryTaskAttachments(
+    h.task_id
+  );
+
+}
+
+// ====================================================
+// HISTORY – LOAD TASK ATTACHMENTS
+// ======================================================
+
+async function loadHistoryTaskAttachments(
+  taskId
+) {
+
+  const container =
+    document.getElementById(
+      "historyAttachmentsContent"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!taskId) {
+
+    container.innerHTML = `
+      <div class="history-attachments-empty">
+        No attachments
+      </div>
+    `;
+
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/attachments/task/${taskId}`
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Failed to load attachments"
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    const attachments =
+      Array.isArray(data)
+        ? data
+        : Array.isArray(
+            data.attachments
+          )
+        ? data.attachments
+        : [];
+
+
+    if (
+      attachments.length === 0
+    ) {
+
+      container.innerHTML = `
+        <div class="history-attachments-empty">
+          No attachments
+        </div>
+      `;
+
+      return;
+    }
+
+
+    const escapeHtml =
+      value =>
+        String(
+          value ?? ""
+        )
+          .replaceAll(
+            "&",
+            "&amp;"
+          )
+          .replaceAll(
+            "<",
+            "&lt;"
+          )
+          .replaceAll(
+            ">",
+            "&gt;"
+          )
+          .replaceAll(
+            '"',
+            "&quot;"
+          )
+          .replaceAll(
+            "'",
+            "&#039;"
+          );
+
+
+    container.innerHTML =
+      attachments
+        .map(
+          attachment => {
+
+            const id =
+              attachment.id;
+
+
+            const fileName =
+              attachment.original_name ||
+              attachment.original_filename ||
+              attachment.file_name ||
+              attachment.filename ||
+              "Attachment";
+
+
+            const mimeType =
+              String(
+                attachment.mime_type ||
+                attachment.content_type ||
+                ""
+              )
+                .toLowerCase();
+
+
+            const isImage =
+              mimeType.startsWith(
+                "image/"
+              );
+
+
+            const isPdf =
+              mimeType ===
+                "application/pdf" ||
+              String(
+                fileName
+              )
+                .toLowerCase()
+                .endsWith(
+                  ".pdf"
+                );
+
+
+            const openUrl =
+              `/attachments/${id}/open`;
+
+
+            if (isImage) {
+
+              return `
+
+                <div class="history-attachment-card">
+
+                  <a
+                    href="${openUrl}"
+                    target="_blank"
+                    rel="noopener"
+                    class="history-attachment-preview"
+                    title="Open full size"
+                  >
+
+                    <img
+                      src="${openUrl}"
+                      alt="${escapeHtml(fileName)}"
+                      loading="lazy"
+                    />
+
+                  </a>
+
+
+                  <div class="history-attachment-footer">
+
+                    <div
+                      class="history-attachment-name"
+                      title="${escapeHtml(fileName)}"
+                    >
+                      ${escapeHtml(fileName)}
+                    </div>
+
+
+                    <a
+                      href="${openUrl}"
+                      target="_blank"
+                      rel="noopener"
+                      class="history-attachment-open"
+                    >
+                      View Full
+                    </a>
+
+                  </div>
+
+                </div>
+              `;
+            }
+
+
+            if (isPdf) {
+
+              return `
+
+                <div
+                  class="
+                    history-attachment-card
+                    history-attachment-pdf
+                  "
+                >
+
+                  <a
+                    href="${openUrl}"
+                    target="_blank"
+                    rel="noopener"
+                    class="history-attachment-preview"
+                  >
+
+                    <div class="history-pdf-preview">
+
+                      <div class="history-pdf-icon">
+                        PDF
+                      </div>
+
+                      <div>
+                        Preview document
+                      </div>
+
+                    </div>
+
+                  </a>
+
+
+                  <div class="history-attachment-footer">
+
+                    <div
+                      class="history-attachment-name"
+                      title="${escapeHtml(fileName)}"
+                    >
+                      ${escapeHtml(fileName)}
+                    </div>
+
+
+                    <a
+                      href="${openUrl}"
+                      target="_blank"
+                      rel="noopener"
+                      class="history-attachment-open"
+                    >
+                      Open PDF
+                    </a>
+
+                  </div>
+
+                </div>
+              `;
+            }
+
+
+            return `
+
+              <div class="history-attachment-card">
+
+                <div class="history-file-preview">
+                  📎
+                </div>
+
+
+                <div class="history-attachment-footer">
+
+                  <div
+                    class="history-attachment-name"
+                    title="${escapeHtml(fileName)}"
+                  >
+                    ${escapeHtml(fileName)}
+                  </div>
+
+
+                  <a
+                    href="${openUrl}"
+                    target="_blank"
+                    rel="noopener"
+                    class="history-attachment-open"
+                  >
+                    Open
+                  </a>
+
+                </div>
+
+              </div>
+            `;
+
+          }
+        )
+        .join("");
+
+
+  }
+  catch (err) {
+
+    console.error(
+      "Failed to load history attachments:",
+      err
+    );
+
+
+    container.innerHTML = `
+      <div class="history-attachments-error">
+        Could not load attachments
+      </div>
+    `;
+
+  }
+
 }
 
 // Close history view
