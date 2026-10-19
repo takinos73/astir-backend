@@ -148,9 +148,9 @@ console.log("filterByTaskType():", state.activeTaskTypeFilter, "sample:", tasks?
   return tasks;
 }
 
-//======================
+// ======================
 // FILTERED TASKS FOR PRINTING
-//======================
+// ======================
 
 function getFilteredTasksForPrint() {
 
@@ -158,51 +158,159 @@ function getFilteredTasksForPrint() {
   today.setHours(0, 0, 0, 0);
 
   const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+  weekEnd.setDate(
+    weekEnd.getDate() + 7
+  );
 
-  return filterByTaskType(state.tasksData)   // 🟢 ← ΜΟΝΗ ΑΛΛΑΓΗ
 
-    // ASSET FILTER (CUSTOM DROPDOWN)
+  return filterByTaskType(
+    state.tasksData
+  )
+
+    // ======================
+    // ASSET FILTER
+    // ======================
+
     .filter(t => {
-      if (state.activeAssetFilter === "all") return true;
-      return `${t.machine_name}||${t.serial_number}` === state.activeAssetFilter;
+
+      if (
+        state.activeAssetFilter === "all" ||
+        !state.activeAssetFilter
+      ) {
+        return true;
+      }
+
+
+      const assetKey =
+        `${t.asset_name || ""}||${t.serial_number || ""}`;
+
+
+      return (
+        assetKey ===
+        state.activeAssetFilter
+      );
+
     })
 
-    // QUICK DATE FILTER (Today / Week / Overdue)
+
+    // ======================
+    // QUICK DATE FILTER
+    // Today / Week / Overdue
+    // ======================
+
     .filter(t => {
-      if (state.activeDateFilter === "all") return true;
-      if (!t.due_date) return false;
 
-      const due = new Date(t.due_date);
-      due.setHours(0, 0, 0, 0);
-
-      if (state.activeDateFilter === "today") {
-        return due.getTime() === today.getTime();
+      if (
+        state.activeDateFilter === "all"
+      ) {
+        return true;
       }
 
-      if (state.activeDateFilter === "week") {
-        return due >= today && due <= weekEnd;
+
+      if (!t.due_date) {
+        return false;
       }
 
-      if (state.activeDateFilter === "overdue") {
+
+      const due =
+        new Date(
+          t.due_date
+        );
+
+      due.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+
+      if (
+        state.activeDateFilter ===
+        "today"
+      ) {
+
+        return (
+          due.getTime() ===
+          today.getTime()
+        );
+
+      }
+
+
+      if (
+        state.activeDateFilter ===
+        "week"
+      ) {
+
+        return (
+          due >= today &&
+          due <= weekEnd
+        );
+
+      }
+
+
+      if (
+        state.activeDateFilter ===
+        "overdue"
+      ) {
+
         return due < today;
+
       }
 
+
       return true;
+
     })
 
-    // TASK DATE RANGE FILTER (From – To)
+
+    // ======================
+    // TASK DATE RANGE FILTER
+    // ======================
+
     .filter(t => {
-      if (!state.taskDateFrom && !state.taskDateTo) return true;
-      if (!t.due_date) return false;
 
-      const due = new Date(t.due_date);
+      if (
+        !state.taskDateFrom &&
+        !state.taskDateTo
+      ) {
+        return true;
+      }
 
-      if (state.taskDateFrom && due < state.taskDateFrom) return false;
-      if (state.taskDateTo && due > state.taskDateTo) return false;
+
+      if (!t.due_date) {
+        return false;
+      }
+
+
+      const due =
+        new Date(
+          t.due_date
+        );
+
+
+      if (
+        state.taskDateFrom &&
+        due < state.taskDateFrom
+      ) {
+        return false;
+      }
+
+
+      if (
+        state.taskDateTo &&
+        due > state.taskDateTo
+      ) {
+        return false;
+      }
+
 
       return true;
+
     });
+
 }
 
 function canEditTask(task) {
