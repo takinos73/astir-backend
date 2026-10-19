@@ -814,6 +814,25 @@ function renderAssetHistoryTable(history) {
 
         <div>
           ${highlightAssetHistorySearch(e.task || "-")}
+
+          ${
+            Number(e.attachment_count) > 0
+              ? `
+                <span
+                  class="task-attachment-indicator"
+                  title="${
+                    Number(e.attachment_count)
+                  } attachment${
+                    Number(e.attachment_count) === 1
+                      ? ""
+                      : "s"
+                  }"
+                >
+                  📎
+                </span>
+              `
+              : ""
+          }
         </div>
 
         ${
