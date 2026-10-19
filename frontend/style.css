@@ -3587,3 +3587,28 @@ body.cmms-authenticated[data-role="shift_foreman"]
 .history-attachments-error {
   color: #fca5a5;
 }
+
+/* =========================================================
+   HISTORY TASK ATTACHMENT INDICATOR
+========================================================= */
+
+.task-attachment-indicator {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 5px;
+
+  font-size: 12px;
+
+  opacity: 0.82;
+
+  vertical-align: middle;
+
+  cursor: default;
+}
+
+.task-attachment-indicator:hover {
+  opacity: 1;
+}

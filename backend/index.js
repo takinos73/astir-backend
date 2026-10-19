@@ -15866,6 +15866,18 @@ app.get("/executions", async (req, res) => {
 
         t.breakdown_id,
         t.scheduled_maintenance_id,
+           /* =====================================================
+             TASK ATTACHMENTS
+             Count attachments owned by the Task.
+             History uses this only as a lightweight indicator.
+             No files or signed URLs are loaded here.
+           ===================================================== */
+            (
+             SELECT COUNT(*)
+             FROM attachments att
+             WHERE att.entity_type = 'TASK'
+              AND att.entity_id = t.id
+            )::int AS attachment_count,
 
         a.model AS machine,
         a.serial_number,

@@ -454,11 +454,34 @@ function renderHistoryTable(data) {
             <strong>${h.task}</strong>
 
             ${
+              Number(h.attachment_count) > 0
+                ? `
+                  <span
+                    class="task-attachment-indicator"
+                    title="${
+                      Number(h.attachment_count)
+                    } attachment${
+                      Number(h.attachment_count) === 1
+                        ? ""
+                        : "s"
+                    }"
+                  >
+                    📎
+                  </span>
+                `
+                : ""
+            }
+
+            ${
               h.notes
-                ? `<span
+                ? `
+                  <span
                     class="task-note-indicator"
                     title="${h.notes}"
-                  >📝</span>`
+                  >
+                    📝
+                  </span>
+                `
                 : ""
             }
           </div>
