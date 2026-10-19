@@ -169,25 +169,23 @@ function getFilteredTasksForPrint() {
 
     // ======================
     // ASSET FILTER
+    // activeAssetFilter = asset_id
     // ======================
 
     .filter(t => {
 
       if (
         state.activeAssetFilter === "all" ||
-        !state.activeAssetFilter
+        state.activeAssetFilter == null ||
+        state.activeAssetFilter === ""
       ) {
         return true;
       }
 
 
-      const assetKey =
-        `${t.asset_name || ""}||${t.serial_number || ""}`;
-
-
       return (
-        assetKey ===
-        state.activeAssetFilter
+        String(t.asset_id) ===
+        String(state.activeAssetFilter)
       );
 
     })
@@ -226,8 +224,7 @@ function getFilteredTasksForPrint() {
 
 
       if (
-        state.activeDateFilter ===
-        "today"
+        state.activeDateFilter === "today"
       ) {
 
         return (
@@ -239,8 +236,7 @@ function getFilteredTasksForPrint() {
 
 
       if (
-        state.activeDateFilter ===
-        "week"
+        state.activeDateFilter === "week"
       ) {
 
         return (
@@ -252,8 +248,7 @@ function getFilteredTasksForPrint() {
 
 
       if (
-        state.activeDateFilter ===
-        "overdue"
+        state.activeDateFilter === "overdue"
       ) {
 
         return due < today;
