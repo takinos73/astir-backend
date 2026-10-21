@@ -207,6 +207,88 @@ function getFilteredProductionReports() {
 }
 
 /* =========================================================
+   PRODUCTION REPORT PRINT — FILTER SUMMARY
+
+   Builds a human-readable description of the filters
+   currently applied in the Shift Foreman view.
+
+   IMPORTANT:
+   - Uses the existing productionReportsViewState.
+   - Does not perform any filtering itself.
+   - The actual filtered dataset always comes from
+     getFilteredProductionReports().
+========================================================= */
+
+function getProductionReportsPrintFilterSummary() {
+
+  /* =====================
+     DATE RANGE
+  ===================== */
+
+  let periodLabel =
+    "All Dates";
+
+
+  if (
+    productionReportsViewState.dateFrom &&
+    productionReportsViewState.dateTo
+  ) {
+
+    periodLabel =
+      `${productionReportsViewState.dateFrom} → ${productionReportsViewState.dateTo}`;
+
+  } else if (
+    productionReportsViewState.dateFrom
+  ) {
+
+    periodLabel =
+      `From ${productionReportsViewState.dateFrom}`;
+
+  } else if (
+    productionReportsViewState.dateTo
+  ) {
+
+    periodLabel =
+      `Until ${productionReportsViewState.dateTo}`;
+
+  }
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  const statusLabel =
+    productionReportsViewState.status &&
+    productionReportsViewState.status !== "ALL"
+      ? productionReportsViewState.status
+          .replace(/_/g, " ")
+      : "All";
+
+
+  /* =====================
+     SORT
+  ===================== */
+
+  const sortLabel =
+    productionReportsViewState.updatedSort === "ASC"
+      ? "Oldest Update First"
+      : "Latest Update First";
+
+
+  /* =====================
+     FINAL SUMMARY
+  ===================== */
+
+  return (
+    `Period: ${periodLabel}` +
+    `  |  Status: ${statusLabel}` +
+    `  |  Sort: ${sortLabel}`
+  );
+
+}
+
+/* =========================================================
    REFRESH PRODUCTION REPORT VIEW
 ========================================================= */
 
@@ -5772,6 +5854,1119 @@ function closeMaintenanceReportModal() {
 
   overlay.style.display =
     "none";
+
+}
+
+function openProductionReportsPrintModal() {
+
+  const reports =
+    getFilteredProductionReports();
+
+
+  const overlay =
+    document.getElementById(
+      "productionReportsPrintOverlay"
+    );
+
+
+  if (!overlay) {
+    return;
+  }
+
+
+  const openReports =
+    reports.filter(report => {
+
+      const status =
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+      return (
+        status === "NEW" ||
+        status === "UNDER_REVIEW"
+      );
+
+    });
+
+
+  const urgentOpen =
+    openReports.filter(report =>
+      String(
+        report.priority || ""
+      )
+        .trim()
+        .toUpperCase() === "URGENT"
+    ).length;
+
+
+  const stoppedOpen =
+    openReports.filter(report =>
+      report.production_stopped === true
+    ).length;
+
+
+  const totalEl =
+    document.getElementById(
+      "productionPrintTotal"
+    );
+
+  const openEl =
+    document.getElementById(
+      "productionPrintOpen"
+    );
+
+  const urgentEl =
+    document.getElementById(
+      "productionPrintUrgent"
+    );
+
+  const stoppedEl =
+    document.getElementById(
+      "productionPrintStopped"
+    );
+
+
+  if (totalEl) {
+    totalEl.textContent =
+      String(reports.length);
+  }
+
+  if (openEl) {
+    openEl.textContent =
+      String(openReports.length);
+  }
+
+  if (urgentEl) {
+    urgentEl.textContent =
+      String(urgentOpen);
+  }
+
+  if (stoppedEl) {
+    stoppedEl.textContent =
+      String(stoppedOpen);
+  }
+
+  /* =====================
+    SHOW ACTIVE FILTERS
+  ===================== */
+
+  const filterSummary =
+    document.getElementById(
+      "productionPrintFilterSummary"
+    );
+
+
+  if (filterSummary) {
+
+    filterSummary.textContent =
+      getProductionReportsPrintFilterSummary();
+
+  }
+
+  overlay.style.display =
+    "flex";
+}
+
+/* =========================================================
+   PRINT PRODUCTION REPORTS
+
+   Prints exactly the reports currently visible according
+   to the active Shift Foreman filters.
+
+   FLOW:
+   1. Get the same filtered dataset used by the screen.
+   2. Calculate report summary KPIs.
+   3. Build a clean printable A4 document.
+   4. Open browser print dialog.
+
+   IMPORTANT:
+   - No separate filtering logic is used here.
+   - getFilteredProductionReports() remains the single
+     source of truth for screen and print results.
+========================================================= */
+
+function printProductionReports() {
+
+  /* =====================
+     FILTERED DATASET
+  ===================== */
+
+  const reports =
+    getFilteredProductionReports();
+
+
+  if (
+    !Array.isArray(reports) ||
+    reports.length === 0
+  ) {
+
+    alert(
+      "No Production Reports available for the current filters."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     OPEN REPORTS
+
+     OPEN =
+     NEW + UNDER_REVIEW
+  ===================== */
+
+  const openReports =
+    reports.filter(report => {
+
+      const status =
+        String(
+          report.status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      return (
+        status === "NEW" ||
+        status === "UNDER_REVIEW"
+      );
+
+    });
+
+
+  /* =====================
+     URGENT OPEN
+  ===================== */
+
+  const urgentOpen =
+    openReports.filter(report =>
+
+      String(
+        report.priority || ""
+      )
+        .trim()
+        .toUpperCase() === "URGENT"
+
+    ).length;
+
+
+  /* =====================
+     PRODUCTION STOPPED OPEN
+  ===================== */
+
+  const stoppedOpen =
+    openReports.filter(report =>
+
+      report.production_stopped === true
+
+    ).length;
+
+
+  /* =====================
+     SAFE HTML HELPER
+
+     Prevent report text from being interpreted
+     as HTML inside the printable document.
+  ===================== */
+
+  const escapeHtml =
+    value =>
+      String(
+        value ?? ""
+      )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+
+  /* =====================
+     DATE / TIME HELPER
+  ===================== */
+
+  const formatPrintDateTime =
+    value => {
+
+      if (!value) {
+        return "—";
+      }
+
+
+      const date =
+        new Date(value);
+
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return "—";
+
+      }
+
+
+      return date.toLocaleString(
+        "el-GR"
+      );
+
+    };
+
+
+  /* =====================
+     FILTER SUMMARY
+  ===================== */
+
+  const filterSummary =
+    getProductionReportsPrintFilterSummary();
+
+
+  /* =====================
+     PRINT DATE
+  ===================== */
+
+  const printedAt =
+    new Date()
+      .toLocaleString(
+        "el-GR"
+      );
+
+
+  /* =====================
+     BUILD TABLE ROWS
+  ===================== */
+
+  const rowsHtml =
+    reports
+      .map(report => {
+
+        const status =
+          String(
+            report.status || "NEW"
+          )
+            .trim()
+            .toUpperCase();
+
+
+        const priority =
+          String(
+            report.priority || "NORMAL"
+          )
+            .trim()
+            .toUpperCase();
+
+
+        /* =====================
+           REPORT NUMBER
+        ===================== */
+
+        const reportCode =
+          report.report_code ||
+          `MR-${String(
+            report.id
+          ).padStart(
+            5,
+            "0"
+          )}`;
+
+
+        /* =====================
+           ASSET
+        ===================== */
+
+        const assetName =
+          report.asset_name ||
+          report.asset_model ||
+          "—";
+
+
+        const assetMeta =
+          [
+            report.line_code,
+            report.asset_serial
+              ? `SN ${report.asset_serial}`
+              : null
+          ]
+            .filter(Boolean)
+            .join(" · ");
+
+
+        /* =====================
+           ISSUE TAGS
+        ===================== */
+
+        const tags = [];
+
+
+        if (report.category) {
+
+          tags.push(
+            String(
+              report.category
+            ).replace(
+              /_/g,
+              " "
+            )
+          );
+
+        }
+
+
+        if (
+          priority === "URGENT"
+        ) {
+
+          tags.push(
+            "URGENT"
+          );
+
+        }
+
+
+        if (
+          report.production_stopped === true
+        ) {
+
+          tags.push(
+            "PRODUCTION STOPPED"
+          );
+
+        }
+
+
+        /* =====================
+           MAINTENANCE RESPONSE
+
+           Same semantic logic used by
+           renderProductionReports().
+        ===================== */
+
+        let maintenanceResponse =
+          "Awaiting Maintenance review";
+
+
+        if (
+          report.maintenance_comment
+        ) {
+
+          maintenanceResponse =
+            report.maintenance_comment;
+
+        } else if (
+          status === "UNDER_REVIEW"
+        ) {
+
+          maintenanceResponse =
+            "Under review by Maintenance";
+
+        } else if (
+          status === "CONVERTED"
+        ) {
+
+          if (
+            report.resolution_type ===
+            "BREAKDOWN"
+          ) {
+
+            maintenanceResponse =
+              report.breakdown_id
+                ? `Converted to Breakdown BD-${String(
+                    report.breakdown_id
+                  ).padStart(
+                    5,
+                    "0"
+                  )}`
+                : "Converted to Breakdown";
+
+          } else if (
+            report.resolution_type ===
+            "PLANNED_TASK"
+          ) {
+
+            maintenanceResponse =
+              "Converted to Planned Maintenance";
+
+          } else {
+
+            maintenanceResponse =
+              "Maintenance action created";
+
+          }
+
+        } else if (
+          status === "CLOSED"
+        ) {
+
+          maintenanceResponse =
+            report.resolution_type ===
+            "NO_ACTION"
+              ? "Reviewed — no maintenance action required"
+              : "Reviewed by Maintenance";
+
+        }
+
+
+        /* =====================
+           UPDATED DATE
+        ===================== */
+
+        const updatedAt =
+          report.updated_at ||
+          report.reviewed_at ||
+          report.reported_at;
+
+
+        /* =====================
+           PRINT TABLE ROW
+        ===================== */
+
+        return `
+          <tr>
+
+            <td>
+              <strong>
+                ${escapeHtml(reportCode)}
+              </strong>
+
+              <div class="sub">
+                ${escapeHtml(
+                  formatPrintDateTime(
+                    report.reported_at
+                  )
+                )}
+              </div>
+
+              ${
+                report.reported_by
+                  ? `
+                    <div class="sub">
+                      By ${escapeHtml(
+                        report.reported_by
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+            </td>
+
+
+            <td>
+              <strong>
+                ${escapeHtml(assetName)}
+              </strong>
+
+              ${
+                assetMeta
+                  ? `
+                    <div class="sub">
+                      ${escapeHtml(assetMeta)}
+                    </div>
+                  `
+                  : ""
+              }
+            </td>
+
+
+            <td>
+              <div>
+                ${escapeHtml(
+                  report.description ||
+                  "—"
+                )}
+              </div>
+
+              ${
+                tags.length > 0
+                  ? `
+                    <div class="tags">
+                      ${tags
+                        .map(
+                          tag =>
+                            `<span>${escapeHtml(tag)}</span>`
+                        )
+                        .join("")}
+                    </div>
+                  `
+                  : ""
+              }
+            </td>
+
+
+            <td>
+              ${escapeHtml(
+                maintenanceResponse
+              )}
+
+              ${
+                report.reviewed_by
+                  ? `
+                    <div class="sub">
+                      Reviewed by ${escapeHtml(
+                        report.reviewed_by
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+            </td>
+
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  status.replace(
+                    /_/g,
+                    " "
+                  )
+                )}
+              </strong>
+            </td>
+
+
+            <td>
+              ${escapeHtml(
+                formatPrintDateTime(
+                  updatedAt
+                )
+              )}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
+
+  /* =====================
+     PRINT WINDOW
+  ===================== */
+
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1200,height=800"
+    );
+
+
+  if (!printWindow) {
+
+    alert(
+      "The print window could not be opened. Please allow pop-ups for this site."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     PRINT DOCUMENT
+  ===================================================== */
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+
+    <html>
+
+      <head>
+
+        <meta charset="UTF-8">
+
+        <title>
+          Production Reporting
+        </title>
+
+
+        <style>
+
+          /* =============================================
+             PAGE SETUP
+          ============================================= */
+
+          @page {
+            size: A4 landscape;
+            margin: 12mm;
+          }
+
+
+          * {
+            box-sizing: border-box;
+          }
+
+
+          body {
+            margin: 0;
+
+            font-family:
+              Arial,
+              Helvetica,
+              sans-serif;
+
+            color: #172033;
+
+            background: #ffffff;
+
+            font-size: 10px;
+          }
+
+
+          /* =============================================
+             REPORT HEADER
+          ============================================= */
+
+          .report-header {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: flex-start;
+
+            gap: 20px;
+
+            padding-bottom: 12px;
+
+            border-bottom: 2px solid #172033;
+          }
+
+
+          .report-header h1 {
+            margin: 0 0 4px;
+
+            font-size: 22px;
+          }
+
+
+          .report-header h2 {
+            margin: 0;
+
+            font-size: 13px;
+
+            font-weight: 500;
+
+            color: #667085;
+          }
+
+
+          .report-meta {
+            text-align: right;
+
+            font-size: 9px;
+
+            line-height: 1.5;
+
+            color: #667085;
+          }
+
+
+          /* =============================================
+             KPI SUMMARY
+          ============================================= */
+
+          .summary {
+            display: grid;
+
+            grid-template-columns:
+              repeat(4, 1fr);
+
+            gap: 8px;
+
+            margin: 14px 0 10px;
+          }
+
+
+          .summary-card {
+            padding: 9px 12px;
+
+            border: 1px solid #d7dce3;
+
+            border-radius: 6px;
+
+            background: #f7f8fa;
+          }
+
+
+          .summary-card span {
+            display: block;
+
+            margin-bottom: 3px;
+
+            font-size: 8px;
+
+            text-transform: uppercase;
+
+            color: #667085;
+          }
+
+
+          .summary-card strong {
+            font-size: 19px;
+          }
+
+
+          /* =============================================
+             FILTER SUMMARY
+          ============================================= */
+
+          .filters {
+            margin-bottom: 12px;
+
+            padding: 7px 10px;
+
+            border: 1px solid #e0e4ea;
+
+            border-radius: 5px;
+
+            background: #fafafa;
+
+            font-size: 9px;
+
+            color: #475467;
+          }
+
+
+          /* =============================================
+             REPORT TABLE
+          ============================================= */
+
+          table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            table-layout: fixed;
+          }
+
+
+          thead {
+            display: table-header-group;
+          }
+
+
+          th {
+            padding: 7px 6px;
+
+            border: 1px solid #cfd5dd;
+
+            background: #eceff3;
+
+            text-align: left;
+
+            font-size: 8px;
+
+            text-transform: uppercase;
+
+            color: #344054;
+          }
+
+
+          td {
+            padding: 7px 6px;
+
+            border: 1px solid #d9dee5;
+
+            vertical-align: top;
+
+            overflow-wrap: break-word;
+
+            line-height: 1.35;
+          }
+
+
+          tr {
+            break-inside: avoid;
+          }
+
+
+          th:nth-child(1),
+          td:nth-child(1) {
+            width: 14%;
+          }
+
+
+          th:nth-child(2),
+          td:nth-child(2) {
+            width: 13%;
+          }
+
+
+          th:nth-child(3),
+          td:nth-child(3) {
+            width: 26%;
+          }
+
+
+          th:nth-child(4),
+          td:nth-child(4) {
+            width: 23%;
+          }
+
+
+          th:nth-child(5),
+          td:nth-child(5) {
+            width: 11%;
+          }
+
+
+          th:nth-child(6),
+          td:nth-child(6) {
+            width: 13%;
+          }
+
+
+          .sub {
+            margin-top: 2px;
+
+            font-size: 8px;
+
+            color: #667085;
+          }
+
+
+          .tags {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 3px;
+
+            margin-top: 5px;
+          }
+
+
+          .tags span {
+            padding: 2px 4px;
+
+            border: 1px solid #cfd5dd;
+
+            border-radius: 3px;
+
+            font-size: 7px;
+
+            font-weight: 700;
+          }
+
+
+          /* =============================================
+             FOOTER
+          ============================================= */
+
+          .footer {
+            margin-top: 10px;
+
+            text-align: right;
+
+            font-size: 8px;
+
+            color: #98a2b3;
+          }
+
+        </style>
+
+      </head>
+
+
+      <body>
+
+        <!-- =============================================
+             HEADER
+        ============================================== -->
+
+        <div class="report-header">
+
+          <div>
+
+            <h1>
+              ASTIR — Production Reporting
+            </h1>
+
+            <h2>
+              Shift Foreman Report
+            </h2>
+
+          </div>
+
+
+          <div class="report-meta">
+
+            <div>
+              Printed:
+              ${escapeHtml(printedAt)}
+            </div>
+
+            <div>
+              Records:
+              ${reports.length}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+             KPI SUMMARY
+        ============================================== -->
+
+        <div class="summary">
+
+          <div class="summary-card">
+
+            <span>
+              Total Reports
+            </span>
+
+            <strong>
+              ${reports.length}
+            </strong>
+
+          </div>
+
+
+          <div class="summary-card">
+
+            <span>
+              Open
+            </span>
+
+            <strong>
+              ${openReports.length}
+            </strong>
+
+          </div>
+
+
+          <div class="summary-card">
+
+            <span>
+              Urgent
+            </span>
+
+            <strong>
+              ${urgentOpen}
+            </strong>
+
+          </div>
+
+
+          <div class="summary-card">
+
+            <span>
+              Production Stopped
+            </span>
+
+            <strong>
+              ${stoppedOpen}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+             ACTIVE FILTERS
+        ============================================== -->
+
+        <div class="filters">
+
+          ${escapeHtml(
+            filterSummary
+          )}
+
+        </div>
+
+
+        <!-- =============================================
+             FILTERED REPORT TABLE
+        ============================================== -->
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Report</th>
+              <th>Asset</th>
+              <th>Issue</th>
+              <th>Maintenance Response</th>
+              <th>Status</th>
+              <th>Updated</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            ${rowsHtml}
+
+          </tbody>
+
+        </table>
+
+
+        <!-- =============================================
+             FOOTER
+        ============================================== -->
+
+        <div class="footer">
+
+          ASTIR CMMS · Production Reporting
+
+        </div>
+
+
+        <script>
+
+          /*
+           * Wait until the printable document is loaded,
+           * then open the browser print dialog.
+           */
+
+          window.onload = function() {
+
+            window.focus();
+
+            window.print();
+
+          };
+
+        <\/script>
+
+      </body>
+
+    </html>
+  `);
+
+
+  /* =====================
+     COMPLETE DOCUMENT
+  ===================== */
+
+  printWindow.document.close();
+
+}
+
+
+function closeProductionReportsPrintModal() {
+
+  const overlay =
+    document.getElementById(
+      "productionReportsPrintOverlay"
+    );
+
+
+  if (overlay) {
+    overlay.style.display =
+      "none";
+  }
 
 }
 

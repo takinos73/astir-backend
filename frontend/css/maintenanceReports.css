@@ -3473,3 +3473,82 @@ textarea {
 .report-period-custom-input.active::placeholder {
   color: #ffffff;
 }
+
+.production-reports-print-modal {
+  width: min(760px, 92vw);
+}
+
+.production-print-preview {
+  padding: 18px 0 6px;
+}
+
+.production-print-preview-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  margin-bottom: 18px;
+}
+
+.production-print-preview-header strong {
+  font-size: 18px;
+}
+
+.production-print-preview-header span {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.production-print-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 16px;
+}
+
+.production-print-summary-card {
+  padding: 14px 12px;
+
+  border: 1px solid #2d3748;
+  border-radius: 10px;
+
+  background: #111827;
+}
+
+.production-print-summary-card span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.production-print-summary-card strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.production-print-filter-summary {
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  background: #0f172a;
+
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.production-reports-print-btn {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  font-weight: 600;
+}
