@@ -1946,19 +1946,6 @@
 
         </button>
 
-        <!-- =====================
-            PRINT BUTTON
-        ===================== -->
-
-        <button
-          id="productionReportsPrintBtn"
-          class="btn-secondary production-reports-print-btn"
-          type="button"
-          onclick="openProductionReportsPrintModal()"
-        >
-          🖨 Print Report
-        </button>
-
       </div>
 
 
@@ -1972,6 +1959,19 @@
       >
         0 Reports
       </div>
+
+        <!-- =====================
+            PRINT BUTTON
+        ===================== -->
+
+        <button
+          id="productionReportsPrintBtn"
+          class="btn-secondary production-reports-print-btn"
+          type="button"
+          onclick="openProductionReportsPrintModal()"
+        >
+          🖨 Print Report
+        </button>
 
     </div>
 
@@ -2439,7 +2439,7 @@
 
       </div>
 
-    </div>
+  </div>
   
   <!-- =========================================================
      ASSIGN RESTORATION TASK MODAL
@@ -2789,7 +2789,6 @@
       </div>
 
     </div>
-
 
     <!-- =====================
          ACTIONS
@@ -3498,7 +3497,6 @@
 
 </div>
 
-
   <!-- =========================================================
      BREAKDOWN DETAIL MODAL
 
@@ -3564,7 +3562,6 @@
     </button>
 
   </div>
-
 
     <!-- =====================
          INCIDENT DETAILS
@@ -3676,6 +3673,7 @@
     </div>
 
   </div>
+
     <!-- =========================================================
       DOWNTIME MODEL v1
 
@@ -3975,11 +3973,11 @@
      - Does NOT modify Restoration Tasks
 ========================================================= -->
 
-  <div
+<div
     id="incidentEditOverlay"
     class="modal-overlay"
     style="display:none;"
-  >
+>
 
   <div
     id="editBreakdownModal"
@@ -4344,7 +4342,6 @@
     </div>
 
   </div>
-
 
   <!-- =========================================================
       ADD RESTORATION TASK MODAL
@@ -5356,7 +5353,6 @@
 
 </div>
 
-
 <!-- =====================
      TECHNICIANS TAB
 ===================== -->
@@ -5399,7 +5395,7 @@
 <!-- =====================
      DASHBOARD TAB
 ===================== -->
-  <div id="tab-dashboard" class="tab-panel active">
+<div id="tab-dashboard" class="tab-panel active">
 
         <!-- DASHBOARD HEADER -->
         <div class="dashboard-header">
@@ -5474,12 +5470,12 @@
       <div id="assetDashboard">
         <div id="assetDashboardCards"></div>
       </div>
-  </div>
+</div>
 
-  <!-- =====================
-      ADD PREVENTIVE MODAL
-  ===================== -->
-  <div id="addPreventiveOverlay" class="modal-overlay" style="display:none;">
+<!-- =====================
+    ADD PREVENTIVE MODAL
+===================== -->
+<div id="addPreventiveOverlay" class="modal-overlay" style="display:none;">
     <div class="modal-box modal-wide preventive-modal">
 
     <!-- HEADER -->
@@ -5707,6 +5703,106 @@
 </div>
 
 
+<!-- ===================== -->
+<!-- TAB: PREVENTIVE LIBRARY -->
+<!-- ===================== -->
+<div id="tab-library" style="display:none;">  
+  <section class="library-header">
+    <div class="library-header-left">
+      <h2>
+        Preventive Maintenance Library
+        <span
+          class="library-info"
+          title="Preventive maintenance plans and recurring rules">
+          ⓘ
+        </span>
+      </h2>
+    </div>
+
+    <div class="library-header-actions">
+      <button
+        id="addPreventiveBtn"
+        class="btn-secondary btn-preventive">
+        ➕ Add Preventive
+      </button>
+    </div>
+  </section>
+
+  <section class="library-controls">
+    <label for="libraryModelSelect">Asset Model</label>
+    <select id="libraryModelSelect">
+      <option value="">— Select model —</option>
+      <option value="PMC250">PMC250</option>
+      <option value="PMC300">PMC300</option>
+      <option value="PMC500">PMC500</option>
+      <option value="PTC027">PTC027</option>
+    </select>
+    <button
+      class="btn-secondary"
+      onclick="generateLibraryFromTasks()">
+      🔁 Generate from Live Tasks
+    </button>
+    <button
+      class="btn-secondary"
+      id="printLibraryBtn"
+      title="Print preventive plan">
+      🖨 Print
+    </button>    
+  </section>
+
+  <section class="library-content" id="libraryContent">
+    <div class="library-empty">
+      Select an asset model to view its preventive plan
+    </div>
+  </section>
+</div>
+
+<!-- =====================
+     CONFIRM PREVENTIVE APPLY
+===================== -->
+<div
+  id="confirmPreventiveApplyOverlay"
+  class="modal-overlay"
+  style="display:none;"
+>
+  <div class="modal-box modal-small">
+
+    <h3>Apply Preventive Changes</h3>
+
+    <p class="modal-subtitle">
+      This rule is used by
+      <strong id="cp-asset-count">0</strong>
+      assets.
+    </p>
+
+    <p style="font-size:0.85rem; opacity:0.85;">
+      Apply changes to all assets using this preventive rule?
+      <br>
+      <span style="opacity:0.7;">
+        Only future work orders will be affected.
+      </span>
+    </p>
+
+    <div class="modal-actions">
+      <button
+        class="btn-secondary"
+        onclick="closePreventiveConfirm()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="btn-primary"
+        id="confirmApplyPreventiveBtn"
+      >
+        ✔ Apply to all assets
+      </button>
+    </div>
+
+  </div>
+  
+</div>
+
 <!-- =====================
      EDIT PREVENTIVE MODAL
 ===================== -->
@@ -5866,106 +5962,6 @@
     </div>
 
   </div>
-</div>
-
-<!-- ===================== -->
-<!-- TAB: PREVENTIVE LIBRARY -->
-<!-- ===================== -->
-<div id="tab-library" style="display:none;">  
-  <section class="library-header">
-    <div class="library-header-left">
-      <h2>
-        Preventive Maintenance Library
-        <span
-          class="library-info"
-          title="Preventive maintenance plans and recurring rules">
-          ⓘ
-        </span>
-      </h2>
-    </div>
-
-    <div class="library-header-actions">
-      <button
-        id="addPreventiveBtn"
-        class="btn-secondary btn-preventive">
-        ➕ Add Preventive
-      </button>
-    </div>
-  </section>
-
-  <section class="library-controls">
-    <label for="libraryModelSelect">Asset Model</label>
-    <select id="libraryModelSelect">
-      <option value="">— Select model —</option>
-      <option value="PMC250">PMC250</option>
-      <option value="PMC300">PMC300</option>
-      <option value="PMC500">PMC500</option>
-      <option value="PTC027">PTC027</option>
-    </select>
-    <button
-      class="btn-secondary"
-      onclick="generateLibraryFromTasks()">
-      🔁 Generate from Live Tasks
-    </button>
-    <button
-      class="btn-secondary"
-      id="printLibraryBtn"
-      title="Print preventive plan">
-      🖨 Print
-    </button>    
-  </section>
-
-  <section class="library-content" id="libraryContent">
-    <div class="library-empty">
-      Select an asset model to view its preventive plan
-    </div>
-  </section>
-</div>
-
-<!-- =====================
-     CONFIRM PREVENTIVE APPLY
-===================== -->
-<div
-  id="confirmPreventiveApplyOverlay"
-  class="modal-overlay"
-  style="display:none;"
->
-  <div class="modal-box modal-small">
-
-    <h3>Apply Preventive Changes</h3>
-
-    <p class="modal-subtitle">
-      This rule is used by
-      <strong id="cp-asset-count">0</strong>
-      assets.
-    </p>
-
-    <p style="font-size:0.85rem; opacity:0.85;">
-      Apply changes to all assets using this preventive rule?
-      <br>
-      <span style="opacity:0.7;">
-        Only future work orders will be affected.
-      </span>
-    </p>
-
-    <div class="modal-actions">
-      <button
-        class="btn-secondary"
-        onclick="closePreventiveConfirm()"
-      >
-        Cancel
-      </button>
-
-      <button
-        class="btn-primary"
-        id="confirmApplyPreventiveBtn"
-      >
-        ✔ Apply to all assets
-      </button>
-    </div>
-
-  </div>
-  
 </div>
     
   <!-- ===================== -->
@@ -7010,11 +7006,11 @@
 
     </div>
 
-  </div>
+</div>
 
-      <!-- ACTIONS -->
-      <div class="asset-view-footer">
-        <div class="modal-actions">
+        <!-- ACTIONS -->
+  <div class="asset-view-footer">
+    <div class="modal-actions">
           <button
             class="btn-secondary"
             onclick="closeAssetView()">
@@ -7022,15 +7018,15 @@
           </button>
 
           <button
-            id="printAssetPreventiveBtn"
-            class="btn-secondary"
-            style="display:none;">
-            🖨 Print Preventive Plan
-          </button>
+              id="printAssetPreventiveBtn"
+              class="btn-secondary"
+              style="display:none;">
+              🖨 Print Preventive Plan
+            </button>
 
+          </div>
         </div>
-      </div>
-  </div>
+    </div>
 </div>
 
   <!-- =====================
