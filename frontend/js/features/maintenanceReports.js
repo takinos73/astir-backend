@@ -4,25 +4,46 @@
 ========================================================= */
 
 /* =========================================================
-   PRODUCTION REPORT FILTER / SORT STATE
+   PRODUCTION REPORTS VIEW STATE
+
+   Stores all active filters and sort options used
+   by the Shift Foreman Production Reporting table.
 ========================================================= */
-
-let productionReportsData = [];
-
 
 const productionReportsViewState = {
 
-  dateFrom: null,
-  dateTo: null,
+  /* =====================
+     PERIOD
+  ===================== */
 
-  status:
-    "ALL",
+  dateFrom: "",
+  dateTo: "",
 
-  updatedSort:
-    "DESC"
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  status: "ALL",
+
+
+  /* =====================
+     ASSET MULTI-SELECT
+
+     Empty array =
+     no Asset restriction.
+  ===================== */
+
+  assets: [],
+
+
+  /* =====================
+     UPDATED SORT
+  ===================== */
+
+  updatedSort: "DESC"
 
 };
-
 /* =========================================================
    RESOLVE UPDATED DATE
 ========================================================= */
@@ -163,6 +184,41 @@ function getFilteredProductionReports() {
 
   }
 
+  /* =====================
+    ASSET MULTI-SELECT FILTER
+
+    Empty selection =
+    show all Assets.
+
+    When one or more Assets are selected,
+    only Reports belonging to those Assets remain.
+  ===================== */
+
+  if (
+    Array.isArray(
+      productionReportsViewState.assets
+    ) &&
+    productionReportsViewState
+      .assets
+      .length > 0
+  ) {
+
+    reports =
+      reports.filter(
+        report =>
+
+          productionReportsViewState
+            .assets
+            .includes(
+              getProductionReportAssetKey(
+                report
+              )
+            )
+
+      );
+
+  }
+
 
   /* =====================
      UPDATED SORT
@@ -290,18 +346,46 @@ function getProductionReportsPrintFilterSummary() {
 
 /* =========================================================
    REFRESH PRODUCTION REPORT VIEW
+
+   Refreshes:
+   - Asset dropdown contents.
+   - Asset filter label.
+   - Filtered report table.
+   - Report count.
+   - Remaining filter UI.
 ========================================================= */
 
 function refreshProductionReportsView() {
+
+  /* =====================
+     BUILD ASSET FILTER
+
+     Always uses the complete loaded Report dataset.
+  ===================== */
+
+  buildProductionReportsAssetDropdown();
+
+
+  /* =====================
+     GET FILTERED REPORTS
+  ===================== */
 
   const reports =
     getFilteredProductionReports();
 
 
+  /* =====================
+     RENDER TABLE
+  ===================== */
+
   renderProductionReports(
     reports
   );
 
+
+  /* =====================
+     UPDATE REPORT COUNT
+  ===================== */
 
   const count =
     document.getElementById(
@@ -316,6 +400,10 @@ function refreshProductionReportsView() {
 
   }
 
+
+  /* =====================
+     UPDATE FILTER CONTROLS
+  ===================== */
 
   updateProductionReportsFilterUI();
 
@@ -955,78 +1043,121 @@ function initProductionReportsFilters() {
     );
 
 
-  /* =====================
-     CLEAR ALL FILTERS
-  ===================== */
+/* =====================
+   CLEAR ALL FILTERS
+===================== */
 
-  clearFiltersBtn
-    ?.addEventListener(
-      "click",
-      () => {
+clearFiltersBtn
+  ?.addEventListener(
+    "click",
+    () => {
 
-        productionReportsViewState.dateFrom =
-          null;
+      /* =====================
+         CLEAR PERIOD
+      ===================== */
 
-
-        productionReportsViewState.dateTo =
-          null;
-
-
-        productionReportsViewState.status =
-          "ALL";
+      productionReportsViewState.dateFrom =
+        null;
 
 
-        /*
-          Restore default:
-          newest report first
-        */
-
-        productionReportsViewState.updatedSort =
-          "DESC";
+      productionReportsViewState.dateTo =
+        null;
 
 
-        if (fromInput) {
+      /* =====================
+         CLEAR STATUS
+      ===================== */
 
-          fromInput.value =
-            "";
-
-          fromInput.max =
-            today;
-
-        }
+      productionReportsViewState.status =
+        "ALL";
 
 
-        if (toInput) {
+      /* =====================
+         CLEAR ASSET SELECTION
 
-          toInput.value =
-            "";
+         Empty array means:
+         All Machines.
+      ===================== */
 
-          toInput.min =
-            "";
-
-          toInput.max =
-            today;
-
-        }
+      productionReportsViewState.assets =
+        [];
 
 
-        if (statusFilter) {
+      /* =====================
+         RESTORE DEFAULT SORT
 
-          statusFilter.value =
-            "ALL";
+         Newest report first.
+      ===================== */
 
-        }
-
-
-        setProductionReportsPeriodPickerOpen(
-          false
-        );
+      productionReportsViewState.updatedSort =
+        "DESC";
 
 
-        refreshProductionReportsView();
+      /* =====================
+         RESET FROM INPUT
+      ===================== */
+
+      if (fromInput) {
+
+        fromInput.value =
+          "";
+
+        fromInput.max =
+          today;
 
       }
-    );
+
+
+      /* =====================
+         RESET TO INPUT
+      ===================== */
+
+      if (toInput) {
+
+        toInput.value =
+          "";
+
+        toInput.min =
+          "";
+
+        toInput.max =
+          today;
+
+      }
+
+
+      /* =====================
+         RESET STATUS CONTROL
+      ===================== */
+
+      if (statusFilter) {
+
+        statusFilter.value =
+          "ALL";
+
+      }
+
+
+      /* =====================
+         CLOSE PERIOD PICKER
+      ===================== */
+
+      setProductionReportsPeriodPickerOpen(
+        false
+      );
+
+
+      /* =====================
+         REFRESH VIEW
+
+         Asset dropdown will also return
+         to "All Machines".
+      ===================== */
+
+      refreshProductionReportsView();
+
+    }
+  );
 
 
   /* =====================
@@ -1080,6 +1211,19 @@ function initProductionReportsFilters() {
 
     }
   );
+
+  /* =====================
+    INITIALIZE ASSET DROPDOWN
+
+    Registers the open / close behavior
+    of the Production Reporting Asset
+    multi-select filter.
+
+    This must run only once during
+    Production Reporting initialization.
+  ===================== */
+
+  setupProductionReportsAssetDropdown();
 
 
   /* =====================
@@ -6954,6 +7098,878 @@ function printProductionReports() {
 
 }
 
+/* =========================================================
+   GET PRODUCTION REPORT ASSET KEY
+
+   Returns the unique value used internally by the
+   Production Reporting Asset filter.
+
+   Priority:
+   1. asset_id
+   2. fallback to Line + Asset Name + Serial
+
+   This prevents Assets with the same visible name
+   from being mixed together.
+========================================================= */
+
+function getProductionReportAssetKey(
+  report
+) {
+
+  /* =====================
+     USE DATABASE ASSET ID
+  ===================== */
+
+  const assetId =
+    Number(
+      report?.asset_id
+    );
+
+
+  if (
+    Number.isInteger(assetId) &&
+    assetId > 0
+  ) {
+
+    return String(assetId);
+
+  }
+
+
+  /* =====================
+     FALLBACK VALUES
+  ===================== */
+
+  const line =
+    String(
+      report?.line_code ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const name =
+    String(
+      report?.asset_name ||
+      report?.asset_model ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const serial =
+    String(
+      report?.asset_serial ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  /* =====================
+     FALLBACK UNIQUE KEY
+  ===================== */
+
+  return (
+    `${line}||${name}||${serial}`
+  );
+
+}
+
+/* =========================================================
+   BUILD PRODUCTION REPORT ASSET DROPDOWN
+
+   Builds a multi-select Asset filter using the already
+   loaded productionReportsData.
+
+   DISPLAY RULES:
+   - Assets are grouped by Line.
+   - Line names are hidden.
+   - A separator is shown between Lines.
+   - Visible Asset text:
+       Asset Name | Serial
+   - Multiple Assets can be selected.
+
+   IMPORTANT:
+   This function only builds the dropdown.
+   It does not perform filtering.
+========================================================= */
+
+function buildProductionReportsAssetDropdown() {
+
+  /* =====================
+     REQUIRED ELEMENTS
+  ===================== */
+
+  const menu =
+    document.getElementById(
+      "productionReportsAssetDropdownMenu"
+    );
+
+
+  const button =
+    document.getElementById(
+      "productionReportsAssetDropdownBtn"
+    );
+
+
+  if (
+    !menu ||
+    !button
+  ) {
+
+    return;
+
+  }
+
+
+  /* =====================
+     CLEAR EXISTING MENU
+  ===================== */
+
+  menu.innerHTML =
+    "";
+
+
+  /* =====================
+     COLLECT UNIQUE ASSETS
+  ===================== */
+
+  const assetMap =
+    new Map();
+
+
+  const reports =
+    Array.isArray(
+      productionReportsData
+    )
+      ? productionReportsData
+      : [];
+
+
+  reports.forEach(report => {
+
+    /* =====================
+       UNIQUE ASSET KEY
+    ===================== */
+
+    const value =
+      getProductionReportAssetKey(
+        report
+      );
+
+
+    /* =====================
+       ASSET NAME
+    ===================== */
+
+    const name =
+      String(
+        report.asset_name ||
+        report.asset_model ||
+        ""
+      ).trim();
+
+
+    if (!name) {
+      return;
+    }
+
+
+    /* =====================
+       AVOID DUPLICATES
+    ===================== */
+
+    if (
+      assetMap.has(value)
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       STORE ASSET DATA
+    ===================== */
+
+    assetMap.set(
+      value,
+      {
+
+        value,
+
+        name,
+
+        serial:
+          String(
+            report.asset_serial ||
+            ""
+          ).trim(),
+
+        line:
+          String(
+            report.line_code ||
+            ""
+          ).trim()
+
+      }
+    );
+
+  });
+
+
+  /* =====================
+     CONVERT MAP TO ARRAY
+  ===================== */
+
+  const assets =
+    Array.from(
+      assetMap.values()
+    );
+
+
+  /* =====================
+     GROUP ASSETS BY LINE
+  ===================== */
+
+  const grouped =
+    new Map();
+
+
+  assets.forEach(asset => {
+
+    const line =
+      asset.line ||
+      "OTHER";
+
+
+    if (
+      !grouped.has(line)
+    ) {
+
+      grouped.set(
+        line,
+        []
+      );
+
+    }
+
+
+    grouped
+      .get(line)
+      .push(asset);
+
+  });
+
+
+  /* =====================
+     SORT LINES
+  ===================== */
+
+  const sortedGroups =
+    Array.from(
+      grouped.entries()
+    )
+      .sort(
+        ([lineA], [lineB]) =>
+
+          lineA.localeCompare(
+            lineB,
+            "en",
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          )
+
+      );
+
+
+  /* =====================================================
+     ALL MACHINES OPTION
+  ===================================================== */
+
+  const allOption =
+    document.createElement(
+      "div"
+    );
+
+
+  allOption.className =
+    "production-reports-asset-option production-reports-asset-option-all";
+
+
+  /* =====================
+     ALL MACHINES CHECKBOX
+  ===================== */
+
+  const allCheckbox =
+    document.createElement(
+      "input"
+    );
+
+
+  allCheckbox.type =
+    "checkbox";
+
+
+  allCheckbox.checked =
+    productionReportsViewState
+      .assets
+      .length === 0;
+
+
+  /* =====================
+     ALL MACHINES LABEL
+  ===================== */
+
+  const allLabel =
+    document.createElement(
+      "span"
+    );
+
+
+  allLabel.textContent =
+    "All Machines";
+
+
+  allOption.append(
+    allCheckbox,
+    allLabel
+  );
+
+
+  /* =====================
+     ALL MACHINES CLICK
+
+     Clearing the selection means
+     all Assets become visible.
+  ===================== */
+
+  allOption.addEventListener(
+    "click",
+    event => {
+
+      event.preventDefault();
+
+
+      productionReportsViewState
+        .assets =
+        [];
+
+
+      buildProductionReportsAssetDropdown();
+
+
+      refreshProductionReportsView();
+
+    }
+  );
+
+
+  menu.appendChild(
+    allOption
+  );
+
+
+  /* =====================================================
+     GROUPED ASSET OPTIONS
+  ===================================================== */
+
+  sortedGroups.forEach(
+    (
+      [line, lineAssets],
+      groupIndex
+    ) => {
+
+      /* =====================
+         LINE SEPARATOR
+
+         The Line name itself is hidden.
+         Only the visual separator is shown.
+      ===================== */
+
+      if (
+        groupIndex > 0
+      ) {
+
+        const separator =
+          document.createElement(
+            "div"
+          );
+
+
+        separator.className =
+          "production-reports-asset-line-separator";
+
+
+        menu.appendChild(
+          separator
+        );
+
+      }
+
+
+      /* =====================
+         SORT ASSETS INSIDE LINE
+      ===================== */
+
+      lineAssets.sort(
+        (a, b) => {
+
+          const labelA =
+            `${a.name} ${a.serial}`;
+
+
+          const labelB =
+            `${b.name} ${b.serial}`;
+
+
+          return labelA.localeCompare(
+            labelB,
+            "el",
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          );
+
+        }
+      );
+
+
+      /* =====================
+         RENDER EACH ASSET
+      ===================== */
+
+      lineAssets.forEach(
+        asset => {
+
+          const option =
+            document.createElement(
+              "div"
+            );
+
+
+          option.className =
+            "production-reports-asset-option";
+
+
+          option.dataset.value =
+            asset.value;
+
+
+          /* =====================
+             CHECKBOX
+          ===================== */
+
+          const checkbox =
+            document.createElement(
+              "input"
+            );
+
+
+          checkbox.type =
+            "checkbox";
+
+
+          checkbox.checked =
+            productionReportsViewState
+              .assets
+              .includes(
+                asset.value
+              );
+
+
+          /* =====================
+             ASSET LABEL
+          ===================== */
+
+          const label =
+            document.createElement(
+              "div"
+            );
+
+
+          label.className =
+            "production-reports-asset-option-line";
+
+
+          /* =====================
+             ASSET NAME
+          ===================== */
+
+          const name =
+            document.createElement(
+              "strong"
+            );
+
+
+          name.textContent =
+            asset.name ||
+            "Unnamed Asset";
+
+
+          label.appendChild(
+            name
+          );
+
+
+          /* =====================
+             SERIAL NUMBER
+          ===================== */
+
+          if (
+            asset.serial
+          ) {
+
+            const separator =
+              document.createElement(
+                "span"
+              );
+
+
+            separator.className =
+              "production-reports-asset-option-separator";
+
+
+            separator.textContent =
+              "|";
+
+
+            const serial =
+              document.createElement(
+                "span"
+              );
+
+
+            serial.className =
+              "production-reports-asset-option-serial";
+
+
+            serial.textContent =
+              asset.serial;
+
+
+            label.append(
+              separator,
+              serial
+            );
+
+          }
+
+
+          option.append(
+            checkbox,
+            label
+          );
+
+
+          /* =====================
+             ASSET CLICK
+
+             Toggle the selected Asset.
+          ===================== */
+
+          option.addEventListener(
+            "click",
+            event => {
+
+              event.preventDefault();
+
+
+              const current =
+                new Set(
+                  productionReportsViewState
+                    .assets
+                );
+
+
+              /* =====================
+                 REMOVE IF SELECTED
+              ===================== */
+
+              if (
+                current.has(
+                  asset.value
+                )
+              ) {
+
+                current.delete(
+                  asset.value
+                );
+
+              }
+
+
+              /* =====================
+                 ADD IF NOT SELECTED
+              ===================== */
+
+              else {
+
+                current.add(
+                  asset.value
+                );
+
+              }
+
+
+              /* =====================
+                 SAVE NEW SELECTION
+              ===================== */
+
+              productionReportsViewState
+                .assets =
+                Array.from(
+                  current
+                );
+
+
+              /* =====================
+                 REFRESH DROPDOWN
+                 AND TABLE
+              ===================== */
+
+              buildProductionReportsAssetDropdown();
+
+
+              refreshProductionReportsView();
+
+            }
+          );
+
+
+          menu.appendChild(
+            option
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+  /* =====================
+     UPDATE BUTTON LABEL
+  ===================== */
+
+  updateProductionReportsAssetFilterLabel();
+
+}
+
+/* =========================================================
+   UPDATE PRODUCTION REPORT ASSET FILTER LABEL
+
+   Button label rules:
+
+   0 selected:
+     All Machines
+
+   1 selected:
+     Asset Name
+
+   More than 1:
+     Assets: X selected
+========================================================= */
+
+function updateProductionReportsAssetFilterLabel() {
+
+  /* =====================
+     REQUIRED ELEMENT
+  ===================== */
+
+  const label =
+    document.getElementById(
+      "productionReportsAssetDropdownText"
+    );
+
+
+  if (!label) {
+    return;
+  }
+
+
+  /* =====================
+     SELECTED ASSETS
+  ===================== */
+
+  const selected =
+    Array.isArray(
+      productionReportsViewState.assets
+    )
+      ? productionReportsViewState.assets
+      : [];
+
+
+  /* =====================
+     NO FILTER
+  ===================== */
+
+  if (
+    selected.length === 0
+  ) {
+
+    label.textContent =
+      "All Machines";
+
+
+    return;
+
+  }
+
+
+  /* =====================
+     MULTIPLE ASSETS
+  ===================== */
+
+  if (
+    selected.length > 1
+  ) {
+
+    label.textContent =
+      `Assets: ${selected.length} selected`;
+
+
+    return;
+
+  }
+
+
+  /* =====================
+     SINGLE ASSET
+
+     Find the visible Asset name
+     from the loaded reports.
+  ===================== */
+
+  const selectedValue =
+    selected[0];
+
+
+  const report =
+    (
+      Array.isArray(
+        productionReportsData
+      )
+        ? productionReportsData
+        : []
+    )
+      .find(
+        item =>
+          getProductionReportAssetKey(
+            item
+          ) ===
+          selectedValue
+      );
+
+
+  /* =====================
+     DISPLAY ASSET NAME
+  ===================== */
+
+  label.textContent =
+    report?.asset_name ||
+    report?.asset_model ||
+    "1 Machine";
+
+}/* =========================================================
+   PRODUCTION REPORT ASSET DROPDOWN EVENTS
+
+   Handles:
+   - Open / close button.
+   - Click outside to close dropdown.
+========================================================= */
+
+function setupProductionReportsAssetDropdown() {
+
+  /* =====================
+     REQUIRED ELEMENTS
+  ===================== */
+
+  const button =
+    document.getElementById(
+      "productionReportsAssetDropdownBtn"
+    );
+
+
+  const menu =
+    document.getElementById(
+      "productionReportsAssetDropdownMenu"
+    );
+
+
+  const wrapper =
+    document.querySelector(
+      ".production-reports-asset-filter-wrap"
+    );
+
+
+  if (
+    !button ||
+    !menu ||
+    !wrapper
+  ) {
+
+    return;
+
+  }
+
+
+  /* =====================
+     TOGGLE MENU
+  ===================== */
+
+  button.addEventListener(
+    "click",
+    event => {
+
+      event.stopPropagation();
+
+
+      const isOpen =
+        menu.style.display ===
+        "block";
+
+
+      menu.style.display =
+        isOpen
+          ? "none"
+          : "block";
+
+    }
+  );
+
+
+  /* =====================
+     CLOSE WHEN CLICKING
+     OUTSIDE THE DROPDOWN
+  ===================== */
+
+  document.addEventListener(
+    "click",
+    event => {
+
+      if (
+        !wrapper.contains(
+          event.target
+        )
+      ) {
+
+        menu.style.display =
+          "none";
+
+      }
+
+    }
+  );
+
+}
+
 
 function closeProductionReportsPrintModal() {
 
@@ -7033,7 +8049,7 @@ document.addEventListener(
         closeMaintenanceReportModal
       );
 
-
+      
     /* =====================
        MAINTENANCE REVIEW
        ACTION BUTTONS
@@ -7235,6 +8251,14 @@ document.addEventListener(
         "click",
         createPlannedTaskFromMaintenanceReport
       );
+
+    /* =========================================================
+   INITIALIZE PRODUCTION REPORT ASSET FILTER
+
+    Run once when the Production Reporting UI is initialized.
+  ========================================================= */
+
+  setupProductionReportsAssetDropdown();
 
   }
 );
