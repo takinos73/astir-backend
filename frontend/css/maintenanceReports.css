@@ -3474,81 +3474,423 @@ textarea {
   color: #ffffff;
 }
 
+/* =========================================================
+   PRODUCTION REPORTING — PRINT MODAL
+
+   Dedicated styles for the Shift Foreman print modal.
+
+   IMPORTANT:
+   These selectors are scoped under the unique modal ID
+   so they do not interfere with any other CMMS modal.
+========================================================= */
+
+
+/* =========================================================
+   MODAL OVERLAY
+
+   Covers the entire application and keeps the print modal
+   above headers, navigation and other page elements.
+========================================================= */
+
+#productionReportsPrintOverlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 10000;
+
+  display: none;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    rgba(5, 9, 14, 0.78);
+
+  backdrop-filter:
+    blur(3px);
+}
+
+
+/* =========================================================
+   MODAL CARD
+
+   Main container of the Print Production Report modal.
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-reports-print-modal {
-  width: min(760px, 92vw);
+  position: relative;
+
+  width:
+    min(
+      780px,
+      calc(100vw - 40px)
+    );
+
+  max-height:
+    calc(100vh - 48px);
+
+  overflow-y: auto;
+
+  padding: 0;
+
+  border:
+    1px solid #303846;
+
+  border-radius:
+    16px;
+
+  background:
+    #161b22;
+
+  color:
+    #f3f4f6;
+
+  box-shadow:
+    0 24px 70px
+    rgba(0, 0, 0, 0.55);
 }
 
+
+/* =========================================================
+   MODAL HEADER
+
+   Keeps title / description on the left and close button
+   correctly aligned on the right.
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding:
+    22px 24px 18px;
+
+  border-bottom:
+    1px solid #2b3340;
+}
+
+
+/* =========================================================
+   MODAL TITLE
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-header h3 {
+  margin: 0 0 6px;
+
+  font-size: 20px;
+
+  font-weight: 700;
+
+  color: #f8fafc;
+}
+
+
+/* =========================================================
+   MODAL DESCRIPTION
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-header p {
+  margin: 0;
+
+  font-size: 13px;
+
+  line-height: 1.4;
+
+  color: #9ca3af;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+
+   Keeps the X button inside the top-right corner
+   of the modal header.
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-close {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  width: 34px;
+  height: 34px;
+
+  padding: 0;
+
+  border:
+    1px solid #374151;
+
+  border-radius:
+    8px;
+
+  background:
+    #11161d;
+
+  color:
+    #cbd5e1;
+
+  font-size: 22px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON — HOVER
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-close:hover {
+  background:
+    #202833;
+
+  color:
+    #ffffff;
+}
+
+
+/* =========================================================
+   PRINT PREVIEW CONTENT
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-preview {
-  padding: 18px 0 6px;
+  padding:
+    22px 24px 10px;
 }
 
+
+/* =========================================================
+   PREVIEW HEADER
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-preview-header {
   display: flex;
+
   flex-direction: column;
+
   gap: 4px;
 
   margin-bottom: 18px;
 }
 
+
+/* =========================================================
+   PREVIEW MAIN TITLE
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-preview-header strong {
   font-size: 18px;
+
+  color: #f3f4f6;
 }
 
+
+/* =========================================================
+   PREVIEW SUBTITLE
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-preview-header span {
   font-size: 13px;
-  color: #9ca3af;
+
+  color: #94a3b8;
 }
 
+
+/* =========================================================
+   KPI SUMMARY GRID
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-summary {
   display: grid;
+
   grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
 
   gap: 10px;
 
   margin-bottom: 16px;
 }
 
+
+/* =========================================================
+   KPI CARD
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-summary-card {
-  padding: 14px 12px;
+  min-width: 0;
 
-  border: 1px solid #2d3748;
-  border-radius: 10px;
+  padding:
+    14px 14px;
 
-  background: #111827;
+  border:
+    1px solid #334155;
+
+  border-radius:
+    10px;
+
+  background:
+    #111827;
 }
 
+
+/* =========================================================
+   KPI LABEL
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-summary-card span {
   display: block;
 
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 
   font-size: 11px;
-  color: #9ca3af;
+
+  color: #94a3b8;
 }
 
+
+/* =========================================================
+   KPI VALUE
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-summary-card strong {
-  font-size: 24px;
+  font-size: 26px;
+
   line-height: 1;
+
+  color: #f8fafc;
 }
 
+
+/* =========================================================
+   FILTER SUMMARY
+
+   Shows the exact active Foreman filters that will be
+   applied to the printed report.
+========================================================= */
+
+#productionReportsPrintOverlay
 .production-print-filter-summary {
-  padding: 10px 12px;
+  padding:
+    11px 13px;
 
-  border-radius: 8px;
+  border:
+    1px solid #263244;
 
-  background: #0f172a;
+  border-radius:
+    8px;
+
+  background:
+    #0f172a;
 
   font-size: 12px;
+
+  line-height: 1.4;
+
   color: #cbd5e1;
 }
 
-.production-reports-print-btn {
+
+/* =========================================================
+   MODAL ACTIONS
+
+   Keeps Cancel and Print Report aligned at the bottom.
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-actions {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding:
+    16px 24px 20px;
+
+  border-top:
+    1px solid #2b3340;
+}
+
+
+/* =========================================================
+   PRINT BUTTON APPEARANCE
+========================================================= */
+
+#productionReportsPrintOverlay
+.modal-actions .btn-primary {
   display: inline-flex;
 
   align-items: center;
 
   gap: 7px;
+}
 
-  font-weight: 600;
+
+/* =========================================================
+   RESPONSIVE LAYOUT
+
+   On smaller screens the KPI cards become two columns.
+========================================================= */
+
+@media (
+  max-width: 700px
+) {
+
+  #productionReportsPrintOverlay
+  .production-print-summary {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE LAYOUT
+
+   On very narrow displays show KPI cards one per row.
+========================================================= */
+
+@media (
+  max-width: 430px
+) {
+
+  #productionReportsPrintOverlay
+  .production-print-summary {
+    grid-template-columns:
+      1fr;
+  }
+
 }
