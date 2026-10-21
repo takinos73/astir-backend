@@ -129,11 +129,23 @@ function createAssetDashboardRecord(task) {
 
 
     /* =====================
-       MAINTENANCE STATUS
+      MAINTENANCE STATUS
     ===================== */
 
     overdue:
       0,
+
+
+    /* =====================
+      OVERDUE WORKLOAD
+
+      Total duration of the same overdue tasks
+      counted by the Asset Dashboard.
+    ===================== */
+
+    overdueMinutes:
+      0,
+
 
     overdueDaysTotal:
       0,
@@ -342,6 +354,35 @@ function aggregateDashboardTasks(today) {
 
 
       assetsMap[assetKey].overdue++;
+
+      /* =====================
+        OVERDUE WORKLOAD MINUTES
+
+        Adds the duration of the same task that has
+        just been counted as Overdue.
+
+        Missing or invalid duration is treated as 0.
+      ===================== */
+
+      const overdueDurationMin =
+        Number(
+          t.duration_min || 0
+        );
+
+
+      if (
+        Number.isFinite(
+          overdueDurationMin
+        ) &&
+        overdueDurationMin > 0
+      ) {
+
+        assetsMap[
+          assetKey
+        ].overdueMinutes +=
+          overdueDurationMin;
+
+}
 
       assetsMap[assetKey].overdueDaysTotal +=
         overdueDays;
@@ -668,8 +709,27 @@ function calculateAssetDashboardScore(
     serial: asset.serial,
     line: asset.line,
 
+    /* =====================
+      OVERDUE
+    ===================== */
+
     overdue:
       asset.overdue,
+
+
+    /* =====================
+      OVERDUE WORKLOAD
+    ===================== */
+
+    overdueMinutes:
+      asset.overdueMinutes,
+
+
+    overdueDaysTotal:
+      asset.overdueDaysTotal,
+
+    maxOverdueDays:
+      asset.maxOverdueDays,
 
     overdueDaysTotal:
       asset.overdueDaysTotal,

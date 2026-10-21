@@ -1704,23 +1704,36 @@ function renderProductionPreventivePriority() {
       "production-preventive-priority-workload";
 
 
-    const taskCount =
+    /* =====================
+      OVERDUE WORKLOAD
+
+      Uses exactly the same Overdue count shown
+      on the Asset Dashboard.
+
+      overdueMinutes represents the estimated
+      duration of those same overdue tasks.
+    ===================== */
+
+    const overdueCount =
       Number(
-        asset.preventiveTaskCount ||
+        asset.overdue ||
         0
       );
 
 
-    const minutes =
+    const overdueMinutes =
       Number(
-        asset.preventiveMinutes ||
+        asset.overdueMinutes ||
         0
       );
 
+
+    /* =====================
+      DISPLAY WORKLOAD
+    ===================== */
 
     workload.textContent =
-      `${taskCount} task${taskCount === 1 ? "" : "s"} · ${minutes} min`;
-
+      `${overdueCount} overdue · ${overdueMinutes} min`;
 
     /* =====================
        ASSEMBLE CARD
