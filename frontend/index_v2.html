@@ -1724,6 +1724,53 @@
 
   </div>
 
+  <!-- =========================================================
+      PREVENTIVE PRIORITY
+      Compact read-only view for Shift Foremen.
+
+      PURPOSE:
+      - Shows up to the Top 3 most critical Assets.
+      - Uses the same ranking as the Asset Dashboard.
+      - Shows only Preventive workload.
+      - Keeps the Production Reports ticket table as the main view.
+  ========================================================= -->
+
+  <section
+    id="productionPreventivePriority"
+    class="production-preventive-priority"
+  >
+
+    <!-- =====================
+        COMPACT HEADER
+    ===================== -->
+
+    <div class="production-preventive-priority-header">
+
+      <span class="production-preventive-priority-title">
+        Preventive Priority
+      </span>
+
+      <span class="production-preventive-priority-subtitle">
+        Top critical assets
+      </span>
+
+    </div>
+
+
+    <!-- =====================
+        PRIORITY ASSET CARDS
+
+        Filled dynamically by JavaScript.
+    ===================== -->
+
+    <div
+      id="productionPreventivePriorityList"
+      class="production-preventive-priority-list"
+    >
+    </div>
+
+  </section>
+
     <!-- =====================================================
         PRODUCTION REPORTS
         Current renderer remains connected for now.

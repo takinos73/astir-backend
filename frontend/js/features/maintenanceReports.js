@@ -358,13 +358,21 @@ function getProductionReportsPrintFilterSummary() {
 function refreshProductionReportsView() {
 
   /* =====================
+    REFRESH PREVENTIVE PRIORITY
+
+    Keeps the compact Top 3 priority strip updated
+    whenever the Production Reporting view refreshes.
+  ===================== */
+
+  renderProductionPreventivePriority();
+
+  /* =====================
      BUILD ASSET FILTER
 
      Always uses the complete loaded Report dataset.
   ===================== */
 
   buildProductionReportsAssetDropdown();
-
 
   /* =====================
      GET FILTERED REPORTS
@@ -373,7 +381,6 @@ function refreshProductionReportsView() {
   const reports =
     getFilteredProductionReports();
 
-
   /* =====================
      RENDER TABLE
   ===================== */
@@ -381,7 +388,6 @@ function refreshProductionReportsView() {
   renderProductionReports(
     reports
   );
-
 
   /* =====================
      UPDATE REPORT COUNT
@@ -1507,6 +1513,237 @@ async function loadReportingAssets() {
     select.disabled = true;
 
   }
+
+}
+
+/* =========================================================
+   RENDER PREVENTIVE PRIORITY
+
+   Shows up to the Top 3 Assets using the exact same
+   Asset Dashboard priority ranking.
+
+   IMPORTANT:
+   - Read-only.
+   - No new scoring logic.
+   - getTopWorstAssetsDashboard(3) remains the source.
+   - Workload includes active Preventive tasks only.
+========================================================= */
+
+function renderProductionPreventivePriority() {
+
+  /* =====================
+     TARGET CONTAINER
+  ===================== */
+
+  const container =
+    document.getElementById(
+      "productionPreventivePriorityList"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  /* =====================
+     GET TOP 3 ASSETS
+
+     Uses existing Asset Dashboard ranking.
+  ===================== */
+
+  const assets =
+    typeof getTopWorstAssetsDashboard ===
+      "function"
+      ? getTopWorstAssetsDashboard(3)
+      : [];
+
+
+  /* =====================
+     RESET CONTENT
+  ===================== */
+
+  container.replaceChildren();
+
+
+  /* =====================
+     EMPTY STATE
+  ===================== */
+
+  if (
+    !Array.isArray(assets) ||
+    assets.length === 0
+  ) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+
+    empty.className =
+      "production-preventive-priority-empty";
+
+
+    empty.textContent =
+      "No preventive priorities at this time.";
+
+
+    container.appendChild(
+      empty
+    );
+
+
+    return;
+
+  }
+
+
+  /* =====================
+     RENDER TOP ASSETS
+  ===================== */
+
+  assets.forEach(asset => {
+
+    /* =====================
+       CARD
+    ===================== */
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+
+    card.className =
+      "production-preventive-priority-card";
+
+
+    /* =====================
+       MAIN ROW
+    ===================== */
+
+    const main =
+      document.createElement(
+        "div"
+      );
+
+
+    main.className =
+      "production-preventive-priority-main";
+
+
+    /* =====================
+       RISK ICON
+    ===================== */
+
+    const risk =
+      document.createElement(
+        "span"
+      );
+
+
+    risk.className =
+      "production-preventive-priority-risk";
+
+
+    risk.textContent =
+      asset.riskIcon ||
+      "•";
+
+
+    /* =====================
+       ASSET NAME
+    ===================== */
+
+    const assetName =
+      document.createElement(
+        "span"
+      );
+
+
+    assetName.className =
+      "production-preventive-priority-asset";
+
+
+    assetName.textContent =
+      asset.machine ||
+      "Unnamed Asset";
+
+
+    /* =====================
+       LINE
+    ===================== */
+
+    const line =
+      document.createElement(
+        "span"
+      );
+
+
+    line.className =
+      "production-preventive-priority-line";
+
+
+    line.textContent =
+      asset.line ||
+      "—";
+
+
+    /* =====================
+       WORKLOAD
+    ===================== */
+
+    const workload =
+      document.createElement(
+        "div"
+      );
+
+
+    workload.className =
+      "production-preventive-priority-workload";
+
+
+    const taskCount =
+      Number(
+        asset.preventiveTaskCount ||
+        0
+      );
+
+
+    const minutes =
+      Number(
+        asset.preventiveMinutes ||
+        0
+      );
+
+
+    workload.textContent =
+      `${taskCount} task${taskCount === 1 ? "" : "s"} · ${minutes} min`;
+
+
+    /* =====================
+       ASSEMBLE CARD
+    ===================== */
+
+    main.append(
+      risk,
+      assetName,
+      line
+    );
+
+
+    card.append(
+      main,
+      workload
+    );
+
+
+    container.appendChild(
+      card
+    );
+
+  });
 
 }
 

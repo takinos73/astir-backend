@@ -97,39 +97,115 @@ const DASHBOARD_DUE_SOON_DAYS = 7;
 const DASHBOARD_MTTR_THRESHOLD = 60; // minutes
 
 
-/* =====================
-   CREATE ASSET RECORD
-===================== */
+/* =====================================================
+   CREATE ASSET DASHBOARD RECORD
+
+   Creates the base aggregation object used by the
+   Asset Dashboard scoring engine.
+
+   IMPORTANT:
+   Preventive workload fields are initialized here so
+   aggregateDashboardTasks() can safely increment them.
+===================================================== */
 
 function createAssetDashboardRecord(task) {
 
   return {
-    machine: task.machine_name,
-    serial: task.serial_number,
-    line: task.line_code || task.line || "—",
 
-    // Maintenance status
-    overdue: 0,
-    overdueDaysTotal: 0,
-    maxOverdueDays: 0,
-    dueSoon: 0,
+    /* =====================
+       ASSET IDENTITY
+    ===================== */
 
-    // Safety / Quality impact
-    safetyOverdue: 0,
-    safetyDueSoon: 0,
-    qualityOverdue: 0,
-    qualityDueSoon: 0,
+    machine:
+      task.machine_name,
 
-    // Reliability
-    breakdowns: 0,
-    totalRepairMin: 0,
-    lastBreakdownDate: null,
+    serial:
+      task.serial_number,
 
-    // Planned manual workload
-    manualPlanned30d: 0
+    line:
+      task.line_code ||
+      task.line ||
+      "—",
+
+
+    /* =====================
+       MAINTENANCE STATUS
+    ===================== */
+
+    overdue:
+      0,
+
+    overdueDaysTotal:
+      0,
+
+    maxOverdueDays:
+      0,
+
+    dueSoon:
+      0,
+
+
+    /* =====================
+       SAFETY / QUALITY
+       IMPACT
+    ===================== */
+
+    safetyOverdue:
+      0,
+
+    safetyDueSoon:
+      0,
+
+    qualityOverdue:
+      0,
+
+    qualityDueSoon:
+      0,
+
+
+    /* =====================
+       RELIABILITY
+    ===================== */
+
+    breakdowns:
+      0,
+
+    totalRepairMin:
+      0,
+
+    lastBreakdownDate:
+      null,
+
+
+    /* =====================
+       PLANNED MANUAL WORKLOAD
+    ===================== */
+
+    manualPlanned30d:
+      0,
+
+
+    /* =====================
+       PREVENTIVE WORKLOAD
+
+       Active Preventive tasks only:
+       - no Breakdown
+       - frequency_hours > 0
+       - not Done
+
+       These fields are informational.
+       They do NOT affect the Asset Risk score.
+    ===================== */
+
+    preventiveTaskCount:
+      0,
+
+    preventiveMinutes:
+      0
+
   };
-}
 
+}
 
 /* =====================================================
    AGGREGATE ACTIVE TASKS
@@ -162,6 +238,70 @@ function aggregateDashboardTasks(today) {
     // Ignore completed / invalid due date
     if (!t.due_date || t.status === "Done") {
       return;
+    }
+
+    /* =====================
+      PREVENTIVE WORKLOAD
+
+      Count only active Preventive tasks.
+
+      Preventive definition:
+      - not linked to Breakdown
+      - frequency_hours > 0
+      - task is still active
+
+      NOTE:
+      This workload is informational only.
+      It does NOT change the Asset Dashboard score.
+    ===================== */
+
+    const isPreventive =
+      (
+        t.breakdown_id === null ||
+        t.breakdown_id === undefined
+      ) &&
+      Number(
+        t.frequency_hours || 0
+      ) > 0;
+
+
+    if (isPreventive) {
+
+      /* =====================
+        ACTIVE PREVENTIVE TASK COUNT
+      ===================== */
+
+      assetsMap[
+        assetKey
+      ].preventiveTaskCount++;
+
+
+      /* =====================
+        PREVENTIVE DURATION
+
+        Missing or invalid duration is treated as 0.
+      ===================== */
+
+      const durationMin =
+        Number(
+          t.duration_min || 0
+        );
+
+
+      if (
+        Number.isFinite(
+          durationMin
+        ) &&
+        durationMin > 0
+      ) {
+
+        assetsMap[
+          assetKey
+        ].preventiveMinutes +=
+          durationMin;
+
+      }
+
     }
 
 
@@ -566,10 +706,25 @@ function calculateAssetDashboardScore(
       daysSinceLastBreakdown,
 
 
-    // Workload
+    /* =====================
+      WORKLOAD
+
+      manualPlanned30d:
+      Existing manual Planned workload metric.
+
+      preventiveTaskCount / preventiveMinutes:
+      Active Preventive workload used by the
+      Shift Foreman Preventive Priority panel.
+    ===================== */
 
     manualPlanned30d:
       asset.manualPlanned30d,
+
+    preventiveTaskCount:
+      asset.preventiveTaskCount,
+
+    preventiveMinutes:
+      asset.preventiveMinutes,
 
 
     // Risk

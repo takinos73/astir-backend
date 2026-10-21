@@ -4110,3 +4110,247 @@ textarea {
   background:
     #334155;
 }
+
+/* =========================================================
+   PRODUCTION REPORTING — PREVENTIVE PRIORITY
+
+   Compact read-only strip for Shift Foremen.
+
+   DESIGN GOAL:
+   - Low visual weight.
+   - Minimal vertical space.
+   - Production Reports remain the primary workspace.
+========================================================= */
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.production-preventive-priority {
+  margin:
+    0 0 12px;
+
+  padding:
+    10px 12px;
+
+  border:
+    1px solid #2f3742;
+
+  border-radius:
+    10px;
+
+  background:
+    #151a20;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.production-preventive-priority-header {
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 8px;
+
+  margin-bottom:
+    8px;
+}
+
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.production-preventive-priority-title {
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  color:
+    #e5e7eb;
+}
+
+
+/* =========================================================
+   SUBTITLE
+========================================================= */
+
+.production-preventive-priority-subtitle {
+  font-size:
+    11px;
+
+  color:
+    #7f8a99;
+}
+
+
+/* =========================================================
+   PRIORITY LIST
+========================================================= */
+
+.production-preventive-priority-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    8px;
+}
+
+
+/* =========================================================
+   PRIORITY CARD
+========================================================= */
+
+.production-preventive-priority-card {
+  min-width:
+    0;
+
+  padding:
+    8px 10px;
+
+  border:
+    1px solid #29313b;
+
+  border-radius:
+    8px;
+
+  background:
+    #11161b;
+}
+
+
+/* =========================================================
+   ASSET MAIN LINE
+========================================================= */
+
+.production-preventive-priority-main {
+  display: flex;
+
+  align-items: center;
+
+  gap:
+    6px;
+
+  min-width:
+    0;
+}
+
+
+/* =========================================================
+   RISK ICON
+========================================================= */
+
+.production-preventive-priority-risk {
+  flex:
+    0 0 auto;
+
+  font-size:
+    11px;
+}
+
+
+/* =========================================================
+   ASSET NAME
+========================================================= */
+
+.production-preventive-priority-asset {
+  overflow: hidden;
+
+  font-size:
+    12px;
+
+  font-weight:
+    600;
+
+  color:
+    #e5e7eb;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   LINE
+========================================================= */
+
+.production-preventive-priority-line {
+  flex:
+    0 0 auto;
+
+  margin-left:
+    auto;
+
+  font-size:
+    10px;
+
+  color:
+    #94a3b8;
+}
+
+
+/* =========================================================
+   WORKLOAD
+========================================================= */
+
+.production-preventive-priority-workload {
+  margin-top:
+    5px;
+
+  font-size:
+    11px;
+
+  color:
+    #9ca3af;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.production-preventive-priority-empty {
+  grid-column:
+    1 / -1;
+
+  padding:
+    4px 0;
+
+  font-size:
+    11px;
+
+  color:
+    #7f8a99;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+
+   On smaller screens allow cards to stack naturally.
+========================================================= */
+
+@media (
+  max-width: 800px
+) {
+
+  .production-preventive-priority-list {
+    grid-template-columns:
+      1fr;
+  }
+
+}
