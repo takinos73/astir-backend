@@ -7877,12 +7877,19 @@ function updateProductionReportsAssetFilterLabel() {
     report?.asset_model ||
     "1 Machine";
 
-}/* =========================================================
-   PRODUCTION REPORT ASSET DROPDOWN EVENTS
+}
 
-   Handles:
-   - Open / close button.
-   - Click outside to close dropdown.
+/* =========================================================
+   SETUP PRODUCTION REPORT ASSET DROPDOWN
+
+   Initializes the open / close behavior of the custom
+   multi-select Asset filter.
+
+   IMPORTANT:
+   - Safe to call more than once.
+   - Event listeners are registered only once.
+   - Prevents duplicate listeners from opening and
+     immediately closing the dropdown.
 ========================================================= */
 
 function setupProductionReportsAssetDropdown() {
@@ -7915,26 +7922,67 @@ function setupProductionReportsAssetDropdown() {
     !wrapper
   ) {
 
+    console.warn(
+      "Production Reports Asset dropdown elements not found."
+    );
+
     return;
 
   }
 
 
   /* =====================
-     TOGGLE MENU
+     PREVENT DOUBLE INIT
+
+     initProductionReportsFilters() may potentially
+     run more than once during the application lifecycle.
+
+     This flag guarantees that the dropdown listeners
+     are attached only once.
+  ===================== */
+
+  if (
+    button.dataset.assetDropdownInitialized ===
+    "true"
+  ) {
+
+    return;
+
+  }
+
+
+  button.dataset.assetDropdownInitialized =
+    "true";
+
+
+  /* =====================
+     OPEN / CLOSE BUTTON
   ===================== */
 
   button.addEventListener(
     "click",
     event => {
 
+      event.preventDefault();
       event.stopPropagation();
 
 
-      const isOpen =
-        menu.style.display ===
-        "block";
+      /* =====================
+         DETECT CURRENT STATE
 
+         Use computed style instead of relying only
+         on the inline style value.
+      ===================== */
+
+      const isOpen =
+        window
+          .getComputedStyle(menu)
+          .display !== "none";
+
+
+      /* =====================
+         TOGGLE DROPDOWN
+      ===================== */
 
       menu.style.display =
         isOpen
@@ -7946,8 +7994,27 @@ function setupProductionReportsAssetDropdown() {
 
 
   /* =====================
-     CLOSE WHEN CLICKING
-     OUTSIDE THE DROPDOWN
+     MENU CLICK
+
+     Clicking checkboxes / Assets inside the dropdown
+     must not trigger the global outside-click handler.
+  ===================== */
+
+  menu.addEventListener(
+    "click",
+    event => {
+
+      event.stopPropagation();
+
+    }
+  );
+
+
+  /* =====================
+     CLICK OUTSIDE
+
+     Close the Asset dropdown when the user clicks
+     anywhere outside its wrapper.
   ===================== */
 
   document.addEventListener(
@@ -7968,8 +8035,31 @@ function setupProductionReportsAssetDropdown() {
     }
   );
 
-}
 
+  /* =====================
+     ESC KEY
+
+     Close the Asset dropdown with Escape.
+  ===================== */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Escape"
+      ) {
+
+        menu.style.display =
+          "none";
+
+      }
+
+    }
+  );
+
+}
 
 function closeProductionReportsPrintModal() {
 
