@@ -570,32 +570,56 @@ function highlightHistoryText(value) {
   );
 }
 
-// ====================================================
-// VIEW HISTORY ENTRY
-// ASSET HEADER FIRST – WITH TYPE COLOR + ATTACHMENTS
-// ======================================================
+/* =========================================================
+   VIEW HISTORY ENTRY
+   Asset header first — with type color + attachments.
+
+   Displays:
+   - Asset information
+   - Execution details
+   - Task
+   - Maintenance Report source badge, when applicable
+   - Safety / Quality impact
+   - Section / Unit
+   - Notes
+   - Task attachments
+========================================================= */
 
 async function viewHistoryEntry(executionId) {
+
+  /* =====================
+     FIND EXECUTION
+  ===================== */
 
   const h =
     state.executionsData.find(
       e => e.id === executionId
     );
 
-  if (!h) return;
 
+  if (!h) {
+    return;
+  }
+
+
+  /* =====================
+     TARGET CONTENT AREA
+  ===================== */
 
   const el =
     document.getElementById(
       "historyViewContent"
     );
 
-  if (!el) return;
+
+  if (!el) {
+    return;
+  }
 
 
-  // =========================
-  // TYPE CLASS
-  // =========================
+  /* =====================
+     EXECUTION TYPE CLASS
+  ===================== */
 
   const execType =
     getExecutionType(h);
@@ -624,9 +648,9 @@ async function viewHistoryEntry(executionId) {
   }
 
 
-  // =========================
-  // DURATION
-  // =========================
+  /* =====================
+     DURATION
+  ===================== */
 
   const durationLabel =
     Number.isFinite(
@@ -638,9 +662,9 @@ async function viewHistoryEntry(executionId) {
       : "—";
 
 
-  // =========================
-  // BASE CONTENT
-  // =========================
+  /* =====================
+     BASE CONTENT
+  ===================== */
 
   el.innerHTML = `
 
@@ -657,7 +681,10 @@ async function viewHistoryEntry(executionId) {
             <div class="history-breakdown-id">
               BD-${String(
                 h.breakdown_id
-              ).padStart(5, "0")}
+              ).padStart(
+                5,
+                "0"
+              )}
             </div>
           `
           : ""
@@ -683,6 +710,10 @@ async function viewHistoryEntry(executionId) {
 
     <div class="history-view-grid">
 
+
+      <!-- =====================
+           DATE / TIME
+      ====================== -->
 
       <div class="history-view-section">
 
@@ -713,6 +744,10 @@ async function viewHistoryEntry(executionId) {
       </div>
 
 
+      <!-- =====================
+           SERVICE TIME
+      ====================== -->
+
       <div class="history-view-section">
 
         <strong>
@@ -726,6 +761,10 @@ async function viewHistoryEntry(executionId) {
       </div>
 
 
+      <!-- =====================
+           EXECUTED BY
+      ====================== -->
+
       <div class="history-view-section">
 
         <strong>
@@ -738,14 +777,15 @@ async function viewHistoryEntry(executionId) {
 
       </div>
 
-      /* =====================
-        TASK
 
-        Displays:
-        - Task description
-        - Maintenance Report source badge, when applicable
-        - Safety / Quality impact badge
-      ===================== */
+      <!-- =====================
+           TASK
+
+           Displays:
+           - Task description
+           - Maintenance Report source badge
+           - Safety / Quality impact badge
+      ====================== -->
 
       <div class="history-view-section">
 
@@ -755,8 +795,8 @@ async function viewHistoryEntry(executionId) {
 
 
         <!-- =====================
-            TASK DESCRIPTION
-        ===================== -->
+             TASK DESCRIPTION
+        ====================== -->
 
         <div>
           ${h.task}
@@ -764,11 +804,11 @@ async function viewHistoryEntry(executionId) {
 
 
         <!-- =====================
-            MAINTENANCE REPORT SOURCE
+             MAINTENANCE REPORT SOURCE
 
-            Visible only when this Task was originally
-            created from a Maintenance Report.
-        ===================== -->
+             Visible only when this Task was originally
+             created from a Maintenance Report.
+        ====================== -->
 
         ${
           h.maintenance_report_code
@@ -789,8 +829,8 @@ async function viewHistoryEntry(executionId) {
 
 
         <!-- =====================
-            SAFETY / QUALITY IMPACT
-        ===================== -->
+             SAFETY / QUALITY IMPACT
+        ====================== -->
 
         ${
           h.impact &&
@@ -821,6 +861,10 @@ async function viewHistoryEntry(executionId) {
       </div>
 
 
+      <!-- =====================
+           SECTION / UNIT
+      ====================== -->
+
       <div
         class="
           history-view-section
@@ -843,6 +887,10 @@ async function viewHistoryEntry(executionId) {
 
       </div>
 
+
+      <!-- =====================
+           NOTES
+      ====================== -->
 
       <div
         class="
@@ -896,21 +944,27 @@ async function viewHistoryEntry(executionId) {
   `;
 
 
-  // =========================
-  // OPEN MODAL
-  // =========================
+  /* =====================
+     OPEN MODAL
+  ===================== */
 
-  document
-    .getElementById(
+  const overlay =
+    document.getElementById(
       "historyViewOverlay"
-    )
-    .style.display =
+    );
+
+
+  if (overlay) {
+
+    overlay.style.display =
       "flex";
 
+  }
 
-  // =========================
-  // LOAD TASK ATTACHMENTS
-  // =========================
+
+  /* =====================
+     LOAD TASK ATTACHMENTS
+  ===================== */
 
   await loadHistoryTaskAttachments(
     h.task_id
