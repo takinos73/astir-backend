@@ -897,78 +897,125 @@
 }
 
 /* =========================================================
-   COLUMN WIDTHS
+   PRODUCTION REPORTS TABLE
+   COLUMN WIDTHS + ROW STYLING
+
+   CURRENT TABLE STRUCTURE
+   ---------------------------------------------------------
+   1. Report No
+   2. Asset
+   3. Issue
+   4. Maintenance Response
+   5. Status
+   6. Updated
+
+   IMPORTANT:
+   This layout matches the current Foreman renderer.
+========================================================= */
+
+
+/* =========================================================
+   TABLE LAYOUT
+
+   Fixed layout keeps the utility columns stable while
+   allowing the Issue column to use the remaining space.
 ========================================================= */
 
 #tab-reporting .production-reports-table {
   width: 100%;
+
+  min-width: 1180px;
+
   table-layout: fixed;
 }
 
 
-/* REPORT ID */
+/* =========================================================
+   COLUMN 1 — REPORT NO
+========================================================= */
+
 #tab-reporting .production-reports-table th:nth-child(1),
 #tab-reporting .production-reports-table td:nth-child(1) {
-  width: 95px;
-  min-width: 95px;
+  width: 115px;
+
   white-space: nowrap;
 }
 
 
-/* ASSET */
+/* =========================================================
+   COLUMN 2 — ASSET
+========================================================= */
+
 #tab-reporting .production-reports-table th:nth-child(2),
 #tab-reporting .production-reports-table td:nth-child(2) {
-  width: 120px;
-  min-width: 120px;
+  width: 150px;
 }
 
 
-/* ISSUE */
+/* =========================================================
+   COLUMN 3 — ISSUE
+
+   Main flexible column.
+   Uses the remaining available table width.
+========================================================= */
+
 #tab-reporting .production-reports-table th:nth-child(3),
 #tab-reporting .production-reports-table td:nth-child(3) {
   width: auto;
-  min-width: 320px;
 
   white-space: normal;
+
   overflow-wrap: anywhere;
+
   word-break: normal;
-  line-height: 1.35;
+
+  line-height: 1.4;
 }
 
 
-/* REPORTED BY */
+/* =========================================================
+   COLUMN 4 — MAINTENANCE RESPONSE
+
+   Wider than before because Maintenance comments can
+   contain meaningful technical information.
+========================================================= */
+
 #tab-reporting .production-reports-table th:nth-child(4),
 #tab-reporting .production-reports-table td:nth-child(4) {
-  width: 180px;
-  min-width: 180px;
+  width: 300px;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
+  word-break: normal;
 }
 
 
-/* STATUS */
+/* =========================================================
+   COLUMN 5 — STATUS
+========================================================= */
+
 #tab-reporting .production-reports-table th:nth-child(5),
 #tab-reporting .production-reports-table td:nth-child(5) {
   width: 135px;
-  min-width: 135px;
+
+  white-space: nowrap;
 }
 
-
-/* REPORTED */
-#tab-reporting .production-reports-table th:nth-child(6),
-#tab-reporting .production-reports-table td:nth-child(6) {
-  width: 170px;
-  min-width: 170px;
-}
-
-
-/* ACTION */
-#tab-reporting .production-reports-table th:nth-child(7),
-#tab-reporting .production-reports-table td:nth-child(7) {
-  width: 170px;
-  min-width: 170px;
-}
 
 /* =========================================================
-   ROWS
+   COLUMN 6 — UPDATED
+========================================================= */
+
+#tab-reporting .production-reports-table th:nth-child(6),
+#tab-reporting .production-reports-table td:nth-child(6) {
+  width: 190px;
+}
+
+
+/* =========================================================
+   TABLE ROWS
 ========================================================= */
 
 #tab-reporting .production-reports-table tbody tr {
@@ -979,14 +1026,27 @@
 }
 
 
+/* =========================================================
+   ROW HOVER
+========================================================= */
+
 #tab-reporting .production-reports-table tbody tr:hover {
   background:
     rgba(51, 65, 85, 0.26);
 }
 
 
+/* =========================================================
+   TABLE CELLS
+
+   Slightly compact padding keeps the ticket table
+   as the dominant Foreman workspace without making
+   long reports unnecessarily tall.
+========================================================= */
+
 #tab-reporting .production-reports-table td {
-  padding: 12px;
+  padding:
+    11px 14px;
 
   border-bottom:
     1px solid rgba(148, 163, 184, 0.10);
@@ -998,6 +1058,10 @@
 }
 
 
+/* =========================================================
+   LAST ROW
+========================================================= */
+
 #tab-reporting .production-reports-table tbody tr:last-child td {
   border-bottom: 0;
 }
@@ -1007,21 +1071,36 @@
    URGENT / STOPPED ROW MARKERS
 ========================================================= */
 
-#tab-reporting .production-reports-table tbody tr.report-row-urgent td:first-child {
+#tab-reporting
+.production-reports-table
+tbody
+tr.report-row-urgent
+td:first-child {
   box-shadow:
-    inset 3px 0 0 rgba(245, 158, 11, 0.78);
+    inset 3px 0 0
+    rgba(245, 158, 11, 0.78);
 }
 
 
-#tab-reporting .production-reports-table tbody tr.report-row-stopped td:first-child {
+#tab-reporting
+.production-reports-table
+tbody
+tr.report-row-stopped
+td:first-child {
   box-shadow:
-    inset 3px 0 0 rgba(239, 68, 68, 0.90);
+    inset 3px 0 0
+    rgba(239, 68, 68, 0.90);
 }
 
 
-#tab-reporting .production-reports-table tbody tr.report-row-urgent.report-row-stopped td:first-child {
+#tab-reporting
+.production-reports-table
+tbody
+tr.report-row-urgent.report-row-stopped
+td:first-child {
   box-shadow:
-    inset 3px 0 0 rgba(239, 68, 68, 0.95);
+    inset 3px 0 0
+    rgba(239, 68, 68, 0.95);
 }
 
 
@@ -1072,8 +1151,13 @@
 }
 
 
+/* =========================================================
+   ISSUE TAGS
+========================================================= */
+
 #tab-reporting .report-table-tags {
   display: flex;
+
   align-items: center;
 
   flex-wrap: wrap;
@@ -1086,27 +1170,38 @@
 
 #tab-reporting .report-table-tag {
   display: inline-flex;
+
   align-items: center;
 
-  padding: 3px 7px;
-
-  border-radius: 7px;
-
-  background:
-    rgba(100, 116, 139, 0.14);
+  padding:
+    3px 7px;
 
   border:
     1px solid rgba(148, 163, 184, 0.12);
 
+  border-radius:
+    7px;
+
+  background:
+    rgba(100, 116, 139, 0.14);
+
   color:
     rgba(203, 213, 225, 0.82);
 
-  font-size: 10px;
-  font-weight: 650;
+  font-size:
+    10px;
 
-  line-height: 1.2;
+  font-weight:
+    650;
+
+  line-height:
+    1.2;
 }
 
+
+/* =========================================================
+   URGENT TAG
+========================================================= */
 
 #tab-reporting .report-table-tag.urgent {
   background:
@@ -1119,6 +1214,10 @@
     #fcd34d;
 }
 
+
+/* =========================================================
+   PRODUCTION STOPPED TAG
+========================================================= */
 
 #tab-reporting .report-table-tag.stopped {
   background:
@@ -1134,10 +1233,16 @@
 
 /* =========================================================
    MAINTENANCE RESPONSE
+
+   Keep full response visible.
+   No line clamp is used because this is operational
+   information for the Shift Foreman.
 ========================================================= */
 
 #tab-reporting .report-table-response {
-  line-height: 1.42;
+  font-size: 12.5px;
+
+  line-height: 1.45;
 
   color:
     rgba(226, 232, 240, 0.88);
@@ -1145,6 +1250,13 @@
   overflow-wrap: anywhere;
 }
 
+
+/* =========================================================
+   MAINTENANCE RESPONSE CELL
+
+   Very light tint separates the Maintenance feedback
+   without making it visually dominant.
+========================================================= */
 
 #tab-reporting .report-table-response-cell {
   background:
@@ -1154,12 +1266,17 @@
 
 /* =========================================================
    SUBTEXT
+
+   Used by Report date / reporter,
+   Asset metadata and Reviewed By.
 ========================================================= */
 
 #tab-reporting .report-table-subtext {
-  margin-top: 2px;
+  margin-top: 3px;
 
   font-size: 11px;
+
+  line-height: 1.35;
 
   color:
     rgba(148, 163, 184, 0.74);
@@ -1173,6 +1290,8 @@
 #tab-reporting .report-table-updated {
   font-size: 12px;
 
+  line-height: 1.4;
+
   color:
     rgba(203, 213, 225, 0.76);
 
@@ -1184,34 +1303,49 @@
    STATUS BADGES
 ========================================================= */
 
-#tab-reporting .production-reports-table .production-report-status {
+#tab-reporting
+.production-reports-table
+.production-report-status {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
   min-width: 76px;
 
-  padding: 4px 8px;
+  padding:
+    4px 8px;
 
-  border-radius: 999px;
+  border-radius:
+    999px;
 
-  font-size: 10px;
-  font-weight: 760;
+  font-size:
+    10px;
 
-  letter-spacing: 0.03em;
+  font-weight:
+    760;
 
-  text-align: center;
+  letter-spacing:
+    0.03em;
+
+  text-align:
+    center;
 }
 
 
 /* =========================================================
    RESPONSIVE
+
+   Below this width the table keeps its internal layout
+   and the existing table wrapper can scroll horizontally.
 ========================================================= */
 
-@media (max-width: 1100px) {
+@media (
+  max-width: 1180px
+) {
 
   #tab-reporting .production-reports-table {
-    min-width: 960px;
+    min-width: 1180px;
   }
 
 }
@@ -4355,263 +4489,4 @@ textarea {
 
 }
 
-/* =========================================================
-   PRODUCTION REPORTS TABLE
-   VISUAL TUNE-UP
-   ---------------------------------------------------------
-   Goal:
-   - tighter layout
-   - better column balance
-   - cleaner row height
-   - controlled Issue / Maintenance Response width
-========================================================= */
 
-#tab-reporting .production-reports-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-}
-
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-#tab-reporting .production-reports-table thead th {
-  padding: 14px 16px;
-
-  text-align: left;
-  vertical-align: middle;
-
-  font-size: 0.95rem;
-  font-weight: 800;
-  line-height: 1.2;
-
-  color: #cbd5e1;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-
-/* =========================================================
-   BODY CELLS
-========================================================= */
-
-#tab-reporting .production-reports-table tbody td {
-  padding: 14px 16px;
-
-  vertical-align: top;
-  line-height: 1.4;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
-}
-
-
-/* =========================================================
-   ROW HOVER
-========================================================= */
-
-#tab-reporting .production-reports-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.05);
-}
-
-
-/* =========================================================
-   COLUMN WIDTHS
-   ---------------------------------------------------------
-   1 = REPORT NO
-   2 = ASSET
-   3 = ISSUE
-   4 = MAINTENANCE RESPONSE
-   5 = STATUS
-   6 = UPDATED
-========================================================= */
-
-#tab-reporting .production-reports-table th:nth-child(1),
-#tab-reporting .production-reports-table td:nth-child(1) {
-  width: 120px;
-}
-
-#tab-reporting .production-reports-table th:nth-child(2),
-#tab-reporting .production-reports-table td:nth-child(2) {
-  width: 150px;
-}
-
-#tab-reporting .production-reports-table th:nth-child(3),
-#tab-reporting .production-reports-table td:nth-child(3) {
-  width: 37%;
-}
-
-#tab-reporting .production-reports-table th:nth-child(4),
-#tab-reporting .production-reports-table td:nth-child(4) {
-  width: 18%;
-}
-
-#tab-reporting .production-reports-table th:nth-child(5),
-#tab-reporting .production-reports-table td:nth-child(5) {
-  width: 120px;
-}
-
-#tab-reporting .production-reports-table th:nth-child(6),
-#tab-reporting .production-reports-table td:nth-child(6) {
-  width: 190px;
-}
-
-
-/* =========================================================
-   REPORT NUMBER
-========================================================= */
-
-#tab-reporting .production-report-code {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #ffffff;
-
-  white-space: nowrap;
-}
-
-#tab-reporting .production-report-meta {
-  margin-top: 6px;
-
-  font-size: 0.84rem;
-  line-height: 1.35;
-
-  color: #8fa3bf;
-}
-
-
-/* =========================================================
-   ASSET CELL
-========================================================= */
-
-#tab-reporting .production-report-asset-name {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #ffffff;
-
-  white-space: nowrap;
-}
-
-#tab-reporting .production-report-asset-sub {
-  margin-top: 4px;
-
-  font-size: 0.84rem;
-  line-height: 1.35;
-
-  color: #8fa3bf;
-
-  word-break: break-word;
-}
-
-
-/* =========================================================
-   ISSUE CELL
-   ---------------------------------------------------------
-   - wraps nicely
-   - does not create ugly overflow
-========================================================= */
-
-#tab-reporting .production-report-issue-text {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
-
-  font-size: 0.98rem;
-  line-height: 1.45;
-  color: #f8fafc;
-
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-#tab-reporting .production-report-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-
-  margin-top: 10px;
-}
-
-
-/* =========================================================
-   MAINTENANCE RESPONSE CELL
-   ---------------------------------------------------------
-   - slightly smaller text
-   - limited to a few lines
-   - cleaner review meta
-========================================================= */
-
-#tab-reporting .production-report-maintenance-response {
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
-
-  font-size: 0.94rem;
-  line-height: 1.5;
-  color: #dbe7f5;
-
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-#tab-reporting .production-report-reviewed-by {
-  margin-top: 8px;
-
-  font-size: 0.83rem;
-  line-height: 1.35;
-
-  color: #8fa3bf;
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-#tab-reporting .production-reports-table td:nth-child(5) {
-  white-space: nowrap;
-}
-
-
-/* =========================================================
-   UPDATED
-========================================================= */
-
-#tab-reporting .production-reports-table td:nth-child(6) {
-  font-size: 0.92rem;
-  line-height: 1.35;
-  color: #e2e8f0;
-
-  white-space: normal;
-  word-break: break-word;
-}
-
-
-/* =========================================================
-   EMPTY RESPONSE PLACEHOLDER
-========================================================= */
-
-#tab-reporting .production-report-empty-response {
-  color: #64748b;
-  font-style: italic;
-}
-
-
-/* =========================================================
-   OPTIONAL:
-   MORE COMPACT BADGES
-========================================================= */
-
-#tab-reporting .production-report-tag {
-  padding: 4px 8px;
-
-  border-radius: 999px;
-
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1;
-}
