@@ -1693,10 +1693,34 @@ function buildRow(task) {
               : "-"
           );
 
+    /* =====================
+      MAINTENANCE REPORT SOURCE
 
-  /* =====================
-     TASK ROW HTML
-  ===================== */
+      If this Task was created from a Maintenance Report,
+      prepare a small MR-xxxxx source badge.
+
+      The backend already provides:
+      - maintenance_report_id
+      - maintenance_report_code
+
+      Normal Tasks simply return an empty string here.
+    ===================== */
+
+    const maintenanceReportBadgeHtml =
+      task.maintenance_report_code
+        ? `
+            <span
+              class="task-mr-source-badge"
+              title="Created from Maintenance Report ${task.maintenance_report_code}"
+            >
+              ${task.maintenance_report_code}
+            </span>
+          `
+        : "";
+
+    /* =====================
+      TASK ROW HTML
+    ===================== */
 
   tr.innerHTML = `
 
@@ -1781,13 +1805,19 @@ function buildRow(task) {
 
 
     <!-- =====================
-         TASK DESCRIPTION
+        TASK DESCRIPTION
 
-         Also displays the existing
-         Safety / Quality impact badge.
+        Displays:
+        - Task description
+        - Maintenance Report source badge, when applicable
+        - Existing Safety / Quality impact badge
     ===================== -->
 
     <td>
+
+      <!-- =====================
+          TASK TEXT
+      ===================== -->
 
       <div>
         ${highlight(
@@ -1795,6 +1825,23 @@ function buildRow(task) {
           q
         )}
       </div>
+
+
+      <!-- =====================
+          MAINTENANCE REPORT SOURCE
+
+          Visible only when the Task originated
+          from Maintenance Report conversion.
+      ===================== -->
+
+      ${
+        maintenanceReportBadgeHtml
+      }
+
+
+      <!-- =====================
+          SAFETY / QUALITY IMPACT
+      ===================== -->
 
       ${renderImpactBadge(
         task.impact
