@@ -14297,12 +14297,14 @@ const maintenanceWorkloadForecast = {
    scheduled_maintenance_id:
      Links a Planned Task to its parent Scheduled Maintenance.
 
-   Both references are returned to the frontend so that
-   the Tasks table can display BD-xxxxx or SM-xxxxx.
+   maintenance_report_id / maintenance_report_code:
+     Identifies a Planned Task that was created from a
+     Maintenance Report (MR-xxxxx).
 
    IMPORTANT
    ---------------------------------------------------------
    - SM Tasks remain normal Planned Tasks.
+   - MR-created Tasks remain normal Planned Tasks.
    - This route does not create or complete Tasks.
    - No Breakdown downtime is calculated or modified.
    - Completed Tasks are handled by the History endpoint.
@@ -14331,6 +14333,27 @@ app.get("/tasks", async (req, res) => {
         mt.notes,
         mt.impact,
 
+        /* =================================================
+           MAINTENANCE REPORT SOURCE
+
+           If this Task was created from a Maintenance Report,
+           expose the linked Report ID and formatted MR code.
+        ================================================= */
+
+        mr.id AS maintenance_report_id,
+
+        CASE
+          WHEN mr.id IS NOT NULL
+            THEN
+              'MR-' ||
+              LPAD(
+                mr.id::text,
+                5,
+                '0'
+              )
+          ELSE NULL
+        END AS maintenance_report_code,
+
         a.name AS asset_name,
         a.model AS machine_name,
         a.serial_number,
@@ -14344,6 +14367,16 @@ app.get("/tasks", async (req, res) => {
 
       JOIN lines l
         ON l.id = a.line_id
+
+      /* =================================================
+         MAINTENANCE REPORT SOURCE LINK
+
+         Maintenance Reports store the ID of the Planned Task
+         created during conversion in maintenance_task_id.
+      ================================================= */
+
+      LEFT JOIN maintenance_reports mr
+        ON mr.maintenance_task_id = mt.id
 
       WHERE
         mt.status IN ('Planned', 'Overdue')
