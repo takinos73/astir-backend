@@ -1807,6 +1807,75 @@
 
       <div class="production-reports-filter-bar">
 
+          <!-- =====================================================
+            PRODUCTION REPORTS — ASSET MULTI-SELECT FILTER
+
+            - Custom dropdown.
+            - Supports multiple selected Assets.
+            - Assets are grouped internally by Line.
+            - Line names are NOT displayed.
+            - A separator is rendered between Lines.
+        ====================================================== -->
+
+        <div
+          class="production-reports-asset-filter-wrap"
+        >
+
+          <!-- =====================
+              DROPDOWN BUTTON
+          ===================== -->
+
+          <button
+            id="productionReportsAssetDropdownBtn"
+            class="production-reports-filter-control production-reports-asset-dropdown-btn"
+            type="button"
+          >
+
+            <!-- =====================
+                FILTER ICON
+            ===================== -->
+
+            <span class="production-reports-filter-icon">
+              ⚙
+            </span>
+
+
+            <!-- =====================
+                CURRENT SELECTION LABEL
+            ===================== -->
+
+            <span
+              id="productionReportsAssetDropdownText"
+              class="production-reports-asset-dropdown-text"
+            >
+              All Machines
+            </span>
+
+
+            <!-- =====================
+                DROPDOWN ARROW
+            ===================== -->
+
+            <span class="production-reports-filter-arrow">
+              ▾
+            </span>
+
+          </button>
+
+
+          <!-- =====================
+              DROPDOWN MENU
+          ===================== -->
+
+          <div
+            id="productionReportsAssetDropdownMenu"
+            class="production-reports-asset-dropdown-menu"
+            style="display:none;"
+          >
+          </div>
+
+        </div>
+
         <!-- =====================
             PERIOD RANGE PICKER
         ===================== -->
@@ -1944,75 +2013,6 @@
           </option>
 
         </select>
-
-        <!-- =====================================================
-            PRODUCTION REPORTS — ASSET MULTI-SELECT FILTER
-
-            - Custom dropdown.
-            - Supports multiple selected Assets.
-            - Assets are grouped internally by Line.
-            - Line names are NOT displayed.
-            - A separator is rendered between Lines.
-        ====================================================== -->
-
-        <div
-          class="production-reports-asset-filter-wrap"
-        >
-
-          <!-- =====================
-              DROPDOWN BUTTON
-          ===================== -->
-
-          <button
-            id="productionReportsAssetDropdownBtn"
-            class="production-reports-filter-control production-reports-asset-dropdown-btn"
-            type="button"
-          >
-
-            <!-- =====================
-                FILTER ICON
-            ===================== -->
-
-            <span class="production-reports-filter-icon">
-              ⚙
-            </span>
-
-
-            <!-- =====================
-                CURRENT SELECTION LABEL
-            ===================== -->
-
-            <span
-              id="productionReportsAssetDropdownText"
-              class="production-reports-asset-dropdown-text"
-            >
-              All Machines
-            </span>
-
-
-            <!-- =====================
-                DROPDOWN ARROW
-            ===================== -->
-
-            <span class="production-reports-filter-arrow">
-              ▾
-            </span>
-
-          </button>
-
-
-          <!-- =====================
-              DROPDOWN MENU
-          ===================== -->
-
-          <div
-            id="productionReportsAssetDropdownMenu"
-            class="production-reports-asset-dropdown-menu"
-            style="display:none;"
-          >
-          </div>
-
-        </div>
 
         <!-- =====================
             UPDATED SORT
