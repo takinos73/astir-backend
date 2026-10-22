@@ -936,7 +936,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(1),
 #tab-reporting .production-reports-table td:nth-child(1) {
-  width: 130px;
+  width: 135px;
 
   white-space: nowrap;
 }
@@ -1010,7 +1010,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(6),
 #tab-reporting .production-reports-table td:nth-child(6) {
-  width: 180px;
+  width: 175px;
 }
 
 
