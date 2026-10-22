@@ -451,6 +451,29 @@ function renderHistoryTable(data) {
                 : ""
             }
 
+            /* =====================
+              MAINTENANCE REPORT SOURCE
+
+              Displays MR-xxxxx when this execution belongs
+              to a Task originally created from a
+              Maintenance Report.
+
+              The field must be supplied by /executions.
+            ===================== */
+
+            ${
+              h.maintenance_report_code
+                ? `
+                  <span
+                    class="task-mr-source-badge"
+                    title="Created from Maintenance Report ${h.maintenance_report_code}"
+                  >
+                    ${h.maintenance_report_code}
+                  </span>
+                `
+                : ""
+            }
+
             <strong>${h.task}</strong>
 
             ${
@@ -716,6 +739,14 @@ async function viewHistoryEntry(executionId) {
 
       </div>
 
+      /* =====================
+        TASK
+
+        Displays:
+        - Task description
+        - Maintenance Report source badge, when applicable
+        - Safety / Quality impact badge
+      ===================== */
 
       <div class="history-view-section">
 
@@ -723,10 +754,44 @@ async function viewHistoryEntry(executionId) {
           Task
         </strong>
 
+
+        <!-- =====================
+            TASK DESCRIPTION
+        ===================== -->
+
         <div>
           ${h.task}
         </div>
 
+
+        <!-- =====================
+            MAINTENANCE REPORT SOURCE
+
+            Visible only when this Task was originally
+            created from a Maintenance Report.
+        ===================== -->
+
+        ${
+          h.maintenance_report_code
+            ? `
+              <div class="task-mr-source-wrap">
+
+                <span
+                  class="task-mr-source-badge"
+                  title="Created from Maintenance Report ${h.maintenance_report_code}"
+                >
+                  ${h.maintenance_report_code}
+                </span>
+
+              </div>
+            `
+            : ""
+        }
+
+
+        <!-- =====================
+            SAFETY / QUALITY IMPACT
+        ===================== -->
 
         ${
           h.impact &&

@@ -380,6 +380,27 @@ function renderAssetTasksTable(tasks) {
               </div>
             `
           : "";
+      
+      /* =====================
+        MAINTENANCE REPORT SOURCE
+
+        If this Task was created from a Maintenance Report,
+        prepare the MR-xxxxx source badge.
+
+        Normal Tasks return an empty string.
+      ===================== */
+
+      const maintenanceReportReferenceHtml =
+        t.maintenance_report_code
+          ? `
+              <span
+                class="task-mr-source-badge"
+                title="Created from Maintenance Report ${t.maintenance_report_code}"
+              >
+                ${t.maintenance_report_code}
+              </span>
+            `
+          : "";
 
     // =====================
     // STATUS (TYPE + DUE STATE)
@@ -460,9 +481,28 @@ function renderAssetTasksTable(tasks) {
         }
       </td>
 
+      <!-- =====================
+          TASK DESCRIPTION
+
+          Displays:
+          - Task description
+          - Maintenance Report source badge
+          - Notes indicator
+          - Safety / Quality impact badge
+      ===================== -->
+
       <td>
+
+        <!-- =====================
+            TASK TEXT
+        ===================== -->
+
         <div>
           ${highlightAssetTaskSearch(t.task)}
+
+          <!-- =====================
+              NOTE INDICATOR
+          ===================== -->
 
           ${
             t.notes
@@ -478,7 +518,20 @@ function renderAssetTasksTable(tasks) {
           }
         </div>
 
+
+        <!-- =====================
+            MAINTENANCE REPORT SOURCE
+        ===================== -->
+
+        ${maintenanceReportReferenceHtml}
+
+
+        <!-- =====================
+            SAFETY / QUALITY IMPACT
+        ===================== -->
+
         ${renderImpactBadge(t.impact)}
+
       </td>
 
       <!-- TASK TYPE + SCHEDULED MAINTENANCE REFERENCE -->
@@ -663,6 +716,8 @@ function renderAssetBreakdowns() {
    - Sort executions by date DESC, then Section ASC.
    - Display Task, Type, Technician and Notes.
    - Show parent BD / SM reference below the Task Type.
+   - Show MR-xxxxx when the Task originated from a
+     Maintenance Report.
    - Preserve the exact Task Timeline filter.
    - Open the existing execution detail through View.
 
@@ -674,6 +729,11 @@ function renderAssetBreakdowns() {
    SM-xxxxx:
      Planned Task linked to Scheduled Maintenance.
 
+   SOURCE REFERENCE
+   ---------------------------------------------------------
+   MR-xxxxx:
+     Task originally created from a Maintenance Report.
+
    References are display-only.
    They do not change Task type, execution or History filters.
 ========================================================= */
@@ -682,148 +742,306 @@ function renderAssetHistoryTable(history) {
 
   renderAssetHistoryActiveFilter();
 
+
   const tasksWrap =
-    document.querySelector(".asset-tasks-table");
+    document.querySelector(
+      ".asset-tasks-table"
+    );
+
 
   const historyWrap =
-    document.querySelector(".asset-history-table");
+    document.querySelector(
+      ".asset-history-table"
+    );
+
 
   const tbody =
-    document.querySelector("#assetHistoryTable tbody");
+    document.querySelector(
+      "#assetHistoryTable tbody"
+    );
 
-  if (!historyWrap || !tbody) return;
 
-  // =====================
-  // TOGGLE VIEWS
-  // =====================
+  if (
+    !historyWrap ||
+    !tbody
+  ) {
 
-  if (tasksWrap) {
-    tasksWrap.style.display = "none";
+    return;
+
   }
 
-  historyWrap.style.display = "block";
 
-  tbody.innerHTML = "";
+  /* =====================
+     TOGGLE VIEWS
+  ===================== */
+
+  if (tasksWrap) {
+
+    tasksWrap.style.display =
+      "none";
+
+  }
+
+
+  historyWrap.style.display =
+    "block";
+
+
+  tbody.innerHTML =
+    "";
+
 
   const list =
     Array.isArray(history)
       ? history
       : [];
 
-  // =====================
-  // EMPTY HISTORY
-  // =====================
 
-  if (list.length === 0) {
+  /* =====================
+     EMPTY HISTORY
+  ===================== */
+
+  if (
+    list.length === 0
+  ) {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty">
+        <td
+          colspan="6"
+          class="empty"
+        >
           No history records
         </td>
       </tr>
     `;
 
+
     return;
+
   }
 
-  // =====================
-  // APPLY FILTERS
-  // =====================
+
+  /* =====================
+     APPLY FILTERS
+  ===================== */
 
   const filtered =
-    getFilteredAssetHistory(list);
+    getFilteredAssetHistory(
+      list
+    );
 
-  if (filtered.length === 0) {
+
+  if (
+    filtered.length === 0
+  ) {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="empty">
+        <td
+          colspan="6"
+          class="empty"
+        >
           No matching history records
         </td>
       </tr>
     `;
 
+
     return;
+
   }
 
-  // =====================
-  // SORT
-  // Date DESC → Section ASC
-  // =====================
+
+  /* =====================
+     SORT
+
+     Date DESC
+     →
+     Section ASC
+  ===================== */
 
   const sortedHistory =
-    [...filtered].sort((a, b) => {
+    [...filtered]
+      .sort(
+        (a, b) => {
 
-      const dateCompare =
-        new Date(b.executed_at || "1900-01-01") -
-        new Date(a.executed_at || "1900-01-01");
+          const dateCompare =
+            new Date(
+              b.executed_at ||
+              "1900-01-01"
+            ) -
+            new Date(
+              a.executed_at ||
+              "1900-01-01"
+            );
 
-      if (dateCompare !== 0) {
-        return dateCompare;
-      }
 
-      return (a.section || "")
-        .localeCompare(b.section || "");
-    });
+          if (
+            dateCompare !== 0
+          ) {
 
-  // =====================
-  // RENDER ROWS
-  // =====================
+            return dateCompare;
+
+          }
+
+
+          return (
+            a.section ||
+            ""
+          ).localeCompare(
+            b.section ||
+            ""
+          );
+
+        }
+      );
+
+
+  /* =====================
+     RENDER ROWS
+  ===================== */
 
   sortedHistory.forEach(e => {
 
     const tr =
-      document.createElement("tr");
+      document.createElement(
+        "tr"
+      );
 
-    tr.classList.add("clickable");
 
-    // =====================
-    // EXECUTION TYPE
-    // =====================
+    tr.classList.add(
+      "clickable"
+    );
+
+
+    /* =====================
+       EXECUTION TYPE
+    ===================== */
 
     const execType =
       getExecutionType(e);
 
-    if (execType === "restoration") {
-      tr.classList.add("history-restoration");
-    }
-    else if (execType === "unplanned") {
-      tr.classList.add("history-unplanned");
-    }
-    else if (execType === "preventive") {
-      tr.classList.add("history-preventive");
-    }
-    else {
-      tr.classList.add("history-planned");
+
+    if (
+      execType ===
+      "restoration"
+    ) {
+
+      tr.classList.add(
+        "history-restoration"
+      );
+
     }
 
-    // =====================
-    // ROW CONTENT
-    //
-    // BD / SM references appear below
-    // the Type, not inside the Task cell.
-    // =====================
+    else if (
+      execType ===
+      "unplanned"
+    ) {
+
+      tr.classList.add(
+        "history-unplanned"
+      );
+
+    }
+
+    else if (
+      execType ===
+      "preventive"
+    ) {
+
+      tr.classList.add(
+        "history-preventive"
+      );
+
+    }
+
+    else {
+
+      tr.classList.add(
+        "history-planned"
+      );
+
+    }
+
+
+    /* =====================
+       ROW CONTENT
+
+       BD / SM references appear below
+       the Type.
+
+       MR reference appears inside
+       the Task cell as source badge.
+    ===================== */
 
     tr.innerHTML = `
+
+      <!-- =====================
+           EXECUTION DATE
+      ===================== -->
+
       <td>
-        ${formatDate(e.executed_at)}
+        ${formatDate(
+          e.executed_at
+        )}
       </td>
+
+
+      <!-- =====================
+           TASK
+      ===================== -->
 
       <td class="task-filter">
 
         <div>
-          ${highlightAssetHistorySearch(e.task || "-")}
+
+          ${highlightAssetHistorySearch(
+            e.task ||
+            "-"
+          )}
+
+
+          <!-- =====================
+               MAINTENANCE REPORT SOURCE
+
+               Visible only when the executed Task
+               originated from a Maintenance Report.
+          ===================== -->
 
           ${
-            Number(e.attachment_count) > 0
+            e.maintenance_report_code
+              ? `
+                <span
+                  class="task-mr-source-badge"
+                  title="Created from Maintenance Report ${e.maintenance_report_code}"
+                >
+                  ${e.maintenance_report_code}
+                </span>
+              `
+              : ""
+          }
+
+
+          <!-- =====================
+               ATTACHMENT INDICATOR
+          ===================== -->
+
+          ${
+            Number(
+              e.attachment_count
+            ) > 0
               ? `
                 <span
                   class="task-attachment-indicator"
                   title="${
-                    Number(e.attachment_count)
+                    Number(
+                      e.attachment_count
+                    )
                   } attachment${
-                    Number(e.attachment_count) === 1
+                    Number(
+                      e.attachment_count
+                    ) === 1
                       ? ""
                       : "s"
                   }"
@@ -833,29 +1051,55 @@ function renderAssetHistoryTable(history) {
               `
               : ""
           }
+
         </div>
 
+
+        <!-- =====================
+             SECTION / UNIT
+        ===================== -->
+
         ${
-          (e.section || e.unit)
+          (
+            e.section ||
+            e.unit
+          )
             ? `
               <small>
-                ${highlightAssetHistorySearch(e.section || "")}
+
+                ${highlightAssetHistorySearch(
+                  e.section ||
+                  ""
+                )}
 
                 ${
-                  e.section && e.unit
+                  e.section &&
+                  e.unit
                     ? " / "
                     : ""
                 }
 
-                ${highlightAssetHistorySearch(e.unit || "")}
+                ${highlightAssetHistorySearch(
+                  e.unit ||
+                  ""
+                )}
+
               </small>
             `
             : ""
         }
 
-        ${renderImpactBadge(e.impact)}
+
+        <!-- =====================
+             SAFETY / QUALITY IMPACT
+        ===================== -->
+
+        ${renderImpactBadge(
+          e.impact
+        )}
 
       </td>
+
 
       <!-- =====================
            TYPE + PARENT INCIDENT
@@ -868,28 +1112,68 @@ function renderAssetHistoryTable(history) {
 
       <td class="asset-history-type-cell">
 
+        <!-- =====================
+             TYPE LABEL
+        ===================== -->
+
         <div class="asset-history-type-label">
-          ${highlightAssetHistorySearch(e.type || "-")}
+
+          ${highlightAssetHistorySearch(
+            e.type ||
+            "-"
+          )}
+
         </div>
 
+
+        <!-- =====================
+             BREAKDOWN REFERENCE
+        ===================== -->
+
         ${
-          execType === "restoration" && e.breakdown_id
+          execType ===
+            "restoration" &&
+          e.breakdown_id
             ? `
               <div class="asset-history-breakdown-ref">
-                BD-${String(e.breakdown_id).padStart(5, "0")}
+
+                BD-${String(
+                  e.breakdown_id
+                ).padStart(
+                  5,
+                  "0"
+                )}
+
               </div>
             `
             : ""
         }
+
+
+        <!-- =====================
+             SCHEDULED MAINTENANCE
+             REFERENCE
+        ===================== -->
 
         ${
-          Number.isInteger(Number(e.scheduled_maintenance_id)) &&
-          Number(e.scheduled_maintenance_id) > 0
+          Number.isInteger(
+            Number(
+              e.scheduled_maintenance_id
+            )
+          ) &&
+          Number(
+            e.scheduled_maintenance_id
+          ) > 0
             ? `
               <div class="asset-history-sm-ref">
+
                 SM-${String(
                   e.scheduled_maintenance_id
-                ).padStart(5, "0")}
+                ).padStart(
+                  5,
+                  "0"
+                )}
+
               </div>
             `
             : ""
@@ -897,90 +1181,178 @@ function renderAssetHistoryTable(history) {
 
       </td>
 
-      <td>
-        ${highlightAssetHistorySearch(e.executed_by || "-")}
-      </td>
+
+      <!-- =====================
+           TECHNICIAN
+      ===================== -->
 
       <td>
-        ${highlightAssetHistorySearch(e.notes || "-")}
+
+        ${highlightAssetHistorySearch(
+          e.executed_by ||
+          "-"
+        )}
+
       </td>
 
+
+      <!-- =====================
+           NOTES
+      ===================== -->
+
       <td>
+
+        ${highlightAssetHistorySearch(
+          e.notes ||
+          "-"
+        )}
+
+      </td>
+
+
+      <!-- =====================
+           ACTIONS
+      ===================== -->
+
+      <td>
+
         <button
           class="btn-secondary btn-sm"
-          type="button">
+          type="button"
+        >
           View
         </button>
+
       </td>
+
     `;
 
-    // =====================
-    // TASK CLICK → EXACT TIMELINE FILTER
-    // =====================
+
+    /* =====================
+       TASK CLICK
+       →
+       EXACT TIMELINE FILTER
+    ===================== */
 
     const taskCell =
-      tr.querySelector(".task-filter");
-
-    taskCell.onclick = ev => {
-
-      ev.stopPropagation();
-
-      const taskKey =
-        `${e.task}||${e.section || ""}||${e.unit || ""}`;
-
-      if (
-        state.assetHistoryTaskFilter === taskKey
-      ) {
-
-        state.assetHistoryTaskFilter = null;
-
-      } else {
-
-        state.assetHistoryTaskFilter = taskKey;
-
-        // Exact timeline mode
-        // → clear free-text search
-        state.assetHistorySearchQuery = "";
-
-        const historySearch =
-          document.getElementById(
-            "assetHistorySearch"
-          );
-
-        if (historySearch) {
-          historySearch.value = "";
-        }
-      }
-
-      // Exact task filter clears legend type filter
-      state.assetHistoryTypeFilter = "all";
-
-      highlightActiveHistoryLegend();
-
-      renderAssetHistoryTable(
-        state.assetHistoryTasks
+      tr.querySelector(
+        ".task-filter"
       );
-    };
 
-    // =====================
-    // VIEW BUTTON
-    // =====================
 
-    const viewBtn =
-      tr.querySelector("button");
-
-    if (viewBtn) {
-
-      viewBtn.onclick = ev => {
+    taskCell.onclick =
+      ev => {
 
         ev.stopPropagation();
 
-        viewHistoryEntry(e.id);
+
+        const taskKey =
+          `${e.task}||${e.section || ""}||${e.unit || ""}`;
+
+
+        if (
+          state.assetHistoryTaskFilter ===
+          taskKey
+        ) {
+
+          state.assetHistoryTaskFilter =
+            null;
+
+        }
+
+        else {
+
+          state.assetHistoryTaskFilter =
+            taskKey;
+
+
+          /* =====================
+             EXACT TIMELINE MODE
+
+             Clear free-text search.
+          ===================== */
+
+          state.assetHistorySearchQuery =
+            "";
+
+
+          const historySearch =
+            document.getElementById(
+              "assetHistorySearch"
+            );
+
+
+          if (
+            historySearch
+          ) {
+
+            historySearch.value =
+              "";
+
+          }
+
+        }
+
+
+        /* =====================
+           CLEAR TYPE FILTER
+
+           Exact Task Timeline takes priority.
+        ===================== */
+
+        state.assetHistoryTypeFilter =
+          "all";
+
+
+        highlightActiveHistoryLegend();
+
+
+        renderAssetHistoryTable(
+          state.assetHistoryTasks
+        );
+
       };
+
+
+    /* =====================
+       VIEW BUTTON
+    ===================== */
+
+    const viewBtn =
+      tr.querySelector(
+        "button"
+      );
+
+
+    if (
+      viewBtn
+    ) {
+
+      viewBtn.onclick =
+        ev => {
+
+          ev.stopPropagation();
+
+
+          viewHistoryEntry(
+            e.id
+          );
+
+        };
+
     }
 
-    tbody.appendChild(tr);
+
+    /* =====================
+       APPEND ROW
+    ===================== */
+
+    tbody.appendChild(
+      tr
+    );
+
   });
+
 }
 
 // =====================

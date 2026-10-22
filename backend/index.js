@@ -15853,7 +15853,9 @@ app.delete("/tasks/:id", async (req, res) => {
 
    - Preserves the existing execution details and filters.
    - Returns Breakdown and Scheduled Maintenance references.
+   - Returns Maintenance Report source reference when applicable.
    - SM executions remain normal Planned executions.
+   - MR-created Tasks remain normal Planned executions.
    - Existing legacy Breakdown cutover remains unchanged.
    - Does not create, update or delete executions.
 ========================================================= */
@@ -15899,18 +15901,47 @@ app.get("/executions", async (req, res) => {
 
         t.breakdown_id,
         t.scheduled_maintenance_id,
-           /* =====================================================
-             TASK ATTACHMENTS
-             Count attachments owned by the Task.
-             History uses this only as a lightweight indicator.
-             No files or signed URLs are loaded here.
-           ===================================================== */
-            (
-             SELECT COUNT(*)
-             FROM attachments att
-             WHERE att.entity_type = 'TASK'
-              AND att.entity_id = t.id
-            )::int AS attachment_count,
+
+        /* =====================================================
+           MAINTENANCE REPORT SOURCE
+
+           If the executed Task was originally created from a
+           Maintenance Report, expose the linked Report ID and
+           formatted MR-xxxxx code.
+
+           The existing relation remains:
+           maintenance_reports.maintenance_task_id = task.id
+        ===================================================== */
+
+        mr.id AS maintenance_report_id,
+
+        CASE
+          WHEN mr.id IS NOT NULL
+            THEN
+              'MR-' ||
+              LPAD(
+                mr.id::text,
+                5,
+                '0'
+              )
+          ELSE NULL
+        END AS maintenance_report_code,
+
+        /* =====================================================
+           TASK ATTACHMENTS
+
+           Count attachments owned by the Task.
+
+           History uses this only as a lightweight indicator.
+           No files or signed URLs are loaded here.
+        ===================================================== */
+
+        (
+          SELECT COUNT(*)
+          FROM attachments att
+          WHERE att.entity_type = 'TASK'
+            AND att.entity_id = t.id
+        )::int AS attachment_count,
 
         a.model AS machine,
         a.serial_number,
@@ -15928,6 +15959,18 @@ app.get("/executions", async (req, res) => {
         ON l.id = a.line_id
 
       /* =====================================================
+         MAINTENANCE REPORT SOURCE LINK
+
+         A Maintenance Report stores the ID of the Planned Task
+         created during conversion in maintenance_task_id.
+
+         LEFT JOIN preserves all normal Tasks and executions.
+      ===================================================== */
+
+      LEFT JOIN maintenance_reports mr
+        ON mr.maintenance_task_id = t.id
+
+      /* =====================================================
          HISTORY CUTOVER
 
          Hide old legacy Breakdown executions ONLY when
@@ -15937,6 +15980,7 @@ app.get("/executions", async (req, res) => {
          No legacy data is deleted.
          Restoration executions remain visible.
       ===================================================== */
+
       WHERE NOT (
         t.is_planned = FALSE
         AND t.breakdown_id IS NULL
@@ -15950,7 +15994,10 @@ app.get("/executions", async (req, res) => {
       ORDER BY e.executed_at DESC
     `);
 
-    res.json(result.rows);
+
+    res.json(
+      result.rows
+    );
 
   } catch (err) {
 
@@ -15959,8 +16006,10 @@ app.get("/executions", async (req, res) => {
       err.message
     );
 
+
     res.status(500).json({
-      error: err.message
+      error:
+        err.message
     });
 
   }
@@ -16181,7 +16230,6 @@ app.post("/executions/:id/undo", async (req, res) => {
   }
 
 });
-
 
 
 // Undo to planned
