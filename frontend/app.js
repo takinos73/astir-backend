@@ -451,15 +451,13 @@ function renderHistoryTable(data) {
                 : ""
             }
 
-            /* =====================
-              MAINTENANCE REPORT SOURCE
+            <!-- =====================
+                MAINTENANCE REPORT SOURCE
 
-              Displays MR-xxxxx when this execution belongs
-              to a Task originally created from a
-              Maintenance Report.
-
-              The field must be supplied by /executions.
-            ===================== */
+                Displays MR-xxxxx when this execution belongs
+                to a Task originally created from a
+                Maintenance Report.
+            ===================== -->
 
             ${
               h.maintenance_report_code
@@ -545,6 +543,7 @@ function renderHistoryTable(data) {
 
   applyRoleVisibility();
 }
+
 /* =====================
    HISTORY SEARCH HIGHLIGHT
 ===================== */
