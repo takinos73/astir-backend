@@ -936,7 +936,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(1),
 #tab-reporting .production-reports-table td:nth-child(1) {
-  width: 115px;
+  width: 120px;
 
   white-space: nowrap;
 }
@@ -948,7 +948,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(2),
 #tab-reporting .production-reports-table td:nth-child(2) {
-  width: 150px;
+  width: 155px;
 }
 
 
@@ -998,7 +998,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(5),
 #tab-reporting .production-reports-table td:nth-child(5) {
-  width: 135px;
+  width: 130px;
 
   white-space: nowrap;
 }
@@ -1010,7 +1010,7 @@
 
 #tab-reporting .production-reports-table th:nth-child(6),
 #tab-reporting .production-reports-table td:nth-child(6) {
-  width: 190px;
+  width: 185px;
 }
 
 
