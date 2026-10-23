@@ -356,32 +356,59 @@ function renderAssetTasksTable(tasks) {
         ? formatDuration(t.duration_min)
         : "—";
 
-      /* =====================
-        SCHEDULED MAINTENANCE REFERENCE
+        
+    /* =====================
+      SCHEDULED MAINTENANCE
 
-        Click opens the existing Scheduled Maintenance
-        Detail view from Asset Active Tasks.
+      An SM Task remains a normal Planned Task.
 
-        stopPropagation prevents opening the Task View.
-      ===================== */
+      scheduled_maintenance_id identifies the
+      parent Scheduled Maintenance incident.
+    ===================== */
 
-      const smReferenceHtml =
-        isSmTask
-          ? `
-              <div
-                class="task-sm-parent clickable-incident-reference"
-                title="Open Scheduled Maintenance details"
-                onclick="
-                  event.stopPropagation();
-                  openScheduledMaintenanceDetail(${smId});
-                "
-              >
-                SM-${String(
-                  smId
-                ).padStart(5, "0")}
-              </div>
-            `
-          : "";
+    const smId =
+      Number(
+        t.scheduled_maintenance_id
+      );
+
+
+    const isSmTask =
+      Number.isInteger(
+        smId
+      ) &&
+      smId > 0;
+
+
+    /* =====================
+      SCHEDULED MAINTENANCE REFERENCE
+
+      Click opens the existing Scheduled Maintenance
+      Detail view.
+
+      stopPropagation prevents the Asset Task row
+      from opening at the same time.
+    ===================== */
+
+    const smReferenceHtml =
+      isSmTask
+        ? `
+            <div
+              class="task-sm-parent clickable-incident-reference"
+              title="Open Scheduled Maintenance details"
+              onclick="
+                event.stopPropagation();
+                openScheduledMaintenanceDetail(${smId});
+              "
+            >
+              SM-${String(
+                smId
+              ).padStart(
+                5,
+                "0"
+              )}
+            </div>
+          `
+        : "";
       
       /* =====================
         MAINTENANCE REPORT SOURCE
