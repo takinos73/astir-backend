@@ -1497,6 +1497,7 @@ function viewTask(taskId) {
    2. Identify the parent maintenance incident:
       - BD-xxxxx → Breakdown / Restoration Task
       - SM-xxxxx → Scheduled Maintenance / Planned Task
+      - MR-xxxxx → Task created from Maintenance Report
    3. Apply the appropriate task row styling.
    4. Display task type, due/completion date and status.
    5. Provide the existing View and Complete actions.
@@ -1505,12 +1506,12 @@ function viewTask(taskId) {
    ---------------------------------------------------------
    Restoration:
      Linked to a Breakdown through breakdown_id.
-     Displays "Restoration" and its BD reference.
+     Displays "Restoration" and clickable BD reference.
 
    Scheduled Maintenance:
      Linked to an SM through scheduled_maintenance_id.
      Remains a normal Planned Task.
-     Displays "Planned" and its SM reference.
+     Displays "Planned" and clickable SM reference.
 
    Preventive:
      Recurring task with frequency_hours > 0.
@@ -1523,6 +1524,7 @@ function viewTask(taskId) {
    - This function only renders the task row.
    - It does not create, update or complete Tasks.
    - BD and SM references are independent.
+   - MR is a source reference only.
    - SM Tasks do not create Breakdown downtime.
    - Completion uses the existing askTechnician() flow.
 ========================================================= */
@@ -1536,67 +1538,115 @@ function buildRow(task) {
   const isIdle =
     !!task.asset_idle_since;
 
+
   const tr =
-    document.createElement("tr");
+    document.createElement(
+      "tr"
+    );
+
 
   const q =
-    document.getElementById("taskSearch")?.value || "";
+    document.getElementById(
+      "taskSearch"
+    )?.value || "";
 
 
-/* =====================
-   BREAKDOWN REFERENCE
+  /* =====================
+     BREAKDOWN / RESTORATION
 
-   Click opens the existing Breakdown Detail view.
-   stopPropagation prevents the row click/action
-   from being triggered at the same time.
-===================== */
+     A Restoration Task is linked to
+     its parent Breakdown incident.
+  ===================== */
 
-const breakdownCode =
-  isRestoration
-    ? `
-        <div
-          class="task-breakdown-parent clickable-incident-reference"
-          title="Open Breakdown details"
-          onclick="
-            event.stopPropagation();
-            openBreakdownDetail(${Number(task.breakdown_id)});
-          "
-        >
-          BD-${String(
-            task.breakdown_id
-          ).padStart(5, "0")}
-        </div>
-      `
-    : "";
+  const isRestoration =
+    Number(
+      task.breakdown_id
+    ) > 0;
 
 
-/* =====================
-   SCHEDULED MAINTENANCE REFERENCE
+  /* =====================
+     BREAKDOWN REFERENCE
 
-   Click opens the existing Scheduled Maintenance
-   Detail view.
+     Click opens the existing Breakdown Detail view.
 
-   stopPropagation prevents the row click/action
-   from being triggered at the same time.
-===================== */
+     stopPropagation prevents any parent row/action
+     click from firing at the same time.
+  ===================== */
 
-const smCode =
-  isSmTask
-    ? `
-        <div
-          class="task-sm-parent clickable-incident-reference"
-          title="Open Scheduled Maintenance details"
-          onclick="
-            event.stopPropagation();
-            openScheduledMaintenanceDetail(${smId});
-          "
-        >
-          SM-${String(
-            smId
-          ).padStart(5, "0")}
-        </div>
-      `
-    : "";
+  const breakdownCode =
+    isRestoration
+      ? `
+          <div
+            class="task-breakdown-parent clickable-incident-reference"
+            title="Open Breakdown details"
+            onclick="
+              event.stopPropagation();
+              openBreakdownDetail(${Number(task.breakdown_id)});
+            "
+          >
+            BD-${String(
+              task.breakdown_id
+            ).padStart(
+              5,
+              "0"
+            )}
+          </div>
+        `
+      : "";
+
+
+  /* =====================
+     SCHEDULED MAINTENANCE
+
+     An SM Task remains a normal Planned Task.
+
+     Its scheduled_maintenance_id identifies
+     the parent Scheduled Maintenance incident.
+  ===================== */
+
+  const smId =
+    Number(
+      task.scheduled_maintenance_id
+    );
+
+
+  const isSmTask =
+    Number.isInteger(
+      smId
+    ) &&
+    smId > 0;
+
+
+  /* =====================
+     SCHEDULED MAINTENANCE REFERENCE
+
+     Click opens the existing Scheduled Maintenance
+     Detail view.
+
+     stopPropagation prevents any parent row/action
+     click from firing at the same time.
+  ===================== */
+
+  const smCode =
+    isSmTask
+      ? `
+          <div
+            class="task-sm-parent clickable-incident-reference"
+            title="Open Scheduled Maintenance details"
+            onclick="
+              event.stopPropagation();
+              openScheduledMaintenanceDetail(${smId});
+            "
+          >
+            SM-${String(
+              smId
+            ).padStart(
+              5,
+              "0"
+            )}
+          </div>
+        `
+      : "";
 
 
   /* =====================
@@ -1612,11 +1662,17 @@ const smCode =
      even after completion.
   ===================== */
 
-  let rowClass = "";
+  let rowClass =
+    "";
 
 
-  // Breakdown / Restoration
-  if (isRestoration) {
+  /* =====================
+     BREAKDOWN / RESTORATION
+  ===================== */
+
+  if (
+    isRestoration
+  ) {
 
     rowClass =
       "task-restoration";
@@ -1624,8 +1680,13 @@ const smCode =
   }
 
 
-  // Scheduled Maintenance / Planned
-  else if (isSmTask) {
+  /* =====================
+     SCHEDULED MAINTENANCE
+  ===================== */
+
+  else if (
+    isSmTask
+  ) {
 
     rowClass =
       "task-planned-manual";
@@ -1633,10 +1694,15 @@ const smCode =
   }
 
 
-  // Recurring Preventive
+  /* =====================
+     RECURRING PREVENTIVE
+  ===================== */
+
   else if (
     task.frequency_hours &&
-    Number(task.frequency_hours) > 0
+    Number(
+      task.frequency_hours
+    ) > 0
   ) {
 
     rowClass =
@@ -1645,7 +1711,11 @@ const smCode =
   }
 
 
-  // Existing Unplanned / completed manual classification
+  /* =====================
+     LEGACY UNPLANNED /
+     COMPLETED MANUAL
+  ===================== */
+
   else if (
     task.is_planned === false ||
     task.status === "Done"
@@ -1657,7 +1727,10 @@ const smCode =
   }
 
 
-  // Planned manual
+  /* =====================
+     PLANNED MANUAL
+  ===================== */
+
   else {
 
     rowClass =
@@ -1675,10 +1748,10 @@ const smCode =
      TASK TYPE DISPLAY
 
      Breakdown:
-       Restoration + BD-xxxxx
+       Restoration + clickable BD-xxxxx
 
      Scheduled Maintenance:
-       Planned + SM-xxxxx
+       Planned + clickable SM-xxxxx
 
      Other Tasks:
        Existing Task type
@@ -1691,16 +1764,10 @@ const smCode =
             Restoration
           </div>
 
-          <div class="task-breakdown-parent">
-            ${breakdownCode}
-          </div>
+          ${breakdownCode}
         `
       : isSmTask
         ? `
-            /* =====================
-              SCHEDULED MAINTENANCE TYPE
-            ===================== */
-
             <div>
               Planned
             </div>
@@ -1709,38 +1776,44 @@ const smCode =
           `
         : (
             task.type
-              ? highlight(task.type, q)
+              ? highlight(
+                  task.type,
+                  q
+                )
               : "-"
           );
 
-    /* =====================
-      MAINTENANCE REPORT SOURCE
 
-      If this Task was created from a Maintenance Report,
-      prepare a small MR-xxxxx source badge.
+  /* =====================
+     MAINTENANCE REPORT SOURCE
 
-      The backend already provides:
-      - maintenance_report_id
-      - maintenance_report_code
+     If this Task was created from a Maintenance Report,
+     prepare a small MR-xxxxx source badge.
 
-      Normal Tasks simply return an empty string here.
-    ===================== */
+     The backend provides:
+     - maintenance_report_id
+     - maintenance_report_code
 
-    const maintenanceReportBadgeHtml =
-      task.maintenance_report_code
-        ? `
-            <span
-              class="task-mr-source-badge"
-              title="Created from Maintenance Report ${task.maintenance_report_code}"
-            >
-              ${task.maintenance_report_code}
-            </span>
-          `
-        : "";
+     MR remains display-only for now because
+     its Detail view is still pending.
+  ===================== */
 
-    /* =====================
-      TASK ROW HTML
-    ===================== */
+  const maintenanceReportBadgeHtml =
+    task.maintenance_report_code
+      ? `
+          <span
+            class="task-mr-source-badge"
+            title="Created from Maintenance Report ${task.maintenance_report_code}"
+          >
+            ${task.maintenance_report_code}
+          </span>
+        `
+      : "";
+
+
+  /* =====================
+     TASK ROW HTML
+  ===================== */
 
   tr.innerHTML = `
 
@@ -1803,11 +1876,16 @@ const smCode =
     ===================== -->
 
     <td>
+
       ${
         task.section
-          ? highlight(task.section, q)
+          ? highlight(
+              task.section,
+              q
+            )
           : "-"
       }
+
     </td>
 
 
@@ -1816,51 +1894,53 @@ const smCode =
     ===================== -->
 
     <td>
+
       ${
         task.unit
-          ? highlight(task.unit, q)
+          ? highlight(
+              task.unit,
+              q
+            )
           : "-"
       }
+
     </td>
 
 
     <!-- =====================
-        TASK DESCRIPTION
+         TASK DESCRIPTION
 
-        Displays:
-        - Task description
-        - Maintenance Report source badge, when applicable
-        - Existing Safety / Quality impact badge
+         Displays:
+         - Task description
+         - MR source badge, when applicable
+         - Safety / Quality impact badge
     ===================== -->
 
     <td>
 
       <!-- =====================
-          TASK TEXT
+           TASK TEXT
       ===================== -->
 
       <div>
+
         ${highlight(
           task.task || "",
           q
         )}
+
       </div>
 
 
       <!-- =====================
-          MAINTENANCE REPORT SOURCE
-
-          Visible only when the Task originated
-          from Maintenance Report conversion.
+           MAINTENANCE REPORT SOURCE
       ===================== -->
 
-      ${
-        maintenanceReportBadgeHtml
-      }
+      ${maintenanceReportBadgeHtml}
 
 
       <!-- =====================
-          SAFETY / QUALITY IMPACT
+           SAFETY / QUALITY IMPACT
       ===================== -->
 
       ${renderImpactBadge(
@@ -1878,7 +1958,9 @@ const smCode =
     ===================== -->
 
     <td>
+
       ${typeHtml}
+
     </td>
 
 
@@ -1893,12 +1975,18 @@ const smCode =
     ===================== -->
 
     <td>
+
       ${
         task.status === "Done"
           ? "Completed: " +
-            formatDate(task.completed_at)
-          : formatDate(task.due_date)
+            formatDate(
+              task.completed_at
+            )
+          : formatDate(
+              task.due_date
+            )
       }
+
     </td>
 
 
@@ -1907,7 +1995,11 @@ const smCode =
     ===================== -->
 
     <td>
-      ${statusPill(task)}
+
+      ${statusPill(
+        task
+      )}
+
     </td>
 
 
@@ -1919,16 +2011,15 @@ const smCode =
 
          Complete:
            Existing technician / completion flow
-
-         No incident-specific completion
-         mechanism is introduced here.
     ===================== -->
 
     <td>
 
       <div class="history-action-group">
 
-        <!-- VIEW TASK -->
+        <!-- =====================
+             VIEW TASK
+        ===================== -->
 
         <button
           class="btn-icon btn-view"
@@ -1939,7 +2030,9 @@ const smCode =
         </button>
 
 
-        <!-- COMPLETE TASK -->
+        <!-- =====================
+             COMPLETE TASK
+        ===================== -->
 
         ${
           task.status !== "Done"
@@ -1961,6 +2054,10 @@ const smCode =
 
   `;
 
+
+  /* =====================
+     RETURN COMPLETED ROW
+  ===================== */
 
   return tr;
 
