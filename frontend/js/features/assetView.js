@@ -356,27 +356,29 @@ function renderAssetTasksTable(tasks) {
         ? formatDuration(t.duration_min)
         : "—";
 
-        /* =====================
+      /* =====================
         SCHEDULED MAINTENANCE REFERENCE
 
-        An SM Task remains a normal Planned Task.
+        Click opens the existing Scheduled Maintenance
+        Detail view from Asset Active Tasks.
 
-        The badge identifies its parent incident
-        without changing Task type or status.
+        stopPropagation prevents opening the Task View.
       ===================== */
-
-      const smId =
-        Number(t.scheduled_maintenance_id);
-
-      const isSmTask =
-        Number.isInteger(smId) &&
-        smId > 0;
 
       const smReferenceHtml =
         isSmTask
           ? `
-              <div class="task-sm-parent">
-                SM-${String(smId).padStart(5, "0")}
+              <div
+                class="task-sm-parent clickable-incident-reference"
+                title="Open Scheduled Maintenance details"
+                onclick="
+                  event.stopPropagation();
+                  openScheduledMaintenanceDetail(${smId});
+                "
+              >
+                SM-${String(
+                  smId
+                ).padStart(5, "0")}
               </div>
             `
           : "";
@@ -1126,61 +1128,68 @@ function renderAssetHistoryTable(history) {
         </div>
 
 
-        <!-- =====================
-             BREAKDOWN REFERENCE
-        ===================== -->
+      <!-- =====================
+          BREAKDOWN REFERENCE
 
-        ${
-          execType ===
-            "restoration" &&
-          e.breakdown_id
-            ? `
-              <div class="asset-history-breakdown-ref">
+          Click opens the existing Breakdown Detail view.
+      ===================== -->
 
-                BD-${String(
-                  e.breakdown_id
-                ).padStart(
-                  5,
-                  "0"
-                )}
+      ${
+        execType === "restoration" &&
+        e.breakdown_id
+          ? `
+            <div
+              class="asset-history-breakdown-ref clickable-incident-reference"
+              title="Open Breakdown details"
+              onclick="
+                event.stopPropagation();
+                openBreakdownDetail(${Number(e.breakdown_id)});
+              "
+            >
+              BD-${String(
+                e.breakdown_id
+              ).padStart(5, "0")}
+            </div>
+          `
+          : ""
+      }
 
-              </div>
-            `
-            : ""
-        }
+      <!-- =====================
+          SCHEDULED MAINTENANCE REFERENCE
 
+          Click opens the existing Scheduled Maintenance
+          Detail view.
+      ===================== -->
 
-        <!-- =====================
-             SCHEDULED MAINTENANCE
-             REFERENCE
-        ===================== -->
-
-        ${
-          Number.isInteger(
-            Number(
-              e.scheduled_maintenance_id
-            )
-          ) &&
+      ${
+        Number.isInteger(
           Number(
             e.scheduled_maintenance_id
-          ) > 0
-            ? `
-              <div class="asset-history-sm-ref">
-
-                SM-${String(
-                  e.scheduled_maintenance_id
-                ).padStart(
-                  5,
-                  "0"
-                )}
-
-              </div>
-            `
-            : ""
-        }
+          )
+        ) &&
+        Number(
+          e.scheduled_maintenance_id
+        ) > 0
+          ? `
+            <div
+              class="asset-history-sm-ref clickable-incident-reference"
+              title="Open Scheduled Maintenance details"
+              onclick="
+                event.stopPropagation();
+                openScheduledMaintenanceDetail(
+                  ${Number(e.scheduled_maintenance_id)}
+                );
+              "
+            >
+              SM-${String(
+                e.scheduled_maintenance_id
+              ).padStart(5, "0")}
+            </div>
+          `
+          : ""
+      }
 
       </td>
-
 
       <!-- =====================
            TECHNICIAN

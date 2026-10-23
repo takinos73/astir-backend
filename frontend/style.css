@@ -3612,3 +3612,39 @@ body.cmms-authenticated[data-role="shift_foreman"]
 .task-attachment-indicator:hover {
   opacity: 1;
 }
+
+/* =========================================================
+   CLICKABLE INCIDENT REFERENCES
+
+   Shared hover/cursor behavior for BD and SM flags.
+
+   Used in:
+   - Central Tasks
+   - Central History
+   - Asset Tasks
+   - Asset History
+========================================================= */
+
+.clickable-incident-reference {
+  cursor: pointer;
+
+  transition:
+    opacity 0.15s ease,
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+
+
+/* =====================
+   HOVER
+===================== */
+
+.clickable-incident-reference:hover {
+  opacity: 0.88;
+
+  filter:
+    brightness(1.15);
+
+  transform:
+    translateY(-1px);
+}

@@ -426,23 +426,59 @@ function renderHistoryTable(data) {
 
       <td>
           <div class="task-title">
-            ${
-              execType === "restoration" && h.breakdown_id
-                ? `
-                  <div class="history-breakdown-reference">
-                    BD-${String(
-                      h.breakdown_id
-                    ).padStart(5, "0")}
-                  </div>
-                `
-                : ""
-            }
+              <!-- =====================
+                  BREAKDOWN REFERENCE
+
+                  Click opens the existing Breakdown Detail view.
+              ===================== -->
+
+              ${
+                execType === "restoration" &&
+                h.breakdown_id
+                  ? `
+                    <div
+                      class="history-breakdown-reference clickable-incident-reference"
+                      title="Open Breakdown details"
+                      onclick="
+                        event.stopPropagation();
+                        openBreakdownDetail(${Number(h.breakdown_id)});
+                      "
+                    >
+                      BD-${String(
+                        h.breakdown_id
+                      ).padStart(5, "0")}
+                    </div>
+                  `
+                  : ""
+              }
+
+            <!-- =====================
+                SCHEDULED MAINTENANCE REFERENCE
+
+                Click opens the existing Scheduled Maintenance
+                Detail view.
+            ===================== -->
 
             ${
-              Number.isInteger(Number(h.scheduled_maintenance_id)) &&
-              Number(h.scheduled_maintenance_id) > 0
+              Number.isInteger(
+                Number(
+                  h.scheduled_maintenance_id
+                )
+              ) &&
+              Number(
+                h.scheduled_maintenance_id
+              ) > 0
                 ? `
-                  <div class="history-sm-reference">
+                  <div
+                    class="history-sm-reference clickable-incident-reference"
+                    title="Open Scheduled Maintenance details"
+                    onclick="
+                      event.stopPropagation();
+                      openScheduledMaintenanceDetail(
+                        ${Number(h.scheduled_maintenance_id)}
+                      );
+                    "
+                  >
                     SM-${String(
                       h.scheduled_maintenance_id
                     ).padStart(5, "0")}

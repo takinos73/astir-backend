@@ -1543,42 +1543,60 @@ function buildRow(task) {
     document.getElementById("taskSearch")?.value || "";
 
 
-  /* =====================
-     BREAKDOWN / RESTORATION
+/* =====================
+   BREAKDOWN REFERENCE
 
-     A Restoration Task is linked to
-     its parent Breakdown incident.
-  ===================== */
+   Click opens the existing Breakdown Detail view.
+   stopPropagation prevents the row click/action
+   from being triggered at the same time.
+===================== */
 
-  const isRestoration =
-    Number(task.breakdown_id) > 0;
+const breakdownCode =
+  isRestoration
+    ? `
+        <div
+          class="task-breakdown-parent clickable-incident-reference"
+          title="Open Breakdown details"
+          onclick="
+            event.stopPropagation();
+            openBreakdownDetail(${Number(task.breakdown_id)});
+          "
+        >
+          BD-${String(
+            task.breakdown_id
+          ).padStart(5, "0")}
+        </div>
+      `
+    : "";
 
-  const breakdownCode =
-    isRestoration
-      ? `BD-${String(task.breakdown_id).padStart(5, "0")}`
-      : null;
 
+/* =====================
+   SCHEDULED MAINTENANCE REFERENCE
 
-  /* =====================
-     SCHEDULED MAINTENANCE
+   Click opens the existing Scheduled Maintenance
+   Detail view.
 
-     An SM Task remains a normal Planned Task.
+   stopPropagation prevents the row click/action
+   from being triggered at the same time.
+===================== */
 
-     Its scheduled_maintenance_id identifies
-     the parent maintenance incident.
-  ===================== */
-
-  const smId =
-    Number(task.scheduled_maintenance_id);
-
-  const isSmTask =
-    Number.isInteger(smId) &&
-    smId > 0;
-
-  const smCode =
-    isSmTask
-      ? `SM-${String(smId).padStart(5, "0")}`
-      : null;
+const smCode =
+  isSmTask
+    ? `
+        <div
+          class="task-sm-parent clickable-incident-reference"
+          title="Open Scheduled Maintenance details"
+          onclick="
+            event.stopPropagation();
+            openScheduledMaintenanceDetail(${smId});
+          "
+        >
+          SM-${String(
+            smId
+          ).padStart(5, "0")}
+        </div>
+      `
+    : "";
 
 
   /* =====================
@@ -1679,13 +1697,15 @@ function buildRow(task) {
         `
       : isSmTask
         ? `
+            /* =====================
+              SCHEDULED MAINTENANCE TYPE
+            ===================== */
+
             <div>
               Planned
             </div>
 
-            <div class="task-sm-parent">
-              ${smCode}
-            </div>
+            ${smCode}
           `
         : (
             task.type
