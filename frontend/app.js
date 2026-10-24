@@ -487,7 +487,7 @@ function renderHistoryTable(data) {
                 : ""
             }
 
-            /* =====================
+            <!-- =====================
               MAINTENANCE REPORT SOURCE
 
               Displays MR-xxxxx when this execution belongs
@@ -496,7 +496,7 @@ function renderHistoryTable(data) {
 
               Click opens the shared Maintenance Report
               Detail modal.
-            ===================== */
+            ===================== -->
 
             ${
               h.maintenance_report_code &&
