@@ -2387,6 +2387,7 @@ function renderProductionReports(reports) {
       "tr"
     );
 
+
   [
     "Report No",
     "Asset",
@@ -2413,7 +2414,7 @@ function renderProductionReports(reports) {
 
 
   /* =====================
-    UPDATED SORT HEADER
+     UPDATED SORT HEADER
   ===================== */
 
   const updatedHeader =
@@ -2432,7 +2433,7 @@ function renderProductionReports(reports) {
 
   updatedHeader.textContent =
     productionReportsViewState.updatedSort ===
-      "ASC"
+    "ASC"
       ? "Updated ↑"
       : "Updated ↓";
 
@@ -2530,6 +2531,9 @@ function renderProductionReports(reports) {
 
     /* ===================================================
        REPORT NUMBER
+
+       MR-xxxxx is clickable and opens
+       the shared Maintenance Report Detail modal.
     =================================================== */
 
     const reportCell =
@@ -2548,8 +2552,16 @@ function renderProductionReports(reports) {
       );
 
 
+    /* =====================
+       CLICKABLE MR CODE
+    ===================== */
+
     code.className =
-      "report-table-code";
+      "report-table-code clickable-incident-reference";
+
+
+    code.title =
+      "Open Maintenance Report details";
 
 
     code.textContent =
@@ -2557,6 +2569,28 @@ function renderProductionReports(reports) {
       `MR-${String(
         report.id
       ).padStart(5, "0")}`;
+
+
+    /* =====================
+       OPEN MR DETAIL
+
+       Uses the shared read-only
+       Maintenance Report Detail view.
+    ===================== */
+
+    code.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+
+        openMaintenanceReportDetail(
+          Number(report.id)
+        );
+
+      }
+    );
 
 
     const reportedMeta =
@@ -2976,12 +3010,14 @@ function renderProductionReports(reports) {
       report.reviewed_at ||
       report.reported_at;
 
+
     const updatedDate =
       updatedAt
         ? new Date(
             updatedAt
           )
         : null;
+
 
     updatedCell.textContent =
       updatedDate &&
@@ -2992,6 +3028,7 @@ function renderProductionReports(reports) {
             "el-GR"
           )
         : "—";
+
 
     /* ===================================================
        APPEND ROW
