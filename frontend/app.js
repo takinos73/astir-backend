@@ -487,20 +487,32 @@ function renderHistoryTable(data) {
                 : ""
             }
 
-            <!-- =====================
-                MAINTENANCE REPORT SOURCE
+            /* =====================
+              MAINTENANCE REPORT SOURCE
 
-                Displays MR-xxxxx when this execution belongs
-                to a Task originally created from a
-                Maintenance Report.
-            ===================== -->
+              Displays MR-xxxxx when this execution belongs
+              to a Task originally created from a
+              Maintenance Report.
+
+              Click opens the shared Maintenance Report
+              Detail modal.
+            ===================== */
 
             ${
-              h.maintenance_report_code
+              h.maintenance_report_code &&
+              Number(
+                h.maintenance_report_id
+              ) > 0
                 ? `
                   <span
-                    class="task-mr-source-badge"
-                    title="Created from Maintenance Report ${h.maintenance_report_code}"
+                    class="task-mr-source-badge clickable-incident-reference"
+                    title="Open Maintenance Report ${h.maintenance_report_code}"
+                    onclick="
+                      event.stopPropagation();
+                      openMaintenanceReportDetail(
+                        ${Number(h.maintenance_report_id)}
+                      );
+                    "
                   >
                     ${h.maintenance_report_code}
                   </span>

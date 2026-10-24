@@ -1788,22 +1788,31 @@ function buildRow(task) {
      MAINTENANCE REPORT SOURCE
 
      If this Task was created from a Maintenance Report,
-     prepare a small MR-xxxxx source badge.
+     prepare a clickable MR-xxxxx source badge.
+
+     Clicking the badge opens the shared
+     Maintenance Report Detail modal.
 
      The backend provides:
      - maintenance_report_id
      - maintenance_report_code
-
-     MR remains display-only for now because
-     its Detail view is still pending.
   ===================== */
 
   const maintenanceReportBadgeHtml =
-    task.maintenance_report_code
+    task.maintenance_report_code &&
+    Number(
+      task.maintenance_report_id
+    ) > 0
       ? `
           <span
-            class="task-mr-source-badge"
-            title="Created from Maintenance Report ${task.maintenance_report_code}"
+            class="task-mr-source-badge clickable-incident-reference"
+            title="Open Maintenance Report ${task.maintenance_report_code}"
+            onclick="
+              event.stopPropagation();
+              openMaintenanceReportDetail(
+                ${Number(task.maintenance_report_id)}
+              );
+            "
           >
             ${task.maintenance_report_code}
           </span>
@@ -1912,7 +1921,7 @@ function buildRow(task) {
 
          Displays:
          - Task description
-         - MR source badge, when applicable
+         - Clickable MR source badge, when applicable
          - Safety / Quality impact badge
     ===================== -->
 
