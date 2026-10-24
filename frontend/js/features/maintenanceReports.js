@@ -8538,19 +8538,17 @@ async function openMaintenanceReportDetail(
 
 
     /* =====================
-       HEADER
+      MODAL HEADER
+
+      The MR code is already displayed prominently
+      inside the Detail content, so the outer modal
+      header keeps a simple descriptive title.
     ===================== */
 
     if (title) {
 
       title.textContent =
-        report.report_code ||
-        `MR-${String(
-          report.id
-        ).padStart(
-          5,
-          "0"
-        )}`;
+        "Maintenance Report";
 
     }
 
