@@ -19483,6 +19483,338 @@ app.get("/maintenance-reports/new-count", async (req, res) => {
 );
 
 /* =========================================================
+   GET MAINTENANCE REPORT DETAIL
+   GET /maintenance-reports/:id?technician_id=123
+
+   Shared read-only Maintenance Report Detail endpoint.
+
+   ACCESS
+   ---------------------------------------------------------
+   Allowed roles:
+   - Shift Foreman
+   - Technician
+   - Planner
+   - Admin
+
+   PURPOSE
+   ---------------------------------------------------------
+   Provides one common Maintenance Report Detail source for:
+   - Shift Foreman Production Reporting
+   - Maintenance / Technical Team
+   - MR references shown in Tasks
+   - MR references shown in History
+
+   IMPORTANT
+   ---------------------------------------------------------
+   - READ ONLY.
+   - Does NOT start review.
+   - Does NOT update comments.
+   - Does NOT create Breakdown.
+   - Does NOT create Maintenance Task.
+========================================================= */
+
+app.get("/maintenance-reports/:id", async (req, res) => {
+
+    try {
+
+      /* =====================
+         REPORT ID
+      ===================== */
+
+      const reportId =
+        Number(
+          req.params.id
+        );
+
+
+      /* =====================
+         VIEWER ID
+
+         Uses the same technician/user identity
+         already used by Production Reporting.
+      ===================== */
+
+      const technicianId =
+        Number(
+          req.query.technician_id
+        );
+
+
+      /* =====================
+         VALIDATE REPORT ID
+      ===================== */
+
+      if (
+        !Number.isInteger(
+          reportId
+        ) ||
+        reportId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Maintenance Report ID"
+        });
+
+      }
+
+
+      /* =====================
+         VALIDATE VIEWER ID
+      ===================== */
+
+      if (
+        !Number.isInteger(
+          technicianId
+        ) ||
+        technicianId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid User ID"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD VIEWER
+      ===================== */
+
+      const userResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            name,
+            role,
+            active,
+            is_user
+
+          FROM technicians
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [
+            technicianId
+          ]
+        );
+
+
+      if (
+        !userResult.rows.length
+      ) {
+
+        return res.status(404).json({
+          error:
+            "User not found"
+        });
+
+      }
+
+
+      const user =
+        userResult.rows[0];
+
+
+      /* =====================
+         NORMALIZE ROLE
+      ===================== */
+
+      const rawRole =
+        String(
+          user.role || ""
+        )
+          .trim()
+          .toLowerCase()
+          .replace(
+            /\s+/g,
+            "_"
+          );
+
+
+      const roleMap = {
+
+        shift_foreman:
+          "shift_foreman",
+
+        technician:
+          "technician",
+
+        supervisor:
+          "planner",
+
+        planner:
+          "planner",
+
+        admin:
+          "admin"
+
+      };
+
+
+      const normalizedRole =
+        roleMap[
+          rawRole
+        ];
+
+
+      /* =====================
+         ACCESS CONTROL
+      ===================== */
+
+      if (
+        user.active !== true ||
+        user.is_user !== true ||
+        ![
+          "shift_foreman",
+          "technician",
+          "planner",
+          "admin"
+        ].includes(
+          normalizedRole
+        )
+      ) {
+
+        return res.status(403).json({
+          error:
+            "Maintenance Report access denied"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD REPORT DETAIL
+      ===================== */
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            mr.id,
+            mr.asset_id,
+
+            mr.category,
+            mr.priority,
+            mr.production_stopped,
+            mr.description,
+
+            mr.reported_by,
+            mr.reported_at,
+
+            mr.status,
+
+            mr.reviewed_by,
+            mr.reviewed_at,
+            mr.maintenance_comment,
+
+            mr.resolution_type,
+
+            mr.breakdown_id,
+            mr.maintenance_task_id,
+
+            mr.created_at,
+            mr.updated_at,
+
+            a.name AS asset_name,
+            a.model AS asset_model,
+            a.serial_number AS asset_serial,
+
+            l.id AS line_id,
+            l.code AS line_code,
+            l.name AS line_name
+
+          FROM maintenance_reports mr
+
+          JOIN assets a
+            ON a.id = mr.asset_id
+
+          LEFT JOIN lines l
+            ON l.id = a.line_id
+
+          WHERE mr.id = $1
+
+          LIMIT 1
+          `,
+          [
+            reportId
+          ]
+        );
+
+
+      /* =====================
+         NOT FOUND
+      ===================== */
+
+      if (
+        !result.rows.length
+      ) {
+
+        return res.status(404).json({
+          error:
+            "Maintenance Report not found"
+        });
+
+      }
+
+
+      const report =
+        result.rows[0];
+
+
+      /* =====================
+         RESPONSE
+
+         report_code is generated consistently
+         with the existing Maintenance Report APIs.
+      ===================== */
+
+      return res.json({
+
+        report: {
+
+          ...report,
+
+          report_code:
+            `MR-${String(
+              report.id
+            ).padStart(
+              5,
+              "0"
+            )}`
+
+        }
+
+      });
+
+
+    } catch (err) {
+
+      /* =====================
+         ERROR
+      ===================== */
+
+      console.error(
+        "GET MAINTENANCE REPORT DETAIL ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to load Maintenance Report"
+      });
+
+    }
+
+  }
+);
+
+/* =========================================================
    START MAINTENANCE REPORT REVIEW
    PATCH /maintenance-reports/:id/start-review
 
