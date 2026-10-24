@@ -1695,399 +1695,399 @@
     style="display:none;"
 >
 
-  <!-- =====================================================
-      PRODUCTION REPORTING HEADER
-  ====================================================== -->
-
-  <div class="reporting-page-header">
-
-    <div>
-
-      <h2>
-        Production Reporting
-      </h2>
-
-      <div class="reporting-page-subtitle">
-        Report production issues to the Maintenance Department
-      </div>
-
-    </div>
-
-
-    <button
-      id="openMaintenanceReportModalBtn"
-      type="button"
-      class="reporting-open-report-btn"
-    >
-      + Report New Issue
-    </button>
-
-  </div>
-
-  <!-- =========================================================
-      PREVENTIVE PRIORITY
-      Compact read-only view for Shift Foremen.
-
-      PURPOSE:
-      - Shows up to the Top 3 most critical Assets.
-      - Uses the same ranking as the Asset Dashboard.
-      - Shows only Preventive workload.
-      - Keeps the Production Reports ticket table as the main view.
-  ========================================================= -->
-
-  <section
-    id="productionPreventivePriority"
-    class="production-preventive-priority"
-  >
-
-    <!-- =====================
-        COMPACT HEADER
-    ===================== -->
-
-    <div class="production-preventive-priority-header">
-
-      <span class="production-preventive-priority-title">
-        Preventive Priority
-      </span>
-
-      <span class="production-preventive-priority-subtitle">
-        Top critical assets
-      </span>
-
-    </div>
-
-
-    <!-- =====================
-        PRIORITY ASSET CARDS
-
-        Filled dynamically by JavaScript.
-    ===================== -->
-
-    <div
-      id="productionPreventivePriorityList"
-      class="production-preventive-priority-list"
-    >
-    </div>
-
-  </section>
-
     <!-- =====================================================
-        PRODUCTION REPORTS
-        Current renderer remains connected for now.
+        PRODUCTION REPORTING HEADER
     ====================================================== -->
 
-  <section class="reporting-card reporting-reports-section">
+    <div class="reporting-page-header">
 
-    <!-- =====================================================
-        PRODUCTION REPORTS HEADER + FILTERS
-    ====================================================== -->
+      <div>
 
-    <div class="reporting-reports-header">
+        <h2>
+          Production Reporting
+        </h2>
 
-      <!-- =====================
-          TITLE
-      ===================== -->
-
-      <div class="reporting-reports-title-block">
-
-        <h3>
-          Production Reports
-        </h3>
-
-        <div class="reporting-reports-subtitle">
-          Issues reported by all Shift Foremen
+        <div class="reporting-page-subtitle">
+          Report production issues to the Maintenance Department
         </div>
 
       </div>
 
 
+      <button
+        id="openMaintenanceReportModalBtn"
+        type="button"
+        class="reporting-open-report-btn"
+      >
+        + Report New Issue
+      </button>
+
+    </div>
+
+    <!-- =========================================================
+        PREVENTIVE PRIORITY
+        Compact read-only view for Shift Foremen.
+
+        PURPOSE:
+        - Shows up to the Top 3 most critical Assets.
+        - Uses the same ranking as the Asset Dashboard.
+        - Shows only Preventive workload.
+        - Keeps the Production Reports ticket table as the main view.
+    ========================================================= -->
+
+    <section
+      id="productionPreventivePriority"
+      class="production-preventive-priority"
+    >
+
       <!-- =====================
-          FILTER BAR
+          COMPACT HEADER
       ===================== -->
 
-      <div class="production-reports-filter-bar">
-
-          <!-- =====================================================
-            PRODUCTION REPORTS — ASSET MULTI-SELECT FILTER
-
-            - Custom dropdown.
-            - Supports multiple selected Assets.
-            - Assets are grouped internally by Line.
-            - Line names are NOT displayed.
-            - A separator is rendered between Lines.
-        ====================================================== -->
-
-        <div
-          class="production-reports-asset-filter-wrap"
-        >
-
-          <!-- =====================
-              DROPDOWN BUTTON
-          ===================== -->
-
-          <button
-            id="productionReportsAssetDropdownBtn"
-            class="production-reports-filter-control production-reports-asset-dropdown-btn"
-            type="button"
-          >
-
-            <!-- =====================
-                FILTER ICON
-            ===================== -->
-
-            <span class="production-reports-filter-icon">
-              ⚙
-            </span>
-
-
-            <!-- =====================
-                CURRENT SELECTION LABEL
-            ===================== -->
-
-            <span
-              id="productionReportsAssetDropdownText"
-              class="production-reports-asset-dropdown-text"
-            >
-              All Machines
-            </span>
-
-
-            <!-- =====================
-                DROPDOWN ARROW
-            ===================== -->
-
-            <span class="production-reports-filter-arrow">
-              ▾
-            </span>
-
-          </button>
-
-
-          <!-- =====================
-              DROPDOWN MENU
-          ===================== -->
-
-          <div
-            id="productionReportsAssetDropdownMenu"
-            class="production-reports-asset-dropdown-menu"
-            style="display:none;"
-          >
-          </div>
-
-        </div>
-
-        <!-- =====================
-            PERIOD RANGE PICKER
-        ===================== -->
-
-        <div class="production-reports-period-wrap">
-
-          <button
-            id="productionReportsPeriodBtn"
-            class="production-reports-filter-control production-reports-period-btn"
-            type="button"          >
-
-            <span class="production-reports-filter-icon">
-              📅
-            </span>
-
-            <span class="production-reports-filter-label">
-              Period
-            </span>
-
-            <span
-              id="productionReportsPeriodText"
-              class="production-reports-period-text"
-            >
-              All dates
-            </span>
-
-            <span class="production-reports-filter-arrow">
-              ▾
-            </span>
-
-          </button>
-
-          <!-- =====================
-              PERIOD POPOVER
-          ===================== -->
-
-          <div
-            id="productionReportsPeriodPicker"
-            class="production-reports-period-picker"
-            style="display:none;"
-          >
-
-            <div class="production-reports-period-picker-title">
-              Select Period
-            </div>
-
-            <div class="production-reports-period-grid">
-
-              <div class="field">
-
-                <label for="productionReportsDateFrom">
-                  From
-                </label>
-
-                <input
-                  id="productionReportsDateFrom"
-                  type="date"
-                >
-
-              </div>
-
-              <div class="field">
-
-                <label for="productionReportsDateTo">
-                  To
-                </label>
-
-                <input
-                  id="productionReportsDateTo"
-                  type="date"
-                >
-
-              </div>
-
-            </div>
-
-
-            <div class="production-reports-period-note">
-              Future dates are not allowed.
-            </div>
-
-
-            <div class="production-reports-period-actions">
-
-              <button
-                id="productionReportsPeriodClearBtn"
-                class="btn-cancel"
-                type="button"
-              >
-                Clear
-              </button>
-
-
-              <button
-                id="productionReportsPeriodApplyBtn"
-                class="btn-table"
-                type="button"
-              >
-                Apply
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <!-- =====================
-            STATUS FILTER
-        ===================== -->
-
-        <select
-          id="productionReportsStatusFilter"
-          class="production-reports-filter-control production-reports-status-filter"
-        >
-
-          <option value="ALL">
-            Status: All
-          </option>
-
-          <option value="NEW">
-            Status: New
-          </option>
-
-          <option value="UNDER_REVIEW">
-            Status: Under Review
-          </option>
-
-          <option value="CONVERTED">
-            Status: Converted
-          </option>
-
-          <option value="CLOSED">
-            Status: Closed
-          </option>
-
-        </select>
-
-        <!-- =====================
-            UPDATED SORT
-        ===================== -->
-
-        <button
-          id="productionReportsUpdatedSortBtn"
-          class="production-reports-filter-control production-reports-sort-btn"
-          type="button"
-          title="Sort by last update"
-        >
-
-          <span class="production-reports-sort-icon">
-            ⇅
-          </span>
-
-          <span>
-            Updated
-          </span>
-
-          <span
-            id="productionReportsUpdatedSortArrow"
-            class="production-reports-sort-arrow"
-          >
-            ↓
-          </span>
-
-        </button>
-
-        <!-- =====================
-            CLEAR ALL FILTERS
-        ===================== -->
-
-        <button
-          id="productionReportsClearFiltersBtn"
-          class="production-reports-filter-control production-reports-clear-btn"
-          type="button"
-        >
-
-          <span>
-            ↻
-          </span>
-
-          <span>
-            Clear
-          </span>
-
-        </button>
+      <div class="production-preventive-priority-header">
+
+        <span class="production-preventive-priority-title">
+          Preventive Priority
+        </span>
+
+        <span class="production-preventive-priority-subtitle">
+          Top critical assets
+        </span>
 
       </div>
 
 
       <!-- =====================
-          REPORT COUNT
+          PRIORITY ASSET CARDS
+
+          Filled dynamically by JavaScript.
       ===================== -->
 
       <div
-        id="productionReportsCount"
-        class="reporting-reports-count"
+        id="productionPreventivePriorityList"
+        class="production-preventive-priority-list"
       >
-        0 Reports
       </div>
 
+    </section>
+
+      <!-- =====================================================
+          PRODUCTION REPORTS
+          Current renderer remains connected for now.
+      ====================================================== -->
+
+    <section class="reporting-card reporting-reports-section">
+
+      <!-- =====================================================
+          PRODUCTION REPORTS HEADER + FILTERS
+      ====================================================== -->
+
+      <div class="reporting-reports-header">
+
         <!-- =====================
-            PRINT BUTTON
+            TITLE
         ===================== -->
 
-        <button
-          id="productionReportsPrintBtn"
-          class="btn-secondary production-reports-print-btn"
-          type="button"
-          onclick="openProductionReportsPrintModal()"
+        <div class="reporting-reports-title-block">
+
+          <h3>
+            Production Reports
+          </h3>
+
+          <div class="reporting-reports-subtitle">
+            Issues reported by all Shift Foremen
+          </div>
+
+        </div>
+
+
+        <!-- =====================
+            FILTER BAR
+        ===================== -->
+
+        <div class="production-reports-filter-bar">
+
+            <!-- =====================================================
+              PRODUCTION REPORTS — ASSET MULTI-SELECT FILTER
+
+              - Custom dropdown.
+              - Supports multiple selected Assets.
+              - Assets are grouped internally by Line.
+              - Line names are NOT displayed.
+              - A separator is rendered between Lines.
+          ====================================================== -->
+
+          <div
+            class="production-reports-asset-filter-wrap"
+          >
+
+            <!-- =====================
+                DROPDOWN BUTTON
+            ===================== -->
+
+            <button
+              id="productionReportsAssetDropdownBtn"
+              class="production-reports-filter-control production-reports-asset-dropdown-btn"
+              type="button"
+            >
+
+              <!-- =====================
+                  FILTER ICON
+              ===================== -->
+
+              <span class="production-reports-filter-icon">
+                ⚙
+              </span>
+
+
+              <!-- =====================
+                  CURRENT SELECTION LABEL
+              ===================== -->
+
+              <span
+                id="productionReportsAssetDropdownText"
+                class="production-reports-asset-dropdown-text"
+              >
+                All Machines
+              </span>
+
+
+              <!-- =====================
+                  DROPDOWN ARROW
+              ===================== -->
+
+              <span class="production-reports-filter-arrow">
+                ▾
+              </span>
+
+            </button>
+
+
+            <!-- =====================
+                DROPDOWN MENU
+            ===================== -->
+
+            <div
+              id="productionReportsAssetDropdownMenu"
+              class="production-reports-asset-dropdown-menu"
+              style="display:none;"
+            >
+            </div>
+
+          </div>
+
+          <!-- =====================
+              PERIOD RANGE PICKER
+          ===================== -->
+
+          <div class="production-reports-period-wrap">
+
+            <button
+              id="productionReportsPeriodBtn"
+              class="production-reports-filter-control production-reports-period-btn"
+              type="button"          >
+
+              <span class="production-reports-filter-icon">
+                📅
+              </span>
+
+              <span class="production-reports-filter-label">
+                Period
+              </span>
+
+              <span
+                id="productionReportsPeriodText"
+                class="production-reports-period-text"
+              >
+                All dates
+              </span>
+
+              <span class="production-reports-filter-arrow">
+                ▾
+              </span>
+
+            </button>
+
+            <!-- =====================
+                PERIOD POPOVER
+            ===================== -->
+
+            <div
+              id="productionReportsPeriodPicker"
+              class="production-reports-period-picker"
+              style="display:none;"
+            >
+
+              <div class="production-reports-period-picker-title">
+                Select Period
+              </div>
+
+              <div class="production-reports-period-grid">
+
+                <div class="field">
+
+                  <label for="productionReportsDateFrom">
+                    From
+                  </label>
+
+                  <input
+                    id="productionReportsDateFrom"
+                    type="date"
+                  >
+
+                </div>
+
+                <div class="field">
+
+                  <label for="productionReportsDateTo">
+                    To
+                  </label>
+
+                  <input
+                    id="productionReportsDateTo"
+                    type="date"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div class="production-reports-period-note">
+                Future dates are not allowed.
+              </div>
+
+
+              <div class="production-reports-period-actions">
+
+                <button
+                  id="productionReportsPeriodClearBtn"
+                  class="btn-cancel"
+                  type="button"
+                >
+                  Clear
+                </button>
+
+
+                <button
+                  id="productionReportsPeriodApplyBtn"
+                  class="btn-table"
+                  type="button"
+                >
+                  Apply
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- =====================
+              STATUS FILTER
+          ===================== -->
+
+          <select
+            id="productionReportsStatusFilter"
+            class="production-reports-filter-control production-reports-status-filter"
+          >
+
+            <option value="ALL">
+              Status: All
+            </option>
+
+            <option value="NEW">
+              Status: New
+            </option>
+
+            <option value="UNDER_REVIEW">
+              Status: Under Review
+            </option>
+
+            <option value="CONVERTED">
+              Status: Converted
+            </option>
+
+            <option value="CLOSED">
+              Status: Closed
+            </option>
+
+          </select>
+
+          <!-- =====================
+              UPDATED SORT
+          ===================== -->
+
+          <button
+            id="productionReportsUpdatedSortBtn"
+            class="production-reports-filter-control production-reports-sort-btn"
+            type="button"
+            title="Sort by last update"
+          >
+
+            <span class="production-reports-sort-icon">
+              ⇅
+            </span>
+
+            <span>
+              Updated
+            </span>
+
+            <span
+              id="productionReportsUpdatedSortArrow"
+              class="production-reports-sort-arrow"
+            >
+              ↓
+            </span>
+
+          </button>
+
+          <!-- =====================
+              CLEAR ALL FILTERS
+          ===================== -->
+
+          <button
+            id="productionReportsClearFiltersBtn"
+            class="production-reports-filter-control production-reports-clear-btn"
+            type="button"
+          >
+
+            <span>
+              ↻
+            </span>
+
+            <span>
+              Clear
+            </span>
+
+          </button>
+
+        </div>
+
+
+        <!-- =====================
+            REPORT COUNT
+        ===================== -->
+
+        <div
+          id="productionReportsCount"
+          class="reporting-reports-count"
         >
-          🖨 Print Report
-        </button>
+          0 Reports
+        </div>
+
+          <!-- =====================
+              PRINT BUTTON
+          ===================== -->
+
+          <button
+            id="productionReportsPrintBtn"
+            class="btn-secondary production-reports-print-btn"
+            type="button"
+            onclick="openProductionReportsPrintModal()"
+          >
+            🖨 Print Report
+          </button>
 
     </div>
 
@@ -2301,6 +2301,84 @@
     </div>
 
   </div>
+
+  <!-- =========================================================
+     MAINTENANCE REPORT DETAIL MODAL
+
+     Shared read-only view.
+
+     Accessible from:
+     - Shift Foreman Production Reporting
+     - Maintenance / Technical Team
+     - MR badges in Tasks / History
+========================================================= -->
+
+<div
+  id="maintenanceReportDetailOverlay"
+  class="modal-overlay"
+  style="display:none;"
+>
+
+  <!-- =====================
+       MODAL CARD
+  ===================== -->
+
+  <div
+    class="modal-card maintenance-report-detail-modal"
+  >
+
+    <!-- =====================
+         MODAL HEADER
+    ===================== -->
+
+    <div class="modal-header">
+
+      <div>
+
+        <h3 id="maintenanceReportDetailTitle">
+          Maintenance Report
+        </h3>
+
+        <p id="maintenanceReportDetailSubtitle">
+          Production Reporting detail
+        </p>
+
+      </div>
+
+
+      <!-- =====================
+           CLOSE BUTTON
+      ===================== -->
+
+      <button
+        type="button"
+        class="modal-close"
+        onclick="closeMaintenanceReportDetail()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <!-- =====================
+         MODAL CONTENT
+    ===================== -->
+
+    <div
+      id="maintenanceReportDetailContent"
+      class="maintenance-report-detail-content"
+    >
+
+      <div class="maintenance-report-detail-loading">
+        Loading Maintenance Report...
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
 
 
   <!-- =====================

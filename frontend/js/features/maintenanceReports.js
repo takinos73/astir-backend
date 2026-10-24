@@ -8327,6 +8327,690 @@ function closeProductionReportsPrintModal() {
 }
 
 /* =========================================================
+   OPEN MAINTENANCE REPORT DETAIL
+
+   Shared read-only Maintenance Report view.
+
+   Uses the logged user ID stored in:
+   TECHNICIAN_ID_STORAGE_KEY
+
+   Accessible by:
+   - Shift Foreman
+   - Technician
+   - Planner
+   - Admin
+========================================================= */
+
+async function openMaintenanceReportDetail(
+  reportId
+) {
+
+  /* =====================
+     VALIDATE REPORT ID
+  ===================== */
+
+  const id =
+    Number(
+      reportId
+    );
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+
+    console.error(
+      "Invalid Maintenance Report ID:",
+      reportId
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     LOGGED USER ID
+  ===================== */
+
+  const technicianId =
+    Number(
+      localStorage.getItem(
+        TECHNICIAN_ID_STORAGE_KEY
+      )
+    );
+
+
+  if (
+    !Number.isInteger(
+      technicianId
+    ) ||
+    technicianId <= 0
+  ) {
+
+    console.error(
+      "Unable to identify logged user."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     REQUIRED ELEMENTS
+  ===================== */
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportDetailOverlay"
+    );
+
+
+  const content =
+    document.getElementById(
+      "maintenanceReportDetailContent"
+    );
+
+
+  const title =
+    document.getElementById(
+      "maintenanceReportDetailTitle"
+    );
+
+
+  const subtitle =
+    document.getElementById(
+      "maintenanceReportDetailSubtitle"
+    );
+
+
+  if (
+    !overlay ||
+    !content
+  ) {
+
+    console.error(
+      "Maintenance Report Detail modal elements not found."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     SHOW MODAL
+  ===================== */
+
+  overlay.style.display =
+    "flex";
+
+
+  content.innerHTML = `
+    <div class="maintenance-report-detail-loading">
+      Loading Maintenance Report...
+    </div>
+  `;
+
+
+  /* =====================
+     LOAD REPORT
+  ===================== */
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/maintenance-reports/${id}?technician_id=${technicianId}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Maintenance Report"
+      );
+
+    }
+
+
+    const report =
+      data?.report;
+
+
+    if (!report) {
+
+      throw new Error(
+        "Maintenance Report data is missing"
+      );
+
+    }
+
+
+    /* =====================
+       HEADER
+    ===================== */
+
+    if (title) {
+
+      title.textContent =
+        report.report_code ||
+        `MR-${String(
+          report.id
+        ).padStart(
+          5,
+          "0"
+        )}`;
+
+    }
+
+
+    if (subtitle) {
+
+      subtitle.textContent =
+        "Maintenance Report Detail";
+
+    }
+
+
+    /* =====================
+       RENDER REPORT
+    ===================== */
+
+    renderMaintenanceReportDetail(
+      report
+    );
+
+
+  } catch (err) {
+
+    /* =====================
+       LOAD ERROR
+    ===================== */
+
+    console.error(
+      "LOAD MAINTENANCE REPORT DETAIL ERROR:",
+      err
+    );
+
+
+    content.innerHTML = `
+      <div class="maintenance-report-detail-error">
+        ${
+          err?.message ||
+          "Could not load Maintenance Report."
+        }
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER MAINTENANCE REPORT DETAIL
+
+   Displays one Maintenance Report in the shared modal.
+========================================================= */
+
+function renderMaintenanceReportDetail(
+  report
+) {
+
+  /* =====================
+     TARGET
+  ===================== */
+
+  const content =
+    document.getElementById(
+      "maintenanceReportDetailContent"
+    );
+
+
+  if (!content) {
+    return;
+  }
+
+
+  /* =====================
+     DATE FORMATTER
+  ===================== */
+
+  const formatDateTime =
+    value => {
+
+      if (!value) {
+        return "—";
+      }
+
+
+      const date =
+        new Date(value);
+
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return "—";
+
+      }
+
+
+      return date.toLocaleString(
+        "el-GR",
+        {
+          day:
+            "2-digit",
+
+          month:
+            "2-digit",
+
+          year:
+            "numeric",
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          hour12:
+            false
+        }
+      );
+
+    };
+
+
+  /* =====================
+     STATUS
+  ===================== */
+
+  const status =
+    String(
+      report.status ||
+      "—"
+    )
+      .trim()
+      .toUpperCase();
+
+
+  /* =====================
+     PRIORITY
+  ===================== */
+
+  const priority =
+    String(
+      report.priority ||
+      "NORMAL"
+    )
+      .trim()
+      .toUpperCase();
+
+
+  /* =====================
+     CATEGORY
+  ===================== */
+
+  const category =
+    String(
+      report.category ||
+      "—"
+    )
+      .replace(
+        /_/g,
+        " "
+      );
+
+
+  /* =====================
+     ASSET LABEL
+  ===================== */
+
+  const assetLabel =
+    [
+      report.line_code,
+      report.asset_name,
+      report.asset_model,
+      report.asset_serial
+        ? `SN ${report.asset_serial}`
+        : null
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+
+  /* =====================
+     RESOLUTION
+  ===================== */
+
+  let resolutionHtml =
+    `<div>—</div>`;
+
+
+  if (
+    report.resolution_type ===
+    "BREAKDOWN" &&
+    report.breakdown_id
+  ) {
+
+    resolutionHtml = `
+      <div>
+        Converted to Breakdown
+      </div>
+
+      <div
+        class="maintenance-report-detail-link"
+        title="Open Breakdown details"
+        onclick="
+          event.stopPropagation();
+          openBreakdownDetail(${Number(report.breakdown_id)});
+        "
+      >
+        BD-${String(
+          report.breakdown_id
+        ).padStart(
+          5,
+          "0"
+        )}
+      </div>
+    `;
+
+  }
+
+  else if (
+    report.resolution_type ===
+    "PLANNED_TASK" &&
+    report.maintenance_task_id
+  ) {
+
+    resolutionHtml = `
+      <div>
+        Converted to Planned Maintenance Task
+      </div>
+
+      <div>
+        Task #${report.maintenance_task_id}
+      </div>
+    `;
+
+  }
+
+  else if (
+    report.resolution_type ===
+    "NO_ACTION"
+  ) {
+
+    resolutionHtml = `
+      <div>
+        Reviewed — no maintenance action required
+      </div>
+    `;
+
+  }
+
+  else if (
+    status ===
+    "UNDER_REVIEW"
+  ) {
+
+    resolutionHtml = `
+      <div>
+        Under review by Maintenance
+      </div>
+    `;
+
+  }
+
+  else if (
+    status ===
+    "NEW"
+  ) {
+
+    resolutionHtml = `
+      <div>
+        Awaiting Maintenance review
+      </div>
+    `;
+
+  }
+
+
+  /* =====================
+     MAIN CONTENT
+  ===================== */
+
+  content.innerHTML = `
+
+    <!-- =====================
+         TOP SUMMARY
+    ===================== -->
+
+    <div class="maintenance-report-detail-top">
+
+      <div>
+
+        <div class="maintenance-report-detail-code">
+          ${
+            report.report_code ||
+            `MR-${String(
+              report.id
+            ).padStart(
+              5,
+              "0"
+            )}`
+          }
+        </div>
+
+        <div class="maintenance-report-detail-asset">
+          ${assetLabel || "—"}
+        </div>
+
+      </div>
+
+
+      <div class="maintenance-report-detail-status">
+        ${status}
+      </div>
+
+    </div>
+
+
+    <!-- =====================
+         DETAIL GRID
+    ===================== -->
+
+    <div class="maintenance-report-detail-grid">
+
+
+      <!-- =====================
+           REPORTED
+      ===================== -->
+
+      <div class="maintenance-report-detail-section">
+
+        <strong>
+          Reported
+        </strong>
+
+        <div>
+          ${formatDateTime(
+            report.reported_at
+          )}
+        </div>
+
+        <div>
+          By ${report.reported_by || "—"}
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           REVIEW
+      ===================== -->
+
+      <div class="maintenance-report-detail-section">
+
+        <strong>
+          Maintenance Review
+        </strong>
+
+        <div>
+          ${report.reviewed_by || "—"}
+        </div>
+
+        <div>
+          ${formatDateTime(
+            report.reviewed_at
+          )}
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           ISSUE
+      ===================== -->
+
+      <div class="maintenance-report-detail-section full-width">
+
+        <strong>
+          Issue
+        </strong>
+
+        <div>
+          ${report.description || "—"}
+        </div>
+
+
+        <!-- =====================
+             ISSUE TAGS
+        ===================== -->
+
+        <div class="maintenance-report-detail-tags">
+
+          <span class="maintenance-report-detail-tag">
+            ${category}
+          </span>
+
+
+          <span
+            class="
+              maintenance-report-detail-tag
+              ${
+                priority === "URGENT"
+                  ? "urgent"
+                  : ""
+              }
+            "
+          >
+            ${priority}
+          </span>
+
+
+          ${
+            report.production_stopped ===
+            true
+              ? `
+                <span
+                  class="
+                    maintenance-report-detail-tag
+                    stopped
+                  "
+                >
+                  PRODUCTION STOPPED
+                </span>
+              `
+              : ""
+          }
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           MAINTENANCE RESPONSE
+      ===================== -->
+
+      <div class="maintenance-report-detail-section full-width">
+
+        <strong>
+          Maintenance Response
+        </strong>
+
+        <div>
+          ${
+            report.maintenance_comment ||
+            "No Maintenance comment."
+          }
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           RESOLUTION
+      ===================== -->
+
+      <div class="maintenance-report-detail-section full-width">
+
+        <strong>
+          Resolution
+        </strong>
+
+        ${resolutionHtml}
+
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE MAINTENANCE REPORT DETAIL
+
+   Closes the shared MR Detail modal.
+========================================================= */
+
+function closeMaintenanceReportDetail() {
+
+  const overlay =
+    document.getElementById(
+      "maintenanceReportDetailOverlay"
+    );
+
+
+  if (overlay) {
+
+    overlay.style.display =
+      "none";
+
+  }
+
+}
+
+/* =========================================================
    PAGE LOAD
 
    Useful only if a valid Shift Foreman

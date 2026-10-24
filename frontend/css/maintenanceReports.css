@@ -4489,4 +4489,350 @@ textarea {
 
 }
 
+/* =========================================================
+   MAINTENANCE REPORT DETAIL MODAL
 
+   Shared read-only detail view for
+   Shift Foremen and Maintenance Team.
+========================================================= */
+
+
+/* =====================
+   MODAL WIDTH
+===================== */
+
+.maintenance-report-detail-modal {
+  width:
+    min(
+      760px,
+      calc(100vw - 40px)
+    );
+
+  max-height:
+    calc(100vh - 50px);
+
+  overflow-y:
+    auto;
+}
+
+
+/* =====================
+   CONTENT
+===================== */
+
+.maintenance-report-detail-content {
+  padding:
+    20px 24px 24px;
+}
+
+
+/* =====================
+   LOADING / ERROR
+===================== */
+
+.maintenance-report-detail-loading,
+.maintenance-report-detail-error {
+  padding:
+    18px 0;
+
+  color:
+    #94a3b8;
+}
+
+
+/* =====================
+   TOP SUMMARY
+===================== */
+
+.maintenance-report-detail-top {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  margin-bottom:
+    16px;
+}
+
+
+/* =====================
+   REPORT CODE
+===================== */
+
+.maintenance-report-detail-code {
+  font-size:
+    18px;
+
+  font-weight:
+    800;
+
+  color:
+    #f8fafc;
+}
+
+
+/* =====================
+   ASSET
+===================== */
+
+.maintenance-report-detail-asset {
+  margin-top:
+    4px;
+
+  font-size:
+    13px;
+
+  color:
+    #cbd5e1;
+}
+
+
+/* =====================
+   STATUS
+===================== */
+
+.maintenance-report-detail-status {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding:
+    4px 9px;
+
+  border-radius:
+    999px;
+
+  border:
+    1px solid #334155;
+
+  background:
+    #111827;
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.03em;
+
+  color:
+    #e2e8f0;
+}
+
+
+/* =====================
+   GRID
+===================== */
+
+.maintenance-report-detail-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    10px;
+}
+
+
+/* =====================
+   SECTION
+===================== */
+
+.maintenance-report-detail-section {
+  padding:
+    12px;
+
+  border:
+    1px solid #29313b;
+
+  border-radius:
+    9px;
+
+  background:
+    #11161b;
+}
+
+
+/* =====================
+   FULL WIDTH SECTION
+===================== */
+
+.maintenance-report-detail-section.full-width {
+  grid-column:
+    1 / -1;
+}
+
+
+/* =====================
+   SECTION LABEL
+===================== */
+
+.maintenance-report-detail-section strong {
+  display: block;
+
+  margin-bottom:
+    5px;
+
+  font-size:
+    10px;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.04em;
+
+  color:
+    #94a3b8;
+}
+
+
+/* =====================
+   SECTION VALUE
+===================== */
+
+.maintenance-report-detail-section div {
+  font-size:
+    12.5px;
+
+  line-height:
+    1.45;
+
+  color:
+    #e2e8f0;
+
+  overflow-wrap:
+    anywhere;
+}
+
+
+/* =====================
+   TAG ROW
+===================== */
+
+.maintenance-report-detail-tags {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap:
+    6px;
+
+  margin-top:
+    8px;
+}
+
+
+/* =====================
+   TAG
+===================== */
+
+.maintenance-report-detail-tag {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding:
+    3px 7px;
+
+  border:
+    1px solid #334155;
+
+  border-radius:
+    6px;
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  color:
+    #cbd5e1;
+}
+
+
+/* =====================
+   URGENT TAG
+===================== */
+
+.maintenance-report-detail-tag.urgent {
+  border-color:
+    rgba(245, 158, 11, 0.30);
+
+  color:
+    #fcd34d;
+}
+
+
+/* =====================
+   STOPPED TAG
+===================== */
+
+.maintenance-report-detail-tag.stopped {
+  border-color:
+    rgba(239, 68, 68, 0.30);
+
+  color:
+    #fca5a5;
+}
+
+
+/* =====================
+   RESOLUTION LINK
+===================== */
+
+.maintenance-report-detail-link {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap:
+    6px;
+
+  margin-top:
+    6px;
+
+  cursor:
+    pointer;
+
+  font-weight:
+    700;
+
+  color:
+    #93c5fd;
+}
+
+
+/* =====================
+   RESOLUTION LINK HOVER
+===================== */
+
+.maintenance-report-detail-link:hover {
+  text-decoration:
+    underline;
+}
+
+
+/* =====================
+   MOBILE
+===================== */
+
+@media (
+  max-width: 700px
+) {
+
+  .maintenance-report-detail-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+}
