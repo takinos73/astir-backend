@@ -356,7 +356,7 @@ function renderAssetTasksTable(tasks) {
         ? formatDuration(t.duration_min)
         : "—";
 
-        
+
     /* =====================
       SCHEDULED MAINTENANCE
 
@@ -409,27 +409,41 @@ function renderAssetTasksTable(tasks) {
             </div>
           `
         : "";
-      
-      /* =====================
-        MAINTENANCE REPORT SOURCE
 
-        If this Task was created from a Maintenance Report,
-        prepare the MR-xxxxx source badge.
 
-        Normal Tasks return an empty string.
-      ===================== */
+    /* =====================
+      MAINTENANCE REPORT SOURCE
 
-      const maintenanceReportReferenceHtml =
-        t.maintenance_report_code
-          ? `
-              <span
-                class="task-mr-source-badge"
-                title="Created from Maintenance Report ${t.maintenance_report_code}"
-              >
-                ${t.maintenance_report_code}
-              </span>
-            `
-          : "";
+      If this Task was created from a Maintenance Report,
+      prepare a clickable MR-xxxxx source badge.
+
+      Clicking the badge opens the shared
+      Maintenance Report Detail modal.
+
+      Normal Tasks return an empty string.
+    ===================== */
+
+    const maintenanceReportReferenceHtml =
+      t.maintenance_report_code &&
+      Number(
+        t.maintenance_report_id
+      ) > 0
+        ? `
+            <span
+              class="task-mr-source-badge clickable-incident-reference"
+              title="Open Maintenance Report ${t.maintenance_report_code}"
+              onclick="
+                event.stopPropagation();
+                openMaintenanceReportDetail(
+                  ${Number(t.maintenance_report_id)}
+                );
+              "
+            >
+              ${t.maintenance_report_code}
+            </span>
+          `
+        : "";
+
 
     // =====================
     // STATUS (TYPE + DUE STATE)
@@ -550,6 +564,9 @@ function renderAssetTasksTable(tasks) {
 
         <!-- =====================
             MAINTENANCE REPORT SOURCE
+
+            MR-xxxxx is clickable and opens
+            the shared Maintenance Report Detail.
         ===================== -->
 
         ${maintenanceReportReferenceHtml}
@@ -1039,18 +1056,26 @@ function renderAssetHistoryTable(history) {
           ===================== -->
 
           ${
-            e.maintenance_report_code
+            e.maintenance_report_code &&
+            Number(
+              e.maintenance_report_id
+            ) > 0
               ? `
                 <span
-                  class="task-mr-source-badge"
-                  title="Created from Maintenance Report ${e.maintenance_report_code}"
+                  class="task-mr-source-badge clickable-incident-reference"
+                  title="Open Maintenance Report ${e.maintenance_report_code}"
+                  onclick="
+                    event.stopPropagation();
+                    openMaintenanceReportDetail(
+                      ${Number(e.maintenance_report_id)}
+                    );
+                  "
                 >
                   ${e.maintenance_report_code}
                 </span>
               `
               : ""
           }
-
 
           <!-- =====================
                ATTACHMENT INDICATOR
