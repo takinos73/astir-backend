@@ -8,6 +8,26 @@
 let currentScheduledMaintenance = null;
 
 /* =========================================================
+   SM PLANNED TASK — ATTACHMENT SELECTION
+
+   Rules:
+   - Maximum 3 files
+   - Maximum 10 MB total
+   - JPG / JPEG / PNG / WEBP / PDF
+========================================================= */
+
+const SM_TASK_ATTACHMENT_MAX_FILES =
+  3;
+
+
+const SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES =
+  8 * 1024 * 1024;
+
+
+let smTaskAttachmentFiles =
+  [];
+
+/* =========================================================
    SCHEDULED MAINTENANCE DETAIL — READ ONLY
 
    Displays one SM incident and its linked Planned Tasks.
@@ -3349,26 +3369,6 @@ async function createSmTask() {
 
 }
 
-/* =========================================================
-   SM PLANNED TASK — ATTACHMENT SELECTION
-
-   Rules:
-   - Maximum 3 files
-   - Maximum 10 MB total
-   - JPG / JPEG / PNG / WEBP / PDF
-========================================================= */
-
-const SM_TASK_ATTACHMENT_MAX_FILES =
-  3;
-
-
-const SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES =
-  8 * 1024 * 1024;
-
-
-let smTaskAttachmentFiles =
-  [];
-
 
 /* =====================
    RESET
@@ -3867,6 +3867,8 @@ document.addEventListener("click", event => {
 
 });
 
+
+
 /* =========================================================
    NEW MAINTENANCE INCIDENT — TYPE SELECTOR
 
@@ -4045,6 +4047,1143 @@ window.openNewIncidentChooser = function () {
   overlay.style.display = "flex";
 
 };
+
+/* =========================================================
+   SCHEDULED MAINTENANCE SET — DRAFT STATE
+
+   Frontend-only working copy.
+
+   IMPORTANT:
+   - Does NOT modify the source Scheduled Maintenance.
+   - Does NOT modify source Tasks.
+   - Does NOT create a new SM.
+   - Does NOT write anything to the database.
+========================================================= */
+
+let scheduledMaintenanceSetDraft = {
+
+  /* =====================
+     SOURCE
+  ===================== */
+
+  sourceSmId: null,
+
+  sourceSmCode: null,
+
+  sourceSmTitle: null,
+
+  sourceAssetId: null,
+
+  sourceAssetModel: null,
+
+
+  /* =====================
+     TARGET
+  ===================== */
+
+  targetAssetId: null,
+
+  targetAssetModel: null,
+
+
+  /* =====================
+     DRAFT TASKS
+  ===================== */
+
+  tasks: []
+
+};
+
+
+/* =========================================================
+   RESET SM SET DRAFT
+========================================================= */
+
+function resetScheduledMaintenanceSetDraft() {
+
+  /* =====================
+     RESET MEMORY
+  ===================== */
+
+  scheduledMaintenanceSetDraft = {
+
+    sourceSmId: null,
+
+    sourceSmCode: null,
+
+    sourceSmTitle: null,
+
+    sourceAssetId: null,
+
+    sourceAssetModel: null,
+
+    targetAssetId: null,
+
+    targetAssetModel: null,
+
+    tasks: []
+
+  };
+
+
+  /* =====================
+     RESET DRAFT UI
+  ===================== */
+
+  const draftContainer =
+    document.getElementById(
+      "newSmSetDraft"
+    );
+
+
+  if (draftContainer) {
+
+    draftContainer.style.display =
+      "none";
+
+    draftContainer.innerHTML =
+      "";
+
+  }
+
+}
+
+/* =========================================================
+   FORMAT DRAFT DURATION
+========================================================= */
+
+function formatSmDraftDuration(minutes) {
+
+  /* =====================
+     NORMALIZE MINUTES
+  ===================== */
+
+  const total =
+    Number(minutes) || 0;
+
+
+  const hours =
+    Math.floor(
+      total / 60
+    );
+
+
+  const mins =
+    total % 60;
+
+
+  /* =====================
+     FORMAT
+  ===================== */
+
+  if (
+    hours > 0 &&
+    mins > 0
+  ) {
+
+    return `${hours}h ${mins}m`;
+
+  }
+
+
+  if (hours > 0) {
+
+    return `${hours}h`;
+
+  }
+
+
+  return `${mins}m`;
+
+}
+
+
+/* =========================================================
+   CALCULATE SM SET DRAFT SUMMARY
+
+   Only included Tasks count toward
+   the planned maintenance workload.
+========================================================= */
+
+function getScheduledMaintenanceSetDraftSummary() {
+
+  /* =====================
+     INCLUDED TASKS
+  ===================== */
+
+  const includedTasks =
+    scheduledMaintenanceSetDraft.tasks.filter(
+      task =>
+        task.included === true
+    );
+
+
+  /* =====================
+     TOTAL MINUTES
+  ===================== */
+
+  const totalMinutes =
+    includedTasks.reduce(
+      (sum, task) =>
+        sum +
+        (
+          Number(
+            task.duration_min
+          ) || 0
+        ),
+      0
+    );
+
+
+  return {
+
+    totalTasks:
+      scheduledMaintenanceSetDraft.tasks.length,
+
+    includedTasks:
+      includedTasks.length,
+
+    totalMinutes
+
+  };
+
+}
+
+
+/* =========================================================
+   UPDATE SM SET DRAFT SUMMARY
+========================================================= */
+
+function refreshScheduledMaintenanceSetDraftSummary() {
+
+  const summaryElement =
+    document.getElementById(
+      "newSmDraftSummary"
+    );
+
+
+  if (!summaryElement) {
+    return;
+  }
+
+
+  /* =====================
+     CALCULATE SUMMARY
+  ===================== */
+
+  const summary =
+    getScheduledMaintenanceSetDraftSummary();
+
+
+  /* =====================
+     RENDER SUMMARY
+  ===================== */
+
+  summaryElement.textContent =
+    `${summary.includedTasks} / ${summary.totalTasks} Tasks selected · ` +
+    `Total Planned Work: ${formatSmDraftDuration(summary.totalMinutes)}`;
+
+}
+
+
+/* =========================================================
+   UPDATE ONE DRAFT TASK DURATION
+
+   Frontend draft only.
+========================================================= */
+
+function updateScheduledMaintenanceDraftDuration(
+  draftIndex,
+  value
+) {
+
+  /* =====================
+     VALIDATE INDEX
+  ===================== */
+
+  const index =
+    Number(draftIndex);
+
+
+  if (
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= scheduledMaintenanceSetDraft.tasks.length
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     VALIDATE DURATION
+  ===================== */
+
+  const duration =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(duration) ||
+    duration < 0
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     UPDATE DRAFT ONLY
+  ===================== */
+
+  scheduledMaintenanceSetDraft.tasks[
+    index
+  ].duration_min =
+    Math.round(duration);
+
+
+  refreshScheduledMaintenanceSetDraftSummary();
+
+}
+
+
+/* =========================================================
+   TOGGLE DRAFT TASK INCLUDE / EXCLUDE
+========================================================= */
+
+function toggleScheduledMaintenanceDraftTask(
+  draftIndex,
+  included
+) {
+
+  /* =====================
+     VALIDATE INDEX
+  ===================== */
+
+  const index =
+    Number(draftIndex);
+
+
+  if (
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= scheduledMaintenanceSetDraft.tasks.length
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     UPDATE DRAFT ONLY
+  ===================== */
+
+  scheduledMaintenanceSetDraft.tasks[
+    index
+  ].included =
+    included === true;
+
+
+  refreshScheduledMaintenanceSetDraftSummary();
+
+}
+
+
+/* =========================================================
+   RENDER SCHEDULED MAINTENANCE SET DRAFT
+
+   Displays the working copy of source SM Tasks.
+
+   Editable now:
+   - Include / Exclude
+   - Estimated Duration
+
+   Source Tasks remain untouched.
+========================================================= */
+
+function renderScheduledMaintenanceSetDraft() {
+
+  const container =
+    document.getElementById(
+      "newSmSetDraft"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  /* =====================
+     OPEN DRAFT AREA
+  ===================== */
+
+  container.style.display =
+    "block";
+
+
+  container.replaceChildren();
+
+
+  /* =====================
+     SOURCE HEADER
+  ===================== */
+
+  const header =
+    document.createElement(
+      "div"
+    );
+
+
+  header.style.marginBottom =
+    "14px";
+
+
+  header.innerHTML = `
+    <!-- =====================
+         DRAFT HEADER
+    ===================== -->
+
+    <div
+      style="
+        font-size: 14px;
+        font-weight: 800;
+        color: #f1f5f9;
+      "
+    >
+      Maintenance Set Draft
+    </div>
+
+    <div
+      style="
+        margin-top: 4px;
+        font-size: 11px;
+        color: #94a3b8;
+      "
+    >
+      Based on
+      ${scheduledMaintenanceSetDraft.sourceSmCode || "—"}
+      ·
+      ${scheduledMaintenanceSetDraft.sourceSmTitle || "Scheduled Maintenance"}
+    </div>
+  `;
+
+
+  container.appendChild(
+    header
+  );
+
+
+  /* =====================
+     TASK LIST
+  ===================== */
+
+  const taskList =
+    document.createElement(
+      "div"
+    );
+
+
+  taskList.style.display =
+    "flex";
+
+  taskList.style.flexDirection =
+    "column";
+
+  taskList.style.gap =
+    "8px";
+
+
+  scheduledMaintenanceSetDraft.tasks.forEach(
+    (task, index) => {
+
+      /* =====================
+         TASK CARD
+      ===================== */
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.style.boxSizing =
+        "border-box";
+
+      card.style.padding =
+        "12px";
+
+      card.style.border =
+        "1px solid rgba(255,255,255,.10)";
+
+      card.style.borderRadius =
+        "8px";
+
+      card.style.background =
+        "#181f29";
+
+
+      /* =====================
+         TOP ROW
+      ===================== */
+
+      const topRow =
+        document.createElement(
+          "div"
+        );
+
+
+      topRow.style.display =
+        "grid";
+
+      topRow.style.gridTemplateColumns =
+        "24px minmax(0, 1fr) 110px";
+
+      topRow.style.gap =
+        "10px";
+
+      topRow.style.alignItems =
+        "start";
+
+
+      /* =====================
+         INCLUDE CHECKBOX
+      ===================== */
+
+      const checkbox =
+        document.createElement(
+          "input"
+        );
+
+
+      checkbox.type =
+        "checkbox";
+
+      checkbox.checked =
+        task.included === true;
+
+      checkbox.title =
+        "Include this Task in the new Scheduled Maintenance";
+
+
+      checkbox.addEventListener(
+        "change",
+        () => {
+
+          /* =====================
+             INCLUDE / EXCLUDE
+          ===================== */
+
+          toggleScheduledMaintenanceDraftTask(
+            index,
+            checkbox.checked
+          );
+
+
+          /* =====================
+             VISUAL STATE
+          ===================== */
+
+          card.style.opacity =
+            checkbox.checked
+              ? "1"
+              : ".48";
+
+        }
+      );
+
+
+      /* =====================
+         TASK INFO
+      ===================== */
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      const title =
+        document.createElement(
+          "div"
+        );
+
+
+      title.style.fontSize =
+        "13px";
+
+      title.style.fontWeight =
+        "700";
+
+      title.style.color =
+        "#f1f5f9";
+
+
+      title.textContent =
+        `${String(index + 1).padStart(2, "0")} · ` +
+        `${task.task || "—"}`;
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.style.marginTop =
+        "4px";
+
+      meta.style.fontSize =
+        "11px";
+
+      meta.style.color =
+        "#94a3b8";
+
+
+      meta.textContent =
+        [
+          task.section || null,
+          task.unit || null,
+          task.impact || null
+        ]
+          .filter(Boolean)
+          .join(" · ") ||
+        "No additional classification";
+
+
+      info.append(
+        title,
+        meta
+      );
+
+
+      /* =====================
+         DURATION EDITOR
+      ===================== */
+
+      const durationWrap =
+        document.createElement(
+          "div"
+        );
+
+
+      durationWrap.style.display =
+        "flex";
+
+      durationWrap.style.flexDirection =
+        "column";
+
+      durationWrap.style.gap =
+        "4px";
+
+
+      const durationLabel =
+        document.createElement(
+          "label"
+        );
+
+
+      durationLabel.style.fontSize =
+        "10px";
+
+      durationLabel.style.color =
+        "#94a3b8";
+
+
+      durationLabel.textContent =
+        "Duration (min)";
+
+
+      const durationInput =
+        document.createElement(
+          "input"
+        );
+
+
+      durationInput.type =
+        "number";
+
+      durationInput.min =
+        "0";
+
+      durationInput.step =
+        "1";
+
+      durationInput.value =
+        task.duration_min ?? "";
+
+
+      durationInput.style.boxSizing =
+        "border-box";
+
+      durationInput.style.width =
+        "100%";
+
+
+      durationInput.addEventListener(
+        "change",
+        () => {
+
+          /* =====================
+             UPDATE DRAFT DURATION
+          ===================== */
+
+          updateScheduledMaintenanceDraftDuration(
+            index,
+            durationInput.value
+          );
+
+        }
+      );
+
+
+      durationWrap.append(
+        durationLabel,
+        durationInput
+      );
+
+
+      /* =====================
+         BUILD TOP ROW
+      ===================== */
+
+      topRow.append(
+        checkbox,
+        info,
+        durationWrap
+      );
+
+
+      card.appendChild(
+        topRow
+      );
+
+
+      taskList.appendChild(
+        card
+      );
+
+    }
+  );
+
+
+  container.appendChild(
+    taskList
+  );
+
+
+  /* =====================
+     DRAFT SUMMARY
+  ===================== */
+
+  const summary =
+    document.createElement(
+      "div"
+    );
+
+
+  summary.id =
+    "newSmDraftSummary";
+
+
+  summary.style.marginTop =
+    "14px";
+
+  summary.style.padding =
+    "12px";
+
+  summary.style.border =
+    "1px solid #35506f";
+
+  summary.style.borderRadius =
+    "8px";
+
+  summary.style.background =
+    "#172233";
+
+  summary.style.color =
+    "#cfe1ff";
+
+  summary.style.fontSize =
+    "12px";
+
+  summary.style.fontWeight =
+    "700";
+
+
+  container.appendChild(
+    summary
+  );
+
+
+  /* =====================
+     INITIAL SUMMARY
+  ===================== */
+
+  refreshScheduledMaintenanceSetDraftSummary();
+
+}
+
+
+/* =========================================================
+   LOAD PREVIOUS SM TASKS INTO DRAFT
+
+   Uses:
+   GET /scheduled-maintenance/:id
+   GET /scheduled-maintenance/:id/tasks
+
+   IMPORTANT:
+   - Read only.
+   - Creates frontend copies.
+   - Does NOT reuse mutable source Task objects.
+========================================================= */
+
+async function loadPreviousScheduledMaintenanceSetDraft(
+  sourceSmId
+) {
+
+  const smId =
+    Number(
+      sourceSmId
+    );
+
+
+  if (
+    !Number.isInteger(smId) ||
+    smId <= 0
+  ) {
+    return;
+  }
+
+
+  const assetSelect =
+    document.getElementById(
+      "new-sm-asset"
+    );
+
+
+  const loadButton =
+    document.getElementById(
+      "loadPreviousSmSetBtn"
+    );
+
+
+  const summaryElement =
+    document.getElementById(
+      "newSmSetSummary"
+    );
+
+
+  /* =====================
+     TARGET ASSET
+  ===================== */
+
+  const targetAssetId =
+    Number(
+      assetSelect?.value
+    );
+
+
+  const targetAsset =
+    Array.isArray(state.assetsData)
+      ? state.assetsData.find(
+          asset =>
+            Number(asset.id) ===
+            targetAssetId
+        )
+      : null;
+
+
+  if (!targetAsset) {
+
+    alert(
+      "Please select a valid target Asset."
+    );
+
+    return;
+  }
+
+
+  /* =====================
+     LOADING STATE
+  ===================== */
+
+  if (loadButton) {
+
+    loadButton.disabled =
+      true;
+
+    loadButton.textContent =
+      "Loading...";
+
+  }
+
+
+  try {
+
+    /* =====================
+       LOAD SOURCE SM + TASKS
+    ===================== */
+
+    const [
+      smResponse,
+      tasksResponse
+    ] =
+      await Promise.all([
+
+        fetch(
+          `/scheduled-maintenance/${smId}`
+        ),
+
+        fetch(
+          `/scheduled-maintenance/${smId}/tasks`
+        )
+
+      ]);
+
+
+    if (
+      !smResponse.ok ||
+      !tasksResponse.ok
+    ) {
+
+      throw new Error(
+        "Failed to load Maintenance Set"
+      );
+
+    }
+
+
+    const smResult =
+      await smResponse.json();
+
+
+    const tasksResult =
+      await tasksResponse.json();
+
+
+    const sourceSm =
+      smResult.scheduled_maintenance;
+
+
+    const sourceTasks =
+      Array.isArray(
+        tasksResult.tasks
+      )
+        ? tasksResult.tasks
+        : [];
+
+
+    if (!sourceSm) {
+
+      throw new Error(
+        "Source Scheduled Maintenance not found"
+      );
+
+    }
+
+
+    /* =====================================================
+       MODEL SAFETY CHECK
+
+       Frontend guard.
+
+       The source Asset model MUST match
+       the target Asset model.
+    ===================================================== */
+
+    const sourceModel =
+      String(
+        sourceSm.asset_model || ""
+      ).trim();
+
+
+    const targetModel =
+      String(
+        targetAsset.model || ""
+      ).trim();
+
+
+    if (
+      !sourceModel ||
+      !targetModel ||
+      sourceModel !== targetModel
+    ) {
+
+      throw new Error(
+        "Source Scheduled Maintenance is not compatible with the selected Asset model"
+      );
+
+    }
+
+
+    /* =====================
+       REQUIRE SOURCE TASKS
+    ===================== */
+
+    if (sourceTasks.length === 0) {
+
+      resetScheduledMaintenanceSetDraft();
+
+
+      if (summaryElement) {
+
+        summaryElement.textContent =
+          "The selected Scheduled Maintenance has no Tasks.";
+
+      }
+
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       CREATE FRONTEND DRAFT
+
+       Every Task becomes a COPY.
+
+       Source IDs are kept only for traceability.
+       They will NOT become the new Task IDs.
+    ===================================================== */
+
+    scheduledMaintenanceSetDraft = {
+
+      sourceSmId:
+        Number(sourceSm.id),
+
+      sourceSmCode:
+        `SM-${String(
+          sourceSm.id
+        ).padStart(5, "0")}`,
+
+      sourceSmTitle:
+        sourceSm.title ||
+        "Scheduled Maintenance",
+
+      sourceAssetId:
+        Number(sourceSm.asset_id),
+
+      sourceAssetModel:
+        sourceModel,
+
+      targetAssetId:
+        targetAssetId,
+
+      targetAssetModel:
+        targetModel,
+
+      tasks:
+        sourceTasks.map(
+          (task, index) => ({
+
+            /* =====================
+               SOURCE TRACE
+            ===================== */
+
+            sourceTaskId:
+              Number(task.id),
+
+
+            /* =====================
+               DRAFT CONTROL
+            ===================== */
+
+            included:
+              true,
+
+            sortOrder:
+              index + 1,
+
+
+            /* =====================
+               TASK DEFINITION
+
+               Copies only reusable planning data.
+               Does NOT copy execution status/history.
+            ===================== */
+
+            task:
+              String(
+                task.task || ""
+              ).trim(),
+
+            section:
+              task.section || null,
+
+            unit:
+              task.unit || null,
+
+            impact:
+              task.impact || "normal",
+
+            duration_min:
+              Number(
+                task.duration_min
+              ) || 0,
+
+            notes:
+              task.notes || null
+
+          })
+        )
+
+    };
+
+
+    /* =====================
+       RENDER DRAFT
+    ===================== */
+
+    renderScheduledMaintenanceSetDraft();
+
+
+    /* =====================
+       SOURCE SUMMARY
+    ===================== */
+
+    if (summaryElement) {
+
+      summaryElement.textContent =
+        `${scheduledMaintenanceSetDraft.sourceSmCode} loaded from ${sourceModel}. ` +
+        `${sourceTasks.length} Tasks copied to Draft.`;
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD SM SET DRAFT ERROR:",
+      err
+    );
+
+
+    resetScheduledMaintenanceSetDraft();
+
+
+    alert(
+      err.message ||
+      "Could not load Maintenance Set."
+    );
+
+  } finally {
+
+    /* =====================
+       RESTORE LOAD BUTTON
+    ===================== */
+
+    if (loadButton) {
+
+      loadButton.textContent =
+        "Load Set";
+
+
+      refreshPreviousSmSetSelection();
+
+    }
+
+  }
+
+}
 
 /* =========================================================
    SCHEDULED MAINTENANCE SET PLANNER
@@ -4890,6 +6029,26 @@ async function openNewScheduledMaintenanceModal() {
               Load Set
             </button>
 
+            <!-- =================================================
+                MAINTENANCE SET DRAFT
+
+                Populated only after Load Set.
+
+                Frontend-only working copy.
+                No database records are created here.
+            ================================================= -->
+
+            <div
+              id="newSmSetDraft"
+              style="
+                display: none;
+                margin-top: 18px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(255,255,255,.10);
+              "
+            >
+            </div>
+
           </div>
 
         </div>
@@ -5154,15 +6313,13 @@ async function openNewScheduledMaintenanceModal() {
     );
 
 
-    /* =====================
-       LOAD SET BUTTON
+    /* =====================================================
+      LOAD PREVIOUS MAINTENANCE SET
 
-       Intentionally no Task loading yet.
+      Loads source Tasks into a frontend-only Draft.
 
-       Next implementation step will:
-       GET /scheduled-maintenance/:id/tasks
-       and create the editable Draft.
-    ===================== */
+      No database write occurs here.
+    ===================================================== */
 
     overlay
       .querySelector(
@@ -5170,7 +6327,11 @@ async function openNewScheduledMaintenanceModal() {
       )
       ?.addEventListener(
         "click",
-        () => {
+        async () => {
+
+          /* =====================
+            SOURCE SM
+          ===================== */
 
           const sourceId =
             Number(
@@ -5186,35 +6347,16 @@ async function openNewScheduledMaintenanceModal() {
           }
 
 
-          console.log(
-            "MAINTENANCE SET SOURCE SELECTED:",
+          /* =====================
+            LOAD DRAFT
+          ===================== */
+
+          await loadPreviousScheduledMaintenanceSetDraft(
             sourceId
           );
 
-
-          /* =====================
-             NEXT STEP PLACEHOLDER
-
-             No DB change.
-          ===================== */
-
-          const summary =
-            document.getElementById(
-              "newSmSetSummary"
-            );
-
-
-          if (summary) {
-
-            summary.textContent =
-              `SM-${String(sourceId).padStart(5, "0")} selected. ` +
-              "Task Draft loading will be connected next.";
-
-          }
-
         }
       );
-
 
     /* =====================
        INITIAL MODE
