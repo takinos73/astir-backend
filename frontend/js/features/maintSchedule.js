@@ -4414,7 +4414,6 @@ function invalidateScheduledMaintenanceSetPreview() {
 
 }
 
-
 /* =========================================================
    FORMAT DATE / TIME FOR SET PREVIEW
 ========================================================= */
