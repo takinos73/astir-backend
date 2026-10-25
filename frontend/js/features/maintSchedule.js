@@ -7983,34 +7983,64 @@ async function openNewScheduledMaintenanceModal() {
 
 
       /* =====================
-         EXISTING EMPTY FLOW
+        CREATE BUTTON STATE
 
-         Existing Create button remains
-         active only for Empty mode.
+        EMPTY MODE:
+        Existing flow remains available.
 
-         Set mode is still planning-only.
+        SET MODE:
+        Creation is allowed only after
+        a valid Preview has been created.
       ===================== */
 
       if (saveButton) {
 
+        /* =====================
+          SET MODE
+        ===================== */
+
         if (useSet) {
 
-          saveButton.textContent =
-            "Preview Set";
+          const hasValidPreview =
+            Boolean(
+              scheduledMaintenanceSetDraft?.preview &&
+              Array.isArray(
+                scheduledMaintenanceSetDraft.preview.tasks
+              ) &&
+              scheduledMaintenanceSetDraft.preview.tasks.length > 0
+            );
+
 
           saveButton.disabled =
-            true;
+            !hasValidPreview;
+
+
+          saveButton.textContent =
+            hasValidPreview
+              ? "Confirm & Create"
+              : "Preview Required";
+
 
           saveButton.title =
-            "Load a previous Maintenance Set first.";
+            hasValidPreview
+              ? "Create Scheduled Maintenance and all selected Planned Tasks."
+              : "Preview the Maintenance Set before creation.";
 
-        } else {
+        }
+
+        /* =====================
+          EMPTY MODE
+        ===================== */
+
+        else {
 
           saveButton.textContent =
             "Create Scheduled Maintenance";
 
+
           saveButton.disabled =
             false;
+
 
           saveButton.title =
             "";
