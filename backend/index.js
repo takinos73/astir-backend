@@ -14973,98 +14973,112 @@ app.post("/preventives", async (req, res) => {
     );
 
 
+/* =====================
+   CREATE PREVENTIVE TASK
+
+   IMPORTANT:
+   unique_preventive_task is a PARTIAL UNIQUE INDEX,
+   not a PostgreSQL CONSTRAINT.
+
+   Therefore conflict detection must use:
+   - the indexed columns
+   - the exact same partial-index predicate
+
+   The unique rule applies only to Tasks that are:
+   - NOT Breakdown Tasks
+   - NOT Scheduled Maintenance Tasks
+===================== */
+
+const result =
+  await client.query(
+    `
+    INSERT INTO maintenance_tasks (
+      asset_id,
+      section,
+      unit,
+      task,
+      type,
+      duration_min,
+      frequency_hours,
+      due_date,
+      status,
+      is_planned,
+      impact,
+      notes
+    )
+
+    VALUES (
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7,
+      $8,
+      'Planned',
+      true,
+      $9,
+      $10
+    )
+
     /* =====================
-       CREATE PREVENTIVE TASK
+       DUPLICATE PROTECTION
 
-       IMPORTANT:
-       unique_preventive_task is now a PARTIAL UNIQUE INDEX,
-       not a PostgreSQL CONSTRAINT.
+       Matches the partial unique index:
 
-       Therefore conflict detection must use the indexed
-       columns + the same partial-index predicate:
+       unique_preventive_task
+       (
+         asset_id,
+         section,
+         unit,
+         task,
+         type,
+         frequency_hours
+       )
 
-       WHERE breakdown_id IS NULL
+       WHERE
+         breakdown_id IS NULL
+         AND scheduled_maintenance_id IS NULL
+
+       Result:
+       - Preventive duplicates are blocked.
+       - Standalone Planned duplicates are blocked.
+       - Breakdown Tasks are excluded.
+       - Scheduled Maintenance Tasks are excluded,
+         because the same real maintenance work
+         may legitimately repeat in another SM.
     ===================== */
 
-    const result =
-      await client.query(
-        `
-        INSERT INTO maintenance_tasks (
-          asset_id,
-          section,
-          unit,
-          task,
-          type,
-          duration_min,
-          frequency_hours,
-          due_date,
-          status,
-          is_planned,
-          impact,
-          notes
-        )
+    ON CONFLICT (
+      asset_id,
+      section,
+      unit,
+      task,
+      type,
+      frequency_hours
+    )
+    WHERE
+      breakdown_id IS NULL
+      AND scheduled_maintenance_id IS NULL
 
-        VALUES (
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6,
-          $7,
-          $8,
-          'Planned',
-          true,
-          $9,
-          $10
-        )
+    DO NOTHING
 
-        /* =====================
-           DUPLICATE PROTECTION
-
-           Matches the existing partial unique index:
-
-           unique_preventive_task
-           (
-             asset_id,
-             section,
-             unit,
-             task,
-             type,
-             frequency_hours
-           )
-           WHERE breakdown_id IS NULL
-
-           Breakdown Tasks remain excluded from this rule.
-        ===================== */
-
-        ON CONFLICT (
-          asset_id,
-          section,
-          unit,
-          task,
-          type,
-          frequency_hours
-        )
-        WHERE breakdown_id IS NULL
-
-        DO NOTHING
-
-        RETURNING *
-        `,
-        [
-          asset_id,
-          section || null,
-          unit || null,
-          task.trim(),
-          type || null,
-          duration_min || null,
-          frequency_hours,
-          due_date,
-          cleanImpact,
-          notes || null
-        ]
-      );
+    RETURNING *
+    `,
+    [
+      asset_id,
+      section || null,
+      unit || null,
+      task.trim(),
+      type || null,
+      duration_min || null,
+      frequency_hours,
+      due_date,
+      cleanImpact,
+      notes || null
+    ]
+  );
 
 
     /* =====================
