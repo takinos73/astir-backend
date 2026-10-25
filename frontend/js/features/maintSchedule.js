@@ -6107,10 +6107,10 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-               LOAD SET ACTION
+              LOAD SET ACTION
 
-               Next step will load the
-               selected SM Tasks into Draft.
+              Loads the selected SM Tasks
+              into the frontend Draft.
           ===================== -->
 
           <div
@@ -6130,26 +6130,30 @@ async function openNewScheduledMaintenanceModal() {
               Load Set
             </button>
 
-            <!-- =================================================
-                MAINTENANCE SET DRAFT
+          </div>
 
-                Populated only after Load Set.
 
-                Frontend-only working copy.
-                No database records are created here.
-            ================================================= -->
+          <!-- =================================================
+              MAINTENANCE SET DRAFT
 
-            <div
-              id="newSmSetDraft"
-              style="
-                display: none;
-                margin-top: 18px;
-                padding-top: 16px;
-                border-top: 1px solid rgba(255,255,255,.10);
-              "
-            >
-            </div>
+              IMPORTANT:
+              This block is OUTSIDE the Load Set flex container.
 
+              Populated only after Load Set.
+
+              Frontend-only working copy.
+              No database records are created here.
+          ================================================= -->
+
+          <div
+            id="newSmSetDraft"
+            style="
+              display: none;
+              margin-top: 18px;
+              padding-top: 16px;
+              border-top: 1px solid rgba(255,255,255,.10);
+            "
+          >
           </div>
 
         </div>
