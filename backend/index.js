@@ -9626,6 +9626,910 @@ app.post("/scheduled-maintenance", async (req, res) => {
 });
 
 /* =========================================================
+   CREATE SCHEDULED MAINTENANCE FROM SET
+
+   POST /scheduled-maintenance/from-set
+
+   Creates, in ONE database transaction:
+
+   1. New Scheduled Maintenance incident
+   2. All selected Planned Tasks
+   3. Planned timeline for every Task
+
+   TASK TIMELINE:
+   - planned_start_at = planned Task start
+   - due_date         = planned Task end
+   - duration_min     = estimated duration
+
+   SAFETY:
+   - Target Asset must exist.
+   - Source SM must exist.
+   - Source SM Asset model must match Target Asset model.
+   - At least one Task is required.
+   - Duplicate Tasks inside the submitted Set are rejected.
+   - Any error rolls back the ENTIRE creation.
+
+   IMPORTANT:
+   - Existing Empty SM flow is NOT modified.
+   - Existing Breakdown flow is NOT modified.
+   - No Task execution is created.
+   - New SM starts as PLANNED.
+========================================================= */
+
+app.post( "/scheduled-maintenance/from-set", async (req, res) => {
+
+    /* =====================
+       READ INPUT
+    ===================== */
+
+    const {
+      asset_id,
+      source_sm_id,
+      title,
+      description,
+      scheduled_start_at,
+      scheduled_end_at,
+      tasks
+    } = req.body || {};
+
+
+    /* =====================
+       VALIDATE IDS
+    ===================== */
+
+    const assetId =
+      Number(asset_id);
+
+
+    const sourceSmId =
+      Number(source_sm_id);
+
+
+    if (
+      !Number.isInteger(assetId) ||
+      assetId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Target Asset is required."
+      });
+
+    }
+
+
+    if (
+      !Number.isInteger(sourceSmId) ||
+      sourceSmId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Source Scheduled Maintenance is required."
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE TITLE
+    ===================== */
+
+    const resolvedTitle =
+      String(
+        title ?? ""
+      ).trim();
+
+
+    if (!resolvedTitle) {
+
+      return res.status(400).json({
+        error:
+          "Scheduled Maintenance title is required."
+      });
+
+    }
+
+
+    /* =====================
+       DATE PARSER
+
+       Require explicit timezone because
+       PostgreSQL stores TIMESTAMPTZ values.
+    ===================== */
+
+    const parseDateWithTimezone =
+      value => {
+
+        if (
+          typeof value !== "string" ||
+          !value.trim()
+        ) {
+          return null;
+        }
+
+
+        const cleanValue =
+          value.trim();
+
+
+        if (
+          !/(Z|[+-]\d{2}:\d{2})$/i.test(
+            cleanValue
+          )
+        ) {
+          return "INVALID";
+        }
+
+
+        const date =
+          new Date(
+            cleanValue
+          );
+
+
+        return Number.isNaN(
+          date.getTime()
+        )
+          ? "INVALID"
+          : date;
+
+      };
+
+
+    /* =====================
+       VALIDATE SM DATES
+    ===================== */
+
+    const scheduledStart =
+      parseDateWithTimezone(
+        scheduled_start_at
+      );
+
+
+    const scheduledEnd =
+      parseDateWithTimezone(
+        scheduled_end_at
+      );
+
+
+    if (
+      scheduledStart === "INVALID" ||
+      scheduledEnd === "INVALID" ||
+      !scheduledStart ||
+      !scheduledEnd
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Valid Scheduled Start and Scheduled End are required."
+      });
+
+    }
+
+
+    if (
+      scheduledEnd <=
+      scheduledStart
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Scheduled End must be later than Scheduled Start."
+      });
+
+    }
+
+
+    /* =====================
+       VALIDATE TASK ARRAY
+    ===================== */
+
+    if (
+      !Array.isArray(tasks) ||
+      tasks.length === 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "At least one Maintenance Task is required."
+      });
+
+    }
+
+
+    /* =====================================================
+       NORMALIZE + VALIDATE TASKS
+    ===================================================== */
+
+    const normalizedTasks =
+      [];
+
+
+    const duplicateKeys =
+      new Set();
+
+
+    for (
+      let index = 0;
+      index < tasks.length;
+      index += 1
+    ) {
+
+      const task =
+        tasks[index] || {};
+
+
+      /* =====================
+         TASK NAME
+      ===================== */
+
+      const taskName =
+        String(
+          task.task ?? ""
+        ).trim();
+
+
+      if (!taskName) {
+
+        return res.status(400).json({
+          error:
+            `Task ${index + 1} has no Task description.`
+        });
+
+      }
+
+
+      /* =====================
+         ESTIMATED DURATION
+      ===================== */
+
+      const durationMin =
+        Number(
+          task.duration_min
+        );
+
+
+      if (
+        !Number.isFinite(
+          durationMin
+        ) ||
+        durationMin < 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            `Invalid estimated duration for Task: ${taskName}`
+        });
+
+      }
+
+
+      /* =====================
+         PLANNED START / END
+      ===================== */
+
+      const plannedStart =
+        parseDateWithTimezone(
+          task.planned_start_at
+        );
+
+
+      const plannedEnd =
+        parseDateWithTimezone(
+          task.planned_end_at
+        );
+
+
+      if (
+        plannedStart === "INVALID" ||
+        plannedEnd === "INVALID" ||
+        !plannedStart ||
+        !plannedEnd
+      ) {
+
+        return res.status(400).json({
+          error:
+            `Invalid planned timeline for Task: ${taskName}`
+        });
+
+      }
+
+
+      if (
+        plannedEnd <
+        plannedStart
+      ) {
+
+        return res.status(400).json({
+          error:
+            `Planned End cannot be earlier than Planned Start for Task: ${taskName}`
+        });
+
+      }
+
+
+      /* =====================
+         TASK MUST REMAIN
+         INSIDE SM WINDOW
+      ===================== */
+
+      if (
+        plannedStart <
+          scheduledStart ||
+        plannedEnd >
+          scheduledEnd
+      ) {
+
+        return res.status(400).json({
+          error:
+            `Task "${taskName}" is outside the Scheduled Maintenance window.`
+        });
+
+      }
+
+
+      /* =====================
+         IMPACT
+      ===================== */
+
+      const resolvedImpact =
+        String(
+          task.impact ||
+          "normal"
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const validImpacts = [
+        "normal",
+        "safety",
+        "quality",
+        "safety_quality"
+      ];
+
+
+      if (
+        !validImpacts.includes(
+          resolvedImpact
+        )
+      ) {
+
+        return res.status(400).json({
+          error:
+            `Invalid impact for Task: ${taskName}`
+        });
+
+      }
+
+
+      /* =================================================
+         DUPLICATE INSIDE SET
+
+         Identity:
+         section + unit + task + type
+
+         Type is always Planned for SM Tasks.
+
+         This does NOT prevent the same real Task
+         from appearing in another SM incident.
+      ================================================= */
+
+      const section =
+        String(
+          task.section ?? ""
+        ).trim();
+
+
+      const unit =
+        String(
+          task.unit ?? ""
+        ).trim();
+
+
+      const duplicateKey =
+        [
+          section.toLowerCase(),
+          unit.toLowerCase(),
+          taskName.toLowerCase(),
+          "planned"
+        ].join("||");
+
+
+      if (
+        duplicateKeys.has(
+          duplicateKey
+        )
+      ) {
+
+        return res.status(409).json({
+          error:
+            `Duplicate Task inside Maintenance Set: ${taskName}`
+        });
+
+      }
+
+
+      duplicateKeys.add(
+        duplicateKey
+      );
+
+
+      /* =====================
+         NORMALIZED TASK
+      ===================== */
+
+      normalizedTasks.push({
+
+        task:
+          taskName,
+
+        section:
+          section || null,
+
+        unit:
+          unit || null,
+
+        impact:
+          resolvedImpact,
+
+        duration_min:
+          Math.round(
+            durationMin
+          ),
+
+        notes:
+          String(
+            task.notes ?? ""
+          ).trim() || null,
+
+        planned_start_at:
+          plannedStart,
+
+        planned_end_at:
+          plannedEnd
+
+      });
+
+    }
+
+
+    /* =====================================================
+       VERIFY ORDER / OVERLAP
+
+       Tasks must be submitted in timeline order.
+
+       V1 is a single sequential work stream,
+       therefore Tasks must NOT overlap.
+    ===================================================== */
+
+    for (
+      let index = 1;
+      index < normalizedTasks.length;
+      index += 1
+    ) {
+
+      const previousTask =
+        normalizedTasks[
+          index - 1
+        ];
+
+
+      const currentTask =
+        normalizedTasks[
+          index
+        ];
+
+
+      if (
+        currentTask.planned_start_at <
+        previousTask.planned_start_at
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Maintenance Set Tasks are not in chronological order."
+        });
+
+      }
+
+
+      if (
+        currentTask.planned_start_at <
+        previousTask.planned_end_at
+      ) {
+
+        return res.status(409).json({
+          error:
+            `Task "${currentTask.task}" overlaps the previous Task.`
+        });
+
+      }
+
+    }
+
+
+    /* =====================
+       DATABASE TRANSACTION
+    ===================== */
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      /* =================================================
+         1. LOAD TARGET ASSET
+
+         Model is required for compatibility validation.
+      ================================================= */
+
+      const targetAssetResult =
+        await client.query(
+          `
+          SELECT
+            id,
+            model,
+            serial_number
+          FROM assets
+          WHERE id = $1
+          LIMIT 1
+          FOR SHARE
+          `,
+          [
+            assetId
+          ]
+        );
+
+
+      if (
+        targetAssetResult.rows.length === 0
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(404).json({
+          error:
+            "Target Asset not found."
+        });
+
+      }
+
+
+      const targetAsset =
+        targetAssetResult.rows[0];
+
+
+      const targetModel =
+        String(
+          targetAsset.model || ""
+        ).trim();
+
+
+      if (!targetModel) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(409).json({
+          error:
+            "Target Asset has no Model information."
+        });
+
+      }
+
+
+      /* =================================================
+         2. LOAD SOURCE SM + SOURCE ASSET MODEL
+      ================================================= */
+
+      const sourceSmResult =
+        await client.query(
+          `
+          SELECT
+            sm.id,
+            sm.asset_id,
+            sm.title,
+            sm.status,
+
+            a.model
+              AS asset_model
+
+          FROM scheduled_maintenance sm
+
+          JOIN assets a
+            ON a.id = sm.asset_id
+
+          WHERE sm.id = $1
+
+          LIMIT 1
+          FOR SHARE OF sm, a
+          `,
+          [
+            sourceSmId
+          ]
+        );
+
+
+      if (
+        sourceSmResult.rows.length === 0
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(404).json({
+          error:
+            "Source Scheduled Maintenance not found."
+        });
+
+      }
+
+
+      const sourceSm =
+        sourceSmResult.rows[0];
+
+
+      const sourceModel =
+        String(
+          sourceSm.asset_model || ""
+        ).trim();
+
+
+      /* =================================================
+         3. BACKEND MODEL COMPATIBILITY
+
+         This is the authoritative safety check.
+
+         Frontend filtering alone is NOT trusted.
+      ================================================= */
+
+      if (
+        !sourceModel ||
+        sourceModel !== targetModel
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(409).json({
+          error:
+            "Source Maintenance Set is not compatible with the selected Asset model."
+        });
+
+      }
+
+
+      /* =================================================
+         4. CREATE NEW SM INCIDENT
+
+         Existing SM semantics are preserved:
+         - status = PLANNED
+         - actual dates = NULL
+      ================================================= */
+
+      const smInsertResult =
+        await client.query(
+          `
+          INSERT INTO scheduled_maintenance (
+            asset_id,
+            title,
+            description,
+            status,
+            scheduled_start_at,
+            scheduled_end_at
+          )
+
+          VALUES (
+            $1,
+            $2,
+            $3,
+            'PLANNED',
+            $4,
+            $5
+          )
+
+          RETURNING *
+          `,
+          [
+            assetId,
+            resolvedTitle,
+            String(
+              description ?? ""
+            ).trim() || null,
+            scheduledStart,
+            scheduledEnd
+          ]
+        );
+
+
+      const createdSm =
+        smInsertResult.rows[0];
+
+
+      /* =================================================
+         5. CREATE PLANNED TASKS
+
+         Same semantics as normal SM Tasks:
+
+         - asset_id = Target SM Asset
+         - type = Planned
+         - status = Planned
+         - frequency_hours = 0
+         - is_planned = true
+         - breakdown_id = NULL
+         - scheduled_maintenance_id = new SM ID
+
+         Timeline:
+         - planned_start_at = planned start
+         - due_date         = planned end
+      ================================================= */
+
+      const createdTasks =
+        [];
+
+
+      for (
+        const task
+        of normalizedTasks
+      ) {
+
+        const taskResult =
+          await client.query(
+            `
+            INSERT INTO maintenance_tasks (
+              asset_id,
+              task,
+              section,
+              unit,
+              type,
+              impact,
+              status,
+              planned_start_at,
+              due_date,
+              frequency_hours,
+              duration_min,
+              notes,
+              is_planned,
+              breakdown_id,
+              scheduled_maintenance_id
+            )
+
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              'Planned',
+              $5,
+              'Planned',
+              $6,
+              $7,
+              0,
+              $8,
+              $9,
+              true,
+              NULL,
+              $10
+            )
+
+            RETURNING *
+            `,
+            [
+              assetId,
+              task.task,
+              task.section,
+              task.unit,
+              task.impact,
+              task.planned_start_at,
+              task.planned_end_at,
+              task.duration_min,
+              task.notes,
+              createdSm.id
+            ]
+          );
+
+
+        createdTasks.push(
+          taskResult.rows[0]
+        );
+
+      }
+
+
+      /* =====================
+         6. COMMIT
+      ===================== */
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      /* =====================
+         SUCCESS RESPONSE
+      ===================== */
+
+      return res.status(201).json({
+
+        success:
+          true,
+
+        message:
+          "Scheduled Maintenance Set created successfully.",
+
+        source_scheduled_maintenance_id:
+          sourceSmId,
+
+        scheduled_maintenance:
+          createdSm,
+
+        task_count:
+          createdTasks.length,
+
+        tasks:
+          createdTasks
+
+      });
+
+
+    } catch (err) {
+
+      /* =====================
+         ROLLBACK EVERYTHING
+      ===================== */
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {}
+
+
+      console.error(
+        "CREATE SM FROM SET ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          "Failed to create Scheduled Maintenance from Set."
+      });
+
+
+    } finally {
+
+      /* =====================
+         RELEASE DB CLIENT
+      ===================== */
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    GET SCHEDULED MAINTENANCE TASKS
 
    GET /scheduled-maintenance/:id/tasks

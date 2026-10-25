@@ -4377,6 +4377,41 @@ function invalidateScheduledMaintenanceSetPreview() {
 
   }
 
+  /* =====================
+    DISABLE FINAL CREATE
+
+    Draft changed, therefore the old
+    Preview can no longer be confirmed.
+  ===================== */
+
+  const setMode =
+    document.getElementById(
+      "new-sm-mode-set"
+    );
+
+
+  const saveButton =
+    document.getElementById(
+      "saveNewSmBtn"
+    );
+
+
+  if (
+    setMode?.checked === true &&
+    saveButton
+  ) {
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Preview Required";
+
+    saveButton.title =
+      "Preview the updated Maintenance Set before creation.";
+
+  }
+
 }
 
 
@@ -5038,6 +5073,7 @@ function toggleScheduledMaintenanceDraftTask(
    IMPORTANT:
    - Frontend only.
    - No database write.
+   - Uses the already calculated Preview timeline.
 ========================================================= */
 
 function renderScheduledMaintenanceSetPreview(
@@ -5056,7 +5092,8 @@ function renderScheduledMaintenanceSetPreview(
 
   if (
     !container ||
-    !preview
+    !preview ||
+    !Array.isArray(preview.tasks)
   ) {
     return;
   }
@@ -5113,6 +5150,7 @@ function renderScheduledMaintenanceSetPreview(
       Schedule Preview
     </div>
 
+
     <div
       style="
         display: grid;
@@ -5124,12 +5162,21 @@ function renderScheduledMaintenanceSetPreview(
       "
     >
 
+      <!-- =====================
+           SELECTED TASKS
+      ===================== -->
+
       <div>
         Tasks:
         <strong>
           ${preview.selectedTaskCount}
         </strong>
       </div>
+
+
+      <!-- =====================
+           TOTAL PLANNED WORK
+      ===================== -->
 
       <div>
         Total Work:
@@ -5140,6 +5187,11 @@ function renderScheduledMaintenanceSetPreview(
         </strong>
       </div>
 
+
+      <!-- =====================
+           SCHEDULED START
+      ===================== -->
+
       <div>
         Start:
         <strong>
@@ -5148,6 +5200,11 @@ function renderScheduledMaintenanceSetPreview(
           )}
         </strong>
       </div>
+
+
+      <!-- =====================
+           EXPECTED COMPLETION
+      ===================== -->
 
       <div>
         Expected Completion:
@@ -5168,7 +5225,7 @@ function renderScheduledMaintenanceSetPreview(
 
 
   /* =====================================================
-     GROUP TASKS BY DAY
+     GROUP TASKS BY LOCAL DAY
   ===================================================== */
 
   const groupedByDay =
@@ -5178,12 +5235,29 @@ function renderScheduledMaintenanceSetPreview(
   preview.tasks.forEach(
     task => {
 
+      /* =====================
+         TASK START
+      ===================== */
+
       const start =
         task.planned_start_at;
 
 
+      if (
+        !(start instanceof Date) ||
+        Number.isNaN(
+          start.getTime()
+        )
+      ) {
+        return;
+      }
+
+
       /* =====================
          LOCAL DAY KEY
+
+         Uses local calendar date,
+         not UTC date.
       ===================== */
 
       const dayKey = [
@@ -5191,14 +5265,24 @@ function renderScheduledMaintenanceSetPreview(
 
         String(
           start.getMonth() + 1
-        ).padStart(2, "0"),
+        ).padStart(
+          2,
+          "0"
+        ),
 
         String(
           start.getDate()
-        ).padStart(2, "0")
+        ).padStart(
+          2,
+          "0"
+        )
 
       ].join("-");
 
+
+      /* =====================
+         CREATE DAY GROUP
+      ===================== */
 
       if (
         !groupedByDay.has(
@@ -5213,6 +5297,10 @@ function renderScheduledMaintenanceSetPreview(
 
       }
 
+
+      /* =====================
+         ADD TASK TO DAY
+      ===================== */
 
       groupedByDay
         .get(dayKey)
@@ -5236,6 +5324,10 @@ function renderScheduledMaintenanceSetPreview(
       dayNumber +=
         1;
 
+
+      /* =====================
+         DAY BLOCK
+      ===================== */
 
       const dayBlock =
         document.createElement(
@@ -5282,6 +5374,26 @@ function renderScheduledMaintenanceSetPreview(
 
 
       /* =====================
+         DATE LABEL
+      ===================== */
+
+      const dateText =
+        dayDate instanceof Date &&
+        !Number.isNaN(
+          dayDate.getTime()
+        )
+          ? dayDate.toLocaleDateString(
+              "el-GR",
+              {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+              }
+            )
+          : dayKey;
+
+
+      /* =====================
          DAY HEADER
       ===================== */
 
@@ -5316,19 +5428,6 @@ function renderScheduledMaintenanceSetPreview(
         "#dbeafe";
 
 
-      const dateText =
-        dayDate
-          ? dayDate.toLocaleDateString(
-              "el-GR",
-              {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric"
-              }
-            )
-          : dayKey;
-
-
       header.innerHTML = `
         <!-- =====================
              DAY SUMMARY
@@ -5339,6 +5438,7 @@ function renderScheduledMaintenanceSetPreview(
           ·
           ${dateText}
         </span>
+
 
         <span>
           ${formatSmDraftDuration(
@@ -5398,24 +5498,30 @@ function renderScheduledMaintenanceSetPreview(
 
           const startTime =
             task.planned_start_at
-              .toLocaleTimeString(
-                "el-GR",
-                {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                }
-              );
+              instanceof Date
+              ? task.planned_start_at
+                  .toLocaleTimeString(
+                    "el-GR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    }
+                  )
+              : "—";
 
 
           const endTime =
             task.planned_end_at
-              .toLocaleTimeString(
-                "el-GR",
-                {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                }
-              );
+              instanceof Date
+              ? task.planned_end_at
+                  .toLocaleTimeString(
+                    "el-GR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    }
+                  )
+              : "—";
 
 
           /* =====================
@@ -5431,6 +5537,10 @@ function renderScheduledMaintenanceSetPreview(
               .join(" · ");
 
 
+          /* =====================
+             TASK ROW CONTENT
+          ===================== */
+
           row.innerHTML = `
             <!-- =====================
                  TASK TIME
@@ -5440,6 +5550,7 @@ function renderScheduledMaintenanceSetPreview(
               style="
                 color: #9fc5ff;
                 font-weight: 700;
+                white-space: nowrap;
               "
             >
               ${startTime}–${endTime}
@@ -5460,6 +5571,7 @@ function renderScheduledMaintenanceSetPreview(
               >
                 ${task.task || "—"}
               </div>
+
 
               ${
                 taskMeta
@@ -5505,6 +5617,10 @@ function renderScheduledMaintenanceSetPreview(
         }
       );
 
+
+      /* =====================
+         APPEND DAY
+      ===================== */
 
       container.appendChild(
         dayBlock
@@ -8837,6 +8953,548 @@ async function createScheduledMaintenance() {
 }
 
 /* =========================================================
+   CREATE SCHEDULED MAINTENANCE FROM SET
+
+   Uses:
+   POST /scheduled-maintenance/from-set
+
+   Creates atomically:
+   - New Scheduled Maintenance
+   - Selected Planned Tasks
+   - Stored Task timeline
+
+   IMPORTANT:
+   - Requires a valid Preview.
+   - Uses only included Draft Tasks.
+   - Existing Empty SM creation flow remains independent.
+========================================================= */
+
+async function createScheduledMaintenanceFromSet() {
+
+  /* =====================
+     PREVENT DOUBLE SAVE
+  ===================== */
+
+  if (newSmCreateInProgress) {
+    return;
+  }
+
+
+  /* =====================
+     FORM ELEMENTS
+  ===================== */
+
+  const assetSelect =
+    document.getElementById(
+      "new-sm-asset"
+    );
+
+  const titleInput =
+    document.getElementById(
+      "new-sm-title"
+    );
+
+  const descriptionInput =
+    document.getElementById(
+      "new-sm-description"
+    );
+
+  const scheduledStartInput =
+    document.getElementById(
+      "new-sm-scheduled-start"
+    );
+
+  const scheduledEndInput =
+    document.getElementById(
+      "new-sm-scheduled-end"
+    );
+
+  const saveBtn =
+    document.getElementById(
+      "saveNewSmBtn"
+    );
+
+  const overlay =
+    document.getElementById(
+      "newScheduledMaintenanceOverlay"
+    );
+
+
+  /* =====================
+     TARGET ASSET
+  ===================== */
+
+  const assetId =
+    Number(
+      assetSelect?.value
+    );
+
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+
+    alert(
+      "Please select an Asset."
+    );
+
+    assetSelect?.focus();
+
+    return;
+
+  }
+
+
+  /* =====================
+     SOURCE SM
+  ===================== */
+
+  const sourceSmId =
+    Number(
+      scheduledMaintenanceSetDraft.sourceSmId
+    );
+
+
+  if (
+    !Number.isInteger(sourceSmId) ||
+    sourceSmId <= 0
+  ) {
+
+    alert(
+      "Please load a Maintenance Set first."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     TARGET SAFETY
+
+     Draft must still belong to
+     the currently selected Asset.
+  ===================== */
+
+  if (
+    Number(
+      scheduledMaintenanceSetDraft.targetAssetId
+    ) !== assetId
+  ) {
+
+    alert(
+      "The loaded Maintenance Set does not belong to the currently selected target Asset. Please reload the Set."
+    );
+
+    resetScheduledMaintenanceSetDraft();
+
+    return;
+
+  }
+
+
+  /* =====================
+     TITLE
+  ===================== */
+
+  const title =
+    String(
+      titleInput?.value || ""
+    ).trim();
+
+
+  if (!title) {
+
+    alert(
+      "Please enter a Maintenance Title."
+    );
+
+    titleInput?.focus();
+
+    return;
+
+  }
+
+
+  /* =====================
+     PREVIEW REQUIRED
+
+     The stored timeline must match
+     the latest Draft configuration.
+  ===================== */
+
+  const preview =
+    scheduledMaintenanceSetDraft.preview;
+
+
+  if (
+    !preview ||
+    !Array.isArray(preview.tasks) ||
+    preview.tasks.length === 0
+  ) {
+
+    alert(
+      "Please Preview the Maintenance Schedule before creating the incident."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================
+     SCHEDULED DATES
+
+     datetime-local values are local browser time.
+     Convert to ISO with timezone information.
+  ===================== */
+
+  const startValue =
+    String(
+      scheduledStartInput?.value || ""
+    ).trim();
+
+
+  const endValue =
+    String(
+      scheduledEndInput?.value || ""
+    ).trim();
+
+
+  if (
+    !startValue ||
+    !endValue
+  ) {
+
+    alert(
+      "Scheduled Start and Scheduled End are required."
+    );
+
+    return;
+
+  }
+
+
+  const startDate =
+    new Date(
+      startValue
+    );
+
+
+  const endDate =
+    new Date(
+      endValue
+    );
+
+
+  if (
+    Number.isNaN(
+      startDate.getTime()
+    ) ||
+    Number.isNaN(
+      endDate.getTime()
+    )
+  ) {
+
+    alert(
+      "Invalid Scheduled Start or Scheduled End."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    endDate <=
+    startDate
+  ) {
+
+    alert(
+      "Scheduled End must be later than Scheduled Start."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     BUILD TASK PAYLOAD
+
+     Preview already contains:
+     - final order
+     - estimated duration
+     - planned start
+     - planned end
+
+     planned_end_at becomes due_date in backend.
+  ===================================================== */
+
+  const tasks =
+    preview.tasks.map(
+      task => ({
+
+        /* =====================
+           TASK DEFINITION
+        ===================== */
+
+        task:
+          task.task,
+
+        section:
+          task.section,
+
+        unit:
+          task.unit,
+
+        impact:
+          task.impact,
+
+        duration_min:
+          task.duration_min,
+
+
+        /* =====================
+           TIMELINE
+        ===================== */
+
+        planned_start_at:
+          task.planned_start_at
+            .toISOString(),
+
+        planned_end_at:
+          task.planned_end_at
+            .toISOString(),
+
+
+        /* =====================
+           NOTES
+
+           Retrieve notes from the
+           matching Draft Task.
+        ===================== */
+
+        notes:
+          scheduledMaintenanceSetDraft.tasks.find(
+            draftTask =>
+              Number(
+                draftTask.sourceTaskId
+              ) ===
+              Number(
+                task.sourceTaskId
+              )
+          )?.notes || null
+
+      })
+    );
+
+
+  /* =====================
+     FINAL PAYLOAD
+  ===================== */
+
+  const payload = {
+
+    asset_id:
+      assetId,
+
+    source_sm_id:
+      sourceSmId,
+
+    title:
+      title,
+
+    description:
+      String(
+        descriptionInput?.value || ""
+      ).trim() || null,
+
+    scheduled_start_at:
+      startDate.toISOString(),
+
+    scheduled_end_at:
+      endDate.toISOString(),
+
+    tasks:
+      tasks
+
+  };
+
+
+  /* =====================
+     CREATE STATE
+  ===================== */
+
+  newSmCreateInProgress =
+    true;
+
+
+  if (saveBtn) {
+
+    saveBtn.disabled =
+      true;
+
+    saveBtn.textContent =
+      "Creating Maintenance Set...";
+
+  }
+
+
+  try {
+
+    /* =====================
+       ATOMIC CREATE
+    ===================== */
+
+    const response =
+      await fetch(
+        "/scheduled-maintenance/from-set",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
+
+
+    const result =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result?.error ||
+        result?.message ||
+        "Could not create Scheduled Maintenance Set."
+      );
+
+    }
+
+
+    /* =====================
+       CREATED SM ID
+    ===================== */
+
+    const createdSmId =
+      Number(
+        result
+          ?.scheduled_maintenance
+          ?.id
+      );
+
+
+    if (
+      !Number.isInteger(createdSmId) ||
+      createdSmId <= 0
+    ) {
+
+      throw new Error(
+        "Scheduled Maintenance was created but the returned SM ID is invalid."
+      );
+
+    }
+
+
+    /* =====================
+       RESET PLANNER
+    ===================== */
+
+    resetScheduledMaintenanceSetDraft();
+
+
+    /* =====================
+       CLOSE CREATE MODAL
+    ===================== */
+
+    if (overlay) {
+
+      overlay.style.display =
+        "none";
+
+    }
+
+
+    /* =====================
+       REFRESH INCIDENT LIST
+
+       Uses existing loader if available.
+    ===================== */
+
+    if (
+      typeof loadBreakdowns ===
+      "function"
+    ) {
+
+      await loadBreakdowns();
+
+    }
+
+
+    /* =====================
+       OPEN EXISTING SM DETAIL
+
+       No new Detail UI is introduced.
+    ===================== */
+
+    await openScheduledMaintenanceDetail(
+      createdSmId
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "CREATE SM FROM SET ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message ||
+      "Could not create Scheduled Maintenance Set."
+    );
+
+
+  } finally {
+
+    /* =====================
+       RESTORE CREATE STATE
+    ===================== */
+
+    newSmCreateInProgress =
+      false;
+
+
+    if (saveBtn) {
+
+      saveBtn.disabled =
+        false;
+
+      saveBtn.textContent =
+        "Confirm & Create";
+
+    }
+
+  }
+
+}
+
+/* =========================================================
    DELETE SCHEDULED MAINTENANCE TASK
 
    Allowed only while parent SM is IN_PROGRESS.
@@ -9042,25 +9700,76 @@ async function deleteScheduledMaintenanceTask(smId, task) {
 
 }
 
-/* =====================
+/* =========================================================
    NEW SM — SAVE BUTTON
 
-   Event delegation because the modal
-   is created dynamically.
-===================== */
+   Routes creation according to Planning Mode.
 
-document.addEventListener("click", event => {
+   EMPTY
+   → existing createScheduledMaintenance()
 
-  if (
-    event.target instanceof Element &&
-    event.target.closest("#saveNewSmBtn")
-  ) {
+   SET
+   → new createScheduledMaintenanceFromSet()
+
+   IMPORTANT:
+   There is only ONE save-button listener.
+========================================================= */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    /* =====================
+       SAVE BUTTON ONLY
+    ===================== */
+
+    if (
+      !(
+        event.target instanceof Element
+      ) ||
+      !event.target.closest(
+        "#saveNewSmBtn"
+      )
+    ) {
+      return;
+    }
+
+
+    /* =====================
+       CURRENT PLANNING MODE
+    ===================== */
+
+    const setMode =
+      document.getElementById(
+        "new-sm-mode-set"
+      );
+
+
+    const useSet =
+      setMode?.checked === true;
+
+
+    /* =====================
+       SET FLOW
+    ===================== */
+
+    if (useSet) {
+
+      createScheduledMaintenanceFromSet();
+
+      return;
+
+    }
+
+
+    /* =====================
+       EXISTING EMPTY FLOW
+    ===================== */
 
     createScheduledMaintenance();
 
   }
-
-});
+);
 
 /* =========================================================
    SCHEDULED MAINTENANCE — START ACTION
