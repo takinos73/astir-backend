@@ -4997,6 +4997,495 @@ function toggleScheduledMaintenanceDraftTask(
 
 }
 
+/* =========================================================
+   RENDER SCHEDULED MAINTENANCE SET PREVIEW
+
+   Displays:
+   - Total selected Tasks
+   - Total Planned Work
+   - Scheduled Start
+   - Expected Completion
+   - Day-by-day Task schedule
+
+   IMPORTANT:
+   - Frontend only.
+   - No database write.
+========================================================= */
+
+function renderScheduledMaintenanceSetPreview(
+  preview
+) {
+
+  /* =====================
+     PREVIEW CONTAINER
+  ===================== */
+
+  const container =
+    document.getElementById(
+      "newSmSchedulePreview"
+    );
+
+
+  if (
+    !container ||
+    !preview
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET + SHOW
+  ===================== */
+
+  container.replaceChildren();
+
+  container.style.display =
+    "block";
+
+
+  /* =====================================================
+     SUMMARY CARD
+  ===================================================== */
+
+  const summary =
+    document.createElement(
+      "div"
+    );
+
+
+  summary.style.padding =
+    "14px";
+
+  summary.style.border =
+    "1px solid #35506f";
+
+  summary.style.borderRadius =
+    "8px";
+
+  summary.style.background =
+    "#172233";
+
+  summary.style.color =
+    "#cfe1ff";
+
+
+  summary.innerHTML = `
+    <!-- =====================
+         PREVIEW SUMMARY
+    ===================== -->
+
+    <div
+      style="
+        font-size: 14px;
+        font-weight: 800;
+        color: #dbeafe;
+      "
+    >
+      Schedule Preview
+    </div>
+
+    <div
+      style="
+        display: grid;
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+        gap: 8px 18px;
+        margin-top: 10px;
+        font-size: 12px;
+      "
+    >
+
+      <div>
+        Tasks:
+        <strong>
+          ${preview.selectedTaskCount}
+        </strong>
+      </div>
+
+      <div>
+        Total Work:
+        <strong>
+          ${formatSmDraftDuration(
+            preview.totalWorkMinutes
+          )}
+        </strong>
+      </div>
+
+      <div>
+        Start:
+        <strong>
+          ${formatSmPlanningDateTime(
+            preview.scheduledStart
+          )}
+        </strong>
+      </div>
+
+      <div>
+        Expected Completion:
+        <strong>
+          ${formatSmPlanningDateTime(
+            preview.expectedCompletion
+          )}
+        </strong>
+      </div>
+
+    </div>
+  `;
+
+
+  container.appendChild(
+    summary
+  );
+
+
+  /* =====================================================
+     GROUP TASKS BY DAY
+  ===================================================== */
+
+  const groupedByDay =
+    new Map();
+
+
+  preview.tasks.forEach(
+    task => {
+
+      const start =
+        task.planned_start_at;
+
+
+      /* =====================
+         LOCAL DAY KEY
+      ===================== */
+
+      const dayKey = [
+        start.getFullYear(),
+
+        String(
+          start.getMonth() + 1
+        ).padStart(2, "0"),
+
+        String(
+          start.getDate()
+        ).padStart(2, "0")
+
+      ].join("-");
+
+
+      if (
+        !groupedByDay.has(
+          dayKey
+        )
+      ) {
+
+        groupedByDay.set(
+          dayKey,
+          []
+        );
+
+      }
+
+
+      groupedByDay
+        .get(dayKey)
+        .push(task);
+
+    }
+  );
+
+
+  /* =====================================================
+     RENDER EACH WORK DAY
+  ===================================================== */
+
+  let dayNumber =
+    0;
+
+
+  groupedByDay.forEach(
+    (tasks, dayKey) => {
+
+      dayNumber +=
+        1;
+
+
+      const dayBlock =
+        document.createElement(
+          "div"
+        );
+
+
+      dayBlock.style.marginTop =
+        "12px";
+
+      dayBlock.style.padding =
+        "12px";
+
+      dayBlock.style.border =
+        "1px solid rgba(255,255,255,.10)";
+
+      dayBlock.style.borderRadius =
+        "8px";
+
+      dayBlock.style.background =
+        "#181f29";
+
+
+      /* =====================
+         DAILY TOTAL
+      ===================== */
+
+      const dayMinutes =
+        tasks.reduce(
+          (sum, task) =>
+            sum +
+            (
+              Number(
+                task.duration_min
+              ) || 0
+            ),
+          0
+        );
+
+
+      const dayDate =
+        tasks[0]
+          ?.planned_start_at;
+
+
+      /* =====================
+         DAY HEADER
+      ===================== */
+
+      const header =
+        document.createElement(
+          "div"
+        );
+
+
+      header.style.display =
+        "flex";
+
+      header.style.justifyContent =
+        "space-between";
+
+      header.style.alignItems =
+        "center";
+
+      header.style.gap =
+        "12px";
+
+      header.style.marginBottom =
+        "8px";
+
+      header.style.fontSize =
+        "12px";
+
+      header.style.fontWeight =
+        "800";
+
+      header.style.color =
+        "#dbeafe";
+
+
+      const dateText =
+        dayDate
+          ? dayDate.toLocaleDateString(
+              "el-GR",
+              {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+              }
+            )
+          : dayKey;
+
+
+      header.innerHTML = `
+        <!-- =====================
+             DAY SUMMARY
+        ===================== -->
+
+        <span>
+          Day ${dayNumber}
+          ·
+          ${dateText}
+        </span>
+
+        <span>
+          ${formatSmDraftDuration(
+            dayMinutes
+          )}
+          /
+          ${formatSmDraftDuration(
+            preview.dailyWorkMinutes
+          )}
+        </span>
+      `;
+
+
+      dayBlock.appendChild(
+        header
+      );
+
+
+      /* =================================================
+         TASK ROWS
+      ================================================= */
+
+      tasks.forEach(
+        task => {
+
+          const row =
+            document.createElement(
+              "div"
+            );
+
+
+          row.style.display =
+            "grid";
+
+          row.style.gridTemplateColumns =
+            "105px minmax(0, 1fr) 75px";
+
+          row.style.gap =
+            "10px";
+
+          row.style.alignItems =
+            "center";
+
+          row.style.padding =
+            "8px 0";
+
+          row.style.borderTop =
+            "1px solid rgba(255,255,255,.06)";
+
+          row.style.fontSize =
+            "11px";
+
+
+          /* =====================
+             START / END TIME
+          ===================== */
+
+          const startTime =
+            task.planned_start_at
+              .toLocaleTimeString(
+                "el-GR",
+                {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                }
+              );
+
+
+          const endTime =
+            task.planned_end_at
+              .toLocaleTimeString(
+                "el-GR",
+                {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                }
+              );
+
+
+          /* =====================
+             TASK META
+          ===================== */
+
+          const taskMeta =
+            [
+              task.section || null,
+              task.unit || null
+            ]
+              .filter(Boolean)
+              .join(" · ");
+
+
+          row.innerHTML = `
+            <!-- =====================
+                 TASK TIME
+            ===================== -->
+
+            <div
+              style="
+                color: #9fc5ff;
+                font-weight: 700;
+              "
+            >
+              ${startTime}–${endTime}
+            </div>
+
+
+            <!-- =====================
+                 TASK DESCRIPTION
+            ===================== -->
+
+            <div>
+
+              <div
+                style="
+                  color: #f1f5f9;
+                  font-weight: 700;
+                "
+              >
+                ${task.task || "—"}
+              </div>
+
+              ${
+                taskMeta
+                  ? `
+                    <div
+                      style="
+                        margin-top: 2px;
+                        color: #7f8b9a;
+                        font-size: 10px;
+                      "
+                    >
+                      ${taskMeta}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+
+
+            <!-- =====================
+                 TASK DURATION
+            ===================== -->
+
+            <div
+              style="
+                text-align: right;
+                color: #94a3b8;
+                white-space: nowrap;
+              "
+            >
+              ${formatSmDraftDuration(
+                task.duration_min
+              )}
+            </div>
+          `;
+
+
+          dayBlock.appendChild(
+            row
+          );
+
+        }
+      );
+
+
+      container.appendChild(
+        dayBlock
+      );
+
+    }
+  );
+
+}
 
 /* =========================================================
    RENDER SCHEDULED MAINTENANCE SET DRAFT
@@ -5572,6 +6061,280 @@ function renderScheduledMaintenanceSetDraft() {
   ===================== */
 
   refreshScheduledMaintenanceSetDraftSummary();
+
+  /* =====================================================
+   PLANNING CONTROLS
+
+   Added after the Draft summary.
+
+   IMPORTANT:
+   - Frontend only.
+   - No database write.
+   - Uses the current Draft order / selection / durations.
+===================================================== */
+
+const planningControls =
+  document.createElement(
+    "div"
+  );
+
+
+planningControls.style.marginTop =
+  "14px";
+
+planningControls.style.padding =
+  "12px";
+
+planningControls.style.border =
+  "1px solid rgba(255,255,255,.10)";
+
+planningControls.style.borderRadius =
+  "8px";
+
+planningControls.style.background =
+  "#141b24";
+
+
+planningControls.innerHTML = `
+  <!-- =====================
+       PLANNING CONTROLS
+  ===================== -->
+
+  <div
+    style="
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+    "
+  >
+
+    <!-- =====================
+         WORK HOURS / DAY
+    ===================== -->
+
+    <div class="field">
+
+      <label for="new-sm-work-hours">
+        Work Hours / Day
+      </label>
+
+      <input
+        id="new-sm-work-hours"
+        type="number"
+        min="0.5"
+        max="24"
+        step="0.5"
+        value="${
+          (
+            Number(
+              scheduledMaintenanceSetDraft.dailyWorkMinutes
+            ) || 600
+          ) / 60
+        }"
+      >
+
+    </div>
+
+
+    <!-- =====================
+         PREVIEW ACTION
+    ===================== -->
+
+    <div
+      style="
+        display: flex;
+        justify-content: flex-end;
+      "
+    >
+
+      <button
+        id="newSmPreviewScheduleBtn"
+        class="btn-table"
+        type="button"
+      >
+        Preview Schedule
+      </button>
+
+    </div>
+
+  </div>
+`;
+
+
+/* =====================
+   APPEND CONTROLS
+===================== */
+
+container.appendChild(
+  planningControls
+);
+
+
+/* =====================================================
+   PREVIEW CONTAINER
+
+   Populated only after Preview Schedule.
+===================================================== */
+
+const previewContainer =
+  document.createElement(
+    "div"
+  );
+
+
+previewContainer.id =
+  "newSmSchedulePreview";
+
+previewContainer.style.display =
+  "none";
+
+previewContainer.style.marginTop =
+  "14px";
+
+
+container.appendChild(
+  previewContainer
+);
+
+
+/* =====================================================
+   WORK HOURS CHANGE
+
+   Any change invalidates an existing Preview.
+===================================================== */
+
+planningControls
+  .querySelector(
+    "#new-sm-work-hours"
+  )
+  ?.addEventListener(
+    "input",
+    event => {
+
+      /* =====================
+         SAVE DRAFT CAPACITY
+      ===================== */
+
+      const hours =
+        Number(
+          event.target.value
+        );
+
+
+      if (
+        Number.isFinite(hours) &&
+        hours > 0
+      ) {
+
+        scheduledMaintenanceSetDraft.dailyWorkMinutes =
+          Math.round(
+            hours * 60
+          );
+
+      }
+
+
+      /* =====================
+         INVALIDATE PREVIEW
+      ===================== */
+
+      invalidateScheduledMaintenanceSetPreview();
+
+    }
+  );
+
+      /* =====================================================
+        PREVIEW BUTTON
+      ===================================================== */
+
+      planningControls
+        .querySelector(
+          "#newSmPreviewScheduleBtn"
+        )
+        ?.addEventListener(
+          "click",
+          () => {
+
+            try {
+
+              /* =====================
+                BUILD PREVIEW
+              ===================== */
+
+              const preview =
+                buildScheduledMaintenanceSetPreview();
+
+
+              /* =====================
+                TEMPORARY OUTPUT
+
+                In the next step we will replace
+                this with the full visual Preview renderer.
+              ===================== */
+
+             /* =====================
+                RENDER FULL PREVIEW
+              ===================== */
+
+              renderScheduledMaintenanceSetPreview(
+                preview
+              );
+
+              /* =====================
+                AUTO-FILL SM END
+
+                Expected Completion becomes
+                the proposed Scheduled End.
+
+                No database write occurs.
+              ===================== */
+
+              const endInput =
+                document.getElementById(
+                  "new-sm-scheduled-end"
+                );
+
+
+              if (endInput) {
+
+                const end =
+                  preview.expectedCompletion;
+
+
+                const pad =
+                  number =>
+                    String(number)
+                      .padStart(2, "0");
+
+
+                endInput.value =
+                  `${end.getFullYear()}-` +
+                  `${pad(end.getMonth() + 1)}-` +
+                  `${pad(end.getDate())}T` +
+                  `${pad(end.getHours())}:` +
+                  `${pad(end.getMinutes())}`;
+
+              }
+
+
+            } catch (err) {
+
+              console.error(
+                "SM SET PREVIEW ERROR:",
+                err
+              );
+
+
+              alert(
+                err.message ||
+                "Could not build Schedule Preview."
+              );
+
+            }
+
+          }
+        );
 
 }
 
