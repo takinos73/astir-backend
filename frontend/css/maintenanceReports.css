@@ -5092,3 +5092,156 @@ textarea {
   }
 
 }
+
+/* =========================================================
+   MAINTENANCE REPORT DETAIL — MR CODE BADGE
+
+   Soft blue visual, aligned with the MR source badges
+   used elsewhere in the CMMS.
+========================================================= */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-code {
+  display: inline-flex;
+  align-items: center;
+
+  padding:
+    5px 9px;
+
+  border:
+    1px solid #35506f;
+
+  border-radius:
+    6px;
+
+  background:
+    #172233;
+
+  color:
+    #9fc5ff;
+
+  font-size:
+    13px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.03em;
+
+  line-height:
+    1.2;
+}
+
+
+/* =========================================================
+   MAINTENANCE REPORT DETAIL — STATUS BADGE
+
+   Base visual shared by all MR statuses.
+========================================================= */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    5px 11px;
+
+  border:
+    1px solid #334155;
+
+  border-radius:
+    999px;
+
+  background:
+    #172033;
+
+  color:
+    #dbe7f5;
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.03em;
+
+  line-height:
+    1.2;
+}
+
+/* =========================================================
+   MAINTENANCE REPORT DETAIL — STATUS COLORS
+========================================================= */
+
+
+/* =====================
+   NEW
+===================== */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-status.status-new {
+  border-color:
+    rgba(239, 68, 68, 0.35);
+
+  background:
+    rgba(239, 68, 68, 0.12);
+
+  color:
+    #fca5a5;
+}
+
+
+/* =====================
+   UNDER REVIEW
+===================== */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-status.status-under-review {
+  border-color:
+    #405673;
+
+  background:
+    #192638;
+
+  color:
+    #c7d9f2;
+}
+
+
+/* =====================
+   CONVERTED
+===================== */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-status.status-converted {
+  border-color:
+    rgba(34, 197, 94, 0.35);
+
+  background:
+    rgba(34, 197, 94, 0.12);
+
+  color:
+    #86efac;
+}
+
+
+/* =====================
+   CLOSED
+===================== */
+
+#maintenanceReportDetailOverlay
+.maintenance-report-detail-status.status-closed {
+  border-color:
+    #334155;
+
+  background:
+    #1e293b;
+
+  color:
+    #d7dee8;
+}

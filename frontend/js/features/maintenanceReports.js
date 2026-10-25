@@ -8861,8 +8861,25 @@ function renderMaintenanceReportDetail(
       </div>
 
 
-      <div class="maintenance-report-detail-status">
-        ${status}
+      /* =====================
+        STATUS
+
+        Adds the same status-specific class pattern
+        used by Production Reporting.
+      ===================== */
+
+      <div
+        class="
+          maintenance-report-detail-status
+          status-${status
+            .toLowerCase()
+            .replace(/_/g, "-")}
+        "
+      >
+        ${status.replace(
+          /_/g,
+          " "
+        )}
       </div>
 
     </div>
