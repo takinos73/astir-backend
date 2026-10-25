@@ -3868,6 +3868,118 @@ document.addEventListener("click", event => {
 });
 
 
+/* =========================================================
+   MOVE SCHEDULED MAINTENANCE DRAFT TASK
+
+   Moves one Task up or down inside the frontend Draft.
+
+   direction:
+   -1 → move up
+    1 → move down
+
+   IMPORTANT:
+   - Draft only.
+   - Does NOT modify source Tasks.
+   - Does NOT write anything to the database.
+========================================================= */
+
+function moveScheduledMaintenanceDraftTask(
+  draftIndex,
+  direction
+) {
+
+  /* =====================
+     NORMALIZE INPUT
+  ===================== */
+
+  const index =
+    Number(draftIndex);
+
+  const moveDirection =
+    Number(direction);
+
+
+  if (
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= scheduledMaintenanceSetDraft.tasks.length
+  ) {
+    return;
+  }
+
+
+  if (
+    moveDirection !== -1 &&
+    moveDirection !== 1
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     TARGET POSITION
+  ===================== */
+
+  const targetIndex =
+    index + moveDirection;
+
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >= scheduledMaintenanceSetDraft.tasks.length
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     SWAP TASKS
+  ===================== */
+
+  const currentTask =
+    scheduledMaintenanceSetDraft.tasks[
+      index
+    ];
+
+
+  scheduledMaintenanceSetDraft.tasks[
+    index
+  ] =
+    scheduledMaintenanceSetDraft.tasks[
+      targetIndex
+    ];
+
+
+  scheduledMaintenanceSetDraft.tasks[
+    targetIndex
+  ] =
+    currentTask;
+
+
+  /* =====================
+     REFRESH SORT ORDER
+
+     Keeps explicit sequence numbers
+     synchronized with the array order.
+  ===================== */
+
+  scheduledMaintenanceSetDraft.tasks.forEach(
+    (task, taskIndex) => {
+
+      task.sortOrder =
+        taskIndex + 1;
+
+    }
+  );
+
+
+  /* =====================
+     RENDER UPDATED ORDER
+  ===================== */
+
+  renderScheduledMaintenanceSetDraft();
+
+}
 
 /* =========================================================
    NEW MAINTENANCE INCIDENT — TYPE SELECTOR
@@ -4521,7 +4633,13 @@ function renderScheduledMaintenanceSetDraft() {
 
 
       /* =====================
-         TOP ROW
+        TOP ROW
+
+        Columns:
+        - Include checkbox
+        - Task information
+        - Duration
+        - Reorder controls
       ===================== */
 
       const topRow =
@@ -4534,7 +4652,7 @@ function renderScheduledMaintenanceSetDraft() {
         "grid";
 
       topRow.style.gridTemplateColumns =
-        "24px minmax(0, 1fr) 110px";
+        "24px minmax(0, 1fr) 110px 68px";
 
       topRow.style.gap =
         "10px";
@@ -4739,15 +4857,151 @@ function renderScheduledMaintenanceSetDraft() {
         durationInput
       );
 
+      /* =====================
+        REORDER CONTROLS
+
+        Changes only the Draft sequence.
+
+        This sequence will later be used
+        by the Preview Scheduler.
+      ===================== */
+
+      const reorderWrap =
+        document.createElement(
+          "div"
+        );
+
+
+      reorderWrap.style.display =
+        "flex";
+
+      reorderWrap.style.alignItems =
+        "center";
+
+      reorderWrap.style.justifyContent =
+        "flex-end";
+
+      reorderWrap.style.gap =
+        "5px";
+
+      reorderWrap.style.paddingTop =
+        "18px";
+
 
       /* =====================
-         BUILD TOP ROW
+        MOVE UP
+      ===================== */
+
+      const moveUpButton =
+        document.createElement(
+          "button"
+        );
+
+
+      moveUpButton.type =
+        "button";
+
+      moveUpButton.className =
+        "btn-table";
+
+      moveUpButton.textContent =
+        "↑";
+
+      moveUpButton.title =
+        "Move Task up";
+
+
+      /* =====================
+        FIRST TASK CANNOT
+        MOVE FURTHER UP
+      ===================== */
+
+      moveUpButton.disabled =
+        index === 0;
+
+
+      moveUpButton.addEventListener(
+        "click",
+        () => {
+
+          /* =====================
+            MOVE UP
+          ===================== */
+
+          moveScheduledMaintenanceDraftTask(
+            index,
+            -1
+          );
+
+        }
+      );
+
+
+      /* =====================
+        MOVE DOWN
+      ===================== */
+
+      const moveDownButton =
+        document.createElement(
+          "button"
+        );
+
+
+      moveDownButton.type =
+        "button";
+
+      moveDownButton.className =
+        "btn-table";
+
+      moveDownButton.textContent =
+        "↓";
+
+      moveDownButton.title =
+        "Move Task down";
+
+
+      /* =====================
+        LAST TASK CANNOT
+        MOVE FURTHER DOWN
+      ===================== */
+
+      moveDownButton.disabled =
+        index ===
+        scheduledMaintenanceSetDraft.tasks.length - 1;
+
+
+      moveDownButton.addEventListener(
+        "click",
+        () => {
+
+          /* =====================
+            MOVE DOWN
+          ===================== */
+
+          moveScheduledMaintenanceDraftTask(
+            index,
+            1
+          );
+
+        }
+      );
+
+
+      reorderWrap.append(
+        moveUpButton,
+        moveDownButton
+      );
+
+
+      /* =====================
+        BUILD TOP ROW
       ===================== */
 
       topRow.append(
         checkbox,
         info,
-        durationWrap
+        durationWrap,
+        reorderWrap
       );
 
 
