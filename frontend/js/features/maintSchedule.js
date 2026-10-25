@@ -4345,6 +4345,8 @@ function formatSmDraftDuration(minutes) {
    IMPORTANT:
    - Frontend only.
    - No database write.
+   - Create button state is controlled ONLY by
+     refreshScheduledMaintenanceSetCreateButton().
 ========================================================= */
 
 function invalidateScheduledMaintenanceSetPreview() {
@@ -4372,45 +4374,20 @@ function invalidateScheduledMaintenanceSetPreview() {
     previewContainer.style.display =
       "none";
 
-    previewContainer.innerHTML =
-      "";
+
+    previewContainer.replaceChildren();
 
   }
+
 
   /* =====================
-    DISABLE FINAL CREATE
+     REFRESH CREATE BUTTON
 
-    Draft changed, therefore the old
-    Preview can no longer be confirmed.
+     Preview is now invalid,
+     therefore SET creation must lock.
   ===================== */
 
-  const setMode =
-    document.getElementById(
-      "new-sm-mode-set"
-    );
-
-
-  const saveButton =
-    document.getElementById(
-      "saveNewSmBtn"
-    );
-
-
-  if (
-    setMode?.checked === true &&
-    saveButton
-  ) {
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Preview Required";
-
-    saveButton.title =
-      "Preview the updated Maintenance Set before creation.";
-
-  }
+  refreshScheduledMaintenanceSetCreateButton();
 
 }
 
@@ -6460,6 +6437,16 @@ planningControls
 
               }
 
+              /* =====================
+                REFRESH CREATE BUTTON
+
+                Preview now exists and is valid,
+                therefore Confirm & Create
+                can be enabled.
+              ===================== */
+
+              refreshScheduledMaintenanceSetCreateButton();
+
 
             } catch (err) {
 
@@ -7389,6 +7376,113 @@ function refreshPreviousSmSetSelection() {
 
 }
 
+/* =========================================================
+   REFRESH SM CREATE BUTTON
+
+   Single source of truth for the New SM Create button.
+
+   EMPTY MODE:
+   - Existing Create flow is always available.
+
+   SET MODE:
+   - Create is enabled only when a valid Preview exists.
+
+   IMPORTANT:
+   No other function should independently decide
+   the enabled / disabled state of saveNewSmBtn.
+========================================================= */
+
+function refreshScheduledMaintenanceSetCreateButton() {
+
+  /* =====================
+     ELEMENTS
+  ===================== */
+
+  const saveButton =
+    document.getElementById(
+      "saveNewSmBtn"
+    );
+
+
+  const setMode =
+    document.getElementById(
+      "new-sm-mode-set"
+    );
+
+
+  if (!saveButton) {
+    return;
+  }
+
+
+  /* =====================
+     CURRENT MODE
+  ===================== */
+
+  const useSet =
+    setMode?.checked === true;
+
+
+  /* =====================
+     EMPTY MODE
+
+     Preserve existing behavior.
+  ===================== */
+
+  if (!useSet) {
+
+    saveButton.disabled =
+      false;
+
+
+    saveButton.textContent =
+      "Create Scheduled Maintenance";
+
+
+    saveButton.title =
+      "";
+
+
+    return;
+  }
+
+
+  /* =====================
+     SET MODE
+
+     Valid Preview is required.
+  ===================== */
+
+  const preview =
+    scheduledMaintenanceSetDraft?.preview;
+
+
+  const hasValidPreview =
+    Boolean(
+      preview &&
+      Array.isArray(
+        preview.tasks
+      ) &&
+      preview.tasks.length > 0
+    );
+
+
+  saveButton.disabled =
+    !hasValidPreview;
+
+
+  saveButton.textContent =
+    hasValidPreview
+      ? "Confirm & Create"
+      : "Preview Required";
+
+
+  saveButton.title =
+    hasValidPreview
+      ? "Create Scheduled Maintenance and all selected Planned Tasks."
+      : "Preview the Maintenance Set before creation.";
+
+}
 
 /* =========================================================
    NEW SCHEDULED MAINTENANCE — CREATION FORM
@@ -7981,74 +8075,14 @@ async function openNewScheduledMaintenanceModal() {
 
       }
 
-
       /* =====================
-        CREATE BUTTON STATE
+        REFRESH CREATE BUTTON
 
-        EMPTY MODE:
-        Existing flow remains available.
-
-        SET MODE:
-        Creation is allowed only after
-        a valid Preview has been created.
+        Button state is controlled from
+        one central helper only.
       ===================== */
 
-      if (saveButton) {
-
-        /* =====================
-          SET MODE
-        ===================== */
-
-        if (useSet) {
-
-          const hasValidPreview =
-            Boolean(
-              scheduledMaintenanceSetDraft?.preview &&
-              Array.isArray(
-                scheduledMaintenanceSetDraft.preview.tasks
-              ) &&
-              scheduledMaintenanceSetDraft.preview.tasks.length > 0
-            );
-
-
-          saveButton.disabled =
-            !hasValidPreview;
-
-
-          saveButton.textContent =
-            hasValidPreview
-              ? "Confirm & Create"
-              : "Preview Required";
-
-
-          saveButton.title =
-            hasValidPreview
-              ? "Create Scheduled Maintenance and all selected Planned Tasks."
-              : "Preview the Maintenance Set before creation.";
-
-        }
-
-        /* =====================
-          EMPTY MODE
-        ===================== */
-
-        else {
-
-          saveButton.textContent =
-            "Create Scheduled Maintenance";
-
-
-          saveButton.disabled =
-            false;
-
-
-          saveButton.title =
-            "";
-
-        }
-
-      }
-
+      refreshScheduledMaintenanceSetCreateButton();
 
       /* =====================
          LOAD COMPATIBLE SOURCES
@@ -8063,7 +8097,6 @@ async function openNewScheduledMaintenanceModal() {
       }
 
     };
-
 
     emptyMode?.addEventListener(
       "change",
@@ -9502,24 +9535,28 @@ async function createScheduledMaintenanceFromSet() {
   } finally {
 
     /* =====================
-       RESTORE CREATE STATE
+      RESTORE CREATE STATE
+
+      Button state is recalculated
+      from the current Planning Mode
+      and current Preview validity.
     ===================== */
 
     newSmCreateInProgress =
       false;
 
 
-    if (saveBtn) {
+    /* =====================
+      REFRESH CREATE BUTTON
 
-      saveBtn.disabled =
-        false;
+      Do not force-enable here.
+      The central helper decides whether
+      Confirm & Create is currently valid.
+    ===================== */
 
-      saveBtn.textContent =
-        "Confirm & Create";
+    refreshScheduledMaintenanceSetCreateButton();
 
-    }
-
-  }
+      }
 
 }
 
