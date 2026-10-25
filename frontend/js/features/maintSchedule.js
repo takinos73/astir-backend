@@ -4148,48 +4148,25 @@ async function openNewScheduledMaintenanceModal() {
 
 
         <!-- =================================================
-             PLANNING METHOD
+            PLANNING METHOD
 
-             Existing Empty SM remains the default.
+            Existing Empty SM remains the default.
+            The new Set flow is an optional second path.
         ================================================= -->
 
-        <div
-          style="
-            margin-top: 18px;
-            margin-bottom: 20px;
-            padding: 14px 16px;
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 10px;
-            background: rgba(255,255,255,.025);
-          "
-        >
+        <div class="sm-planning-method">
 
-          <div
-            style="
-              margin-bottom: 10px;
-              font-size: 12px;
-              font-weight: 700;
-              color: #cbd5e1;
-            "
-          >
+          <div class="sm-planning-method-title">
             Planning Method
           </div>
 
 
           <!-- =====================
-               EMPTY SM
-               Existing flow
+              EMPTY SM
+              Existing flow
           ===================== -->
 
-          <label
-            style="
-              display: flex;
-              align-items: flex-start;
-              gap: 10px;
-              margin-bottom: 12px;
-              cursor: pointer;
-            "
-          >
+          <label class="sm-planning-option">
 
             <input
               id="new-sm-mode-empty"
@@ -4197,24 +4174,17 @@ async function openNewScheduledMaintenanceModal() {
               name="new-sm-planning-mode"
               value="EMPTY"
               checked
-              style="margin-top: 3px;"
             >
 
-            <span>
+            <span class="sm-planning-option-content">
 
-              <strong>
+              <span class="sm-planning-option-title">
                 Create Empty Scheduled Maintenance
-              </strong>
+              </span>
 
-              <div
-                style="
-                  margin-top: 3px;
-                  font-size: 11px;
-                  color: #94a3b8;
-                "
-              >
+              <span class="sm-planning-option-description">
                 Create the SM incident now and add Planned Tasks manually.
-              </div>
+              </span>
 
             </span>
 
@@ -4222,43 +4192,29 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-               LOAD PREVIOUS SET
-               New mock flow
+              LOAD PREVIOUS SET
+              New planning flow
           ===================== -->
 
-          <label
-            style="
-              display: flex;
-              align-items: flex-start;
-              gap: 10px;
-              cursor: pointer;
-            "
-          >
+          <label class="sm-planning-option">
 
             <input
               id="new-sm-mode-set"
               type="radio"
               name="new-sm-planning-mode"
               value="SET"
-              style="margin-top: 3px;"
             >
 
-            <span>
+            <span class="sm-planning-option-content">
 
-              <strong>
+              <span class="sm-planning-option-title">
                 Load Previous Maintenance Set
-              </strong>
+              </span>
 
-              <div
-                style="
-                  margin-top: 3px;
-                  font-size: 11px;
-                  color: #94a3b8;
-                "
-              >
+              <span class="sm-planning-option-description">
                 Load Tasks from a previous compatible Scheduled Maintenance,
                 edit the set and preview the new schedule before creation.
-              </div>
+              </span>
 
             </span>
 
