@@ -5035,6 +5035,102 @@ async function loadPreviousScheduledMaintenanceSetDraft(
 
     }
 
+    /* =====================================================
+      SOURCE TASK ORDER
+
+      Rebuild the Maintenance Set in the real execution order.
+
+      Rules:
+      - Task completed first appears first.
+      - Task completed last appears last.
+      - Tasks without execution time are placed after
+        the executed Tasks.
+      - Source data itself is NOT modified.
+    ===================================================== */
+
+    const orderedSourceTasks =
+      [...sourceTasks].sort(
+        (a, b) => {
+
+          /* =====================
+            EXECUTION TIMES
+          ===================== */
+
+          const timeA =
+            a.execution_executed_at
+              ? new Date(
+                  a.execution_executed_at
+                ).getTime()
+              : null;
+
+
+          const timeB =
+            b.execution_executed_at
+              ? new Date(
+                  b.execution_executed_at
+                ).getTime()
+              : null;
+
+
+          /* =====================
+            BOTH EXECUTED
+
+            Earliest Done first.
+          ===================== */
+
+          if (
+            timeA !== null &&
+            timeB !== null
+          ) {
+
+            if (timeA !== timeB) {
+
+              return timeA - timeB;
+
+            }
+
+
+            /* =====================
+              STABLE FALLBACK
+            ===================== */
+
+            return (
+              Number(a.id) -
+              Number(b.id)
+            );
+
+          }
+
+
+          /* =====================
+            EXECUTED BEFORE
+            NON-EXECUTED
+          ===================== */
+
+          if (timeA !== null) {
+            return -1;
+          }
+
+
+          if (timeB !== null) {
+            return 1;
+          }
+
+
+          /* =====================
+            BOTH WITHOUT EXECUTION
+
+            Stable fallback.
+          ===================== */
+
+          return (
+            Number(a.id) -
+            Number(b.id)
+          );
+
+        }
+      );
+
 
     /* =====================================================
        CREATE FRONTEND DRAFT
@@ -5071,8 +5167,13 @@ async function loadPreviousScheduledMaintenanceSetDraft(
       targetAssetModel:
         targetModel,
 
+      /* =====================
+        BUILD DRAFT IN
+        EXECUTION ORDER
+      ===================== */
+
       tasks:
-        sourceTasks.map(
+        orderedSourceTasks.map(
           (task, index) => ({
 
             /* =====================
@@ -5137,14 +5238,14 @@ async function loadPreviousScheduledMaintenanceSetDraft(
 
 
     /* =====================
-       SOURCE SUMMARY
+      SOURCE SUMMARY
     ===================== */
 
     if (summaryElement) {
 
       summaryElement.textContent =
         `${scheduledMaintenanceSetDraft.sourceSmCode} loaded from ${sourceModel}. ` +
-        `${sourceTasks.length} Tasks copied to Draft.`;
+        `${orderedSourceTasks.length} Tasks copied to Draft.`;
 
     }
 
@@ -6280,22 +6381,89 @@ async function openNewScheduledMaintenanceModal() {
       );
 
 
+    /* =====================================================
+      SET PLANNER — ASSET CHANGE
+
+      IMPORTANT:
+      Changing target Asset invalidates any previously
+      loaded Maintenance Set Draft.
+
+      Therefore:
+      - Clear the current Draft immediately.
+      - Clear previous source selection.
+      - Reload only compatible SMs for the new Asset model.
+
+      No database write occurs here.
+    ===================================================== */
+
     assetSelector?.addEventListener(
       "change",
-      () => {
+      async () => {
 
         /* =====================
-           ONLY SET MODE
+          CLEAR EXISTING DRAFT
 
-           Existing Empty SM flow
-           performs no additional request.
+          Prevents accidental use of Tasks
+          loaded for a previous Asset.
+        ===================== */
+
+        resetScheduledMaintenanceSetDraft();
+
+
+        /* =====================
+          RESET SOURCE SELECTION
+        ===================== */
+
+        const previousSmSelector =
+          document.getElementById(
+            "new-sm-source-set"
+          );
+
+
+        if (previousSmSelector) {
+
+          previousSmSelector.disabled =
+            true;
+
+          previousSmSelector.innerHTML = `
+            <option value="">
+              Loading compatible maintenance...
+            </option>
+          `;
+
+        }
+
+
+        /* =====================
+          RESET LOAD BUTTON
+        ===================== */
+
+        const loadSetButton =
+          document.getElementById(
+            "loadPreviousSmSetBtn"
+          );
+
+
+        if (loadSetButton) {
+
+          loadSetButton.disabled =
+            true;
+
+        }
+
+
+        /* =====================
+          ONLY SET MODE
+
+          Existing Empty SM flow remains
+          completely unaffected.
         ===================== */
 
         if (
           setMode?.checked === true
         ) {
 
-          loadCompatiblePreviousScheduledMaintenance();
+          await loadCompatiblePreviousScheduledMaintenance();
 
         }
 
@@ -6303,14 +6471,32 @@ async function openNewScheduledMaintenanceModal() {
     );
 
 
+/* =====================================================
+   PREVIOUS SM SOURCE CHANGE
+
+   Changing source SM invalidates
+   the currently loaded Draft.
+===================================================== */
+
+previousSmSelector?.addEventListener(
+  "change",
+  () => {
+
     /* =====================
-       SOURCE SELECTION
+       CLEAR OLD DRAFT
     ===================== */
 
-    previousSmSelector?.addEventListener(
-      "change",
-      refreshPreviousSmSetSelection
-    );
+    resetScheduledMaintenanceSetDraft();
+
+
+    /* =====================
+       REFRESH LOAD BUTTON
+    ===================== */
+
+    refreshPreviousSmSetSelection();
+
+  }
+);
 
 
     /* =====================================================
