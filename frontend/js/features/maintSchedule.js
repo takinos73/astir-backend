@@ -3972,6 +3972,14 @@ function moveScheduledMaintenanceDraftTask(
     }
   );
 
+  /* =====================
+    OLD PREVIEW INVALID
+
+    Reordering changes the
+    calculated schedule.
+  ===================== */
+
+  invalidateScheduledMaintenanceSetPreview();
 
   /* =====================
      RENDER UPDATED ORDER
@@ -8117,6 +8125,34 @@ async function openNewScheduledMaintenanceModal() {
           await loadPreviousScheduledMaintenanceSetDraft(
             sourceId
           );
+
+        }
+      );
+
+    /* =====================================================
+      SCHEDULED START CHANGE
+
+      Changing Scheduled Start invalidates
+      the existing Set Preview.
+
+      IMPORTANT:
+      - Scheduled Start is planning data.
+      - Actual Start remains independent.
+    ===================================================== */
+
+    overlay
+      .querySelector(
+        "#new-sm-scheduled-start"
+      )
+      ?.addEventListener(
+        "change",
+        () => {
+
+          /* =====================
+            INVALIDATE PREVIEW
+          ===================== */
+
+          invalidateScheduledMaintenanceSetPreview();
 
         }
       );
