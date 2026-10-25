@@ -4047,6 +4047,444 @@ window.openNewIncidentChooser = function () {
 };
 
 /* =========================================================
+   SCHEDULED MAINTENANCE SET PLANNER
+   LOAD COMPATIBLE PREVIOUS SM INCIDENTS
+
+   RULES:
+   - Target Asset must be selected.
+   - Previous SM must belong to an Asset with the SAME model.
+   - Uses existing GET /scheduled-maintenance.
+   - Read-only operation.
+   - Does NOT create or modify any SM or Task.
+========================================================= */
+
+async function loadCompatiblePreviousScheduledMaintenance() {
+
+  const assetSelect =
+    document.getElementById(
+      "new-sm-asset"
+    );
+
+  const sourceSelect =
+    document.getElementById(
+      "new-sm-source-set"
+    );
+
+  const summary =
+    document.getElementById(
+      "newSmSetSummary"
+    );
+
+  const loadButton =
+    document.getElementById(
+      "loadPreviousSmSetBtn"
+    );
+
+
+  /* =====================
+     BASIC UI GUARD
+  ===================== */
+
+  if (
+    !assetSelect ||
+    !sourceSelect
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     RESET SOURCE LIST
+  ===================== */
+
+  sourceSelect.innerHTML = `
+    <option value="">
+      Loading compatible maintenance...
+    </option>
+  `;
+
+  sourceSelect.disabled =
+    true;
+
+
+  if (loadButton) {
+
+    loadButton.disabled =
+      true;
+
+  }
+
+
+  /* =====================
+     TARGET ASSET
+  ===================== */
+
+  const targetAssetId =
+    Number(
+      assetSelect.value
+    );
+
+
+  if (
+    !Number.isInteger(targetAssetId) ||
+    targetAssetId <= 0
+  ) {
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Select Asset first
+      </option>
+    `;
+
+
+    if (summary) {
+
+      summary.textContent =
+        "Select an Asset to load compatible previous maintenance sets.";
+
+    }
+
+
+    return;
+
+  }
+
+
+  /* =====================
+     FIND TARGET ASSET
+
+     Uses existing CMMS Asset state.
+  ===================== */
+
+  const targetAsset =
+    Array.isArray(state.assetsData)
+      ? state.assetsData.find(
+          asset =>
+            Number(asset.id) ===
+            targetAssetId
+        )
+      : null;
+
+
+  if (!targetAsset) {
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Asset not found
+      </option>
+    `;
+
+
+    if (summary) {
+
+      summary.textContent =
+        "Could not identify the selected Asset.";
+
+    }
+
+
+    return;
+
+  }
+
+
+  /* =====================
+     TARGET MODEL
+  ===================== */
+
+  const targetModel =
+    String(
+      targetAsset.model || ""
+    ).trim();
+
+
+  if (!targetModel) {
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Asset model unavailable
+      </option>
+    `;
+
+
+    if (summary) {
+
+      summary.textContent =
+        "The selected Asset has no Model information.";
+
+    }
+
+
+    return;
+
+  }
+
+
+  try {
+
+    /* =====================
+       LOAD EXISTING SM LIST
+
+       Existing read-only endpoint.
+    ===================== */
+
+    const response =
+      await fetch(
+        "/scheduled-maintenance"
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Failed to load Scheduled Maintenance list"
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    const scheduledMaintenance =
+      Array.isArray(data)
+        ? data
+        : [];
+
+
+    /* =====================
+       MODEL COMPATIBILITY
+
+       Same model only.
+
+       Example:
+       PMC250 → PMC250 only.
+    ===================== */
+
+    const compatible =
+      scheduledMaintenance.filter(
+        sm =>
+          String(
+            sm.asset_model || ""
+          ).trim() === targetModel
+      );
+
+
+    /* =====================
+       SORT
+
+       Most recent first.
+
+       Prefer actual close date,
+       then scheduled start,
+       then ID.
+    ===================== */
+
+    compatible.sort(
+      (a, b) => {
+
+        const dateA =
+          new Date(
+            a.actual_closed_at ||
+            a.scheduled_start_at ||
+            0
+          ).getTime();
+
+
+        const dateB =
+          new Date(
+            b.actual_closed_at ||
+            b.scheduled_start_at ||
+            0
+          ).getTime();
+
+
+        if (dateB !== dateA) {
+          return dateB - dateA;
+        }
+
+
+        return (
+          Number(b.id) -
+          Number(a.id)
+        );
+
+      }
+    );
+
+
+    /* =====================
+       EMPTY RESULT
+    ===================== */
+
+    if (compatible.length === 0) {
+
+      sourceSelect.innerHTML = `
+        <option value="">
+          No previous ${targetModel} maintenance found
+        </option>
+      `;
+
+
+      if (summary) {
+
+        summary.textContent =
+          `No previous Scheduled Maintenance was found for model ${targetModel}.`;
+
+      }
+
+
+      return;
+
+    }
+
+
+    /* =====================
+       BUILD SOURCE OPTIONS
+    ===================== */
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Select previous maintenance...
+      </option>
+    `;
+
+
+    compatible.forEach(sm => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        String(sm.id);
+
+
+      const code =
+        `SM-${String(
+          sm.id
+        ).padStart(5, "0")}`;
+
+
+      const title =
+        sm.title ||
+        "Scheduled Maintenance";
+
+
+      const status =
+        String(
+          sm.status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      option.textContent =
+        `${code} · ${title} · ${status}`;
+
+
+      sourceSelect.appendChild(
+        option
+      );
+
+    });
+
+
+    sourceSelect.disabled =
+      false;
+
+
+    /* =====================
+       SUMMARY
+    ===================== */
+
+    if (summary) {
+
+      summary.textContent =
+        `${compatible.length} compatible Scheduled Maintenance ` +
+        `incident${compatible.length === 1 ? "" : "s"} found for ${targetModel}.`;
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD COMPATIBLE SM ERROR:",
+      err
+    );
+
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Could not load maintenance history
+      </option>
+    `;
+
+
+    if (summary) {
+
+      summary.textContent =
+        "Could not load previous Scheduled Maintenance.";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   PREVIOUS SM SET SELECTION
+
+   Enables Load Set only after
+   a valid source SM has been selected.
+
+   Still read-only.
+========================================================= */
+
+function refreshPreviousSmSetSelection() {
+
+  const sourceSelect =
+    document.getElementById(
+      "new-sm-source-set"
+    );
+
+  const loadButton =
+    document.getElementById(
+      "loadPreviousSmSetBtn"
+    );
+
+
+  if (
+    !sourceSelect ||
+    !loadButton
+  ) {
+    return;
+  }
+
+
+  const smId =
+    Number(
+      sourceSelect.value
+    );
+
+
+  /* =====================
+     VALID SOURCE
+  ===================== */
+
+  loadButton.disabled =
+    !Number.isInteger(smId) ||
+    smId <= 0;
+
+}
+
+
+/* =========================================================
    NEW SCHEDULED MAINTENANCE — CREATION FORM
 
    Independent from New Breakdown.
@@ -4061,11 +4499,11 @@ window.openNewIncidentChooser = function () {
       New planning workflow.
 
       CURRENT IMPLEMENTATION:
-      - UI / mock only.
+      - Loads compatible previous SM incidents.
+      - Compatibility is based on Asset Model.
       - Does NOT create an SM.
       - Does NOT create Tasks.
-      - Does NOT modify any previous SM.
-      - Future steps will load compatible historical SM sets.
+      - Does NOT modify previous SM records.
 ========================================================= */
 
 async function openNewScheduledMaintenanceModal() {
@@ -4148,10 +4586,9 @@ async function openNewScheduledMaintenanceModal() {
 
 
         <!-- =================================================
-            PLANNING METHOD
+             PLANNING METHOD
 
-            Existing Empty SM remains the default.
-            The new Set flow is an optional second path.
+             Existing Empty SM remains the default.
         ================================================= -->
 
         <div class="sm-planning-method">
@@ -4162,8 +4599,8 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-              EMPTY SM
-              Existing flow
+               EMPTY SM
+               Existing flow
           ===================== -->
 
           <label class="sm-planning-option">
@@ -4192,8 +4629,7 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-              LOAD PREVIOUS SET
-              New planning flow
+               LOAD PREVIOUS SET
           ===================== -->
 
           <label class="sm-planning-option">
@@ -4226,7 +4662,7 @@ async function openNewScheduledMaintenanceModal() {
         <!-- =================================================
              EXISTING SM FORM
 
-             Remains unchanged and is used by both modes.
+             Remains available in both modes.
         ================================================= -->
 
         <div class="restoration-form-grid">
@@ -4314,12 +4750,10 @@ async function openNewScheduledMaintenanceModal() {
 
 
         <!-- =================================================
-             LOAD SET — MOCK AREA
+             LOAD SET PLANNING AREA
 
-             Hidden when using the existing Empty SM flow.
-
-             No backend calls yet.
-             No data is created.
+             Hidden during existing Empty SM flow.
+             Read-only source loading only for now.
         ================================================= -->
 
         <div
@@ -4367,7 +4801,7 @@ async function openNewScheduledMaintenanceModal() {
                   color: #94a3b8;
                 "
               >
-                Previous maintenance sets will be filtered by the selected Asset model.
+                Previous maintenance is filtered by the selected Asset model.
               </div>
 
             </div>
@@ -4383,14 +4817,14 @@ async function openNewScheduledMaintenanceModal() {
                 font-weight: 700;
               "
             >
-              MOCK
+              PLANNER
             </span>
 
           </div>
 
 
           <!-- =====================
-               PREVIOUS SET
+               PREVIOUS SM
           ===================== -->
 
           <div class="field">
@@ -4414,7 +4848,7 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-               PLACEHOLDER SUMMARY
+               SOURCE SUMMARY
           ===================== -->
 
           <div
@@ -4433,7 +4867,10 @@ async function openNewScheduledMaintenanceModal() {
 
 
           <!-- =====================
-               MOCK ACTION
+               LOAD SET ACTION
+
+               Next step will load the
+               selected SM Tasks into Draft.
           ===================== -->
 
           <div
@@ -4484,8 +4921,8 @@ async function openNewScheduledMaintenanceModal() {
           <!-- =====================
                EXISTING CREATE BUTTON
 
-               Existing Empty SM flow remains connected
-               to this exact button.
+               Empty SM flow continues to
+               use this exact button.
           ===================== -->
 
           <button
@@ -4556,17 +4993,7 @@ async function openNewScheduledMaintenanceModal() {
 
 
     /* =====================================================
-       PLANNING MODE TOGGLE
-
-       UI ONLY.
-
-       EMPTY:
-       Existing SM creation remains available.
-
-       SET:
-       Shows the new mock planning area.
-
-       No backend behavior is changed.
+       PLANNING MODE
     ===================================================== */
 
     const emptyMode =
@@ -4614,12 +5041,12 @@ async function openNewScheduledMaintenanceModal() {
 
 
       /* =====================
-         EXISTING FLOW BUTTON
+         EXISTING EMPTY FLOW
 
-         For Empty mode, preserve today's label.
+         Existing Create button remains
+         active only for Empty mode.
 
-         For Set mode, prevent accidental creation
-         while the new planning flow is only a mock.
+         Set mode is still planning-only.
       ===================== */
 
       if (saveButton) {
@@ -4633,7 +5060,7 @@ async function openNewScheduledMaintenanceModal() {
             true;
 
           saveButton.title =
-            "Maintenance Set planning is currently in mock mode.";
+            "Load a previous Maintenance Set first.";
 
         } else {
 
@@ -4650,6 +5077,19 @@ async function openNewScheduledMaintenanceModal() {
 
       }
 
+
+      /* =====================
+         LOAD COMPATIBLE SOURCES
+
+         Only when Set mode is active.
+      ===================== */
+
+      if (useSet) {
+
+        loadCompatiblePreviousScheduledMaintenance();
+
+      }
+
     };
 
 
@@ -4663,6 +5103,117 @@ async function openNewScheduledMaintenanceModal() {
       "change",
       refreshPlanningMode
     );
+
+
+    /* =====================================================
+       SET PLANNER — ASSET CHANGE
+    ===================================================== */
+
+    const assetSelector =
+      overlay.querySelector(
+        "#new-sm-asset"
+      );
+
+
+    const previousSmSelector =
+      overlay.querySelector(
+        "#new-sm-source-set"
+      );
+
+
+    assetSelector?.addEventListener(
+      "change",
+      () => {
+
+        /* =====================
+           ONLY SET MODE
+
+           Existing Empty SM flow
+           performs no additional request.
+        ===================== */
+
+        if (
+          setMode?.checked === true
+        ) {
+
+          loadCompatiblePreviousScheduledMaintenance();
+
+        }
+
+      }
+    );
+
+
+    /* =====================
+       SOURCE SELECTION
+    ===================== */
+
+    previousSmSelector?.addEventListener(
+      "change",
+      refreshPreviousSmSetSelection
+    );
+
+
+    /* =====================
+       LOAD SET BUTTON
+
+       Intentionally no Task loading yet.
+
+       Next implementation step will:
+       GET /scheduled-maintenance/:id/tasks
+       and create the editable Draft.
+    ===================== */
+
+    overlay
+      .querySelector(
+        "#loadPreviousSmSetBtn"
+      )
+      ?.addEventListener(
+        "click",
+        () => {
+
+          const sourceId =
+            Number(
+              previousSmSelector?.value
+            );
+
+
+          if (
+            !Number.isInteger(sourceId) ||
+            sourceId <= 0
+          ) {
+            return;
+          }
+
+
+          console.log(
+            "MAINTENANCE SET SOURCE SELECTED:",
+            sourceId
+          );
+
+
+          /* =====================
+             NEXT STEP PLACEHOLDER
+
+             No DB change.
+          ===================== */
+
+          const summary =
+            document.getElementById(
+              "newSmSetSummary"
+            );
+
+
+          if (summary) {
+
+            summary.textContent =
+              `SM-${String(sourceId).padStart(5, "0")} selected. ` +
+              "Task Draft loading will be connected next.";
+
+          }
+
+        }
+      );
 
 
     /* =====================
@@ -4703,7 +5254,7 @@ async function openNewScheduledMaintenanceModal() {
      RESET PLANNING MODE
 
      Existing Empty SM remains
-     the default every time.
+     default every time.
   ===================== */
 
   const emptyMode =
@@ -4727,6 +5278,24 @@ async function openNewScheduledMaintenanceModal() {
   const saveButton =
     document.getElementById(
       "saveNewSmBtn"
+    );
+
+
+  const sourceSelect =
+    document.getElementById(
+      "new-sm-source-set"
+    );
+
+
+  const summary =
+    document.getElementById(
+      "newSmSetSummary"
+    );
+
+
+  const loadButton =
+    document.getElementById(
+      "loadPreviousSmSetBtn"
     );
 
 
@@ -4768,11 +5337,40 @@ async function openNewScheduledMaintenanceModal() {
   }
 
 
+  if (sourceSelect) {
+
+    sourceSelect.disabled =
+      true;
+
+    sourceSelect.innerHTML = `
+      <option value="">
+        Select Asset first
+      </option>
+    `;
+
+  }
+
+
+  if (summary) {
+
+    summary.textContent =
+      "Select an Asset to load compatible previous maintenance sets.";
+
+  }
+
+
+  if (loadButton) {
+
+    loadButton.disabled =
+      true;
+
+  }
+
+
   /* =====================
      LOAD ASSETS
 
-     Uses the existing CMMS asset data.
-     No independent SM asset API is needed.
+     Uses existing CMMS asset data.
   ===================== */
 
   const assetSelect =
@@ -4812,6 +5410,7 @@ async function openNewScheduledMaintenanceModal() {
         "";
 
     }
+
 
   } catch (err) {
 
