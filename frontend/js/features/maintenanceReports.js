@@ -8861,12 +8861,12 @@ function renderMaintenanceReportDetail(
       </div>
 
 
-      /* =====================
+      <!-- =====================
         STATUS
 
         Adds the same status-specific class pattern
         used by Production Reporting.
-      ===================== */
+      ===================== -->
 
       <div
         class="
