@@ -4197,6 +4197,13 @@ let scheduledMaintenanceSetDraft = {
 
   targetAssetModel: null,
 
+  /* =====================
+    PLANNING
+  ===================== */
+
+  dailyWorkMinutes: 600,
+
+  preview: null,
 
   /* =====================
      DRAFT TASKS
@@ -4233,10 +4240,23 @@ function resetScheduledMaintenanceSetDraft() {
 
     targetAssetModel: null,
 
+
+    /* =====================
+      PLANNING
+    ===================== */
+
+    dailyWorkMinutes: 600,
+
+    preview: null,
+
+
+    /* =====================
+      DRAFT TASKS
+    ===================== */
+
     tasks: []
 
   };
-
 
   /* =====================
      RESET DRAFT UI
@@ -4309,6 +4329,486 @@ function formatSmDraftDuration(minutes) {
 
 }
 
+/* =========================================================
+   INVALIDATE SM SET PREVIEW
+
+   Any Draft change makes the previous Preview obsolete.
+
+   IMPORTANT:
+   - Frontend only.
+   - No database write.
+========================================================= */
+
+function invalidateScheduledMaintenanceSetPreview() {
+
+  /* =====================
+     CLEAR PREVIEW STATE
+  ===================== */
+
+  scheduledMaintenanceSetDraft.preview =
+    null;
+
+
+  /* =====================
+     CLEAR PREVIEW UI
+  ===================== */
+
+  const previewContainer =
+    document.getElementById(
+      "newSmSchedulePreview"
+    );
+
+
+  if (previewContainer) {
+
+    previewContainer.style.display =
+      "none";
+
+    previewContainer.innerHTML =
+      "";
+
+  }
+
+}
+
+
+/* =========================================================
+   FORMAT DATE / TIME FOR SET PREVIEW
+========================================================= */
+
+function formatSmPlanningDateTime(value) {
+
+  /* =====================
+     EMPTY VALUE
+  ===================== */
+
+  if (!value) {
+    return "—";
+  }
+
+
+  /* =====================
+     NORMALIZE DATE
+  ===================== */
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+
+  /* =====================
+     LOCAL DISPLAY
+  ===================== */
+
+  return date.toLocaleString(
+    "el-GR",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+/* =========================================================
+   BUILD SCHEDULED MAINTENANCE SET PREVIEW
+
+   V1 RULES:
+   - Uses INCLUDED Tasks only.
+   - Uses estimated duration_min.
+   - Follows current Draft order.
+   - Tasks do NOT split across days.
+   - If a Task does not fit in remaining daily capacity,
+     it moves to the next calendar day.
+   - Each new work day starts at the same clock time
+     as the original Scheduled Start.
+========================================================= */
+
+function buildScheduledMaintenanceSetPreview() {
+
+  /* =====================
+     SCHEDULED START
+  ===================== */
+
+  const startInput =
+    document.getElementById(
+      "new-sm-scheduled-start"
+    );
+
+
+  const startValue =
+    String(
+      startInput?.value || ""
+    ).trim();
+
+
+  if (!startValue) {
+
+    throw new Error(
+      "Scheduled Start is required for Set planning."
+    );
+
+  }
+
+
+  const scheduledStart =
+    new Date(
+      startValue
+    );
+
+
+  if (
+    Number.isNaN(
+      scheduledStart.getTime()
+    )
+  ) {
+
+    throw new Error(
+      "Invalid Scheduled Start."
+    );
+
+  }
+
+
+  /* =====================
+     DAILY CAPACITY
+  ===================== */
+
+  const workHoursInput =
+    document.getElementById(
+      "new-sm-work-hours"
+    );
+
+
+  const workHours =
+    Number(
+      workHoursInput?.value
+    );
+
+
+  if (
+    !Number.isFinite(workHours) ||
+    workHours <= 0 ||
+    workHours > 24
+  ) {
+
+    throw new Error(
+      "Work Hours / Day must be greater than 0 and not more than 24."
+    );
+
+  }
+
+
+  const dailyWorkMinutes =
+    Math.round(
+      workHours * 60
+    );
+
+
+  scheduledMaintenanceSetDraft.dailyWorkMinutes =
+    dailyWorkMinutes;
+
+
+  /* =====================
+     INCLUDED TASKS
+  ===================== */
+
+  const includedTasks =
+    scheduledMaintenanceSetDraft.tasks.filter(
+      task =>
+        task.included === true
+    );
+
+
+  if (includedTasks.length === 0) {
+
+    throw new Error(
+      "Select at least one Task for the Maintenance Set."
+    );
+
+  }
+
+
+  /* =====================
+     VALIDATE DURATIONS
+  ===================== */
+
+  includedTasks.forEach(
+    task => {
+
+      const duration =
+        Number(
+          task.duration_min
+        );
+
+
+      if (
+        !Number.isFinite(duration) ||
+        duration < 0
+      ) {
+
+        throw new Error(
+          `Invalid duration for Task: ${task.task || "Unnamed Task"}`
+        );
+
+      }
+
+
+      /* =====================
+         V1 — NO SPLIT TASK
+
+         One Task must fit
+         inside one work day.
+      ===================== */
+
+      if (
+        duration > dailyWorkMinutes
+      ) {
+
+        throw new Error(
+          `"${task.task || "Task"}" requires ${duration} min, ` +
+          `which exceeds the daily capacity of ${dailyWorkMinutes} min.`
+        );
+
+      }
+
+    }
+  );
+
+
+  /* =====================
+     INITIAL VALUES
+  ===================== */
+
+  const workDayStartHour =
+    scheduledStart.getHours();
+
+
+  const workDayStartMinute =
+    scheduledStart.getMinutes();
+
+
+  let currentDay =
+    new Date(
+      scheduledStart
+    );
+
+
+  let usedMinutesToday =
+    0;
+
+
+  const scheduledTasks =
+    [];
+
+
+  /* =====================
+     TOTAL WORK
+  ===================== */
+
+  const totalWorkMinutes =
+    includedTasks.reduce(
+      (sum, task) =>
+        sum +
+        (
+          Number(
+            task.duration_min
+          ) || 0
+        ),
+      0
+    );
+
+
+  /* =====================
+     SCHEDULE TASKS
+  ===================== */
+
+  includedTasks.forEach(
+    task => {
+
+      const duration =
+        Number(
+          task.duration_min
+        ) || 0;
+
+
+      /* =====================
+         REMAINING CAPACITY
+      ===================== */
+
+      const remainingToday =
+        dailyWorkMinutes -
+        usedMinutesToday;
+
+
+      /* =====================
+         MOVE TO NEXT DAY
+         IF TASK DOES NOT FIT
+      ===================== */
+
+      if (
+        duration > remainingToday &&
+        usedMinutesToday > 0
+      ) {
+
+        currentDay =
+          new Date(
+            currentDay
+          );
+
+
+        currentDay.setDate(
+          currentDay.getDate() + 1
+        );
+
+
+        currentDay.setHours(
+          workDayStartHour,
+          workDayStartMinute,
+          0,
+          0
+        );
+
+
+        usedMinutesToday =
+          0;
+
+      }
+
+
+      /* =====================
+         TASK START
+      ===================== */
+
+      const taskStart =
+        new Date(
+          currentDay.getTime() +
+          usedMinutesToday * 60000
+        );
+
+
+      /* =====================
+         TASK END
+      ===================== */
+
+      const taskEnd =
+        new Date(
+          taskStart.getTime() +
+          duration * 60000
+        );
+
+
+      /* =====================
+         PREVIEW ITEM
+      ===================== */
+
+      scheduledTasks.push({
+
+        sourceTaskId:
+          task.sourceTaskId,
+
+        sortOrder:
+          task.sortOrder,
+
+        task:
+          task.task,
+
+        section:
+          task.section,
+
+        unit:
+          task.unit,
+
+        impact:
+          task.impact,
+
+        duration_min:
+          duration,
+
+        planned_start_at:
+          taskStart,
+
+        planned_end_at:
+          taskEnd
+
+      });
+
+
+      /* =====================
+         ADVANCE DAY LOAD
+      ===================== */
+
+      usedMinutesToday +=
+        duration;
+
+    }
+  );
+
+
+  /* =====================
+     EXPECTED COMPLETION
+  ===================== */
+
+  const expectedCompletion =
+    scheduledTasks.length > 0
+      ? scheduledTasks[
+          scheduledTasks.length - 1
+        ].planned_end_at
+      : scheduledStart;
+
+
+  /* =====================
+     PREVIEW OBJECT
+  ===================== */
+
+  const preview = {
+
+    scheduledStart:
+      scheduledStart,
+
+    expectedCompletion:
+      expectedCompletion,
+
+    dailyWorkMinutes:
+      dailyWorkMinutes,
+
+    totalWorkMinutes:
+      totalWorkMinutes,
+
+    selectedTaskCount:
+      includedTasks.length,
+
+    tasks:
+      scheduledTasks
+
+  };
+
+
+  /* =====================
+     STORE PREVIEW
+  ===================== */
+
+  scheduledMaintenanceSetDraft.preview =
+    preview;
+
+
+  return preview;
+
+}
 
 /* =========================================================
    CALCULATE SM SET DRAFT SUMMARY
@@ -5075,7 +5575,6 @@ function renderScheduledMaintenanceSetDraft() {
 
 }
 
-
 /* =========================================================
    LOAD PREVIOUS SM TASKS INTO DRAFT
 
@@ -5385,7 +5884,6 @@ async function loadPreviousScheduledMaintenanceSetDraft(
         }
       );
 
-
     /* =====================================================
        CREATE FRONTEND DRAFT
 
@@ -5420,6 +5918,16 @@ async function loadPreviousScheduledMaintenanceSetDraft(
 
       targetAssetModel:
         targetModel,
+
+      /* =====================
+        PLANNING DEFAULTS
+      ===================== */
+
+      dailyWorkMinutes:
+        600,
+
+      preview:
+        null,
 
       /* =====================
         BUILD DRAFT IN
@@ -5483,13 +5991,11 @@ async function loadPreviousScheduledMaintenanceSetDraft(
 
     };
 
-
     /* =====================
        RENDER DRAFT
     ===================== */
 
     renderScheduledMaintenanceSetDraft();
-
 
     /* =====================
       SOURCE SUMMARY
