@@ -6543,6 +6543,18 @@ async function openNewScheduledMaintenanceModal() {
       const useSet =
         setMode?.checked === true;
 
+      /* =====================
+        EMPTY MODE RESET
+
+        Leaving Set mode invalidates
+        the current planning Draft.
+      ===================== */
+
+      if (!useSet) {
+
+        resetScheduledMaintenanceSetDraft();
+
+      }
 
       /* =====================
          SHOW / HIDE SET AREA
@@ -6672,12 +6684,6 @@ async function openNewScheduledMaintenanceModal() {
           RESET SOURCE SELECTION
         ===================== */
 
-        const previousSmSelector =
-          document.getElementById(
-            "new-sm-source-set"
-          );
-
-
         if (previousSmSelector) {
 
           previousSmSelector.disabled =
@@ -6707,6 +6713,9 @@ async function openNewScheduledMaintenanceModal() {
           loadSetButton.disabled =
             true;
 
+          loadSetButton.textContent =
+            "Load Set";
+
         }
 
 
@@ -6723,39 +6732,60 @@ async function openNewScheduledMaintenanceModal() {
 
           await loadCompatiblePreviousScheduledMaintenance();
 
+        } else {
+
+          /* =====================
+            EMPTY MODE
+
+            Keep source selector neutral
+            because Set planning is inactive.
+          ===================== */
+
+          if (previousSmSelector) {
+
+            previousSmSelector.innerHTML = `
+              <option value="">
+                Select Asset first
+              </option>
+            `;
+
+          }
+
         }
 
       }
     );
 
 
-/* =====================================================
-   PREVIOUS SM SOURCE CHANGE
+    /* =====================================================
+      PREVIOUS SM SOURCE CHANGE
 
-   Changing source SM invalidates
-   the currently loaded Draft.
-===================================================== */
+      Changing source SM invalidates
+      the currently loaded Draft.
 
-previousSmSelector?.addEventListener(
-  "change",
-  () => {
+      This prevents stale Tasks from a previously
+      loaded Maintenance Set remaining visible.
+    ===================================================== */
 
-    /* =====================
-       CLEAR OLD DRAFT
-    ===================== */
+    previousSmSelector?.addEventListener(
+      "change",
+      () => {
 
-    resetScheduledMaintenanceSetDraft();
+        /* =====================
+          CLEAR OLD DRAFT
+        ===================== */
+
+        resetScheduledMaintenanceSetDraft();
 
 
-    /* =====================
-       REFRESH LOAD BUTTON
-    ===================== */
+        /* =====================
+          REFRESH LOAD BUTTON
+        ===================== */
 
-    refreshPreviousSmSetSelection();
+        refreshPreviousSmSetSelection();
 
-  }
-);
-
+      }
+    );
 
     /* =====================================================
       LOAD PREVIOUS MAINTENANCE SET
