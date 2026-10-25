@@ -4941,9 +4941,8 @@ function updateScheduledMaintenanceDraftDuration(
     return;
   }
 
-
   /* =====================
-     UPDATE DRAFT ONLY
+    UPDATE DRAFT ONLY
   ===================== */
 
   scheduledMaintenanceSetDraft.tasks[
@@ -4951,6 +4950,17 @@ function updateScheduledMaintenanceDraftDuration(
   ].duration_min =
     Math.round(duration);
 
+
+  /* =====================
+    OLD PREVIEW INVALID
+  ===================== */
+
+  invalidateScheduledMaintenanceSetPreview();
+
+
+  /* =====================
+    REFRESH SUMMARY
+  ===================== */
 
   refreshScheduledMaintenanceSetDraftSummary();
 
@@ -4982,9 +4992,8 @@ function toggleScheduledMaintenanceDraftTask(
     return;
   }
 
-
   /* =====================
-     UPDATE DRAFT ONLY
+    UPDATE DRAFT ONLY
   ===================== */
 
   scheduledMaintenanceSetDraft.tasks[
@@ -4992,6 +5001,17 @@ function toggleScheduledMaintenanceDraftTask(
   ].included =
     included === true;
 
+
+  /* =====================
+    OLD PREVIEW INVALID
+  ===================== */
+
+  invalidateScheduledMaintenanceSetPreview();
+
+
+  /* =====================
+    REFRESH SUMMARY
+  ===================== */
 
   refreshScheduledMaintenanceSetDraftSummary();
 
