@@ -4051,18 +4051,29 @@ window.openNewIncidentChooser = function () {
 
    Independent from New Breakdown.
 
-   Current step:
-   - Open / close the SM form.
-   - Collect SM incident fields.
-   - No POST request or database changes yet.
+   PLANNING MODES
+   ---------------------------------------------------------
+   1. EMPTY SM
+      Existing Scheduled Maintenance creation flow.
+      No behavior is changed.
 
-   Asset selection and Save will be connected next.
+   2. LOAD PREVIOUS SET
+      New planning workflow.
+
+      CURRENT IMPLEMENTATION:
+      - UI / mock only.
+      - Does NOT create an SM.
+      - Does NOT create Tasks.
+      - Does NOT modify any previous SM.
+      - Future steps will load compatible historical SM sets.
 ========================================================= */
 
 async function openNewScheduledMaintenanceModal() {
 
   let overlay =
-    document.getElementById("newScheduledMaintenanceOverlay");
+    document.getElementById(
+      "newScheduledMaintenanceOverlay"
+    );
 
 
   /* =====================
@@ -4071,13 +4082,23 @@ async function openNewScheduledMaintenanceModal() {
 
   if (!overlay) {
 
-    overlay = document.createElement("div");
+    overlay =
+      document.createElement(
+        "div"
+      );
 
-    overlay.id = "newScheduledMaintenanceOverlay";
-    overlay.className = "modal-overlay";
+    overlay.id =
+      "newScheduledMaintenanceOverlay";
 
-    overlay.style.display = "none";
-    overlay.style.zIndex = "1250";
+    overlay.className =
+      "modal-overlay";
+
+    overlay.style.display =
+      "none";
+
+    overlay.style.zIndex =
+      "1250";
+
 
     overlay.innerHTML = `
       <div
@@ -4085,7 +4106,9 @@ async function openNewScheduledMaintenanceModal() {
         class="modal"
         style="
           box-sizing: border-box;
-          width: min(650px, calc(100vw - 32px));
+          width: min(760px, calc(100vw - 32px));
+          max-height: calc(100vh - 40px);
+          overflow-y: auto;
           padding: 24px;
           background: #181b22;
           color: #f5f7fa;
@@ -4093,6 +4116,10 @@ async function openNewScheduledMaintenanceModal() {
           border-radius: 14px;
         "
       >
+
+        <!-- =====================
+             HEADER
+        ===================== -->
 
         <div
           class="modal-header"
@@ -4119,21 +4146,157 @@ async function openNewScheduledMaintenanceModal() {
 
         </div>
 
+
+        <!-- =================================================
+             PLANNING METHOD
+
+             Existing Empty SM remains the default.
+        ================================================= -->
+
+        <div
+          style="
+            margin-top: 18px;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 10px;
+            background: rgba(255,255,255,.025);
+          "
+        >
+
+          <div
+            style="
+              margin-bottom: 10px;
+              font-size: 12px;
+              font-weight: 700;
+              color: #cbd5e1;
+            "
+          >
+            Planning Method
+          </div>
+
+
+          <!-- =====================
+               EMPTY SM
+               Existing flow
+          ===================== -->
+
+          <label
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              margin-bottom: 12px;
+              cursor: pointer;
+            "
+          >
+
+            <input
+              id="new-sm-mode-empty"
+              type="radio"
+              name="new-sm-planning-mode"
+              value="EMPTY"
+              checked
+              style="margin-top: 3px;"
+            >
+
+            <span>
+
+              <strong>
+                Create Empty Scheduled Maintenance
+              </strong>
+
+              <div
+                style="
+                  margin-top: 3px;
+                  font-size: 11px;
+                  color: #94a3b8;
+                "
+              >
+                Create the SM incident now and add Planned Tasks manually.
+              </div>
+
+            </span>
+
+          </label>
+
+
+          <!-- =====================
+               LOAD PREVIOUS SET
+               New mock flow
+          ===================== -->
+
+          <label
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              cursor: pointer;
+            "
+          >
+
+            <input
+              id="new-sm-mode-set"
+              type="radio"
+              name="new-sm-planning-mode"
+              value="SET"
+              style="margin-top: 3px;"
+            >
+
+            <span>
+
+              <strong>
+                Load Previous Maintenance Set
+              </strong>
+
+              <div
+                style="
+                  margin-top: 3px;
+                  font-size: 11px;
+                  color: #94a3b8;
+                "
+              >
+                Load Tasks from a previous compatible Scheduled Maintenance,
+                edit the set and preview the new schedule before creation.
+              </div>
+
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <!-- =================================================
+             EXISTING SM FORM
+
+             Remains unchanged and is used by both modes.
+        ================================================= -->
+
         <div class="restoration-form-grid">
 
           <div class="field">
+
             <label for="new-sm-asset">
               Asset *
             </label>
 
-            <select id="new-sm-asset" disabled>
+            <select
+              id="new-sm-asset"
+              disabled
+            >
+
               <option value="">
                 Select Asset
               </option>
+
             </select>
+
           </div>
 
+
           <div class="field">
+
             <label for="new-sm-title">
               Maintenance Title *
             </label>
@@ -4143,9 +4306,12 @@ async function openNewScheduledMaintenanceModal() {
               type="text"
               placeholder="Scheduled Maintenance"
             >
+
           </div>
 
+
           <div class="field">
+
             <label for="new-sm-scheduled-start">
               Scheduled Start
             </label>
@@ -4154,9 +4320,12 @@ async function openNewScheduledMaintenanceModal() {
               id="new-sm-scheduled-start"
               type="datetime-local"
             >
+
           </div>
 
+
           <div class="field">
+
             <label for="new-sm-scheduled-end">
               Scheduled End
             </label>
@@ -4165,9 +4334,15 @@ async function openNewScheduledMaintenanceModal() {
               id="new-sm-scheduled-end"
               type="datetime-local"
             >
+
           </div>
 
-          <div class="field" style="grid-column: 1 / -1;">
+
+          <div
+            class="field"
+            style="grid-column: 1 / -1;"
+          >
+
             <label for="new-sm-description">
               Description
             </label>
@@ -4176,9 +4351,160 @@ async function openNewScheduledMaintenanceModal() {
               id="new-sm-description"
               rows="3"
             ></textarea>
+
           </div>
 
         </div>
+
+
+        <!-- =================================================
+             LOAD SET — MOCK AREA
+
+             Hidden when using the existing Empty SM flow.
+
+             No backend calls yet.
+             No data is created.
+        ================================================= -->
+
+        <div
+          id="newSmSetPlanningSection"
+          style="
+            display: none;
+            margin-top: 20px;
+            padding: 16px;
+            border: 1px solid #30425a;
+            border-radius: 10px;
+            background: #141b24;
+          "
+        >
+
+          <!-- =====================
+               SECTION HEADER
+          ===================== -->
+
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              gap: 16px;
+              align-items: flex-start;
+              margin-bottom: 14px;
+            "
+          >
+
+            <div>
+
+              <div
+                style="
+                  font-size: 13px;
+                  font-weight: 800;
+                  color: #dbeafe;
+                "
+              >
+                Maintenance Set
+              </div>
+
+              <div
+                style="
+                  margin-top: 3px;
+                  font-size: 11px;
+                  color: #94a3b8;
+                "
+              >
+                Previous maintenance sets will be filtered by the selected Asset model.
+              </div>
+
+            </div>
+
+            <span
+              style="
+                padding: 3px 7px;
+                border: 1px solid #35506f;
+                border-radius: 5px;
+                background: #172233;
+                color: #9fc5ff;
+                font-size: 10px;
+                font-weight: 700;
+              "
+            >
+              MOCK
+            </span>
+
+          </div>
+
+
+          <!-- =====================
+               PREVIOUS SET
+          ===================== -->
+
+          <div class="field">
+
+            <label for="new-sm-source-set">
+              Previous Scheduled Maintenance
+            </label>
+
+            <select
+              id="new-sm-source-set"
+              disabled
+            >
+
+              <option value="">
+                Select Asset first
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- =====================
+               PLACEHOLDER SUMMARY
+          ===================== -->
+
+          <div
+            id="newSmSetSummary"
+            style="
+              margin-top: 14px;
+              padding: 12px;
+              border: 1px dashed rgba(255,255,255,.14);
+              border-radius: 8px;
+              color: #94a3b8;
+              font-size: 12px;
+            "
+          >
+            Select an Asset to load compatible previous maintenance sets.
+          </div>
+
+
+          <!-- =====================
+               MOCK ACTION
+          ===================== -->
+
+          <div
+            style="
+              display: flex;
+              justify-content: flex-end;
+              margin-top: 14px;
+            "
+          >
+
+            <button
+              id="loadPreviousSmSetBtn"
+              class="btn-table"
+              type="button"
+              disabled
+            >
+              Load Set
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ACTIONS
+        ================================================= -->
 
         <div
           class="modal-actions"
@@ -4198,6 +4524,14 @@ async function openNewScheduledMaintenanceModal() {
             Cancel
           </button>
 
+
+          <!-- =====================
+               EXISTING CREATE BUTTON
+
+               Existing Empty SM flow remains connected
+               to this exact button.
+          ===================== -->
+
           <button
             id="saveNewSmBtn"
             class="btn-table"
@@ -4211,7 +4545,10 @@ async function openNewScheduledMaintenanceModal() {
       </div>
     `;
 
-    document.body.appendChild(overlay);
+
+    document.body.appendChild(
+      overlay
+    );
 
 
     /* =====================
@@ -4219,24 +4556,164 @@ async function openNewScheduledMaintenanceModal() {
     ===================== */
 
     const closeModal = () => {
-      overlay.style.display = "none";
+
+      overlay.style.display =
+        "none";
+
     };
 
-    overlay
-      .querySelector("#closeNewSmBtn")
-      ?.addEventListener("click", closeModal);
 
     overlay
-      .querySelector("#cancelNewSmBtn")
-      ?.addEventListener("click", closeModal);
+      .querySelector(
+        "#closeNewSmBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeModal
+      );
 
-    overlay.addEventListener("click", event => {
 
-      if (event.target === overlay) {
-        closeModal();
+    overlay
+      .querySelector(
+        "#cancelNewSmBtn"
+      )
+      ?.addEventListener(
+        "click",
+        closeModal
+      );
+
+
+    overlay.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target === overlay
+        ) {
+
+          closeModal();
+
+        }
+
+      }
+    );
+
+
+    /* =====================================================
+       PLANNING MODE TOGGLE
+
+       UI ONLY.
+
+       EMPTY:
+       Existing SM creation remains available.
+
+       SET:
+       Shows the new mock planning area.
+
+       No backend behavior is changed.
+    ===================================================== */
+
+    const emptyMode =
+      overlay.querySelector(
+        "#new-sm-mode-empty"
+      );
+
+
+    const setMode =
+      overlay.querySelector(
+        "#new-sm-mode-set"
+      );
+
+
+    const setSection =
+      overlay.querySelector(
+        "#newSmSetPlanningSection"
+      );
+
+
+    const saveButton =
+      overlay.querySelector(
+        "#saveNewSmBtn"
+      );
+
+
+    const refreshPlanningMode = () => {
+
+      const useSet =
+        setMode?.checked === true;
+
+
+      /* =====================
+         SHOW / HIDE SET AREA
+      ===================== */
+
+      if (setSection) {
+
+        setSection.style.display =
+          useSet
+            ? "block"
+            : "none";
+
       }
 
-    });
+
+      /* =====================
+         EXISTING FLOW BUTTON
+
+         For Empty mode, preserve today's label.
+
+         For Set mode, prevent accidental creation
+         while the new planning flow is only a mock.
+      ===================== */
+
+      if (saveButton) {
+
+        if (useSet) {
+
+          saveButton.textContent =
+            "Preview Set";
+
+          saveButton.disabled =
+            true;
+
+          saveButton.title =
+            "Maintenance Set planning is currently in mock mode.";
+
+        } else {
+
+          saveButton.textContent =
+            "Create Scheduled Maintenance";
+
+          saveButton.disabled =
+            false;
+
+          saveButton.title =
+            "";
+
+        }
+
+      }
+
+    };
+
+
+    emptyMode?.addEventListener(
+      "change",
+      refreshPlanningMode
+    );
+
+
+    setMode?.addEventListener(
+      "change",
+      refreshPlanningMode
+    );
+
+
+    /* =====================
+       INITIAL MODE
+    ===================== */
+
+    refreshPlanningMode();
 
   }
 
@@ -4252,13 +4729,87 @@ async function openNewScheduledMaintenanceModal() {
     "new-sm-description"
   ].forEach(id => {
 
-    const field = document.getElementById(id);
+    const field =
+      document.getElementById(id);
+
 
     if (field) {
-      field.value = "";
+
+      field.value =
+        "";
+
     }
 
   });
+
+
+  /* =====================
+     RESET PLANNING MODE
+
+     Existing Empty SM remains
+     the default every time.
+  ===================== */
+
+  const emptyMode =
+    document.getElementById(
+      "new-sm-mode-empty"
+    );
+
+
+  const setMode =
+    document.getElementById(
+      "new-sm-mode-set"
+    );
+
+
+  const setSection =
+    document.getElementById(
+      "newSmSetPlanningSection"
+    );
+
+
+  const saveButton =
+    document.getElementById(
+      "saveNewSmBtn"
+    );
+
+
+  if (emptyMode) {
+
+    emptyMode.checked =
+      true;
+
+  }
+
+
+  if (setMode) {
+
+    setMode.checked =
+      false;
+
+  }
+
+
+  if (setSection) {
+
+    setSection.style.display =
+      "none";
+
+  }
+
+
+  if (saveButton) {
+
+    saveButton.disabled =
+      false;
+
+    saveButton.textContent =
+      "Create Scheduled Maintenance";
+
+    saveButton.title =
+      "";
+
+  }
 
 
   /* =====================
@@ -4269,25 +4820,41 @@ async function openNewScheduledMaintenanceModal() {
   ===================== */
 
   const assetSelect =
-    document.getElementById("new-sm-asset");
+    document.getElementById(
+      "new-sm-asset"
+    );
+
 
   if (assetSelect) {
-    assetSelect.disabled = true;
+
+    assetSelect.disabled =
+      true;
+
   }
+
 
   try {
 
     if (
-      !Array.isArray(state.assetsData) ||
+      !Array.isArray(
+        state.assetsData
+      ) ||
       state.assetsData.length === 0
     ) {
+
       await loadAssets();
+
     }
+
 
     populateScheduledMaintenanceAssetDropdown();
 
+
     if (assetSelect) {
-      assetSelect.value = "";
+
+      assetSelect.value =
+        "";
+
     }
 
   } catch (err) {
@@ -4297,9 +4864,14 @@ async function openNewScheduledMaintenanceModal() {
       err
     );
 
-    alert("Could not load Assets. Please try again.");
+
+    alert(
+      "Could not load Assets. Please try again."
+    );
+
 
     return;
+
   }
 
 
@@ -4307,7 +4879,9 @@ async function openNewScheduledMaintenanceModal() {
      SHOW MODAL
   ===================== */
 
-  overlay.style.display = "flex";
+  overlay.style.display =
+    "flex";
+
 
   assetSelect?.focus();
 
