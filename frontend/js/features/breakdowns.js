@@ -1832,6 +1832,9 @@ function resetNewBreakdownForm() {
     actualDurationInput.value = "";
   }
 
+  /* Reset Historical auto-fill manual override */
+    delete actualDurationInput.dataset
+      .manualOverride;
 
   /* =====================
      TASK NOTES
@@ -3084,6 +3087,8 @@ function populateBreakdownAssetDropdown() {
   });
 
 }
+
+
 
 /* =====================
    BREAKDOWN STATUS UI
@@ -6931,6 +6936,200 @@ document
 
   }
 
+  /* =========================================================
+   HISTORICAL AUTO-FILL
+
+   Historical mode only.
+
+   Automatically sets:
+   - Actual Completion = Restored At
+   - Actual Service Time = Restored At - Started At
+
+   Service Time is auto-updated only while the user
+   has not manually edited it.
+========================================================= */
+
+function updateHistoricalTaskAutoFill() {
+
+  const historicalCheckbox =
+    document.getElementById(
+      "bd-already-restored"
+    );
+
+  const startedInput =
+    document.getElementById(
+      "bd-started-at"
+    );
+
+  const restoredInput =
+    document.getElementById(
+      "bd-restored-at"
+    );
+
+  const executedAtInput =
+    document.getElementById(
+      "bd-restoration-executed-at"
+    );
+
+  const actualDurationInput =
+    document.getElementById(
+      "bd-restoration-actual-duration"
+    );
+
+
+  /* =====================
+     HISTORICAL ONLY
+  ===================== */
+
+  if (
+    historicalCheckbox?.checked !== true
+  ) {
+    return;
+  }
+
+
+  /* =====================
+     ACTUAL COMPLETION
+     = RESTORED AT
+  ===================== */
+
+  if (
+    restoredInput?.value &&
+    executedAtInput
+  ) {
+
+    executedAtInput.value =
+      restoredInput.value;
+
+  }
+
+
+  /* =====================
+     SERVICE TIME
+     = RESTORED - STARTED
+  ===================== */
+
+  if (
+    !startedInput?.value ||
+    !restoredInput?.value ||
+    !actualDurationInput
+  ) {
+    return;
+  }
+
+
+  const startedDate =
+    new Date(
+      startedInput.value
+    );
+
+  const restoredDate =
+    new Date(
+      restoredInput.value
+    );
+
+
+  if (
+    Number.isNaN(
+      startedDate.getTime()
+    ) ||
+    Number.isNaN(
+      restoredDate.getTime()
+    )
+  ) {
+    return;
+  }
+
+
+  const durationMs =
+    restoredDate.getTime() -
+    startedDate.getTime();
+
+
+  if (durationMs < 0) {
+    return;
+  }
+
+
+  /* =====================
+     MANUAL OVERRIDE GUARD
+
+     If the user has manually edited
+     Actual Service Time, do not replace it.
+  ===================== */
+
+  if (
+    actualDurationInput.dataset
+      .manualOverride === "true"
+  ) {
+    return;
+  }
+
+
+  const durationMin =
+    Math.round(
+      durationMs / 60000
+    );
+
+
+  actualDurationInput.value =
+    String(
+      durationMin
+    );
+
+}
+
+/* =========================================================
+   HISTORICAL AUTO-FILL LISTENERS
+========================================================= */
+
+document
+  .getElementById(
+    "bd-started-at"
+  )
+  ?.addEventListener(
+    "change",
+    updateHistoricalTaskAutoFill
+  );
+
+
+document
+  .getElementById(
+    "bd-restored-at"
+  )
+  ?.addEventListener(
+    "change",
+    updateHistoricalTaskAutoFill
+  );
+
+
+document
+  .getElementById(
+    "bd-already-restored"
+  )
+  ?.addEventListener(
+    "change",
+    updateHistoricalTaskAutoFill
+  );
+
+
+document
+  .getElementById(
+    "bd-restoration-actual-duration"
+  )
+  ?.addEventListener(
+    "input",
+    event => {
+
+      /* =====================
+         MANUAL OVERRIDE
+      ===================== */
+
+      event.target.dataset.manualOverride =
+        "true";
+
+    }
+  );
 
   /* =========================================================
     TASK MODE UI
@@ -7190,6 +7389,8 @@ document
 
       }
     );
+
+  
 
 
   /* =====================
