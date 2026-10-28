@@ -19255,140 +19255,326 @@ app.post("/assets/idle-all", async (req, res) => {
   }
 });
 
-/* =====================
+/* =========================================================
    RESUME FILTERED ASSETS
-===================== */
+
+   POST /assets/resume-all
+
+   For each selected Asset:
+   - Calculates its own actual idle duration.
+   - Shifts ONLY current/future Preventive Tasks.
+   - Does NOT shift overdue Preventive Tasks.
+   - Does NOT shift Planned Tasks.
+   - Does NOT shift Scheduled Maintenance Tasks.
+   - Does NOT shift Breakdown / Restoration Tasks.
+   - If the new Due Date falls on Sunday in Athens time,
+     moves it one additional day to Monday.
+   - Reactivates the Asset by clearing idle_since.
+
+   All changes run inside ONE database transaction.
+========================================================= */
+
 app.post("/assets/resume-all", async (req, res) => {
 
-  const client = await pool.connect();
+    const client =
+      await pool.connect();
 
-  try {
 
-    const { asset_ids } = req.body;
+    try {
 
-    if (
-      !Array.isArray(asset_ids) ||
-      asset_ids.length === 0
-    ) {
-      return res.status(400).json({
-        error: "No assets selected"
-      });
-    }
+      const {
+        asset_ids
+      } = req.body;
 
-    await client.query("BEGIN");
 
-    // Get ONLY requested assets that are currently idle
-    const assetsRes = await client.query(
-      `
-      SELECT id, idle_since
-      FROM assets
-      WHERE id = ANY($1::int[])
-        AND idle_since IS NOT NULL
-      `,
-      [asset_ids]
-    );
+      /* =====================
+         VALIDATE ASSET LIST
+      ===================== */
 
-    const idleAssets = assetsRes.rows;
+      if (
+        !Array.isArray(asset_ids) ||
+        asset_ids.length === 0
+      ) {
 
-    // Resume each asset using its OWN idle duration
-    for (const asset of idleAssets) {
+        return res.status(400).json({
+          error:
+            "No assets selected"
+        });
 
-      const idleMs =
-        Date.now() -
-        new Date(asset.idle_since).getTime();
+      }
 
-    // Shift ONLY open tasks for this asset
-    // If calculated Due falls on Sunday in Athens time,
-    // move it to Monday at the same local time.
-    await client.query(
-      `
-      UPDATE maintenance_tasks
 
-      SET due_date =
+      /* =====================
+         BEGIN TRANSACTION
+      ===================== */
 
-        CASE
+      await client.query(
+        "BEGIN"
+      );
 
-          WHEN EXTRACT(
-            DOW FROM (
-              (
-                due_date +
-                ($1 || ' milliseconds')::interval
-              )
-              AT TIME ZONE 'Europe/Athens'
-            )
-          ) = 0
 
-          THEN
+      /* =================================================
+         LOAD SELECTED IDLE ASSETS
 
-            (
-              (
+         Only Assets that are actually IDLE
+         are included in the Resume operation.
+      ================================================= */
+
+      const assetsRes =
+        await client.query(
+          `
+          SELECT
+            id,
+            idle_since
+          FROM assets
+          WHERE id = ANY($1::int[])
+            AND idle_since IS NOT NULL
+          `,
+          [
+            asset_ids
+          ]
+        );
+
+
+      const idleAssets =
+        assetsRes.rows;
+
+
+      /* =================================================
+         RESUME EACH ASSET
+
+         Every Asset uses its OWN idle duration.
+      ================================================= */
+
+      for (
+        const asset
+        of idleAssets
+      ) {
+
+        /* =====================
+           ACTUAL IDLE DURATION
+        ===================== */
+
+        const idleMs =
+          Date.now() -
+          new Date(
+            asset.idle_since
+          ).getTime();
+
+
+        /* =================================================
+           SHIFT PREVENTIVE TASKS ONLY
+
+           PREVENTIVE DEFINITION:
+           - breakdown_id IS NULL
+           - scheduled_maintenance_id IS NULL
+           - frequency_hours > 0
+
+           ADDITIONAL RULES:
+           - Task must still be open.
+           - Task must have a Due Date.
+           - Overdue Preventive Tasks are NOT shifted.
+           - Due today or in the future ARE shifted.
+
+           SUNDAY RULE:
+           If the calculated new Due Date falls on Sunday
+           in Europe/Athens, add one additional day.
+        ================================================= */
+
+        await client.query(
+          `
+          UPDATE maintenance_tasks
+
+          SET due_date =
+
+            CASE
+
+              /* =====================
+                 NEW DUE FALLS SUNDAY
+              ===================== */
+
+              WHEN EXTRACT(
+                DOW FROM (
+                  (
+                    due_date +
+                    ($1 || ' milliseconds')::interval
+                  )
+                  AT TIME ZONE 'Europe/Athens'
+                )
+              ) = 0
+
+              THEN
+
+                /* =====================
+                   MOVE SUNDAY → MONDAY
+
+                   Preserve the same local clock time.
+                ===================== */
+
                 (
-                  due_date +
-                  ($1 || ' milliseconds')::interval
+                  (
+                    (
+                      due_date +
+                      ($1 || ' milliseconds')::interval
+                    )
+                    AT TIME ZONE 'Europe/Athens'
+                  )
+                  +
+                  INTERVAL '1 day'
                 )
                 AT TIME ZONE 'Europe/Athens'
-              )
-              +
-              INTERVAL '1 day'
-            )
-            AT TIME ZONE 'Europe/Athens'
 
-          ELSE
 
-            due_date +
-            ($1 || ' milliseconds')::interval
+              /* =====================
+                 NORMAL SHIFT
+              ===================== */
 
-        END
+              ELSE
 
-      WHERE asset_id = $2
+                due_date +
+                ($1 || ' milliseconds')::interval
 
-        AND status != 'Done'
+            END
 
-        AND due_date IS NOT NULL
-      `,
-      [
-        idleMs,
-        asset.id
-      ]
-    );
 
-      // Reactivate asset
+          WHERE
+            asset_id = $2
+
+
+            /* =====================
+               OPEN TASK ONLY
+            ===================== */
+
+            AND status != 'Done'
+
+
+            /* =====================
+               DUE DATE REQUIRED
+            ===================== */
+
+            AND due_date IS NOT NULL
+
+
+            /* =====================
+               PREVENTIVE ONLY
+            ===================== */
+
+            AND breakdown_id IS NULL
+
+            AND scheduled_maintenance_id IS NULL
+
+            AND COALESCE(
+              frequency_hours,
+              0
+            ) > 0
+
+
+            /* =====================
+               NOT OVERDUE
+
+               Compare calendar dates in Athens time.
+
+               Preventive Tasks due today or later
+               are shifted.
+
+               Preventive Tasks due before today
+               remain unchanged.
+            ===================== */
+
+            AND (
+              due_date
+              AT TIME ZONE 'Europe/Athens'
+            )::date
+            >=
+            (
+              NOW()
+              AT TIME ZONE 'Europe/Athens'
+            )::date
+          `,
+          [
+            idleMs,
+            asset.id
+          ]
+        );
+
+
+        /* =====================
+           REACTIVATE ASSET
+        ===================== */
+
+        await client.query(
+          `
+          UPDATE assets
+
+          SET idle_since = NULL
+
+          WHERE id = $1
+          `,
+          [
+            asset.id
+          ]
+        );
+
+      }
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
       await client.query(
-        `
-        UPDATE assets
-        SET idle_since = NULL
-        WHERE id = $1
-        `,
-        [asset.id]
+        "COMMIT"
       );
+
+
+      /* =====================
+         SUCCESS RESPONSE
+      ===================== */
+
+      return res.json({
+        success:
+          true,
+
+        updated:
+          idleAssets.length
+      });
+
+
+    } catch (err) {
+
+      /* =====================
+         ROLLBACK
+      ===================== */
+
+      await client.query(
+        "ROLLBACK"
+      );
+
+
+      console.error(
+        "RESUME FILTERED ASSETS ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          err.message
+      });
+
+
+    } finally {
+
+      /* =====================
+         RELEASE DB CLIENT
+      ===================== */
+
+      client.release();
+
     }
 
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      updated: idleAssets.length
-    });
-
-  } catch (err) {
-
-    await client.query("ROLLBACK");
-
-    console.error(
-      "RESUME FILTERED ASSETS ERROR:",
-      err
-    );
-
-    res.status(500).json({
-      error: err.message
-    });
-
-  } finally {
-
-    client.release();
-
   }
-});
+);
 
 // ============================================================
 // GET /assets/:id/locations

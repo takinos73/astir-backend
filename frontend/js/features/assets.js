@@ -597,10 +597,17 @@ async function resumeAllAssets() {
       ? "ALL visible idle assets"
       : `idle assets in Line ${selectedLine}`;
 
+  /* =====================
+    CONFIRM RESUME
+
+    Only current/future Preventive Tasks
+    will have their due dates shifted.
+  ===================== */
+
   const ok = confirm(
     `Resume ${scopeLabel}?\n\n` +
     `${assetsToResume.length} asset(s) will be resumed.\n\n` +
-    `Open task due dates will be shifted by each asset's idle time.`
+    `Current and future Preventive task due dates will be shifted by each asset's idle time.`
   );
 
   if (!ok) return;
