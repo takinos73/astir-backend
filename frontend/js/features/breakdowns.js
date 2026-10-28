@@ -7240,6 +7240,8 @@ document
    - Section / Unit are taken from the selected Asset
      location catalogue.
    - New Unit manual entry is supported.
+   - Historical Restoration Task requires
+     both Section and Unit.
    - Backend performs the same validations again.
    - Breakdown + initial task are created atomically.
 ========================================================= */
@@ -7312,11 +7314,11 @@ async function createBreakdown() {
 
 
   /* =====================================================
-    INITIAL RESTORATION TASK ELEMENTS
+     INITIAL RESTORATION TASK ELEMENTS
   ===================================================== */
 
   /* =====================
-    OPTIONAL LIVE TASK
+     OPTIONAL LIVE TASK
   ===================== */
 
   const addTaskCheckbox =
@@ -7389,27 +7391,30 @@ async function createBreakdown() {
       "bd-restoration-notes"
     );
 
+
   /* =====================================================
-    BREAKDOWN MODE
+     BREAKDOWN MODE
   ===================================================== */
 
   const isHistorical =
     historicalCheckbox?.checked === true;
 
+
   /* =====================================================
-    INITIAL RESTORATION TASK REQUIRED?
+     INITIAL RESTORATION TASK REQUIRED?
 
-    Historical:
-    - Always YES
+     Historical:
+     - Always YES
 
-    Live:
-    - Only when technician selected
-      "Add Restoration Task now"
+     Live:
+     - Only when technician selected
+       "Add Restoration Task now"
   ===================================================== */
 
   const shouldCreateInitialTask =
     isHistorical ||
     addTaskCheckbox?.checked === true;
+
 
   /* =====================================================
      READ BREAKDOWN VALUES
@@ -7672,28 +7677,10 @@ async function createBreakdown() {
 
   /* =====================================================
      INITIAL RESTORATION TASK
-
-     One initial Restoration Task is created together
-     with the Breakdown.
-  ===================================================== */
-
-  /* =====================================================
-    CREATE INITIAL TASK ONLY WHEN REQUIRED
-
-    Historical:
-    - Always creates a DONE Restoration Task
-
-    Live:
-    - Creates a task only when technician selected
-      "Add Restoration Task now"
-
-    Live without Task:
-    - Entire task validation block is skipped
-    - payload.restoration_task is NOT sent
   ===================================================== */
 
   if (shouldCreateInitialTask) {
-    
+
     const taskName =
       String(
         taskInput?.value || ""
@@ -7712,524 +7699,562 @@ async function createBreakdown() {
     }
 
 
-  /* =====================================================
-     TASK MODE
+    /* =====================================================
+       TASK MODE
 
-     Historical:
-       always DONE
+       Historical:
+       - Always DONE
 
-     Live:
-       PLANNED or DONE
-  ===================================================== */
+       Live:
+       - PLANNED or DONE
+    ===================================================== */
 
-  const taskMode =
-    isHistorical
-      ? "DONE"
-      : String(
-          taskModeSelect?.value ||
-          "PLANNED"
-        )
-          .trim()
-          .toUpperCase();
-
-
-  if (
-    taskMode !== "PLANNED" &&
-    taskMode !== "DONE"
-  ) {
-
-    alert(
-      "Please select a valid Restoration Task status."
-    );
-
-    taskModeSelect?.focus();
-
-    return;
-  }
-
-
-  /* =====================================================
-     SECTION
-
-     Existing catalogue Section:
-       bd-restoration-section
-
-     Manual fallback:
-       bd-restoration-section-input
-  ===================================================== */
-
-  let section =
-    "";
-
-
-  if (
-    sectionSelect &&
-    sectionSelect.style.display !== "none"
-  ) {
-
-    section =
-      String(
-        sectionSelect.value || ""
-      ).trim();
-
-  } else {
-
-    section =
-      String(
-        sectionInput?.value || ""
-      ).trim();
-
-  }
-
-
-  /* =====================================================
-     UNIT
-
-     Existing Unit:
-       dropdown value
-
-     New Unit:
-       dropdown = "__new__"
-       manual value is used instead
-  ===================================================== */
-
-  let unit =
-    "";
-
-
-  if (
-    unitSelect &&
-    unitSelect.style.display !== "none"
-  ) {
-
-    const selectedUnit =
-      String(
-        unitSelect.value || ""
-      ).trim();
+    const taskMode =
+      isHistorical
+        ? "DONE"
+        : String(
+            taskModeSelect?.value ||
+            "PLANNED"
+          )
+            .trim()
+            .toUpperCase();
 
 
     if (
-      selectedUnit === "__new__"
+      taskMode !== "PLANNED" &&
+      taskMode !== "DONE"
     ) {
+
+      alert(
+        "Please select a valid Restoration Task status."
+      );
+
+      taskModeSelect?.focus();
+
+      return;
+    }
+
+
+    /* =====================================================
+       SECTION
+
+       Existing catalogue Section:
+       bd-restoration-section
+
+       Manual fallback:
+       bd-restoration-section-input
+    ===================================================== */
+
+    let section =
+      "";
+
+
+    if (
+      sectionSelect &&
+      sectionSelect.style.display !== "none"
+    ) {
+
+      section =
+        String(
+          sectionSelect.value || ""
+        ).trim();
+
+    } else {
+
+      section =
+        String(
+          sectionInput?.value || ""
+        ).trim();
+
+    }
+
+
+    /* =====================================================
+       UNIT
+
+       Existing Unit:
+       dropdown value
+
+       New Unit:
+       dropdown = "__new__"
+       manual value is used instead
+    ===================================================== */
+
+    let unit =
+      "";
+
+
+    if (
+      unitSelect &&
+      unitSelect.style.display !== "none"
+    ) {
+
+      const selectedUnit =
+        String(
+          unitSelect.value || ""
+        ).trim();
+
+
+      if (
+        selectedUnit === "__new__"
+      ) {
+
+        unit =
+          String(
+            unitInput?.value || ""
+          ).trim();
+
+
+        if (!unit) {
+
+          alert(
+            "Please enter the new Unit."
+          );
+
+          unitInput?.focus();
+
+          return;
+        }
+
+
+      } else {
+
+        unit =
+          selectedUnit;
+
+      }
+
+
+    } else {
 
       unit =
         String(
           unitInput?.value || ""
         ).trim();
 
+    }
 
-      if (!unit) {
+
+    /* =====================================================
+       HISTORICAL LOCATION REQUIRED
+
+       Historical Restoration Tasks must always
+       identify both Section and Unit.
+    ===================================================== */
+
+    if (isHistorical) {
+
+      if (!section) {
 
         alert(
-          "Please enter the new Unit."
+          "Section is required for a Historical Restoration Task."
         );
 
-        unitInput?.focus();
+        (
+          sectionSelect?.style.display !== "none"
+            ? sectionSelect
+            : sectionInput
+        )?.focus();
 
         return;
       }
 
 
-    } else {
+      if (!unit) {
 
-      unit =
-        selectedUnit;
+        alert(
+          "Unit is required for a Historical Restoration Task."
+        );
+
+        (
+          unitSelect?.style.display !== "none"
+            ? unitSelect
+            : unitInput
+        )?.focus();
+
+        return;
+      }
 
     }
 
 
-  } else {
+    /* =====================================================
+       TASK COMMON VALUES
+    ===================================================== */
 
-    unit =
+    const taskNotes =
       String(
-        unitInput?.value || ""
+        taskNotesInput?.value || ""
       ).trim();
 
-  }
+
+    const impact =
+      String(
+        impactSelect?.value ||
+        "normal"
+      )
+        .trim()
+        .toLowerCase();
 
 
-  /* =====================================================
-     TASK COMMON VALUES
-  ===================================================== */
+    const restorationTask = {
 
-  const taskNotes =
-    String(
-      taskNotesInput?.value || ""
-    ).trim();
+      mode:
+        taskMode,
 
+      task:
+        taskName,
 
-  const impact =
-    String(
-      impactSelect?.value ||
-      "normal"
-    )
-      .trim()
-      .toLowerCase();
+      section:
+        section || null,
 
+      unit:
+        unit || null,
 
-  const restorationTask = {
+      impact,
 
-    mode:
-      taskMode,
+      notes:
+        taskNotes || null
 
-    task:
-      taskName,
-
-    section:
-      section || null,
-
-    unit:
-      unit || null,
-
-    impact,
-
-    notes:
-      taskNotes || null
-
-  };
+    };
 
 
-  /* =====================================================
-     LIVE + PLANNED TASK
-  ===================================================== */
+    /* =====================================================
+       LIVE + PLANNED TASK
+    ===================================================== */
 
-  if (
-    taskMode === "PLANNED"
-  ) {
+    if (
+      taskMode === "PLANNED"
+    ) {
 
-    const dueAt =
-      dueDateInput?.value || "";
+      const dueAt =
+        dueDateInput?.value || "";
 
 
-    /*
-      Due Date remains optional, as in the
-      existing Restoration Task flow.
+      /*
+        Due Date remains optional, as in the
+        existing Restoration Task flow.
 
-      But when entered, it cannot be earlier
-      than the Breakdown start.
-    */
+        But when entered, it cannot be earlier
+        than the Breakdown start.
+      */
 
-    if (dueAt) {
+      if (dueAt) {
 
-      const dueDate =
+        const dueDate =
+          new Date(
+            dueAt
+          );
+
+
+        if (
+          Number.isNaN(
+            dueDate.getTime()
+          )
+        ) {
+
+          alert(
+            "Invalid Restoration Task Due Date."
+          );
+
+          dueDateInput?.focus();
+
+          return;
+        }
+
+
+        if (
+          dueDate.getTime() <
+          startedDate.getTime()
+        ) {
+
+          alert(
+            "Restoration Task Due Date cannot be earlier than Breakdown Start."
+          );
+
+          dueDateInput?.focus();
+
+          return;
+        }
+
+
+        restorationTask.due_date =
+          dueDate.toISOString();
+
+
+      } else {
+
+        restorationTask.due_date =
+          null;
+
+      }
+
+
+      /* =====================
+         ESTIMATED DURATION
+      ===================== */
+
+      const estimatedDurationRaw =
+        estimatedDurationInput?.value ?? "";
+
+
+      if (
+        estimatedDurationRaw !== ""
+      ) {
+
+        const estimatedDuration =
+          Number(
+            estimatedDurationRaw
+          );
+
+
+        if (
+          !Number.isFinite(
+            estimatedDuration
+          ) ||
+          estimatedDuration < 0
+        ) {
+
+          alert(
+            "Estimated Duration must be a non-negative number."
+          );
+
+          estimatedDurationInput?.focus();
+
+          return;
+        }
+
+
+        restorationTask.duration_min =
+          estimatedDuration;
+
+
+      } else {
+
+        restorationTask.duration_min =
+          null;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       DONE TASK
+
+       Used for:
+       - Live Already Completed
+       - Historical Restoration
+    ===================================================== */
+
+    if (
+      taskMode === "DONE"
+    ) {
+
+      /* =====================
+         TECHNICIAN
+      ===================== */
+
+      const technicianId =
+        Number(
+          technicianSelect?.value
+        );
+
+
+      if (
+        !Number.isInteger(
+          technicianId
+        ) ||
+        technicianId <= 0
+      ) {
+
+        alert(
+          "Please select the Technician who completed the work."
+        );
+
+        technicianSelect?.focus();
+
+        return;
+      }
+
+
+      /* =====================
+         ACTUAL COMPLETION
+      ===================== */
+
+      const executedAt =
+        executedAtInput?.value || "";
+
+
+      if (!executedAt) {
+
+        alert(
+          "Please enter the actual completion date and time."
+        );
+
+        executedAtInput?.focus();
+
+        return;
+      }
+
+
+      const executedDate =
         new Date(
-          dueAt
+          executedAt
         );
 
 
       if (
         Number.isNaN(
-          dueDate.getTime()
+          executedDate.getTime()
         )
       ) {
 
         alert(
-          "Invalid Restoration Task Due Date."
+          "Invalid actual completion date and time."
         );
 
-        dueDateInput?.focus();
+        executedAtInput?.focus();
 
         return;
       }
 
 
+      /* =====================
+         BEFORE BREAKDOWN START
+      ===================== */
+
       if (
-        dueDate.getTime() <
+        executedDate.getTime() <
         startedDate.getTime()
       ) {
 
         alert(
-          "Restoration Task Due Date cannot be earlier than Breakdown Start."
+          "Actual completion time cannot be earlier than Breakdown Start."
         );
 
-        dueDateInput?.focus();
+        executedAtInput?.focus();
 
         return;
       }
 
 
-      restorationTask.due_date =
-        dueDate.toISOString();
+      /* =================================================
+         HISTORICAL TIME WINDOW
+
+         started_at
+            <= executed_at
+            <= restored_at
+      ================================================= */
+
+      if (
+        isHistorical &&
+        restoredDate &&
+        executedDate.getTime() >
+          restoredDate.getTime()
+      ) {
+
+        alert(
+          "Actual completion time must be within the Breakdown period."
+        );
+
+        executedAtInput?.focus();
+
+        return;
+      }
 
 
-    } else {
+      /* =================================================
+         LIVE DONE TASK
 
-      restorationTask.due_date =
-        null;
+         executed_at cannot be in the future.
+      ================================================= */
 
-    }
+      if (
+        !isHistorical &&
+        executedDate.getTime() >
+          Date.now()
+      ) {
+
+        alert(
+          "Actual completion time cannot be in the future."
+        );
+
+        executedAtInput?.focus();
+
+        return;
+      }
 
 
-    /* =====================
-       ESTIMATED DURATION
-    ===================== */
+      /* =====================
+         ACTUAL DURATION
+      ===================== */
 
-    const estimatedDurationRaw =
-      estimatedDurationInput?.value ?? "";
+      const actualDurationRaw =
+        actualDurationInput?.value ?? "";
 
 
-    if (
-      estimatedDurationRaw !== ""
-    ) {
+      if (
+        actualDurationRaw === ""
+      ) {
 
-      const estimatedDuration =
+        alert(
+          "Please enter the Actual Service Time."
+        );
+
+        actualDurationInput?.focus();
+
+        return;
+      }
+
+
+      const actualDuration =
         Number(
-          estimatedDurationRaw
+          actualDurationRaw
         );
 
 
       if (
-        !Number.isFinite(
-          estimatedDuration
+        !Number.isInteger(
+          actualDuration
         ) ||
-        estimatedDuration < 0
+        actualDuration < 0
       ) {
 
         alert(
-          "Estimated Duration must be a non-negative number."
+          "Actual Service Time must be a non-negative whole number."
         );
 
-        estimatedDurationInput?.focus();
+        actualDurationInput?.focus();
 
         return;
       }
 
 
-      restorationTask.duration_min =
-        estimatedDuration;
+      restorationTask.technician_id =
+        technicianId;
 
+      restorationTask.executed_at =
+        executedDate.toISOString();
 
-    } else {
-
-      restorationTask.duration_min =
-        null;
+      restorationTask.actual_duration_min =
+        actualDuration;
 
     }
+
+
+    /* =====================================================
+       ADD INITIAL TASK TO BREAKDOWN PAYLOAD
+    ===================================================== */
+
+    payload.restoration_task =
+      restorationTask;
 
   }
-
-
-  /* =====================================================
-     DONE TASK
-
-     Used for:
-     - Live Already Completed
-     - Historical Restoration
-  ===================================================== */
-
-  if (
-    taskMode === "DONE"
-  ) {
-
-    /* =====================
-       TECHNICIAN
-    ===================== */
-
-    const technicianId =
-      Number(
-        technicianSelect?.value
-      );
-
-
-    if (
-      !Number.isInteger(
-        technicianId
-      ) ||
-      technicianId <= 0
-    ) {
-
-      alert(
-        "Please select the Technician who completed the work."
-      );
-
-      technicianSelect?.focus();
-
-      return;
-    }
-
-
-    /* =====================
-       ACTUAL COMPLETION
-    ===================== */
-
-    const executedAt =
-      executedAtInput?.value || "";
-
-
-    if (!executedAt) {
-
-      alert(
-        "Please enter the actual completion date and time."
-      );
-
-      executedAtInput?.focus();
-
-      return;
-    }
-
-
-    const executedDate =
-      new Date(
-        executedAt
-      );
-
-
-    if (
-      Number.isNaN(
-        executedDate.getTime()
-      )
-    ) {
-
-      alert(
-        "Invalid actual completion date and time."
-      );
-
-      executedAtInput?.focus();
-
-      return;
-    }
-
-
-    /* =====================
-       BEFORE BREAKDOWN START
-    ===================== */
-
-    if (
-      executedDate.getTime() <
-      startedDate.getTime()
-    ) {
-
-      alert(
-        "Actual completion time cannot be earlier than Breakdown Start."
-      );
-
-      executedAtInput?.focus();
-
-      return;
-    }
-
-
-    /* =================================================
-       HISTORICAL TIME WINDOW
-
-       started_at
-          <= executed_at
-          <= restored_at
-    ================================================= */
-
-    if (
-      isHistorical &&
-      restoredDate &&
-      executedDate.getTime() >
-        restoredDate.getTime()
-    ) {
-
-      alert(
-        "Actual completion time must be within the Breakdown period."
-      );
-
-      executedAtInput?.focus();
-
-      return;
-    }
-
-
-    /* =================================================
-       LIVE DONE TASK
-
-       executed_at cannot be in the future.
-    ================================================= */
-
-    if (
-      !isHistorical &&
-      executedDate.getTime() >
-        Date.now()
-    ) {
-
-      alert(
-        "Actual completion time cannot be in the future."
-      );
-
-      executedAtInput?.focus();
-
-      return;
-    }
-
-
-    /* =====================
-       ACTUAL DURATION
-    ===================== */
-
-    const actualDurationRaw =
-      actualDurationInput?.value ?? "";
-
-
-    if (
-      actualDurationRaw === ""
-    ) {
-
-      alert(
-        "Please enter the Actual Service Time."
-      );
-
-      actualDurationInput?.focus();
-
-      return;
-    }
-
-
-    const actualDuration =
-      Number(
-        actualDurationRaw
-      );
-
-
-    if (
-      !Number.isInteger(
-        actualDuration
-      ) ||
-      actualDuration < 0
-    ) {
-
-      alert(
-        "Actual Service Time must be a non-negative whole number."
-      );
-
-      actualDurationInput?.focus();
-
-      return;
-    }
-
-
-    restorationTask.technician_id =
-      technicianId;
-
-    restorationTask.executed_at =
-      executedDate.toISOString();
-
-    restorationTask.actual_duration_min =
-      actualDuration;
-
-  }
-
-
-  /* =====================================================
-     ADD INITIAL TASK TO BREAKDOWN PAYLOAD
-  ===================================================== */
-
-  payload.restoration_task =
-    restorationTask;
-}
 
 
   /* =====================================================
      ENDPOINT
-
-     LIVE:
-       POST /breakdowns
-
-     HISTORICAL:
-       POST /breakdowns/historical
   ===================================================== */
 
   const endpoint =
@@ -8240,10 +8265,6 @@ async function createBreakdown() {
 
   /* =====================================================
      SAVE
-
-     Backend transaction guarantees that Breakdown,
-     Restoration Task and Task Execution (when DONE)
-     are either all created successfully or rolled back.
   ===================================================== */
 
   try {
@@ -8300,19 +8321,7 @@ async function createBreakdown() {
 
 
     /* =====================================================
-      SUCCESS
-
-      IMPORTANT:
-      At this point the Breakdown has already been
-      successfully created by the backend.
-
-      Any following UI refresh/detail error must NOT
-      be reported as a Breakdown creation failure.
-
-      Applies to:
-      1. Historical + DONE task
-      2. Live + initial task
-      3. Live + no initial task
+       SUCCESS
     ===================================================== */
 
     const createdBreakdownId =
@@ -8322,33 +8331,27 @@ async function createBreakdown() {
 
 
     /* =====================
-      CLOSE CREATE MODAL
+       CLOSE CREATE MODAL
     ===================== */
 
     closeNewBreakdownModal();
 
 
     /* =====================================================
-      POST-CREATE UI REFRESH
-
-      These actions happen AFTER successful creation.
-
-      If one of them fails:
-      - The Breakdown remains successfully created.
-      - Do NOT fall into the CREATE error handler.
+       POST-CREATE UI REFRESH
     ===================================================== */
 
     try {
 
       /* =====================
-        RELOAD BREAKDOWN LIST
+         RELOAD BREAKDOWN LIST
       ===================== */
 
       await loadBreakdowns();
 
 
       /* =====================
-        OPEN CREATED BD DETAIL
+         OPEN CREATED BD DETAIL
       ===================== */
 
       if (
@@ -8365,9 +8368,9 @@ async function createBreakdown() {
     } catch (uiError) {
 
       /* =====================
-        UI ERROR ONLY
+         UI ERROR ONLY
 
-        Breakdown creation has already succeeded.
+         Breakdown creation has already succeeded.
       ===================== */
 
       console.error(
@@ -8398,13 +8401,7 @@ async function createBreakdown() {
 
 
     /* =====================================================
-      RESTORE SAVE BUTTON STATE
-
-      Historical:
-      - Record Historical Breakdown
-
-      Live:
-      - Create Breakdown
+       RESTORE SAVE BUTTON STATE
     ===================================================== */
 
     if (saveBtn) {
@@ -8419,7 +8416,8 @@ async function createBreakdown() {
 
     }
 
-}
+  }
+
 }
 
 /* =====================
