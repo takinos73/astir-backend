@@ -3208,6 +3208,52 @@
 
     </div>
 
+    <!-- =====================================================
+        LIVE BREAKDOWN — INITIAL TASK OPTION
+
+        Used only when the Breakdown will remain OPEN.
+
+        Later JavaScript logic will:
+        - Hide this option in Historical mode.
+        - Show / hide the existing Restoration Task section.
+        - Historical mode will always require a Task.
+
+        IMPORTANT:
+        This block currently changes UI only.
+    ====================================================== -->
+
+    <div
+      id="bd-live-task-option"
+      class="field"
+    >
+
+      <div class="breakdown-historical-option">
+
+        <input
+          id="bd-add-restoration-task"
+          type="checkbox"
+          checked
+        />
+
+        <div class="breakdown-historical-option-content">
+
+          <label
+            for="bd-add-restoration-task"
+            class="breakdown-historical-option-title"
+          >
+            Add Restoration Task now
+          </label>
+
+          <div class="breakdown-historical-option-description">
+            Uncheck this to create the Breakdown now
+            and add Restoration Tasks later.
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>                        
 
     <!-- =====================
          HISTORICAL FIELDS

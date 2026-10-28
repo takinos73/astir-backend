@@ -1572,6 +1572,43 @@ function resetNewBreakdownForm() {
     historicalFields.style.display = "none";
   }
 
+  /* =====================
+    LIVE TASK DEFAULT
+
+    Every new Breakdown starts as:
+    - LIVE
+    - Add Restoration Task now = YES
+    - Task section visible
+  ===================== */
+
+  const liveTaskOption =
+    document.getElementById(
+      "bd-live-task-option"
+    );
+
+  if (liveTaskOption) {
+    liveTaskOption.style.display = "block";
+  }
+
+
+  const addTaskCheckbox =
+    document.getElementById(
+      "bd-add-restoration-task"
+    );
+
+  if (addTaskCheckbox) {
+    addTaskCheckbox.checked = true;
+  }
+
+
+  const taskSection =
+    document.getElementById(
+      "bd-restoration-task-section"
+    );
+
+  if (taskSection) {
+    taskSection.style.display = "block";
+  }
 
   const restoredInput =
     document.getElementById(
@@ -1582,7 +1619,6 @@ function resetNewBreakdownForm() {
     restoredInput.value = "";
   }
 
-
   const failureCauseInput =
     document.getElementById(
       "bd-historical-failure-cause"
@@ -1591,7 +1627,6 @@ function resetNewBreakdownForm() {
   if (failureCauseInput) {
     failureCauseInput.value = "";
   }
-
 
   const rootCauseInput =
     document.getElementById(
@@ -1602,7 +1637,6 @@ function resetNewBreakdownForm() {
     rootCauseInput.value = "";
   }
 
-
   const correctiveActionInput =
     document.getElementById(
       "bd-historical-corrective-action"
@@ -1611,7 +1645,6 @@ function resetNewBreakdownForm() {
   if (correctiveActionInput) {
     correctiveActionInput.value = "";
   }
-
 
   /* =====================
      RESTORATION TASK
@@ -7279,8 +7312,17 @@ async function createBreakdown() {
 
 
   /* =====================================================
-     INITIAL RESTORATION TASK ELEMENTS
+    INITIAL RESTORATION TASK ELEMENTS
   ===================================================== */
+
+  /* =====================
+    OPTIONAL LIVE TASK
+  ===================== */
+
+  const addTaskCheckbox =
+    document.getElementById(
+      "bd-add-restoration-task"
+    );
 
   const taskInput =
     document.getElementById(
@@ -7347,14 +7389,27 @@ async function createBreakdown() {
       "bd-restoration-notes"
     );
 
-
   /* =====================================================
-     BREAKDOWN MODE
+    BREAKDOWN MODE
   ===================================================== */
 
   const isHistorical =
     historicalCheckbox?.checked === true;
 
+  /* =====================================================
+    INITIAL RESTORATION TASK REQUIRED?
+
+    Historical:
+    - Always YES
+
+    Live:
+    - Only when technician selected
+      "Add Restoration Task now"
+  ===================================================== */
+
+  const shouldCreateInitialTask =
+    isHistorical ||
+    addTaskCheckbox?.checked === true;
 
   /* =====================================================
      READ BREAKDOWN VALUES
@@ -7622,22 +7677,39 @@ async function createBreakdown() {
      with the Breakdown.
   ===================================================== */
 
-  const taskName =
-    String(
-      taskInput?.value || ""
-    ).trim();
+  /* =====================================================
+    CREATE INITIAL TASK ONLY WHEN REQUIRED
+
+    Historical:
+    - Always creates a DONE Restoration Task
+
+    Live:
+    - Creates a task only when technician selected
+      "Add Restoration Task now"
+
+    Live without Task:
+    - Entire task validation block is skipped
+    - payload.restoration_task is NOT sent
+  ===================================================== */
+
+  if (shouldCreateInitialTask) {
+    
+    const taskName =
+      String(
+        taskInput?.value || ""
+      ).trim();
 
 
-  if (!taskName) {
+    if (!taskName) {
 
-    alert(
-      "Please enter the Restoration Task."
-    );
+      alert(
+        "Please enter the Restoration Task."
+      );
 
-    taskInput?.focus();
+      taskInput?.focus();
 
-    return;
-  }
+      return;
+    }
 
 
   /* =====================================================
@@ -8147,6 +8219,7 @@ async function createBreakdown() {
 
   payload.restoration_task =
     restorationTask;
+}
 
 
   /* =====================================================
@@ -8227,27 +8300,82 @@ async function createBreakdown() {
 
 
     /* =====================================================
-       SUCCESS
+      SUCCESS
 
-       LIVE:
-       Breakdown remains OPEN.
+      IMPORTANT:
+      At this point the Breakdown has already been
+      successfully created by the backend.
 
-       HISTORICAL:
-       Breakdown is already CLOSED.
+      Any following UI refresh/detail error must NOT
+      be reported as a Breakdown creation failure.
 
-       Initial Restoration Task has already been
-       created inside the same backend transaction.
+      Applies to:
+      1. Historical + DONE task
+      2. Live + initial task
+      3. Live + no initial task
     ===================================================== */
+
+    const createdBreakdownId =
+      Number(
+        result?.breakdown?.id
+      );
+
+
+    /* =====================
+      CLOSE CREATE MODAL
+    ===================== */
 
     closeNewBreakdownModal();
 
 
-    /*
-      Reload Breakdown list.
-    */
+    /* =====================================================
+      POST-CREATE UI REFRESH
 
-    await loadBreakdowns();
+      These actions happen AFTER successful creation.
 
+      If one of them fails:
+      - The Breakdown remains successfully created.
+      - Do NOT fall into the CREATE error handler.
+    ===================================================== */
+
+    try {
+
+      /* =====================
+        RELOAD BREAKDOWN LIST
+      ===================== */
+
+      await loadBreakdowns();
+
+
+      /* =====================
+        OPEN CREATED BD DETAIL
+      ===================== */
+
+      if (
+        Number.isInteger(createdBreakdownId) &&
+        createdBreakdownId > 0
+      ) {
+
+        await openBreakdownDetail(
+          createdBreakdownId
+        );
+
+      }
+
+    } catch (uiError) {
+
+      /* =====================
+        UI ERROR ONLY
+
+        Breakdown creation has already succeeded.
+      ===================== */
+
+      console.error(
+        "POST-CREATE BREAKDOWN UI ERROR:",
+        uiError
+      );
+
+    }
 
   } catch (err) {
 
@@ -8269,7 +8397,15 @@ async function createBreakdown() {
     );
 
 
-  } finally {
+    /* =====================================================
+      RESTORE SAVE BUTTON STATE
+
+      Historical:
+      - Record Historical Breakdown
+
+      Live:
+      - Create Breakdown
+    ===================================================== */
 
     if (saveBtn) {
 
@@ -8277,12 +8413,13 @@ async function createBreakdown() {
         false;
 
       saveBtn.textContent =
-        "Create Breakdown";
+        isHistorical
+          ? "Record Historical Breakdown"
+          : "Create Breakdown";
 
     }
 
-  }
-
+}
 }
 
 /* =====================
@@ -11489,6 +11626,7 @@ document.addEventListener(
   }
 );
 
+/* EXISTING HISTORICAL LISTENER */
 document
   .getElementById(
     "bd-already-restored"
@@ -11499,18 +11637,103 @@ document
   );
 
 /* =========================================================
+   LIVE BREAKDOWN — OPTIONAL INITIAL TASK
+
+   Used only when the Breakdown is NOT Historical.
+
+   Checked:
+   - Show existing Restoration Task section
+
+   Unchecked:
+   - Hide existing Restoration Task section
+
+   Historical mode is handled separately by
+   toggleHistoricalBreakdownMode().
+========================================================= */
+
+document
+  .getElementById(
+    "bd-add-restoration-task"
+  )
+  ?.addEventListener(
+    "change",
+    () => {
+
+      const historicalCheckbox =
+        document.getElementById(
+          "bd-already-restored"
+        );
+
+      const addTaskCheckbox =
+        document.getElementById(
+          "bd-add-restoration-task"
+        );
+
+      const taskSection =
+        document.getElementById(
+          "bd-restoration-task-section"
+        );
+
+
+      /* =====================
+         SAFETY GUARD
+      ===================== */
+
+      if (
+        !addTaskCheckbox ||
+        !taskSection
+      ) {
+        return;
+      }
+
+
+      /* =====================
+         HISTORICAL MODE
+
+         Historical always requires
+         a visible Restoration Task.
+      ===================== */
+
+      if (
+        historicalCheckbox?.checked === true
+      ) {
+
+        taskSection.style.display =
+          "block";
+
+        return;
+      }
+
+
+      /* =====================
+         LIVE MODE
+
+         Task visibility follows
+         technician selection.
+      ===================== */
+
+      taskSection.style.display =
+        addTaskCheckbox.checked
+          ? "block"
+          : "none";
+
+    }
+  ); 
+
+/* =========================================================
    TOGGLE HISTORICAL BREAKDOWN MODE
 
    LIVE:
-   - normal Breakdown creation
-   - initial Machine State = DOWN
    - Breakdown remains OPEN
+   - Technician may choose whether to add
+     an initial Restoration Task now
 
    HISTORICAL:
-   - failure was already restored
+   - Failure was already restored
    - Restored At becomes required
    - Breakdown is created CLOSED
-   - historical DOWN interval is created
+   - Historical DOWN interval is created
+   - Restoration Task is always required
 ========================================================= */
 
 function toggleHistoricalBreakdownMode() {
@@ -11525,13 +11748,31 @@ function toggleHistoricalBreakdownMode() {
       "bd-historical-fields"
     );
 
+  const liveTaskOption =
+    document.getElementById(
+      "bd-live-task-option"
+    );
+
+  const addTaskCheckbox =
+    document.getElementById(
+      "bd-add-restoration-task"
+    );
+
+  const taskSection =
+    document.getElementById(
+      "bd-restoration-task-section"
+    );
+
   const saveBtn =
     document.getElementById(
       "saveBreakdownBtn"
     );
 
 
-  if (!checkbox || !fields) {
+  if (
+    !checkbox ||
+    !fields
+  ) {
     return;
   }
 
@@ -11541,13 +11782,64 @@ function toggleHistoricalBreakdownMode() {
 
 
   /* =====================
-     SHOW / HIDE FIELDS
+     HISTORICAL FIELDS
   ===================== */
 
   fields.style.display =
     isHistorical
       ? "block"
       : "none";
+
+
+  /* =====================
+     LIVE TASK OPTION
+
+     Historical:
+     - Hide optional choice
+
+     Live:
+     - Show optional choice
+  ===================== */
+
+  if (liveTaskOption) {
+
+    liveTaskOption.style.display =
+      isHistorical
+        ? "none"
+        : "block";
+
+  }
+
+
+  /* =====================
+     RESTORATION TASK SECTION
+
+     Historical:
+     - Always visible
+     - Task is mandatory
+
+     Live:
+     - Visibility follows
+       "Add Restoration Task now"
+  ===================== */
+
+  if (taskSection) {
+
+    if (isHistorical) {
+
+      taskSection.style.display =
+        "block";
+
+    } else {
+
+      taskSection.style.display =
+        addTaskCheckbox?.checked === true
+          ? "block"
+          : "none";
+
+    }
+
+  }
 
 
   /* =====================
@@ -11725,6 +12017,7 @@ function openCloseBreakdownModal() {
   overlay.style.display = "flex";
 
 }
+
 function closeCloseBreakdownModal() {
 
   const overlay =

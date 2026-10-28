@@ -5374,68 +5374,108 @@ async function createBreakdownFromMaintenanceReport() {
     }
 
 
+    /* =====================================================
+      SUCCESS
+
+      IMPORTANT:
+      At this point the Breakdown has already been
+      successfully created by the backend.
+
+      Any following UI refresh/detail error must NOT
+      be reported as a Breakdown creation failure.
+    ===================================================== */
+
+    const breakdownId =
+      Number(
+        data?.breakdown?.id
+      );
+
+
     /* =====================
-       CLOSE REVIEW MODAL
+      CLOSE REVIEW MODAL
     ===================== */
 
     closeMaintenanceReportReview();
 
 
-    /* =====================
-       REFRESH REPORT QUEUE
-    ===================== */
+    /* =====================================================
+      POST-CREATE UI REFRESH
 
-    await loadMaintenanceReportsQueue();
+      These actions happen AFTER successful creation.
+
+      If one of them fails:
+      - The Breakdown remains successfully created.
+      - Do NOT fall into the CREATE error handler.
+    ===================================================== */
+
+    try {
+
+      /* =====================
+        REFRESH REPORT QUEUE
+      ===================== */
+
+      await loadMaintenanceReportsQueue();
 
 
-    /* =====================
-       REFRESH BADGE
-    ===================== */
+      /* =====================
+        REFRESH BADGE
+      ===================== */
 
-    if (
-      typeof loadMaintenanceReportsBadge ===
-      "function"
-    ) {
+      if (
+        typeof loadMaintenanceReportsBadge ===
+        "function"
+      ) {
 
-      await loadMaintenanceReportsBadge();
+        await loadMaintenanceReportsBadge();
+
+      }
+
+
+      /* =====================
+        REFRESH BREAKDOWN LIST
+      ===================== */
+
+      if (
+        typeof loadBreakdowns ===
+        "function"
+      ) {
+
+        await loadBreakdowns();
+
+      }
+
+
+      /* =====================
+        OPEN CREATED BD DETAIL
+      ===================== */
+
+      if (
+        Number.isInteger(breakdownId) &&
+        breakdownId > 0 &&
+        typeof openBreakdownDetail ===
+          "function"
+      ) {
+
+        await openBreakdownDetail(
+          breakdownId
+        );
+
+      }
+
+    } catch (uiError) {
+
+      /* =====================
+        UI ERROR ONLY
+
+        Breakdown creation has already succeeded.
+      ===================== */
+
+      console.error(
+        "POST-CREATE REPORT BREAKDOWN UI ERROR:",
+        uiError
+      );
 
     }
-
-
-    /* =====================
-       OPTIONAL:
-       REFRESH INCIDENT DATA
-    ===================== */
-
-    if (
-      typeof loadBreakdowns ===
-      "function"
-    ) {
-
-      loadBreakdowns();
-
-    }
-
-
-    /* =====================
-       SUCCESS
-    ===================== */
-
-    const breakdownId =
-      data?.breakdown?.id;
-
-
-    const breakdownCode =
-      breakdownId
-        ? `BD-${String(
-            breakdownId
-          ).padStart(5, "0")}`
-        : "Breakdown";
-
-
-    alert(
-      `${breakdownCode} created successfully.`
-    );
 
 
   } catch (err) {

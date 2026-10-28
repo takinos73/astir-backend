@@ -3465,24 +3465,73 @@ app.post( "/breakdowns/historical", async (req, res) => {
       }
 
 
-      if (!started_at) {
+/* =====================
+   BASIC VALIDATION
+===================== */
 
-        return res.status(400).json({
-          error:
-            "Breakdown start time is required"
-        });
+if (!asset_id) {
 
-      }
+  return res.status(400).json({
+    error: "Asset is required"
+  });
+
+}
 
 
-      if (!restored_at) {
+if (
+  !title ||
+  !String(title).trim()
+) {
 
-        return res.status(400).json({
-          error:
-            "Restored time is required"
-        });
+  return res.status(400).json({
+    error:
+      "Breakdown title is required"
+  });
 
-      }
+}
+
+
+if (!started_at) {
+
+  return res.status(400).json({
+    error:
+      "Breakdown start time is required"
+  });
+
+}
+
+
+if (!restored_at) {
+
+  return res.status(400).json({
+    error:
+      "Restored time is required"
+  });
+
+}
+
+
+  /* =====================================================
+    HISTORICAL RESTORATION TASK REQUIRED
+
+    Historical Breakdown represents an incident
+    that has already been restored.
+
+    Therefore one completed Restoration Task
+    must always be provided.
+  ===================================================== */
+
+  if (
+    !restoration_task ||
+    typeof restoration_task !== "object"
+  ) {
+
+    return res.status(400).json({
+      error:
+        "Historical Breakdown requires a Restoration Task"
+    });
+
+  }
 
 
       /* =====================
