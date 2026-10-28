@@ -3421,7 +3421,6 @@ app.post( "/breakdowns/historical", async (req, res) => {
     const client =
       await pool.connect();
 
-
     try {
 
     const {
@@ -3439,76 +3438,50 @@ app.post( "/breakdowns/historical", async (req, res) => {
     } = req.body || {};
 
 
-      /* =====================
-         BASIC VALIDATION
-      ===================== */
+  /* =====================
+    BASIC VALIDATION
+  ===================== */
 
-      if (!asset_id) {
+  if (!asset_id) {
 
-        return res.status(400).json({
-          error: "Asset is required"
-        });
+    return res.status(400).json({
+      error: "Asset is required"
+    });
 
-      }
-
-
-      if (
-        !title ||
-        !String(title).trim()
-      ) {
-
-        return res.status(400).json({
-          error:
-            "Breakdown title is required"
-        });
-
-      }
+  }
 
 
-/* =====================
-   BASIC VALIDATION
-===================== */
+  if (
+    !title ||
+    !String(title).trim()
+  ) {
 
-if (!asset_id) {
+    return res.status(400).json({
+      error:
+        "Breakdown title is required"
+    });
 
-  return res.status(400).json({
-    error: "Asset is required"
-  });
-
-}
-
-
-if (
-  !title ||
-  !String(title).trim()
-) {
-
-  return res.status(400).json({
-    error:
-      "Breakdown title is required"
-  });
-
-}
+  }
 
 
-if (!started_at) {
+  if (!started_at) {
 
-  return res.status(400).json({
-    error:
-      "Breakdown start time is required"
-  });
+    return res.status(400).json({
+      error:
+        "Breakdown start time is required"
+    });
 
-}
+  }
 
 
-if (!restored_at) {
+  if (!restored_at) {
 
-  return res.status(400).json({
-    error:
-      "Restored time is required"
-  });
+    return res.status(400).json({
+      error:
+        "Restored time is required"
+    });
 
-}
+  }
 
 
   /* =====================================================
@@ -3681,6 +3654,44 @@ if (!restored_at) {
 
         }
 
+        /* =====================================================
+          HISTORICAL LOCATION REQUIRED
+
+          A Historical Restoration Task must always
+          identify both Section and Unit.
+        ===================================================== */
+
+        const section =
+          String(
+            restoration_task.section || ""
+          ).trim();
+
+
+        if (!section) {
+
+          return res.status(400).json({
+            error:
+              "Section is required for a Historical Restoration Task"
+          });
+
+        }
+
+
+        const unit =
+          String(
+            restoration_task.unit || ""
+          ).trim();
+
+
+        if (!unit) {
+
+          return res.status(400).json({
+            error:
+              "Unit is required for a Historical Restoration Task"
+          });
+
+        }
+
         /* =====================
           IMPACT
         ===================== */
@@ -3842,15 +3853,9 @@ if (!restored_at) {
           task:
             taskName,
 
-          section:
-            String(
-              restoration_task.section || ""
-            ).trim() || null,
+          section,
 
-          unit:
-            String(
-              restoration_task.unit || ""
-            ).trim() || null,
+          unit,
 
           impact:
             resolvedImpact,
