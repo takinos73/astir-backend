@@ -16520,6 +16520,114 @@ app.patch("/tasks/:id", async (req, res) => {
       task.frequency_hours &&
       Number(task.frequency_hours) > 0;
 
+    /* =====================================================
+      COMPLETION TIME VALIDATION
+
+      GENERAL RULE:
+      - A completed task represents work that has
+        already happened.
+      - Therefore completed_at cannot be in the future.
+
+      HISTORICAL SUPPORT:
+      - completed_at MAY be earlier than task.created_at.
+      - This is intentionally allowed.
+
+      RESTORATION / BREAKDOWN RULE:
+      - If the task belongs to a Breakdown,
+        completed_at cannot be earlier than
+        breakdown.started_at.
+    ===================================================== */
+
+
+    /* =====================
+      FUTURE COMPLETION GUARD
+    ===================== */
+
+    if (
+      completedAt.getTime() >
+      Date.now()
+    ) {
+
+      await client.query("ROLLBACK");
+
+      return res.status(400).json({
+        error:
+          "Completion date / time cannot be in the future"
+      });
+
+    }
+
+
+    /* =====================
+      BREAKDOWN TIME WINDOW
+    ===================== */
+
+    if (task.breakdown_id) {
+
+      const breakdownRes =
+        await client.query(
+          `
+            SELECT
+              id,
+              started_at
+            FROM breakdowns
+            WHERE id = $1
+            LIMIT 1
+          `,
+          [task.breakdown_id]
+        );
+
+
+      if (!breakdownRes.rows.length) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error:
+            "Breakdown not found for this Restoration Task"
+        });
+
+      }
+
+
+      const breakdownStartedAt =
+        new Date(
+          breakdownRes.rows[0].started_at
+        );
+
+
+      if (
+        Number.isNaN(
+          breakdownStartedAt.getTime()
+        )
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(500).json({
+          error:
+            "Invalid Breakdown start date / time"
+        });
+
+      }
+
+
+      if (
+        completedAt.getTime() <
+        breakdownStartedAt.getTime()
+      ) {
+
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error:
+            "Task completion cannot be earlier than Breakdown start time"
+        });
+
+      }
+
+    }
+
 
     /* =====================
        2. DUPLICATE COMPLETION GUARD

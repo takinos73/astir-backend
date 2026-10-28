@@ -4469,6 +4469,26 @@ getEl("confirmDone")?.addEventListener("click", async () => {
       );
     }
 
+    /* =====================
+      FUTURE COMPLETION GUARD
+
+      A task marked as DONE represents
+      work that has already happened.
+
+      Therefore its completion time
+      cannot be in the future.
+    ===================== */
+
+    if (
+      localCompletedDate.getTime() >
+      Date.now()
+    ) {
+
+      return alert(
+        "Completion date / time cannot be in the future."
+      );
+
+    }
 
     completedAt =
       localCompletedDate.toISOString();
