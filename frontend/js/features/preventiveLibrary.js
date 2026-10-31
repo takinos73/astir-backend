@@ -326,8 +326,28 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
           }
         </td>
         <td>
+        /* Task cell with optional attachment badge */
+        <td>
           <div>
             ${r.task}
+
+            ${
+              r.has_attachments
+                ? `
+                  <span
+                    class="badge badge-attachment"
+                    title="Preventive attachment available"
+                    style="
+                      margin-left:6px;
+                      font-size:11px;
+                      opacity:.85;
+                    "
+                  >
+                    📎
+                  </span>
+                `
+                : ""
+            }
           </div>
 
           ${
@@ -652,6 +672,12 @@ function generateLibraryFromTasks() {
 
       impact:
         normalizedImpact,
+
+      /* Preventive shared attachment indicator */
+      has_attachments:
+        Boolean(
+          t.has_preventive_attachments
+      ),
 
       notes:
         t.notes || ""
