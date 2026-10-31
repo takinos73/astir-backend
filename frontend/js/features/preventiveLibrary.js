@@ -2163,6 +2163,7 @@ document
     const rule = window.currentEditPreventive;
 
     const model =
+      rule.model ||
       document.getElementById("libraryModelSelect")?.value;
 
     if (!model) {
@@ -2170,12 +2171,26 @@ document
       return;
     }
 
+    // Normalize unit
+    const unit =
+      rule.unit && rule.unit !== "-"
+        ? rule.unit
+        : null;
+
     // =====================
     // 1️⃣ PREVIEW AFFECTED ASSETS
     // =====================
     let affected = 0;
 
     try {
+
+      console.log("DELETE PREVIEW PAYLOAD:", {
+        model,
+        section: rule.section,
+        task: rule.task,
+        unit
+      });
+
       const res = await fetch(
         `${API}/preventives/delete-rule/preview`,
         {
@@ -2188,21 +2203,35 @@ document
             model,
             section: rule.section,
             task: rule.task,
-            unit: rule.unit || null
+            unit
           })
         }
       );
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Preview failed");
+        throw new Error(
+          err.error || "Preview failed"
+        );
       }
 
       const data = await res.json();
-      affected = Number(data.affected_assets) || 0;
+
+      console.log(
+        "DELETE PREVIEW RESPONSE:",
+        data
+      );
+
+      affected =
+        Number(data.affected_assets) || 0;
 
     } catch (err) {
-      console.error("DELETE PREVIEW ERROR:", err);
+
+      console.error(
+        "DELETE PREVIEW ERROR:",
+        err
+      );
+
       alert(err.message);
       return;
     }
@@ -2215,20 +2244,22 @@ document
         ? `⚠️ This preventive rule will be removed from ${affected} assets.\n\nOnly future preventive work orders will be affected.\n\nProceed?`
         : `ℹ️ This preventive rule is not applied to any assets.\n\nDisabling it will prevent future use.\n\nProceed?`;
 
-    if (!confirm(msg)) return;
+    if (!confirm(msg)) {
+      return;
+    }
 
     // =====================
     // 3️⃣ SOFT DELETE
     // =====================
     try {
-      console.log("DELETE PREVIEW PAYLOAD:", {
+
+      console.log("DELETE RULE PAYLOAD:", {
         model,
         section: rule.section,
         task: rule.task,
-        unit: rule.unit || null
+        unit
       });
 
-      console.log("CURRENT RULE:", rule);
       const res = await fetch(
         `${API}/preventives/delete-rule`,
         {
@@ -2241,39 +2272,59 @@ document
             model,
             section: rule.section,
             task: rule.task,
-            unit: rule.unit || null
+            unit
           })
         }
       );
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Delete failed");
+
+        throw new Error(
+          err.error || "Delete failed"
+        );
       }
+
       const data = await res.json();
 
-      console.log("DELETE PREVIEW RESPONSE:", data);
+      console.log(
+        "DELETE RULE RESPONSE:",
+        data
+      );
 
-      affected = Number(data.affected_assets) || 0;
-
-      // 🔄 Refresh
-      if (typeof loadTasks === "function") {
+      // =====================
+      // REFRESH
+      // =====================
+      if (
+        typeof loadTasks === "function"
+      ) {
         await loadTasks();
       }
 
-      if (typeof generateLibraryFromTasks === "function") {
+      if (
+        typeof generateLibraryFromTasks ===
+        "function"
+      ) {
         generateLibraryFromTasks();
       }
 
       closeEditPreventiveModal();
-      alert("✔ Preventive rule disabled");
+
+      alert(
+        "✔ Preventive rule disabled"
+      );
 
     } catch (err) {
-      console.error("DELETE RULE ERROR:", err);
+
+      console.error(
+        "DELETE RULE ERROR:",
+        err
+      );
+
       alert(err.message);
     }
-  });
 
+  });
 
 // =====================
 // PREVENTIVE UI HELPERS
