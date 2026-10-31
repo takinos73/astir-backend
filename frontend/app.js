@@ -2534,7 +2534,7 @@ document.getElementById("nt-attachments")
       ) {
 
         alert(
-          "Maximum total attachment size is 10 MB."
+          "Maximum total attachment size is 8 MB."
         );
 
 

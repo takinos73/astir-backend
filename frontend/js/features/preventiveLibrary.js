@@ -1575,6 +1575,7 @@ function openPreventiveConfirm() {
 function closePreventiveConfirm() {
   document.getElementById("confirmPreventiveApplyOverlay").style.display = "none";
 }
+
 async function applyPreventiveRule(rule) {
 
   if (!rule) {
@@ -1625,6 +1626,7 @@ async function applyPreventiveRule(rule) {
   await loadTasks();
   generateLibraryFromTasks();
 }
+
 /* =====================
    UNIT DROPDOWN POPULATION
    - Populates the unit dropdown based on the selected model's existing units

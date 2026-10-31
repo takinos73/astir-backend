@@ -618,6 +618,52 @@ function buildAttachmentFileKey(
 
 }
 
+/* =========================================================
+   BUILD PREVENTIVE RULE R2 OBJECT KEY
+
+   Shared Preventive attachments are NOT owned
+   by one specific Task.
+
+   One physical file may be linked to many
+   Preventive maintenance_tasks.
+
+   Example:
+   preventive-rules/<uuid>.pdf
+========================================================= */
+
+function buildPreventiveRuleAttachmentFileKey(
+  originalFileName
+) {
+
+  /* =====================
+     FILE EXTENSION
+  ===================== */
+
+  const extension =
+    getAttachmentExtension(
+      originalFileName
+    );
+
+
+  /* =====================
+     UNIQUE FILE ID
+  ===================== */
+
+  const fileId =
+    randomUUID();
+
+
+  /* =====================
+     SHARED R2 KEY
+  ===================== */
+
+  return (
+    `preventive-rules/` +
+    `${fileId}${extension}`
+  );
+
+}
+
 /* =====================
    CLEAN ORIGINAL FILE NAME
 
@@ -16418,6 +16464,674 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
     client.release();
   }
 });
+
+/* =========================================================
+   PREVENTIVE SHARED ATTACHMENTS
+
+   POST:
+   /preventive-attachments
+
+   Multipart fields:
+
+   files
+     - Maximum existing ATTACHMENT_MAX_FILES
+     - Existing MIME validation is reused
+
+   task_ids
+     JSON array as string, for example:
+
+     [101]
+
+     or:
+
+     [101,102,103,104]
+
+   uploaded_by_id
+     Optional
+
+   RESULT:
+
+   Each physical file:
+   - uploaded ONCE to Cloudflare R2
+   - inserted ONCE in preventive_rule_attachments
+   - linked to ONE or MANY Preventive Tasks
+
+   IMPORTANT:
+   Existing generic /attachments endpoint
+   remains completely unchanged.
+========================================================= */
+
+app.post("/preventive-attachments", attachmentUpload.array(
+    "files",
+    ATTACHMENT_MAX_FILES
+  ),
+
+  async (req, res) => {
+
+    const client =
+      await pool.connect();
+
+
+    /* =====================================================
+       R2 OBJECTS CREATED DURING THIS REQUEST
+
+       If anything fails before COMMIT,
+       these objects are removed from R2.
+    ===================================================== */
+
+    const uploadedR2Keys =
+      [];
+
+
+    try {
+
+      /* =====================
+         FILES
+      ===================== */
+
+      const files =
+        Array.isArray(req.files)
+          ? req.files
+          : [];
+
+
+      if (
+        files.length === 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "No attachment files provided"
+        });
+
+      }
+
+
+      /* =====================
+         TOTAL FILE SIZE
+
+         Shared Preventive upload follows
+         the same total upload ceiling.
+      ===================== */
+
+      const totalBytes =
+        files.reduce(
+          (
+            total,
+            file
+          ) =>
+            total +
+            Number(
+              file.size || 0
+            ),
+          0
+        );
+
+
+      if (
+        totalBytes >
+        ATTACHMENT_MAX_TOTAL_BYTES
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Maximum total attachment size exceeded"
+        });
+
+      }
+
+
+      /* =====================================================
+         TASK IDS
+
+         task_ids arrives through multipart/form-data,
+         therefore it is expected as a JSON string.
+      ===================================================== */
+
+      let taskIds =
+        [];
+
+
+      try {
+
+        const parsedTaskIds =
+          JSON.parse(
+            String(
+              req.body?.task_ids ||
+              "[]"
+            )
+          );
+
+
+        if (
+          Array.isArray(
+            parsedTaskIds
+          )
+        ) {
+
+          taskIds =
+            parsedTaskIds
+              .map(
+                value =>
+                  Number(value)
+              )
+              .filter(
+                value =>
+                  Number.isInteger(value) &&
+                  value > 0
+              );
+
+        }
+
+      } catch (_) {
+
+        return res.status(400).json({
+          error:
+            "Invalid task_ids"
+        });
+
+      }
+
+
+      /* =====================
+         REMOVE DUPLICATE IDS
+      ===================== */
+
+      taskIds =
+        [
+          ...new Set(
+            taskIds
+          )
+        ];
+
+
+      if (
+        taskIds.length === 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "At least one Preventive Task is required"
+        });
+
+      }
+
+
+      /* =====================
+         START TRANSACTION
+      ===================== */
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      /* =====================================================
+         VERIFY PREVENTIVE TASKS
+
+         Preventive semantics:
+         - breakdown_id IS NULL
+         - frequency_hours > 0
+
+         We do NOT modify any Task here.
+         This endpoint only verifies and links attachments.
+      ===================================================== */
+
+      const preventiveTasksResult =
+        await client.query(
+          `
+          SELECT
+            id
+
+          FROM maintenance_tasks
+
+          WHERE
+            id = ANY($1::bigint[])
+
+            AND breakdown_id IS NULL
+
+            AND COALESCE(
+              frequency_hours,
+              0
+            ) > 0
+
+          ORDER BY
+            id
+          `,
+          [
+            taskIds
+          ]
+        );
+
+
+      const validTaskIds =
+        preventiveTasksResult.rows.map(
+          row =>
+            Number(row.id)
+        );
+
+
+      /* =====================================================
+         ALL REQUESTED TASKS MUST BE VALID PREVENTIVES
+      ===================================================== */
+
+      if (
+        validTaskIds.length !==
+        taskIds.length
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(400).json({
+          error:
+            "One or more Task IDs are not valid Preventive Tasks"
+        });
+
+      }
+
+
+      /* =====================
+         RESOLVE UPLOADER
+      ===================== */
+
+      let uploadedById =
+        null;
+
+
+      let uploadedBy =
+        null;
+
+
+      const requestedUploaderId =
+        Number(
+          req.body
+            ?.uploaded_by_id
+        );
+
+
+      if (
+        Number.isInteger(
+          requestedUploaderId
+        ) &&
+        requestedUploaderId > 0
+      ) {
+
+        const technicianResult =
+          await client.query(
+            `
+            SELECT
+              id,
+              name
+
+            FROM technicians
+
+            WHERE
+              id = $1
+              AND active = true
+
+            LIMIT 1
+            `,
+            [
+              requestedUploaderId
+            ]
+          );
+
+
+        if (
+          technicianResult.rows.length === 0
+        ) {
+
+          throw new Error(
+            "Uploader not found or inactive"
+          );
+
+        }
+
+
+        uploadedById =
+          technicianResult.rows[0].id;
+
+
+        uploadedBy =
+          technicianResult.rows[0].name;
+
+      }
+
+
+      /* =====================================================
+         CREATE SHARED ATTACHMENTS
+
+         Each file is uploaded ONCE.
+
+         Then the same attachment_id is linked
+         to every validated Preventive Task.
+      ===================================================== */
+
+      const createdAttachments =
+        [];
+
+
+      for (
+        const file
+        of files
+      ) {
+
+        /* =====================
+           SAFE FILE INFORMATION
+        ===================== */
+
+        const fileKey =
+          buildPreventiveRuleAttachmentFileKey(
+            file.originalname
+          );
+
+
+        const cleanFileName =
+          cleanAttachmentFileName(
+            file.originalname
+          );
+
+
+        /* =====================
+           UPLOAD ONCE TO R2
+        ===================== */
+
+        await r2Client.send(
+          new PutObjectCommand({
+            Bucket:
+              process.env.R2_BUCKET,
+
+            Key:
+              fileKey,
+
+            Body:
+              file.buffer,
+
+            ContentType:
+              file.mimetype
+          })
+        );
+
+
+        uploadedR2Keys.push(
+          fileKey
+        );
+
+
+        /* =====================
+           SAVE FILE METADATA
+        ===================== */
+
+        const attachmentResult =
+          await client.query(
+            `
+            INSERT INTO
+              preventive_rule_attachments
+              (
+                file_key,
+                file_name,
+                mime_type,
+                file_size,
+                uploaded_by_id,
+                uploaded_by
+              )
+
+            VALUES
+              (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6
+              )
+
+            RETURNING
+              id,
+              file_key,
+              file_name,
+              mime_type,
+              file_size,
+              uploaded_by_id,
+              uploaded_by,
+              uploaded_at
+            `,
+            [
+              fileKey,
+              cleanFileName,
+              file.mimetype,
+              Number(file.size),
+              uploadedById,
+              uploadedBy
+            ]
+          );
+
+
+        const attachment =
+          attachmentResult.rows[0];
+
+
+        /* =================================================
+           LINK SAME FILE TO ALL PREVENTIVE TASKS
+
+           No additional R2 upload happens here.
+        ================================================= */
+
+        for (
+          const taskId
+          of validTaskIds
+        ) {
+
+          await client.query(
+            `
+            INSERT INTO
+              preventive_rule_attachment_links
+              (
+                attachment_id,
+                task_id
+              )
+
+            VALUES
+              (
+                $1,
+                $2
+              )
+
+            ON CONFLICT (
+              attachment_id,
+              task_id
+            )
+
+            DO NOTHING
+            `,
+            [
+              attachment.id,
+              taskId
+            ]
+          );
+
+        }
+
+
+        createdAttachments.push({
+          ...attachment,
+
+          task_ids:
+            [
+              ...validTaskIds
+            ]
+        });
+
+      }
+
+
+      /* =====================
+         COMMIT
+      ===================== */
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      /* =====================
+         SUCCESS
+      ===================== */
+
+      return res
+        .status(201)
+        .json({
+
+          message:
+            "Preventive attachments uploaded successfully",
+
+          task_ids:
+            validTaskIds,
+
+          uploaded:
+            createdAttachments,
+
+          usage: {
+            fileCount:
+              files.length,
+
+            totalBytes,
+
+            maxFiles:
+              ATTACHMENT_MAX_FILES,
+
+            maxTotalBytes:
+              ATTACHMENT_MAX_TOTAL_BYTES
+          }
+
+        });
+
+
+    } catch (err) {
+
+      /* =====================
+         ROLLBACK DB
+      ===================== */
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (
+        rollbackErr
+      ) {
+
+        console.error(
+          "PREVENTIVE ATTACHMENT DB ROLLBACK ERROR:",
+          rollbackErr
+        );
+
+      }
+
+
+      /* =====================================================
+         CLEAN R2 ORPHANS
+
+         Any file uploaded during this failed request
+         is removed because DB linking did not complete.
+      ===================================================== */
+
+      for (
+        const fileKey
+        of uploadedR2Keys
+      ) {
+
+        try {
+
+          await r2Client.send(
+            new DeleteObjectCommand({
+              Bucket:
+                process.env.R2_BUCKET,
+
+              Key:
+                fileKey
+            })
+          );
+
+        } catch (
+          deleteErr
+        ) {
+
+          console.error(
+            "PREVENTIVE ATTACHMENT R2 CLEANUP ERROR:",
+            fileKey,
+            deleteErr
+          );
+
+        }
+
+      }
+
+
+      console.error(
+        "POST /preventive-attachments ERROR:",
+        err
+      );
+
+
+      /* =====================
+         FRIENDLY ERRORS
+      ===================== */
+
+      if (
+        err instanceof
+        multer.MulterError
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            error:
+              err.message
+          });
+
+      }
+
+
+      const message =
+        err.message ||
+        "Preventive attachment upload failed";
+
+
+      const isValidationError =
+        message.includes("Maximum") ||
+        message.includes("not found") ||
+        message.includes("Invalid") ||
+        message.includes("Unsupported") ||
+        message.includes("Only JPG") ||
+        message.includes("No attachment");
+
+
+      return res
+        .status(
+          isValidationError
+            ? 400
+            : 500
+        )
+        .json({
+          error:
+            message
+        });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
 
 /* =====================
    COMPLETE TASK
