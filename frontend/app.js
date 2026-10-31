@@ -2022,10 +2022,10 @@ function resetPreventiveAttachments() {
 
 }
 
-
-/* =========================================================
-   RENDER PREVENTIVE ATTACHMENTS
-========================================================= */
+/* =====================
+   RENDER PREVENTIVE SELECTED FILES
+   Same visual behavior as AddTask attachments
+===================== */
 
 function renderPreventiveAttachments() {
 
@@ -2041,95 +2041,285 @@ function renderPreventiveAttachments() {
     );
 
 
-  if (!summary || !list) {
+  if (
+    !summary ||
+    !list
+  ) {
     return;
   }
 
 
-  /* Calculate total selected size */
-  const totalBytes =
-    preventiveAttachmentFiles.reduce(
-      (sum, file) =>
-        sum + Number(file.size || 0),
-      0
-    );
+  /* Clear previous preview */
+  list.innerHTML =
+    "";
 
 
-  /* Update summary */
-  summary.textContent =
-    preventiveAttachmentFiles.length === 0
-      ? "No files selected"
-      : `${preventiveAttachmentFiles.length} file` +
-        `${preventiveAttachmentFiles.length === 1 ? "" : "s"} · ` +
-        `${formatAttachmentSize(totalBytes)}`;
-
-
-  /* Nothing selected */
+  /* No files selected */
   if (
     preventiveAttachmentFiles.length === 0
   ) {
 
-    list.innerHTML = "";
+    summary.textContent =
+      "No files selected";
 
     return;
 
   }
 
 
-  /* Render selected files */
-  list.innerHTML =
-    preventiveAttachmentFiles
-      .map(
-        (file, index) => `
-          <div class="task-attachment-chip">
+  /* =====================
+     TOTAL SELECTED SIZE
+  ===================== */
 
-            <span class="task-attachment-name">
-              ${file.name}
-            </span>
-
-            <span class="task-attachment-size">
-              ${formatAttachmentSize(file.size)}
-            </span>
-
-            <button
-              type="button"
-              class="task-attachment-remove"
-              data-preventive-attachment-index="${index}"
-              title="Remove attachment"
-            >
-              ×
-            </button>
-
-          </div>
-        `
-      )
-      .join("");
+  const totalBytes =
+    preventiveAttachmentFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(
+          file.size || 0
+        ),
+      0
+    );
 
 
-  /* Remove one selected file */
-  list
-    .querySelectorAll(
-      "[data-preventive-attachment-index]"
-    )
-    .forEach(button => {
+  summary.textContent =
+    `${preventiveAttachmentFiles.length} file${
+      preventiveAttachmentFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
 
-      button.addEventListener(
-        "click",
-        () => {
 
-          const index =
-            Number(
-              button.dataset
-                .preventiveAttachmentIndex
+  /* =====================
+     BUILD FILE PREVIEWS
+  ===================== */
+
+  preventiveAttachmentFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      /* =====================
+         ATTACHMENT CHIP
+      ===================== */
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      /*
+        Reuse the existing AddTask CSS
+        so Preventive attachments have
+        exactly the same appearance.
+      */
+
+      item.className =
+        "task-attachment-chip";
+
+
+      /* =====================
+         PREVIEW / FILE ICON
+      ===================== */
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-chip-preview";
+
+
+      /* =====================
+         IMAGE THUMBNAIL
+      ===================== */
+
+      if (
+        String(
+          file.type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
+
+
+        img.src =
+          objectUrl;
+
+
+        img.alt =
+          file.name;
+
+
+        img.className =
+          "task-attachment-chip-thumb";
+
+
+        /*
+          Release temporary browser URL
+          after thumbnail has loaded.
+        */
+
+        img.addEventListener(
+          "load",
+          () => {
+
+            URL.revokeObjectURL(
+              objectUrl
             );
 
-
-          if (
-            !Number.isInteger(index)
-          ) {
-            return;
+          },
+          {
+            once:
+              true
           }
+        );
 
+
+        preview.appendChild(
+          img
+        );
+
+      }
+
+
+      /* =====================
+         PDF PREVIEW BADGE
+      ===================== */
+
+      else if (
+        file.type ===
+        "application/pdf"
+      ) {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-chip-pdf";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      /* =====================
+         FILE INFORMATION
+      ===================== */
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      info.className =
+        "task-attachment-chip-info";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-chip-name";
+
+
+      name.textContent =
+        file.name;
+
+
+      name.title =
+        file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+
+      size.className =
+        "task-attachment-chip-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      info.appendChild(
+        name
+      );
+
+
+      info.appendChild(
+        size
+      );
+
+
+      /* =====================
+         REMOVE BUTTON
+      ===================== */
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
 
           preventiveAttachmentFiles.splice(
             index,
@@ -2142,10 +2332,34 @@ function renderPreventiveAttachments() {
         }
       );
 
-    });
+
+      /* =====================
+         BUILD CHIP
+      ===================== */
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        info
+      );
+
+
+      item.appendChild(
+        removeBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
 
 }
-
 
 /* =====================
    FORMAT FILE SIZE
