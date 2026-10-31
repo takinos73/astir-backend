@@ -2221,6 +2221,14 @@ document
     // 3️⃣ SOFT DELETE
     // =====================
     try {
+      console.log("DELETE PREVIEW PAYLOAD:", {
+        model,
+        section: rule.section,
+        task: rule.task,
+        unit: rule.unit || null
+      });
+
+      console.log("CURRENT RULE:", rule);
       const res = await fetch(
         `${API}/preventives/delete-rule`,
         {
@@ -2242,6 +2250,11 @@ document
         const err = await res.json();
         throw new Error(err.error || "Delete failed");
       }
+      const data = await res.json();
+
+      console.log("DELETE PREVIEW RESPONSE:", data);
+
+      affected = Number(data.affected_assets) || 0;
 
       // 🔄 Refresh
       if (typeof loadTasks === "function") {
