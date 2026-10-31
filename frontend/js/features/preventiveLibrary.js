@@ -1772,27 +1772,71 @@ function openEditPreventiveModal(preventive) {
   setVal("ep-duration", preventive.duration_min);
   setVal("ep-notes", preventive.notes);
 
-  // =====================
-  // SHOW MODAL
-  // =====================
-  const overlay = document.getElementById("editPreventiveOverlay");
+  /* =====================
+    SHOW MODAL
+  ===================== */
+
+  const overlay =
+    document.getElementById(
+      "editPreventiveOverlay"
+    );
+
+
   if (overlay) {
-    overlay.style.display = "flex";
+
+    /* Reset temporary attachment edit state */
+    resetEditPreventiveAttachments();
+
+
+    overlay.style.display =
+      "flex";
+
+
+    /* Load existing shared attachments */
+    loadEditPreventiveAttachments(
+      window.currentEditPreventive
+    );
+
   }
 
-  // UX polish
-  document.getElementById("ep-task")?.focus();
+
+  /* UX polish */
+  document
+    .getElementById(
+      "ep-task"
+    )
+    ?.focus();
 }
 
 /* =====================
    CLOSE EDIT PREVENTIVE MODAL
 ===================== */
-function closeEditPreventiveModal() {
-  const overlay = document.getElementById("editPreventiveOverlay");
-  if (overlay) overlay.style.display = "none";
 
-  window.currentEditPreventive = null;
+function closeEditPreventiveModal() {
+
+  const overlay =
+    document.getElementById(
+      "editPreventiveOverlay"
+    );
+
+
+  if (overlay) {
+
+    overlay.style.display =
+      "none";
+
+  }
+
+
+  /* Clear unsaved attachment changes */
+  resetEditPreventiveAttachments();
+
+
+  window.currentEditPreventive =
+    null;
+
 }
+
 /* =====================
    VALIDATE EDIT PREVENTIVE
 ===================== */
@@ -1838,108 +1882,264 @@ function validateEditPreventive() {
 
   return valid;
 }
-document
-  .getElementById("saveEditPreventiveBtn")
-  ?.addEventListener("click", saveEditPreventive);
 
-/* =====================
-   SAVE + APPLY EDIT PREVENTIVE
-===================== */
+/* =========================================================
+   SAVE EDIT PREVENTIVE
 
-async function saveEditPreventive() {
-  if (!window.currentEditPreventive) {
-    alert("No preventive selected");
-    return;
-  }
-
-  if (!validateEditPreventive()) {
-    return;
-  }
-
-  // 🔒 Update rule IN MEMORY only (no backend save here)
-  window.currentEditPreventive = {
-    ...window.currentEditPreventive,
-
-    task: getVal("ep-task"),
-    type: getVal("ep-type") || null,
-
-    // Impact classification
-    impact: getVal("ep-impact") || "normal",
-
-    unit: getVal("ep-unit") || null,
-
-    frequency_hours:
-      Number(getVal("ep-frequency")),
-
-    duration_min:
-      getVal("ep-duration")
-        ? Number(getVal("ep-duration"))
-        : null,
-
-    notes:
-      getVal("ep-notes") || null
-  };
-}
+   Flow:
+   1. Validate
+   2. Update current rule in memory
+   3. Confirm Apply-to-All
+   4. Apply existing Preventive rule logic
+   5. Delete attachments marked for removal
+   6. Upload new attachments once
+   7. Link new files to all affected Preventive Tasks
+========================================================= */
 
 document
   .getElementById("saveEditPreventiveBtn")
-  ?.addEventListener("click", async () => {
+  ?.addEventListener(
+    "click",
+    async () => {
 
-    if (!window.currentEditPreventive) {
-      alert("No preventive selected");
-      return;
-    }
+      if (
+        !window.currentEditPreventive
+      ) {
 
-    // 🔒 Basic validation
-    const freq = Number(getVal("ep-frequency"));
-    if (!freq || freq <= 0) {
-      alert("Frequency must be greater than 0");
-      return;
-    }
+        alert(
+          "No preventive selected"
+        );
 
-    // Save edits locally
-    saveEditPreventive();
+        return;
 
-    // 🔎 Affected assets confirmation
-    const affectedCount =
-      Number(document.getElementById("ep-affected-count")?.textContent) || 0;
-
-    if (affectedCount > 0) {
-      const ok = confirm(
-        `This preventive rule applies to ${affectedCount} assets.\n\nApply changes to all future work orders?`
-      );
-      if (!ok) return;
-    }
-
-    try {
-      // 🔥 APPLY RULE (single source of truth)
-      await applyPreventiveRule(window.currentEditPreventive);
-
-      // 🔄 Refresh data
-      if (typeof loadTasks === "function") {
-        await loadTasks();
       }
 
-      if (typeof loadHistory === "function") {
-        await loadHistory();
+
+      /* =====================
+         VALIDATION
+      ===================== */
+
+      if (
+        !validateEditPreventive()
+      ) {
+        return;
       }
 
-      if (typeof generateLibraryFromTasks === "function") {
-        generateLibraryFromTasks();
+
+      /* =====================================================
+         UPDATE RULE IN MEMORY
+
+         Existing business logic remains unchanged.
+      ===================================================== */
+
+      window.currentEditPreventive = {
+
+        ...window.currentEditPreventive,
+
+        task:
+          getVal("ep-task"),
+
+        type:
+          getVal("ep-type") ||
+          null,
+
+        impact:
+          getVal("ep-impact") ||
+          "normal",
+
+        unit:
+          getVal("ep-unit") ||
+          null,
+
+        frequency_hours:
+          Number(
+            getVal("ep-frequency")
+          ),
+
+        duration_min:
+          getVal("ep-duration")
+            ? Number(
+                getVal("ep-duration")
+              )
+            : null,
+
+        notes:
+          getVal("ep-notes") ||
+          null
+
+      };
+
+
+      /* =====================
+         AFFECTED ASSETS
+      ===================== */
+
+      const affectedCount =
+        Number(
+          document
+            .getElementById(
+              "ep-affected-count"
+            )
+            ?.textContent
+        ) || 0;
+
+
+      if (
+        affectedCount > 0
+      ) {
+
+        const ok =
+          confirm(
+            `This preventive rule applies to ${affectedCount} assets.\n\n` +
+            `Apply changes to all future work orders?`
+          );
+
+
+        if (!ok) {
+          return;
+        }
+
       }
 
-      closeEditPreventiveModal();
 
-      alert(
-        "✔ New preventive rule created\n\n" +
-        "Applied to 1 asset"
-      );
+      try {
 
-    } catch (err) {
-      console.error("APPLY PREVENTIVE ERROR:", err);
-      alert(err.message);
+        /* =====================================================
+           APPLY EXISTING PREVENTIVE RULE
+
+           NEW:
+           We retain returned affected Task IDs
+           for shared attachment linking.
+        ===================================================== */
+
+        const affectedTaskIds =
+          await applyPreventiveRule(
+            window.currentEditPreventive
+          );
+
+
+        /* =====================================================
+           DELETE REMOVED ATTACHMENTS
+
+           Each shared attachment is deleted once.
+           Cascade removes all Task links.
+        ===================================================== */
+
+        for (
+          const attachmentId of
+          editPreventiveAttachmentsToDelete
+        ) {
+
+          const deleteResponse =
+            await fetch(
+              `${API}/preventive-attachments/${attachmentId}`,
+              {
+                method:
+                  "DELETE"
+              }
+            );
+
+
+          const deleteData =
+            await deleteResponse
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          if (
+            !deleteResponse.ok
+          ) {
+
+            throw new Error(
+              deleteData?.error ||
+              `Failed to delete attachment ${attachmentId}`
+            );
+
+          }
+
+        }
+
+
+        /* =====================================================
+           UPLOAD NEW / REPLACEMENT ATTACHMENTS
+
+           Physical file uploaded once.
+           Linked to every affected Preventive Task.
+        ===================================================== */
+
+        if (
+          editPreventiveAttachmentFiles.length >
+          0
+        ) {
+
+          await uploadPreventiveAttachments(
+            affectedTaskIds,
+            editPreventiveAttachmentFiles
+          );
+
+        }
+
+
+        /* =====================
+           REFRESH
+        ===================== */
+
+        if (
+          typeof loadTasks ===
+          "function"
+        ) {
+
+          await loadTasks();
+
+        }
+
+
+        if (
+          typeof loadHistory ===
+          "function"
+        ) {
+
+          await loadHistory();
+
+        }
+
+
+        if (
+          typeof generateLibraryFromTasks ===
+          "function"
+        ) {
+
+          generateLibraryFromTasks();
+
+        }
+
+
+        closeEditPreventiveModal();
+
+
+        alert(
+          "✔ Preventive rule updated successfully"
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          "EDIT PREVENTIVE ERROR:",
+          err
+        );
+
+
+        alert(
+          err.message
+        );
+
+      }
+
     }
-  });
+  );
   
 document
   .getElementById("disablePreventiveBtn")
@@ -2297,6 +2497,1531 @@ async function applyPreventiveRule(rule) {
 
 }
 
+/* =========================================================
+   TASK VIEW — LOAD PREVENTIVE SHARED ATTACHMENTS
+
+   Appends Preventive attachments AFTER the existing
+   generic Task attachments.
+
+   Does NOT clear the existing attachment list.
+========================================================= */
+
+async function loadPreventiveTaskAttachments(
+  taskId
+) {
+
+  const section =
+    document.getElementById(
+      "taskAttachmentsSection"
+    );
+
+
+  const list =
+    document.getElementById(
+      "taskAttachmentsList"
+    );
+
+
+  const usage =
+    document.getElementById(
+      "taskAttachmentsUsage"
+    );
+
+
+  if (
+    !section ||
+    !list ||
+    !usage
+  ) {
+    return;
+  }
+
+
+  try {
+
+    /* =====================
+       LOAD PREVENTIVE FILES
+    ===================== */
+
+    const response =
+      await fetch(
+        `${API}/preventive-attachments/task/${taskId}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Preventive attachments"
+      );
+
+    }
+
+
+    const attachments =
+      Array.isArray(
+        data.attachments
+      )
+        ? data.attachments
+        : [];
+
+
+    /* =====================
+       NO PREVENTIVE FILES
+    ===================== */
+
+    if (
+      attachments.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       CALCULATE COMBINED USAGE
+    ===================== */
+
+    const preventiveBytes =
+      attachments.reduce(
+        (
+          total,
+          attachment
+        ) =>
+          total +
+          Number(
+            attachment.file_size || 0
+          ),
+        0
+      );
+
+
+    const genericCount =
+      Number(
+        list.dataset
+          .genericAttachmentCount ||
+        0
+      );
+
+
+    const genericBytes =
+      Number(
+        list.dataset
+          .genericAttachmentBytes ||
+        0
+      );
+
+
+    const combinedCount =
+      genericCount +
+      attachments.length;
+
+
+    const combinedBytes =
+      genericBytes +
+      preventiveBytes;
+
+
+    usage.textContent =
+      `${combinedCount} file${
+        combinedCount === 1
+          ? ""
+          : "s"
+      } · ${formatAttachmentSize(
+        combinedBytes
+      )}`;
+
+
+    /* =====================================================
+       OPTIONAL VISUAL SEPARATOR
+
+       Only shown when generic attachments already exist.
+    ===================================================== */
+
+    if (
+      genericCount > 0
+    ) {
+
+      const separator =
+        document.createElement(
+          "div"
+        );
+
+
+      separator.className =
+        "task-attachment-view-separator";
+
+
+      separator.textContent =
+        "Preventive attachments";
+
+
+      list.appendChild(
+        separator
+      );
+
+    }
+
+
+    /* =====================
+       RENDER ATTACHMENTS
+    ===================== */
+
+    for (
+      const attachment of attachments
+    ) {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-view-item";
+
+
+      /* =====================
+         PREVIEW
+      ===================== */
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-preview";
+
+
+      /* =====================
+         IMAGE THUMBNAIL
+      ===================== */
+
+      if (
+        String(
+          attachment.mime_type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        try {
+
+          const previewRes =
+            await fetch(
+              `${API}/preventive-attachments/${attachment.id}/open`
+            );
+
+
+          const previewData =
+            await previewRes
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          if (
+            previewRes.ok &&
+            previewData?.url
+          ) {
+
+            const img =
+              document.createElement(
+                "img"
+              );
+
+
+            img.src =
+              previewData.url;
+
+
+            img.alt =
+              attachment.file_name ||
+              "Preventive attachment";
+
+
+            img.className =
+              "task-attachment-thumbnail";
+
+
+            img.addEventListener(
+              "click",
+              () => {
+
+                openPreventiveAttachment(
+                  attachment.id
+                );
+
+              }
+            );
+
+
+            preview.appendChild(
+              img
+            );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "PREVENTIVE ATTACHMENT PREVIEW ERROR:",
+            err
+          );
+
+        }
+
+      }
+
+
+      /* =====================
+         PDF BADGE
+      ===================== */
+
+      else if (
+        attachment.mime_type ===
+        "application/pdf"
+      ) {
+
+        const pdfBadge =
+          document.createElement(
+            "div"
+          );
+
+
+        pdfBadge.className =
+          "task-attachment-pdf-badge";
+
+
+        pdfBadge.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdfBadge
+        );
+
+      }
+
+
+      /* =====================
+         MAIN INFO
+      ===================== */
+
+      const main =
+        document.createElement(
+          "div"
+        );
+
+
+      main.className =
+        "task-attachment-view-main";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-view-name";
+
+
+      name.textContent =
+        attachment.file_name ||
+        "Preventive attachment";
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.className =
+        "task-attachment-view-meta";
+
+
+      const metaParts =
+        [];
+
+
+      metaParts.push(
+        formatAttachmentSize(
+          attachment.file_size
+        )
+      );
+
+
+      if (
+        attachment.uploaded_by
+      ) {
+
+        metaParts.push(
+          `Uploaded by ${attachment.uploaded_by}`
+        );
+
+      }
+
+
+      if (
+        attachment.uploaded_at
+      ) {
+
+        metaParts.push(
+          new Date(
+            attachment.uploaded_at
+          ).toLocaleString(
+            "el-GR",
+            {
+              day:
+                "2-digit",
+
+              month:
+                "2-digit",
+
+              year:
+                "numeric",
+
+              hour:
+                "2-digit",
+
+              minute:
+                "2-digit",
+
+              hour12:
+                false
+            }
+          )
+        );
+
+      }
+
+
+      meta.textContent =
+        metaParts.join(
+          " · "
+        );
+
+
+      main.appendChild(
+        name
+      );
+
+
+      main.appendChild(
+        meta
+      );
+
+
+      /* =====================
+         OPEN BUTTON
+      ===================== */
+
+      const openBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      openBtn.type =
+        "button";
+
+
+      openBtn.className =
+        "task-attachment-open-btn";
+
+
+      openBtn.textContent =
+        attachment.mime_type ===
+        "application/pdf"
+          ? "Open PDF"
+          : "Open";
+
+
+      openBtn.addEventListener(
+        "click",
+        () => {
+
+          openPreventiveAttachment(
+            attachment.id
+          );
+
+        }
+      );
+
+
+      /* =====================
+         BUILD ITEM
+      ===================== */
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        main
+      );
+
+
+      item.appendChild(
+        openBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+
+
+    /* =====================
+       SHOW ATTACHMENT SECTION
+    ===================== */
+
+    section.style.display =
+      "block";
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD PREVENTIVE TASK ATTACHMENTS ERROR:",
+      err
+    );
+
+  }
+
+}
+
+/* =========================================================
+   OPEN PREVENTIVE SHARED ATTACHMENT
+========================================================= */
+
+async function openPreventiveAttachment(
+  attachmentId
+) {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/preventive-attachments/${attachmentId}/open`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to open Preventive attachment"
+      );
+
+    }
+
+
+    if (!data?.url) {
+
+      throw new Error(
+        "Attachment URL not available"
+      );
+
+    }
+
+
+    /* Open signed R2 URL in a new tab */
+    window.open(
+      data.url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "OPEN PREVENTIVE ATTACHMENT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message
+    );
+
+  }
+
+}
+
+/* =========================================================
+   EDIT PREVENTIVE ATTACHMENT STATE
+========================================================= */
+
+let editPreventiveAttachmentFiles =
+  [];
+
+
+/* Attachments marked for deletion during this Edit session */
+let editPreventiveAttachmentsToDelete =
+  new Set();
+
+
+/* =========================================================
+   GET TASK IDS FOR CURRENT PREVENTIVE RULE
+
+   IMPORTANT:
+   Mirrors the existing Apply-to-All identity:
+   - model
+   - section
+   - task
+
+   Unit / frequency are NOT added as matching conditions,
+   because Apply Preventive Rule does not use them
+   to identify existing Tasks.
+========================================================= */
+
+function getPreventiveRuleTaskIds(
+  rule
+) {
+
+  if (!rule) {
+    return [];
+  }
+
+
+  return state.tasksData
+    .filter(
+      task =>
+        task.breakdown_id == null &&
+
+        Number(
+          task.frequency_hours || 0
+        ) > 0 &&
+
+        task.is_planned === true &&
+
+        task.status ===
+          "Planned" &&
+
+        task.machine_name ===
+          rule.model &&
+
+        (task.section || "") ===
+          (rule.section || "") &&
+
+        task.task ===
+          rule.task
+    )
+    .map(
+      task =>
+        Number(task.id)
+    )
+    .filter(
+      id =>
+        Number.isInteger(id) &&
+        id > 0
+    );
+
+}
+
+/* =========================================================
+   RESET EDIT PREVENTIVE ATTACHMENTS
+========================================================= */
+
+function resetEditPreventiveAttachments() {
+
+  editPreventiveAttachmentFiles =
+    [];
+
+
+  editPreventiveAttachmentsToDelete =
+    new Set();
+
+
+  const input =
+    document.getElementById(
+      "ep-attachments"
+    );
+
+
+  if (input) {
+    input.value = "";
+  }
+
+
+  const existing =
+    document.getElementById(
+      "ep-existing-attachments"
+    );
+
+
+  if (existing) {
+    existing.innerHTML = "";
+  }
+
+
+  renderEditPreventiveNewAttachments();
+
+}
+
+/* =========================================================
+   RENDER NEW EDIT PREVENTIVE ATTACHMENTS
+========================================================= */
+
+function renderEditPreventiveNewAttachments() {
+
+  const summary =
+    document.getElementById(
+      "ep-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "ep-attachments-list"
+    );
+
+
+  if (
+    !summary ||
+    !list
+  ) {
+    return;
+  }
+
+
+  list.innerHTML =
+    "";
+
+
+  if (
+    editPreventiveAttachmentFiles.length ===
+    0
+  ) {
+
+    summary.textContent =
+      "No new files selected";
+
+    return;
+
+  }
+
+
+  /* =====================
+     TOTAL SIZE
+  ===================== */
+
+  const totalBytes =
+    editPreventiveAttachmentFiles.reduce(
+      (
+        total,
+        file
+      ) =>
+        total +
+        Number(file.size || 0),
+      0
+    );
+
+
+  summary.textContent =
+    `${editPreventiveAttachmentFiles.length} file${
+      editPreventiveAttachmentFiles.length === 1
+        ? ""
+        : "s"
+    } · ${formatAttachmentSize(
+      totalBytes
+    )}`;
+
+
+  /* =====================
+     PREVIEW FILES
+  ===================== */
+
+  editPreventiveAttachmentFiles.forEach(
+    (
+      file,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-chip";
+
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-chip-preview";
+
+
+      /* =====================
+         IMAGE
+      ===================== */
+
+      if (
+        String(
+          file.type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        const objectUrl =
+          URL.createObjectURL(
+            file
+          );
+
+
+        img.src =
+          objectUrl;
+
+
+        img.alt =
+          file.name;
+
+
+        img.className =
+          "task-attachment-chip-thumb";
+
+
+        img.addEventListener(
+          "load",
+          () => {
+
+            URL.revokeObjectURL(
+              objectUrl
+            );
+
+          },
+          {
+            once:
+              true
+          }
+        );
+
+
+        preview.appendChild(
+          img
+        );
+
+      }
+
+
+      /* =====================
+         PDF
+      ===================== */
+
+      else if (
+        file.type ===
+        "application/pdf"
+      ) {
+
+        const pdf =
+          document.createElement(
+            "span"
+          );
+
+
+        pdf.className =
+          "task-attachment-chip-pdf";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      /* =====================
+         INFO
+      ===================== */
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+
+      info.className =
+        "task-attachment-chip-info";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-chip-name";
+
+
+      name.textContent =
+        file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+
+      size.className =
+        "task-attachment-chip-size";
+
+
+      size.textContent =
+        formatAttachmentSize(
+          file.size
+        );
+
+
+      info.appendChild(
+        name
+      );
+
+
+      info.appendChild(
+        size
+      );
+
+
+      /* =====================
+         REMOVE NEW FILE
+      ===================== */
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove new attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          editPreventiveAttachmentFiles.splice(
+            index,
+            1
+          );
+
+
+          renderEditPreventiveNewAttachments();
+
+        }
+      );
+
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        info
+      );
+
+
+      item.appendChild(
+        removeBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+/* =========================================================
+   EDIT PREVENTIVE FILE PICKER
+========================================================= */
+
+document
+  .getElementById(
+    "ep-attachments-btn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      document
+        .getElementById(
+          "ep-attachments"
+        )
+        ?.click();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "ep-attachments"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const input =
+        event.target;
+
+
+      const selected =
+        Array.from(
+          input.files || []
+        );
+
+
+      const allowedTypes =
+        new Set([
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf"
+        ]);
+
+
+      selected.forEach(
+        file => {
+
+          /* =====================
+             FILE TYPE
+          ===================== */
+
+          if (
+            !allowedTypes.has(
+              file.type
+            )
+          ) {
+
+            alert(
+              `File not allowed:\n${file.name}`
+            );
+
+            return;
+
+          }
+
+
+          /* =====================
+             DUPLICATE SELECTION
+          ===================== */
+
+          const duplicate =
+            editPreventiveAttachmentFiles.some(
+              existing =>
+                existing.name ===
+                  file.name &&
+                existing.size ===
+                  file.size &&
+                existing.lastModified ===
+                  file.lastModified
+            );
+
+
+          if (duplicate) {
+            return;
+          }
+
+
+          /* =====================
+             MAX FILE COUNT
+          ===================== */
+
+          if (
+            editPreventiveAttachmentFiles.length >=
+            PREVENTIVE_ATTACHMENT_MAX_FILES
+          ) {
+
+            alert(
+              `Maximum ${PREVENTIVE_ATTACHMENT_MAX_FILES} new attachments allowed.`
+            );
+
+            return;
+
+          }
+
+
+          /* =====================
+             TOTAL SIZE
+          ===================== */
+
+          const existingBytes =
+            editPreventiveAttachmentFiles.reduce(
+              (
+                total,
+                existing
+              ) =>
+                total +
+                Number(
+                  existing.size || 0
+                ),
+              0
+            );
+
+
+          if (
+            existingBytes +
+              file.size >
+            PREVENTIVE_ATTACHMENT_MAX_TOTAL_BYTES
+          ) {
+
+            alert(
+              `Maximum total size is ${formatAttachmentSize(
+                PREVENTIVE_ATTACHMENT_MAX_TOTAL_BYTES
+              )}.`
+            );
+
+            return;
+
+          }
+
+
+          editPreventiveAttachmentFiles.push(
+            file
+          );
+
+        }
+      );
+
+
+      input.value =
+        "";
+
+
+      renderEditPreventiveNewAttachments();
+
+    }
+  );
+
+  /* =========================================================
+   LOAD EXISTING PREVENTIVE ATTACHMENTS FOR EDIT
+
+   Shared attachments are identical across the rule's
+   affected Task IDs, therefore one valid Task ID
+   is sufficient for loading the current attachment set.
+========================================================= */
+
+async function loadEditPreventiveAttachments(
+  rule
+) {
+
+  const container =
+    document.getElementById(
+      "ep-existing-attachments"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  container.innerHTML =
+    "Loading attachments...";
+
+
+  const taskIds =
+    getPreventiveRuleTaskIds(
+      rule
+    );
+
+
+  if (
+    taskIds.length === 0
+  ) {
+
+    container.innerHTML =
+      `<div class="muted">No existing attachments</div>`;
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/preventive-attachments/task/${taskIds[0]}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Preventive attachments"
+      );
+
+    }
+
+
+    const attachments =
+      Array.isArray(
+        data.attachments
+      )
+        ? data.attachments
+        : [];
+
+
+    if (
+      attachments.length === 0
+    ) {
+
+      container.innerHTML =
+        `<div class="muted">No existing attachments</div>`;
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      "";
+
+
+    /* =====================
+       EXISTING FILES
+    ===================== */
+
+    for (
+      const attachment of attachments
+    ) {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-view-item";
+
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-preview";
+
+
+      /* =====================
+         IMAGE PREVIEW
+      ===================== */
+
+      if (
+        String(
+          attachment.mime_type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        try {
+
+          const openResponse =
+            await fetch(
+              `${API}/preventive-attachments/${attachment.id}/open`
+            );
+
+
+          const openData =
+            await openResponse
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          if (
+            openResponse.ok &&
+            openData?.url
+          ) {
+
+            const img =
+              document.createElement(
+                "img"
+              );
+
+
+            img.src =
+              openData.url;
+
+
+            img.className =
+              "task-attachment-thumbnail";
+
+
+            img.alt =
+              attachment.file_name;
+
+
+            preview.appendChild(
+              img
+            );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "EDIT PREVENTIVE PREVIEW ERROR:",
+            err
+          );
+
+        }
+
+      }
+
+
+      /* =====================
+         PDF BADGE
+      ===================== */
+
+      else if (
+        attachment.mime_type ===
+        "application/pdf"
+      ) {
+
+        const pdf =
+          document.createElement(
+            "div"
+          );
+
+
+        pdf.className =
+          "task-attachment-pdf-badge";
+
+
+        pdf.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdf
+        );
+
+      }
+
+
+      /* =====================
+         FILE INFO
+      ===================== */
+
+      const main =
+        document.createElement(
+          "div"
+        );
+
+
+      main.className =
+        "task-attachment-view-main";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-view-name";
+
+
+      name.textContent =
+        attachment.file_name;
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.className =
+        "task-attachment-view-meta";
+
+
+      meta.textContent =
+        formatAttachmentSize(
+          attachment.file_size
+        );
+
+
+      main.appendChild(
+        name
+      );
+
+
+      main.appendChild(
+        meta
+      );
+
+
+      /* =====================
+         REMOVE EXISTING FILE
+
+         Marks for deletion only.
+         Actual deletion happens on Save.
+      ===================== */
+
+      const removeBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      removeBtn.type =
+        "button";
+
+
+      removeBtn.className =
+        "task-attachment-remove-btn";
+
+
+      removeBtn.textContent =
+        "×";
+
+
+      removeBtn.title =
+        "Remove attachment";
+
+
+      removeBtn.addEventListener(
+        "click",
+        () => {
+
+          editPreventiveAttachmentsToDelete.add(
+            Number(
+              attachment.id
+            )
+          );
+
+
+          item.style.display =
+            "none";
+
+        }
+      );
+
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        main
+      );
+
+
+      item.appendChild(
+        removeBtn
+      );
+
+
+      container.appendChild(
+        item
+      );
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD EDIT PREVENTIVE ATTACHMENTS ERROR:",
+      err
+    );
+
+
+    container.innerHTML =
+      `<div class="history-attachments-error">
+        Could not load attachments
+      </div>`;
+
+  }
+
+}
+
+
+
 /* =====================
    UNIT DROPDOWN POPULATION
    - Populates the unit dropdown based on the selected model's existing units
@@ -2421,6 +4146,7 @@ function populateUnitDropdown(model) {
   optNew.textContent = "➕ New unit…";
   select.appendChild(optNew);
 }
+
 function populateContextDropdown({
   model,
   field,          // "section" | "unit"
@@ -2477,6 +4203,7 @@ function populateContextDropdown({
   optNew.textContent = newLabel;
   select.appendChild(optNew);
 }
+
 document.getElementById("pm-section")?.addEventListener("change", e => {
   const section = e.target.value;
   const model = document.getElementById("pm-machine")?.value;
@@ -2554,7 +4281,6 @@ function handleContextCustomInput({
     }
   });
 }
-
 
 /* =====================
    PRINT PREVENTIVE PLAN (LIBRARY / MODEL)

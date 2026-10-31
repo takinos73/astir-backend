@@ -16768,6 +16768,226 @@ app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
 });
 
 /* =========================================================
+   DELETE SHARED PREVENTIVE ATTACHMENT
+
+   DELETE:
+   /preventive-attachments/:attachmentId
+
+   Behavior:
+   - Deletes the attachment metadata.
+   - CASCADE removes all Task links.
+   - Deletes the single physical R2 object.
+   - Does NOT affect generic Planned / BD attachments.
+========================================================= */
+
+app.delete( "/preventive-attachments/:attachmentId", async (req, res) => {
+
+    const attachmentId =
+      Number(
+        req.params.attachmentId
+      );
+
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
+    if (
+      !Number.isInteger(
+        attachmentId
+      ) ||
+      attachmentId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Preventive attachment ID"
+      });
+
+    }
+
+
+    const client =
+      await pool.connect();
+
+
+    let attachment =
+      null;
+
+
+    try {
+
+      /* =====================
+         START TRANSACTION
+      ===================== */
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      /* =====================
+         LOAD + LOCK ATTACHMENT
+      ===================== */
+
+      const result =
+        await client.query(
+          `
+          SELECT
+            id,
+            file_key,
+            file_name
+
+          FROM preventive_rule_attachments
+
+          WHERE id = $1
+
+          FOR UPDATE
+          `,
+          [
+            attachmentId
+          ]
+        );
+
+
+      if (
+        result.rows.length === 0
+      ) {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+
+        return res.status(404).json({
+          error:
+            "Preventive attachment not found"
+        });
+
+      }
+
+
+      attachment =
+        result.rows[0];
+
+
+      /* =====================================================
+         DELETE DATABASE ATTACHMENT
+
+         preventive_rule_attachment_links has
+         ON DELETE CASCADE, therefore all Task links
+         are removed automatically.
+      ===================================================== */
+
+      await client.query(
+        `
+        DELETE FROM preventive_rule_attachments
+        WHERE id = $1
+        `,
+        [
+          attachmentId
+        ]
+      );
+
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      /* =====================================================
+         DELETE PHYSICAL R2 OBJECT
+
+         Database is already clean.
+
+         If R2 cleanup fails, no broken DB reference remains;
+         only an orphan object may remain in storage.
+      ===================================================== */
+
+      try {
+
+        const command =
+          new DeleteObjectCommand({
+
+            Bucket:
+              process.env.R2_BUCKET,
+
+            Key:
+              attachment.file_key
+
+          });
+
+
+        await r2Client.send(
+          command
+        );
+
+
+      } catch (r2Err) {
+
+        console.error(
+          "PREVENTIVE ATTACHMENT R2 DELETE ERROR:",
+          r2Err
+        );
+
+      }
+
+
+      /* =====================
+         SUCCESS
+      ===================== */
+
+      return res.json({
+
+        message:
+          "Preventive attachment deleted successfully",
+
+        attachment_id:
+          attachmentId,
+
+        file_name:
+          attachment.file_name
+
+      });
+
+
+    } catch (err) {
+
+      try {
+
+        await client.query(
+          "ROLLBACK"
+        );
+
+      } catch (_) {
+
+        /* Ignore secondary rollback errors */
+
+      }
+
+
+      console.error(
+        "DELETE PREVENTIVE ATTACHMENT ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          err.message
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
    PREVENTIVE SHARED ATTACHMENTS
 
    POST:
@@ -18253,7 +18473,7 @@ app.get("/executions", async (req, res) => {
           WHERE att.entity_type = 'TASK'
             AND att.entity_id = t.id
         )::int AS attachment_count,
-        
+
         /* =====================================================
           PREVENTIVE SHARED ATTACHMENTS
 
