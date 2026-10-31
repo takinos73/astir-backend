@@ -167,7 +167,6 @@ function detectPreventiveRuleImpact({
   };
 }
 
-
 /* =====================
    OPEN ADD PREVENTIVE MODAL
 ===================== */
