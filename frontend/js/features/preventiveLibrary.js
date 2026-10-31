@@ -902,14 +902,13 @@ function closePreventiveModal() {
 /* =====================
    SAVE PREVENTIVE (POST)
 
-   Additional behavior:
-   - Captures affected task IDs for Apply-to-All
-   - Captures created task ID for Single Preventive
-   - No attachment upload yet
+   Supports:
+   - Single Preventive
+   - Apply to All
+   - Shared Preventive attachments
 ===================== */
 
-document
-  .getElementById("savePreventiveBtn")
+document .getElementById("savePreventiveBtn")
   ?.addEventListener("click", async () => {
 
     clearPreventiveErrors();
@@ -1029,8 +1028,20 @@ document
         : freqValue * 24;
 
 
+    /* =====================================================
+       KEEP SELECTED ATTACHMENTS
+
+       Copy the array before any modal reset.
+    ===================================================== */
+
+    const attachmentFiles =
+      [
+        ...preventiveAttachmentFiles
+      ];
+
+
     /* =====================
-       MULTI-ASSET APPLY
+       ASSET / MODEL
     ===================== */
 
     const selectedAsset =
@@ -1040,10 +1051,6 @@ document
           String(assetId)
       );
 
-
-    /* =====================
-       SAFE MODEL RESOLVE
-    ===================== */
 
     const model =
       selectedAsset?.model ||
@@ -1111,31 +1118,9 @@ document
             );
 
 
-          console.log(
-            "APPLY DEBUG:",
-            {
-              assetId,
-              selectedAsset,
-              model,
-              section:
-                sectionValue,
-              unit:
-                unitValue,
-              taskText,
-              frequency_hours
-            }
-          );
-
-
-          /* =====================================================
-             APPLY RULE
-
-             NEW:
-             applyPreventiveRule now returns all affected
-             Preventive Task IDs.
-
-             Existing Apply-to-All behavior is unchanged.
-          ===================================================== */
+          /* =====================
+             APPLY PREVENTIVE RULE
+          ===================== */
 
           const affectedTaskIds =
             await applyPreventiveRule({
@@ -1164,17 +1149,59 @@ document
             });
 
 
-          /* =====================================================
-             TEMPORARY DEBUG
-
-             We only verify that the IDs arrive correctly.
-             Attachment upload will be added in the next step.
-          ===================================================== */
-
           console.log(
             "PREVENTIVE APPLY-TO-ALL TASK IDS:",
             affectedTaskIds
           );
+
+
+          /* =====================================================
+             SHARED ATTACHMENT UPLOAD
+
+             Important:
+             One physical file is uploaded once
+             and linked to ALL affected Preventive Tasks.
+          ===================================================== */
+
+          if (
+            attachmentFiles.length > 0
+          ) {
+
+            try {
+
+              await uploadPreventiveAttachments(
+                affectedTaskIds,
+                attachmentFiles
+              );
+
+            } catch (
+              attachmentErr
+            ) {
+
+              /*
+                IMPORTANT:
+                The Preventive rule already exists.
+
+                Do NOT throw here because retrying
+                the Save action could create unwanted
+                duplicate work.
+              */
+
+              console.error(
+                "PREVENTIVE ATTACHMENT UPLOAD ERROR:",
+                attachmentErr
+              );
+
+
+              alert(
+                `Preventive rule was created successfully, ` +
+                `but the attachment upload failed:\n\n` +
+                `${attachmentErr.message}`
+              );
+
+            }
+
+          }
 
 
           /* =====================
@@ -1199,6 +1226,10 @@ document
             generateLibraryFromTasks();
 
           }
+
+
+          /* Clear temporary attachment selection */
+          resetPreventiveAttachments();
 
 
           closePreventiveModal();
@@ -1237,7 +1268,6 @@ document
 
     /* =====================================================
        SINGLE-ASSET PREVENTIVE
-       DEFAULT FLOW
     ===================================================== */
 
     const payload = {
@@ -1294,6 +1324,10 @@ document
 
     try {
 
+      /* =====================
+         CREATE PREVENTIVE
+      ===================== */
+
       const res =
         await fetch(
           `${API}/preventives`,
@@ -1314,14 +1348,6 @@ document
         );
 
 
-      /* =====================================================
-         READ SUCCESS / ERROR RESPONSE
-
-         NEW:
-         We need the created Preventive ID for the future
-         shared attachment upload.
-      ===================================================== */
-
       const result =
         await res
           .json()
@@ -1340,12 +1366,9 @@ document
       }
 
 
-      /* =====================================================
-         CREATED PREVENTIVE TASK ID
-
-         Backend returns:
-         result.preventive.id
-      ===================================================== */
+      /* =====================
+         CREATED TASK ID
+      ===================== */
 
       const createdPreventiveId =
         Number(
@@ -1353,10 +1376,70 @@ document
         );
 
 
+      if (
+        !Number.isInteger(
+          createdPreventiveId
+        ) ||
+        createdPreventiveId <= 0
+      ) {
+
+        throw new Error(
+          "Preventive created but returned Task ID is invalid"
+        );
+
+      }
+
+
       console.log(
         "SINGLE PREVENTIVE TASK ID:",
         createdPreventiveId
       );
+
+
+      /* =====================================================
+         SINGLE PREVENTIVE ATTACHMENT UPLOAD
+      ===================================================== */
+
+      if (
+        attachmentFiles.length > 0
+      ) {
+
+        try {
+
+          await uploadPreventiveAttachments(
+            [
+              createdPreventiveId
+            ],
+            attachmentFiles
+          );
+
+        } catch (
+          attachmentErr
+        ) {
+
+          /*
+            IMPORTANT:
+            The Preventive already exists.
+
+            Do NOT fail the whole creation flow
+            and do NOT create the task again.
+          */
+
+          console.error(
+            "PREVENTIVE ATTACHMENT UPLOAD ERROR:",
+            attachmentErr
+          );
+
+
+          alert(
+            `Preventive was created successfully, ` +
+            `but the attachment upload failed:\n\n` +
+            `${attachmentErr.message}`
+          );
+
+        }
+
+      }
 
 
       /* =====================
@@ -1371,6 +1454,10 @@ document
         await loadTasks();
 
       }
+
+
+      /* Clear temporary attachments */
+      resetPreventiveAttachments();
 
 
       closePreventiveModal();

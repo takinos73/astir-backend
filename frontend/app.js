@@ -2361,6 +2361,157 @@ function renderPreventiveAttachments() {
 
 }
 
+/* =========================================================
+   UPLOAD PREVENTIVE ATTACHMENTS
+
+   Uploads each selected physical file ONCE
+   and links it to one or more Preventive Task IDs.
+
+   Used by:
+   - Single Preventive
+   - Apply to All
+========================================================= */
+
+async function uploadPreventiveAttachments(
+  taskIds,
+  files
+) {
+
+  /* Nothing to upload */
+  if (
+    !Array.isArray(files) ||
+    files.length === 0
+  ) {
+    return;
+  }
+
+
+  /* Normalize and validate task IDs */
+  const validTaskIds =
+    [
+      ...new Set(
+        (Array.isArray(taskIds)
+          ? taskIds
+          : []
+        )
+          .map(Number)
+          .filter(
+            id =>
+              Number.isInteger(id) &&
+              id > 0
+          )
+      )
+    ];
+
+
+  if (
+    validTaskIds.length === 0
+  ) {
+
+    throw new Error(
+      "No valid Preventive Task IDs available for attachment upload"
+    );
+
+  }
+
+
+  /* =====================
+     BUILD MULTIPART FORM
+  ===================== */
+
+  const formData =
+    new FormData();
+
+
+  files.forEach(
+    file => {
+
+      formData.append(
+        "files",
+        file
+      );
+
+    }
+  );
+
+
+  /*
+    The backend expects task_ids
+    as a JSON encoded array.
+  */
+
+  formData.append(
+    "task_ids",
+    JSON.stringify(
+      validTaskIds
+    )
+  );
+
+
+  /* Optional uploader information */
+  const loggedInTechnicianId =
+    localStorage.getItem(
+      TECHNICIAN_ID_STORAGE_KEY
+    );
+
+
+  if (
+    loggedInTechnicianId
+  ) {
+
+    formData.append(
+      "uploaded_by_id",
+      loggedInTechnicianId
+    );
+
+  }
+
+
+  /* =====================
+     UPLOAD
+  ===================== */
+
+  const res =
+    await fetch(
+      `${API}/preventive-attachments`,
+      {
+        method:
+          "POST",
+
+        body:
+          formData
+      }
+    );
+
+
+  const result =
+    await res
+      .json()
+      .catch(
+        () => ({})
+      );
+
+
+  if (!res.ok) {
+
+    throw new Error(
+      result?.error ||
+      "Failed to upload Preventive attachments"
+    );
+
+  }
+
+
+  console.log(
+    "PREVENTIVE ATTACHMENTS UPLOADED:",
+    result
+  );
+
+
+  return result;
+
+}
+
 /* =====================
    FORMAT FILE SIZE
 ===================== */
@@ -2763,6 +2914,7 @@ function renderTaskAttachments() {
 );
 
 }
+
 
 /* =========================================================
    PREVENTIVE ATTACHMENT PICKER
