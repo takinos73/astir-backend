@@ -489,29 +489,46 @@ document.addEventListener("DOMContentLoaded", () => {
   populateLibraryModels();
   renderLibraryTable();
 });
+
 /* =====================
    GENERATE LIBRARY FROM LIVE TASKS
 ===================== */
+
 function generateLibraryFromTasks() {
 
   if (
     !Array.isArray(state.tasksData) ||
     state.tasksData.length === 0
   ) {
-    alert("No tasks available to generate library");
+    alert(
+      "No tasks available to generate library"
+    );
     return;
   }
 
-  // 🔒 Preserve current selected model
+
+  /* =====================
+     PRESERVE SELECTED MODEL
+  ===================== */
+
   const modelSelect =
-    document.getElementById("libraryModelSelect");
+    document.getElementById(
+      "libraryModelSelect"
+    );
+
 
   const currentModel =
     modelSelect?.value || "";
 
+
   const map = {};
 
+
   state.tasksData.forEach(t => {
+
+    /* =====================
+       PREVENTIVE TASKS ONLY
+    ===================== */
 
     if (
       t.is_planned !== true ||
@@ -521,62 +538,175 @@ function generateLibraryFromTasks() {
       return;
     }
 
-    const model = t.machine_name;
+
+    /* machine_name is the model used by the Library */
+    const model =
+      t.machine_name;
+
 
     if (!map[model]) {
       map[model] = [];
     }
 
-    // avoid duplicates
-    const exists = map[model].some(p =>
-      p.section === t.section &&
-      (p.unit || "") === (t.unit || "") &&
-      p.task === t.task &&
-      Number(p.frequency_hours) === Number(t.frequency_hours) &&
-      Number(p.duration_min || 0) === Number(t.duration_min || 0) &&
-      (p.type || "") === (t.type || "") &&
-      (p.impact || "normal") === (t.impact || "normal")
-    );
 
-    if (exists) return;
+    /* =====================================================
+       NORMALIZED VALUES
+
+       IMPORTANT:
+       Use the SAME normalized values both for:
+       - duplicate comparison
+       - stored Library rule
+
+       This prevents blank values such as unit=""
+       from becoming "-" only after the comparison.
+    ===================================================== */
+
+    const normalizedSection =
+      t.section || "-";
+
+    const normalizedUnit =
+      t.unit || "-";
+
+    const normalizedType =
+      t.type || "Preventive";
+
+    const normalizedImpact =
+      t.impact || "normal";
+
+    const normalizedDuration =
+      Number(
+        t.duration_min || 0
+      );
+
+    const normalizedFrequency =
+      Number(
+        t.frequency_hours
+      );
+
+
+    /* =====================
+       AVOID DUPLICATE RULES
+    ===================== */
+
+    const exists =
+      map[model].some(p =>
+
+        p.section ===
+          normalizedSection &&
+
+        p.unit ===
+          normalizedUnit &&
+
+        p.task ===
+          t.task &&
+
+        Number(
+          p.frequency_hours
+        ) ===
+          normalizedFrequency &&
+
+        Number(
+          p.duration_min || 0
+        ) ===
+          normalizedDuration &&
+
+        (p.type || "Preventive") ===
+          normalizedType &&
+
+        (p.impact || "normal") ===
+          normalizedImpact
+
+      );
+
+
+    if (exists) {
+      return;
+    }
+
+
+    /* =====================
+       ADD UNIQUE RULE
+    ===================== */
 
     map[model].push({
-      section: t.section || "-",
-      unit: t.unit || "-",
-      task: t.task,
-      type: t.type || "Preventive",
-      frequency_hours: Number(t.frequency_hours),
-      duration_min: t.duration_min ?? null,
-      impact: t.impact || "normal",
-      notes: t.notes || ""
+
+      section:
+        normalizedSection,
+
+      unit:
+        normalizedUnit,
+
+      task:
+        t.task,
+
+      type:
+        normalizedType,
+
+      frequency_hours:
+        normalizedFrequency,
+
+      duration_min:
+        t.duration_min ?? null,
+
+      impact:
+        normalizedImpact,
+
+      notes:
+        t.notes || ""
+
     });
+
   });
 
-  // Convert map → libraryData format
+
+  /* =====================
+     BUILD LIBRARY DATA
+  ===================== */
+
   libraryData =
-    Object.entries(map).map(([model, plans]) => ({
-      model,
-      plans
-    }));
+    Object.entries(map).map(
+      ([model, plans]) => ({
+        model,
+        plans
+      })
+    );
+
 
   saveLibrary();
 
-  // Rebuild models dropdown
+
+  /* =====================
+     REBUILD MODEL DROPDOWN
+  ===================== */
+
   populateLibraryModels();
 
-  // 🔄 Restore previous model selection
+
+  /* =====================
+     RESTORE MODEL SELECTION
+  ===================== */
+
   if (
     modelSelect &&
     currentModel &&
     [...modelSelect.options].some(
-      opt => opt.value === currentModel
+      opt =>
+        opt.value === currentModel
     )
   ) {
-    modelSelect.value = currentModel;
+
+    modelSelect.value =
+      currentModel;
+
   }
 
-  // Re-render same library immediately
+
+  /* =====================
+     RE-RENDER LIBRARY
+  ===================== */
+
   renderLibraryTable();
+
 }
 
 function renderLibrarySummary(plans) {
