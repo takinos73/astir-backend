@@ -1476,13 +1476,45 @@ function viewTask(taskId) {
     followupBtn.style.display = "none";
   }
 
-  /* =====================
+  /* =====================================================
     LOAD TASK ATTACHMENTS
-  ===================== */
+
+    First load existing generic Task attachments.
+    Then append shared Preventive attachments if applicable.
+
+    Sequential loading avoids one loader clearing
+    the results of the other.
+  ===================================================== */
 
   loadTaskAttachments(
     task.id
-  );
+  )
+    .then(
+      async () => {
+
+        if (
+          isPreventive(task) &&
+          task.has_preventive_attachments === true
+        ) {
+
+          await loadPreventiveTaskAttachments(
+            task.id
+          );
+
+        }
+
+      }
+    )
+    .catch(
+      err => {
+
+        console.error(
+          "TASK ATTACHMENT VIEW ERROR:",
+          err
+        );
+
+      }
+    );
 
 }
 
@@ -2723,14 +2755,17 @@ async function loadTaskAttachments(taskId) {
   section.style.display =
     "none";
 
+  list.innerHTML = "";
 
-  list.innerHTML =
-    "";
+  /* Reset generic attachment usage counters */
+  list.dataset.genericAttachmentCount =
+    "0";
 
+  list.dataset.genericAttachmentBytes =
+    "0";
 
   usage.textContent =
     "";
-
 
   try {
 
@@ -2764,22 +2799,26 @@ async function loadTaskAttachments(taskId) {
         : [];
 
 
-    /* =====================
-       NO ATTACHMENTS
-    ===================== */
+    /* =====================================================
+      NO GENERIC ATTACHMENTS
+
+      Keep the section hidden for now.
+      The Preventive loader may show it immediately after.
+    ===================================================== */
 
     if (
       attachments.length === 0
     ) {
 
-      section.style.display =
-        "none";
+      list.dataset.genericAttachmentCount =
+        "0";
 
+      list.dataset.genericAttachmentBytes =
+        "0";
 
       return;
 
     }
-
 
     /* =====================
        USAGE
@@ -2791,6 +2830,23 @@ async function loadTaskAttachments(taskId) {
           ?.totalBytes || 0
       );
 
+    /* =====================================================
+      STORE GENERIC ATTACHMENT USAGE
+
+      Used later when Preventive shared attachments
+      are appended to the same TaskView section.
+    ===================================================== */
+
+    list.dataset.genericAttachmentCount =
+      String(
+        attachments.length
+      );
+
+
+    list.dataset.genericAttachmentBytes =
+      String(
+        totalBytes
+      );
 
     usage.textContent =
       `${attachments.length} file${
@@ -3132,6 +3188,518 @@ async function loadTaskAttachments(taskId) {
 
 }
 
+/* =========================================================
+   TASK VIEW — LOAD PREVENTIVE SHARED ATTACHMENTS
+
+   Appends Preventive attachments AFTER the existing
+   generic Task attachments.
+
+   Does NOT clear the existing attachment list.
+========================================================= */
+
+async function loadPreventiveTaskAttachments(
+  taskId
+) {
+
+  const section =
+    document.getElementById(
+      "taskAttachmentsSection"
+    );
+
+
+  const list =
+    document.getElementById(
+      "taskAttachmentsList"
+    );
+
+
+  const usage =
+    document.getElementById(
+      "taskAttachmentsUsage"
+    );
+
+
+  if (
+    !section ||
+    !list ||
+    !usage
+  ) {
+    return;
+  }
+
+
+  try {
+
+    /* =====================
+       LOAD PREVENTIVE FILES
+    ===================== */
+
+    const response =
+      await fetch(
+        `${API}/preventive-attachments/task/${taskId}`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to load Preventive attachments"
+      );
+
+    }
+
+
+    const attachments =
+      Array.isArray(
+        data.attachments
+      )
+        ? data.attachments
+        : [];
+
+
+    /* =====================
+       NO PREVENTIVE FILES
+    ===================== */
+
+    if (
+      attachments.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       CALCULATE COMBINED USAGE
+    ===================== */
+
+    const preventiveBytes =
+      attachments.reduce(
+        (
+          total,
+          attachment
+        ) =>
+          total +
+          Number(
+            attachment.file_size || 0
+          ),
+        0
+      );
+
+
+    const genericCount =
+      Number(
+        list.dataset
+          .genericAttachmentCount ||
+        0
+      );
+
+
+    const genericBytes =
+      Number(
+        list.dataset
+          .genericAttachmentBytes ||
+        0
+      );
+
+
+    const combinedCount =
+      genericCount +
+      attachments.length;
+
+
+    const combinedBytes =
+      genericBytes +
+      preventiveBytes;
+
+
+    usage.textContent =
+      `${combinedCount} file${
+        combinedCount === 1
+          ? ""
+          : "s"
+      } · ${formatAttachmentSize(
+        combinedBytes
+      )}`;
+
+
+    /* =====================================================
+       OPTIONAL VISUAL SEPARATOR
+
+       Only shown when generic attachments already exist.
+    ===================================================== */
+
+    if (
+      genericCount > 0
+    ) {
+
+      const separator =
+        document.createElement(
+          "div"
+        );
+
+
+      separator.className =
+        "task-attachment-view-separator";
+
+
+      separator.textContent =
+        "Preventive attachments";
+
+
+      list.appendChild(
+        separator
+      );
+
+    }
+
+
+    /* =====================
+       RENDER ATTACHMENTS
+    ===================== */
+
+    for (
+      const attachment of attachments
+    ) {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "task-attachment-view-item";
+
+
+      /* =====================
+         PREVIEW
+      ===================== */
+
+      const preview =
+        document.createElement(
+          "div"
+        );
+
+
+      preview.className =
+        "task-attachment-preview";
+
+
+      /* =====================
+         IMAGE THUMBNAIL
+      ===================== */
+
+      if (
+        String(
+          attachment.mime_type || ""
+        ).startsWith(
+          "image/"
+        )
+      ) {
+
+        try {
+
+          const previewRes =
+            await fetch(
+              `${API}/preventive-attachments/${attachment.id}/open`
+            );
+
+
+          const previewData =
+            await previewRes
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          if (
+            previewRes.ok &&
+            previewData?.url
+          ) {
+
+            const img =
+              document.createElement(
+                "img"
+              );
+
+
+            img.src =
+              previewData.url;
+
+
+            img.alt =
+              attachment.file_name ||
+              "Preventive attachment";
+
+
+            img.className =
+              "task-attachment-thumbnail";
+
+
+            img.addEventListener(
+              "click",
+              () => {
+
+                openPreventiveAttachment(
+                  attachment.id
+                );
+
+              }
+            );
+
+
+            preview.appendChild(
+              img
+            );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "PREVENTIVE ATTACHMENT PREVIEW ERROR:",
+            err
+          );
+
+        }
+
+      }
+
+
+      /* =====================
+         PDF BADGE
+      ===================== */
+
+      else if (
+        attachment.mime_type ===
+        "application/pdf"
+      ) {
+
+        const pdfBadge =
+          document.createElement(
+            "div"
+          );
+
+
+        pdfBadge.className =
+          "task-attachment-pdf-badge";
+
+
+        pdfBadge.textContent =
+          "PDF";
+
+
+        preview.appendChild(
+          pdfBadge
+        );
+
+      }
+
+
+      /* =====================
+         MAIN INFO
+      ===================== */
+
+      const main =
+        document.createElement(
+          "div"
+        );
+
+
+      main.className =
+        "task-attachment-view-main";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+
+      name.className =
+        "task-attachment-view-name";
+
+
+      name.textContent =
+        attachment.file_name ||
+        "Preventive attachment";
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.className =
+        "task-attachment-view-meta";
+
+
+      const metaParts =
+        [];
+
+
+      metaParts.push(
+        formatAttachmentSize(
+          attachment.file_size
+        )
+      );
+
+
+      if (
+        attachment.uploaded_by
+      ) {
+
+        metaParts.push(
+          `Uploaded by ${attachment.uploaded_by}`
+        );
+
+      }
+
+
+      if (
+        attachment.uploaded_at
+      ) {
+
+        metaParts.push(
+          new Date(
+            attachment.uploaded_at
+          ).toLocaleString(
+            "el-GR",
+            {
+              day:
+                "2-digit",
+
+              month:
+                "2-digit",
+
+              year:
+                "numeric",
+
+              hour:
+                "2-digit",
+
+              minute:
+                "2-digit",
+
+              hour12:
+                false
+            }
+          )
+        );
+
+      }
+
+
+      meta.textContent =
+        metaParts.join(
+          " · "
+        );
+
+
+      main.appendChild(
+        name
+      );
+
+
+      main.appendChild(
+        meta
+      );
+
+
+      /* =====================
+         OPEN BUTTON
+      ===================== */
+
+      const openBtn =
+        document.createElement(
+          "button"
+        );
+
+
+      openBtn.type =
+        "button";
+
+
+      openBtn.className =
+        "task-attachment-open-btn";
+
+
+      openBtn.textContent =
+        attachment.mime_type ===
+        "application/pdf"
+          ? "Open PDF"
+          : "Open";
+
+
+      openBtn.addEventListener(
+        "click",
+        () => {
+
+          openPreventiveAttachment(
+            attachment.id
+          );
+
+        }
+      );
+
+
+      /* =====================
+         BUILD ITEM
+      ===================== */
+
+      item.appendChild(
+        preview
+      );
+
+
+      item.appendChild(
+        main
+      );
+
+
+      item.appendChild(
+        openBtn
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+
+
+    /* =====================
+       SHOW ATTACHMENT SECTION
+    ===================== */
+
+    section.style.display =
+      "block";
+
+
+  } catch (err) {
+
+    console.error(
+      "LOAD PREVENTIVE TASK ATTACHMENTS ERROR:",
+      err
+    );
+
+  }
+
+}
 
 /* =========================================================
    TASK VIEW — OPEN ATTACHMENT
@@ -3188,6 +3756,73 @@ async function openTaskAttachment(
 
     console.error(
       "OPEN TASK ATTACHMENT ERROR:",
+      err
+    );
+
+
+    alert(
+      err.message
+    );
+
+  }
+
+}
+
+/* =========================================================
+   OPEN PREVENTIVE SHARED ATTACHMENT
+========================================================= */
+
+async function openPreventiveAttachment(
+  attachmentId
+) {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/preventive-attachments/${attachmentId}/open`
+      );
+
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Failed to open Preventive attachment"
+      );
+
+    }
+
+
+    if (!data?.url) {
+
+      throw new Error(
+        "Attachment URL not available"
+      );
+
+    }
+
+
+    /* Open signed R2 URL in a new tab */
+    window.open(
+      data.url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      "OPEN PREVENTIVE ATTACHMENT ERROR:",
       err
     );
 
