@@ -1189,7 +1189,6 @@ function renderAssetHistoryTable(history) {
             "-"
           )}
 
-
           <!-- =====================
                MAINTENANCE REPORT SOURCE
 
