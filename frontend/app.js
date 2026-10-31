@@ -522,15 +522,42 @@ function renderHistoryTable(data) {
 
             <strong>${h.task}</strong>
 
+            /* =====================================================
+              HISTORY ATTACHMENT INDICATOR
+
+              Supports:
+              - Generic Task attachments
+              - Shared Preventive attachments
+            ===================================================== */
+
             ${
-              Number(h.attachment_count) > 0
+              (
+                Number(
+                  h.attachment_count || 0
+                ) +
+                Number(
+                  h.preventive_attachment_count || 0
+                )
+              ) > 0
                 ? `
                   <span
                     class="task-attachment-indicator"
                     title="${
-                      Number(h.attachment_count)
+                      Number(
+                        h.attachment_count || 0
+                      ) +
+                      Number(
+                        h.preventive_attachment_count || 0
+                      )
                     } attachment${
-                      Number(h.attachment_count) === 1
+                      (
+                        Number(
+                          h.attachment_count || 0
+                        ) +
+                        Number(
+                          h.preventive_attachment_count || 0
+                        )
+                      ) === 1
                         ? ""
                         : "s"
                     }"
@@ -1020,9 +1047,16 @@ async function viewHistoryEntry(executionId) {
 
 }
 
-// ====================================================
-// HISTORY – LOAD TASK ATTACHMENTS
-// ======================================================
+/* =========================================================
+   HISTORY — LOAD TASK ATTACHMENTS
+
+   Supports:
+   - Generic Task attachments
+   - Shared Preventive attachments
+
+   Both attachment sources are rendered together
+   using the existing History attachment UI.
+========================================================= */
 
 async function loadHistoryTaskAttachments(
   taskId
@@ -1053,41 +1087,128 @@ async function loadHistoryTaskAttachments(
 
   try {
 
-    // =========================
-    // LOAD ATTACHMENT LIST
-    // =========================
+    /* =====================================================
+       LOAD BOTH ATTACHMENT SOURCES
 
-    const response =
-      await fetch(
-        `/attachments/task/${taskId}`
-      );
+       Generic:
+       /attachments/task/:taskId
+
+       Preventive shared:
+       /preventive-attachments/task/:taskId
+    ===================================================== */
+
+    const [
+      genericResponse,
+      preventiveResponse
+    ] =
+      await Promise.all([
+        fetch(
+          `/attachments/task/${taskId}`
+        ),
+        fetch(
+          `/preventive-attachments/task/${taskId}`
+        )
+      ]);
 
 
-    if (!response.ok) {
+    /* =====================
+       GENERIC RESPONSE
+    ===================== */
 
-      throw new Error(
-        "Failed to load attachments"
-      );
+    let genericAttachments =
+      [];
+
+
+    if (
+      genericResponse.ok
+    ) {
+
+      const genericData =
+        await genericResponse
+          .json()
+          .catch(
+            () => ({})
+          );
+
+
+      genericAttachments =
+        Array.isArray(
+          genericData
+        )
+          ? genericData
+          : Array.isArray(
+              genericData.attachments
+            )
+          ? genericData.attachments
+          : [];
 
     }
 
 
-    const data =
-      await response.json();
+    /* =====================
+       PREVENTIVE RESPONSE
+    ===================== */
 
-
-    const attachments =
-      Array.isArray(data)
-        ? data
-        : Array.isArray(
-            data.attachments
-          )
-        ? data.attachments
-        : [];
+    let preventiveAttachments =
+      [];
 
 
     if (
-      attachments.length === 0
+      preventiveResponse.ok
+    ) {
+
+      const preventiveData =
+        await preventiveResponse
+          .json()
+          .catch(
+            () => ({})
+          );
+
+
+      preventiveAttachments =
+        Array.isArray(
+          preventiveData.attachments
+        )
+          ? preventiveData.attachments
+          : [];
+
+    }
+
+
+    /* =====================================================
+       NORMALIZE SOURCES
+
+       Add attachmentSource so the correct secure-open
+       endpoint is used later.
+    ===================================================== */
+
+    const allAttachments = [
+
+      ...genericAttachments.map(
+        attachment => ({
+          ...attachment,
+          attachmentSource:
+            "generic"
+        })
+      ),
+
+      ...preventiveAttachments.map(
+        attachment => ({
+          ...attachment,
+          attachmentSource:
+            "preventive"
+        })
+      )
+
+    ];
+
+
+    /* =====================
+       NO ATTACHMENTS
+    ===================== */
+
+    if (
+      allAttachments.length === 0
     ) {
 
       container.innerHTML = `
@@ -1097,49 +1218,94 @@ async function loadHistoryTaskAttachments(
       `;
 
       return;
+
     }
 
 
-    // =========================
-    // GET SIGNED URLS
-    // =========================
+    /* =====================================================
+       GET SIGNED URLS
+
+       Generic attachments use:
+       /attachments/:id/open
+
+       Preventive attachments use:
+       /preventive-attachments/:id/open
+    ===================================================== */
 
     const attachmentsWithUrls =
       await Promise.all(
 
-        attachments.map(
+        allAttachments.map(
           async attachment => {
 
             try {
 
-              const openResponse =
-                await fetch(
-                  `/attachments/${attachment.id}/open`
+              const attachmentId =
+                Number(
+                  attachment.id
                 );
 
 
-              if (!openResponse.ok) {
+              if (
+                !Number.isInteger(
+                  attachmentId
+                ) ||
+                attachmentId <= 0
+              ) {
 
                 return {
                   ...attachment,
-                  signedUrl: null
+                  signedUrl:
+                    null
+                };
+
+              }
+
+
+              const openUrl =
+                attachment.attachmentSource ===
+                "preventive"
+                  ? `/preventive-attachments/${attachmentId}/open`
+                  : `/attachments/${attachmentId}/open`;
+
+
+              const openResponse =
+                await fetch(
+                  openUrl
+                );
+
+
+              if (
+                !openResponse.ok
+              ) {
+
+                return {
+                  ...attachment,
+                  signedUrl:
+                    null
                 };
 
               }
 
 
               const openData =
-                await openResponse.json();
+                await openResponse
+                  .json()
+                  .catch(
+                    () => ({})
+                  );
 
 
               return {
                 ...attachment,
+
                 signedUrl:
-                  openData.url || null
+                  openData.url ||
+                  null
               };
 
-            }
-            catch (err) {
+
+            } catch (err) {
 
               console.error(
                 "Failed to load attachment URL:",
@@ -1150,7 +1316,8 @@ async function loadHistoryTaskAttachments(
 
               return {
                 ...attachment,
-                signedUrl: null
+                signedUrl:
+                  null
               };
 
             }
@@ -1161,9 +1328,9 @@ async function loadHistoryTaskAttachments(
       );
 
 
-    // =========================
-    // SAFE HTML
-    // =========================
+    /* =====================
+       SAFE HTML
+    ===================== */
 
     const escapeHtml =
       value =>
@@ -1192,9 +1359,9 @@ async function loadHistoryTaskAttachments(
           );
 
 
-    // =========================
-    // RENDER
-    // =========================
+    /* =====================
+       RENDER
+    ===================== */
 
     container.innerHTML =
       attachmentsWithUrls
@@ -1242,9 +1409,9 @@ async function loadHistoryTaskAttachments(
                 );
 
 
-            // =====================
-            // FAILED URL
-            // =====================
+            /* =====================
+               FAILED URL
+            ===================== */
 
             if (!signedUrl) {
 
@@ -1260,9 +1427,13 @@ async function loadHistoryTaskAttachments(
 
                     <div
                       class="history-attachment-name"
-                      title="${escapeHtml(fileName)}"
+                      title="${escapeHtml(
+                        fileName
+                      )}"
                     >
-                      ${escapeHtml(fileName)}
+                      ${escapeHtml(
+                        fileName
+                      )}
                     </div>
 
                     <div class="history-attachments-error">
@@ -1277,9 +1448,9 @@ async function loadHistoryTaskAttachments(
             }
 
 
-            // =====================
-            // IMAGE
-            // =====================
+            /* =====================
+               IMAGE
+            ===================== */
 
             if (isImage) {
 
@@ -1297,7 +1468,9 @@ async function loadHistoryTaskAttachments(
 
                     <img
                       src="${signedUrl}"
-                      alt="${escapeHtml(fileName)}"
+                      alt="${escapeHtml(
+                        fileName
+                      )}"
                       loading="lazy"
                     />
 
@@ -1308,9 +1481,13 @@ async function loadHistoryTaskAttachments(
 
                     <div
                       class="history-attachment-name"
-                      title="${escapeHtml(fileName)}"
+                      title="${escapeHtml(
+                        fileName
+                      )}"
                     >
-                      ${escapeHtml(fileName)}
+                      ${escapeHtml(
+                        fileName
+                      )}
                     </div>
 
 
@@ -1331,9 +1508,9 @@ async function loadHistoryTaskAttachments(
             }
 
 
-            // =====================
-            // PDF
-            // =====================
+            /* =====================
+               PDF
+            ===================== */
 
             if (isPdf) {
 
@@ -1372,9 +1549,13 @@ async function loadHistoryTaskAttachments(
 
                     <div
                       class="history-attachment-name"
-                      title="${escapeHtml(fileName)}"
+                      title="${escapeHtml(
+                        fileName
+                      )}"
                     >
-                      ${escapeHtml(fileName)}
+                      ${escapeHtml(
+                        fileName
+                      )}
                     </div>
 
 
@@ -1395,9 +1576,9 @@ async function loadHistoryTaskAttachments(
             }
 
 
-            // =====================
-            // GENERIC FILE
-            // =====================
+            /* =====================
+               GENERIC FILE
+            ===================== */
 
             return `
 
@@ -1412,9 +1593,13 @@ async function loadHistoryTaskAttachments(
 
                   <div
                     class="history-attachment-name"
-                    title="${escapeHtml(fileName)}"
+                    title="${escapeHtml(
+                      fileName
+                    )}"
                   >
-                    ${escapeHtml(fileName)}
+                    ${escapeHtml(
+                      fileName
+                    )}
                   </div>
 
 
@@ -1437,8 +1622,7 @@ async function loadHistoryTaskAttachments(
         .join("");
 
 
-  }
-  catch (err) {
+  } catch (err) {
 
     console.error(
       "Failed to load history attachments:",

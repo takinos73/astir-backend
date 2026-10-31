@@ -1851,6 +1851,29 @@ function buildRow(task) {
         `
       : "";
 
+  /* =====================
+    PREVENTIVE ATTACHMENT BADGE
+
+    Shown only when the backend reports
+    shared Preventive attachments for this Task.
+  ===================== */
+
+  const preventiveAttachmentBadgeHtml =
+    task.has_preventive_attachments === true
+      ? `
+          <span
+            class="badge badge-attachment"
+            title="Preventive attachment available"
+            style="
+              margin-left:6px;
+              font-size:11px;
+              opacity:.85;
+            "
+          >
+            📎
+          </span>
+        `
+      : "";
 
   /* =====================
      TASK ROW HTML
@@ -1959,19 +1982,21 @@ function buildRow(task) {
 
     <td>
 
-      <!-- =====================
-           TASK TEXT
-      ===================== -->
+    /* =====================
+      TASK TEXT
+      + Preventive attachment badge
+    ===================== */
 
-      <div>
+    <div>
 
-        ${highlight(
-          task.task || "",
-          q
-        )}
+      ${highlight(
+        task.task || "",
+        q
+      )}
 
-      </div>
+      ${preventiveAttachmentBadgeHtml}
 
+    </div>
 
       <!-- =====================
            MAINTENANCE REPORT SOURCE

@@ -18253,6 +18253,24 @@ app.get("/executions", async (req, res) => {
           WHERE att.entity_type = 'TASK'
             AND att.entity_id = t.id
         )::int AS attachment_count,
+        
+        /* =====================================================
+          PREVENTIVE SHARED ATTACHMENTS
+
+          Count shared Preventive attachments linked
+          to this Task.
+
+          This is separate from the existing generic
+          attachments table used by Planned / BD Tasks.
+        ===================================================== */
+
+        (
+          SELECT COUNT(*)
+
+          FROM preventive_rule_attachment_links pral
+
+          WHERE pral.task_id = t.id
+        )::int AS preventive_attachment_count,
 
         a.model AS machine,
         a.serial_number,
