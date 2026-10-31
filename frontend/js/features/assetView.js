@@ -343,274 +343,416 @@ function renderAssetTasksTable(tasks) {
         .localeCompare(b.section || "");
     });
 
-  // =====================
-  // RENDER ROWS
-  // =====================
-  groupedTasks.forEach(t => {
+/* =====================
+   RENDER ROWS
+===================== */
 
-    const tr = document.createElement("tr");
-    tr.classList.add("clickable");
+groupedTasks.forEach(t => {
 
-    const dur =
-      t.duration_min != null
-        ? formatDuration(t.duration_min)
-        : "—";
+  const tr =
+    document.createElement(
+      "tr"
+    );
 
 
-    /* =====================
-      SCHEDULED MAINTENANCE
-
-      An SM Task remains a normal Planned Task.
-
-      scheduled_maintenance_id identifies the
-      parent Scheduled Maintenance incident.
-    ===================== */
-
-    const smId =
-      Number(
-        t.scheduled_maintenance_id
-      );
+  tr.classList.add(
+    "clickable"
+  );
 
 
-    const isSmTask =
-      Number.isInteger(
-        smId
-      ) &&
-      smId > 0;
+  const dur =
+    t.duration_min != null
+      ? formatDuration(
+          t.duration_min
+        )
+      : "—";
 
 
-    /* =====================
-      SCHEDULED MAINTENANCE REFERENCE
+  /* =====================
+     SCHEDULED MAINTENANCE
 
-      Click opens the existing Scheduled Maintenance
-      Detail view.
+     An SM Task remains a normal Planned Task.
 
-      stopPropagation prevents the Asset Task row
-      from opening at the same time.
-    ===================== */
+     scheduled_maintenance_id identifies the
+     parent Scheduled Maintenance incident.
+  ===================== */
 
-    const smReferenceHtml =
-      isSmTask
-        ? `
-            <div
-              class="task-sm-parent clickable-incident-reference"
-              title="Open Scheduled Maintenance details"
-              onclick="
-                event.stopPropagation();
-                openScheduledMaintenanceDetail(${smId});
-              "
-            >
-              SM-${String(
-                smId
-              ).padStart(
-                5,
-                "0"
+  const smId =
+    Number(
+      t.scheduled_maintenance_id
+    );
+
+
+  const isSmTask =
+    Number.isInteger(
+      smId
+    ) &&
+    smId > 0;
+
+
+  /* =====================
+     SCHEDULED MAINTENANCE REFERENCE
+
+     Click opens the existing Scheduled Maintenance
+     Detail view.
+
+     stopPropagation prevents the Asset Task row
+     from opening at the same time.
+  ===================== */
+
+  const smReferenceHtml =
+    isSmTask
+      ? `
+          <div
+            class="task-sm-parent clickable-incident-reference"
+            title="Open Scheduled Maintenance details"
+            onclick="
+              event.stopPropagation();
+              openScheduledMaintenanceDetail(${smId});
+            "
+          >
+            SM-${String(
+              smId
+            ).padStart(
+              5,
+              "0"
+            )}
+          </div>
+        `
+      : "";
+
+
+  /* =====================
+     MAINTENANCE REPORT SOURCE
+
+     If this Task was created from a Maintenance Report,
+     prepare a clickable MR-xxxxx source badge.
+
+     Clicking the badge opens the shared
+     Maintenance Report Detail modal.
+
+     Normal Tasks return an empty string.
+  ===================== */
+
+  const maintenanceReportReferenceHtml =
+    t.maintenance_report_code &&
+    Number(
+      t.maintenance_report_id
+    ) > 0
+      ? `
+          <span
+            class="task-mr-source-badge clickable-incident-reference"
+            title="Open Maintenance Report ${t.maintenance_report_code}"
+            onclick="
+              event.stopPropagation();
+              openMaintenanceReportDetail(
+                ${Number(t.maintenance_report_id)}
+              );
+            "
+          >
+            ${t.maintenance_report_code}
+          </span>
+        `
+      : "";
+
+
+  /* =====================
+     PREVENTIVE ATTACHMENT BADGE
+
+     Uses the lightweight flag returned
+     by GET /tasks.
+
+     No extra fetch is required.
+  ===================== */
+
+  const preventiveAttachmentBadgeHtml =
+    t.has_preventive_attachments === true
+      ? `
+          <span
+            class="task-attachment-indicator"
+            title="Preventive attachment available"
+          >
+            📎
+          </span>
+        `
+      : "";
+
+
+  /* =====================
+     STATUS
+     TYPE + DUE STATE
+  ===================== */
+
+  const taskType =
+    getTaskTypeMeta(t);
+
+
+  const dueState =
+    getDueState(t);
+
+
+  const dueLabel =
+    getDueStateLabel(
+      dueState
+    );
+
+
+  /* =====================
+     CHECKBOX CELL
+  ===================== */
+
+  const checkboxTd =
+    document.createElement(
+      "td"
+    );
+
+
+  checkboxTd.className =
+    "select-cell";
+
+
+  const checkbox =
+    document.createElement(
+      "input"
+    );
+
+
+  checkbox.type =
+    "checkbox";
+
+
+  checkbox.className =
+    "asset-task-checkbox";
+
+
+  checkbox.addEventListener(
+    "click",
+    e => {
+
+      e.stopPropagation();
+
+
+      if (
+        checkbox.checked
+      ) {
+
+        state.assetSelectedTaskIds.add(
+          t.id
+        );
+
+      } else {
+
+        state.assetSelectedTaskIds.delete(
+          t.id
+        );
+
+      }
+
+
+      updateAssetBulkActionsBar();
+
+    }
+  );
+
+
+  checkboxTd.appendChild(
+    checkbox
+  );
+
+
+  tr.appendChild(
+    checkboxTd
+  );
+
+
+  /* =====================
+     ROW CONTENT
+  ===================== */
+
+  tr.insertAdjacentHTML(
+    "beforeend",
+    `
+    <td class="asset-status ${taskType.className}">
+      <span class="status-type">
+        ${taskType.label}
+      </span>
+
+      ${
+        dueLabel
+          ? `
+            <span class="status-due ${dueState}">
+              • ${dueLabel}
+            </span>
+          `
+          : ""
+      }
+    </td>
+
+
+    <td>
+      <div class="asset-task-unit">
+        ${highlightAssetTaskSearch(
+          t.unit || "-"
+        )}
+      </div>
+
+      ${
+        t.section
+          ? `
+            <div class="asset-task-section">
+              ${highlightAssetTaskSearch(
+                t.section
               )}
             </div>
           `
-        : "";
-
-
-    /* =====================
-      MAINTENANCE REPORT SOURCE
-
-      If this Task was created from a Maintenance Report,
-      prepare a clickable MR-xxxxx source badge.
-
-      Clicking the badge opens the shared
-      Maintenance Report Detail modal.
-
-      Normal Tasks return an empty string.
-    ===================== */
-
-    const maintenanceReportReferenceHtml =
-      t.maintenance_report_code &&
-      Number(
-        t.maintenance_report_id
-      ) > 0
-        ? `
-            <span
-              class="task-mr-source-badge clickable-incident-reference"
-              title="Open Maintenance Report ${t.maintenance_report_code}"
-              onclick="
-                event.stopPropagation();
-                openMaintenanceReportDetail(
-                  ${Number(t.maintenance_report_id)}
-                );
-              "
-            >
-              ${t.maintenance_report_code}
-            </span>
-          `
-        : "";
-
-
-    // =====================
-    // STATUS (TYPE + DUE STATE)
-    // =====================
-    const taskType =
-      getTaskTypeMeta(t);
-
-    const dueState =
-      getDueState(t);
-
-    const dueLabel =
-      getDueStateLabel(dueState);
-
-    // =====================
-    // CHECKBOX CELL
-    // =====================
-    const checkboxTd =
-      document.createElement("td");
-
-    checkboxTd.className = "select-cell";
-
-    const checkbox =
-      document.createElement("input");
-
-    checkbox.type = "checkbox";
-    checkbox.className = "asset-task-checkbox";
-
-    checkbox.addEventListener("click", e => {
-      e.stopPropagation();
-
-      if (checkbox.checked) {
-        state.assetSelectedTaskIds.add(t.id);
-      } else {
-        state.assetSelectedTaskIds.delete(t.id);
+          : ""
       }
+    </td>
 
-      updateAssetBulkActionsBar();
-    });
 
-    checkboxTd.appendChild(checkbox);
-    tr.appendChild(checkboxTd);
+    <!-- =====================
+         TASK DESCRIPTION
 
-    // =====================
-    // ROW CONTENT
-    // =====================
-    tr.insertAdjacentHTML(
-      "beforeend",
-      `
-      <td class="asset-status ${taskType.className}">
-        <span class="status-type">
-          ${taskType.label}
-        </span>
+         Displays:
+         - Task description
+         - Preventive attachment badge
+         - Notes indicator
+         - Maintenance Report source badge
+         - Safety / Quality impact badge
+    ===================== -->
+
+    <td>
+
+      <!-- =====================
+           TASK TEXT
+      ===================== -->
+
+      <div>
+
+        ${highlightAssetTaskSearch(
+          t.task
+        )}
+
+
+        <!-- =====================
+             PREVENTIVE ATTACHMENT INDICATOR
+        ===================== -->
+
+        ${preventiveAttachmentBadgeHtml}
+
+
+        <!-- =====================
+             NOTE INDICATOR
+        ===================== -->
 
         ${
-          dueLabel
+          t.notes
             ? `
-              <span class="status-due ${dueState}">
-                • ${dueLabel}
+              <span
+                class="task-note-indicator"
+                title="${t.notes}"
+              >
+                📝
               </span>
             `
             : ""
         }
-      </td>
 
-      <td>
-        <div class="asset-task-unit">
-          ${highlightAssetTaskSearch(t.unit || "-")}
-        </div>
+      </div>
 
-        ${
-          t.section
-            ? `
-              <div class="asset-task-section">
-                ${highlightAssetTaskSearch(t.section)}
-              </div>
-            `
-            : ""
-        }
-      </td>
 
       <!-- =====================
-          TASK DESCRIPTION
+           MAINTENANCE REPORT SOURCE
 
-          Displays:
-          - Task description
-          - Maintenance Report source badge
-          - Notes indicator
-          - Safety / Quality impact badge
+           MR-xxxxx is clickable and opens
+           the shared Maintenance Report Detail.
       ===================== -->
 
-      <td>
-
-        <!-- =====================
-            TASK TEXT
-        ===================== -->
-
-        <div>
-          ${highlightAssetTaskSearch(t.task)}
-
-          <!-- =====================
-              NOTE INDICATOR
-          ===================== -->
-
-          ${
-            t.notes
-              ? `
-                <span
-                  class="task-note-indicator"
-                  title="${t.notes}"
-                >
-                  📝
-                </span>
-              `
-              : ""
-          }
-        </div>
+      ${maintenanceReportReferenceHtml}
 
 
-        <!-- =====================
-            MAINTENANCE REPORT SOURCE
+      <!-- =====================
+           SAFETY / QUALITY IMPACT
+      ===================== -->
 
-            MR-xxxxx is clickable and opens
-            the shared Maintenance Report Detail.
-        ===================== -->
+      ${renderImpactBadge(
+        t.impact
+      )}
 
-        ${maintenanceReportReferenceHtml}
+    </td>
 
 
-        <!-- =====================
-            SAFETY / QUALITY IMPACT
-        ===================== -->
+    <!-- =====================
+         TASK TYPE
+         + SCHEDULED MAINTENANCE REFERENCE
+    ===================== -->
 
-        ${renderImpactBadge(t.impact)}
+    <td>
 
-      </td>
+      <div>
+        ${highlightAssetTaskSearch(
+          t.type || "-"
+        )}
+      </div>
 
-      <!-- TASK TYPE + SCHEDULED MAINTENANCE REFERENCE -->
+      ${smReferenceHtml}
 
-      <td>
-        <div>
-          ${highlightAssetTaskSearch(t.type || "-")}
-        </div>
+    </td>
 
-        ${smReferenceHtml}
-      </td>
 
-      <td>${formatDate(t.due_date)}</td>
-      <td>${dur}</td>
-      `
-    );
+    <!-- =====================
+         DUE DATE
+    ===================== -->
 
-    // =====================
-    // ROW CLICK → TASK VIEW
-    // =====================
-    tr.addEventListener("click", () => {
+    <td>
+      ${formatDate(
+        t.due_date
+      )}
+    </td>
 
-      // If bulk selection exists,
-      // do not open Task View
-      if (state.assetSelectedTaskIds.size > 0) {
+
+    <!-- =====================
+         DURATION
+    ===================== -->
+
+    <td>
+      ${dur}
+    </td>
+    `
+  );
+
+
+  /* =====================
+     ROW CLICK → TASK VIEW
+  ===================== */
+
+  tr.addEventListener(
+    "click",
+    () => {
+
+      /* If bulk selection exists,
+         do not open Task View */
+      if (
+        state.assetSelectedTaskIds.size >
+        0
+      ) {
         return;
       }
 
-      viewTask(t.id);
-    });
 
-    tbody.appendChild(tr);
-  });
+      viewTask(
+        t.id
+      );
+
+    }
+  );
+
+
+  tbody.appendChild(
+    tr
+  );
+
+});
 
   // 🔥 force reflow
   tasksWrap.offsetHeight;
@@ -1077,24 +1219,41 @@ function renderAssetHistoryTable(history) {
               : ""
           }
 
-          <!-- =====================
-               ATTACHMENT INDICATOR
-          ===================== -->
+          /* =====================================================
+            ATTACHMENT INDICATOR
+
+            Supports:
+            - Generic Task attachments
+            - Shared Preventive attachments
+          ===================================================== */
 
           ${
-            Number(
-              e.attachment_count
+            (
+              Number(
+                e.attachment_count || 0
+              ) +
+              Number(
+                e.preventive_attachment_count || 0
+              )
             ) > 0
               ? `
                 <span
                   class="task-attachment-indicator"
                   title="${
                     Number(
-                      e.attachment_count
+                      e.attachment_count || 0
+                    ) +
+                    Number(
+                      e.preventive_attachment_count || 0
                     )
                   } attachment${
-                    Number(
-                      e.attachment_count
+                    (
+                      Number(
+                        e.attachment_count || 0
+                      ) +
+                      Number(
+                        e.preventive_attachment_count || 0
+                      )
                     ) === 1
                       ? ""
                       : "s"
@@ -1107,7 +1266,6 @@ function renderAssetHistoryTable(history) {
           }
 
         </div>
-
 
         <!-- =====================
              SECTION / UNIT
