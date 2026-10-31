@@ -2015,7 +2015,6 @@ function buildRow(task) {
 
     </td>
 
-
     <!-- =====================
          TASK TYPE + PARENT INCIDENT
 
