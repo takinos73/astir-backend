@@ -314,75 +314,86 @@ const groupRowsHtml = Array.from(groups.values()).map(g => {
 
   const rowsHtml = g.rows.map(r => {
     const freq = getFrequencyBucket(r.frequency_hours);
+/* =====================
+   LIBRARY ROW
+   Task cell includes optional attachment badge
+===================== */
 
-    return `
-      <tr>
-        <td>
-          ${r.section || "-"}
-          ${
-            r.unit
-              ? `<br><small style="opacity:.4">${r.unit}</small>`
-              : ""
-          }
-        </td>
-        <td>
-        /* Task cell with optional attachment badge */
-        <td>
-          <div>
-            ${r.task}
+return `
+  <tr>
 
-            ${
-              r.has_attachments
-                ? `
-                  <span
-                    class="badge badge-attachment"
-                    title="Preventive attachment available"
-                    style="
-                      margin-left:6px;
-                      font-size:11px;
-                      opacity:.85;
-                    "
-                  >
-                    📎
-                  </span>
-                `
-                : ""
-            }
-          </div>
+    <td>
+      ${r.section || "-"}
+      ${
+        r.unit
+          ? `<br><small style="opacity:.4">${r.unit}</small>`
+          : ""
+      }
+    </td>
 
-          ${
-            r.impact && r.impact !== "normal"
-              ? `
-                <div class="task-impact-wrap">
-                  <span class="task-impact-badge task-impact-${r.impact}">
-                    ${
-                      r.impact === "safety"
-                        ? "SAFETY"
-                        : r.impact === "quality"
-                        ? "QUALITY"
-                        : "S + Q"
-                    }
-                  </span>
-                </div>
-              `
-              : ""
-          }
-        </td>
-        <td class="${freq.className}">
-          ${freq.label}
-        </td>
-        <td>${r.duration_min ?? "—"} min</td>
-        <td class="library-actions ">
-          <button
-            class="btn-ghost btn-sm edit-preventive-btn admin-only"
-            title="Edit preventive"
-            data-preventive='${encodeURIComponent(JSON.stringify(r))}'
-          >
-            ✏️
-          </button>
-        </td>
-      </tr>
-    `;
+    <td>
+      <div>
+        ${r.task}
+
+        ${
+          r.has_attachments
+            ? `
+              <span
+                class="badge badge-attachment"
+                title="Preventive attachment available"
+                style="
+                  margin-left:6px;
+                  font-size:11px;
+                  opacity:.85;
+                "
+              >
+                📎
+              </span>
+            `
+            : ""
+        }
+      </div>
+
+      ${
+        r.impact && r.impact !== "normal"
+          ? `
+            <div class="task-impact-wrap">
+              <span class="task-impact-badge task-impact-${r.impact}">
+                ${
+                  r.impact === "safety"
+                    ? "SAFETY"
+                    : r.impact === "quality"
+                    ? "QUALITY"
+                    : "S + Q"
+                }
+              </span>
+            </div>
+          `
+          : ""
+      }
+    </td>
+
+    <td class="${freq.className}">
+      ${freq.label}
+    </td>
+
+    <td>
+      ${r.duration_min ?? "—"} min
+    </td>
+
+    <td class="library-actions">
+      <button
+        class="btn-ghost btn-sm edit-preventive-btn admin-only"
+        title="Edit preventive"
+        data-preventive='${encodeURIComponent(JSON.stringify(r))}'
+      >
+        ✏️
+      </button>
+    </td>
+
+  </tr>
+`;
+
   }).join("");
 
   return groupHeader + rowsHtml;
