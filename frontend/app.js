@@ -1983,8 +1983,168 @@ const TASK_ATTACHMENT_MAX_TOTAL_BYTES = 8 * 1024 * 1024;
   Files currently selected for the
   new Task being created.
 */
-let taskAttachmentFiles =
-  [];
+let taskAttachmentFiles = [];
+
+/* =========================================================
+   PREVENTIVE ATTACHMENTS
+   Separate from the existing AddTask attachment mechanism.
+========================================================= */
+
+const PREVENTIVE_ATTACHMENT_MAX_FILES = 3;
+const PREVENTIVE_ATTACHMENT_MAX_TOTAL_BYTES = 8 * 1024 * 1024;
+
+
+/* Selected files for the Add Preventive modal */
+let preventiveAttachmentFiles = [];
+
+
+/* =========================================================
+   RESET PREVENTIVE ATTACHMENTS
+========================================================= */
+
+function resetPreventiveAttachments() {
+
+  preventiveAttachmentFiles = [];
+
+
+  const input =
+    document.getElementById(
+      "pm-attachments"
+    );
+
+
+  if (input) {
+    input.value = "";
+  }
+
+
+  renderPreventiveAttachments();
+
+}
+
+
+/* =========================================================
+   RENDER PREVENTIVE ATTACHMENTS
+========================================================= */
+
+function renderPreventiveAttachments() {
+
+  const summary =
+    document.getElementById(
+      "pm-attachments-summary"
+    );
+
+
+  const list =
+    document.getElementById(
+      "pm-attachments-list"
+    );
+
+
+  if (!summary || !list) {
+    return;
+  }
+
+
+  /* Calculate total selected size */
+  const totalBytes =
+    preventiveAttachmentFiles.reduce(
+      (sum, file) =>
+        sum + Number(file.size || 0),
+      0
+    );
+
+
+  /* Update summary */
+  summary.textContent =
+    preventiveAttachmentFiles.length === 0
+      ? "No files selected"
+      : `${preventiveAttachmentFiles.length} file` +
+        `${preventiveAttachmentFiles.length === 1 ? "" : "s"} · ` +
+        `${formatAttachmentSize(totalBytes)}`;
+
+
+  /* Nothing selected */
+  if (
+    preventiveAttachmentFiles.length === 0
+  ) {
+
+    list.innerHTML = "";
+
+    return;
+
+  }
+
+
+  /* Render selected files */
+  list.innerHTML =
+    preventiveAttachmentFiles
+      .map(
+        (file, index) => `
+          <div class="task-attachment-chip">
+
+            <span class="task-attachment-name">
+              ${file.name}
+            </span>
+
+            <span class="task-attachment-size">
+              ${formatAttachmentSize(file.size)}
+            </span>
+
+            <button
+              type="button"
+              class="task-attachment-remove"
+              data-preventive-attachment-index="${index}"
+              title="Remove attachment"
+            >
+              ×
+            </button>
+
+          </div>
+        `
+      )
+      .join("");
+
+
+  /* Remove one selected file */
+  list
+    .querySelectorAll(
+      "[data-preventive-attachment-index]"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const index =
+            Number(
+              button.dataset
+                .preventiveAttachmentIndex
+            );
+
+
+          if (
+            !Number.isInteger(index)
+          ) {
+            return;
+          }
+
+
+          preventiveAttachmentFiles.splice(
+            index,
+            1
+          );
+
+
+          renderPreventiveAttachments();
+
+        }
+      );
+
+    });
+
+}
 
 
 /* =====================
@@ -2389,6 +2549,164 @@ function renderTaskAttachments() {
 );
 
 }
+
+/* =========================================================
+   PREVENTIVE ATTACHMENT PICKER
+========================================================= */
+
+const preventiveAttachmentInput =
+  document.getElementById(
+    "pm-attachments"
+  );
+
+
+const preventiveAttachmentButton =
+  document.getElementById(
+    "pm-attachments-btn"
+  );
+
+
+/* Open native file picker */
+preventiveAttachmentButton
+  ?.addEventListener(
+    "click",
+    () => {
+
+      preventiveAttachmentInput
+        ?.click();
+
+    }
+  );
+
+
+/* Handle selected files */
+preventiveAttachmentInput
+  ?.addEventListener(
+    "change",
+    () => {
+
+      const selectedFiles =
+        Array.from(
+          preventiveAttachmentInput.files ||
+          []
+        );
+
+
+      if (
+        selectedFiles.length === 0
+      ) {
+        return;
+      }
+
+
+      /* Allowed file types */
+      const allowedTypes =
+        new Set([
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf"
+        ]);
+
+
+      for (
+        const file of selectedFiles
+      ) {
+
+        /* Validate file type */
+        if (
+          !allowedTypes.has(
+            file.type
+          )
+        ) {
+
+          alert(
+            `File not allowed:\n${file.name}\n\n` +
+            `Only JPG, PNG, WEBP and PDF files are allowed.`
+          );
+
+          continue;
+
+        }
+
+
+        /* Prevent duplicate selection */
+        const duplicate =
+          preventiveAttachmentFiles.some(
+            existing =>
+              existing.name === file.name &&
+              existing.size === file.size &&
+              existing.lastModified ===
+                file.lastModified
+          );
+
+
+        if (duplicate) {
+          continue;
+        }
+
+
+        /* Maximum file count */
+        if (
+          preventiveAttachmentFiles.length >=
+          PREVENTIVE_ATTACHMENT_MAX_FILES
+        ) {
+
+          alert(
+            `Maximum ${PREVENTIVE_ATTACHMENT_MAX_FILES} attachments allowed.`
+          );
+
+          break;
+
+        }
+
+
+        /* Check accumulated total size */
+        const currentBytes =
+          preventiveAttachmentFiles.reduce(
+            (sum, existing) =>
+              sum +
+              Number(
+                existing.size || 0
+              ),
+            0
+          );
+
+
+        if (
+          currentBytes + file.size >
+          PREVENTIVE_ATTACHMENT_MAX_TOTAL_BYTES
+        ) {
+
+          alert(
+            `Maximum total attachment size is ` +
+            `${formatAttachmentSize(
+              PREVENTIVE_ATTACHMENT_MAX_TOTAL_BYTES
+            )}.`
+          );
+
+          continue;
+
+        }
+
+
+        /* Add validated file */
+        preventiveAttachmentFiles.push(
+          file
+        );
+
+      }
+
+
+      /* Allow selecting the same file again after removal */
+      preventiveAttachmentInput.value =
+        "";
+
+
+      renderPreventiveAttachments();
+
+    }
+  );
 
 /* =====================
    OPEN FILE PICKER

@@ -190,6 +190,9 @@ document.getElementById("addPreventiveBtn")?.addEventListener("click", e => {
     .querySelectorAll("input, textarea, select")
     .forEach(el => (el.value = ""));
 
+  /* Clear any temporary Preventive attachment selection */
+  resetPreventiveAttachments();
+
   // Default impact
   const impactSelect =
     document.getElementById("pm-impact");
@@ -1509,7 +1512,6 @@ function populateContextDropdown({
 
   console.log(`[populateContextDropdown] ${field}:`, values);
 }
-
 
 // =====================
 // ASSET CHANGE HANDLER

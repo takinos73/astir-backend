@@ -5905,6 +5905,66 @@
     </section>
 
     <!-- =====================
+        SECTION: ATTACHMENTS
+        Preventive-only shared attachments
+    ===================== -->
+    <section class="preventive-section">
+
+      <h4 class="section-title">
+        📎 Attachments
+      </h4>
+
+      <div class="form-grid">
+
+        <div class="field full">
+
+          <!-- Hidden native file input -->
+          <input
+            id="pm-attachments"
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,.pdf"
+            multiple
+            style="display:none;"
+          />
+
+          <!-- User-facing file picker button -->
+          <button
+            id="pm-attachments-btn"
+            type="button"
+            class="btn-secondary"
+          >
+            📎 Add Files
+          </button>
+
+          <!-- Current attachment selection summary -->
+          <span
+            id="pm-attachments-summary"
+            style="margin-left:10px;"
+          >
+            No files selected
+          </span>
+
+          <!-- Selected attachment chips -->
+          <div
+            id="pm-attachments-list"
+            style="margin-top:10px;"
+          ></div>
+
+          <!-- Attachment rules -->
+          <small
+            class="field-hint"
+            style="display:block; margin-top:8px;"
+          >
+            Up to 3 files · JPG, PNG, WEBP or PDF · 8 MB total
+          </small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =====================
          SECTION: NOTES
     ===================== -->
     <section class="preventive-section">
@@ -5925,9 +5985,13 @@
          ACTIONS
     ===================== -->
     <div class="modal-actions">
+      <!-- Close modal and clear temporary Preventive attachments -->
       <button
         class="btn-secondary"
-        onclick="document.getElementById('addPreventiveOverlay').style.display='none'">
+        onclick="
+          resetPreventiveAttachments();
+          document.getElementById('addPreventiveOverlay').style.display='none';
+        ">
         Cancel
       </button>
 
@@ -5940,7 +6004,6 @@
 
   </div>
 </div>
-
 
 <!-- ===================== -->
 <!-- TAB: PREVENTIVE LIBRARY -->
