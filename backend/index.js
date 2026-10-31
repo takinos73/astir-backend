@@ -15338,6 +15338,21 @@ app.get("/tasks", async (req, res) => {
         mt.impact,
 
         /* =================================================
+          PREVENTIVE SHARED ATTACHMENT FLAG
+
+          True when this Preventive Task has at least
+          one linked shared Preventive attachment.
+        ================================================= */
+
+        EXISTS (
+          SELECT 1
+
+          FROM preventive_rule_attachment_links pral
+
+          WHERE pral.task_id = mt.id
+        ) AS has_preventive_attachments,
+
+        /* =================================================
            MAINTENANCE REPORT SOURCE
 
            If this Task was created from a Maintenance Report,
@@ -16620,7 +16635,6 @@ app.post("/preventive-attachments", attachmentUpload.array(
     "files",
     ATTACHMENT_MAX_FILES
   ),
-
   async (req, res) => {
 
     const client =
@@ -17242,6 +17256,111 @@ app.post("/preventive-attachments", attachmentUpload.array(
     } finally {
 
       client.release();
+
+    }
+
+  }
+);
+
+/* =========================================================
+   GET PREVENTIVE ATTACHMENTS FOR TASK
+
+   Returns all shared Preventive attachments
+   linked to one Preventive Task.
+
+   IMPORTANT:
+   - Read only
+   - Does not modify links
+   - Does not modify R2 objects
+========================================================= */
+
+app.get( "/preventive-attachments/task/:taskId", async (req, res) => {
+
+    const taskId =
+      Number(
+        req.params.taskId
+      );
+
+
+    /* =====================
+       VALIDATE TASK ID
+    ===================== */
+
+    if (
+      !Number.isInteger(taskId) ||
+      taskId <= 0
+    ) {
+
+      return res.status(400).json({
+        error:
+          "Invalid Preventive Task ID"
+      });
+
+    }
+
+
+    try {
+
+      /* =====================
+         LOAD ATTACHMENTS
+      ===================== */
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            a.id,
+            a.file_key,
+            a.file_name,
+            a.mime_type,
+            a.file_size,
+            a.uploaded_by_id,
+            a.uploaded_by,
+            a.uploaded_at
+
+          FROM preventive_rule_attachment_links l
+
+          JOIN preventive_rule_attachments a
+            ON a.id = l.attachment_id
+
+          WHERE
+            l.task_id = $1
+
+          ORDER BY
+            a.uploaded_at ASC,
+            a.id ASC
+          `,
+          [
+            taskId
+          ]
+        );
+
+
+      /* =====================
+         SUCCESS
+      ===================== */
+
+      res.json({
+        task_id:
+          taskId,
+
+        attachments:
+          result.rows
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET PREVENTIVE ATTACHMENTS ERROR:",
+        err
+      );
+
+
+      res.status(500).json({
+        error:
+          err.message
+      });
 
     }
 
