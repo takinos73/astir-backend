@@ -522,13 +522,13 @@ function renderHistoryTable(data) {
 
             <strong>${h.task}</strong>
 
-            /* =====================================================
+            <!--=====================================================
               HISTORY ATTACHMENT INDICATOR
 
               Supports:
               - Generic Task attachments
               - Shared Preventive attachments
-            ===================================================== */
+            ===================================================== -->
 
             ${
               (
