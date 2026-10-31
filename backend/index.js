@@ -16162,6 +16162,14 @@ const result =
    APPLY PREVENTIVE RULE
    - Creates or updates planned preventive tasks
    - Applies to all assets of the given model
+
+   IMPORTANT:
+   Existing Apply-to-All logic remains unchanged.
+
+   Additional behavior:
+   - Returns affected Preventive Task IDs
+     so shared attachments can later be linked
+     to all corresponding Tasks.
 ===================== */
 
 app.patch("/preventives/apply-rule", async (req, res) => {
@@ -16185,19 +16193,24 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     !task ||
     !frequency_hours
   ) {
+
     return res.status(400).json({
       error: "Missing required fields"
     });
+
   }
 
 
-  // =====================
-  // IMPACT
-  // =====================
+  /* =====================
+     IMPACT
+  ===================== */
 
   const cleanImpact =
-    String(impact || "normal")
+    String(
+      impact || "normal"
+    )
       .toLowerCase();
+
 
   const validImpacts = [
     "normal",
@@ -16206,25 +16219,36 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     "safety_quality"
   ];
 
-  if (!validImpacts.includes(cleanImpact)) {
+
+  if (
+    !validImpacts.includes(
+      cleanImpact
+    )
+  ) {
+
     return res.status(400).json({
       error: "Invalid preventive impact"
     });
+
   }
 
 
-  const client = await pool.connect();
+  const client =
+    await pool.connect();
 
 
   try {
 
-    // Real transaction
+    /* =====================
+       START TRANSACTION
+    ===================== */
+
     await client.query("BEGIN");
 
 
-    // =====================
-    // UPDATE EXISTING
-    // =====================
+    /* =====================
+       UPDATE EXISTING
+    ===================== */
 
     await client.query(
       `
@@ -16264,9 +16288,9 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     );
 
 
-    // =====================
-    // INSERT MISSING
-    // =====================
+    /* =====================
+       INSERT MISSING
+    ===================== */
 
     await client.query(
       `
@@ -16330,32 +16354,123 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     );
 
 
+    /* =====================================================
+       GET AFFECTED PREVENTIVE TASK IDS
+
+       IMPORTANT:
+       This does NOT change the Apply-to-All logic.
+
+       It only finds the Preventive Tasks that now
+       belong to this model / section / task rule,
+       so the same shared attachment can later
+       be linked to all of them.
+    ===================================================== */
+
+    const affectedTasksResult =
+      await client.query(
+        `
+        SELECT
+          t.id
+
+        FROM maintenance_tasks t
+
+        JOIN assets a
+          ON a.id = t.asset_id
+
+        WHERE
+          a.model = $1
+
+          AND t.breakdown_id IS NULL
+
+          AND t.scheduled_maintenance_id IS NULL
+
+          AND t.is_planned = true
+
+          AND t.status = 'Planned'
+
+          AND COALESCE(
+            t.frequency_hours,
+            0
+          ) > 0
+
+          AND t.section = $2
+
+          AND t.task = $3
+
+        ORDER BY
+          t.id
+        `,
+        [
+          model,
+          section,
+          task
+        ]
+      );
+
+
+    const affectedTaskIds =
+      affectedTasksResult.rows.map(
+        row =>
+          Number(row.id)
+      );
+
+
+    /* =====================
+       COMMIT
+    ===================== */
+
     await client.query("COMMIT");
 
 
+    /* =====================================================
+       SUCCESS
+
+       Existing Apply-to-All behavior is unchanged.
+
+       task_ids are returned only for shared
+       Preventive attachment linking.
+    ===================================================== */
+
     res.json({
-      message: "Preventive rule applied successfully"
+
+      message:
+        "Preventive rule applied successfully",
+
+      task_ids:
+        affectedTaskIds
+
     });
 
 
   } catch (err) {
 
-    await client.query("ROLLBACK");
+    /* =====================
+       ROLLBACK
+    ===================== */
+
+    await client.query(
+      "ROLLBACK"
+    );
+
 
     console.error(
       "APPLY PREVENTIVE ERROR:",
       err
     );
 
+
     res.status(500).json({
-      error: err.message
+      error:
+        err.message
     });
+
 
   } finally {
 
     client.release();
 
   }
+
 });
 
 /* =====================

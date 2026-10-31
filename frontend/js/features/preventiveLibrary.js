@@ -769,92 +769,185 @@ function closePreventiveModal() {
 
 /* =====================
    SAVE PREVENTIVE (POST)
+
+   Additional behavior:
+   - Captures affected task IDs for Apply-to-All
+   - Captures created task ID for Single Preventive
+   - No attachment upload yet
 ===================== */
+
 document
   .getElementById("savePreventiveBtn")
   ?.addEventListener("click", async () => {
 
     clearPreventiveErrors();
 
-    // =====================
-    // FORM VALUES
-    // =====================
-    const assetId = getVal("pm-asset");
-    const taskText = getVal("pm-task");
-    const freqValue = Number(getVal("pm-frequency-value"));
-    const freqUnit = getVal("pm-frequency-unit");
-    const firstDue = getVal("pm-first-due");
 
-    let hasError = false;
+    /* =====================
+       FORM VALUES
+    ===================== */
 
-    // =====================
-    // VALIDATION
-    // =====================
+    const assetId =
+      getVal("pm-asset");
+
+    const taskText =
+      getVal("pm-task");
+
+    const freqValue =
+      Number(
+        getVal("pm-frequency-value")
+      );
+
+    const freqUnit =
+      getVal("pm-frequency-unit");
+
+    const firstDue =
+      getVal("pm-first-due");
+
+
+    let hasError =
+      false;
+
+
+    /* =====================
+       VALIDATION
+    ===================== */
+
     if (!assetId) {
-      setPreventiveError("pm-asset", "Asset is required");
-      hasError = true;
+
+      setPreventiveError(
+        "pm-asset",
+        "Asset is required"
+      );
+
+      hasError =
+        true;
+
     }
+
 
     if (!taskText) {
-      setPreventiveError("pm-task", "Task description is required");
-      hasError = true;
+
+      setPreventiveError(
+        "pm-task",
+        "Task description is required"
+      );
+
+      hasError =
+        true;
+
     }
 
-    if (!Number.isFinite(freqValue) || freqValue <= 0) {
+
+    if (
+      !Number.isFinite(freqValue) ||
+      freqValue <= 0
+    ) {
+
       setPreventiveError(
         "pm-frequency-value",
         "Frequency must be greater than 0"
       );
-      hasError = true;
+
+      hasError =
+        true;
+
     }
 
+
     if (!freqUnit) {
+
       setPreventiveError(
         "pm-frequency-unit",
         "Frequency unit is required"
       );
-      hasError = true;
+
+      hasError =
+        true;
+
     }
 
+
     if (!firstDue) {
+
       setPreventiveError(
         "pm-first-due",
         "First due date is required"
       );
-      hasError = true;
+
+      hasError =
+        true;
+
     }
 
-    if (hasError) return;
 
-    // =====================
-    // FREQUENCY (NORMALIZED)
-    // =====================
-    const frequency_hours =
-      freqUnit === "hours" ? freqValue : freqValue * 24;
-
-    // =====================
-    // MULTI-ASSET APPLY (ADD PREVENTIVE)
-    // =====================
-    const selectedAsset = state.assetsData.find(
-      a => String(a.id) === String(assetId)
-    );
-
-    // 🔥 SAFE MODEL RESOLVE
-    const model =
-      selectedAsset?.model ||
-      document.getElementById("libraryModelSelect")?.value ||
-      null;
-
-    if (!model) {
-      alert("Asset model not found");
+    if (hasError) {
       return;
     }
 
-    const sameModelAssets = state.assetsData.filter(
-      a => a.model === model
-    );
 
-    if (sameModelAssets.length > 1) {
+    /* =====================
+       FREQUENCY
+       NORMALIZED TO HOURS
+    ===================== */
+
+    const frequency_hours =
+      freqUnit === "hours"
+        ? freqValue
+        : freqValue * 24;
+
+
+    /* =====================
+       MULTI-ASSET APPLY
+    ===================== */
+
+    const selectedAsset =
+      state.assetsData.find(
+        a =>
+          String(a.id) ===
+          String(assetId)
+      );
+
+
+    /* =====================
+       SAFE MODEL RESOLVE
+    ===================== */
+
+    const model =
+      selectedAsset?.model ||
+      document
+        .getElementById(
+          "libraryModelSelect"
+        )
+        ?.value ||
+      null;
+
+
+    if (!model) {
+
+      alert(
+        "Asset model not found"
+      );
+
+      return;
+
+    }
+
+
+    const sameModelAssets =
+      state.assetsData.filter(
+        a =>
+          a.model === model
+      );
+
+
+    /* =====================================================
+       APPLY TO ALL ASSETS OF SAME MODEL
+    ===================================================== */
+
+    if (
+      sameModelAssets.length > 1
+    ) {
 
       const msg =
         `This preventive rule will apply to:\n\n` +
@@ -863,114 +956,333 @@ document
         `Do you want to apply this rule to ALL assets of this model?\n\n` +
         `Only future work orders will be affected.`;
 
-      const applyToAll = confirm(msg);
+
+      const applyToAll =
+        confirm(msg);
+
 
       if (applyToAll) {
+
         try {
 
-          const sectionValue = getContextValue("pm-section", "pm-section-custom");
-          const unitValue = getContextValue("pm-unit", "pm-unit-custom");
+          const sectionValue =
+            getContextValue(
+              "pm-section",
+              "pm-section-custom"
+            );
 
-          console.log("APPLY DEBUG:", {
-            assetId,
-            selectedAsset,
-            model,
-            section: sectionValue,
-            unit: unitValue,
-            taskText,
-            frequency_hours
-          });
 
-          await applyPreventiveRule({
-            model,
-            section: sectionValue,
-            task: taskText,
-            frequency_hours,
-            unit: unitValue,
-            type: getVal("pm-type") || null,
-            duration_min: Number(getVal("pm-duration")) || null,
-            impact: getVal("pm-impact") || "normal",
-            notes: getVal("pm-notes") || null
-          });
+          const unitValue =
+            getContextValue(
+              "pm-unit",
+              "pm-unit-custom"
+            );
 
-          if (typeof loadTasks === "function") {
+
+          console.log(
+            "APPLY DEBUG:",
+            {
+              assetId,
+              selectedAsset,
+              model,
+              section:
+                sectionValue,
+              unit:
+                unitValue,
+              taskText,
+              frequency_hours
+            }
+          );
+
+
+          /* =====================================================
+             APPLY RULE
+
+             NEW:
+             applyPreventiveRule now returns all affected
+             Preventive Task IDs.
+
+             Existing Apply-to-All behavior is unchanged.
+          ===================================================== */
+
+          const affectedTaskIds =
+            await applyPreventiveRule({
+              model,
+              section:
+                sectionValue,
+              task:
+                taskText,
+              frequency_hours,
+              unit:
+                unitValue,
+              type:
+                getVal("pm-type") ||
+                null,
+              duration_min:
+                Number(
+                  getVal("pm-duration")
+                ) ||
+                null,
+              impact:
+                getVal("pm-impact") ||
+                "normal",
+              notes:
+                getVal("pm-notes") ||
+                null
+            });
+
+
+          /* =====================================================
+             TEMPORARY DEBUG
+
+             We only verify that the IDs arrive correctly.
+             Attachment upload will be added in the next step.
+          ===================================================== */
+
+          console.log(
+            "PREVENTIVE APPLY-TO-ALL TASK IDS:",
+            affectedTaskIds
+          );
+
+
+          /* =====================
+             EXISTING REFRESH
+          ===================== */
+
+          if (
+            typeof loadTasks ===
+            "function"
+          ) {
+
             await loadTasks();
+
           }
 
-          if (typeof generateLibraryFromTasks === "function") {
+
+          if (
+            typeof generateLibraryFromTasks ===
+            "function"
+          ) {
+
             generateLibraryFromTasks();
+
           }
+
 
           closePreventiveModal();
+
 
           alert(
             `✔ Preventive rule created\n\n` +
             `Applied to ${sameModelAssets.length} assets (model ${model})`
           );
 
+
           return;
+
 
         } catch (err) {
-          console.error("APPLY PREVENTIVE RULE ERROR:", err);
-          alert(err.message);
+
+          console.error(
+            "APPLY PREVENTIVE RULE ERROR:",
+            err
+          );
+
+
+          alert(
+            err.message
+          );
+
+
           return;
+
         }
+
       }
+
     }
 
-    // =====================
-    // SINGLE-ASSET PREVENTIVE (DEFAULT FLOW)
-    // =====================
-    const payload = {
-      asset_id: assetId,
-      section: getContextValue("pm-section", "pm-section-custom"),
-      unit: getContextValue("pm-unit", "pm-unit-custom"),
-      task: taskText,
-      type: getVal("pm-type") || null,
-      impact: getVal("pm-impact") || "normal",
-      notes: getVal("pm-notes") || null,
 
-      is_planned: true,
-      status: "Planned",
-      due_date: firstDue,
-      duration_min: Number(getVal("pm-duration")) || null,
+    /* =====================================================
+       SINGLE-ASSET PREVENTIVE
+       DEFAULT FLOW
+    ===================================================== */
+
+    const payload = {
+
+      asset_id:
+        assetId,
+
+      section:
+        getContextValue(
+          "pm-section",
+          "pm-section-custom"
+        ),
+
+      unit:
+        getContextValue(
+          "pm-unit",
+          "pm-unit-custom"
+        ),
+
+      task:
+        taskText,
+
+      type:
+        getVal("pm-type") ||
+        null,
+
+      impact:
+        getVal("pm-impact") ||
+        "normal",
+
+      notes:
+        getVal("pm-notes") ||
+        null,
+
+      is_planned:
+        true,
+
+      status:
+        "Planned",
+
+      due_date:
+        firstDue,
+
+      duration_min:
+        Number(
+          getVal("pm-duration")
+        ) ||
+        null,
+
       frequency_hours
+
     };
 
+
     try {
-      const res = await fetch(`${API}/preventives`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+
+      const res =
+        await fetch(
+          `${API}/preventives`,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
+        );
+
+
+      /* =====================================================
+         READ SUCCESS / ERROR RESPONSE
+
+         NEW:
+         We need the created Preventive ID for the future
+         shared attachment upload.
+      ===================================================== */
+
+      const result =
+        await res
+          .json()
+          .catch(
+            () => ({})
+          );
+
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create preventive");
+
+        throw new Error(
+          result?.error ||
+          "Failed to create preventive"
+        );
+
       }
 
-      if (typeof loadTasks === "function") {
+
+      /* =====================================================
+         CREATED PREVENTIVE TASK ID
+
+         Backend returns:
+         result.preventive.id
+      ===================================================== */
+
+      const createdPreventiveId =
+        Number(
+          result?.preventive?.id
+        );
+
+
+      console.log(
+        "SINGLE PREVENTIVE TASK ID:",
+        createdPreventiveId
+      );
+
+
+      /* =====================
+         EXISTING REFRESH
+      ===================== */
+
+      if (
+        typeof loadTasks ===
+        "function"
+      ) {
+
         await loadTasks();
+
       }
+
 
       closePreventiveModal();
 
+
       document
         .querySelectorAll(
-          "#addPreventiveOverlay input, #addPreventiveOverlay textarea, #addPreventiveOverlay select"
+          "#addPreventiveOverlay input, " +
+          "#addPreventiveOverlay textarea, " +
+          "#addPreventiveOverlay select"
         )
-        .forEach(el => (el.value = ""));
+        .forEach(
+          el =>
+            (
+              el.value = ""
+            )
+        );
 
-      if (typeof loadPreventiveLibrary === "function") {
+
+      if (
+        typeof loadPreventiveLibrary ===
+        "function"
+      ) {
+
         loadPreventiveLibrary();
+
       }
 
-    } catch (err) {
-      console.error("SAVE PREVENTIVE ERROR:", err);
-      alert(err.message);
-    }
-  });
 
+    } catch (err) {
+
+      console.error(
+        "SAVE PREVENTIVE ERROR:",
+        err
+      );
+
+
+      alert(
+        err.message
+      );
+
+    }
+
+  });
 
 function setPreventiveError(fieldId, message) {
   const field = document.getElementById(fieldId);
@@ -1583,48 +1895,150 @@ async function applyPreventiveRule(rule) {
     return;
   }
 
-  // 🔥 SAFE MODEL RESOLUTION
+
+  /* =====================
+     SAFE MODEL RESOLUTION
+  ===================== */
+
   const resolvedModel =
     rule.model ||
-    document.getElementById("libraryModelSelect")?.value ||
+    document.getElementById(
+      "libraryModelSelect"
+    )?.value ||
     window.currentEditPreventive?.model ||
     null;
 
+
   const payload = {
-    model: resolvedModel,
-    section: rule.section,
-    task: rule.task,
-    frequency_hours: rule.frequency_hours,
-    unit: rule.unit || null,
-    duration_min: rule.duration_min || null,
-    type: rule.type || null,
-    impact: rule.impact || "normal",
-    notes: rule.notes || null
+
+    model:
+      resolvedModel,
+
+    section:
+      rule.section,
+
+    task:
+      rule.task,
+
+    frequency_hours:
+      rule.frequency_hours,
+
+    unit:
+      rule.unit || null,
+
+    duration_min:
+      rule.duration_min || null,
+
+    type:
+      rule.type || null,
+
+    impact:
+      rule.impact || "normal",
+
+    notes:
+      rule.notes || null
+
   };
 
-  // 🔎 FRONTEND VALIDATION
-  if (!payload.model || !payload.section || !payload.task || !payload.frequency_hours) {
-    console.error("INVALID PAYLOAD:", payload);
-    alert("Missing required fields");
+
+  /* =====================
+     FRONTEND VALIDATION
+  ===================== */
+
+  if (
+    !payload.model ||
+    !payload.section ||
+    !payload.task ||
+    !payload.frequency_hours
+  ) {
+
+    console.error(
+      "INVALID PAYLOAD:",
+      payload
+    );
+
+    alert(
+      "Missing required fields"
+    );
+
     return;
   }
 
-  const res = await fetch(`${API}/preventives/apply-rule`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "x-cmms-role": window.currentUserRole
-    },
-    body: JSON.stringify(payload)
-  });
+
+  /* =====================
+     APPLY RULE
+  ===================== */
+
+  const res =
+    await fetch(
+      `${API}/preventives/apply-rule`,
+      {
+        method:
+          "PATCH",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          "x-cmms-role":
+            window.currentUserRole
+        },
+
+        body:
+          JSON.stringify(
+            payload
+          )
+      }
+    );
+
+
+  /* =====================
+     READ RESPONSE
+  ===================== */
+
+  const result =
+    await res
+      .json()
+      .catch(
+        () => ({})
+      );
+
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to apply preventive");
+
+    throw new Error(
+      result?.error ||
+      "Failed to apply preventive"
+    );
+
   }
 
+
+  /* =====================
+     EXISTING REFRESH LOGIC
+  ===================== */
+
   await loadTasks();
+
   generateLibraryFromTasks();
+
+
+  /* =====================================================
+     RETURN AFFECTED TASK IDS
+
+     This does NOT change Apply-to-All behavior.
+
+     The caller may use these IDs to link
+     one shared Preventive attachment
+     to all affected Tasks.
+  ===================================================== */
+
+  return Array.isArray(
+    result?.task_ids
+  )
+    ? result.task_ids
+    : [];
+
 }
 
 /* =====================
