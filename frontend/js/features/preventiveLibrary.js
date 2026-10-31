@@ -656,50 +656,53 @@ function generateLibraryFromTasks() {
       return;
     }
 
-  /* =====================
-    ADD UNIQUE RULE
+    /* =====================
+      ADD UNIQUE RULE
 
-    IMPORTANT:
-    Keep the model inside the Library rule itself.
-    Edit Preventive and shared attachments need it
-    to resolve all affected Preventive Task IDs.
-  ===================== */
+      IMPORTANT:
+      Keep the model inside the Library rule itself.
+      Edit Preventive and shared attachments need it
+      to resolve all affected Preventive Task IDs.
+    ===================== */
 
-  map[model].push({
+    map[model].push({
 
-    /* Asset model */
-    model:
-      model,
+      /* Asset model */
+      model:
+        model,
 
-    section:
-      normalizedSection,
+      section:
+        normalizedSection,
 
-    unit:
-      normalizedUnit,
+      unit:
+        normalizedUnit,
 
-    task:
-      t.task,
+      task:
+        t.task,
 
-    type:
-      normalizedType,
+      type:
+        normalizedType,
 
-    frequency_hours:
-      normalizedFrequency,
+      frequency_hours:
+        normalizedFrequency,
 
-    duration_min:
-      t.duration_min ?? null,
+      duration_min:
+        t.duration_min ?? null,
 
-    impact:
-      normalizedImpact,
+      impact:
+        normalizedImpact,
 
-    notes:
-      t.notes || "",
+      notes:
+        t.notes || "",
 
-    /* Shared Preventive attachment indicator */
-    has_attachments:
-      Boolean(
-        t.has_preventive_attachments
-      )
+      /* Shared Preventive attachment indicator */
+      has_attachments:
+        Boolean(
+          t.has_preventive_attachments
+        )
+
+    });
+
 
   });
 
@@ -1888,6 +1891,7 @@ function validateEditPreventive() {
 
   return valid;
 }
+
 
 /* =========================================================
    SAVE EDIT PREVENTIVE
