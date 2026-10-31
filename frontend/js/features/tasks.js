@@ -1982,10 +1982,10 @@ function buildRow(task) {
 
     <td>
 
-    /* =====================
+    <!-- =====================
       TASK TEXT
       + Preventive attachment badge
-    ===================== */
+    ===================== -->
 
     <div>
 
