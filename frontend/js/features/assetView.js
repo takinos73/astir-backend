@@ -1219,13 +1219,13 @@ function renderAssetHistoryTable(history) {
               : ""
           }
 
-          /* =====================================================
+          <!-- =====================================================
             ATTACHMENT INDICATOR
 
             Supports:
             - Generic Task attachments
             - Shared Preventive attachments
-          ===================================================== */
+          ===================================================== -->
 
           ${
             (
