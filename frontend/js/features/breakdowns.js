@@ -5157,12 +5157,31 @@ function printBreakdownDetail() {
                   )
                 : "-";
 
-            const due =
-              task.due_date
-                ? formatBreakdownDate(
-                    task.due_date
+            const normalizedStatus =
+              String(task.status || "")
+                .trim()
+                .toUpperCase();
+
+            const isDone =
+              normalizedStatus === "DONE";
+
+
+            const taskDate =
+              isDone
+                ? (
+                    task.completed_at
+                      ? `Done: ${formatBreakdownDate(
+                          task.completed_at
+                        )}`
+                      : "Done: -"
                   )
-                : "-";
+                : (
+                    task.due_date
+                      ? `Due: ${formatBreakdownDate(
+                          task.due_date
+                        )}`
+                      : "Due: -"
+                  );
 
 
             return `
@@ -5194,7 +5213,7 @@ function printBreakdownDetail() {
 
                 <td>
                   ${escapeBreakdownHtml(
-                    due
+                    taskDate
                   )}
                 </td>
 
@@ -6111,7 +6130,7 @@ td {
         </th>
 
         <th style="width:17%;">
-          Due
+          Due / Done
         </th>
 
         <th style="width:13%;">
