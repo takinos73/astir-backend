@@ -4985,7 +4985,6 @@ function updateScheduledMaintenanceDraftDuration(
 
 }
 
-
 /* =========================================================
    TOGGLE DRAFT TASK INCLUDE / EXCLUDE
 ========================================================= */

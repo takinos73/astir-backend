@@ -4369,7 +4369,6 @@ async function loadBreakdownMachineState(breakdownId) {
 
 }
 
-
 /* =========================================================
    RENDER MACHINE STATE
 ========================================================= */
@@ -4477,7 +4476,6 @@ function renderBreakdownMachineState(data) {
 
 }
 
-
 /* =========================================================
    MACHINE STATE LABEL
 ========================================================= */
@@ -4504,7 +4502,6 @@ function formatMachineStateLabel(state) {
   }
 
 }
-
 
 /* =========================================================
    MACHINE STATE TOTAL
@@ -9012,16 +9009,96 @@ async function loadRestorationTasks(breakdownId) {
 
     }
 
-
     const tasks =
       Array.isArray(result?.tasks)
         ? result.tasks
         : [];
 
-    currentBreakdownTasks = tasks;
+
+    /* =====================
+      SORT RESTORATION TASKS
+
+      1. OPEN first
+          → nearest due_date first
+
+      2. DONE after
+          → latest completed_at first
+    ===================== */
+
+    const sortedTasks =
+      [...tasks].sort((a, b) => {
+
+        const statusA =
+          String(a.status || "")
+            .trim()
+            .toUpperCase();
+
+        const statusB =
+          String(b.status || "")
+            .trim()
+            .toUpperCase();
+
+
+        const aDone =
+          statusA === "DONE";
+
+        const bDone =
+          statusB === "DONE";
+
+
+        // OPEN always before DONE
+        if (aDone !== bDone) {
+          return aDone ? 1 : -1;
+        }
+
+
+        // =====================
+        // BOTH OPEN
+        // nearest due first
+        // =====================
+
+        if (!aDone) {
+
+          const dueA =
+            a.due_date
+              ? new Date(a.due_date).getTime()
+              : Infinity;
+
+          const dueB =
+            b.due_date
+              ? new Date(b.due_date).getTime()
+              : Infinity;
+
+          return dueA - dueB;
+        }
+
+
+        // =====================
+        // BOTH DONE
+        // latest completed first
+        // =====================
+
+        const completedA =
+          a.completed_at
+            ? new Date(a.completed_at).getTime()
+            : 0;
+
+        const completedB =
+          b.completed_at
+            ? new Date(b.completed_at).getTime()
+            : 0;
+
+        return completedB - completedA;
+
+      });
+
+
+    currentBreakdownTasks =
+      sortedTasks;
+
 
     renderRestorationTasks(
-      tasks
+      sortedTasks
     );
 
 
