@@ -16525,6 +16525,17 @@ app.patch("/preventives/apply-rule", async (req, res) => {
        same frequency
 
        Then applies the edited values.
+
+       IMPORTANT:
+       Existing due_date is preserved.
+
+       This means:
+       - Planned Tasks keep their current Due Date
+       - Overdue Tasks keep their original Due Date
+       - Overdue status is not altered
+       - Updated frequency will be used when the
+         Preventive Task is completed and rotates
+         to its next Due Date
     ===================================================== */
 
     await client.query(
@@ -16539,11 +16550,7 @@ app.patch("/preventives/apply-rule", async (req, res) => {
         duration_min = $5,
         type = $6,
         notes = $7,
-        impact = $8,
-
-        due_date =
-          NOW() +
-          ($4::integer * INTERVAL '1 hour')
+        impact = $8
 
       FROM assets a
 
