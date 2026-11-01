@@ -16402,12 +16402,12 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     unit,
     task,
     frequency_hours,
+    first_due,
     duration_min,
     type,
     impact,
     notes,
 
-    // Original rule identity
     original_section,
     original_unit,
     original_task,
@@ -16642,7 +16642,12 @@ app.patch("/preventives/apply-rule", async (req, res) => {
         $4,
         $5::integer,
         $6,
-        NOW() + ($5::integer * INTERVAL '1 hour'),
+
+        COALESCE(
+          $10::timestamptz,
+          NOW() + ($5::integer * INTERVAL '1 hour')
+        ),
+
         'Planned',
         true,
         $7,
@@ -16695,10 +16700,10 @@ app.patch("/preventives/apply-rule", async (req, res) => {
         duration_min,     // $6
         cleanImpact,      // $7
         notes || null,    // $8
-        model             // $9
+        model,            // $9
+        first_due || null // $10
       ]
     );
-
 
     /* =====================================================
        GET AFFECTED PREVENTIVE TASK IDS

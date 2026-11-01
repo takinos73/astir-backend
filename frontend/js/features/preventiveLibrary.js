@@ -1176,6 +1176,8 @@ document .getElementById("savePreventiveBtn")
               task:
                 taskText,
               frequency_hours,
+              first_due:
+                firstDue,
               unit:
                 unitValue,
               type:
@@ -1193,7 +1195,6 @@ document .getElementById("savePreventiveBtn")
                 getVal("pm-notes") ||
                 null
             });
-
 
           console.log(
             "PREVENTIVE APPLY-TO-ALL TASK IDS:",
@@ -2442,37 +2443,39 @@ async function applyPreventiveRule(rule) {
     window.currentEditPreventive?.model ||
     null;
 
+    const payload = {
 
-  const payload = {
+      model:
+        resolvedModel,
 
-    model:
-      resolvedModel,
+      section:
+        rule.section,
 
-    section:
-      rule.section,
+      task:
+        rule.task,
 
-    task:
-      rule.task,
+      frequency_hours:
+        rule.frequency_hours,
 
-    frequency_hours:
-      rule.frequency_hours,
+      first_due:
+        rule.first_due || null,
 
-    unit:
-      rule.unit || null,
+      unit:
+        rule.unit || null,
 
-    duration_min:
-      rule.duration_min || null,
+      duration_min:
+        rule.duration_min || null,
 
-    type:
-      rule.type || null,
+      type:
+        rule.type || null,
 
-    impact:
-      rule.impact || "normal",
+      impact:
+        rule.impact || "normal",
 
-    notes:
-      rule.notes || null
+      notes:
+        rule.notes || null
 
-  };
+    };
 
 
   /* =====================
