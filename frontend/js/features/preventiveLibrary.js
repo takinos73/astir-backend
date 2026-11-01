@@ -3167,19 +3167,21 @@ let editPreventiveAttachmentFiles =
 let editPreventiveAttachmentsToDelete =
   new Set();
 
-
 /* =========================================================
    GET TASK IDS FOR CURRENT PREVENTIVE RULE
 
-   IMPORTANT:
-   Mirrors the existing Apply-to-All identity:
+   PREVENTIVE RULE IDENTITY:
    - model
    - section
-   - task
+   - unit
+   - task description
+   - frequency_hours
 
-   Unit / frequency are NOT added as matching conditions,
-   because Apply Preventive Rule does not use them
-   to identify existing Tasks.
+   Returns only active Preventive Tasks that belong
+   to the exact same Preventive rule across assets
+   of the same model.
+
+   Used for shared Preventive attachment loading.
 ========================================================= */
 
 function getPreventiveRuleTaskIds(
@@ -3191,28 +3193,58 @@ function getPreventiveRuleTaskIds(
   }
 
 
+  const ruleUnit =
+    rule.unit && rule.unit !== "-"
+      ? String(rule.unit).trim()
+      : "";
+
+
+  const ruleFrequency =
+    Number(
+      rule.frequency_hours || 0
+    );
+
+
   return state.tasksData
     .filter(
-      task =>
-        task.breakdown_id == null &&
+      task => {
 
-        Number(
-          task.frequency_hours || 0
-        ) > 0 &&
+        const taskUnit =
+          task.unit
+            ? String(task.unit).trim()
+            : "";
 
-        task.is_planned === true &&
 
-        task.status ===
-          "Planned" &&
+        return (
+          task.breakdown_id == null &&
 
-        task.machine_name ===
-          rule.model &&
+          task.scheduled_maintenance_id == null &&
 
-        (task.section || "") ===
-          (rule.section || "") &&
+          Number(
+            task.frequency_hours || 0
+          ) === ruleFrequency &&
 
-        task.task ===
-          rule.task
+          task.is_planned === true &&
+
+          (
+            task.status === "Planned" ||
+            task.status === "Overdue"
+          ) &&
+
+          task.machine_name ===
+            rule.model &&
+
+          (task.section || "") ===
+            (rule.section || "") &&
+
+          taskUnit ===
+            ruleUnit &&
+
+          task.task ===
+            rule.task
+        );
+
+      }
     )
     .map(
       task =>
@@ -4097,8 +4129,6 @@ async function loadEditPreventiveAttachments(
   }
 
 }
-
-
 
 /* =====================
    UNIT DROPDOWN POPULATION
