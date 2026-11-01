@@ -16347,16 +16347,51 @@ const result =
 
 /* =====================
    APPLY PREVENTIVE RULE
-   - Creates or updates planned preventive tasks
-   - Applies to all assets of the given model
+
+   - Creates or updates planned Preventive Tasks
+   - Applies the Preventive rule to all assets
+     of the selected model
+
+   RULE IDENTITY:
+   A Preventive rule is identified by:
+
+   - model
+   - section
+   - unit
+   - task description
+   - frequency_hours
 
    IMPORTANT:
-   Existing Apply-to-All logic remains unchanged.
+   Existing Apply-to-All behavior remains unchanged.
+
+   ATTACHMENT BEHAVIOR:
+   - One physical attachment is uploaded once
+   - The same file may be linked to the matching
+     Preventive Task of multiple assets
+   - Assets must belong to the SAME model
+   - Only Tasks belonging to the SAME Preventive
+     rule are returned for attachment linking
+
+   SAME PREVENTIVE RULE means:
+
+   model
+   + section
+   + unit
+   + task description
+   + frequency_hours
+
+   Tasks with a different unit or different
+   frequency are separate Preventive rules
+   and must NOT receive the attachment.
 
    Additional behavior:
    - Returns affected Preventive Task IDs
      so shared attachments can later be linked
      to all corresponding Tasks.
+
+   IMPORTANT:
+   This endpoint does NOT upload files.
+   It only returns the matching Task IDs.
 ===================== */
 
 app.patch("/preventives/apply-rule", async (req, res) => {
@@ -16370,7 +16405,13 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     duration_min,
     type,
     impact,
-    notes
+    notes,
+
+    // Original rule identity
+    original_section,
+    original_unit,
+    original_task,
+    original_frequency_hours
   } = req.body;
 
 
@@ -16386,6 +16427,45 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     });
 
   }
+
+
+  /* =====================
+     NORMALIZE UNIT
+  ===================== */
+
+  const cleanUnit =
+    unit && unit !== "-"
+      ? String(unit).trim()
+      : null;
+
+
+  const cleanOriginalUnit =
+    original_unit &&
+    original_unit !== "-"
+      ? String(original_unit).trim()
+      : cleanUnit;
+
+
+  /* =====================
+     ORIGINAL RULE IDENTITY
+
+     If original values are not supplied,
+     current values are used.
+
+     This preserves Add / existing behavior.
+  ===================== */
+
+  const sourceSection =
+    original_section || section;
+
+  const sourceTask =
+    original_task || task;
+
+  const sourceFrequency =
+    Number(
+      original_frequency_hours ||
+      frequency_hours
+    );
 
 
   /* =====================
@@ -16433,51 +16513,102 @@ app.patch("/preventives/apply-rule", async (req, res) => {
     await client.query("BEGIN");
 
 
-    /* =====================
-       UPDATE EXISTING
-    ===================== */
+    /* =====================================================
+       UPDATE EXISTING RULE
+
+       Finds ONLY the original Preventive rule:
+
+       same model
+       same section
+       same unit
+       same task description
+       same frequency
+
+       Then applies the edited values.
+    ===================================================== */
 
     await client.query(
       `
       UPDATE maintenance_tasks t
 
       SET
-        frequency_hours = $1::integer,
-        duration_min = $2,
-        type = $3,
-        notes = $4,
-        impact = $5,
+        section = $1,
+        unit = $2,
+        task = $3,
+        frequency_hours = $4::integer,
+        duration_min = $5,
+        type = $6,
+        notes = $7,
+        impact = $8,
 
         due_date =
           NOW() +
-          ($1::integer * INTERVAL '1 hour')
+          ($4::integer * INTERVAL '1 hour')
 
       FROM assets a
 
       WHERE
         t.asset_id = a.id
-        AND a.model = $6
+
+        AND a.model = $9
+
+        AND t.breakdown_id IS NULL
+
+        AND t.scheduled_maintenance_id IS NULL
+
         AND t.is_planned = true
-        AND t.status = 'Planned'
-        AND t.section = $7
-        AND t.task = $8
+
+        AND t.status IN (
+          'Planned',
+          'Overdue'
+        )
+
+        AND t.section = $10
+
+        AND t.task = $11
+
+        AND t.frequency_hours =
+          $12::integer
+
+        AND NULLIF(
+          BTRIM(t.unit),
+          ''
+        ) IS NOT DISTINCT FROM $13
       `,
       [
-        frequency_hours, // $1
-        duration_min,    // $2
-        type,            // $3
-        notes || null,   // $4
-        cleanImpact,     // $5
-        model,           // $6
-        section,         // $7
-        task             // $8
+        section,           // $1 new
+        cleanUnit,         // $2 new
+        task,              // $3 new
+        frequency_hours,   // $4 new
+        duration_min,      // $5
+        type,              // $6
+        notes || null,     // $7
+        cleanImpact,       // $8
+
+        model,             // $9
+
+        sourceSection,     // $10 original
+        sourceTask,        // $11 original
+        sourceFrequency,   // $12 original
+        cleanOriginalUnit  // $13 original
       ]
     );
 
 
-    /* =====================
-       INSERT MISSING
-    ===================== */
+    /* =====================================================
+       INSERT MISSING ASSETS
+
+       Ensures the edited Preventive rule exists
+       once for every asset of the selected model.
+
+       Rule identity:
+
+       model
+       + section
+       + unit
+       + task
+       + frequency
+    ===================================================== */
 
     await client.query(
       `
@@ -16498,45 +16629,66 @@ app.patch("/preventives/apply-rule", async (req, res) => {
 
       SELECT
         a.id,
+        $1,
         $2,
-        $8,
         $3,
         $4,
-        $1::integer,
-        $5,
-        NOW() + ($1::integer * INTERVAL '1 hour'),
+        $5::integer,
+        $6,
+        NOW() + ($5::integer * INTERVAL '1 hour'),
         'Planned',
         true,
-        $9,
-        $6
+        $7,
+        $8
 
       FROM assets a
 
       WHERE
-        a.model = $7
+        a.model = $9
 
         AND NOT EXISTS (
+
           SELECT 1
+
           FROM maintenance_tasks t
 
           WHERE
             t.asset_id = a.id
+
+            AND t.breakdown_id IS NULL
+
+            AND t.scheduled_maintenance_id IS NULL
+
             AND t.is_planned = true
-            AND t.status = 'Planned'
-            AND t.section = $2
+
+            AND t.status IN (
+              'Planned',
+              'Overdue'
+            )
+
+            AND t.section = $1
+
             AND t.task = $3
+
+            AND t.frequency_hours =
+              $5::integer
+
+            AND NULLIF(
+              BTRIM(t.unit),
+              ''
+            ) IS NOT DISTINCT FROM $2
         )
       `,
       [
-        frequency_hours, // $1
-        section,         // $2
-        task,            // $3
-        type,            // $4
-        duration_min,    // $5
-        notes || null,   // $6
-        model,           // $7
-        unit,            // $8
-        cleanImpact      // $9
+        section,          // $1
+        cleanUnit,        // $2
+        task,             // $3
+        type,             // $4
+        frequency_hours,  // $5
+        duration_min,     // $6
+        cleanImpact,      // $7
+        notes || null,    // $8
+        model             // $9
       ]
     );
 
@@ -16545,12 +16697,20 @@ app.patch("/preventives/apply-rule", async (req, res) => {
        GET AFFECTED PREVENTIVE TASK IDS
 
        IMPORTANT:
-       This does NOT change the Apply-to-All logic.
 
-       It only finds the Preventive Tasks that now
-       belong to this model / section / task rule,
-       so the same shared attachment can later
-       be linked to all of them.
+       One physical attachment may be linked
+       to the same Preventive rule across
+       different assets of the SAME model.
+
+       Matching rule:
+
+       model
+       + section
+       + unit
+       + task description
+       + frequency
+
+       No unrelated Preventive rule is included.
     ===================================================== */
 
     const affectedTasksResult =
@@ -16573,24 +16733,32 @@ app.patch("/preventives/apply-rule", async (req, res) => {
 
           AND t.is_planned = true
 
-          AND t.status = 'Planned'
-
-          AND COALESCE(
-            t.frequency_hours,
-            0
-          ) > 0
+          AND t.status IN (
+            'Planned',
+            'Overdue'
+          )
 
           AND t.section = $2
 
           AND t.task = $3
 
+          AND t.frequency_hours =
+            $4::integer
+
+          AND NULLIF(
+            BTRIM(t.unit),
+            ''
+          ) IS NOT DISTINCT FROM $5
+
         ORDER BY
           t.id
         `,
         [
-          model,
-          section,
-          task
+          model,           // $1
+          section,         // $2
+          task,            // $3
+          frequency_hours, // $4
+          cleanUnit        // $5
         ]
       );
 
@@ -16606,17 +16774,14 @@ app.patch("/preventives/apply-rule", async (req, res) => {
        COMMIT
     ===================== */
 
-    await client.query("COMMIT");
+    await client.query(
+      "COMMIT"
+    );
 
 
-    /* =====================================================
+    /* =====================
        SUCCESS
-
-       Existing Apply-to-All behavior is unchanged.
-
-       task_ids are returned only for shared
-       Preventive attachment linking.
-    ===================================================== */
+    ===================== */
 
     res.json({
 
