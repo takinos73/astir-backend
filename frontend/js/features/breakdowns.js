@@ -5135,6 +5135,53 @@ function printBreakdownDetail() {
       )
     );
 
+  const completedCorrectionTasks =
+  Array.isArray(currentBreakdownTasks)
+    ? currentBreakdownTasks.filter(task =>
+        String(task.status || "")
+          .trim()
+          .toUpperCase() === "DONE"
+      )
+    : [];
+
+const totalCorrectionMinutes =
+  completedCorrectionTasks.reduce(
+    (sum, task) =>
+      sum +
+      (Number(task.actual_duration_min) || 0),
+    0
+  );
+
+function formatCorrectionServiceTime(minutes) {
+
+  const total =
+    Math.max(
+      0,
+      Number(minutes) || 0
+    );
+
+  const hours =
+    Math.floor(total / 60);
+
+  const mins =
+    total % 60;
+
+  if (hours > 0 && mins > 0) {
+    return `${hours} h ${mins} min`;
+  }
+
+  if (hours > 0) {
+    return `${hours} h`;
+  }
+
+  return `${mins} min`;
+}
+
+const totalCorrectionServiceTime =
+  formatCorrectionServiceTime(
+    totalCorrectionMinutes
+  ); 
+
 
   /* =====================
      RESTORATION TASKS
@@ -6106,6 +6153,26 @@ td {
     Correction Tasks
   </div>
 
+  <div
+    class="card"
+    style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+      padding:6px 8px;
+    "
+  >
+    <div class="label" style="margin:0;">
+      Total Correction Service Time
+    </div>
+
+    <div class="value value-large">
+      ${escapeBreakdownHtml(
+        totalCorrectionServiceTime
+      )}
+    </div>
+  </div>
 
   <table>
 
