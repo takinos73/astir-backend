@@ -2188,7 +2188,8 @@ document
         model,
         section: rule.section,
         task: rule.task,
-        unit
+        unit,
+        frequency_hours: rule.frequency_hours
       });
 
       const res = await fetch(
@@ -2203,7 +2204,8 @@ document
             model,
             section: rule.section,
             task: rule.task,
-            unit
+            unit,
+            frequency_hours: rule.frequency_hours
           })
         }
       );
@@ -2257,7 +2259,8 @@ document
         model,
         section: rule.section,
         task: rule.task,
-        unit
+        unit,
+        frequency_hours: rule.frequency_hours
       });
 
       const res = await fetch(
@@ -2272,7 +2275,8 @@ document
             model,
             section: rule.section,
             task: rule.task,
-            unit
+            unit,
+            frequency_hours: rule.frequency_hours
           })
         }
       );

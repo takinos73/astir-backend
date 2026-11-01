@@ -16827,49 +16827,141 @@ app.patch("/preventives/apply-rule", async (req, res) => {
 
 /* =====================
    PREVIEW DELETE PREVENTIVE RULE
+
    - Counts affected assets
    - READ ONLY
    - Admin only
+
+   PREVENTIVE RULE IDENTITY:
+
+   model
+   + section
+   + unit
+   + task description
+   + frequency_hours
+
+   IMPORTANT:
+   Only assets containing the exact selected
+   Preventive rule are counted.
 ===================== */
+
 app.post("/preventives/delete-rule/preview", async (req, res) => {
-  const role = req.headers["x-cmms-role"];
+
+  const role =
+    req.headers["x-cmms-role"];
+
+
   if (role !== "admin") {
-    return res.status(403).json({ error: "Admin only" });
-  }
 
-  const { model, section, task, unit } = req.body || {};
-
-  if (!model || !section || !task) {
-    return res.status(400).json({
-      error: "model, section and task are required"
+    return res.status(403).json({
+      error: "Admin only"
     });
+
   }
+
+
+  const {
+    model,
+    section,
+    task,
+    unit,
+    frequency_hours
+  } = req.body || {};
+
+
+  if (
+    !model ||
+    !section ||
+    !task ||
+    !frequency_hours
+  ) {
+
+    return res.status(400).json({
+      error:
+        "model, section, task and frequency_hours are required"
+    });
+
+  }
+
+
+  /* =====================
+     NORMALIZE UNIT
+  ===================== */
+
+  const cleanUnit =
+    unit && unit !== "-"
+      ? String(unit).trim()
+      : null;
+
 
   try {
-    const result = await pool.query(
-      `
-      SELECT COUNT(DISTINCT t.asset_id)::int AS affected_assets
-      FROM maintenance_tasks t
-      JOIN assets a ON a.id = t.asset_id
-      WHERE
-        a.model = $1
-        AND t.is_planned = true
-        AND t.frequency_hours > 0
-        AND t.status IN ('Planned', 'Overdue')
-        AND t.deleted_at IS NULL
-        AND t.section = $2
-        AND t.task = $3
-        AND ($4::text IS NULL OR t.unit = $4)
-      `,
-      [model, section, task, unit || null]
+
+    const result =
+      await pool.query(
+        `
+        SELECT
+          COUNT(
+            DISTINCT t.asset_id
+          )::int AS affected_assets
+
+        FROM maintenance_tasks t
+
+        JOIN assets a
+          ON a.id = t.asset_id
+
+        WHERE
+          a.model = $1
+
+          AND t.is_planned = true
+
+          AND t.frequency_hours =
+            $2::integer
+
+          AND t.status IN (
+            'Planned',
+            'Overdue'
+          )
+
+          AND t.deleted_at IS NULL
+
+          AND t.section = $3
+
+          AND t.task = $4
+
+          AND NULLIF(
+            BTRIM(t.unit),
+            ''
+          ) IS NOT DISTINCT FROM $5
+        `,
+        [
+          model,           // $1
+          frequency_hours, // $2
+          section,         // $3
+          task,            // $4
+          cleanUnit        // $5
+        ]
+      );
+
+
+    res.json(
+      result.rows[0]
     );
 
-    res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("PREVIEW DELETE RULE ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+
+    console.error(
+      "PREVIEW DELETE RULE ERROR:",
+      err.message
+    );
+
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
+
 });
 
 /* =====================
@@ -16878,59 +16970,150 @@ app.post("/preventives/delete-rule/preview", async (req, res) => {
    - Soft delete only
    - Admin only
 ===================== */
-app.patch("/preventives/delete-rule",requireAdmin, async (req, res) => {
-  const role = req.headers["x-cmms-role"];
-  if (role !== "admin") {
-    return res.status(403).json({ error: "Admin only" });
+
+app.patch("/preventives/delete-rule", requireAdmin, async (req, res) => {
+
+    const role =
+      req.headers["x-cmms-role"];
+
+    if (role !== "admin") {
+
+      return res.status(403).json({
+        error: "Admin only"
+      });
+
+    }
+
+
+    const {
+      model,
+      section,
+      task,
+      unit,
+      frequency_hours
+    } = req.body || {};
+
+
+    if (
+      !model ||
+      !section ||
+      !task ||
+      !frequency_hours
+    ) {
+
+      return res.status(400).json({
+        error:
+          "model, section, task and frequency_hours are required"
+      });
+
+    }
+
+
+    /* =====================
+       NORMALIZE UNIT
+    ===================== */
+
+    const cleanUnit =
+      unit && unit !== "-"
+        ? String(unit).trim()
+        : null;
+
+
+    const client =
+      await pool.connect();
+
+
+    try {
+
+      await client.query(
+        "BEGIN"
+      );
+
+
+      const result =
+        await client.query(
+          `
+          UPDATE maintenance_tasks t
+
+          SET
+            deleted_at = NOW()
+
+          FROM assets a
+
+          WHERE
+            t.asset_id = a.id
+
+            AND a.model = $1
+
+            AND t.is_planned = true
+
+            AND t.frequency_hours =
+              $2::integer
+
+            AND t.status IN (
+              'Planned',
+              'Overdue'
+            )
+
+            AND t.deleted_at IS NULL
+
+            AND t.section = $3
+
+            AND t.task = $4
+
+            AND NULLIF(
+              BTRIM(t.unit),
+              ''
+            ) IS NOT DISTINCT FROM $5
+          `,
+          [
+            model,           // $1
+            frequency_hours, // $2
+            section,         // $3
+            task,            // $4
+            cleanUnit        // $5
+          ]
+        );
+
+
+      await client.query(
+        "COMMIT"
+      );
+
+
+      res.json({
+        success: true,
+        affected_tasks:
+          result.rowCount
+      });
+
+
+    } catch (err) {
+
+      await client.query(
+        "ROLLBACK"
+      );
+
+
+      console.error(
+        "DELETE RULE ERROR:",
+        err.message
+      );
+
+
+      res.status(500).json({
+        error: err.message
+      });
+
+
+    } finally {
+
+      client.release();
+
+    }
+
   }
-
-  const { model, section, task, unit } = req.body || {};
-
-  if (!model || !section || !task) {
-    return res.status(400).json({
-      error: "model, section and task are required"
-    });
-  }
-
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const result = await client.query(
-      `
-      UPDATE maintenance_tasks t
-      SET deleted_at = NOW()
-      FROM assets a
-      WHERE
-        t.asset_id = a.id
-        AND a.model = $1
-        AND t.is_planned = true
-        AND t.frequency_hours > 0
-        AND t.status IN ('Planned', 'Overdue')
-        AND t.deleted_at IS NULL
-        AND t.section = $2
-        AND t.task = $3
-        AND ($4::text IS NULL OR t.unit = $4)
-      `,
-      [model, section, task, unit || null]
-    );
-
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      affected_tasks: result.rowCount
-    });
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("DELETE RULE ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
-  }
-});
+);
 
 /* =========================================================
    DELETE SHARED PREVENTIVE ATTACHMENT
