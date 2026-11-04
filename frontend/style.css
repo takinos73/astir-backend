@@ -3845,3 +3845,17 @@ body.cmms-authenticated[data-role="shift_foreman"]
   #historyViewOverlay .history-details-cards { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Append AFTER execution-details.css. Asset panel colors only. */
+#historyViewOverlay #historyViewContent > .history-asset-header.history-type-breakdown {
+  border-left-color: #dc2626;
+  background: linear-gradient(rgba(220, 38, 38, .12), rgba(220, 38, 38, .12)), var(--bg-card, #181b22);
+}
+#historyViewOverlay #historyViewContent > .history-asset-header.history-type-planned {
+  border-left-color: #facc15;
+  background: linear-gradient(rgba(250, 204, 21, .09), rgba(250, 204, 21, .09)), var(--bg-card, #181b22);
+}
+#historyViewOverlay #historyViewContent > .history-asset-header.history-type-preventive {
+  border-left-color: #16a34a;
+  background: linear-gradient(rgba(22, 163, 74, .12), rgba(22, 163, 74, .12)), var(--bg-card, #181b22);
+}
+
