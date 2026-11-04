@@ -783,7 +783,7 @@ async function viewHistoryEntry(executionId) {
          EXECUTION DETAILS
     ====================== -->
 
-    <div class="history-view-grid">
+    <div class="history-details-cards">
 
 
       <!-- =====================
@@ -840,7 +840,7 @@ async function viewHistoryEntry(executionId) {
            EXECUTED BY
       ====================== -->
 
-      <div class="history-view-section">
+      <div class="history-view-section history-executor-card">
 
         <strong>
           Executed By
@@ -862,7 +862,7 @@ async function viewHistoryEntry(executionId) {
            - Safety / Quality impact badge
       ====================== -->
 
-      <div class="history-view-section">
+      <div class="history-view-section history-task-card">
 
         <strong>
           Task
@@ -970,7 +970,7 @@ async function viewHistoryEntry(executionId) {
       <div
         class="
           history-view-section
-          full-width
+          full-width history-notes-card
         "
       >
 
@@ -1046,6 +1046,8 @@ async function viewHistoryEntry(executionId) {
   );
 
 }
+
+
 
 /* =========================================================
    HISTORY — LOAD TASK ATTACHMENTS
