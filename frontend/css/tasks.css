@@ -390,11 +390,11 @@ tr.task-restoration {
 ========================================================= */
 
 .task-attachment-preview {
-  width: 82px;
-  height: 82px;
+  width: 84px;
+  height: 84px;
 
   flex:
-    0 0 82px;
+    0 0 84px;
 
   display: flex;
 
