@@ -6315,10 +6315,6 @@ function applyRoleVisibility() {
       el.style.display = isAdmin ? "" : "none";
     });
 
-  // Optional: specific buttons by id
-  const addTaskBtn = document.getElementById("addTaskBtn");
-  if (addTaskBtn) addTaskBtn.style.display = isAdmin ? "" : "none";
-
 }
 
 applyRoleVisibility();
