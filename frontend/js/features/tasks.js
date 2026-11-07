@@ -1117,16 +1117,27 @@ function resetSectionLockState() {
 
 // ============================================================
 // CLOSE TASK VIEW
+//
 // Κλείνει το Task Details.
-// Αν το Task άνοιξε από Breakdown Detail,
-// επιστρέφει στο ίδιο BD overlay.
+//
+// Αν το Task άνοιξε από:
+// - Breakdown Detail → επιστρέφει στο ίδιο BD Detail
+// - Scheduled Maintenance Detail → επιστρέφει στο ίδιο SM Detail
+//
+// Δεν γίνεται reload του Detail.
+// Απλώς ξαναεμφανίζεται το overlay που ήταν από κάτω.
 // ============================================================
 
 function closeTaskView() {
 
-  // Κλείνουμε το Task Details
+  // ==========================================================
+  // CLOSE TASK DETAILS
+  // ==========================================================
+
   const taskOverlay =
-    document.getElementById("taskViewOverlay");
+    document.getElementById(
+      "taskViewOverlay"
+    );
 
   if (taskOverlay) {
     taskOverlay.style.display = "none";
@@ -1135,14 +1146,16 @@ function closeTaskView() {
 
   // ==========================================================
   // RETURN TO BREAKDOWN DETAIL
-  // Αν το Task είχε ανοίξει από BD,
-  // ξαναδείχνουμε το ίδιο Breakdown Detail.
   // ==========================================================
 
-  if (taskViewOrigin === "breakdown") {
+  if (
+    taskViewOrigin === "breakdown"
+  ) {
 
     const bdOverlay =
-      document.getElementById("breakdownDetailOverlay");
+      document.getElementById(
+        "breakdownDetailOverlay"
+      );
 
     if (bdOverlay) {
       bdOverlay.style.display = "flex";
@@ -1151,8 +1164,33 @@ function closeTaskView() {
   }
 
 
-  // Καθαρίζουμε το origin
-  // ώστε το επόμενο άνοιγμα Task να ξεκινήσει καθαρά.
+  // ==========================================================
+  // RETURN TO SCHEDULED MAINTENANCE DETAIL
+  // ==========================================================
+
+  if (
+    taskViewOrigin ===
+    "scheduled-maintenance"
+  ) {
+
+    const smOverlay =
+      document.getElementById(
+        "scheduledMaintenanceDetailOverlay"
+      );
+
+    if (smOverlay) {
+      smOverlay.style.display = "flex";
+    }
+
+  }
+
+
+  // ==========================================================
+  // RESET ORIGIN
+  //
+  // Καθαρίζουμε το origin αφού ολοκληρωθεί η επιστροφή.
+  // ==========================================================
+
   taskViewOrigin = null;
 }
 
