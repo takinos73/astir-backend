@@ -232,6 +232,7 @@ tr.task-restoration {
 
 /* =========================================================
    TASK VIEW — ATTACHMENTS
+   Horizontal Card View
 ========================================================= */
 
 .task-attachments-section {
@@ -251,6 +252,10 @@ tr.task-restoration {
     0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 .task-attachments-header {
   display: flex;
@@ -283,36 +288,69 @@ tr.task-restoration {
 }
 
 
+/* =========================================================
+   ATTACHMENT LIST
+   Horizontal layout with horizontal scroll
+========================================================= */
+
 .task-attachments-view-list {
+  display: flex;
+
+  flex-direction: row;
+
+  align-items: stretch;
+
+  gap: 14px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding-bottom: 10px;
+
+  scroll-behavior: smooth;
+}
+
+
+/* =========================================================
+   ATTACHMENT CARD
+   Fixed-width card so multiple files sit side-by-side
+========================================================= */
+
+.task-attachment-view-item {
+  flex:
+    0 0 340px;
+
+  min-width: 340px;
+
   display: flex;
 
   flex-direction: column;
 
-  gap: 10px;
-}
-
-
-.task-attachment-view-item {
-  display: flex;
-
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
 
-  gap: 16px;
+  gap: 12px;
 
-  min-height: 92px;
+  min-height: 170px;
 
-  padding: 13px 14px;
+  padding: 16px;
 
   border:
-    1px solid rgba(96, 165, 250, 0.18);
+    1px solid rgba(96, 165, 250, 0.20);
 
-  border-radius: 10px;
+  border-radius: 11px;
 
   background:
-    rgba(15, 23, 42, 0.50);
+    rgba(15, 23, 42, 0.52);
+
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
+
+/* =========================================================
+   FILE INFO
+========================================================= */
 
 .task-attachment-view-main {
   min-width: 0;
@@ -321,7 +359,7 @@ tr.task-restoration {
 
   flex-direction: column;
 
-  gap: 4px;
+  gap: 5px;
 }
 
 
@@ -350,8 +388,14 @@ tr.task-restoration {
 }
 
 
+/* =========================================================
+   OPEN BUTTON
+========================================================= */
+
 .task-attachment-open-btn {
   flex-shrink: 0;
+
+  align-self: flex-end;
 
   padding: 8px 13px;
 
@@ -384,6 +428,37 @@ tr.task-restoration {
     #bfdbfe;
 }
 
+
+/* =========================================================
+   HORIZONTAL SCROLLBAR
+   Small visual improvement only
+========================================================= */
+
+.task-attachments-view-list::-webkit-scrollbar {
+  height: 8px;
+}
+
+
+.task-attachments-view-list::-webkit-scrollbar-track {
+  background:
+    rgba(15, 23, 42, 0.30);
+
+  border-radius: 999px;
+}
+
+
+.task-attachments-view-list::-webkit-scrollbar-thumb {
+  background:
+    rgba(100, 116, 139, 0.55);
+
+  border-radius: 999px;
+}
+
+
+.task-attachments-view-list::-webkit-scrollbar-thumb:hover {
+  background:
+    rgba(148, 163, 184, 0.65);
+}
 
 /* =========================================================
    TASK ATTACHMENT PREVIEW
