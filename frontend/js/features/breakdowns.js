@@ -9639,13 +9639,13 @@ function renderRestorationTasks(tasks) {
     summaryHtml +
     tasksHtml;
 
-  // ============================================================
-  // OPEN TASK DETAILS FROM BREAKDOWN
-  // Συνδέει τα clickable task titles με τη function
-  // openTaskFromBreakdown(taskId) που βάλαμε στο Βήμα 1.
-  // ============================================================
-
-  container
+  /* =====================
+      ATTACH OPEN TASK BUTTONS
+      These buttons open the Task Details
+      from the Breakdown Detail view.
+  ===================== */
+  
+    container
     .querySelectorAll(
       ".restoration-task-open-btn"
     )
