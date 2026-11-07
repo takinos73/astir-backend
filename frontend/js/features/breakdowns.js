@@ -58,6 +58,8 @@ let currentRestorationLocationsAssetId = null;
 
 let editingRestorationTaskId = null;
 
+let taskViewOrigin = null;
+
 
 /* =========================================================
    BREAKDOWN STATUS CLASS
@@ -3739,6 +3741,20 @@ document
 
   }
 );
+
+function openTaskFromBreakdown(taskId) {
+
+  taskViewOrigin = "breakdown";
+
+  const bdOverlay =
+    document.getElementById("breakdownDetailOverlay");
+
+  if (bdOverlay) {
+    bdOverlay.style.display = "none";
+  }
+
+  openTaskView(taskId);
+}
 
   /* =========================================================
    BREAKDOWN DETAIL
@@ -9434,9 +9450,19 @@ function renderRestorationTasks(tasks) {
 
             <div>
 
-              <div class="restoration-task-title">
+              // ============================================================
+              // CLICKABLE TASK TITLE
+              // Ανοίγει το Task Details από το Breakdown Detail.
+              // Το data-task-id κρατά το πραγματικό Task ID.
+              // ============================================================
+
+              <button
+                type="button"
+                class="restoration-task-title restoration-task-open-btn"
+                data-task-id="${id}"
+              >
                 ${escapeBreakdownHtml(title)}
-              </div>
+              </button>
 
               <div class="task-meta">
                 Task #${escapeBreakdownHtml(id)}
@@ -9612,6 +9638,49 @@ function renderRestorationTasks(tasks) {
   container.innerHTML =
     summaryHtml +
     tasksHtml;
+
+  // ============================================================
+  // OPEN TASK DETAILS FROM BREAKDOWN
+  // Συνδέει τα clickable task titles με τη function
+  // openTaskFromBreakdown(taskId) που βάλαμε στο Βήμα 1.
+  // ============================================================
+
+  container
+    .querySelectorAll(
+      ".restoration-task-open-btn"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          // Παίρνουμε το Task ID από το rendered button
+          const taskId =
+            Number(
+              button.dataset.taskId
+            );
+
+
+          // Ασφάλεια: ανοίγουμε μόνο valid Task ID
+          if (
+            !Number.isInteger(taskId) ||
+            taskId <= 0
+          ) {
+            return;
+          }
+
+
+          // Ανοίγουμε το Task Details
+          // και θυμόμαστε ότι ήρθαμε από Breakdown Detail
+          openTaskFromBreakdown(
+            taskId
+          );
+
+        }
+      );
+
+    });
 
 
   /* =====================

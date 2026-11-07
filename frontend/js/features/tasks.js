@@ -1115,9 +1115,45 @@ function resetSectionLockState() {
   state.followUpSectionValue = null;
 }
 
-// Close modal
+// ============================================================
+// CLOSE TASK VIEW
+// Κλείνει το Task Details.
+// Αν το Task άνοιξε από Breakdown Detail,
+// επιστρέφει στο ίδιο BD overlay.
+// ============================================================
+
 function closeTaskView() {
-  document.getElementById("taskViewOverlay").style.display = "none";
+
+  // Κλείνουμε το Task Details
+  const taskOverlay =
+    document.getElementById("taskViewOverlay");
+
+  if (taskOverlay) {
+    taskOverlay.style.display = "none";
+  }
+
+
+  // ==========================================================
+  // RETURN TO BREAKDOWN DETAIL
+  // Αν το Task είχε ανοίξει από BD,
+  // ξαναδείχνουμε το ίδιο Breakdown Detail.
+  // ==========================================================
+
+  if (taskViewOrigin === "breakdown") {
+
+    const bdOverlay =
+      document.getElementById("breakdownDetailOverlay");
+
+    if (bdOverlay) {
+      bdOverlay.style.display = "flex";
+    }
+
+  }
+
+
+  // Καθαρίζουμε το origin
+  // ώστε το επόμενο άνοιγμα Task να ξεκινήσει καθαρά.
+  taskViewOrigin = null;
 }
 
 // =====================
