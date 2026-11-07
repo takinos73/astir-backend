@@ -1332,6 +1332,10 @@ async function confirmDeleteTask() {
 // BREAKDOWN FLOW:
 // 2. Αν δεν υπάρχει εκεί, το αναζητά στα currentBreakdownTasks.
 //
+// SCHEDULED MAINTENANCE FLOW:
+// 3. Αν δεν υπάρχει ούτε εκεί, το αναζητά στα
+//    currentScheduledMaintenanceTasks.
+//
 // Δεν αλλάζει καμία άλλη υπάρχουσα λειτουργία.
 // ============================================================
 
@@ -1342,9 +1346,9 @@ function viewTask(taskId) {
 
 
   // ==========================================================
-  // FIND TASK
-  // Πρώτα στο κανονικό Tasks state.
-  // Αν δεν βρεθεί, fallback στα Breakdown Tasks.
+  // FIND TASK — NORMAL TASK LIST
+  //
+  // Πρώτα ψάχνουμε στο κανονικό global Tasks state.
   // ==========================================================
 
   let task =
@@ -1354,6 +1358,13 @@ function viewTask(taskId) {
         )
       : null;
 
+
+  // ==========================================================
+  // FIND TASK — BREAKDOWN FALLBACK
+  //
+  // Αν δεν βρεθεί στο global state,
+  // ψάχνουμε στα Tasks του ανοιχτού Breakdown.
+  // ==========================================================
 
   if (
     !task &&
@@ -1369,8 +1380,31 @@ function viewTask(taskId) {
 
 
   // ==========================================================
+  // FIND TASK — SCHEDULED MAINTENANCE FALLBACK
+  //
+  // Αν δεν βρεθεί ούτε στα Breakdown Tasks,
+  // ψάχνουμε στα Tasks του ανοιχτού SM Detail.
+  // ==========================================================
+
+  if (
+    !task &&
+    Array.isArray(
+      currentScheduledMaintenanceTasks
+    )
+  ) {
+
+    task =
+      currentScheduledMaintenanceTasks.find(
+        t => Number(t.id) === id
+      );
+
+  }
+
+
+  // ==========================================================
   // TASK NOT FOUND
-  // Δεν συνεχίζουμε αν το Task δεν υπάρχει πουθενά.
+  //
+  // Δεν συνεχίζουμε αν το Task δεν υπάρχει σε κανένα source.
   // ==========================================================
 
   if (!task) {
@@ -1390,8 +1424,7 @@ function viewTask(taskId) {
   // Τα Tasks που φορτώνονται μέσα από Breakdown Detail
   // μπορεί να μην έχουν machine_name / serial_number / line_code.
   //
-  // Συμπληρώνουμε ΜΟΝΟ αυτά τα display fields
-  // από το ήδη ανοιχτό currentBreakdown.
+  // Συμπληρώνουμε ΜΟΝΟ display fields από το currentBreakdown.
   // ==========================================================
 
   if (
@@ -1414,6 +1447,42 @@ function viewTask(taskId) {
       line_code:
         task.line_code ||
         currentBreakdown?.line_name ||
+        ""
+    };
+
+  }
+
+
+  // ==========================================================
+  // SCHEDULED MAINTENANCE ASSET CONTEXT FALLBACK
+  //
+  // Τα SM Tasks μπορεί επίσης να μην έχουν
+  // machine_name / serial_number / line_code.
+  //
+  // Συμπληρώνουμε ΜΟΝΟ display fields από το ανοιχτό SM.
+  // ==========================================================
+
+  if (
+    taskViewOrigin ===
+    "scheduled-maintenance"
+  ) {
+
+    task = {
+      ...task,
+
+      machine_name:
+        task.machine_name ||
+        currentScheduledMaintenance?.asset_model ||
+        "-",
+
+      serial_number:
+        task.serial_number ||
+        currentScheduledMaintenance?.asset_serial ||
+        "",
+
+      line_code:
+        task.line_code ||
+        currentScheduledMaintenance?.line_name ||
         ""
     };
 
@@ -1536,9 +1605,10 @@ function viewTask(taskId) {
       <label>Frequency</label>
 
       <div>
-        ${task.frequency_hours
-          ? task.frequency_hours + " h"
-          : "-"
+        ${
+          task.frequency_hours
+            ? task.frequency_hours + " h"
+            : "-"
         }
       </div>
     </div>
@@ -1547,9 +1617,10 @@ function viewTask(taskId) {
       <label>Estimated Duration</label>
 
       <div>
-        ${task.duration_min
-          ? task.duration_min + " min"
-          : "-"
+        ${
+          task.duration_min
+            ? task.duration_min + " min"
+            : "-"
         }
       </div>
     </div>

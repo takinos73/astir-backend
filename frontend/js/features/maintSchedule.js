@@ -7,6 +7,15 @@
 
 let currentScheduledMaintenance = null;
 
+// ============================================================
+// CURRENT SCHEDULED MAINTENANCE TASKS
+//
+// Κρατά προσωρινά τα Tasks του ανοιχτού SM Detail,
+// ώστε το κοινό Task View modal να μπορεί να τα ανοίξει.
+// ============================================================
+
+let currentScheduledMaintenanceTasks = [];
+
 /* =========================================================
    SM PLANNED TASK — ATTACHMENT SELECTION
 
@@ -24,8 +33,63 @@ const SM_TASK_ATTACHMENT_MAX_TOTAL_BYTES =
   8 * 1024 * 1024;
 
 
-let smTaskAttachmentFiles =
-  [];
+let smTaskAttachmentFiles =  [];
+
+// ============================================================
+// OPEN TASK FROM SCHEDULED MAINTENANCE DETAIL
+//
+// - Θυμάται ότι το Task άνοιξε από SM Detail
+// - Ανοίγει πρώτα το υπάρχον Task Details
+// - Μόνο αν ανοίξει σωστά, κρύβει το SM Detail
+// ============================================================
+
+function openTaskFromScheduledMaintenance(taskId) {
+
+  // Θυμόμαστε ότι ήρθαμε από Scheduled Maintenance Detail
+  taskViewOrigin =
+    "scheduled-maintenance";
+
+
+  // Ανοίγουμε το υπάρχον Task Details
+  viewTask(
+    taskId
+  );
+
+
+  // Ελέγχουμε ότι το Task modal πράγματι άνοιξε
+  const taskOverlay =
+    document.getElementById(
+      "taskViewOverlay"
+    );
+
+
+  if (
+    taskOverlay &&
+    taskOverlay.style.display === "flex"
+  ) {
+
+    // Μόνο τότε κρύβουμε το Scheduled Maintenance Detail
+    const smOverlay =
+      document.getElementById(
+        "scheduledMaintenanceDetailOverlay"
+      );
+
+    if (smOverlay) {
+
+      smOverlay.style.display =
+        "none";
+
+    }
+
+  } else {
+
+    console.error(
+      "Task View did not open from Scheduled Maintenance"
+    );
+
+  }
+
+}
 
 /* =========================================================
    SCHEDULED MAINTENANCE DETAIL — READ ONLY
@@ -387,7 +451,7 @@ async function openScheduledMaintenanceDetail(smId) {
 
 
     /* =====================
-       LINKED TASKS
+      LINKED TASKS
     ===================== */
 
     const tasks =
@@ -396,6 +460,18 @@ async function openScheduledMaintenanceDetail(smId) {
       )
         ? tasksResult.tasks
         : [];
+
+
+    // ============================================================
+    // STORE CURRENT SCHEDULED MAINTENANCE TASKS
+    //
+    // Κρατάμε τα Tasks του ανοιχτού SM Detail,
+    // ώστε το κοινό Task Details modal να μπορεί
+    // να τα βρει μέσω της viewTask().
+    // ============================================================
+
+    currentScheduledMaintenanceTasks =
+      tasks;
 
     /* =====================
       TASK SUMMARY
@@ -516,22 +592,45 @@ async function openScheduledMaintenanceDetail(smId) {
         "restoration-task-item";
 
 
-      /* =====================
-         TASK TITLE
-      ===================== */
+// ============================================================
+// TASK TITLE — CLICKABLE
+//
+// Ο τίτλος του Task μέσα στο SM Detail γίνεται button.
+// Στο click ανοίγει το κανονικό Task Details modal.
+// ============================================================
 
-      const title =
-        document.createElement(
-          "div"
-        );
+const title =
+  document.createElement(
+    "button"
+  );
 
+title.type =
+  "button";
 
-      title.className =
-        "restoration-task-title";
+title.className =
+  "restoration-task-title restoration-task-open-btn";
 
+title.textContent =
+  task.task || "—";
 
-      title.textContent =
-        task.task || "—";
+      // ============================================================
+      // OPEN TASK DETAILS FROM SM
+      //
+      // Χρησιμοποιούμε το υπάρχον task.id.
+      // Η openTaskFromScheduledMaintenance() θα αναλάβει
+      // να ανοίξει το Task Details και μετά να κρύψει το SM Detail.
+      // ============================================================
+
+      title.addEventListener(
+        "click",
+        () => {
+
+          openTaskFromScheduledMaintenance(
+            task.id
+          );
+
+        }
+      );
 
 
       /* =====================
