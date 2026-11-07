@@ -1323,13 +1323,44 @@ async function confirmDeleteTask() {
   }
 }
 
-/* =====================
-   VIEW TASK MODAL
-===================== */
+// ============================================================
+// VIEW TASK MODAL — DEBUG ENTRY
+//
+// Ελέγχουμε τι Task ID παίρνει η function
+// και αν υπάρχει πραγματικά στο global task state.
+// ============================================================
 
 function viewTask(taskId) {
-  const task = state.tasksData.find(t => t.id === taskId);
-  if (!task) return;
+
+  console.log(
+    "VIEW TASK called with:",
+    taskId
+  );
+
+
+  const task =
+    Array.isArray(state.tasksData)
+      ? state.tasksData.find(
+          t => Number(t.id) === Number(taskId)
+        )
+      : null;
+
+
+  console.log(
+    "VIEW TASK found task:",
+    task
+  );
+
+
+  if (!task) {
+
+    console.error(
+      "VIEW TASK ABORTED — task not found in state.tasksData:",
+      taskId
+    );
+
+    return;
+  }
 
   const el = document.getElementById("taskViewContent");
 

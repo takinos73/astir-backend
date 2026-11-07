@@ -3742,18 +3742,201 @@ document
   }
 );
 
+// ============================================================
+// DEBUG — OPEN TASK FROM BREAKDOWN DETAIL
+//
+// Σκοπός:
+// 1. Επιβεβαιώνουμε το taskId
+// 2. Ελέγχουμε αν υπάρχει στο state.tasksData
+// 3. Ελέγχουμε αν υπάρχει στα currentBreakdownTasks
+// 4. ΔΕΝ κρύβουμε ακόμη το BD αν κάτι λείπει
+// ============================================================
+
 function openTaskFromBreakdown(taskId) {
 
-  taskViewOrigin = "breakdown";
+  console.group("OPEN TASK FROM BREAKDOWN");
 
-  const bdOverlay =
-    document.getElementById("breakdownDetailOverlay");
+  console.log(
+    "1. Requested taskId:",
+    taskId
+  );
 
-  if (bdOverlay) {
-    bdOverlay.style.display = "none";
+
+  // ==========================================================
+  // NORMALIZE TASK ID
+  // ==========================================================
+
+  const id =
+    Number(taskId);
+
+  console.log(
+    "2. Normalized taskId:",
+    id
+  );
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+
+    console.error(
+      "INVALID TASK ID:",
+      taskId
+    );
+
+    console.groupEnd();
+
+    return;
   }
 
-  viewTask(taskId);
+
+  // ==========================================================
+  // CHECK GLOBAL TASK STATE
+  // viewTask() currently searches only state.tasksData
+  // ==========================================================
+
+  const globalTask =
+    Array.isArray(state.tasksData)
+      ? state.tasksData.find(
+          t => Number(t.id) === id
+        )
+      : null;
+
+  console.log(
+    "3. Found in state.tasksData:",
+    globalTask
+  );
+
+
+  // ==========================================================
+  // CHECK BREAKDOWN TASK STATE
+  // Τα tasks του BD υπάρχουν εδώ μετά το loadRestorationTasks().
+  // ==========================================================
+
+  const breakdownTask =
+    Array.isArray(currentBreakdownTasks)
+      ? currentBreakdownTasks.find(
+          t => Number(t.id) === id
+        )
+      : null;
+
+  console.log(
+    "4. Found in currentBreakdownTasks:",
+    breakdownTask
+  );
+
+
+  // ==========================================================
+  // CHECK VIEW FUNCTION
+  // ==========================================================
+
+  console.log(
+    "5. viewTask function:",
+    typeof viewTask
+  );
+
+
+  // ==========================================================
+  // IMPORTANT:
+  // Αν δεν υπάρχει στο state.tasksData,
+  // η υπάρχουσα viewTask() θα κάνει return.
+  // ==========================================================
+
+  if (!globalTask) {
+
+    console.warn(
+      "TASK NOT FOUND IN state.tasksData"
+    );
+
+    console.log(
+      "Breakdown version of task:",
+      breakdownTask
+    );
+
+    console.groupEnd();
+
+    return;
+  }
+
+
+  // ==========================================================
+  // SET ORIGIN
+  // Μόνο όταν ξέρουμε ότι το Task μπορεί να ανοίξει.
+  // ==========================================================
+
+  taskViewOrigin =
+    "breakdown";
+
+
+  // ==========================================================
+  // OPEN TASK VIEW FIRST
+  // Δεν κρύβουμε ακόμη το BD.
+  // ==========================================================
+
+  console.log(
+    "6. Calling viewTask..."
+  );
+
+  viewTask(id);
+
+
+  // ==========================================================
+  // VERIFY TASK MODAL
+  // ==========================================================
+
+  const taskOverlay =
+    document.getElementById(
+      "taskViewOverlay"
+    );
+
+  console.log(
+    "7. taskViewOverlay:",
+    taskOverlay
+  );
+
+  console.log(
+    "8. taskViewOverlay display:",
+    taskOverlay?.style?.display
+  );
+
+
+  // ==========================================================
+  // ONLY IF TASK MODAL OPENED:
+  // κρύβουμε το Breakdown Detail.
+  // ==========================================================
+
+  if (
+    taskOverlay &&
+    taskOverlay.style.display === "flex"
+  ) {
+
+    const bdOverlay =
+      document.getElementById(
+        "breakdownDetailOverlay"
+      );
+
+    if (bdOverlay) {
+
+      bdOverlay.style.display =
+        "none";
+
+    }
+
+    console.log(
+      "9. SUCCESS — Task opened, BD hidden."
+    );
+
+  } else {
+
+    console.error(
+      "TASK MODAL DID NOT OPEN"
+    );
+
+  }
+
+
+  console.groupEnd();
 }
 
   /* =========================================================
