@@ -428,6 +428,16 @@ tr.task-restoration {
   text-decoration: underline;
 }
 
+/* =========================================================
+   HIDE OPEN BUTTON
+   Το file preview είναι ήδη clickable,
+   οπότε δεν χρειάζεται ξεχωριστό Open control.
+========================================================= */
+
+.task-attachment-open-btn {
+  display: none;
+}
+
 
 /* =========================================================
    HORIZONTAL SCROLLBAR
