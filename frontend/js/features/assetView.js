@@ -2736,17 +2736,76 @@ function populateAssetOverviewHeader(asset) {
 
 // =====================
 // HEADER
+//
+// Legacy Asset header renderer.
+//
+// Ο παλιός header έχει αφαιρεθεί από το HTML,
+// αλλά η function παραμένει για compatibility
+// επειδή καλείται ήδη από την openAssetViewBySerial().
+//
+// Αν τα legacy elements δεν υπάρχουν,
+// η function απλώς δεν κάνει τίποτα.
 // =====================
+
 function renderAssetViewHeader(src) {
-  document.getElementById("assetViewTitle").innerHTML = `
-    ${src.machine_name}
-    <small class="asset-sn">SN: ${src.serial_number}</small>
-  `;
 
-  document.getElementById("assetViewLine").textContent =
-    src.line_code || "-";
+  // ==========================================================
+  // LEGACY TITLE
+  // ==========================================================
 
-  document.getElementById("assetViewStatus").textContent = "Active";
+  const titleEl =
+    document.getElementById(
+      "assetViewTitle"
+    );
+
+
+  if (titleEl) {
+
+    titleEl.innerHTML = `
+      ${src.machine_name || "-"}
+      <small class="asset-sn">
+        SN: ${src.serial_number || "-"}
+      </small>
+    `;
+
+  }
+
+
+  // ==========================================================
+  // LEGACY LINE
+  // ==========================================================
+
+  const lineEl =
+    document.getElementById(
+      "assetViewLine"
+    );
+
+
+  if (lineEl) {
+
+    lineEl.textContent =
+      src.line_code || "-";
+
+  }
+
+
+  // ==========================================================
+  // LEGACY STATUS
+  // ==========================================================
+
+  const statusEl =
+    document.getElementById(
+      "assetViewStatus"
+    );
+
+
+  if (statusEl) {
+
+    statusEl.textContent =
+      "Active";
+
+  }
+
 }
 
 // =====================
