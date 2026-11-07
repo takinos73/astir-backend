@@ -133,6 +133,47 @@ async function openAssetViewBySerial(serial) {
           )
         : null;
 
+    // ============================================================
+    // NEW OVERVIEW — ASSET INFORMATION
+    //
+    // Γεμίζει τα νέα στοιχεία του Overview.
+    // Δεν αλλάζει την υπάρχουσα Asset View λειτουργία.
+    // ============================================================
+
+    if (
+      currentAsset &&
+      typeof populateAssetOverviewHeader === "function"
+    ) {
+      populateAssetOverviewHeader(currentAsset);
+    }
+
+    // ============================================================
+    // NEW OVERVIEW — ASSET PHOTO
+    //
+    // Δείχνει φωτογραφία αν υπάρχει.
+    // Διαφορετικά κρατά το placeholder.
+    // ============================================================
+
+    if (
+      currentAsset &&
+      typeof renderAssetOverviewPhoto === "function"
+    ) {
+      renderAssetOverviewPhoto(currentAsset);
+    }
+
+    // ============================================================
+    // NEW OVERVIEW — ACTION BUTTONS
+    //
+    // Συνδέει το νέο Add Task button
+    // με την υπάρχουσα openAddTaskForAsset().
+    // ============================================================
+
+    if (
+      currentAsset &&
+      typeof bindAssetOverviewActions === "function"
+    ) {
+      bindAssetOverviewActions(currentAsset);
+    }
 
     const assetBreakdowns =
       Array.isArray(allBreakdowns) && currentAsset
@@ -2199,6 +2240,326 @@ function bindAssetTabs() {
 
   container.dataset.tabsBound = "true";
 }
+
+// ============================================================
+// RENDER ASSET OVERVIEW PHOTO
+//
+// Δείχνει φωτογραφία Asset αν υπάρχει διαθέσιμο image field.
+//
+// Προς το παρόν υποστηρίζει πιθανά field names:
+// - image_url
+// - image
+// - photo_url
+// - photo
+//
+// Αν δεν υπάρχει φωτογραφία:
+// - κρύβει το <img>
+// - εμφανίζει το fallback placeholder
+//
+// Δεν κάνει upload.
+// Δεν αλλάζει database.
+// ============================================================
+
+function renderAssetOverviewPhoto(asset) {
+
+  const imageEl =
+    document.getElementById(
+      "assetOverviewImage"
+    );
+
+  const fallbackEl =
+    document.getElementById(
+      "assetOverviewImageFallback"
+    );
+
+
+  // Αν δεν υπάρχουν τα νέα Overview elements,
+  // δεν επηρεάζουμε καθόλου την υπάρχουσα λειτουργία.
+  if (!imageEl || !fallbackEl) {
+    return;
+  }
+
+
+  // ==========================================================
+  // FIND POSSIBLE IMAGE SOURCE
+  // ==========================================================
+
+  const imageUrl =
+    asset?.image_url ||
+    asset?.image ||
+    asset?.photo_url ||
+    asset?.photo ||
+    "";
+
+
+  // ==========================================================
+  // NO PHOTO
+  // ==========================================================
+
+  if (!imageUrl) {
+
+    imageEl.removeAttribute("src");
+
+    imageEl.style.display =
+      "none";
+
+    fallbackEl.style.display =
+      "flex";
+
+    return;
+  }
+
+
+  // ==========================================================
+  // PHOTO AVAILABLE
+  // ==========================================================
+
+  imageEl.src =
+    imageUrl;
+
+  imageEl.style.display =
+    "block";
+
+  fallbackEl.style.display =
+    "none";
+
+
+  // ==========================================================
+  // LOAD ERROR FALLBACK
+  //
+  // Αν υπάρχει invalid URL ή λείπει το αρχείο,
+  // επιστρέφουμε αυτόματα στο placeholder.
+  // ==========================================================
+
+  imageEl.onerror = () => {
+
+    imageEl.removeAttribute("src");
+
+    imageEl.style.display =
+      "none";
+
+    fallbackEl.style.display =
+      "flex";
+
+  };
+
+}
+
+// ============================================================
+// BIND ASSET OVERVIEW ACTIONS
+//
+// Συνδέει τα νέα buttons του Overview
+// με τις υπάρχουσες λειτουργίες του CMMS.
+//
+// Προς το παρόν:
+// - Add Task
+//
+// ΣΗΜΑΝΤΙΚΟ:
+// Χρησιμοποιούμε .onclick αντί για addEventListener,
+// ώστε κάθε νέο άνοιγμα του Asset View να αντικαθιστά
+// το προηγούμενο handler και να μην δημιουργούνται duplicates.
+// ============================================================
+
+function bindAssetOverviewActions(asset) {
+
+  if (!asset) return;
+
+
+  // ==========================================================
+  // ADD TASK BUTTON
+  // ==========================================================
+
+  const addTaskBtn =
+    document.getElementById(
+      "assetOverviewAddTaskBtn"
+    );
+
+
+  if (addTaskBtn) {
+
+    addTaskBtn.onclick = () => {
+
+      // Χρησιμοποιούμε την ήδη υπάρχουσα
+      // και δοκιμασμένη Add Task λειτουργία.
+      openAddTaskForAsset(
+        asset.model || "",
+        asset.serial_number || "",
+        asset.line || ""
+      );
+
+    };
+
+  }
+
+}
+
+// ============================================================
+// POPULATE ASSET OVERVIEW HEADER
+//
+// Γεμίζει ΜΟΝΟ τα νέα στοιχεία του Overview:
+//
+// - Asset model
+// - Serial number
+// - Line
+// - Status
+// - Description
+//
+// Δεν αλλάζει:
+// - KPI calculations
+// - Active Tasks
+// - Breakdowns
+// - History
+// ============================================================
+
+function populateAssetOverviewHeader(asset) {
+
+  if (!asset) return;
+
+
+  // ==========================================================
+  // RESOLVE ASSET VALUES
+  //
+  // Χρησιμοποιούμε fallbacks ώστε να δουλέψει
+  // με τα υπάρχοντα field names του Asset object.
+  // ==========================================================
+
+  const model =
+    asset.model ||
+    asset.machine_name ||
+    asset.name ||
+    "—";
+
+
+  const serial =
+    asset.serial_number ||
+    asset.serial ||
+    "—";
+
+
+  const line =
+    asset.line_name ||
+    asset.line_code ||
+    asset.line ||
+    "—";
+
+
+  const status =
+    asset.status ||
+    "Active";
+
+
+  const description =
+    asset.description ||
+    asset.notes ||
+    "No asset description available.";
+
+
+  // ==========================================================
+  // SMALL HELPER
+  // ==========================================================
+
+  const setText = (
+    elementId,
+    value
+  ) => {
+
+    const element =
+      document.getElementById(
+        elementId
+      );
+
+    if (element) {
+      element.textContent =
+        value ?? "—";
+    }
+
+  };
+
+
+  // ==========================================================
+  // TOP ASSET HEADER
+  // ==========================================================
+
+  setText(
+    "assetOverviewModel",
+    model
+  );
+
+
+  setText(
+    "assetOverviewSerial",
+    `SN: ${serial}`
+  );
+
+
+  setText(
+    "assetOverviewLine",
+    line
+  );
+
+
+  setText(
+    "assetOverviewStatus",
+    status
+  );
+
+
+  // ==========================================================
+  // ASSET INFORMATION STRIP
+  // ==========================================================
+
+  setText(
+    "assetInfoModel",
+    model
+  );
+
+
+  setText(
+    "assetInfoSerial",
+    serial
+  );
+
+
+  setText(
+    "assetInfoLine",
+    line
+  );
+
+
+  // Κρατάμε το υπάρχον ID
+  // ώστε να συνεχίσει να χρησιμοποιείται και από παλιό code.
+  setText(
+    "assetViewDescription",
+    description
+  );
+
+
+  // ==========================================================
+  // STATUS CLASS
+  //
+  // Προς το παρόν μόνο display.
+  // Δεν αλλάζει πραγματικό Asset status.
+  // ==========================================================
+
+  const statusElement =
+    document.getElementById(
+      "assetOverviewStatus"
+    );
+
+
+  if (statusElement) {
+
+    statusElement.classList.toggle(
+      "is-active",
+      String(status)
+        .trim()
+        .toUpperCase() === "ACTIVE"
+    );
+
+  }
+
+}
+
 // =====================
 // HEADER
 // =====================

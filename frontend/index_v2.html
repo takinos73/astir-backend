@@ -7068,55 +7068,652 @@
       <button class="asset-tab" data-tab="history">History</button>
     </div>
 
-    <!-- =====================
-         TAB: OVERVIEW
-    ===================== -->
-    <div class="asset-tab-panel active" data-panel="overview">
+    <!-- =========================================================
+        TAB: OVERVIEW
+        
+        Asset dashboard overview:
+        - Asset image / identity
+        - Add Task action
+        - Asset information strip
+        - KPI cards
+    ========================================================= -->
 
-      <div class="asset-view-description">
-        <p id="assetViewDescription">
-          Asset description / notes will appear here.
-        </p>
+    <div
+      class="asset-tab-panel active"
+      data-panel="overview"
+    >
+
+      <!-- =====================================================
+          ASSET OVERVIEW HEADER
+
+          Επάνω περιοχή με:
+          - Asset photo
+          - Model / Serial / Line / Status
+          - Add Task button
+      ====================================================== -->
+
+      <div class="asset-overview-header">
+
+        <!-- =========================
+            ASSET IMAGE
+        ========================== -->
+
+        <div class="asset-overview-image-wrap">
+
+          <img
+            id="assetOverviewImage"
+            class="asset-overview-image"
+            alt="Asset"
+            style="display:none;"
+          />
+
+          <!--
+            Fallback όταν δεν υπάρχει φωτογραφία.
+            Θα κρύβεται μέσω JS όταν υπάρχει πραγματική εικόνα.
+          -->
+          <div
+            id="assetOverviewImageFallback"
+            class="asset-overview-image-fallback"
+          >
+            🏭
+          </div>
+
+        </div>
+
+
+        <!-- =========================
+            ASSET IDENTITY
+        ========================== -->
+
+        <div class="asset-overview-identity">
+
+          <div class="asset-overview-title-row">
+
+            <h2
+              id="assetOverviewModel"
+              class="asset-overview-model"
+            >
+              —
+            </h2>
+
+            <span
+              id="assetOverviewSerial"
+              class="asset-overview-serial"
+            >
+              SN: —
+            </span>
+
+          </div>
+
+
+          <div class="asset-overview-context">
+
+            <span>
+              Line:
+              <strong id="assetOverviewLine">
+                —
+              </strong>
+            </span>
+
+            <span class="asset-overview-separator">
+              |
+            </span>
+
+            <span>
+              Status:
+              <strong
+                id="assetOverviewStatus"
+                class="asset-overview-status"
+              >
+                —
+              </strong>
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================
+            OVERVIEW ACTIONS
+        ========================== -->
+
+        <div class="asset-overview-actions">
+
+          <!--
+            Unique ID ώστε να μην συγκρουστεί
+            με το global #addTaskBtn της Tasks page.
+          -->
+          <button
+            id="assetOverviewAddTaskBtn"
+            class="btn-primary asset-overview-add-task"
+            type="button"
+          >
+            ➕ Add Task
+          </button>
+
+        </div>
+
       </div>
 
-      <section class="kpi-strip asset-kpis">
-        <article class="kpi-card">
-          <span class="kpi-label">Planned</span>
-          <span class="kpi-value" id="assetPlannedCount">0</span>
-        </article>
 
-        <article class="kpi-card">
-          <span class="kpi-label">Overdue</span>
-          <span class="kpi-value" id="assetOverdueCount">0</span>
-        </article>
+      <!-- =====================================================
+          ASSET INFORMATION STRIP
 
-        <article class="kpi-card">
-          <span class="kpi-label">History</span>
-          <span class="kpi-value" id="assetHistoryCount">0</span>
-        </article>
+          Συνοπτική πληροφορία Asset.
+          Το υπάρχον assetViewDescription διατηρείται.
+      ====================================================== -->
 
-        <article class="kpi-card kpi-metrics">
-          <div class="kpi-metric">
-            <span class="kpi-label">MTBF</span>
-            <span class="kpi-value" id="assetMtbfValue">—</span>
-          </div>
+      <section class="asset-info-strip">
 
-          <div class="kpi-divider"></div>
+        <div class="asset-info-title">
+          ℹ️
+          <strong>
+            Asset Information
+          </strong>
+        </div>
 
-          <div class="kpi-metric">
-            <span class="kpi-label">MTTR</span>
-            <span class="kpi-sub" id="assetMttrValue">—</span>
-          </div>
 
-          <div class="kpi-divider"></div>
+        <div class="asset-info-item">
 
-          <div class="kpi-metric">
-            <span class="kpi-label">DOWN · 30 DAYS</span>
-            <span class="kpi-value" id="assetDown30Value">—</span>
-          </div>
-          
-        </article>      
+          <span class="asset-info-label">
+            Model
+          </span>
+
+          <strong id="assetInfoModel">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="asset-info-item">
+
+          <span class="asset-info-label">
+            Serial No.
+          </span>
+
+          <strong id="assetInfoSerial">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="asset-info-item">
+
+          <span class="asset-info-label">
+            Line
+          </span>
+
+          <strong id="assetInfoLine">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="asset-info-item asset-info-description">
+
+          <span class="asset-info-label">
+            Description
+          </span>
+
+          <!--
+            Κρατάμε το υπάρχον ID ώστε να μην
+            χαλάσει ο σημερινός JS renderer.
+          -->
+          <span id="assetViewDescription">
+            Asset description / notes will appear here.
+          </span>
+
+        </div>
+
+
+        <div class="asset-info-item">
+
+          <span class="asset-info-label">
+            Last Service
+          </span>
+
+          <strong id="assetLastService">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="asset-info-item">
+
+          <span class="asset-info-label">
+            Next Preventive
+          </span>
+
+          <strong id="assetNextPreventive">
+            —
+          </strong>
+
+        </div>
+
+
+        <!-- =========================
+            ASSET HEALTH
+        ========================== -->
+
+        <div class="asset-info-health">
+
+          <span class="asset-info-label">
+            Health
+          </span>
+
+          <span
+            id="assetHealthBadge"
+            class="asset-health-badge"
+          >
+            —
+          </span>
+
+        </div>
+
       </section>
+
+
+      <!-- =====================================================
+          KPI CARDS
+          
+          Κρατάμε τα υπάρχοντα IDs ώστε τα σημερινά
+          calculations να συνεχίσουν να λειτουργούν.
+      ====================================================== -->
+
+      <section class="kpi-strip asset-kpis asset-overview-kpis">
+
+
+        <!-- =========================
+            PLANNED
+        ========================== -->
+
+        <article class="kpi-card asset-kpi-card kpi-planned">
+
+          <div class="asset-kpi-header">
+
+            <span class="asset-kpi-icon">
+              📅
+            </span>
+
+            <span class="kpi-label">
+              Planned
+            </span>
+
+          </div>
+
+
+          <span
+            class="kpi-value"
+            id="assetPlannedCount"
+          >
+            0
+          </span>
+
+
+          <div class="asset-kpi-footer">
+
+            <span>
+              Next Preventive Due
+            </span>
+
+            <strong id="assetNextPreventiveKpi">
+              —
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <!-- =========================
+            OVERDUE
+        ========================== -->
+
+        <article class="kpi-card asset-kpi-card kpi-overdue">
+
+          <div class="asset-kpi-header">
+
+            <span class="asset-kpi-icon">
+              ⚠️
+            </span>
+
+            <span class="kpi-label">
+              Overdue
+            </span>
+
+          </div>
+
+
+          <span
+            class="kpi-value"
+            id="assetOverdueCount"
+          >
+            0
+          </span>
+
+
+          <div class="asset-kpi-footer">
+
+            <span>
+              Oldest Overdue
+            </span>
+
+            <strong id="assetOldestOverdue">
+              —
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <!-- =========================
+            HISTORY
+        ========================== -->
+
+        <article class="kpi-card asset-kpi-card kpi-history">
+
+          <div class="asset-kpi-header">
+
+            <span class="asset-kpi-icon">
+              🗂️
+            </span>
+
+            <span class="kpi-label">
+              History
+            </span>
+
+          </div>
+
+
+          <span
+            class="kpi-value"
+            id="assetHistoryCount"
+          >
+            0
+          </span>
+
+
+          <div class="asset-kpi-footer">
+
+            <span>
+              Last Completed
+            </span>
+
+            <strong id="assetLastCompleted">
+              —
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <!-- =========================
+            RELIABILITY
+        ========================== -->
+
+        <article class="kpi-card kpi-metrics asset-kpi-card kpi-reliability">
+
+          <div class="asset-kpi-header">
+
+            <span class="asset-kpi-icon">
+              📊
+            </span>
+
+            <span class="kpi-label">
+              Reliability
+            </span>
+
+          </div>
+
+
+          <div class="kpi-metric">
+
+            <span class="kpi-label">
+              MTBF
+            </span>
+
+            <span
+              class="kpi-value"
+              id="assetMtbfValue"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="kpi-divider"></div>
+
+
+          <div class="kpi-metric">
+
+            <span class="kpi-label">
+              MTTR
+            </span>
+
+            <span
+              class="kpi-sub"
+              id="assetMttrValue"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="kpi-divider"></div>
+
+
+          <div class="kpi-metric">
+
+            <span class="kpi-label">
+              DOWN · 30 DAYS
+            </span>
+
+            <span
+              class="kpi-value"
+              id="assetDown30Value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =====================================================
+          SECOND ROW — OPERATIONAL SUMMARY
+
+          Θα τα γεμίσουμε στο επόμενο βήμα:
+          - Next Maintenance
+          - Latest Breakdown
+          - Latest Activity
+      ====================================================== -->
+
+      <section class="asset-overview-summary-row">
+
+
+        <!-- NEXT MAINTENANCE -->
+
+        <article class="asset-summary-card summary-next-maintenance">
+
+          <h4>
+            📅 Next Maintenance
+          </h4>
+
+          <div class="asset-summary-content">
+
+            <div>
+              <span class="asset-summary-label">
+                Task
+              </span>
+
+              <strong id="assetNextMaintenanceTask">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Due Date
+              </span>
+
+              <strong id="assetNextMaintenanceDate">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Est. Duration
+              </span>
+
+              <strong id="assetNextMaintenanceDuration">
+                —
+              </strong>
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <!-- LATEST BREAKDOWN -->
+
+        <article class="asset-summary-card summary-latest-breakdown">
+
+          <h4>
+            🔧 Latest Breakdown
+          </h4>
+
+          <div class="asset-summary-content">
+
+            <div>
+              <span class="asset-summary-label">
+                Title
+              </span>
+
+              <strong id="assetLatestBreakdownTitle">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Date
+              </span>
+
+              <strong id="assetLatestBreakdownDate">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Downtime
+              </span>
+
+              <strong id="assetLatestBreakdownDowntime">
+                —
+              </strong>
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <!-- LATEST ACTIVITY -->
+
+        <article class="asset-summary-card summary-latest-activity">
+
+          <h4>
+            ✅ Latest Activity
+          </h4>
+
+          <div class="asset-summary-content">
+
+            <div>
+              <span class="asset-summary-label">
+                Task
+              </span>
+
+              <strong id="assetLatestActivityTask">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Technician
+              </span>
+
+              <strong id="assetLatestActivityTechnician">
+                —
+              </strong>
+            </div>
+
+            <div>
+              <span class="asset-summary-label">
+                Completed
+              </span>
+
+              <strong id="assetLatestActivityDate">
+                —
+              </strong>
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =====================================================
+          MAINTENANCE TIMELINE
+
+          Container μόνο προς το παρόν.
+          Θα το γεμίσουμε δυναμικά στο επόμενο στάδιο.
+      ====================================================== -->
+
+      <section class="asset-maintenance-timeline-card">
+
+        <div class="asset-maintenance-timeline-header">
+
+          <h4>
+            📅 Maintenance Timeline
+            <span>
+              (Next 30 Days)
+            </span>
+          </h4>
+
+        </div>
+
+
+        <div
+          id="assetMaintenanceTimeline"
+          class="asset-maintenance-timeline"
+        >
+
+          <div class="asset-timeline-empty">
+            No upcoming maintenance.
+          </div>
+
+        </div>
+
+      </section>
+
     </div>
 
       <!-- =====================
