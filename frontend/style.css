@@ -3394,18 +3394,20 @@ body.cmms-authenticated[data-role="shift_foreman"]
   grid-template-columns:
     repeat(
       auto-fill,
-      minmax(180px, 220px)
+      260px
     );
 
   justify-content: start;
 
-  gap: 12px;
+  gap: 14px;
 
   margin-top: 10px;
 }
 
 
 .history-attachment-card {
+  width: 260px;
+
   overflow: hidden;
 
   border:
@@ -3426,7 +3428,7 @@ body.cmms-authenticated[data-role="shift_foreman"]
   display: block;
 
   width: 100%;
-  height: 120px;
+  height: 165px;
 
   overflow: hidden;
 
@@ -3457,6 +3459,7 @@ body.cmms-authenticated[data-role="shift_foreman"]
 
   filter: brightness(1.06);
 }
+
 
 
 /* =========================================================
@@ -3767,17 +3770,36 @@ body.cmms-authenticated[data-role="shift_foreman"]
 }
 #historyViewOverlay .history-attachments-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      280px
+    );
+
+  justify-content: start;
+
   gap: 14px;
+
   margin-top: 12px;
+
   min-width: 0;
 }
+
 #historyViewOverlay .history-attachment-card {
+  width: 280px;
+
   min-width: 0;
+
   overflow: hidden;
-  border: 1px solid var(--border-subtle, #272b35);
+
+  border:
+    1px solid var(--border-subtle, #272b35);
+
   border-radius: 10px;
-  background: var(--bg-card-alt, #1f242e);
+
+  background:
+    var(--bg-card-alt, #1f242e);
 }
 #historyViewOverlay .history-attachment-preview,
 #historyViewOverlay .history-file-preview {
