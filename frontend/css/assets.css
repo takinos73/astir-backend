@@ -2649,7 +2649,7 @@ tr.highlight-execution {
 #assetViewOverlay
 .asset-overview-kpis
 .asset-kpi-card {
-  min-height: 168px;
+  min-height: 160px;
 
   padding:
     13px
@@ -2755,7 +2755,7 @@ tr.highlight-execution {
 
   color: #f8fafc;
 
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
 
   line-height: 1;
