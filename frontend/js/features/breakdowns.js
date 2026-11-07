@@ -3753,7 +3753,7 @@ function openTaskFromBreakdown(taskId) {
     bdOverlay.style.display = "none";
   }
 
-  ViewTask(taskId);
+  viewTask(taskId);
 }
 
   /* =========================================================
@@ -4544,7 +4544,6 @@ function renderMachineStateTotal(
 
 }
 
-
 /* =========================================================
    MACHINE STATE HISTORY ROW
 ========================================================= */
@@ -4586,7 +4585,6 @@ function renderMachineStateHistoryRow(item) {
   `;
 
 }
-
 
 /* =========================================================
    FORMAT MACHINE STATE DURATION
@@ -4995,7 +4993,6 @@ function toBreakdownDateTimeLocal(value) {
     pad(date.getMinutes())
   );
 }
-
 
 /* =====================
    CLOSE DETAIL MODAL
