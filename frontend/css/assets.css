@@ -659,49 +659,78 @@ tr.highlight-execution {
   margin-top: 12px;
 }
 
-/* ⬅ κρατά ΜΟΝΟ το info αριστερά */
+
+/* Κρατά μόνο το info αριστερά */
 #assetViewOverlay .modal-actions span,
 #assetViewOverlay .bulk-actions span {
   margin-right: auto;
   opacity: 0.85;
 }
+
+
 .bulk-actions-right {
   margin-left: auto;
   display: flex;
   gap: 8px;
 }
+
+
 .bulk-actions-left #assetBulkClearBtn {
-  margin-left: auto;    
+  margin-left: auto;
 }
-/* Scroll ΜΟΝΟ στο table container */
+
+
+/* =========================================================
+   ASSET TASKS TABLE
+
+   Το table χρησιμοποιεί όσο διαθέσιμο ύψος μπορεί,
+   με ανώτατο όριο το viewport - 20px.
+
+   Αφαιρούμε τα παλιά fixed 320 / 430 / 360px
+   για να μην κάνουν override μεταξύ τους.
+========================================================= */
+
 .asset-tasks-table {
-  max-height: 320px;        /* ~6–8 rows */
+  flex: 1;
+  min-height: 0;
+
   overflow-y: auto;
+
+  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
+
   border: 1px solid #2a2f3a;
   border-radius: 6px;
 }
+
 
 /* Sticky table header */
 .asset-tasks-table thead th {
   position: sticky;
   top: 0;
+
   background: #1e222b;
+
   z-index: 2;
 }
 
-/* Προαιρετικό – πιο καθαρό scrollbar */
+
+/* Scrollbar */
 .asset-tasks-table::-webkit-scrollbar {
   width: 8px;
 }
+
 
 .asset-tasks-table::-webkit-scrollbar-thumb {
   background: #3a4050;
   border-radius: 4px;
 }
 
+
 .asset-tasks-table::-webkit-scrollbar-track {
   background: transparent;
 }
+
 
 /* =====================
    ASSET VIEW – TABS & PANELS
@@ -710,47 +739,56 @@ tr.highlight-execution {
 .asset-tabs {
   display: flex;
   gap: 8px;
+
   margin: 10px 0;
+
   border-bottom: 1px solid #ddd;
 }
 
+
 .asset-tab {
   padding: 8px 14px;
+
   background: none;
   border: none;
+
   cursor: pointer;
+
   font-weight: 500;
   font-size: 13px;
+
   color: #868585;
   opacity: 1;
+
   border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
+
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
+
 
 .asset-tab.active {
   opacity: 1;
-  border-bottom: 2px solid #868484;
+
+  border-bottom:
+    2px solid #868484;
 }
+
 
 .asset-tab-panel {
   display: none;
+
   flex-direction: column;
+
   min-height: 0;
 }
+
 
 .asset-tab-panel.active {
   display: flex;
+
   min-height: 0;
-}
-
-.asset-tasks-table {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 430px;   /* 6–8 rows */
-}
-
-.asset-tab-panel.active .asset-tasks-table {
-  max-height: 360px;
 }
 
 /* =====================
