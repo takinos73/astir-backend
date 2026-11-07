@@ -9438,7 +9438,13 @@ function renderRestorationTasks(tasks) {
                 : "s"
             }`
           : "📎 Add Attachment";
+          
 
+      // ============================================================
+      // CLICKABLE TASK TITLE
+      // Ανοίγει το Task Details από το Breakdown Detail.
+      // Το data-task-id κρατά το πραγματικό Task ID.
+      // ============================================================
 
       return `
         <div
@@ -9449,12 +9455,6 @@ function renderRestorationTasks(tasks) {
           <div class="restoration-task-main">
 
             <div>
-
-              // ============================================================
-              // CLICKABLE TASK TITLE
-              // Ανοίγει το Task Details από το Breakdown Detail.
-              // Το data-task-id κρατά το πραγματικό Task ID.
-              // ============================================================
 
               <button
                 type="button"
@@ -9644,7 +9644,7 @@ function renderRestorationTasks(tasks) {
       These buttons open the Task Details
       from the Breakdown Detail view.
   ===================== */
-  
+
     container
     .querySelectorAll(
       ".restoration-task-open-btn"

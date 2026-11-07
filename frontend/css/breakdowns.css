@@ -2458,4 +2458,30 @@ input[type="date"] {
   color: #bfdbfe;
 }
 
+/* =========================================================
+   BREAKDOWN DETAIL — CLICKABLE TASK TITLE
+
+   Κρατά την εμφάνιση του υπάρχοντος τίτλου,
+   αλλά δείχνει διακριτικά ότι μπορεί να πατηθεί.
+========================================================= */
+
+.restoration-task-open-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.restoration-task-open-btn:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
 
