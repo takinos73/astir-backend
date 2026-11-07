@@ -289,8 +289,9 @@ tr.task-restoration {
 
 
 /* =========================================================
-   ATTACHMENT LIST
-   Horizontal layout with horizontal scroll
+   TASK VIEW — ATTACHMENTS ALIGNMENT
+   Όλα τα attachment cards ξεκινούν από αριστερά.
+   Έτσι και όταν υπάρχει μόνο 1 file, δεν κάθεται στο κέντρο.
 ========================================================= */
 
 .task-attachments-view-list {
@@ -299,6 +300,8 @@ tr.task-restoration {
   flex-direction: row;
 
   align-items: stretch;
+
+  justify-content: flex-start;
 
   gap: 14px;
 
