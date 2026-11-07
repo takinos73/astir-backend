@@ -206,12 +206,37 @@ async function openAssetViewBySerial(serial) {
       line_code: ref.line_code || ref.line || "-"
     });
 
+    // ============================================================
+    // EXISTING KPI RENDER
+    // ============================================================
+
     renderAssetKpis(
       state.assetAllTasks,
       state.assetHistoryTasks
     );
 
-    renderAssetMttrKpis(state.currentAssetSerial);
+
+    // ============================================================
+    // NEW OVERVIEW DETAILS
+    //
+    // Γεμίζει τα νέα Overview cards από τα datasets
+    // που έχουν ήδη δημιουργηθεί για το συγκεκριμένο Asset.
+    // ============================================================
+
+    if (
+      typeof renderAssetOverviewDetails === "function"
+    ) {
+      renderAssetOverviewDetails();
+    }
+
+
+    // ============================================================
+    // EXISTING MTTR
+    // ============================================================
+
+    renderAssetMttrKpis(
+      state.currentAssetSerial
+    );
 
     // 🖨 PRINT PREVENTIVE PLAN BUTTON
     const printBtn = document.getElementById("printAssetPreventiveBtn");
@@ -2568,6 +2593,444 @@ function bindAssetOverviewActions(asset) {
 }
 
 // ============================================================
+// RENDER ASSET OVERVIEW DETAILS
+//
+// Γεμίζει τα νέα operational στοιχεία του Asset Overview
+// χρησιμοποιώντας ΜΟΝΟ δεδομένα που υπάρχουν ήδη:
+//
+// - state.assetAllTasks
+// - state.assetHistoryTasks
+// - state.assetBreakdowns
+//
+// Δεν κάνει κανένα νέο API request.
+// Δεν αλλάζει Tasks / History / Breakdowns.
+// ============================================================
+
+function renderAssetOverviewDetails() {
+
+  // ==========================================================
+  // SAFE DATA SOURCES
+  // ==========================================================
+
+  const tasks =
+    Array.isArray(state.assetAllTasks)
+      ? state.assetAllTasks
+      : [];
+
+
+  const history =
+    Array.isArray(state.assetHistoryTasks)
+      ? state.assetHistoryTasks
+      : [];
+
+
+  const breakdowns =
+    Array.isArray(state.assetBreakdowns)
+      ? state.assetBreakdowns
+      : [];
+
+
+  // ==========================================================
+  // SMALL SAFE TEXT HELPER
+  // ==========================================================
+
+  const setText = (id, value) => {
+
+    const el =
+      document.getElementById(id);
+
+    if (el) {
+      el.textContent =
+        value ?? "—";
+    }
+
+  };
+
+
+  // ==========================================================
+  // DATE SAFETY HELPER
+  // ==========================================================
+
+  const validDate = value => {
+
+    if (!value) return null;
+
+    const date =
+      new Date(value);
+
+    return Number.isNaN(
+      date.getTime()
+    )
+      ? null
+      : date;
+
+  };
+
+
+  // ==========================================================
+  // ACTIVE TASKS
+  //
+  // Κρατάμε μόνο Planned / Overdue tasks.
+  // ==========================================================
+
+  const activeTasks =
+    tasks.filter(t =>
+      t.status === "Planned" ||
+      t.status === "Overdue"
+    );
+
+
+  // ==========================================================
+  // NEXT PREVENTIVE
+  //
+  // Πλησιέστερο ενεργό Preventive με valid due_date.
+  // ==========================================================
+
+  const nextPreventive =
+    activeTasks
+      .filter(t =>
+        typeof isPreventive === "function" &&
+        isPreventive(t) &&
+        validDate(t.due_date)
+      )
+      .sort(
+        (a, b) =>
+          validDate(a.due_date) -
+          validDate(b.due_date)
+      )[0] || null;
+
+
+  const nextPreventiveLabel =
+    nextPreventive
+      ? formatDate(nextPreventive.due_date)
+      : "—";
+
+
+  // Asset Information
+  setText(
+    "assetNextPreventive",
+    nextPreventiveLabel
+  );
+
+
+  // Planned KPI footer
+  setText(
+    "assetNextPreventiveKpi",
+    nextPreventiveLabel
+  );
+
+
+  // ==========================================================
+  // OVERDUE TASKS
+  //
+  // Βρίσκουμε το παλαιότερο overdue due date.
+  // ==========================================================
+
+  const overdueTasks =
+    activeTasks
+      .filter(t =>
+        typeof getDueState === "function" &&
+        getDueState(t) === "overdue" &&
+        validDate(t.due_date)
+      )
+      .sort(
+        (a, b) =>
+          validDate(a.due_date) -
+          validDate(b.due_date)
+      );
+
+
+  const oldestOverdue =
+    overdueTasks[0] || null;
+
+
+  let oldestOverdueLabel =
+    "—";
+
+
+  if (oldestOverdue) {
+
+    const dueDate =
+      validDate(
+        oldestOverdue.due_date
+      );
+
+
+    const now =
+      new Date();
+
+
+    const days =
+      Math.max(
+        0,
+        Math.floor(
+          (
+            now.getTime() -
+            dueDate.getTime()
+          ) /
+          (
+            24 *
+            60 *
+            60 *
+            1000
+          )
+        )
+      );
+
+
+    oldestOverdueLabel =
+      `${days} days · ${formatDate(oldestOverdue.due_date)}`;
+
+  }
+
+
+  setText(
+    "assetOldestOverdue",
+    oldestOverdueLabel
+  );
+
+
+  // ==========================================================
+  // HISTORY — LATEST EXECUTION
+  //
+  // state.assetHistoryTasks χρησιμοποιεί executed_at.
+  // ==========================================================
+
+  const latestExecution =
+    history
+      .filter(e =>
+        validDate(e.executed_at)
+      )
+      .sort(
+        (a, b) =>
+          validDate(b.executed_at) -
+          validDate(a.executed_at)
+      )[0] || null;
+
+
+  const lastCompletedLabel =
+    latestExecution
+      ? formatDate(
+          latestExecution.executed_at
+        )
+      : "—";
+
+
+  // History KPI footer
+  setText(
+    "assetLastCompleted",
+    lastCompletedLabel
+  );
+
+
+  // Asset Information — Last Service
+  setText(
+    "assetLastService",
+    lastCompletedLabel
+  );
+
+
+  // ==========================================================
+  // NEXT MAINTENANCE
+  //
+  // Πλησιέστερο ενεργό task ανεξαρτήτως τύπου.
+  // ==========================================================
+
+  const nextMaintenance =
+    activeTasks
+      .filter(t =>
+        validDate(t.due_date)
+      )
+      .sort(
+        (a, b) =>
+          validDate(a.due_date) -
+          validDate(b.due_date)
+      )[0] || null;
+
+
+  setText(
+    "assetNextMaintenanceTask",
+    nextMaintenance?.task ||
+    "—"
+  );
+
+
+  setText(
+    "assetNextMaintenanceDate",
+    nextMaintenance
+      ? formatDate(
+          nextMaintenance.due_date
+        )
+      : "—"
+  );
+
+
+  setText(
+    "assetNextMaintenanceDuration",
+    nextMaintenance &&
+    Number.isFinite(
+      Number(
+        nextMaintenance.duration_min
+      )
+    )
+      ? formatDuration(
+          Number(
+            nextMaintenance.duration_min
+          )
+        )
+      : "—"
+  );
+
+
+  // ==========================================================
+  // LATEST BREAKDOWN
+  //
+  // state.assetBreakdowns έχει:
+  // - started_at
+  // - title
+  // - effective_down_seconds
+  // ==========================================================
+
+  const latestBreakdown =
+    breakdowns
+      .filter(b =>
+        validDate(b.started_at)
+      )
+      .sort(
+        (a, b) =>
+          validDate(b.started_at) -
+          validDate(a.started_at)
+      )[0] || null;
+
+
+  setText(
+    "assetLatestBreakdownTitle",
+    latestBreakdown?.title ||
+    "—"
+  );
+
+
+  setText(
+    "assetLatestBreakdownDate",
+    latestBreakdown
+      ? formatDate(
+          latestBreakdown.started_at
+        )
+      : "—"
+  );
+
+
+  let latestDowntime =
+    "—";
+
+
+  if (latestBreakdown) {
+
+    const downSeconds =
+      Number(
+        latestBreakdown.effective_down_seconds
+      );
+
+
+    if (
+      Number.isFinite(downSeconds) &&
+      downSeconds >= 0
+    ) {
+
+      latestDowntime =
+        formatDuration(
+          Math.round(
+            downSeconds / 60
+          )
+        );
+
+    }
+
+  }
+
+
+  setText(
+    "assetLatestBreakdownDowntime",
+    latestDowntime
+  );
+
+
+  // ==========================================================
+  // LATEST ACTIVITY
+  //
+  // Χρησιμοποιούμε την τελευταία πραγματική execution.
+  // ==========================================================
+
+  setText(
+    "assetLatestActivityTask",
+    latestExecution?.task ||
+    "—"
+  );
+
+
+  setText(
+    "assetLatestActivityTechnician",
+    latestExecution?.executed_by ||
+    "—"
+  );
+
+
+  setText(
+    "assetLatestActivityDate",
+    latestExecution
+      ? formatDate(
+          latestExecution.executed_at
+        )
+      : "—"
+  );
+
+
+  // ==========================================================
+  // HEALTH BADGE
+  //
+  // Απλή και διαφανής λογική:
+  //
+  // Overdue > 0  → ATTENTION
+  // Overdue = 0  → GOOD
+  //
+  // Δεν αποτελεί reliability calculation.
+  // Είναι μόνο operational status του Overview.
+  // ==========================================================
+
+  const healthBadge =
+    document.getElementById(
+      "assetHealthBadge"
+    );
+
+
+  if (healthBadge) {
+
+    const needsAttention =
+      overdueTasks.length > 0;
+
+
+    healthBadge.textContent =
+      needsAttention
+        ? "ATTENTION"
+        : "GOOD";
+
+
+    healthBadge.classList.toggle(
+      "is-good",
+      !needsAttention
+    );
+
+
+    healthBadge.classList.toggle(
+      "is-attention",
+      needsAttention
+    );
+
+  }
+
+}
+
+// ============================================================
 // POPULATE ASSET OVERVIEW HEADER
 //
 // Γεμίζει ΜΟΝΟ τα νέα στοιχεία του Overview:
@@ -3241,6 +3704,24 @@ async function refreshAssetView() {
   );
 
   highlightActiveHistoryLegend();
+
+  // ============================================================
+  // REFRESH NEW OVERVIEW DETAILS
+  //
+  // Ανανεώνει:
+  // - Last Service
+  // - Next Preventive
+  // - Overdue
+  // - Latest Activity
+  // - Latest Breakdown
+  // - Health
+  // ============================================================
+
+  if (
+    typeof renderAssetOverviewDetails === "function"
+  ) {
+    renderAssetOverviewDetails();
+  }
 
   // =====================
   // REFRESH ASSET KPIs
