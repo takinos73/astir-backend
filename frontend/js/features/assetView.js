@@ -2110,61 +2110,164 @@ async function completeBulkTasks({
 
   return true;
 }
+
 // =====================
 // ACTIVATE ASSET TAB (STABLE VERSION)
 // =====================
 
 function activateAssetTab(tabName) {
+
+  // ==========================================================
+  // BASIC GUARD
+  // ==========================================================
+
   if (!tabName) return;
+
 
   // ============================================================
   // ASSET VIEW — LEGACY HEADER VISIBILITY
   //
-  // Στο νέο Overview έχουμε πλέον δικό μας πλήρες header,
-  // οπότε κρύβουμε τον παλιό μόνο εκεί.
+  // Στο Overview:
+  // - κρύβει τον παλιό Asset title
+  // - κρύβει την παλιά γραμμή Line / Status
   //
-  // Στα:
+  // Στα υπόλοιπα tabs:
   // - Active Tasks
   // - Breakdowns
   // - History
   //
-  // ο υπάρχων header παραμένει κανονικά ορατός.
+  // τα επαναφέρει κανονικά.
+  //
+  // Δεν αφαιρείται κανένα element από το DOM.
+  // Αλλάζει μόνο το display.
   // ============================================================
 
+  const isOverview =
+    tabName === "overview";
+
+
   const assetViewOverlay =
-    document.getElementById("assetViewOverlay");
+    document.getElementById(
+      "assetViewOverlay"
+    );
+
 
   if (assetViewOverlay) {
+
     assetViewOverlay.classList.toggle(
       "overview-mode",
-      tabName === "overview"
+      isOverview
     );
+
   }
+
+
+  // ==========================================================
+  // OLD ASSET TITLE
+  // ==========================================================
+
+  const oldTitle =
+    document.getElementById(
+      "assetViewTitle"
+    );
+
+
+  if (oldTitle) {
+
+    oldTitle.style.display =
+      isOverview
+        ? "none"
+        : "";
+
+  }
+
+
+  // ==========================================================
+  // OLD LINE / STATUS ROW
+  //
+  // Τα #assetViewLine και #assetViewStatus βρίσκονται
+  // στην υπάρχουσα metadata γραμμή του Asset View.
+  //
+  // Κρύβουμε ολόκληρο το κοινό parent μόνο στο Overview.
+  // ==========================================================
+
+  const oldLine =
+    document.getElementById(
+      "assetViewLine"
+    );
+
+
+  const oldStatus =
+    document.getElementById(
+      "assetViewStatus"
+    );
+
+
+  let oldMetaRow = null;
+
+
+  // Προσπαθούμε πρώτα από το Line.
+  if (oldLine) {
+    oldMetaRow =
+      oldLine.parentElement;
+  }
+
+
+  // Αν για οποιονδήποτε λόγο δεν βρέθηκε,
+  // χρησιμοποιούμε το parent του Status.
+  if (!oldMetaRow && oldStatus) {
+    oldMetaRow =
+      oldStatus.parentElement;
+  }
+
+
+  if (oldMetaRow) {
+
+    oldMetaRow.style.display =
+      isOverview
+        ? "none"
+        : "";
+
+  }
+
 
   // =====================
   // UI STATE
   // =====================
 
-  document.querySelectorAll(".asset-tab").forEach(tab => {
-    tab.classList.toggle(
-      "active",
-      tab.dataset.tab === tabName
-    );
-  });
+  document
+    .querySelectorAll(".asset-tab")
+    .forEach(tab => {
 
-  document.querySelectorAll(".asset-tab-panel").forEach(panel => {
-    panel.style.display =
-      panel.dataset.panel === tabName
-        ? "block"
-        : "none";
-  });
+      tab.classList.toggle(
+        "active",
+        tab.dataset.tab === tabName
+      );
+
+    });
+
+
+  document
+    .querySelectorAll(".asset-tab-panel")
+    .forEach(panel => {
+
+      panel.style.display =
+        panel.dataset.panel === tabName
+          ? "block"
+          : "none";
+
+    });
+
 
   // =====================
   // ACTION BUTTON VISIBILITY
   // =====================
 
   const printBtn =
-    document.getElementById("printAssetPreventiveBtn");
+    document.getElementById(
+      "printAssetPreventiveBtn"
+    );
+
 
   if (printBtn) {
 
@@ -2177,11 +2280,15 @@ function activateAssetTab(tabName) {
           t.deleted_at == null
       );
 
+
     printBtn.style.display =
-      tabName === "active" && hasPreventive
+      tabName === "active" &&
+      hasPreventive
         ? "inline-flex"
         : "none";
+
   }
+
 
   // =====================
   // ACTIVE TASKS
@@ -2190,13 +2297,17 @@ function activateAssetTab(tabName) {
   if (tabName === "active") {
 
     renderAssetTasksTable(
-      Array.isArray(state.assetActiveTasks)
+      Array.isArray(
+        state.assetActiveTasks
+      )
         ? state.assetActiveTasks
         : []
     );
 
+
     return;
   }
+
 
   // =====================
   // HISTORY
@@ -2204,37 +2315,76 @@ function activateAssetTab(tabName) {
 
   if (tabName === "history") {
 
-    // Reset History filters
-    state.assetHistoryTaskFilter = null;
-    state.assetHistoryTypeFilter = "all";
-    state.historyDateFrom = null;
-    state.historyDateTo = null;
-    state.assetHistorySearchQuery = "";
+    // ========================================================
+    // RESET HISTORY FILTERS
+    // ========================================================
 
-    // Reset History search input
+    state.assetHistoryTaskFilter =
+      null;
+
+    state.assetHistoryTypeFilter =
+      "all";
+
+    state.historyDateFrom =
+      null;
+
+    state.historyDateTo =
+      null;
+
+    state.assetHistorySearchQuery =
+      "";
+
+
+    // ========================================================
+    // RESET HISTORY SEARCH INPUT
+    // ========================================================
+
     const historySearch =
-      document.getElementById("assetHistorySearch");
+      document.getElementById(
+        "assetHistorySearch"
+      );
+
 
     if (historySearch) {
       historySearch.value = "";
     }
 
+
+    // ========================================================
+    // HISTORY RANGE FILTERS
+    // ========================================================
+
     bindHistoryRangeFilters();
 
+
+    // ========================================================
+    // RENDER HISTORY
+    // ========================================================
+
     renderAssetHistoryTable(
-      Array.isArray(state.assetHistoryTasks)
+      Array.isArray(
+        state.assetHistoryTasks
+      )
         ? state.assetHistoryTasks
         : []
     );
 
+
+    // ========================================================
+    // UPDATE HISTORY LEGEND ACTIVE STATE
+    // ========================================================
+
     highlightActiveHistoryLegend();
+
   }
+
 }
 
 // =====================
 // TAB CLICK HANDLER
 // Bind only once
 // =====================
+
 function bindAssetTabs() {
 
   const container =

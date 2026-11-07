@@ -2185,18 +2185,22 @@ tr.highlight-execution {
 }
 
 /* =========================================================
-   ASSET VIEW — OVERVIEW HEIGHT FIX
+   ASSET VIEW — OVERVIEW FINAL LAYOUT
 
    Στόχος:
-   - Το modal να ΜΗΝ μεγαλώνει έξω από την οθόνη
-   - Το Overview να κάνει εσωτερικό vertical scroll
-   - Τα tabs / header να παραμένουν ορατά
+   - Compact Overview
+   - Να χωράει όσο γίνεται σε μία desktop οθόνη
+   - Χωρίς μόνιμο vertical scrollbar
+   - Το modal παραμένει μέσα στο viewport
+   - Ο παλιός header κρύβεται μόνο στο Overview
 ========================================================= */
 
 
 /* =========================================================
    ASSET VIEW MODAL
-   Κρατάμε το modal μέσα στο viewport.
+
+   Κρατάμε ολόκληρο το Asset View μέσα στο viewport.
+   Το modal λειτουργεί ως vertical flex container.
 ========================================================= */
 
 #assetViewOverlay .modal-box.asset-view {
@@ -2210,8 +2214,9 @@ tr.highlight-execution {
 
 
 /* =========================================================
-   TABS
-   Δεν πρέπει να συρρικνώνονται όταν το Overview μεγαλώνει.
+   ASSET TABS
+
+   Τα tabs παραμένουν σταθερά και δεν συμπιέζονται.
 ========================================================= */
 
 #assetViewOverlay .asset-tabs {
@@ -2221,7 +2226,9 @@ tr.highlight-execution {
 
 /* =========================================================
    TAB PANELS
-   Παίρνουν μόνο τον διαθέσιμο χώρο του modal.
+
+   Επιτρέπουμε στα panels να χρησιμοποιούν σωστά
+   τον διαθέσιμο χώρο του flex modal.
 ========================================================= */
 
 #assetViewOverlay .asset-tab-panel {
@@ -2230,10 +2237,27 @@ tr.highlight-execution {
 
 
 /* =========================================================
+   OVERVIEW — OLD HEADER
+
+   Το JS πλέον κρύβει δυναμικά:
+   - #assetViewTitle
+   - παλιά Line / Status row
+
+   Το class overview-mode παραμένει σαν επιπλέον safety.
+========================================================= */
+
+#assetViewOverlay.overview-mode #assetViewTitle {
+  display: none;
+}
+
+
+/* =========================================================
    OVERVIEW PANEL
 
-   Το νέο dashboard κάνει scroll μόνο μέσα στο panel.
-   Έτσι το κάτω μέρος δεν κόβεται.
+   Compact layout χωρίς δικό του scrollbar.
+
+   Αν το περιεχόμενο χωράει στο viewport,
+   δεν εμφανίζεται vertical scroll.
 ========================================================= */
 
 #assetViewOverlay
@@ -2242,68 +2266,860 @@ tr.highlight-execution {
 
   min-height: 0;
 
-  max-height: calc(95dvh - 190px);
+  max-height: none;
 
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
 
-  padding-right: 6px;
-  padding-bottom: 14px;
+  gap: 8px;
+
+  padding:
+    2px
+    4px
+    6px;
 }
 
 
 /* =========================================================
-   OVERVIEW SCROLLBAR
+   TOP OVERVIEW HEADER
+
+   Photo | Asset identity | Add Task
 ========================================================= */
 
-#assetViewOverlay
-.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar {
-  width: 8px;
+#assetViewOverlay .asset-overview-header {
+  display: grid;
+
+  grid-template-columns:
+    82px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  min-height: 76px;
+
+  gap: 14px;
+
+  padding:
+    6px
+    10px;
+
+  border-bottom:
+    1px solid rgba(148, 163, 184, 0.18);
 }
 
-
-#assetViewOverlay
-.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar-thumb {
-  background: #3a4050;
-  border-radius: 4px;
-}
-
-
-#assetViewOverlay
-.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar-track {
-  background: transparent;
-}
 
 /* =========================================================
-   OVERVIEW — HIDE OLD HEADER
-
-   Ο παλιός header παραμένει στο DOM και συνεχίζει
-   να χρησιμοποιείται από τα άλλα Asset tabs.
-
-   Κρύβεται μόνο όταν το Asset View είναι σε Overview mode.
+   ASSET PHOTO
 ========================================================= */
 
-#assetViewOverlay.overview-mode #assetViewTitle {
-  display: none;
+#assetViewOverlay .asset-overview-image-wrap {
+  width: 76px;
+  height: 66px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  padding-right: 12px;
+
+  border-right:
+    1px solid rgba(148, 163, 184, 0.20);
 }
 
 
-/* Κρύβει τη γραμμή Line / Status του παλιού header.
-   :has() χρησιμοποιείται μόνο μέσα στο Asset View. */
-#assetViewOverlay.overview-mode
-*:has(> #assetViewLine):has(> #assetViewStatus) {
-  display: none;
+#assetViewOverlay .asset-overview-image {
+  display: block;
+
+  width: 62px;
+  height: 58px;
+
+  object-fit: contain;
 }
 
-#assetViewOverlay .asset-tab-panel[data-panel="overview"] {gap:10px;padding...}
-.asset-overview-header { grid-template-columns: 82px 1fr auto; padding:4px 8px 8px; gap:14}
-image wrap 78x62 etc
-model 24
-info padding 9 11
-kpi card min-height:145;padding:14
-kpi value 31
-footer padding top 10
-summary min-height:105; padding 12 14
-summary h4 margin...
-timeline padding 12 14
-timeline min-height:70
+
+#assetViewOverlay .asset-overview-image-fallback {
+  width: 62px;
+  height: 58px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background:
+    rgba(30, 41, 59, 0.55);
+
+  border:
+    1px solid rgba(148, 163, 184, 0.15);
+
+  font-size: 28px;
+}
+
+
+/* =========================================================
+   ASSET IDENTITY
+========================================================= */
+
+#assetViewOverlay .asset-overview-identity {
+  min-width: 0;
+}
+
+
+#assetViewOverlay .asset-overview-title-row {
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 12px;
+
+  flex-wrap: wrap;
+}
+
+
+#assetViewOverlay .asset-overview-model {
+  margin: 0;
+
+  color: #f8fafc;
+
+  font-size: 24px;
+  font-weight: 800;
+
+  line-height: 1.1;
+
+  letter-spacing: -0.02em;
+}
+
+
+#assetViewOverlay .asset-overview-serial {
+  color: #a8b1bf;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+#assetViewOverlay .asset-overview-context {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 5px;
+
+  color: #d8dee9;
+
+  font-size: 13px;
+}
+
+
+#assetViewOverlay .asset-overview-separator {
+  color: #64748b;
+}
+
+
+#assetViewOverlay .asset-overview-status {
+  color: #4ade80;
+}
+
+
+/* =========================================================
+   OVERVIEW — ADD TASK
+========================================================= */
+
+#assetViewOverlay .asset-overview-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+#assetViewOverlay .asset-overview-add-task {
+  min-height: 38px;
+
+  padding:
+    0
+    16px;
+
+  border:
+    1px solid rgba(56, 189, 248, 0.38);
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2e8bff,
+      #1673d2
+    );
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+
+#assetViewOverlay .asset-overview-add-task:hover {
+  filter: brightness(1.08);
+}
+
+
+/* =========================================================
+   ASSET INFORMATION STRIP
+========================================================= */
+
+#assetViewOverlay .asset-info-strip {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(90px, 0.8fr)
+    minmax(100px, 0.9fr)
+    minmax(70px, 0.6fr)
+    minmax(220px, 2.2fr)
+    minmax(110px, 1fr)
+    minmax(120px, 1fr)
+    auto;
+
+  align-items: stretch;
+
+  min-height: 68px;
+
+  gap: 0;
+
+  border:
+    1px solid rgba(96, 165, 250, 0.30);
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 34, 53, 0.84),
+      rgba(13, 25, 39, 0.84)
+    );
+
+  overflow: hidden;
+}
+
+
+#assetViewOverlay .asset-info-title,
+#assetViewOverlay .asset-info-item,
+#assetViewOverlay .asset-info-health {
+  min-width: 0;
+
+  padding:
+    8px
+    12px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border-right:
+    1px solid rgba(148, 163, 184, 0.14);
+}
+
+
+#assetViewOverlay .asset-info-title {
+  flex-direction: row;
+
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+
+  color: #f1f5f9;
+}
+
+
+#assetViewOverlay .asset-info-health {
+  align-items: center;
+
+  border-right: 0;
+}
+
+
+#assetViewOverlay .asset-info-label {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.04em;
+}
+
+
+#assetViewOverlay .asset-info-item strong,
+#assetViewOverlay .asset-info-item > span:last-child {
+  overflow: hidden;
+
+  color: #eef2f7;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+#assetViewOverlay .asset-info-description {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   HEALTH BADGE
+========================================================= */
+
+#assetViewOverlay .asset-health-badge {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-width: 90px;
+
+  padding:
+    6px
+    10px;
+
+  border:
+    1px solid rgba(245, 158, 11, 0.58);
+
+  border-radius: 9px;
+
+  background:
+    rgba(245, 158, 11, 0.13);
+
+  color: #fbbf24;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   KPI ROW
+========================================================= */
+
+#assetViewOverlay .asset-overview-kpis {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+
+/* =========================================================
+   KPI CARD BASE
+========================================================= */
+
+#assetViewOverlay
+.asset-overview-kpis
+.asset-kpi-card {
+  min-height: 168px;
+
+  padding:
+    13px
+    16px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(22, 31, 43, 0.96),
+      rgba(18, 24, 34, 0.96)
+    );
+
+  border:
+    1px solid rgba(148, 163, 184, 0.20);
+
+  box-shadow:
+    0 7px 18px rgba(0, 0, 0, 0.15);
+}
+
+
+/* =========================================================
+   KPI COLOR ACCENTS
+========================================================= */
+
+#assetViewOverlay .kpi-planned {
+  border-color:
+    rgba(56, 189, 248, 0.65);
+}
+
+
+#assetViewOverlay .kpi-overdue {
+  border-color:
+    rgba(248, 113, 113, 0.70);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(74, 28, 38, 0.38),
+      rgba(26, 24, 32, 0.96)
+    );
+}
+
+
+#assetViewOverlay .kpi-history {
+  border-color:
+    rgba(96, 165, 250, 0.38);
+}
+
+
+#assetViewOverlay .kpi-reliability {
+  border-color:
+    rgba(129, 140, 248, 0.55);
+}
+
+
+/* =========================================================
+   KPI HEADER
+========================================================= */
+
+#assetViewOverlay .asset-kpi-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  margin-bottom: 8px;
+}
+
+
+#assetViewOverlay .asset-kpi-icon {
+  font-size: 19px;
+}
+
+
+#assetViewOverlay .asset-kpi-header .kpi-label {
+  color: #e5e7eb;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.03em;
+}
+
+
+/* =========================================================
+   KPI MAIN VALUE
+========================================================= */
+
+#assetViewOverlay
+.asset-overview-kpis
+> .asset-kpi-card
+> .kpi-value {
+  margin-top: 3px;
+
+  color: #f8fafc;
+
+  font-size: 32px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+
+#assetViewOverlay .kpi-overdue > .kpi-value {
+  color: #fb7185;
+}
+
+
+/* =========================================================
+   KPI FOOTER
+========================================================= */
+
+#assetViewOverlay .asset-kpi-footer {
+  margin-top: auto;
+
+  padding-top: 8px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+  border-top:
+    1px solid rgba(148, 163, 184, 0.18);
+
+  color: #aab4c3;
+
+  font-size: 11px;
+}
+
+
+#assetViewOverlay .asset-kpi-footer strong {
+  color: #e2e8f0;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   RELIABILITY KPI
+========================================================= */
+
+#assetViewOverlay .kpi-reliability .kpi-metric {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding:
+    3px
+    0;
+}
+
+
+#assetViewOverlay .kpi-reliability .kpi-label {
+  color: #a8b1bf;
+
+  font-size: 11px;
+}
+
+
+#assetViewOverlay .kpi-reliability .kpi-value {
+  color: #f8fafc;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+
+#assetViewOverlay .kpi-reliability .kpi-sub {
+  margin: 0;
+
+  color: #cbd5e1;
+
+  font-size: 11px;
+}
+
+
+#assetViewOverlay .kpi-reliability .kpi-divider {
+  height: 1px;
+
+  background:
+    rgba(148, 163, 184, 0.18);
+}
+
+
+/* =========================================================
+   SECOND ROW — SUMMARY CARDS
+========================================================= */
+
+#assetViewOverlay .asset-overview-summary-row {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+
+#assetViewOverlay .asset-summary-card {
+  min-height: 105px;
+
+  padding:
+    10px
+    16px;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(21, 30, 42, 0.95),
+      rgba(17, 23, 32, 0.95)
+    );
+
+  border:
+    1px solid rgba(148, 163, 184, 0.20);
+}
+
+
+#assetViewOverlay .summary-next-maintenance {
+  border-color:
+    rgba(52, 211, 153, 0.58);
+}
+
+
+#assetViewOverlay .summary-latest-breakdown {
+  border-color:
+    rgba(248, 113, 113, 0.58);
+}
+
+
+#assetViewOverlay .summary-latest-activity {
+  border-color:
+    rgba(56, 189, 248, 0.58);
+}
+
+
+#assetViewOverlay .asset-summary-card h4 {
+  margin:
+    0
+    0
+    8px;
+
+  color: #f1f5f9;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+#assetViewOverlay .asset-summary-content {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+#assetViewOverlay .asset-summary-content > div {
+  display: grid;
+
+  grid-template-columns:
+    82px
+    minmax(0, 1fr);
+
+  gap: 8px;
+}
+
+
+#assetViewOverlay .asset-summary-label {
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+
+#assetViewOverlay .asset-summary-content strong {
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: #e2e8f0;
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   MAINTENANCE TIMELINE
+========================================================= */
+
+#assetViewOverlay .asset-maintenance-timeline-card {
+  padding:
+    10px
+    14px;
+
+  border:
+    1px solid rgba(96, 165, 250, 0.34);
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(17, 31, 47, 0.94),
+      rgba(14, 24, 37, 0.94)
+    );
+}
+
+
+#assetViewOverlay .asset-maintenance-timeline-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 6px;
+}
+
+
+#assetViewOverlay .asset-maintenance-timeline-header h4 {
+  margin: 0;
+
+  color: #f1f5f9;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+#assetViewOverlay .asset-maintenance-timeline-header h4 span {
+  color: #94a3b8;
+
+  font-size: 10px;
+  font-weight: 500;
+}
+
+
+#assetViewOverlay .asset-maintenance-timeline {
+  min-height: 62px;
+
+  display: flex;
+
+  align-items: center;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+
+#assetViewOverlay .asset-timeline-empty {
+  width: 100%;
+
+  padding: 18px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   RESPONSIVE — MEDIUM WIDTH
+
+   Σε μικρότερες desktop οθόνες:
+   - KPI → 2 columns
+   - Info strip → 4 columns
+========================================================= */
+
+@media (max-width: 1150px) {
+
+  #assetViewOverlay .asset-info-strip {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+
+
+  #assetViewOverlay .asset-overview-kpis {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+
+  #assetViewOverlay .asset-overview-summary-row {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — SMALL HEIGHT
+
+   Αν το viewport έχει μικρό ύψος,
+   επιτρέπουμε scroll μόνο τότε για να μη χαθεί περιεχόμενο.
+========================================================= */
+
+@media (max-height: 760px) {
+
+  #assetViewOverlay
+  .asset-tab-panel[data-panel="overview"].active {
+    overflow-y: auto;
+
+    padding-right: 6px;
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — MOBILE / NARROW
+========================================================= */
+
+@media (max-width: 720px) {
+
+  #assetViewOverlay .asset-overview-header {
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+
+    gap: 10px;
+  }
+
+
+  #assetViewOverlay .asset-overview-actions {
+    grid-column:
+      1 / -1;
+
+    justify-content: flex-end;
+  }
+
+
+  #assetViewOverlay .asset-info-strip {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+
+  #assetViewOverlay .asset-overview-kpis,
+  #assetViewOverlay .asset-overview-summary-row {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+
+  #assetViewOverlay
+  .asset-tab-panel[data-panel="overview"].active {
+    overflow-y: auto;
+  }
+
+}
