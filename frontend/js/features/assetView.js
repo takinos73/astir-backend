@@ -2117,6 +2117,30 @@ async function completeBulkTasks({
 function activateAssetTab(tabName) {
   if (!tabName) return;
 
+  // ============================================================
+  // ASSET VIEW — LEGACY HEADER VISIBILITY
+  //
+  // Στο νέο Overview έχουμε πλέον δικό μας πλήρες header,
+  // οπότε κρύβουμε τον παλιό μόνο εκεί.
+  //
+  // Στα:
+  // - Active Tasks
+  // - Breakdowns
+  // - History
+  //
+  // ο υπάρχων header παραμένει κανονικά ορατός.
+  // ============================================================
+
+  const assetViewOverlay =
+    document.getElementById("assetViewOverlay");
+
+  if (assetViewOverlay) {
+    assetViewOverlay.classList.toggle(
+      "overview-mode",
+      tabName === "overview"
+    );
+  }
+
   // =====================
   // UI STATE
   // =====================

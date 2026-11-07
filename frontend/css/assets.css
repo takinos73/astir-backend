@@ -2273,3 +2273,37 @@ tr.highlight-execution {
 .asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* =========================================================
+   OVERVIEW — HIDE OLD HEADER
+
+   Ο παλιός header παραμένει στο DOM και συνεχίζει
+   να χρησιμοποιείται από τα άλλα Asset tabs.
+
+   Κρύβεται μόνο όταν το Asset View είναι σε Overview mode.
+========================================================= */
+
+#assetViewOverlay.overview-mode #assetViewTitle {
+  display: none;
+}
+
+
+/* Κρύβει τη γραμμή Line / Status του παλιού header.
+   :has() χρησιμοποιείται μόνο μέσα στο Asset View. */
+#assetViewOverlay.overview-mode
+*:has(> #assetViewLine):has(> #assetViewStatus) {
+  display: none;
+}
+
+#assetViewOverlay .asset-tab-panel[data-panel="overview"] {gap:10px;padding...}
+.asset-overview-header { grid-template-columns: 82px 1fr auto; padding:4px 8px 8px; gap:14}
+image wrap 78x62 etc
+model 24
+info padding 9 11
+kpi card min-height:145;padding:14
+kpi value 31
+footer padding top 10
+summary min-height:105; padding 12 14
+summary h4 margin...
+timeline padding 12 14
+timeline min-height:70
