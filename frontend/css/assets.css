@@ -1330,8 +1330,8 @@ tr.highlight-execution {
 ========================================================= */
 
 #assetViewOverlay .modal-box.asset-view {
-  width: min(96vw, 1380px);
-  max-width: 1380px;
+  width: min(96vw, 1320px);
+  max-width: 1320px;
 }
 
 
@@ -2387,7 +2387,7 @@ tr.highlight-execution {
 
   color: #f8fafc;
 
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
 
   line-height: 1.1;
