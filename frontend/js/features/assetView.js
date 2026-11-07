@@ -229,6 +229,19 @@ async function openAssetViewBySerial(serial) {
       renderAssetOverviewDetails();
     }
 
+    // ============================================================
+    // ASSET MAINTENANCE TIMELINE
+    //
+    // Γεμίζει το Timeline με:
+    // - Overdue tasks
+    // - Upcoming tasks των επόμενων 30 ημερών
+    // ============================================================
+
+    if (
+      typeof renderAssetMaintenanceTimeline === "function"
+    ) {
+      renderAssetMaintenanceTimeline();
+    }
 
     // ============================================================
     // EXISTING MTTR
@@ -3031,6 +3044,504 @@ function renderAssetOverviewDetails() {
 }
 
 // ============================================================
+// RENDER ASSET MAINTENANCE TIMELINE
+//
+// Timeline περιεχόμενο:
+// - όλα τα ενεργά Overdue tasks
+// - όλα τα ενεργά tasks από σήμερα έως +30 ημέρες
+//
+// Χρησιμοποιεί μόνο:
+// - state.assetAllTasks
+//
+// Δεν κάνει API request.
+// Δεν αλλάζει tasks.
+// Δεν αλλάζει due dates.
+// ============================================================
+
+function renderAssetMaintenanceTimeline() {
+
+  const container =
+    document.getElementById(
+      "assetMaintenanceTimeline"
+    );
+
+
+  // Αν δεν υπάρχει το Timeline container,
+  // δεν κάνουμε τίποτα.
+  if (!container) {
+    return;
+  }
+
+
+  // ==========================================================
+  // SAFE SOURCE
+  // ==========================================================
+
+  const tasks =
+    Array.isArray(state.assetAllTasks)
+      ? state.assetAllTasks
+      : [];
+
+
+  // ==========================================================
+  // SMALL HTML ESCAPE HELPER
+  //
+  // Προστατεύει task / unit text πριν μπει στο innerHTML.
+  // ==========================================================
+
+  const escapeTimelineHtml = value => {
+
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  };
+
+
+  // ==========================================================
+  // DATE HELPER
+  // ==========================================================
+
+  const getValidDate = value => {
+
+    if (!value) {
+      return null;
+    }
+
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return null;
+    }
+
+    return date;
+
+  };
+
+
+  // ==========================================================
+  // TODAY
+  //
+  // Μηδενίζουμε ώρα ώστε οι συγκρίσεις να γίνονται
+  // σε επίπεδο ημερομηνίας.
+  // ==========================================================
+
+  const today =
+    new Date();
+
+  today.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+
+  // ==========================================================
+  // END OF 30 DAY WINDOW
+  // ==========================================================
+
+  const endDate =
+    new Date(today);
+
+  endDate.setDate(
+    endDate.getDate() + 30
+  );
+
+
+  // ==========================================================
+  // ACTIVE TASKS ONLY
+  //
+  // Δεν εμφανίζουμε Done ή deleted tasks.
+  // ==========================================================
+
+  const activeTasks =
+    tasks.filter(t => {
+
+      if (
+        t.deleted_at != null
+      ) {
+        return false;
+      }
+
+      return (
+        t.status !== "Done" &&
+        getValidDate(t.due_date)
+      );
+
+    });
+
+
+  // ==========================================================
+  // TIMELINE TASK SELECTION
+  //
+  // Περιλαμβάνει:
+  // 1. Overdue
+  // 2. Today → next 30 days
+  // ==========================================================
+
+  const timelineTasks =
+    activeTasks
+      .filter(t => {
+
+        const dueDate =
+          getValidDate(
+            t.due_date
+          );
+
+        if (!dueDate) {
+          return false;
+        }
+
+
+        dueDate.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        const dueState =
+          typeof getDueState === "function"
+            ? getDueState(t)
+            : "";
+
+
+        // Όλα τα overdue εμφανίζονται.
+        if (
+          dueState === "overdue"
+        ) {
+          return true;
+        }
+
+
+        // Upcoming μόνο μέσα στις επόμενες 30 ημέρες.
+        return (
+          dueDate >= today &&
+          dueDate <= endDate
+        );
+
+      })
+      .sort((a, b) => {
+
+        const dateA =
+          getValidDate(
+            a.due_date
+          );
+
+        const dateB =
+          getValidDate(
+            b.due_date
+          );
+
+        return (
+          dateA - dateB
+        );
+
+      });
+
+
+  // ==========================================================
+  // EMPTY STATE
+  // ==========================================================
+
+  if (
+    timelineTasks.length === 0
+  ) {
+
+    container.innerHTML = `
+      <!-- No maintenance inside the timeline window -->
+      <div class="asset-timeline-empty">
+        No overdue or upcoming maintenance in the next 30 days.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  // ==========================================================
+  // BUILD TIMELINE
+  // ==========================================================
+
+  const itemsHtml =
+    timelineTasks
+      .map(task => {
+
+        const dueDate =
+          getValidDate(
+            task.due_date
+          );
+
+
+        dueDate.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+
+        // ====================================================
+        // DAYS DIFFERENCE FROM TODAY
+        // ====================================================
+
+        const daysDifference =
+          Math.round(
+            (
+              dueDate.getTime() -
+              today.getTime()
+            ) /
+            (
+              24 *
+              60 *
+              60 *
+              1000
+            )
+          );
+
+
+        // ====================================================
+        // TASK STATE
+        // ====================================================
+
+        const isOverdue =
+          typeof getDueState === "function" &&
+          getDueState(task) === "overdue";
+
+
+        const preventive =
+          typeof isPreventive === "function" &&
+          isPreventive(task);
+
+
+        const plannedManual =
+          typeof isPlannedManual === "function" &&
+          isPlannedManual(task);
+
+
+        // ====================================================
+        // VISUAL TYPE
+        // ====================================================
+
+        let timelineClass =
+          "planned";
+
+        let typeLabel =
+          "PLANNED";
+
+
+        if (isOverdue) {
+
+          timelineClass =
+            "overdue";
+
+          typeLabel =
+            "OVERDUE";
+
+        }
+        else if (preventive) {
+
+          timelineClass =
+            "preventive";
+
+          typeLabel =
+            "PREVENTIVE";
+
+        }
+        else if (plannedManual) {
+
+          timelineClass =
+            "planned";
+
+          typeLabel =
+            "PLANNED";
+
+        }
+
+
+        // ====================================================
+        // RELATIVE DATE LABEL
+        // ====================================================
+
+        let relativeLabel =
+          "";
+
+
+        if (daysDifference < 0) {
+
+          const overdueDays =
+            Math.abs(
+              daysDifference
+            );
+
+          relativeLabel =
+            `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
+
+        }
+        else if (
+          daysDifference === 0
+        ) {
+
+          relativeLabel =
+            "Today";
+
+        }
+        else if (
+          daysDifference === 1
+        ) {
+
+          relativeLabel =
+            "Tomorrow";
+
+        }
+        else {
+
+          relativeLabel =
+            `In ${daysDifference} days`;
+
+        }
+
+
+        // ====================================================
+        // DURATION
+        // ====================================================
+
+        const durationMinutes =
+          Number(
+            task.duration_min
+          );
+
+
+        const durationLabel =
+          Number.isFinite(
+            durationMinutes
+          ) &&
+          durationMinutes > 0
+            ? (
+                typeof formatDuration === "function"
+                  ? formatDuration(
+                      durationMinutes
+                    )
+                  : `${durationMinutes} min`
+              )
+            : "—";
+
+
+        // ====================================================
+        // SAFE VALUES
+        // ====================================================
+
+        const taskName =
+          escapeTimelineHtml(
+            task.task || "Unnamed task"
+          );
+
+
+        const unit =
+          escapeTimelineHtml(
+            task.unit || "—"
+          );
+
+
+        const dueLabel =
+          typeof formatDate === "function"
+            ? formatDate(
+                task.due_date
+              )
+            : escapeTimelineHtml(
+                task.due_date
+              );
+
+
+        // ====================================================
+        // TIMELINE ITEM
+        // ====================================================
+
+        return `
+          <div
+            class="asset-timeline-item ${timelineClass}"
+            title="${taskName}"
+          >
+
+            <!-- Timeline marker -->
+            <div class="asset-timeline-marker"></div>
+
+
+            <!-- Task card -->
+            <div class="asset-timeline-item-card">
+
+              <div class="asset-timeline-item-top">
+
+                <span class="asset-timeline-type">
+                  ${typeLabel}
+                </span>
+
+                <span class="asset-timeline-relative">
+                  ${relativeLabel}
+                </span>
+
+              </div>
+
+
+              <div class="asset-timeline-task">
+                ${taskName}
+              </div>
+
+
+              <div class="asset-timeline-meta">
+
+                <span>
+                  📅 ${dueLabel}
+                </span>
+
+                <span>
+                  📍 ${unit}
+                </span>
+
+                <span>
+                  ⏱ ${durationLabel}
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  // ==========================================================
+  // FINAL TIMELINE HTML
+  // ==========================================================
+
+  container.innerHTML = `
+    <div class="asset-timeline-track">
+
+      <!-- Horizontal timeline line -->
+      <div class="asset-timeline-line"></div>
+
+      ${itemsHtml}
+
+    </div>
+  `;
+
+}
+
+// ============================================================
 // POPULATE ASSET OVERVIEW HEADER
 //
 // Γεμίζει ΜΟΝΟ τα νέα στοιχεία του Overview:
@@ -3721,6 +4232,18 @@ async function refreshAssetView() {
     typeof renderAssetOverviewDetails === "function"
   ) {
     renderAssetOverviewDetails();
+  }
+
+  // ============================================================
+  // REFRESH MAINTENANCE TIMELINE
+  //
+  // Ανανέωση του Timeline μετά από αλλαγές / Done / refresh.
+  // ============================================================
+
+  if (
+    typeof renderAssetMaintenanceTimeline === "function"
+  ) {
+    renderAssetMaintenanceTimeline();
   }
 
   // =====================

@@ -3201,3 +3201,383 @@ tr.highlight-execution {
   border-color:
     rgba(245, 158, 11, 0.58);
 }
+
+/* =========================================================
+   ASSET MAINTENANCE TIMELINE
+
+   Horizontal operational timeline:
+   - Overdue
+   - Preventive
+   - Planned Manual
+
+   Εμφανίζει horizontal scroll μόνο όταν χρειάζεται.
+========================================================= */
+
+
+/* =========================================================
+   TIMELINE CONTAINER
+========================================================= */
+
+#assetViewOverlay
+.asset-maintenance-timeline {
+  position: relative;
+
+  min-height: 118px;
+
+  display: block;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding:
+    8px
+    4px
+    6px;
+
+  scroll-behavior: smooth;
+}
+
+
+/* =========================================================
+   TIMELINE TRACK
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-track {
+  position: relative;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 14px;
+
+  min-width: max-content;
+
+  padding:
+    13px
+    6px
+    2px;
+}
+
+
+/* =========================================================
+   HORIZONTAL TIMELINE LINE
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-line {
+  position: absolute;
+
+  top: 18px;
+  left: 8px;
+  right: 8px;
+
+  height: 2px;
+
+  background:
+    rgba(100, 116, 139, 0.35);
+}
+
+
+/* =========================================================
+   TIMELINE ITEM
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item {
+  position: relative;
+
+  width: 205px;
+
+  flex:
+    0
+    0
+    205px;
+
+  padding-top: 15px;
+
+  z-index: 1;
+}
+
+
+/* =========================================================
+   TIMELINE MARKER
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-marker {
+  position: absolute;
+
+  top: 0;
+  left: 14px;
+
+  width: 12px;
+  height: 12px;
+
+  border-radius: 50%;
+
+  background:
+    #60a5fa;
+
+  border:
+    2px solid #101923;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(96, 165, 250, 0.28);
+}
+
+
+/* =========================================================
+   TASK CARD
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item-card {
+  min-height: 85px;
+
+  padding:
+    8px
+    10px;
+
+  border-radius: 9px;
+
+  background:
+    rgba(20, 29, 41, 0.94);
+
+  border:
+    1px solid
+    rgba(148, 163, 184, 0.20);
+}
+
+
+/* =========================================================
+   TOP ROW
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item-top {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-bottom: 6px;
+}
+
+
+/* =========================================================
+   TYPE BADGE
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-type {
+  padding:
+    2px
+    6px;
+
+  border-radius: 5px;
+
+  background:
+    rgba(96, 165, 250, 0.12);
+
+  color: #93c5fd;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.04em;
+}
+
+
+/* =========================================================
+   RELATIVE DATE
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-relative {
+  color: #94a3b8;
+
+  font-size: 9px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   TASK NAME
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-task {
+  margin-bottom: 6px;
+
+  overflow: hidden;
+
+  color: #f1f5f9;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  line-height: 1.25;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   TASK META
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-meta {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap:
+    3px
+    8px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   PREVENTIVE
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item.preventive
+.asset-timeline-marker {
+  background:
+    #34d399;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(52, 211, 153, 0.25);
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.preventive
+.asset-timeline-item-card {
+  border-color:
+    rgba(52, 211, 153, 0.35);
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.preventive
+.asset-timeline-type {
+  color: #6ee7b7;
+
+  background:
+    rgba(52, 211, 153, 0.12);
+}
+
+
+/* =========================================================
+   PLANNED MANUAL
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item.planned
+.asset-timeline-marker {
+  background:
+    #60a5fa;
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.planned
+.asset-timeline-item-card {
+  border-color:
+    rgba(96, 165, 250, 0.35);
+}
+
+
+/* =========================================================
+   OVERDUE
+========================================================= */
+
+#assetViewOverlay
+.asset-timeline-item.overdue
+.asset-timeline-marker {
+  background:
+    #fb7185;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(251, 113, 133, 0.26);
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.overdue
+.asset-timeline-item-card {
+  border-color:
+    rgba(251, 113, 133, 0.48);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(76, 29, 40, 0.42),
+      rgba(22, 27, 37, 0.96)
+    );
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.overdue
+.asset-timeline-type {
+  color: #fda4af;
+
+  background:
+    rgba(251, 113, 133, 0.13);
+}
+
+
+#assetViewOverlay
+.asset-timeline-item.overdue
+.asset-timeline-relative {
+  color: #fb7185;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   TIMELINE SCROLLBAR
+
+   Διακριτικό scrollbar μόνο όταν υπάρχουν
+   περισσότερες εργασίες από τον διαθέσιμο χώρο.
+========================================================= */
+
+#assetViewOverlay
+.asset-maintenance-timeline::-webkit-scrollbar {
+  height: 6px;
+}
+
+
+#assetViewOverlay
+.asset-maintenance-timeline::-webkit-scrollbar-thumb {
+  background:
+    #3a4050;
+
+  border-radius: 4px;
+}
+
+
+#assetViewOverlay
+.asset-maintenance-timeline::-webkit-scrollbar-track {
+  background:
+    transparent;
+}
