@@ -2183,3 +2183,93 @@ tr.highlight-execution {
   }
 
 }
+
+/* =========================================================
+   ASSET VIEW — OVERVIEW HEIGHT FIX
+
+   Στόχος:
+   - Το modal να ΜΗΝ μεγαλώνει έξω από την οθόνη
+   - Το Overview να κάνει εσωτερικό vertical scroll
+   - Τα tabs / header να παραμένουν ορατά
+========================================================= */
+
+
+/* =========================================================
+   ASSET VIEW MODAL
+   Κρατάμε το modal μέσα στο viewport.
+========================================================= */
+
+#assetViewOverlay .modal-box.asset-view {
+  max-height: 95dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   TABS
+   Δεν πρέπει να συρρικνώνονται όταν το Overview μεγαλώνει.
+========================================================= */
+
+#assetViewOverlay .asset-tabs {
+  flex: 0 0 auto;
+}
+
+
+/* =========================================================
+   TAB PANELS
+   Παίρνουν μόνο τον διαθέσιμο χώρο του modal.
+========================================================= */
+
+#assetViewOverlay .asset-tab-panel {
+  min-height: 0;
+}
+
+
+/* =========================================================
+   OVERVIEW PANEL
+
+   Το νέο dashboard κάνει scroll μόνο μέσα στο panel.
+   Έτσι το κάτω μέρος δεν κόβεται.
+========================================================= */
+
+#assetViewOverlay
+.asset-tab-panel[data-panel="overview"].active {
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  max-height: calc(95dvh - 190px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 6px;
+  padding-bottom: 14px;
+}
+
+
+/* =========================================================
+   OVERVIEW SCROLLBAR
+========================================================= */
+
+#assetViewOverlay
+.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar {
+  width: 8px;
+}
+
+
+#assetViewOverlay
+.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar-thumb {
+  background: #3a4050;
+  border-radius: 4px;
+}
+
+
+#assetViewOverlay
+.asset-tab-panel[data-panel="overview"].active::-webkit-scrollbar-track {
+  background: transparent;
+}
