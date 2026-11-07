@@ -1324,54 +1324,127 @@ async function confirmDeleteTask() {
 }
 
 // ============================================================
-// VIEW TASK MODAL — DEBUG ENTRY
+// VIEW TASK MODAL
 //
-// Ελέγχουμε τι Task ID παίρνει η function
-// και αν υπάρχει πραγματικά στο global task state.
+// NORMAL FLOW:
+// 1. Προσπαθεί να βρει το Task στο global state.tasksData.
+//
+// BREAKDOWN FLOW:
+// 2. Αν δεν υπάρχει εκεί, το αναζητά στα currentBreakdownTasks.
+//
+// Δεν αλλάζει καμία άλλη υπάρχουσα λειτουργία.
 // ============================================================
 
 function viewTask(taskId) {
 
-  console.log(
-    "VIEW TASK called with:",
-    taskId
-  );
+  const id =
+    Number(taskId);
 
 
-  const task =
+  // ==========================================================
+  // FIND TASK
+  // Πρώτα στο κανονικό Tasks state.
+  // Αν δεν βρεθεί, fallback στα Breakdown Tasks.
+  // ==========================================================
+
+  let task =
     Array.isArray(state.tasksData)
       ? state.tasksData.find(
-          t => Number(t.id) === Number(taskId)
+          t => Number(t.id) === id
         )
       : null;
 
 
-  console.log(
-    "VIEW TASK found task:",
-    task
-  );
+  if (
+    !task &&
+    Array.isArray(currentBreakdownTasks)
+  ) {
 
+    task =
+      currentBreakdownTasks.find(
+        t => Number(t.id) === id
+      );
+
+  }
+
+
+  // ==========================================================
+  // TASK NOT FOUND
+  // Δεν συνεχίζουμε αν το Task δεν υπάρχει πουθενά.
+  // ==========================================================
 
   if (!task) {
 
     console.error(
-      "VIEW TASK ABORTED — task not found in state.tasksData:",
-      taskId
+      "VIEW TASK — task not found:",
+      id
     );
 
     return;
   }
 
-  const el = document.getElementById("taskViewContent");
+
+  // ==========================================================
+  // BREAKDOWN ASSET CONTEXT FALLBACK
+  //
+  // Τα Tasks που φορτώνονται μέσα από Breakdown Detail
+  // μπορεί να μην έχουν machine_name / serial_number / line_code.
+  //
+  // Συμπληρώνουμε ΜΟΝΟ αυτά τα display fields
+  // από το ήδη ανοιχτό currentBreakdown.
+  // ==========================================================
+
+  if (
+    taskViewOrigin === "breakdown"
+  ) {
+
+    task = {
+      ...task,
+
+      machine_name:
+        task.machine_name ||
+        currentBreakdown?.asset_model ||
+        "-",
+
+      serial_number:
+        task.serial_number ||
+        currentBreakdown?.asset_serial ||
+        "",
+
+      line_code:
+        task.line_code ||
+        currentBreakdown?.line_name ||
+        ""
+    };
+
+  }
+
+
+  const el =
+    document.getElementById(
+      "taskViewContent"
+    );
+
 
   // =====================
   // PRINT BUTTON
   // =====================
-  const printBtn = document.getElementById("printTaskBtn");
+
+  const printBtn =
+    document.getElementById(
+      "printTaskBtn"
+    );
+
   if (printBtn) {
-    printBtn.style.display = "inline-flex";
-    printBtn.onclick = () => printTask(task.id);
+
+    printBtn.style.display =
+      "inline-flex";
+
+    printBtn.onclick =
+      () => printTask(task.id);
+
   }
+
 
   el.innerHTML = `
 
@@ -1381,30 +1454,36 @@ function viewTask(taskId) {
 
   <!-- ASSET CONTEXT -->
   <div class="task-view-asset tech">
+
     <div class="asset-main">
       🏭 ${task.machine_name}
     </div>
+
     <div class="asset-sub">
       ${task.serial_number ? `SN: ${task.serial_number}` : ""}
       • Line ${task.line_code}
     </div>
+
   </div>
 
-  <!-- WORK ORDER TITLE -->
-    <div class="task-view-title tech">
-      ${task.task}
-    </div>
 
-    <div
-      style="
-        margin-top:4px;
-        font-size:12px;
-        color:#8b949e;
-        font-weight:500;
-      "
-    >
-      Task ID: ${task.id}
-    </div>
+  <!-- WORK ORDER TITLE -->
+  <div class="task-view-title tech">
+    ${task.task}
+  </div>
+
+
+  <div
+    style="
+      margin-top:4px;
+      font-size:12px;
+      color:#8b949e;
+      font-weight:500;
+    "
+  >
+    Task ID: ${task.id}
+  </div>
+
 
   <!-- STATUS / TYPE / IMPACT -->
   <div class="task-view-meta tech">
@@ -1431,126 +1510,232 @@ function viewTask(taskId) {
 
   </div>
 
-<!-- TECHNICAL DETAILS -->
-<div class="task-view-details tech">
 
-  <div>
-    <label>Section</label>
-    <div>${task.section || "-"}</div>
-  </div>
+  <!-- TECHNICAL DETAILS -->
+  <div class="task-view-details tech">
 
-  <div>
-    <label>Unit</label>
-    <div>${task.unit || "-"}</div>
-  </div>
-
-  <div>
-    <label>Maintenance Type</label>
     <div>
-      ${getMaintenanceTypeLabel(task)}
+      <label>Section</label>
+      <div>${task.section || "-"}</div>
     </div>
-  </div>
 
-  <div>
-    <label>Frequency</label>
     <div>
-      ${task.frequency_hours ? task.frequency_hours + " h" : "-"}
+      <label>Unit</label>
+      <div>${task.unit || "-"}</div>
     </div>
-  </div>
 
-  <div>
-    <label>Estimated Duration</label>
     <div>
-      ${task.duration_min ? task.duration_min + " min" : "-"}
+      <label>Maintenance Type</label>
+
+      <div>
+        ${getMaintenanceTypeLabel(task)}
+      </div>
     </div>
+
+    <div>
+      <label>Frequency</label>
+
+      <div>
+        ${task.frequency_hours
+          ? task.frequency_hours + " h"
+          : "-"
+        }
+      </div>
+    </div>
+
+    <div>
+      <label>Estimated Duration</label>
+
+      <div>
+        ${task.duration_min
+          ? task.duration_min + " min"
+          : "-"
+        }
+      </div>
+    </div>
+
   </div>
 
-</div>
-    <!-- NOTES -->
+
+  <!-- NOTES -->
   ${
     task.notes
       ? `
-  <div class="task-view-notes tech">
-    <label>Notes</label>
-    <div>${task.notes}</div>
-  </div>
-  `
+        <div class="task-view-notes tech">
+
+          <label>Notes</label>
+
+          <div>
+            ${task.notes}
+          </div>
+
+        </div>
+      `
       : ""
   }
+
+
   <!-- COMPLETION INFO -->
   ${
     task.status === "Done"
       ? `
-  <div class="task-view-completed tech">
-    ✔ Completed<br>
-    <span>
-      Executed by <strong>${task.completed_by || "-"}</strong>
-    </span>
-    <span>
-      • ${task.completed_at ? formatDate(task.completed_at) : ""}
-    </span>
-  </div>
-  `
+        <div class="task-view-completed tech">
+
+          ✔ Completed
+          <br>
+
+          <span>
+            Executed by
+            <strong>
+              ${task.completed_by || "-"}
+            </strong>
+          </span>
+
+          <span>
+            • ${
+              task.completed_at
+                ? formatDate(
+                    task.completed_at
+                  )
+                : ""
+            }
+          </span>
+
+        </div>
+      `
       : ""
   }
 
 `;
-  document.getElementById("taskViewOverlay").style.display = "flex";
+
 
   // =====================
-  // EDIT / DONE/ DELETE VISIBILITY
+  // OPEN TASK VIEW
   // =====================
-  state.currentViewedTask = task;
 
-  const doneBtn = document.getElementById("taskViewDoneBtn");
-
-    if (
-      doneBtn &&
-      task.status !== "Done"
-    ) {
-      doneBtn.style.display = "inline-flex";
-    } else if (doneBtn) {
-      doneBtn.style.display = "none";}
+  document
+    .getElementById(
+      "taskViewOverlay"
+    )
+    .style.display =
+      "flex";
 
 
-  const editBtn = document.getElementById("editTaskBtn");
-  const deleteBtn = document.getElementById("deleteTaskBtn");
-  const editArea = document.getElementById("taskEditArea");
+  // =====================
+  // EDIT / DONE / DELETE
+  // =====================
 
-  if (canEditTask(task)) {
-    editBtn.style.display = "inline-flex";
-    deleteBtn.style.display = "inline-flex";
-    editArea.style.display = "none";
-  } else {
-    editBtn.style.display = "none";
-    deleteBtn.style.display = "none";
-    editArea.style.display = "none";
+  state.currentViewedTask =
+    task;
+
+
+  const doneBtn =
+    document.getElementById(
+      "taskViewDoneBtn"
+    );
+
+
+  if (
+    doneBtn &&
+    task.status !== "Done"
+  ) {
+
+    doneBtn.style.display =
+      "inline-flex";
+
+  } else if (doneBtn) {
+
+    doneBtn.style.display =
+      "none";
+
   }
 
+
+  const editBtn =
+    document.getElementById(
+      "editTaskBtn"
+    );
+
+  const deleteBtn =
+    document.getElementById(
+      "deleteTaskBtn"
+    );
+
+  const editArea =
+    document.getElementById(
+      "taskEditArea"
+    );
+
+
+  if (
+    canEditTask(task)
+  ) {
+
+    editBtn.style.display =
+      "inline-flex";
+
+    deleteBtn.style.display =
+      "inline-flex";
+
+    editArea.style.display =
+      "none";
+
+  } else {
+
+    editBtn.style.display =
+      "none";
+
+    deleteBtn.style.display =
+      "none";
+
+    editArea.style.display =
+      "none";
+
+  }
+
+
   // =====================
-  // FOLLOW-UP BUTTON IN ACTION BAR (ALIGN WITH OTHER ACTIONS)
+  // FOLLOW-UP BUTTON
   // =====================
-  const followupBtn = document.getElementById("createFollowupTaskBtn");
+
+  const followupBtn =
+    document.getElementById(
+      "createFollowupTaskBtn"
+    );
+
 
   if (
     followupBtn &&
-    hasRole("planner", "admin") &&
+    hasRole(
+      "planner",
+      "admin"
+    ) &&
     task.status !== "Done" &&
-    (isPreventive(task) || isPlannedManual(task))
+    (
+      isPreventive(task) ||
+      isPlannedManual(task)
+    )
   ) {
-    followupBtn.style.display = "inline-flex";
+
+    followupBtn.style.display =
+      "inline-flex";
+
   } else if (followupBtn) {
-    followupBtn.style.display = "none";
+
+    followupBtn.style.display =
+      "none";
+
   }
 
+
   /* =====================================================
-    LOAD TASK ATTACHMENTS
+     LOAD TASK ATTACHMENTS
 
-    First load existing generic Task attachments.
-    Then append shared Preventive attachments if applicable.
+     First load existing generic Task attachments.
+     Then append shared Preventive attachments if applicable.
 
-    Sequential loading avoids one loader clearing
-    the results of the other.
+     Sequential loading avoids one loader clearing
+     the results of the other.
   ===================================================== */
 
   loadTaskAttachments(
