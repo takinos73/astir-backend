@@ -823,7 +823,7 @@ tbody tr:hover { background: #131520; }
 }
 /* γενικό spacing modal */
 #taskViewOverlay .modal-box {
-  padding: 14px 16px;   /* πριν ήταν πιο “βαρύ” */  
+  padding: 14px 14px;   /* πριν ήταν πιο “βαρύ” */  
 }
 
 /* title */
@@ -1751,7 +1751,7 @@ tr.history-unplanned {
 
 
 .modal-wide {
-  width: 680px;
+  width: 690px;
   max-width: 96%;  
   max-height: 100%;     /* 👈 όριο: μόνο όταν ξεπεραστεί */
   overflow-y: auto;     /* 👈 scroll εμφανίζεται ΜΟΝΟ τότε */  
@@ -3747,7 +3747,18 @@ body.cmms-authenticated[data-role="shift_foreman"]
   font-size: 15px;
   line-height: 1.7;
 }
-#historyViewOverlay .history-notes-card > div { white-space: pre-wrap; }
+/* =========================================================
+   EXECUTION DETAILS — NOTES
+   Κρατάει τις αλλαγές γραμμής αλλά όχι τα περιττά κενά
+   που δημιουργούν μεγάλο αριστερό indent.
+========================================================= */
+
+#historyViewOverlay .history-notes-card > div {
+  white-space: pre-line;
+  margin-left: 0;
+  padding-left: 0;
+}
+
 #historyViewOverlay .history-emphasis {
   color: var(--accent, #4ea8ff) !important;
   font-size: 20px;
