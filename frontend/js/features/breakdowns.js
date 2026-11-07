@@ -3753,7 +3753,7 @@ function openTaskFromBreakdown(taskId) {
     bdOverlay.style.display = "none";
   }
 
-  openTaskView(taskId);
+  ViewTask(taskId);
 }
 
   /* =========================================================
