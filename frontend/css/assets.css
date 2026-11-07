@@ -3123,3 +3123,48 @@ tr.highlight-execution {
   }
 
 }
+
+/* =========================================================
+   ADD TASK MODAL — BACKGROUND FOCUS
+
+   Όταν ανοίγει το Add Task modal:
+   - θολώνει ελαφρά ό,τι βρίσκεται από πίσω
+   - σκοτεινιάζει διακριτικά το background
+   - δίνει μεγαλύτερο visual focus στο Add Task
+
+   Δεν αλλάζει:
+   - JS
+   - modal open / close logic
+   - Asset View
+   - άλλα modals
+========================================================= */
+
+#addTaskOverlay {
+  /* Ελαφρύ σκοτείνιασμα του background */
+  background:
+    rgba(5, 10, 18, 0.48);
+
+  /* Blur μόνο σε ό,τι βρίσκεται ΠΙΣΩ από το overlay */
+  backdrop-filter:
+    blur(4px);
+
+  -webkit-backdrop-filter:
+    blur(4px);
+}
+
+
+/* =========================================================
+   ADD TASK MODAL BOX — FOCUS
+
+   Κάνει το ίδιο το modal να ξεχωρίζει περισσότερο
+   από το blurred Asset View από πίσω.
+========================================================= */
+
+#addTaskOverlay .modal-box {
+  border:
+    1px solid rgba(96, 165, 250, 0.28);
+
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
+}
