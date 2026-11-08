@@ -21463,6 +21463,287 @@ app.post("/assets", async (req, res) => {
   }
 });
 
+/* ============================================================
+   GET EFFECTIVE ASSET PHOTO
+
+   GET:
+   /assets/:id/photo
+
+   Priority:
+   1. ASSET-specific PRIMARY_PHOTO
+   2. MODEL PRIMARY_PHOTO
+   3. No photo
+
+   IMPORTANT:
+   This endpoint returns attachment metadata only.
+
+   The frontend will use the existing:
+   GET /attachments/:attachmentId/open
+
+   to obtain the temporary signed R2 URL.
+============================================================ */
+
+app.get("/assets/:id/photo", async (req, res) => {
+
+    try {
+
+      /* =====================
+         VALIDATE ASSET ID
+      ===================== */
+
+      const assetId =
+        Number(
+          req.params.id
+        );
+
+
+      if (
+        !Number.isInteger(assetId) ||
+        assetId <= 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid Asset ID"
+        });
+
+      }
+
+
+      /* =====================
+         LOAD ASSET
+      ===================== */
+
+      const assetResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            model,
+            serial_number
+
+          FROM assets
+
+          WHERE id = $1
+
+          LIMIT 1
+          `,
+          [
+            assetId
+          ]
+        );
+
+
+      if (
+        assetResult.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          error:
+            "Asset not found"
+        });
+
+      }
+
+
+      const asset =
+        assetResult.rows[0];
+
+
+      /* ======================================================
+         1. TRY ASSET-SPECIFIC PHOTO FIRST
+      ====================================================== */
+
+      const assetPhotoResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            entity_type,
+            entity_id,
+            file_name,
+            mime_type,
+            file_size,
+            purpose,
+            scope,
+            model,
+            uploaded_at
+
+          FROM attachments
+
+          WHERE entity_type =
+                'ASSET'
+
+            AND entity_id = $1
+
+            AND purpose =
+                'PRIMARY_PHOTO'
+
+            AND scope =
+                'ASSET'
+
+          ORDER BY
+            uploaded_at DESC,
+            id DESC
+
+          LIMIT 1
+          `,
+          [
+            assetId
+          ]
+        );
+
+
+      if (
+        assetPhotoResult.rows.length > 0
+      ) {
+
+        return res.json({
+
+          source:
+            "ASSET",
+
+          asset: {
+            id:
+              asset.id,
+
+            model:
+              asset.model,
+
+            serial_number:
+              asset.serial_number
+          },
+
+          photo:
+            assetPhotoResult.rows[0]
+
+        });
+
+      }
+
+
+      /* ======================================================
+         2. FALLBACK TO MODEL PHOTO
+      ====================================================== */
+
+      const modelPhotoResult =
+        await pool.query(
+          `
+          SELECT
+            id,
+            entity_type,
+            entity_id,
+            file_name,
+            mime_type,
+            file_size,
+            purpose,
+            scope,
+            model,
+            uploaded_at
+
+          FROM attachments
+
+          WHERE entity_type =
+                'ASSET'
+
+            AND purpose =
+                'PRIMARY_PHOTO'
+
+            AND scope =
+                'MODEL'
+
+            AND UPPER(
+                  BTRIM(model)
+                ) =
+                UPPER(
+                  BTRIM($1)
+                )
+
+          ORDER BY
+            uploaded_at DESC,
+            id DESC
+
+          LIMIT 1
+          `,
+          [
+            asset.model
+          ]
+        );
+
+
+      if (
+        modelPhotoResult.rows.length > 0
+      ) {
+
+        return res.json({
+
+          source:
+            "MODEL",
+
+          asset: {
+            id:
+              asset.id,
+
+            model:
+              asset.model,
+
+            serial_number:
+              asset.serial_number
+          },
+
+          photo:
+            modelPhotoResult.rows[0]
+
+        });
+
+      }
+
+
+      /* ======================================================
+         3. NO PHOTO
+      ====================================================== */
+
+      return res.json({
+
+        source:
+          null,
+
+        asset: {
+          id:
+            asset.id,
+
+          model:
+            asset.model,
+
+          serial_number:
+            asset.serial_number
+        },
+
+        photo:
+          null
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        "GET /assets/:id/photo ERROR:",
+        err
+      );
+
+
+      return res.status(500).json({
+        error:
+          err.message ||
+          "Failed to load Asset photo"
+      });
+
+    }
+
+  }
+);
+
 /* =====================
    DELETE ASSET
    - Hard delete (admin only)

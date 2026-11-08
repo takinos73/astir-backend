@@ -2959,11 +2959,12 @@ tr.highlight-execution {
 #assetViewOverlay
 .asset-overview-kpis
 .asset-kpi-card {
-  min-height: 160px;
 
+  min-height: 152px;
+  margin-top:8px;
   padding:
-    13px
-    16px;
+    12px
+    14px;
 
   display: flex;
 
