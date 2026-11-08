@@ -496,85 +496,304 @@ function resetEditAssetPhotoSelection() {
 
 }
 
-// ============================================================
-// RENDER EDIT ASSET CURRENT PHOTO
-//
-// Displays the Asset's current saved photo when available.
-//
-// Supports the same possible field names already used
-// by the Asset Overview photo renderer.
-// ============================================================
+/* ============================================================
+   EDIT ASSET — RENDER CURRENT EFFECTIVE PHOTO
 
-function renderEditAssetCurrentPhoto(asset) {
+   Uses the same backend resolver as Asset View:
 
-  const preview =
+   ASSET photo
+   ↓
+   MODEL photo
+   ↓
+   no photo
+
+   DOM:
+   - #editAssetPhotoPreview
+   - #editAssetPhotoFallback
+   - #editAssetPhotoFileName
+   - #editAssetPhotoScopeInfo
+============================================================ */
+
+async function renderEditAssetCurrentPhoto(
+  asset
+) {
+
+  /* =====================
+     GET DOM ELEMENTS
+  ===================== */
+
+  const previewEl =
     document.getElementById(
       "editAssetPhotoPreview"
     );
 
 
-  const fallback =
+  const fallbackEl =
     document.getElementById(
       "editAssetPhotoFallback"
     );
 
 
-  if (
-    !preview ||
-    !fallback
-  ) {
-    return;
-  }
-
-
-  const imageUrl =
-    asset?.image_url ||
-    asset?.image ||
-    asset?.photo_url ||
-    asset?.photo ||
-    "";
-
-
-  if (!imageUrl) {
-
-    preview.removeAttribute(
-      "src"
+  const fileNameEl =
+    document.getElementById(
+      "editAssetPhotoFileName"
     );
 
-    preview.style.display =
-      "none";
 
-    fallback.style.display =
-      "flex";
+  const scopeInfoEl =
+    document.getElementById(
+      "editAssetPhotoScopeInfo"
+    );
+
+
+  /* =====================
+     SAFE EXIT
+  ===================== */
+
+  if (
+    !previewEl ||
+    !fallbackEl
+  ) {
 
     return;
 
   }
 
 
-  preview.src =
-    imageUrl;
+  /* =====================
+     RESET DISPLAY
+  ===================== */
 
-  preview.style.display =
-    "block";
+  previewEl.removeAttribute(
+    "src"
+  );
 
-  fallback.style.display =
+
+  previewEl.style.display =
     "none";
 
 
-  preview.onerror = () => {
+  fallbackEl.style.display =
+    "";
 
-    preview.removeAttribute(
-      "src"
+
+  if (
+    fileNameEl
+  ) {
+
+    fileNameEl.textContent =
+      "No photo selected";
+
+  }
+
+
+  /* =====================
+     VALIDATE ASSET
+  ===================== */
+
+  const assetId =
+    Number(
+      asset?.id
     );
 
-    preview.style.display =
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    /* ========================================================
+       LOAD EFFECTIVE PHOTO
+
+       Backend resolves:
+       ASSET > MODEL > none
+    ======================================================== */
+
+    const photo =
+      await loadEffectiveAssetPhoto(
+        assetId
+      );
+
+
+    /* =====================
+       NO CURRENT PHOTO
+    ===================== */
+
+    if (
+      !photo?.hasPhoto ||
+      !photo?.url
+    ) {
+
+      if (
+        scopeInfoEl
+      ) {
+
+        scopeInfoEl.textContent =
+          "No current Asset / Model photo.";
+
+      }
+
+      return;
+
+    }
+
+
+    /* ========================================================
+       SAFETY CHECK
+
+       User may have opened another Asset while
+       the request was still running.
+    ======================================================== */
+
+    if (
+      Number(
+        editingAssetId
+      ) !== assetId
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       PHOTO METADATA
+    ===================== */
+
+    if (
+      fileNameEl
+    ) {
+
+      fileNameEl.textContent =
+        photo.fileName ||
+        "Current photo";
+
+    }
+
+
+    if (
+      scopeInfoEl
+    ) {
+
+      if (
+        photo.source === "ASSET"
+      ) {
+
+        scopeInfoEl.textContent =
+          "Current photo: Asset-specific";
+
+      }
+
+      else if (
+        photo.source === "MODEL"
+      ) {
+
+        scopeInfoEl.textContent =
+          `Current photo: shared MODEL photo (${asset?.model || ""})`;
+
+      }
+
+      else {
+
+        scopeInfoEl.textContent =
+          "Current photo";
+
+      }
+
+    }
+
+
+    /* =====================
+       LOAD IMAGE
+    ===================== */
+
+    previewEl.src =
+      photo.url;
+
+
+    previewEl.alt =
+      `${asset?.model || "Asset"} ${
+        asset?.serial_number || ""
+      }`.trim();
+
+
+    previewEl.dataset.photoSource =
+      photo.source || "";
+
+
+    previewEl.dataset.attachmentId =
+      String(
+        photo.attachmentId || ""
+      );
+
+
+    /* =====================
+       IMAGE LOAD SUCCESS
+    ===================== */
+
+    previewEl.onload =
+      () => {
+
+        previewEl.style.display =
+          "";
+
+
+        fallbackEl.style.display =
+          "none";
+
+      };
+
+
+    /* =====================
+       IMAGE LOAD FAILURE
+    ===================== */
+
+    previewEl.onerror =
+      () => {
+
+        previewEl.style.display =
+          "none";
+
+
+        fallbackEl.style.display =
+          "";
+
+      };
+
+
+  } catch (err) {
+
+    console.error(
+      "EDIT ASSET PHOTO ERROR:",
+      err
+    );
+
+
+    previewEl.style.display =
       "none";
 
-    fallback.style.display =
-      "flex";
 
-  };
+    fallbackEl.style.display =
+      "";
+
+
+    if (
+      scopeInfoEl
+    ) {
+
+      scopeInfoEl.textContent =
+        "Unable to load current photo.";
+
+    }
+
+  }
 
 }
 
