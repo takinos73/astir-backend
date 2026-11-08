@@ -1120,6 +1120,193 @@ async function loadEffectiveAssetPhoto(assetId) {
 
 }
 
+/* ============================================================
+   EDIT ASSET — UPLOAD PENDING PRIMARY PHOTO
+
+   Runs ONLY when the user has selected a new photo.
+
+   Uses existing backend endpoint:
+
+   POST /attachments/ASSET/:assetId
+
+   Multipart fields:
+   - files
+   - purpose = PRIMARY_PHOTO
+   - scope   = MODEL | ASSET
+   - uploaded_by_id (optional)
+
+   Backend already handles:
+   - MODEL resolution from assets table
+   - replacement of previous MODEL photo
+   - replacement of previous ASSET photo
+   - R2 cleanup
+============================================================ */
+
+async function uploadPendingEditAssetPhoto(
+  assetId
+) {
+
+  /* =====================
+     NO NEW PHOTO
+     
+     Normal Edit Asset Save continues
+     without doing anything here.
+  ===================== */
+
+  if (
+    !editAssetPhotoFile
+  ) {
+
+    return null;
+
+  }
+
+
+  /* =====================
+     VALIDATE ASSET ID
+  ===================== */
+
+  const normalizedAssetId =
+    Number(
+      assetId
+    );
+
+
+  if (
+    !Number.isInteger(
+      normalizedAssetId
+    ) ||
+    normalizedAssetId <= 0
+  ) {
+
+    throw new Error(
+      "Invalid Asset ID for photo upload"
+    );
+
+  }
+
+
+  /* =====================
+     VALIDATE PHOTO SCOPE
+  ===================== */
+
+  const normalizedScope =
+    String(
+      editAssetPhotoScope || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  if (
+    normalizedScope !== "MODEL" &&
+    normalizedScope !== "ASSET"
+  ) {
+
+    throw new Error(
+      "Asset photo scope must be MODEL or ASSET"
+    );
+
+  }
+
+
+  /* =====================
+     BUILD MULTIPART DATA
+  ===================== */
+
+  const formData =
+    new FormData();
+
+
+  formData.append(
+    "files",
+    editAssetPhotoFile
+  );
+
+
+  formData.append(
+    "purpose",
+    "PRIMARY_PHOTO"
+  );
+
+
+  formData.append(
+    "scope",
+    normalizedScope
+  );
+
+
+  /* ==========================================================
+     OPTIONAL UPLOADER
+
+     Reuses the technician ID already stored by the CMMS.
+
+     If no technician is stored, the backend accepts NULL.
+  ========================================================== */
+
+  const uploadedById =
+    localStorage.getItem(
+      TECHNICIAN_ID_STORAGE_KEY
+    );
+
+
+  if (
+    uploadedById
+  ) {
+
+    formData.append(
+      "uploaded_by_id",
+      uploadedById
+    );
+
+  }
+
+
+  /* =====================
+     UPLOAD PHOTO
+  ===================== */
+
+  const response =
+    await fetch(
+      `${API}/attachments/ASSET/${normalizedAssetId}`,
+      {
+        method:
+          "POST",
+
+        body:
+          formData
+      }
+    );
+
+
+  const result =
+    await response
+      .json()
+      .catch(
+        () => ({})
+      );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      result?.error ||
+      "Asset photo upload failed"
+    );
+
+  }
+
+
+  /* =====================
+     SUCCESS
+  ===================== */
+
+  return result;
+
+}
+
 // ============================================================
 // EDIT ASSET — PHOTO PICKER
 // ============================================================
@@ -1421,48 +1608,227 @@ document
 
     });
 
-  /* =====================
-      SAVE EDIT ASSET (PATCH)
-  ===================== */
+/* =====================
+   SAVE EDIT ASSET (PATCH)
 
-getEl("saveEditAssetBtn")?.addEventListener("click", async () => {
-  if (!editingAssetId) return;
+   Flow:
+   1. Save Asset metadata
+   2. If a new photo was selected, upload it
+   3. Close modal
+   4. Refresh Asset data
 
-  const payload = {
-    model: getEl("edit-asset-model").value.trim(),
-    serial_number: getEl("edit-asset-serial").value.trim(),
-    description: getEl("edit-asset-description").value.trim(),
-    line_id: Number(getEl("edit-asset-line").value)
-  };
+   IMPORTANT:
+   Photo upload happens AFTER the Asset PATCH.
 
-  if (!payload.model || !payload.serial_number || !payload.line_id) {
-    return alert("Line, Machine and Serial are required");
-  }
+   This ensures MODEL scope uses the latest
+   model value already stored in the database.
+===================== */
 
-  try {
-    const res = await fetch(`${API}/assets/${editingAssetId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json",
-    "x-cmms-role": window.currentUserRole },
-      body: JSON.stringify(payload)
-    });
+getEl("saveEditAssetBtn")?.addEventListener(
+  "click",
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Update failed");
+  async () => {
+
+    /* =====================
+       VALIDATE EDIT STATE
+    ===================== */
+
+    if (
+      !editingAssetId
+    ) {
+
+      return;
+
     }
 
-    closeEditAsset();
-    
-    // Refresh all asset-related datasets
-    await loadAssets();
-    await loadTasks();
-    await loadHistory(); 
 
-  } catch (err) {
-    alert(err.message);
+    /* =====================
+       BUILD ASSET PAYLOAD
+    ===================== */
+
+    const payload = {
+
+      model:
+        getEl(
+          "edit-asset-model"
+        ).value.trim(),
+
+      serial_number:
+        getEl(
+          "edit-asset-serial"
+        ).value.trim(),
+
+      description:
+        getEl(
+          "edit-asset-description"
+        ).value.trim(),
+
+      line_id:
+        Number(
+          getEl(
+            "edit-asset-line"
+          ).value
+        )
+
+    };
+
+
+    /* =====================
+       REQUIRED FIELDS
+    ===================== */
+
+    if (
+      !payload.model ||
+      !payload.serial_number ||
+      !payload.line_id
+    ) {
+
+      return alert(
+        "Line, Machine and Serial are required"
+      );
+
+    }
+
+
+    try {
+
+      /* =====================================================
+         STEP 1
+         SAVE ASSET METADATA
+      ===================================================== */
+
+      const res =
+        await fetch(
+          `${API}/assets/${editingAssetId}`,
+          {
+            method:
+              "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "x-cmms-role":
+                window.currentUserRole
+            },
+
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
+        );
+
+
+      /* =====================
+         PATCH ERROR
+      ===================== */
+
+      if (
+        !res.ok
+      ) {
+
+        const err =
+          await res
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        throw new Error(
+          err?.error ||
+          "Update failed"
+        );
+
+      }
+
+
+      /* =====================================================
+         STEP 2
+         UPLOAD NEW PRIMARY PHOTO
+
+         Runs ONLY if the user selected a new photo.
+
+         Scope comes from:
+         editAssetPhotoScope
+
+         Allowed:
+         - MODEL
+         - ASSET
+
+         Backend handles replacement of the previous
+         primary photo automatically.
+      ===================================================== */
+
+      if (
+        editAssetPhotoFile
+      ) {
+
+        await uploadPendingEditAssetPhoto(
+          editingAssetId
+        );
+
+      }
+
+
+      /* =====================================================
+         STEP 3
+         CLOSE EDIT MODAL
+
+         IMPORTANT:
+         This happens AFTER photo upload because closing
+         the modal resets the pending photo state.
+      ===================================================== */
+
+      closeEditAsset();
+
+
+      /* =====================================================
+         STEP 4
+         REFRESH ASSET DATA
+      ===================================================== */
+
+      await loadAssets();
+
+      await loadTasks();
+
+      await loadHistory();
+
+
+      /* =====================================================
+         OPTIONAL:
+         If Asset View is currently open, refresh it as well.
+
+         This makes the new photo appear immediately
+         without reopening the Asset View.
+      ===================================================== */
+
+      if (
+        state.currentAssetSerial
+      ) {
+
+        await refreshAssetView();
+
+      }
+
+    } catch (err) {
+
+      console.error(
+        "SAVE EDIT ASSET ERROR:",
+        err
+      );
+
+
+      alert(
+        err.message ||
+        "Failed to update Asset"
+      );
+
+    }
+
   }
-});
+);
 
   function closeEditAsset() {
     editingAssetId = null;
