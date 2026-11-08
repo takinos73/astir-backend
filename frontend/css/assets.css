@@ -573,6 +573,175 @@ tr.highlight-execution {
   opacity: 0.72;
 }
 
+/* =========================================================
+   EDIT ASSET PHOTO — SCOPE SELECTOR
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope {
+  margin-bottom: 14px;
+
+  padding:
+    10px
+    12px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.14);
+
+  border-radius: 8px;
+
+  background:
+    rgba(15, 23, 42, 0.28);
+}
+
+
+/* =========================================================
+   SCOPE TITLE
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-label {
+  margin-bottom: 8px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+
+/* =========================================================
+   OPTIONS
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   INDIVIDUAL OPTION
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-option {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  padding:
+    8px
+    10px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.16);
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+#editAssetOverlay
+.edit-asset-photo-scope-option:hover {
+  border-color:
+    rgba(96, 165, 250, 0.42);
+
+  background:
+    rgba(96, 165, 250, 0.05);
+}
+
+
+/* =========================================================
+   RADIO
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-option input {
+  margin-top: 3px;
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-option strong {
+  display: block;
+
+  color: #e2e8f0;
+
+  font-size: 12px;
+}
+
+
+#editAssetOverlay
+.edit-asset-photo-scope-option small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   CURRENT SELECTION INFO
+========================================================= */
+
+#editAssetOverlay
+.edit-asset-photo-scope-info {
+  margin-top: 8px;
+
+  padding:
+    5px
+    8px;
+
+  border-radius: 6px;
+
+  background:
+    rgba(96, 165, 250, 0.08);
+
+  color: #93c5fd;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   MOBILE / NARROW MODAL
+========================================================= */
+
+@media (max-width: 650px) {
+
+  #editAssetOverlay
+  .edit-asset-photo-scope-options {
+    grid-template-columns: 1fr;
+  }
+
+}
+
 
 /* =========================================================
    ACTIONS

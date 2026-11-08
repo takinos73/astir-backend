@@ -337,12 +337,21 @@ let editingAssetId = null;
 // No upload is performed yet.
 // ============================================================
 
-let editAssetPhotoFile =
-  null;
+let editAssetPhotoFile = null;
 
+let editAssetPhotoPreviewUrl = null;
 
-let editAssetPhotoPreviewUrl =
-  null;
+// ============================================================
+// EDIT ASSET PHOTO — SCOPE STATE
+//
+// MODEL:
+// Photo shared by all Assets with the same Model.
+//
+// ASSET:
+// Photo only for the currently edited Asset.
+// ============================================================
+
+let editAssetPhotoScope = "MODEL";
 
 async function editAsset(assetId) {
   try {
@@ -371,16 +380,50 @@ async function editAsset(assetId) {
       lineSel.appendChild(opt);
     });
 
-    // ============================================================
-    // EDIT ASSET — PHOTO
+    // EDIT ASSET — PHOTO INITIAL STATE
     //
-    // Reset any previous pending selection
-    // and show the Asset's currently saved photo.
+    // Κάθε φορά που ανοίγει το Edit Asset:
+    // - καθαρίζει pending photo
+    // - default scope = MODEL
+    // - εμφανίζει current photo
+    // - ενημερώνει τα scope labels
     // ============================================================
 
     resetEditAssetPhotoSelection();
 
+
+    editAssetPhotoScope =
+      "MODEL";
+
+
+    const modelScopeRadio =
+      document.getElementById(
+        "editAssetPhotoScopeModel"
+      );
+
+
+    const assetScopeRadio =
+      document.getElementById(
+        "editAssetPhotoScopeAsset"
+      );
+
+
+    if (modelScopeRadio) {
+      modelScopeRadio.checked = true;
+    }
+
+
+    if (assetScopeRadio) {
+      assetScopeRadio.checked = false;
+    }
+
+
     renderEditAssetCurrentPhoto(
+      asset
+    );
+
+
+    updateEditAssetPhotoScopeUi(
       asset
     );
 
@@ -532,6 +575,103 @@ function renderEditAssetCurrentPhoto(asset) {
       "flex";
 
   };
+
+}
+
+// ============================================================
+// UPDATE EDIT ASSET PHOTO SCOPE UI
+//
+// Updates the explanatory text using the Asset currently
+// being edited.
+//
+// Example:
+//
+// MODEL:
+// "Applies to all PMC500 Assets"
+//
+// ASSET:
+// "Applies only to SN 10152050"
+// ============================================================
+
+function updateEditAssetPhotoScopeUi(asset) {
+
+  if (!asset) {
+    return;
+  }
+
+
+  const model =
+    String(
+      asset.model || "this model"
+    ).trim();
+
+
+  const serial =
+    String(
+      asset.serial_number || "-"
+    ).trim();
+
+
+  const modelText =
+    document.getElementById(
+      "editAssetPhotoModelScopeText"
+    );
+
+
+  const assetText =
+    document.getElementById(
+      "editAssetPhotoAssetScopeText"
+    );
+
+
+  const info =
+    document.getElementById(
+      "editAssetPhotoScopeInfo"
+    );
+
+
+  // ==========================================================
+  // OPTION DESCRIPTIONS
+  // ==========================================================
+
+  if (modelText) {
+
+    modelText.textContent =
+      `Applies to all ${model} Assets`;
+
+  }
+
+
+  if (assetText) {
+
+    assetText.textContent =
+      `Applies only to SN ${serial}`;
+
+  }
+
+
+  // ==========================================================
+  // CURRENT SELECTION MESSAGE
+  // ==========================================================
+
+  if (info) {
+
+    if (
+      editAssetPhotoScope === "MODEL"
+    ) {
+
+      info.textContent =
+        `Model photo · all ${model} Assets will use this photo unless an Asset-specific photo exists.`;
+
+    }
+    else {
+
+      info.textContent =
+        `Asset-specific photo · only SN ${serial} will use this photo.`;
+
+    }
+
+  }
 
 }
 
@@ -772,6 +912,69 @@ document
 
     }
   );
+
+  // ============================================================
+  // EDIT ASSET PHOTO — SCOPE CHANGE
+  //
+  // Updates only frontend state at this stage.
+  // No DB or upload changes yet.
+  // ============================================================
+
+  document
+    .querySelectorAll(
+      'input[name="editAssetPhotoScope"]'
+    )
+    .forEach(radio => {
+
+      radio.addEventListener(
+        "change",
+        event => {
+
+          if (!event.target.checked) {
+            return;
+          }
+
+
+          // ====================================================
+          // SAVE CURRENT SCOPE
+          // ====================================================
+
+          editAssetPhotoScope =
+            event.target.value === "ASSET"
+              ? "ASSET"
+              : "MODEL";
+
+
+          // ====================================================
+          // GET CURRENT ASSET
+          // ====================================================
+
+          const asset =
+            Array.isArray(state.assetsData)
+              ? state.assetsData.find(
+                  item =>
+                    Number(item.id) ===
+                    Number(editingAssetId)
+                )
+              : null;
+
+
+          // ====================================================
+          // REFRESH DESCRIPTION
+          // ====================================================
+
+          if (asset) {
+
+            updateEditAssetPhotoScopeUi(
+              asset
+            );
+
+          }
+
+        }
+      );
+
+    });
 
   /* =====================
       SAVE EDIT ASSET (PATCH)

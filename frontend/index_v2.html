@@ -8118,6 +8118,100 @@
         Asset Photo
       </div>
 
+      <!-- =========================================================
+          ASSET PHOTO — SCOPE
+
+          MODEL:
+          Η φωτογραφία θα χρησιμοποιείται ως default
+          για όλα τα Assets με το ίδιο Model.
+
+          ASSET:
+          Η φωτογραφία αφορά μόνο το συγκεκριμένο Asset
+          και θα υπερισχύει της Model photo.
+      ========================================================= -->
+
+      <div class="edit-asset-photo-scope">
+
+        <div class="edit-asset-photo-scope-label">
+          Photo Scope
+        </div>
+
+
+        <div class="edit-asset-photo-scope-options">
+
+          <!-- ==================================================
+              MODEL SCOPE
+
+              Default επιλογή.
+              Παράδειγμα:
+              PMC500 → ίδια photo σε όλα τα PMC500.
+          =================================================== -->
+
+          <label class="edit-asset-photo-scope-option">
+
+            <input
+              id="editAssetPhotoScopeModel"
+              type="radio"
+              name="editAssetPhotoScope"
+              value="MODEL"
+              checked
+            />
+
+            <span>
+              <strong>Model</strong>
+
+              <small id="editAssetPhotoModelScopeText">
+                Applies to all Assets of this model
+              </small>
+            </span>
+
+          </label>
+
+
+          <!-- ==================================================
+              ASSET SCOPE
+
+              Η photo αφορά μόνο το συγκεκριμένο serial number.
+              Asset-specific photo υπερισχύει της Model photo.
+          =================================================== -->
+
+          <label class="edit-asset-photo-scope-option">
+
+            <input
+              id="editAssetPhotoScopeAsset"
+              type="radio"
+              name="editAssetPhotoScope"
+              value="ASSET"
+            />
+
+            <span>
+              <strong>This Asset only</strong>
+
+              <small id="editAssetPhotoAssetScopeText">
+                Applies only to this Asset
+              </small>
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ==================================================
+            LIVE SCOPE INFO
+
+            Εξηγεί στον χρήστη πού θα εφαρμοστεί η photo.
+        =================================================== -->
+
+        <div
+          id="editAssetPhotoScopeInfo"
+          class="edit-asset-photo-scope-info"
+        >
+          Model photo
+        </div>
+
+      </div>
+
 
       <!-- =====================
           PHOTO AREA
