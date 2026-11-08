@@ -3581,3 +3581,67 @@ tr.highlight-execution {
   background:
     transparent;
 }
+
+/* =========================================================
+   ASSET OVERVIEW — ADD INCIDENT
+
+   Secondary action δίπλα στο Add Task.
+
+   Στόχος:
+   - Incident = πιο "warning / operational" action
+   - Add Task = primary blue action
+========================================================= */
+
+#assetViewOverlay
+.asset-overview-add-incident {
+  min-height: 38px;
+
+  padding:
+    0
+    15px;
+
+  border:
+    1px solid rgba(245, 158, 11, 0.46);
+
+  border-radius: 9px;
+
+  background:
+    rgba(245, 158, 11, 0.10);
+
+  color: #fbbf24;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.10s ease;
+}
+
+
+/* =========================================================
+   HOVER
+========================================================= */
+
+#assetViewOverlay
+.asset-overview-add-incident:hover {
+  background:
+    rgba(245, 158, 11, 0.18);
+
+  border-color:
+    rgba(245, 158, 11, 0.68);
+}
+
+
+/* =========================================================
+   ACTIVE / CLICK
+========================================================= */
+
+#assetViewOverlay
+.asset-overview-add-incident:active {
+  transform:
+    translateY(1px);
+}

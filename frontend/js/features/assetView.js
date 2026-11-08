@@ -2560,16 +2560,17 @@ function renderAssetOverviewPhoto(asset) {
 // ============================================================
 // BIND ASSET OVERVIEW ACTIONS
 //
-// Συνδέει τα νέα buttons του Overview
-// με τις υπάρχουσες λειτουργίες του CMMS.
+// Συνδέει τα common Asset View buttons με τις
+// υπάρχουσες λειτουργίες του CMMS.
 //
-// Προς το παρόν:
+// Buttons:
+// - Add Incident
 // - Add Task
 //
 // ΣΗΜΑΝΤΙΚΟ:
-// Χρησιμοποιούμε .onclick αντί για addEventListener,
-// ώστε κάθε νέο άνοιγμα του Asset View να αντικαθιστά
-// το προηγούμενο handler και να μην δημιουργούνται duplicates.
+// Χρησιμοποιούμε .onclick ώστε κάθε νέο Asset View opening
+// να αντικαθιστά το προηγούμενο handler και να μην
+// δημιουργούνται duplicate listeners.
 // ============================================================
 
 function bindAssetOverviewActions(asset) {
@@ -2578,7 +2579,55 @@ function bindAssetOverviewActions(asset) {
 
 
   // ==========================================================
+  // ADD INCIDENT BUTTON
+  //
+  // Χρησιμοποιεί το υπάρχον Incident chooser:
+  //
+  // - Breakdown
+  // - Scheduled Maintenance
+  //
+  // Δεν δημιουργούμε νέο modal.
+  // Δεν αλλάζουμε backend.
+  // ==========================================================
+
+  const addIncidentBtn =
+    document.getElementById(
+      "assetOverviewAddIncidentBtn"
+    );
+
+
+  if (addIncidentBtn) {
+
+    addIncidentBtn.onclick = () => {
+
+      if (
+        typeof window.openNewIncidentChooser !== "function"
+      ) {
+
+        console.error(
+          "openNewIncidentChooser() is not available."
+        );
+
+        alert(
+          "Incident form is not available."
+        );
+
+        return;
+      }
+
+
+      window.openNewIncidentChooser();
+
+    };
+
+  }
+
+
+  // ==========================================================
   // ADD TASK BUTTON
+  //
+  // Διατηρούμε ακριβώς την υπάρχουσα και δοκιμασμένη
+  // Add Task λειτουργία.
   // ==========================================================
 
   const addTaskBtn =
@@ -2591,8 +2640,6 @@ function bindAssetOverviewActions(asset) {
 
     addTaskBtn.onclick = () => {
 
-      // Χρησιμοποιούμε την ήδη υπάρχουσα
-      // και δοκιμασμένη Add Task λειτουργία.
       openAddTaskForAsset(
         asset.model || "",
         asset.serial_number || "",
