@@ -8618,13 +8618,46 @@ async function openNewScheduledMaintenanceModal() {
     }
 
 
+    // ============================================================
+    // LOAD ASSETS
+    // ============================================================
+
     populateScheduledMaintenanceAssetDropdown();
 
 
+    // ============================================================
+    // ASSET PRESELECT
+    //
+    // Αν το Scheduled Maintenance άνοιξε από Asset View,
+    // χρησιμοποιούμε το ίδιο προσωρινό Asset context.
+    //
+    // Αν το modal άνοιξε από αλλού,
+    // παραμένει η υπάρχουσα συμπεριφορά.
+    // ============================================================
+
     if (assetSelect) {
 
-      assetSelect.value =
-        "";
+      const contextAssetId =
+        Number(
+          window.assetIncidentContext?.assetId
+        );
+
+
+      if (
+        Number.isInteger(contextAssetId) &&
+        contextAssetId > 0
+      ) {
+
+        assetSelect.value =
+          String(contextAssetId);
+
+      }
+      else {
+
+        assetSelect.value =
+          "";
+
+      }
 
     }
 

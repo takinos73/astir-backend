@@ -2577,17 +2577,17 @@ function bindAssetOverviewActions(asset) {
 
   if (!asset) return;
 
-
   // ==========================================================
   // ADD INCIDENT BUTTON
   //
-  // Χρησιμοποιεί το υπάρχον Incident chooser:
+  // Αποθηκεύει προσωρινά το Asset που άνοιξε
+  // το Incident flow.
   //
-  // - Breakdown
-  // - Scheduled Maintenance
+  // Το context χρησιμοποιείται μετά από:
+  // - New Breakdown
+  // - New Scheduled Maintenance
   //
-  // Δεν δημιουργούμε νέο modal.
-  // Δεν αλλάζουμε backend.
+  // Δεν αλλάζει save logic ή backend.
   // ==========================================================
 
   const addIncidentBtn =
@@ -2599,6 +2599,31 @@ function bindAssetOverviewActions(asset) {
   if (addIncidentBtn) {
 
     addIncidentBtn.onclick = () => {
+
+      // ========================================================
+      // STORE CURRENT ASSET CONTEXT
+      //
+      // Κρατάμε μόνο το ID που χρειάζονται τα Incident forms.
+      // ========================================================
+
+      window.assetIncidentContext = {
+        assetId:
+          Number(asset.id) || null,
+
+        serial:
+          asset.serial_number || "",
+
+        model:
+          asset.model || "",
+
+        line:
+          asset.line || ""
+      };
+
+
+      // ========================================================
+      // OPEN EXISTING INCIDENT CHOOSER
+      // ========================================================
 
       if (
         typeof window.openNewIncidentChooser !== "function"

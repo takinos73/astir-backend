@@ -2036,15 +2036,47 @@ async function openNewBreakdownModal() {
   }
 
 
-  /* =====================
-     POPULATE ASSETS
-  ===================== */
+  // =====================
+  // POPULATE ASSETS
+  // =====================
 
   populateBreakdownAssetDropdown();
 
 
+  // ============================================================
+  // ASSET PRESELECT
+  //
+  // Αν το Breakdown άνοιξε από συγκεκριμένο Asset View,
+  // επιλέγουμε αυτόματα το συγκεκριμένο Asset.
+  //
+  // Αν άνοιξε από το κανονικό global flow,
+  // το dropdown παραμένει κενό όπως πριν.
+  // ============================================================
+
   if (assetSelect) {
-    assetSelect.value = "";
+
+    const contextAssetId =
+      Number(
+        window.assetIncidentContext?.assetId
+      );
+
+
+    if (
+      Number.isInteger(contextAssetId) &&
+      contextAssetId > 0
+    ) {
+
+      assetSelect.value =
+        String(contextAssetId);
+
+    }
+    else {
+
+      assetSelect.value =
+        "";
+
+    }
+
   }
 
 
@@ -3646,25 +3678,58 @@ document
   });
 
 
-/* =====================
-   NEW INCIDENT BUTTON
-
-   Opens the common BD / SM type selector.
-
-   If the SM frontend is not loaded, preserve
-   the existing New Breakdown functionality.
-===================== */
+// =====================
+// NEW INCIDENT BUTTON
+//
+// Global entry point for Maintenance Incidents.
+//
+// Opens the common BD / SM type selector.
+//
+// IMPORTANT:
+// - Clears any Asset View Incident context first.
+// - Therefore global Add Incident keeps the normal behavior:
+//   the user selects the Asset manually.
+// - If the SM frontend is not loaded, preserve
+//   the existing New Breakdown functionality.
+// =====================
 
 document
   .getElementById("newBreakdownBtn")
   ?.addEventListener("click", () => {
 
+    // ========================================================
+    // CLEAR ASSET VIEW CONTEXT
+    //
+    // Prevents a previously selected Asset from the Asset View
+    // from being automatically preselected when the user opens
+    // Incident from the global button.
+    // ========================================================
+
+    window.assetIncidentContext = null;
+
+
+    // ========================================================
+    // OPEN COMMON INCIDENT CHOOSER
+    // ========================================================
+
     if (
       typeof window.openNewIncidentChooser === "function"
     ) {
+
       window.openNewIncidentChooser();
-    } else {
+
+    }
+    else {
+
+      // ======================================================
+      // FALLBACK
+      //
+      // Preserve the existing Breakdown flow if the common
+      // Incident chooser is not available.
+      // ======================================================
+
       openNewBreakdownModal();
+
     }
 
   });
