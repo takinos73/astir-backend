@@ -106,6 +106,14 @@ const ATTACHMENT_ENTITY_CONFIG = {
       "tasks"
   },
 
+  ASSET: {
+  table:
+    "assets",
+
+  folder:
+    "assets"
+},
+
 
   BREAKDOWN: {
     table:
@@ -132,6 +140,7 @@ const ATTACHMENT_ENTITY_CONFIG = {
     folder:
       "maintenance-reports"
   }
+  
 
 };
 
@@ -711,7 +720,7 @@ function cleanAttachmentFileName(
 
    Rules:
    - Maximum 3 files per entity
-   - Maximum 10 MB TOTAL per entity
+   - Maximum 8 MB TOTAL per entity
    - JPG / JPEG / PNG / WEBP / PDF
 ===================================================== */
 
@@ -738,6 +747,25 @@ app.post( "/attachments/:entityType/:entityId",
     const uploadedR2Keys =
       [];
 
+    /* ============================================================
+      OLD PRIMARY PHOTO R2 KEYS
+
+      Used only when replacing an existing Asset / Model photo.
+
+      IMPORTANT:
+      Old R2 files are NOT deleted immediately.
+
+      We first:
+      1. Replace the DB record inside the transaction.
+      2. COMMIT successfully.
+      3. Only then delete the old R2 object.
+
+      This protects the existing photo if the new upload fails.
+    ============================================================ */
+
+    const oldPrimaryPhotoR2Keys =  [];
+
+    let transactionCommitted = false;
 
     try {
 
@@ -798,6 +826,503 @@ app.post( "/attachments/:entityType/:entityId",
           entityType,
           entityId
         );
+
+      /* ============================================================
+        ASSET ATTACHMENT METADATA
+
+        EXTENSION FOR ASSET PRIMARY PHOTOS.
+
+        Generic attachments continue to work exactly as before.
+
+        Only ASSET attachments may currently use:
+
+        purpose = PRIMARY_PHOTO
+        scope   = MODEL | ASSET
+
+        IMPORTANT:
+        For MODEL scope, the model is loaded from the Asset
+        directly from the database.
+
+        We do NOT trust a model value sent by frontend.
+      ============================================================ */
+
+      let attachmentPurpose =
+        null;
+
+
+      let attachmentScope =
+        null;
+
+
+      let attachmentModel =
+        null;
+
+
+      /* ============================================================
+        HANDLE ASSET ATTACHMENT METADATA
+      ============================================================ */
+
+      if (
+        entity.entityType === "ASSET"
+      ) {
+
+        /* ==========================================================
+          NORMALIZE PURPOSE
+        ========================================================== */
+
+        const requestedPurpose =
+          String(
+            req.body?.purpose || ""
+          )
+            .trim()
+            .toUpperCase();
+
+
+        /*
+          purpose is optional because ASSET attachments may later
+          also contain normal documents.
+
+          For now the only special purpose supported is:
+
+          PRIMARY_PHOTO
+        */
+
+        if (requestedPurpose) {
+
+          if (
+            requestedPurpose !==
+              "PRIMARY_PHOTO"
+          ) {
+
+            throw new Error(
+              "Unsupported Asset attachment purpose"
+            );
+
+          }
+
+
+          attachmentPurpose =
+            requestedPurpose;
+
+        }
+
+
+        /* ==========================================================
+          PRIMARY PHOTO RULES
+        ========================================================== */
+
+        if (
+          attachmentPurpose ===
+            "PRIMARY_PHOTO"
+        ) {
+
+          const requestedScope =
+            String(
+              req.body?.scope || ""
+            )
+              .trim()
+              .toUpperCase();
+
+
+          /* ========================================================
+            VALIDATE PHOTO SCOPE
+
+            Allowed:
+            - MODEL
+            - ASSET
+          ======================================================== */
+
+          if (
+            requestedScope !== "MODEL" &&
+            requestedScope !== "ASSET"
+          ) {
+
+            throw new Error(
+              "Asset photo scope must be MODEL or ASSET"
+            );
+
+          }
+
+
+          attachmentScope =
+            requestedScope;
+
+
+          /* ========================================================
+            PRIMARY PHOTO = EXACTLY ONE FILE
+
+            Generic attachments may still use up to 3 files.
+
+            This restriction applies ONLY to PRIMARY_PHOTO.
+          ======================================================== */
+
+          if (
+            files.length !== 1
+          ) {
+
+            throw new Error(
+              "Primary Asset Photo requires exactly one image"
+            );
+
+          }
+
+
+          /* ========================================================
+            PRIMARY PHOTO MUST BE AN IMAGE
+
+            PDFs remain allowed for normal attachments,
+            but cannot be used as the primary Asset photo.
+          ======================================================== */
+
+          const photoFile =
+            files[0];
+
+
+          if (
+            !String(
+              photoFile?.mimetype || ""
+            ).startsWith(
+              "image/"
+            )
+          ) {
+
+            throw new Error(
+              "Primary Asset Photo must be an image"
+            );
+
+          }
+
+
+          /* ========================================================
+            MODEL SCOPE
+
+            For MODEL photos we resolve the model directly
+            from the assets table.
+
+            Example:
+
+            Asset:
+            id    = 25
+            model = PMC500
+
+            Request:
+            scope = MODEL
+
+            Stored metadata:
+            model = PMC500
+          ======================================================== */
+
+          if (
+            attachmentScope === "MODEL"
+          ) {
+
+            const assetResult =
+              await client.query(
+                `
+                SELECT
+                  model
+
+                FROM assets
+
+                WHERE id = $1
+
+                LIMIT 1
+                `,
+                [
+                  entity.entityId
+                ]
+              );
+
+
+            if (
+              assetResult.rows.length === 0
+            ) {
+
+              throw new Error(
+                "Asset not found"
+              );
+
+            }
+
+
+            attachmentModel =
+              String(
+                assetResult.rows[0]
+                  ?.model || ""
+              )
+                .trim();
+
+
+            if (
+              !attachmentModel
+            ) {
+
+              throw new Error(
+                "Asset model is required for MODEL photo scope"
+              );
+
+            }
+
+          }
+
+        }
+
+      }
+
+
+      /* ============================================================
+        PRIMARY PHOTO REPLACEMENT
+
+        Runs ONLY for:
+
+        entity_type = ASSET
+        purpose     = PRIMARY_PHOTO
+
+        RULES:
+
+        ASSET scope:
+        Replace the existing primary photo belonging specifically
+        to this Asset.
+
+        MODEL scope:
+        Replace the existing shared primary photo for this model.
+
+        IMPORTANT:
+
+        At this stage we delete ONLY the old DATABASE row.
+
+        We DO NOT delete the old R2 object yet.
+
+        Why:
+
+        If the new upload fails later, the transaction rolls back
+        and the previous database attachment row is restored.
+
+        The old R2 file therefore remains available.
+
+        Old R2 cleanup happens ONLY AFTER successful COMMIT.
+      ============================================================ */
+
+      if (
+        entity.entityType === "ASSET" &&
+        attachmentPurpose ===
+          "PRIMARY_PHOTO"
+      ) {
+
+        let existingPhotoResult =
+          null;
+
+
+        /* ==========================================================
+          ASSET-SPECIFIC PRIMARY PHOTO
+
+          Match:
+          - entity_type = ASSET
+          - purpose     = PRIMARY_PHOTO
+          - scope       = ASSET
+          - entity_id   = current Asset
+
+          This replaces ONLY the photo override of this Asset.
+        ========================================================== */
+
+        if (
+          attachmentScope === "ASSET"
+        ) {
+
+          existingPhotoResult =
+            await client.query(
+              `
+              SELECT
+                id,
+                file_key
+
+              FROM attachments
+
+              WHERE entity_type =
+                    'ASSET'
+
+                AND purpose =
+                    'PRIMARY_PHOTO'
+
+                AND scope =
+                    'ASSET'
+
+                AND entity_id = $1
+
+              FOR UPDATE
+              `,
+              [
+                entity.entityId
+              ]
+            );
+
+        }
+
+
+        /* ==========================================================
+          MODEL PRIMARY PHOTO
+
+          Match:
+          - entity_type = ASSET
+          - purpose     = PRIMARY_PHOTO
+          - scope       = MODEL
+          - same normalized model
+
+          IMPORTANT:
+
+          entity_id does NOT matter for MODEL scope.
+
+          Example:
+
+          Existing PMC500 photo may have originally been uploaded
+          while editing Asset ID 25.
+
+          A replacement may later be uploaded while editing
+          Asset ID 31.
+
+          Both still represent the same PMC500 MODEL photo.
+        ========================================================== */
+
+        else if (
+          attachmentScope === "MODEL"
+        ) {
+
+          existingPhotoResult =
+            await client.query(
+              `
+              SELECT
+                id,
+                file_key
+
+              FROM attachments
+
+              WHERE entity_type =
+                    'ASSET'
+
+                AND purpose =
+                    'PRIMARY_PHOTO'
+
+                AND scope =
+                    'MODEL'
+
+                AND UPPER(
+                      BTRIM(model)
+                    ) =
+                    UPPER(
+                      BTRIM($1)
+                    )
+
+              FOR UPDATE
+              `,
+              [
+                attachmentModel
+              ]
+            );
+
+        }
+
+
+        /* ==========================================================
+          EXISTING MATCHING PHOTOS
+
+          Normally there should be zero or one.
+
+          We intentionally support multiple rows here so that
+          accidental historical duplicates can also be cleaned.
+        ========================================================== */
+
+        const existingPhotos =
+          Array.isArray(
+            existingPhotoResult?.rows
+          )
+            ? existingPhotoResult.rows
+            : [];
+
+
+        /* ==========================================================
+          REMEMBER OLD R2 KEYS
+
+          Do NOT delete them yet.
+
+          They will be deleted only after the new attachment
+          has successfully committed to the database.
+        ========================================================== */
+
+        for (
+          const photo
+          of existingPhotos
+        ) {
+
+          if (
+            photo?.file_key
+          ) {
+
+            oldPrimaryPhotoR2Keys.push(
+              photo.file_key
+            );
+
+          }
+
+        }
+
+
+        /* ==========================================================
+          BUILD OLD DATABASE ID LIST
+
+          Only valid positive attachment IDs are included.
+        ========================================================== */
+
+        const existingPhotoIds =
+          existingPhotos
+            .map(
+              photo =>
+                Number(
+                  photo?.id
+                )
+            )
+            .filter(
+              id =>
+                Number.isInteger(id) &&
+                id > 0
+            );
+
+
+        /* ==========================================================
+          DELETE OLD DATABASE ROWS
+
+          This happens INSIDE the active DB transaction.
+
+          SUCCESS:
+          - COMMIT permanently removes old row.
+          - New attachment becomes the active primary photo.
+
+          FAILURE:
+          - ROLLBACK restores the previous attachment row.
+          - Old R2 object remains untouched.
+
+          This also means getAttachmentUsage() below sees the
+          replacement correctly instead of counting old + new.
+        ========================================================== */
+
+        if (
+          existingPhotoIds.length > 0
+        ) {
+
+          await client.query(
+            `
+            DELETE FROM attachments
+
+            WHERE id =
+              ANY($1::bigint[])
+            `,
+            [
+              existingPhotoIds
+            ]
+          );
+
+        }
+
+      }
 
 
       /* =====================
@@ -956,10 +1481,34 @@ app.post( "/attachments/:entityType/:entityId",
           fileKey
         );
 
+        /* ============================================================
+          SAVE ATTACHMENT METADATA TO DB
 
-        /* =====================
-           SAVE METADATA TO DB
-        ===================== */
+          EXTENDED:
+
+          Existing fields remain unchanged.
+
+          New optional fields:
+          - purpose
+          - scope
+          - model
+
+          For all existing attachment types these will be NULL.
+
+          Example MODEL photo:
+          entity_type = ASSET
+          entity_id   = 25
+          purpose     = PRIMARY_PHOTO
+          scope       = MODEL
+          model       = PMC500
+
+          Example ASSET-specific photo:
+          entity_type = ASSET
+          entity_id   = 25
+          purpose     = PRIMARY_PHOTO
+          scope       = ASSET
+          model       = NULL
+        ============================================================ */
 
         const insertResult =
           await client.query(
@@ -973,13 +1522,18 @@ app.post( "/attachments/:entityType/:entityId",
                 mime_type,
                 file_size,
                 uploaded_by_id,
-                uploaded_by
+                uploaded_by,
+
+                purpose,
+                scope,
+                model
               )
 
             VALUES
               (
                 $1,$2,$3,$4,
-                $5,$6,$7,$8
+                $5,$6,$7,$8,
+                $9,$10,$11
               )
 
             RETURNING
@@ -992,17 +1546,26 @@ app.post( "/attachments/:entityType/:entityId",
               file_size,
               uploaded_by_id,
               uploaded_by,
+
+              purpose,
+              scope,
+              model,
+
               uploaded_at
             `,
             [
-              entity.entityType,     // $1
-              entity.entityId,       // $2
-              fileKey,               // $3
-              cleanFileName,         // $4
-              file.mimetype,         // $5
-              Number(file.size),     // $6
-              uploadedById,          // $7
-              uploadedBy             // $8
+              entity.entityType,       // $1
+              entity.entityId,         // $2
+              fileKey,                 // $3
+              cleanFileName,           // $4
+              file.mimetype,           // $5
+              Number(file.size),       // $6
+              uploadedById,            // $7
+              uploadedBy,              // $8
+
+              attachmentPurpose,       // $9
+              attachmentScope,         // $10
+              attachmentModel          // $11
             ]
           );
 
@@ -1021,6 +1584,70 @@ app.post( "/attachments/:entityType/:entityId",
       await client.query(
         "COMMIT"
       );
+
+      transactionCommitted = true;
+
+      /* ============================================================
+        DELETE REPLACED PRIMARY PHOTO FROM R2
+
+        IMPORTANT:
+        This happens ONLY AFTER successful DB COMMIT.
+
+        At this point:
+        - New photo exists in R2.
+        - New attachment exists in DB.
+        - Old attachment DB row has been removed.
+
+        Therefore the old R2 object is no longer needed.
+
+        If R2 cleanup fails:
+        - The new photo remains valid.
+        - We log the orphan object.
+        - We do NOT fail the successful user operation.
+      ============================================================ */
+
+      for (
+        const oldFileKey
+        of oldPrimaryPhotoR2Keys
+      ) {
+
+        try {
+
+          await r2Client.send(
+            new DeleteObjectCommand({
+
+              Bucket:
+                process.env.R2_BUCKET,
+
+              Key:
+                oldFileKey
+
+            })
+          );
+
+
+        } catch (deleteErr) {
+
+          /*
+            Do NOT rollback here.
+
+            DB has already committed successfully and the
+            new photo is valid.
+
+            A failed delete only leaves an unused R2 object,
+            which is safer than reporting the whole upload
+            as failed.
+          */
+
+          console.error(
+            "OLD PRIMARY PHOTO R2 CLEANUP ERROR:",
+            oldFileKey,
+            deleteErr
+          );
+
+        }
+
+      }
 
 
       /* =====================
@@ -1062,9 +1689,17 @@ app.post( "/attachments/:entityType/:entityId",
 
     } catch (err) {
 
-      /* =====================
-         ROLLBACK DB
-      ===================== */
+    /* ============================================================
+      ROLLBACK
+
+      Only possible / necessary before successful COMMIT.
+
+      After COMMIT the database change is already permanent.
+    ============================================================ */
+
+    if (
+      !transactionCommitted
+    ) {
 
       try {
 
@@ -1081,43 +1716,55 @@ app.post( "/attachments/:entityType/:entityId",
 
       }
 
+    }
 
-      /* =====================
-         CLEAN R2 ORPHANS
+      /* ============================================================
+        CLEAN NEW R2 OBJECTS AFTER FAILED TRANSACTION
 
-         Anything uploaded during this
-         failed request is removed.
-      ===================== */
+        Only delete newly uploaded files if the database
+        transaction did NOT commit.
 
-      for (
-        const fileKey
-        of uploadedR2Keys
+        After COMMIT the attachments table already references
+        these objects, so they must remain in R2.
+      ============================================================ */
+
+      if (
+        !transactionCommitted
       ) {
 
-        try {
+        for (
+          const fileKey
+          of uploadedR2Keys
+        ) {
 
-          await r2Client.send(
-            new DeleteObjectCommand({
-              Bucket:
-                process.env.R2_BUCKET,
+          try {
 
-              Key:
-                fileKey
-            })
-          );
+            await r2Client.send(
+              new DeleteObjectCommand({
 
-        } catch (deleteErr) {
+                Bucket:
+                  process.env.R2_BUCKET,
 
-          console.error(
-            "ATTACHMENT R2 CLEANUP ERROR:",
-            fileKey,
-            deleteErr
-          );
+                Key:
+                  fileKey
+
+              })
+            );
+
+
+          } catch (deleteErr) {
+
+            console.error(
+              "ATTACHMENT R2 CLEANUP ERROR:",
+              fileKey,
+              deleteErr
+            );
+
+          }
 
         }
 
       }
-
 
       console.error(
         "POST /attachments ERROR:",
@@ -1141,20 +1788,61 @@ app.post( "/attachments/:entityType/:entityId",
 
       }
 
-
       const message =
         err.message ||
         "Attachment upload failed";
 
+      /* ============================================================
+        FRIENDLY VALIDATION ERRORS
+
+        EXTENDED:
+        Includes the new Asset Photo validation messages.
+
+        These are client/request errors and therefore return 400,
+        not 500 Internal Server Error.
+      ============================================================ */
 
       const isValidationError =
-        message.includes("Maximum") ||
-        message.includes("not found") ||
-        message.includes("Invalid") ||
-        message.includes("Unsupported") ||
-        message.includes("Only JPG") ||
-        message.includes("No attachment");
 
+        message.includes(
+          "Maximum"
+        ) ||
+
+        message.includes(
+          "not found"
+        ) ||
+
+        message.includes(
+          "Invalid"
+        ) ||
+
+        message.includes(
+          "Unsupported"
+        ) ||
+
+        message.includes(
+          "Only JPG"
+        ) ||
+
+        message.includes(
+          "No attachment"
+        ) ||
+
+        /* =====================
+          ASSET PHOTO VALIDATION
+        ===================== */
+
+        message.includes(
+          "Asset photo scope"
+        ) ||
+
+        message.includes(
+          "Primary Asset Photo"
+        ) ||
+
+        message.includes(
+          "Asset model is required"
+        );
 
       return res
         .status(
@@ -3538,10 +4226,24 @@ if (initialRestorationTask) {
 }
 
     /* =====================
-       COMMIT TRANSACTION
+      COMMIT DB
     ===================== */
 
-    await client.query("COMMIT");
+    await client.query(
+      "COMMIT"
+    );
+
+
+    /*
+      From this point forward the new attachment
+      is permanently stored in the database.
+
+      The catch block must therefore NOT delete
+      its R2 object.
+    */
+
+    transactionCommitted =
+      true;
 
 
     /* =====================
