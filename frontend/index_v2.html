@@ -8095,6 +8095,113 @@
       ></textarea>
     </div>
 
+    <!-- =========================================================
+        EDIT ASSET — ASSET PHOTO
+
+        Phase 1:
+        - Show current Asset photo
+        - Choose replacement photo
+        - Preview selected file
+        - Remove pending selection
+
+        IMPORTANT:
+        This step does NOT upload or save the photo yet.
+    ========================================================= -->
+
+    <div class="edit-asset-photo-section">
+
+      <!-- =====================
+          SECTION TITLE
+      ===================== -->
+
+      <div class="edit-asset-photo-title">
+        Asset Photo
+      </div>
+
+
+      <!-- =====================
+          PHOTO AREA
+      ===================== -->
+
+      <div class="edit-asset-photo-row">
+
+        <!-- Current / selected photo preview -->
+        <div class="edit-asset-photo-preview-wrap">
+
+          <img
+            id="editAssetPhotoPreview"
+            class="edit-asset-photo-preview"
+            alt="Asset photo"
+            style="display:none;"
+          />
+
+
+          <!-- Placeholder when no photo exists -->
+          <div
+            id="editAssetPhotoFallback"
+            class="edit-asset-photo-fallback"
+          >
+            🏭
+          </div>
+
+        </div>
+
+
+        <!-- =====================
+            PHOTO ACTIONS
+        ===================== -->
+
+        <div class="edit-asset-photo-actions">
+
+          <div class="edit-asset-photo-help">
+            JPG, PNG or WEBP · Max 5 MB
+          </div>
+
+
+          <!-- Hidden native file input -->
+          <input
+            id="editAssetPhotoInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style="display:none;"
+          />
+
+
+          <!-- Opens file picker -->
+          <button
+            id="editAssetChoosePhotoBtn"
+            type="button"
+            class="btn-secondary"
+          >
+            📷 Choose Photo
+          </button>
+
+
+          <!-- Removes only the newly selected file -->
+          <button
+            id="editAssetClearPhotoBtn"
+            type="button"
+            class="btn-secondary"
+            style="display:none;"
+          >
+            ✕ Clear Selection
+          </button>
+
+
+          <!-- Selected filename -->
+          <div
+            id="editAssetPhotoFileName"
+            class="edit-asset-photo-file-name"
+          >
+            No new photo selected
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeEditAsset()">Cancel</button>
       <button class="btn-primary" id="saveEditAssetBtn">💾 Save</button>

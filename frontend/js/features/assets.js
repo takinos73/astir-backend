@@ -323,10 +323,26 @@ function populateAssetLineFilter() {
 }
 
 // =====================
-  // EDIT ASSET MODAL
-  // =====================
+// EDIT ASSET MODAL
+// =====================
 
 let editingAssetId = null;
+
+// ============================================================
+// EDIT ASSET — PHOTO SELECTION STATE
+//
+// Phase 1:
+// Holds only the photo selected in the browser.
+//
+// No upload is performed yet.
+// ============================================================
+
+let editAssetPhotoFile =
+  null;
+
+
+let editAssetPhotoPreviewUrl =
+  null;
 
 async function editAsset(assetId) {
   try {
@@ -355,12 +371,407 @@ async function editAsset(assetId) {
       lineSel.appendChild(opt);
     });
 
+    // ============================================================
+    // EDIT ASSET — PHOTO
+    //
+    // Reset any previous pending selection
+    // and show the Asset's currently saved photo.
+    // ============================================================
+
+    resetEditAssetPhotoSelection();
+
+    renderEditAssetCurrentPhoto(
+      asset
+    );
+
     getEl("editAssetOverlay").style.display = "flex";
   } catch (err) {
     console.error("editAsset ERROR:", err);
     alert("Failed to open edit asset");
   }
 }
+
+// ============================================================
+// RESET EDIT ASSET PHOTO SELECTION
+//
+// Clears only the pending browser selection.
+// Does NOT remove the saved Asset photo.
+// ============================================================
+
+function resetEditAssetPhotoSelection() {
+
+  editAssetPhotoFile =
+    null;
+
+
+  // Revoke previous temporary object URL
+  // to avoid keeping browser memory allocated.
+  if (editAssetPhotoPreviewUrl) {
+
+    URL.revokeObjectURL(
+      editAssetPhotoPreviewUrl
+    );
+
+    editAssetPhotoPreviewUrl =
+      null;
+
+  }
+
+
+  const input =
+    document.getElementById(
+      "editAssetPhotoInput"
+    );
+
+
+  const clearBtn =
+    document.getElementById(
+      "editAssetClearPhotoBtn"
+    );
+
+
+  const fileName =
+    document.getElementById(
+      "editAssetPhotoFileName"
+    );
+
+
+  if (input) {
+    input.value = "";
+  }
+
+
+  if (clearBtn) {
+    clearBtn.style.display = "none";
+  }
+
+
+  if (fileName) {
+    fileName.textContent =
+      "No new photo selected";
+  }
+
+}
+
+// ============================================================
+// RENDER EDIT ASSET CURRENT PHOTO
+//
+// Displays the Asset's current saved photo when available.
+//
+// Supports the same possible field names already used
+// by the Asset Overview photo renderer.
+// ============================================================
+
+function renderEditAssetCurrentPhoto(asset) {
+
+  const preview =
+    document.getElementById(
+      "editAssetPhotoPreview"
+    );
+
+
+  const fallback =
+    document.getElementById(
+      "editAssetPhotoFallback"
+    );
+
+
+  if (
+    !preview ||
+    !fallback
+  ) {
+    return;
+  }
+
+
+  const imageUrl =
+    asset?.image_url ||
+    asset?.image ||
+    asset?.photo_url ||
+    asset?.photo ||
+    "";
+
+
+  if (!imageUrl) {
+
+    preview.removeAttribute(
+      "src"
+    );
+
+    preview.style.display =
+      "none";
+
+    fallback.style.display =
+      "flex";
+
+    return;
+
+  }
+
+
+  preview.src =
+    imageUrl;
+
+  preview.style.display =
+    "block";
+
+  fallback.style.display =
+    "none";
+
+
+  preview.onerror = () => {
+
+    preview.removeAttribute(
+      "src"
+    );
+
+    preview.style.display =
+      "none";
+
+    fallback.style.display =
+      "flex";
+
+  };
+
+}
+
+// ============================================================
+// EDIT ASSET — PHOTO PICKER
+// ============================================================
+
+document
+  .getElementById(
+    "editAssetChoosePhotoBtn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      document
+        .getElementById(
+          "editAssetPhotoInput"
+        )
+        ?.click();
+
+    }
+  );
+
+
+// ============================================================
+// EDIT ASSET — PHOTO FILE SELECTED
+// ============================================================
+
+document
+  .getElementById(
+    "editAssetPhotoInput"
+  )
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const file =
+        event.target.files?.[0];
+
+
+      if (!file) {
+        return;
+      }
+
+
+      // ======================================================
+      // VALIDATE FILE TYPE
+      // ======================================================
+
+      const allowedTypes =
+        [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ];
+
+
+      if (
+        !allowedTypes.includes(
+          file.type
+        )
+      ) {
+
+        alert(
+          "Please select a JPG, PNG or WEBP image."
+        );
+
+        event.target.value =
+          "";
+
+        return;
+
+      }
+
+
+      // ======================================================
+      // VALIDATE FILE SIZE
+      // Max 5 MB
+      // ======================================================
+
+      const maxBytes =
+        5 *
+        1024 *
+        1024;
+
+
+      if (
+        file.size >
+        maxBytes
+      ) {
+
+        alert(
+          "Asset photo must be smaller than 5 MB."
+        );
+
+        event.target.value =
+          "";
+
+        return;
+
+      }
+
+
+      // ======================================================
+      // CLEAR PREVIOUS TEMPORARY PREVIEW
+      // ======================================================
+
+      if (
+        editAssetPhotoPreviewUrl
+      ) {
+
+        URL.revokeObjectURL(
+          editAssetPhotoPreviewUrl
+        );
+
+      }
+
+
+      // ======================================================
+      // STORE NEW SELECTION
+      // ======================================================
+
+      editAssetPhotoFile =
+        file;
+
+
+      editAssetPhotoPreviewUrl =
+        URL.createObjectURL(
+          file
+        );
+
+
+      // ======================================================
+      // UPDATE PREVIEW
+      // ======================================================
+
+      const preview =
+        document.getElementById(
+          "editAssetPhotoPreview"
+        );
+
+
+      const fallback =
+        document.getElementById(
+          "editAssetPhotoFallback"
+        );
+
+
+      const clearBtn =
+        document.getElementById(
+          "editAssetClearPhotoBtn"
+        );
+
+
+      const fileName =
+        document.getElementById(
+          "editAssetPhotoFileName"
+        );
+
+
+      if (preview) {
+
+        preview.src =
+          editAssetPhotoPreviewUrl;
+
+        preview.style.display =
+          "block";
+
+      }
+
+
+      if (fallback) {
+
+        fallback.style.display =
+          "none";
+
+      }
+
+
+      if (clearBtn) {
+
+        clearBtn.style.display =
+          "inline-flex";
+
+      }
+
+
+      if (fileName) {
+
+        fileName.textContent =
+          file.name;
+
+      }
+
+    }
+  );
+
+
+// ============================================================
+// EDIT ASSET — CLEAR PENDING PHOTO
+//
+// Cancels only the newly selected photo.
+// It does NOT delete the existing saved photo.
+// ============================================================
+
+document
+  .getElementById(
+    "editAssetClearPhotoBtn"
+  )
+  ?.addEventListener(
+    "click",
+    () => {
+
+      const asset =
+        Array.isArray(
+          state.assetsData
+        )
+          ? state.assetsData.find(
+              a =>
+                Number(a.id) ===
+                Number(editingAssetId)
+            )
+          : null;
+
+
+      resetEditAssetPhotoSelection();
+
+
+      // Restore currently saved Asset photo.
+      if (asset) {
+
+        renderEditAssetCurrentPhoto(
+          asset
+        );
+
+      }
+
+    }
+  );
 
   /* =====================
       SAVE EDIT ASSET (PATCH)
@@ -900,4 +1311,3 @@ function applyRolePermissions() {
       btn.style.display = isAdmin ? "" : "none";
     });
 }
-
