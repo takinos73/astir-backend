@@ -2935,7 +2935,6 @@ tr.highlight-execution {
   white-space: nowrap;
 }
 
-
 /* =========================================================
    KPI ROW
 ========================================================= */
@@ -2958,7 +2957,7 @@ tr.highlight-execution {
 .asset-overview-kpis
 .asset-kpi-card {
 
-  min-height: 152px;
+  min-height: 142px;
   margin-top:8px;
   padding:
     12px
@@ -2994,7 +2993,6 @@ tr.highlight-execution {
     rgba(56, 189, 248, 0.65);
 }
 
-
 #assetViewOverlay .kpi-overdue {
   border-color:
     rgba(248, 113, 113, 0.70);
@@ -3007,18 +3005,15 @@ tr.highlight-execution {
     );
 }
 
-
 #assetViewOverlay .kpi-history {
   border-color:
     rgba(96, 165, 250, 0.38);
 }
 
-
 #assetViewOverlay .kpi-reliability {
   border-color:
     rgba(129, 140, 248, 0.55);
 }
-
 
 /* =========================================================
    KPI HEADER
@@ -3064,7 +3059,7 @@ tr.highlight-execution {
 
   color: #f8fafc;
 
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 800;
 
   line-height: 1;
