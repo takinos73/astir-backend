@@ -863,3 +863,65 @@ tr.task-restoration {
   white-space:
     nowrap;
 }
+
+/* =========================================================
+   TASK ATTACHMENT MANAGER — COMPACT EXISTING FILES
+
+   Overrides the global card layout ONLY inside the
+   Task Attachment Manager modal.
+
+   Global .task-attachment-view-item remains unchanged
+   for BD / SM / other views.
+========================================================= */
+
+#taskAttachmentManagerOverlay
+.task-attachment-view-item {
+
+  /* Remove fixed card width */
+  flex:
+    0 1 auto;
+
+  min-width: 0;
+  width: 100%;
+
+
+  /* Return to horizontal row layout */
+  display: flex;
+
+  flex-direction: row;
+
+  align-items: center;
+  justify-content: flex-start;
+
+  gap: 10px;
+
+
+  /* Remove tall card behavior */
+  min-height: 0;
+  height: auto;
+
+
+  /* More compact padding */
+  padding: 8px;
+
+
+  border:
+    1px solid rgba(
+      148,
+      163,
+      184,
+      0.12
+    );
+
+  border-radius: 8px;
+
+  background:
+    rgba(
+      15,
+      23,
+      42,
+      0.45
+    );
+
+  box-shadow: none;
+}
