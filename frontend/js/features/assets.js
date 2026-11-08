@@ -675,6 +675,232 @@ function updateEditAssetPhotoScopeUi(asset) {
 
 }
 
+/* ============================================================
+   ASSET PHOTO — LOAD EFFECTIVE PHOTO
+
+   Flow:
+
+   1. Ask backend which photo applies to this Asset:
+      GET /assets/:id/photo
+
+   Backend priority:
+      ASSET-specific photo
+      ↓
+      MODEL photo
+      ↓
+      no photo
+
+   2. If a photo exists, use the existing secure attachment
+      endpoint to obtain a temporary signed R2 URL:
+
+      GET /attachments/:attachmentId/open
+
+   RETURNS:
+
+   {
+     hasPhoto: true,
+     source: "ASSET" | "MODEL",
+     attachmentId: 25,
+     fileName: "...",
+     url: "https://temporary-r2-url..."
+   }
+
+   OR:
+
+   {
+     hasPhoto: false,
+     source: null,
+     url: null
+   }
+============================================================ */
+
+async function loadEffectiveAssetPhoto(assetId) {
+
+  /* =====================
+     VALIDATE ASSET ID
+  ===================== */
+
+  const normalizedAssetId =
+    Number(
+      assetId
+    );
+
+
+  if (
+    !Number.isInteger(
+      normalizedAssetId
+    ) ||
+    normalizedAssetId <= 0
+  ) {
+
+    return {
+      hasPhoto:
+        false,
+
+      source:
+        null,
+
+      attachmentId:
+        null,
+
+      fileName:
+        null,
+
+      url:
+        null
+    };
+
+  }
+
+
+  /* ==========================================================
+     STEP 1
+     LOAD EFFECTIVE PHOTO METADATA
+  ========================================================== */
+
+  const photoResponse =
+    await fetch(
+      `${API}/assets/${normalizedAssetId}/photo`
+    );
+
+
+  const photoResult =
+    await photoResponse
+      .json()
+      .catch(
+        () => ({})
+      );
+
+
+  if (
+    !photoResponse.ok
+  ) {
+
+    throw new Error(
+      photoResult?.error ||
+      "Failed to load Asset photo"
+    );
+
+  }
+
+
+  /* ==========================================================
+     NO PHOTO
+
+     Backend returned:
+     photo: null
+  ========================================================== */
+
+  if (
+    !photoResult?.photo?.id
+  ) {
+
+    return {
+      hasPhoto:
+        false,
+
+      source:
+        photoResult?.source || null,
+
+      attachmentId:
+        null,
+
+      fileName:
+        null,
+
+      url:
+        null
+    };
+
+  }
+
+
+  const attachmentId =
+    Number(
+      photoResult.photo.id
+    );
+
+
+  if (
+    !Number.isInteger(
+      attachmentId
+    ) ||
+    attachmentId <= 0
+  ) {
+
+    throw new Error(
+      "Invalid Asset photo attachment ID"
+    );
+
+  }
+
+
+  /* ==========================================================
+     STEP 2
+     GET TEMPORARY SIGNED R2 URL
+
+     Reuses existing secure attachment endpoint.
+  ========================================================== */
+
+  const openResponse =
+    await fetch(
+      `${API}/attachments/${attachmentId}/open`
+    );
+
+
+  const openResult =
+    await openResponse
+      .json()
+      .catch(
+        () => ({})
+      );
+
+
+  if (
+    !openResponse.ok
+  ) {
+
+    throw new Error(
+      openResult?.error ||
+      "Failed to open Asset photo"
+    );
+
+  }
+
+
+  /* ==========================================================
+     SUCCESS
+  ========================================================== */
+
+  return {
+
+    hasPhoto:
+      true,
+
+    source:
+      photoResult?.source || null,
+
+    attachmentId,
+
+    fileName:
+      photoResult.photo.file_name || null,
+
+    mimeType:
+      photoResult.photo.mime_type || null,
+
+    scope:
+      photoResult.photo.scope || null,
+
+    model:
+      photoResult.photo.model || null,
+
+    url:
+      openResult?.url || null
+
+  };
+
+}
+
 // ============================================================
 // EDIT ASSET — PHOTO PICKER
 // ============================================================

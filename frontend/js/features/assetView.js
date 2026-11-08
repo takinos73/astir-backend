@@ -2453,31 +2453,36 @@ function bindAssetTabs() {
   container.dataset.tabsBound = "true";
 }
 
-// ============================================================
-// RENDER ASSET OVERVIEW PHOTO
-//
-// Δείχνει φωτογραφία Asset αν υπάρχει διαθέσιμο image field.
-//
-// Προς το παρόν υποστηρίζει πιθανά field names:
-// - image_url
-// - image
-// - photo_url
-// - photo
-//
-// Αν δεν υπάρχει φωτογραφία:
-// - κρύβει το <img>
-// - εμφανίζει το fallback placeholder
-//
-// Δεν κάνει upload.
-// Δεν αλλάζει database.
-// ============================================================
+/* ============================================================
+   ASSET OVERVIEW — RENDER EFFECTIVE PHOTO
 
-function renderAssetOverviewPhoto(asset) {
+   Priority is handled by backend:
+
+   1. ASSET-specific PRIMARY_PHOTO
+   2. MODEL PRIMARY_PHOTO
+   3. Placeholder
+
+   Uses:
+   loadEffectiveAssetPhoto(asset.id)
+
+   DOM:
+   - #assetOverviewImage
+   - #assetOverviewImageFallback
+============================================================ */
+
+async function renderAssetOverviewPhoto(
+  asset
+) {
+
+  /* =====================
+     GET DOM ELEMENTS
+  ===================== */
 
   const imageEl =
     document.getElementById(
       "assetOverviewImage"
     );
+
 
   const fallbackEl =
     document.getElementById(
@@ -2485,75 +2490,217 @@ function renderAssetOverviewPhoto(asset) {
     );
 
 
-  // Αν δεν υπάρχουν τα νέα Overview elements,
-  // δεν επηρεάζουμε καθόλου την υπάρχουσα λειτουργία.
-  if (!imageEl || !fallbackEl) {
+  /*
+    If Asset View photo elements do not exist,
+    safely stop without affecting the rest
+    of the Asset View.
+  */
+
+  if (
+    !imageEl ||
+    !fallbackEl
+  ) {
+
     return;
+
   }
 
 
-  // ==========================================================
-  // FIND POSSIBLE IMAGE SOURCE
-  // ==========================================================
+  /* =====================
+     RESET DISPLAY
 
-  const imageUrl =
-    asset?.image_url ||
-    asset?.image ||
-    asset?.photo_url ||
-    asset?.photo ||
-    "";
+     Start from placeholder state while
+     the photo is being resolved.
+  ===================== */
 
+  imageEl.removeAttribute(
+    "src"
+  );
 
-  // ==========================================================
-  // NO PHOTO
-  // ==========================================================
-
-  if (!imageUrl) {
-
-    imageEl.removeAttribute("src");
-
-    imageEl.style.display =
-      "none";
-
-    fallbackEl.style.display =
-      "flex";
-
-    return;
-  }
-
-
-  // ==========================================================
-  // PHOTO AVAILABLE
-  // ==========================================================
-
-  imageEl.src =
-    imageUrl;
 
   imageEl.style.display =
-    "block";
-
-  fallbackEl.style.display =
     "none";
 
 
-  // ==========================================================
-  // LOAD ERROR FALLBACK
-  //
-  // Αν υπάρχει invalid URL ή λείπει το αρχείο,
-  // επιστρέφουμε αυτόματα στο placeholder.
-  // ==========================================================
+  fallbackEl.style.display =
+    "";
 
-  imageEl.onerror = () => {
 
-    imageEl.removeAttribute("src");
+  /* =====================
+     VALIDATE ASSET
+  ===================== */
+
+  const assetId =
+    Number(
+      asset?.id
+    );
+
+
+  if (
+    !Number.isInteger(assetId) ||
+    assetId <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    /* ========================================================
+       LOAD EFFECTIVE PHOTO
+
+       Backend decides:
+       ASSET > MODEL > none
+    ======================================================== */
+
+    const photo =
+      await loadEffectiveAssetPhoto(
+        assetId
+      );
+
+
+    /* =====================
+       NO PHOTO
+    ===================== */
+
+    if (
+      !photo?.hasPhoto ||
+      !photo?.url
+    ) {
+
+      return;
+
+    }
+
+
+    /* ========================================================
+       SAFETY CHECK
+
+       User may have opened another Asset while the request
+       was still loading.
+
+       Do not show Asset A's image inside Asset B's view.
+    ======================================================== */
+
+    const currentAsset =
+      state.assetsData?.find(
+        item =>
+          String(
+            item.serial_number
+          ) ===
+          String(
+            state.currentAssetSerial
+          )
+      );
+
+
+    if (
+      Number(
+        currentAsset?.id
+      ) !== assetId
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================
+       SHOW PHOTO
+    ===================== */
+
+    imageEl.src =
+      photo.url;
+
+
+    imageEl.alt =
+      `${asset?.model || "Asset"} ${
+        asset?.serial_number || ""
+      }`.trim();
+
+
+    /*
+      Helpful metadata for debugging / future UI.
+
+      Example:
+      data-photo-source="ASSET"
+      or
+      data-photo-source="MODEL"
+    */
+
+    imageEl.dataset.photoSource =
+      photo.source || "";
+
+
+    imageEl.dataset.attachmentId =
+      String(
+        photo.attachmentId || ""
+      );
+
+
+    /* ========================================================
+       IMAGE LOAD SUCCESS
+
+       Only hide placeholder after browser actually
+       confirms that the signed R2 image loaded.
+    ======================================================== */
+
+    imageEl.onload =
+      () => {
+
+        imageEl.style.display =
+          "";
+
+
+        fallbackEl.style.display =
+          "none";
+
+      };
+
+
+    /* ========================================================
+       IMAGE LOAD FAILURE
+
+       If signed URL is invalid / expired / unavailable,
+       keep the normal placeholder visible.
+    ======================================================== */
+
+    imageEl.onerror =
+      () => {
+
+        imageEl.style.display =
+          "none";
+
+
+        fallbackEl.style.display =
+          "";
+
+      };
+
+
+  } catch (err) {
+
+    /*
+      Photo failure must never prevent
+      Asset View from opening.
+    */
+
+    console.error(
+      "ASSET OVERVIEW PHOTO ERROR:",
+      err
+    );
+
 
     imageEl.style.display =
       "none";
 
-    fallbackEl.style.display =
-      "flex";
 
-  };
+    fallbackEl.style.display =
+      "";
+
+  }
 
 }
 
