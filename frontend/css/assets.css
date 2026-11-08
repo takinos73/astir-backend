@@ -3065,7 +3065,6 @@ tr.highlight-execution {
   line-height: 1;
 }
 
-
 #assetViewOverlay .kpi-overdue > .kpi-value {
   color: #fb7185;
 }
@@ -3265,9 +3264,9 @@ tr.highlight-execution {
 ========================================================= */
 
 #assetViewOverlay .asset-maintenance-timeline-card {
-  padding:
-    10px
-    14px;
+  padding:8px 12px;
+
+  margin-top: 8px;
 
   border:
     1px solid rgba(96, 165, 250, 0.34);
