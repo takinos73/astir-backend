@@ -3645,3 +3645,43 @@ tr.highlight-execution {
   transform:
     translateY(1px);
 }
+
+/* =========================================================
+   INCIDENT MODALS — BACKGROUND FOCUS
+
+   Όταν ανοίγει οποιοδήποτε Incident modal:
+   - θολώνει ελαφρά το Asset View από πίσω
+   - σκοτεινιάζει διακριτικά το background
+   - δίνει focus στο ενεργό Incident modal
+
+   Εφαρμόζεται σε:
+   - Incident Type Chooser
+   - New Breakdown
+   - New Scheduled Maintenance
+========================================================= */
+
+#newIncidentChooserOverlay,
+#newBreakdownOverlay,
+#newScheduledMaintenanceOverlay {
+  background:
+    rgba(5, 10, 18, 0.48);
+
+  backdrop-filter:
+    blur(4px);
+
+  -webkit-backdrop-filter:
+    blur(4px);
+}
+
+
+/* =========================================================
+   INCIDENT MODAL BOX — EXTRA FOCUS
+========================================================= */
+
+#newIncidentChooserOverlay .modal,
+#newBreakdownOverlay .modal,
+#newScheduledMaintenanceOverlay .modal {
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
+}

@@ -8624,15 +8624,15 @@ async function openNewScheduledMaintenanceModal() {
 
     populateScheduledMaintenanceAssetDropdown();
 
-
     // ============================================================
-    // ASSET PRESELECT
+    // SCHEDULED MAINTENANCE — ASSET PRESELECT + LOCK
     //
-    // Αν το Scheduled Maintenance άνοιξε από Asset View,
-    // χρησιμοποιούμε το ίδιο προσωρινό Asset context.
+    // Από Asset View:
+    // - preselect συγκεκριμένου Asset
+    // - dropdown locked
     //
-    // Αν το modal άνοιξε από αλλού,
-    // παραμένει η υπάρχουσα συμπεριφορά.
+    // Από global Incident:
+    // - κανονική επιλογή Asset
     // ============================================================
 
     if (assetSelect) {
@@ -8643,19 +8643,30 @@ async function openNewScheduledMaintenanceModal() {
         );
 
 
-      if (
+      const hasAssetContext =
         Number.isInteger(contextAssetId) &&
-        contextAssetId > 0
-      ) {
+        contextAssetId > 0;
 
+
+      if (hasAssetContext) {
+
+        // Αυτόματο Asset selection.
         assetSelect.value =
           String(contextAssetId);
+
+        // Κλειδώνουμε το Asset.
+        assetSelect.disabled =
+          true;
 
       }
       else {
 
+        // Global Scheduled Maintenance flow.
         assetSelect.value =
           "";
+
+        assetSelect.disabled =
+          false;
 
       }
 

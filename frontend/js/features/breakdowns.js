@@ -2042,15 +2042,16 @@ async function openNewBreakdownModal() {
 
   populateBreakdownAssetDropdown();
 
-
   // ============================================================
-  // ASSET PRESELECT
+  // ASSET PRESELECT + LOCK
   //
-  // Αν το Breakdown άνοιξε από συγκεκριμένο Asset View,
-  // επιλέγουμε αυτόματα το συγκεκριμένο Asset.
+  // Αν το Breakdown άνοιξε από συγκεκριμένο Asset View:
+  // - επιλέγει αυτόματα το Asset
+  // - κλειδώνει το dropdown
   //
-  // Αν άνοιξε από το κανονικό global flow,
-  // το dropdown παραμένει κενό όπως πριν.
+  // Αν άνοιξε από το global Incident button:
+  // - αφήνει το dropdown κενό
+  // - το αφήνει editable
   // ============================================================
 
   if (assetSelect) {
@@ -2061,24 +2062,34 @@ async function openNewBreakdownModal() {
       );
 
 
-    if (
+    const hasAssetContext =
       Number.isInteger(contextAssetId) &&
-      contextAssetId > 0
-    ) {
+      contextAssetId > 0;
 
+
+    if (hasAssetContext) {
+
+      // Αυτόματο preselect του Asset.
       assetSelect.value =
         String(contextAssetId);
+
+      // Κλείδωμα ώστε να μην αλλάξει κατά λάθος.
+      assetSelect.disabled =
+        true;
 
     }
     else {
 
+      // Global Incident flow.
       assetSelect.value =
         "";
+
+      assetSelect.disabled =
+        false;
 
     }
 
   }
-
 
   /* =====================
      DEFAULT STARTED AT
