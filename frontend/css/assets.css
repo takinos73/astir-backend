@@ -3988,3 +3988,39 @@ tr.highlight-execution {
     0 22px 60px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.025);
 }
+
+/* =========================================================
+   ASSET VIEW — BULK ACTIONS STACKING FIX
+
+   Problem:
+   The Asset View footer overlaps the Bulk Actions area
+   and captures the mouse click before the Bulk Done button.
+
+   Result:
+   - Bulk Done is visible
+   - Selection works
+   - But click lands on .asset-view-footer
+
+   Fix:
+   Keep the Bulk Actions bar above the footer.
+========================================================= */
+
+#assetViewOverlay
+#assetBulkActionsBar {
+  position: relative;
+  z-index: 5;
+}
+
+
+/* =========================================================
+   ASSET VIEW — FOOTER STACKING
+
+   Footer remains fully functional, but stays below
+   the Bulk Actions bar when their areas overlap.
+========================================================= */
+
+#assetViewOverlay
+.asset-view-footer {
+  position: relative;
+  z-index: 1;
+}
