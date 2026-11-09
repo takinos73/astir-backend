@@ -3989,120 +3989,14 @@ tr.highlight-execution {
     0 0 0 1px rgba(255, 255, 255, 0.025);
 }
 
-/* =========================================================
-   ASSET VIEW — BULK ACTIONS + FOOTER
-
-   Goal:
-   - Bulk Actions and Footer look like one action area
-   - Bulk Done remains clickable above the footer
-   - No overlap between the two rows
-========================================================= */
-
-
-/* =====================
-   BULK ACTIONS ROW
-===================== */
-
 #assetViewOverlay
 #assetBulkActionsBar {
   position: relative;
   z-index: 5;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  width: 100%;
-
-  margin: 0;
-
-  padding:
-    7px
-    12px
-    5px;
-
-  border-top:
-    1px solid rgba(
-      148,
-      163,
-      184,
-      0.22
-    );
-
-  background:
-    rgba(
-      15,
-      23,
-      42,
-      0.26
-    );
 }
-
-
-/* =====================
-   BULK LEFT SIDE
-   Selected + Clear
-===================== */
-
-#assetViewOverlay
-.bulk-actions-left {
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-}
-
-
-/* =====================
-   BULK RIGHT SIDE
-   Bulk Done
-===================== */
-
-#assetViewOverlay
-.bulk-actions-right {
-  display: flex;
-
-  align-items: center;
-
-  margin-left: auto;
-}
-
-
-/* =====================
-   ASSET FOOTER
-
-   Visually continues directly
-   below the Bulk Actions row.
-===================== */
 
 #assetViewOverlay
 .asset-view-footer {
   position: relative;
   z-index: 1;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: flex-start;
-
-  gap: 10px;
-
-  padding:
-    4px
-    12px
-    9px;
-
-  border-top: 0;
-
-  background:
-    rgba(
-      15,
-      23,
-      42,
-      0.26
-    );
 }
