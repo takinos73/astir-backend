@@ -3894,27 +3894,16 @@ body.cmms-authenticated[data-role="shift_foreman"]
 }
 
 /* =========================================================
-   ASSET VIEW — STOP SCROLL CHAINING
+   ASSET VIEW — STOP VERTICAL SCROLL CHAINING
+   ON THE REAL SCROLL CONTAINER
 
-   Prevents wheel / trackpad scrolling from continuing
-   to the page behind Asset View when the Asset View
-   reaches its top or bottom limit.
+   Prevents the mouse wheel / trackpad from continuing
+   to the page behind Asset View when this table reaches
+   the top or bottom.
 ========================================================= */
 
-#assetViewOverlay {
-  overscroll-behavior: contain;
-}
-
-
-/* =========================================================
-   ASSET VIEW SCROLLABLE CONTENT
-
-   Extra protection if the actual vertical scroll happens
-   inside the Asset View modal/body.
-========================================================= */
-
-#assetViewOverlay .modal,
-#assetViewOverlay .asset-view-content {
+#assetViewOverlay
+.table-card.asset-tasks-table {
   overscroll-behavior-y: contain;
 }
 
