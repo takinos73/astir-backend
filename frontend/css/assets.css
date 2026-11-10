@@ -4063,3 +4063,28 @@ tr.highlight-execution {
 #taskViewOverlay {
   z-index: 2000;
 }
+
+/* =========================================================
+   ASSET VIEW — STOP SCROLL CHAINING
+
+   Prevents wheel / trackpad scrolling from continuing
+   to the page behind Asset View when the Asset View
+   reaches its top or bottom limit.
+========================================================= */
+
+#assetViewOverlay {
+  overscroll-behavior: contain;
+}
+
+
+/* =========================================================
+   ASSET VIEW SCROLLABLE CONTENT
+
+   Extra protection if the actual vertical scroll happens
+   inside the Asset View modal/body.
+========================================================= */
+
+#assetViewOverlay .modal,
+#assetViewOverlay .asset-view-content {
+  overscroll-behavior-y: contain;
+}
