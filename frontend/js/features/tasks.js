@@ -1280,6 +1280,7 @@ function cancelTaskEdit() {
 // =====================
 // SAVE TASK EDIT (PUT – METADATA ONLY)
 // =====================
+
 async function saveTaskEdit() {
   if (!state.currentViewedTask) return;
 
@@ -3707,5 +3708,3 @@ async function openTaskAttachment(
   }
 
 }
-
-

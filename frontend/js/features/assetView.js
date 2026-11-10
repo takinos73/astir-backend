@@ -3864,6 +3864,168 @@ function renderAssetMaintenanceTimeline() {
 
     </div>
   `;
+  /* ==========================================================
+      ENABLE DRAG TO SCROLL
+    ========================================================== */
+
+    initAssetMaintenanceTimelineDrag();
+
+}
+
+/* ============================================================
+   ASSET MAINTENANCE TIMELINE — DRAG SCROLL
+
+   Allows horizontal scrolling with:
+   - left mouse button
+   - grab + drag
+
+   IMPORTANT:
+   - Native horizontal scrollbar remains active.
+   - Listener is attached only once.
+============================================================ */
+
+function initAssetMaintenanceTimelineDrag() {
+
+  const container =
+    document.getElementById(
+      "assetMaintenanceTimeline"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  /* =====================
+     ATTACH ONLY ONCE
+  ===================== */
+
+  if (
+    container.dataset.dragScrollReady === "true"
+  ) {
+    return;
+  }
+
+
+  container.dataset.dragScrollReady =
+    "true";
+
+
+  /* =====================
+     DRAG STATE
+  ===================== */
+
+  let isDragging =
+    false;
+
+  let startX =
+    0;
+
+  let startScrollLeft =
+    0;
+
+
+  /* =====================
+     MOUSE DOWN
+  ===================== */
+
+  container.addEventListener(
+    "mousedown",
+    event => {
+
+      /*
+        Left mouse button only.
+      */
+
+      if (event.button !== 0) {
+        return;
+      }
+
+
+      isDragging =
+        true;
+
+
+      container.classList.add(
+        "is-dragging"
+      );
+
+
+      startX =
+        event.clientX;
+
+      startScrollLeft =
+        container.scrollLeft;
+
+    }
+  );
+
+
+  /* =====================
+     MOUSE MOVE
+  ===================== */
+
+  window.addEventListener(
+    "mousemove",
+    event => {
+
+      if (!isDragging) {
+        return;
+      }
+
+
+      const deltaX =
+        event.clientX - startX;
+
+
+      container.scrollLeft =
+        startScrollLeft - deltaX;
+
+
+      /*
+        Prevent browser text selection
+        while dragging.
+      */
+
+      event.preventDefault();
+
+    }
+  );
+
+
+  /* =====================
+     END DRAG
+  ===================== */
+
+  const stopDrag = () => {
+
+    if (!isDragging) {
+      return;
+    }
+
+
+    isDragging =
+      false;
+
+
+    container.classList.remove(
+      "is-dragging"
+    );
+
+  };
+
+
+  window.addEventListener(
+    "mouseup",
+    stopDrag
+  );
+
+
+  window.addEventListener(
+    "blur",
+    stopDrag
+  );
 
 }
 

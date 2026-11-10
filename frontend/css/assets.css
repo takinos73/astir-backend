@@ -2404,6 +2404,47 @@ tr.highlight-execution {
   text-align: center;
 }
 
+/* =========================================================
+   ASSET MAINTENANCE TIMELINE — DRAG TO SCROLL
+
+   Desktop:
+   - grab cursor
+   - hold left mouse button
+   - drag horizontally
+
+   Existing scrollbar remains available.
+========================================================= */
+
+#assetMaintenanceTimeline {
+  cursor: grab;
+
+  /* Prevent accidental text selection while dragging */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+
+/* =====================
+   ACTIVE DRAG
+===================== */
+
+#assetMaintenanceTimeline.is-dragging {
+  cursor: grabbing;
+}
+
+
+/* =====================
+   DURING DRAG
+
+   Avoid accidental interaction with Timeline cards
+   while the mouse is moving.
+===================== */
+
+#assetMaintenanceTimeline.is-dragging
+.asset-timeline-track {
+  pointer-events: none;
+}
+
 
 /* =========================================================
    RESPONSIVE — MEDIUM
