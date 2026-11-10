@@ -4218,18 +4218,80 @@ window.openNewIncidentChooser = function () {
 
 
     /* =====================
-       BREAKDOWN — EXISTING FLOW
+      BREAKDOWN — EXISTING FLOW
+
+      Asset View behaviour:
+      - Opens the existing Breakdown modal
+      - Asset may already be prefilled by Asset View context
+      - If Asset is prefilled, trigger the existing
+        Asset change flow so SECTION / UNIT catalogue loads
+
+      IMPORTANT:
+      - Does NOT duplicate SECTION / UNIT logic
+      - Uses the existing bd-asset change handler
     ===================== */
 
     overlay
       .querySelector("#chooseNewBreakdownBtn")
-      ?.addEventListener("click", () => {
+      ?.addEventListener(
+        "click",
+        async () => {
 
-        closeChooser();
+          closeChooser();
 
-        openNewBreakdownModal();
 
-      });
+          /* =====================
+            OPEN EXISTING BD MODAL
+          ===================== */
+
+          await openNewBreakdownModal();
+
+
+          /* =====================
+            PREFILLED ASSET
+
+            When opened from Asset View,
+            bd-asset is already populated.
+
+            Programmatically setting .value
+            does NOT automatically fire
+            the browser "change" event.
+          ===================== */
+
+          const assetSelect =
+            document.getElementById(
+              "bd-asset"
+            );
+
+
+          if (
+            assetSelect &&
+            String(assetSelect.value || "").trim()
+          ) {
+
+            /*
+              Trigger the EXISTING Breakdown
+              Asset → Section loading flow.
+
+              That existing handler already:
+              - loads /assets/:id/locations
+              - fills SECTION
+              - SECTION selection then fills UNIT
+            */
+
+            assetSelect.dispatchEvent(
+              new Event(
+                "change",
+                {
+                  bubbles: true
+                }
+              )
+            );
+
+          }
+
+        }
+      );
 
 
     /* =====================
