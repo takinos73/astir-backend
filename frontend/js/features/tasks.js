@@ -1124,6 +1124,9 @@ function resetSectionLockState() {
 // - Breakdown Detail → επιστρέφει στο ίδιο BD Detail
 // - Scheduled Maintenance Detail → επιστρέφει στο ίδιο SM Detail
 //
+// Αν το Task άνοιξε πάνω από Asset View:
+// - αφαιρεί το blur / dim από το Asset View
+//
 // Δεν γίνεται reload του Detail.
 // Απλώς ξαναεμφανίζεται το overlay που ήταν από κάτω.
 // ============================================================
@@ -1141,6 +1144,28 @@ function closeTaskView() {
 
   if (taskOverlay) {
     taskOverlay.style.display = "none";
+  }
+
+
+  // ==========================================================
+  // RESTORE ASSET VIEW BACKGROUND
+  //
+  // Αν το Task Details είχε ανοίξει πάνω από Asset View,
+  // αφαιρούμε το blur / dim και το Asset View
+  // επιστρέφει αμέσως στην κανονική του εμφάνιση.
+  // ==========================================================
+
+  const assetOverlay =
+    document.getElementById(
+      "assetViewOverlay"
+    );
+
+  if (assetOverlay) {
+
+    assetOverlay.classList.remove(
+      "task-details-background-focus"
+    );
+
   }
 
 
@@ -1728,7 +1753,8 @@ function viewTask(taskId) {
     )
     .style.display =
       "flex";
-
+  /* Asset View → blur background while Task Details is open */
+  enableAssetViewTaskFocus();
 
   // =====================
   // EDIT / DONE / DELETE
@@ -1876,6 +1902,47 @@ function viewTask(taskId) {
 
       }
     );
+
+}
+
+/* =========================================================
+   TASK DETAILS — ASSET VIEW BACKGROUND FOCUS
+
+   Adds / removes blur only when Asset View is open.
+========================================================= */
+
+function enableAssetViewTaskFocus() {
+
+  const assetOverlay =
+    document.getElementById(
+      "assetViewOverlay"
+    );
+
+
+  if (
+    assetOverlay &&
+    assetOverlay.style.display !== "none"
+  ) {
+
+    assetOverlay.classList.add(
+      "task-details-background-focus"
+    );
+
+  }
+
+}
+
+function disableAssetViewTaskFocus() {
+
+  const assetOverlay =
+    document.getElementById(
+      "assetViewOverlay"
+    );
+
+
+  assetOverlay?.classList.remove(
+    "task-details-background-focus"
+  );
 
 }
 

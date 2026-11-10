@@ -972,6 +972,113 @@ function renderAssetBreakdowns() {
 }
 
 /* =========================================================
+   REFRESH ASSET VIEW BREAKDOWNS
+
+   Reloads ONLY the Breakdown dataset for the Asset
+   currently open in Asset View.
+
+   Does NOT:
+   - reload Tasks
+   - reload History
+   - reload the whole Asset View
+   - change the selected Asset View tab
+========================================================= */
+
+async function refreshAssetViewBreakdowns() {
+
+  /* =====================
+     CURRENT ASSET
+  ===================== */
+
+  const serial =
+    String(
+      state.currentAssetSerial || ""
+    ).trim();
+
+
+  if (!serial) {
+    return;
+  }
+
+
+  const currentAsset =
+    Array.isArray(state.assetsData)
+      ? state.assetsData.find(
+          asset =>
+            String(
+              asset.serial_number || ""
+            ).trim() === serial
+        )
+      : null;
+
+
+  if (!currentAsset?.id) {
+    return;
+  }
+
+
+  /* =====================
+     LOAD BREAKDOWNS
+  ===================== */
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/breakdowns`
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Failed to refresh Asset Breakdowns (${response.status})`
+      );
+
+    }
+
+
+    const allBreakdowns =
+      await response.json();
+
+
+    /* =====================
+       FILTER CURRENT ASSET
+    ===================== */
+
+    state.assetBreakdowns =
+      Array.isArray(allBreakdowns)
+        ? allBreakdowns.filter(
+            breakdown =>
+              Number(
+                breakdown.asset_id
+              ) ===
+              Number(
+                currentAsset.id
+              )
+          )
+        : [];
+
+
+    /* =====================
+       RENDER TABLE
+    ===================== */
+
+    renderAssetBreakdowns();
+
+
+  } catch (err) {
+
+    console.error(
+      "REFRESH ASSET BREAKDOWNS ERROR:",
+      err
+    );
+
+  }
+
+}
+
+/* =========================================================
    ASSET HISTORY TABLE — TASK EXECUTIONS
 
    Displays the execution history of the selected Asset.

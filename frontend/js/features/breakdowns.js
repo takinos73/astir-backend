@@ -5114,19 +5114,45 @@ function toBreakdownDateTimeLocal(value) {
 
 /* =====================
    CLOSE DETAIL MODAL
+
+   After closing a Breakdown Detail:
+   - close modal immediately
+   - refresh Asset View Breakdown table
+     if an Asset View is currently open
 ===================== */
 
-function closeBreakdownDetailModal() {
+async function closeBreakdownDetailModal() {
 
   const overlay =
     document.getElementById(
       "breakdownDetailOverlay"
     );
 
-  if (!overlay) return;
 
-  overlay.style.display = "none";
-  currentBreakdownId = null;
+  if (!overlay) {
+    return;
+  }
+
+
+  /* =====================
+     CLOSE IMMEDIATELY
+  ===================== */
+
+  overlay.style.display =
+    "none";
+
+  currentBreakdownId =
+    null;
+
+
+  /* =====================
+     REFRESH ASSET VIEW BD
+
+     Safe even when Asset View
+     is not currently open.
+  ===================== */
+
+  await refreshAssetViewBreakdowns();
 
 }
 

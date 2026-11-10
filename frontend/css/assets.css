@@ -4000,3 +4000,25 @@ tr.highlight-execution {
   position: relative;
   z-index: 1;
 }
+
+/* =========================================================
+   ASSET VIEW — BACKGROUND FOCUS WHEN TASK DETAILS IS OPEN
+
+   Applies only when Task Details is opened
+   on top of Asset View.
+========================================================= */
+
+#assetViewOverlay.task-details-background-focus {
+  filter: blur(3px) brightness(0.55);
+  transition:
+    filter 0.18s ease;
+}
+
+
+/* =========================================================
+   TASK DETAILS MUST STAY ABOVE ASSET VIEW
+========================================================= */
+
+#taskViewOverlay {
+  z-index: 2000;
+}
