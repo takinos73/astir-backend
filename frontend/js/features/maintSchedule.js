@@ -935,6 +935,38 @@ title.textContent =
           doneLabel
         );
 
+        const executionId = Number(task.execution_id);
+        if (
+          Number.isSafeInteger(executionId) &&
+          executionId > 0 &&
+          hasRole("admin", "planner")
+        ) {
+          const undoButton = document.createElement("button");
+          undoButton.type = "button";
+          undoButton.className = "btn-table sm-task-undo-btn";
+          undoButton.textContent = "Undo";
+
+          undoButton.addEventListener("click", async () => {
+            undoButton.disabled = true;
+
+            try {
+              const undone = await window.undoExecution(executionId);
+
+              if (
+                undone &&
+                currentScheduledMaintenance === sm &&
+                overlay.style.display === "flex"
+              ) {
+                await openScheduledMaintenanceDetail(id);
+              }
+            } finally {
+              undoButton.disabled = false;
+            }
+          });
+
+          actions.appendChild(undoButton);
+        }
+
       }
 
 

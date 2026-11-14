@@ -8787,6 +8787,7 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
       t.is_planned,
       t.breakdown_id,
 
+      e.id AS execution_id,
       e.executed_at AS completed_at,
       e.executed_by AS completed_by,
       e.duration_minutes AS actual_duration_min,
@@ -8813,6 +8814,7 @@ app.get("/breakdowns/:id/tasks", async (req, res) => {
     LEFT JOIN LATERAL (
 
       SELECT
+        te.id,
         te.executed_at,
         te.executed_by,
         te.duration_minutes
@@ -11558,6 +11560,8 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
             t.*,
 
+            te.id AS execution_id,
+
             te.duration_minutes
               AS actual_duration_min,
 
@@ -11583,6 +11587,7 @@ app.get("/scheduled-maintenance/:id/tasks", async (req, res) => {
 
             SELECT
 
+              id,
               duration_minutes,
               executed_at,
               executed_by,

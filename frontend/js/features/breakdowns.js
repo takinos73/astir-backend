@@ -9579,7 +9579,7 @@ function renderRestorationTasks(tasks) {
                 : "s"
             }`
           : "📎 Add Attachment";
-          
+
 
       // ============================================================
       // CLICKABLE TASK TITLE
@@ -9663,6 +9663,22 @@ function renderRestorationTasks(tasks) {
                     <span class="restoration-task-done">
                       ✓ Done
                     </span>
+                    ${
+                      isDone &&
+                      Number.isSafeInteger(Number(task.execution_id)) &&
+                      Number(task.execution_id) > 0 &&
+                      hasRole("admin", "planner")
+                        ? `
+                          <button
+                            type="button"
+                            class="btn-table restoration-undo-btn"
+                            data-execution-id="${Number(task.execution_id)}"
+                          >
+                            Undo
+                          </button>
+                        `
+                        : ""
+                    }
                   `
               }
 
@@ -9779,6 +9795,31 @@ function renderRestorationTasks(tasks) {
   container.innerHTML =
     summaryHtml +
     tasksHtml;
+
+  const breakdownId = currentBreakdownId;
+
+  container.querySelectorAll(".restoration-undo-btn").forEach(button => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+
+      try {
+        const undone = await window.undoExecution(
+          Number(button.dataset.executionId)
+        );
+
+        const overlay = document.getElementById("breakdownDetailOverlay");
+        if (
+          undone &&
+          currentBreakdownId === breakdownId &&
+          overlay?.style.display === "flex"
+        ) {
+          await loadRestorationTasks(breakdownId);
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 
   /* =====================
       ATTACH OPEN TASK BUTTONS

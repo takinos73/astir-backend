@@ -342,7 +342,81 @@ function renderHistoryTable(data) {
      RENDER ROWS
   ===================== */
 
-  sortedHistory.forEach(h => {
+  const groups = new Map();
+  const rows = [];
+
+  sortedHistory.forEach(execution => {
+    const breakdownId = Number(execution.breakdown_id);
+    const smId = Number(execution.scheduled_maintenance_id);
+    const isBreakdown = Number.isSafeInteger(breakdownId) && breakdownId > 0;
+    const parentId = isBreakdown ? breakdownId : smId;
+
+    if (!Number.isSafeInteger(parentId) || parentId <= 0) {
+      rows.push({ execution });
+      return;
+    }
+
+    const prefix = isBreakdown ? "BD" : "SM";
+    const key = `${prefix}-${parentId}`;
+    let group = groups.get(key);
+
+    if (!group) {
+      group = {
+        execution,
+        parentId,
+        isBreakdown,
+        code: `${prefix}-${String(parentId).padStart(5, "0")}`,
+        count: 0,
+        duration: 0
+      };
+      groups.set(key, group);
+      rows.push(group);
+    }
+
+    group.count++;
+    group.duration += Number(execution.duration_min) || 0;
+  });
+
+  rows.forEach(group => {
+    const h = group.execution;
+
+    if (group.parentId) {
+      const tr = document.createElement("tr");
+      const label = group.isBreakdown ? "Breakdown" : "Scheduled Maintenance";
+      const badgeClass = group.isBreakdown
+        ? "history-breakdown-reference"
+        : "history-sm-reference";
+      const openDetail = group.isBreakdown
+        ? "openBreakdownDetail"
+        : "openScheduledMaintenanceDetail";
+
+      tr.classList.add(group.isBreakdown ? "history-restoration" : "history-planned");
+      tr.innerHTML = `
+        <td title="${formatDateTime(h.executed_at)}">
+          ${formatDateOnly(h.executed_at)}
+        </td>
+        <td>
+          <strong>${highlightHistoryText(h.machine)}</strong><br>
+          <small>SN: ${highlightHistoryText(h.serial_number)} | ${highlightHistoryText(h.line)}</small>
+        </td>
+        <td>
+          <div class="task-title">
+            <button
+              type="button"
+              class="${badgeClass} clickable-incident-reference"
+              title="Open ${label} details"
+              onclick="event.stopPropagation(); ${openDetail}(${group.parentId});"
+            >${group.code}</button>
+            <strong>${label}</strong>
+          </div>
+          <small>${group.count} ${group.count === 1 ? "execution" : "executions"} · ${group.duration} min total</small>
+        </td>
+        <td title="Latest matching execution">${highlightHistoryText(h.executed_by || "-")}</td>
+        <td><span class="muted">—</span></td>
+      `;
+      tbody.appendChild(tr);
+      return;
+    }
     const tr = document.createElement("tr");
 
     const execType = getExecutionType(h);
@@ -426,67 +500,6 @@ function renderHistoryTable(data) {
 
       <td>
           <div class="task-title">
-              <!-- =====================
-                  BREAKDOWN REFERENCE
-
-                  Click opens the existing Breakdown Detail view.
-              ===================== -->
-
-              ${
-                execType === "restoration" &&
-                h.breakdown_id
-                  ? `
-                    <div
-                      class="history-breakdown-reference clickable-incident-reference"
-                      title="Open Breakdown details"
-                      onclick="
-                        event.stopPropagation();
-                        openBreakdownDetail(${Number(h.breakdown_id)});
-                      "
-                    >
-                      BD-${String(
-                        h.breakdown_id
-                      ).padStart(5, "0")}
-                    </div>
-                  `
-                  : ""
-              }
-
-            <!-- =====================
-                SCHEDULED MAINTENANCE REFERENCE
-
-                Click opens the existing Scheduled Maintenance
-                Detail view.
-            ===================== -->
-
-            ${
-              Number.isInteger(
-                Number(
-                  h.scheduled_maintenance_id
-                )
-              ) &&
-              Number(
-                h.scheduled_maintenance_id
-              ) > 0
-                ? `
-                  <div
-                    class="history-sm-reference clickable-incident-reference"
-                    title="Open Scheduled Maintenance details"
-                    onclick="
-                      event.stopPropagation();
-                      openScheduledMaintenanceDetail(
-                        ${Number(h.scheduled_maintenance_id)}
-                      );
-                    "
-                  >
-                    SM-${String(
-                      h.scheduled_maintenance_id
-                    ).padStart(5, "0")}
-                  </div>
-                `
-                : ""
-            }
-
             <!-- =====================
               MAINTENANCE REPORT SOURCE
 
@@ -5553,18 +5566,34 @@ async function loadCompletedKpi() {
 async function undoExecution(executionId) {
   if (!hasRole("admin", "planner")) {
     alert("You are not allowed to undo executions");
-    return;
+    return false;
   }
 
-  if (!confirm("Undo this execution and restore previous schedule?")) return;
+  if (!confirm("Undo this execution and restore previous schedule?")) {
+    return false;
+  }
 
-  await fetch(`${API}/executions/${executionId}/undo`, {
-    method: "POST"
-  });
+  try {
+    const response = await fetch(`${API}/executions/${executionId}/undo`, {
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      alert(result?.error || "Failed to undo execution.");
+      return false;
+    }
+  } catch (err) {
+    console.error("Failed to undo execution:", err);
+    alert("Failed to undo execution.");
+    return false;
+  }
 
   loadHistory();
   loadTasks();
   loadCompletedKpi();
+
+  return true;
 }
 
 // 👇 ΑΠΑΡΑΙΤΗΤΟ (λόγω type="module")
