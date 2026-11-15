@@ -513,6 +513,42 @@
     dueDate.textContent = [day, month, year].join("/");
     row.insertCell().appendChild(dueDate);
 
+    const actionCell = row.insertCell();
+    if (hasRole("admin", "planner")) {
+      const openPlanner = document.createElement("button");
+      openPlanner.type = "button";
+      openPlanner.className = "btn-secondary";
+      openPlanner.textContent = "Προγραμμάτισε SM";
+
+      openPlanner.addEventListener("click", async () => {
+        openPlanner.disabled = true;
+        try {
+          const query = new URLSearchParams({ model: assignment.asset_model });
+          const response = await fetch("/preventive-packages?" + query, { cache: "no-store" });
+          if (!response.ok) throw new Error("HTTP " + response.status);
+
+          const { packages } = await response.json();
+          const savedPackage = packages.find(item => item.id === assignment.package_id);
+          if (!savedPackage?.tasks?.length) {
+            throw new Error("Δεν βρέθηκαν εργασίες για το αποθηκευμένο πακέτο.");
+          }
+
+          if (!openPlanner.isConnected) return;
+          await openNewScheduledMaintenanceModal({
+            ...assignment,
+            tasks: savedPackage.tasks
+          });
+        } catch (error) {
+          console.error("Could not open the package planner:", error);
+          alert(error.message || "Δεν ήταν δυνατή η προεπισκόπηση του πακέτου.");
+        } finally {
+          openPlanner.disabled = false;
+        }
+      });
+
+      actionCell.appendChild(openPlanner);
+    }
+
     return row;
   }
 
