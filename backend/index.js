@@ -16760,6 +16760,35 @@ app.post("/tasks", async (req, res) => {
 
 });
 
+/* BEGIN: Read preventive packages */
+app.get("/preventive-packages", async (req, res) => {
+  const model = typeof req.query.model === "string"
+    ? req.query.model.trim()
+    : "";
+
+  if (!model) {
+    return res.status(400).json({ error: "Asset model is required." });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT id, asset_model, title, interval_months, tasks, updated_at
+      FROM preventive_packages
+      WHERE asset_model = $1
+      ORDER BY title, id
+      `,
+      [model]
+    );
+
+    return res.json({ packages: rows });
+  } catch (error) {
+    console.error("GET /preventive-packages failed:", error);
+    return res.status(500).json({ error: "Could not load preventive packages." });
+  }
+});
+/* END: Read preventive packages */
+
 /* =====================
    CREATE PREVENTIVE (MANUAL)
 ===================== */
