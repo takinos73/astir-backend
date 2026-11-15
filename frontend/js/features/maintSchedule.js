@@ -4951,6 +4951,9 @@ function buildScheduledMaintenanceSetPreview() {
         duration_min:
           duration,
 
+        notes:
+          task.notes,
+
         planned_start_at:
           taskStart,
 
@@ -7608,9 +7611,10 @@ function refreshScheduledMaintenanceSetCreateButton() {
 
 
   if (saveButton.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true") {
-    saveButton.disabled = true;
-    saveButton.textContent = "Μόνο προεπισκόπηση";
-    saveButton.title = "Η δημιουργία SM από πακέτο θα ενεργοποιηθεί σε επόμενο βήμα.";
+    const ready = Boolean(scheduledMaintenanceSetDraft.preview?.tasks?.length);
+    saveButton.disabled = !ready || Boolean(preventivePackPlannerSession?.saving);
+    saveButton.textContent = "Δημιουργία και προγραμματισμός";
+    saveButton.title = ready ? "" : "Δημιούργησε πρώτα την προεπισκόπηση.";
     return;
   }
 
@@ -7706,6 +7710,110 @@ function refreshScheduledMaintenanceSetCreateButton() {
 ========================================================= */
 
 let returnToPreventivePackDraft = null;
+let preventivePackPlannerSession = null;
+
+async function savePreventivePackFromPlanner(overlay) {
+  const session = preventivePackPlannerSession;
+  const preview = scheduledMaintenanceSetDraft.preview;
+  if (!session || session.saving || !preview?.tasks?.length || !hasRole("admin")) return;
+
+  const password = overlay.querySelector("#newSmPackagePassword");
+  const status = overlay.querySelector("#newSmPackageStatus");
+  if (!password.value) {
+    status.textContent = "Συμπλήρωσε τον κωδικό Admin.";
+    password.focus();
+    return;
+  }
+
+  const title = overlay.querySelector("#new-sm-title").value.trim();
+  if (!title) {
+    status.textContent = "Συμπλήρωσε τον τίτλο του πακέτου.";
+    return;
+  }
+
+  const payload = {
+    asset_id: Number(session.asset_id),
+    title,
+    interval_months: session.interval_months,
+    next_due_date: session.next_due_date,
+    tasks: preview.tasks.map(task => ({
+      task: task.task,
+      section: task.section,
+      unit: task.unit,
+      impact: task.impact,
+      notes: task.notes,
+      duration_min: task.duration_min,
+      planned_start_at: task.planned_start_at.toISOString(),
+      planned_end_at: task.planned_end_at.toISOString()
+    }))
+  };
+
+  const serialized = JSON.stringify(payload);
+  const submission = session.submission;
+  if (submission.serialized && submission.serialized !== serialized) {
+    status.textContent = "Υπάρχει προηγούμενη αποστολή σε εκκρεμότητα. Έλεγξε τα Προγραμματισμένα πακέτα πριν ξεκινήσεις νέο προγραμματισμό.";
+    return;
+  }
+
+  submission.requestId ||= crypto.randomUUID();
+  submission.serialized = serialized;
+  const body = JSON.stringify({
+    ...payload,
+    request_id: submission.requestId,
+    admin_password: password.value
+  });
+
+  password.value = "";
+  session.saving = true;
+  refreshScheduledMaintenanceSetCreateButton();
+  const form = overlay.querySelector("#newScheduledMaintenanceModal");
+  form.inert = true;
+  status.textContent = "Αποθήκευση Preventive Pack…";
+  let saved = false;
+
+  try {
+    const response = await fetch("/preventive-packages/schedule", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cmms-role": "admin"
+      },
+      body
+    });
+
+    if (response.status === 201 || response.status === 200) {
+      saved = true;
+    } else if ([400, 401, 403, 409].includes(response.status)) {
+      const result = await response.json().catch(() => null);
+      status.textContent = result?.error || "Η αποθήκευση απορρίφθηκε.";
+      if (!submission.uncertain && response.status !== 409) {
+        submission.serialized = null;
+        submission.requestId = null;
+      }
+    } else {
+      throw new Error("HTTP " + response.status);
+    }
+  } catch (error) {
+    submission.uncertain = true;
+    console.error("Could not confirm Preventive Pack scheduling:", error);
+    status.textContent = "Η αποθήκευση δεν επιβεβαιώθηκε. Μπορείς να επαναλάβεις την ίδια επιβεβαίωση χωρίς να αλλάξεις τον προγραμματισμό.";
+  } finally {
+    session.saving = false;
+    form.inert = false;
+    refreshScheduledMaintenanceSetCreateButton();
+  }
+
+  if (!saved) {
+    password.focus();
+    return;
+  }
+
+  overlay.style.display = "none";
+  preventivePackPlannerSession = null;
+  returnToPreventivePackDraft = null;
+  session.onSaved();
+  loadTasks().catch(error => console.error("Could not refresh Tasks:", error));
+}
 
 async function openNewScheduledMaintenanceModal(packagePreview) {
   const isPackagePreview = Boolean(packagePreview);
@@ -8135,6 +8243,12 @@ async function openNewScheduledMaintenanceModal(packagePreview) {
           "
         >
 
+          <div id="newSmPackageSave" hidden>
+            <label for="newSmPackagePassword">Κωδικός Admin</label>
+            <input id="newSmPackagePassword" type="password" autocomplete="off">
+            <p id="newSmPackageStatus" role="status"></p>
+          </div>
+
           <button
             id="cancelNewSmBtn"
             class="btn-table"
@@ -8175,6 +8289,8 @@ async function openNewScheduledMaintenanceModal(packagePreview) {
     ===================== */
 
     const closeModal = () => {
+      if (preventivePackPlannerSession?.saving) return;
+      preventivePackPlannerSession = null;
 
       overlay.style.display =
         "none";
@@ -8553,6 +8669,10 @@ async function openNewScheduledMaintenanceModal(packagePreview) {
     resetScheduledMaintenanceSetDraft();
   }
   overlay.dataset.packagePreview = String(isPackagePreview);
+  preventivePackPlannerSession = packagePreview || null;
+  overlay.querySelector("#newSmPackageSave").hidden = !isPackagePreview;
+  overlay.querySelector("#newSmPackagePassword").value = "";
+  overlay.querySelector("#newSmPackageStatus").textContent = "";
   returnToPreventivePackDraft = null;
   overlay.querySelector("#newSmModalHeading").textContent =
     isPackagePreview ? "Προγραμματισμός Preventive Pack" : "New Scheduled Maintenance";
@@ -10112,9 +10232,9 @@ document.addEventListener(
     }
 
 
-    if (
-      event.target.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true"
-    ) {
+    const plannerOverlay = event.target.closest("#newScheduledMaintenanceOverlay");
+    if (plannerOverlay?.dataset.packagePreview === "true") {
+      void savePreventivePackFromPlanner(plannerOverlay);
       return;
     }
 

@@ -17,6 +17,7 @@
   let selectedAsset = null;
   let sourceRequest = 0;
   let planning = false;
+  let plannerSubmission = {};
   let editingTask = false;
   let draftTasks = [];
   let libraryPlans = [];
@@ -208,6 +209,18 @@
       saveForm.querySelector('button[type="submit"]').focus();
     }
 
+    function finishScheduling() {
+      planning = false;
+      closeDraft();
+      const model = document.getElementById("libraryModelSelect");
+      if ([...model.options].some(option => option.value === selectedAsset?.model)) {
+        model.value = selectedAsset.model;
+        model.dispatchEvent(new Event("change"));
+      }
+      alert("Το Preventive Pack δημιουργήθηκε και προγραμματίστηκε.");
+      button.focus();
+    }
+
     saveStatus.textContent = "";
     planning = true;
     dialog.close();
@@ -220,7 +233,9 @@
         interval_months: saveForm.elements.interval.valueAsNumber,
         next_due_date: saveForm.elements.dueDate.value,
         tasks: draftTasks.map(task => ({ ...task })),
-        onClose: returnFromPlanner
+        submission: plannerSubmission,
+        onClose: returnFromPlanner,
+        onSaved: finishScheduling
       });
       if (!opened) throw new Error("Δεν άνοιξε ο προγραμματισμός του πακέτου.");
     } catch (error) {
@@ -358,12 +373,20 @@
     }
   });
 
-  dialog.addEventListener("close", () => {
-    if (editingTask || planning) return;
+  function closeDraft() {
     sourceRequest++;
     saveForm.reset();
     draftTasks = [];
     libraryPlans = [];
+    plannerSubmission = {};
+  }
+
+  dialog.addEventListener("close", () => {
+    if (editingTask || planning) return;
+    if (plannerSubmission.uncertain) {
+      alert("Έλεγξε τα Προγραμματισμένα πακέτα πριν δημιουργήσεις ξανά την ίδια επίσκεψη.");
+    }
+    closeDraft();
   });
 })();
 
