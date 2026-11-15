@@ -155,6 +155,10 @@ function getExecutionType(h) {
   }
 
 
+  if (h.preventive_package_visit_id) {
+    return "preventive";
+  }
+
   // 🟢 Preventive (frequency based)
   if (
     h.frequency_hours &&
@@ -570,6 +574,7 @@ function renderHistoryTable(data) {
             }
 
             <strong>${h.task}</strong>
+            ${h.preventive_package_visit_id ? "<small>Preventive Pack</small>" : ""}
 
             <!--=====================================================
               HISTORY ATTACHMENT INDICATOR

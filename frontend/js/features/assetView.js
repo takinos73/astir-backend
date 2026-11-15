@@ -1516,8 +1516,7 @@ function renderAssetHistoryTable(history) {
         <div class="asset-history-type-label">
 
           ${highlightAssetHistorySearch(
-            e.type ||
-            "-"
+            e.preventive_package_visit_id ? "Preventive Pack" : (e.type || "-")
           )}
 
         </div>

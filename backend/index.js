@@ -13746,10 +13746,10 @@ app.get("/management-dashboard", async (req, res) => {
 
           WHERE
             mt.breakdown_id IS NULL
-            AND COALESCE(
-              mt.frequency_hours,
-              0
-            ) > 0
+            AND (
+              pack_task.task_id IS NOT NULL
+              OR COALESCE(mt.frequency_hours, 0) > 0
+            )
 
         )::int
           AS preventive,
@@ -13765,6 +13765,7 @@ app.get("/management-dashboard", async (req, res) => {
               0
             ) <= 0
 
+            AND pack_task.task_id IS NULL
             AND mt.is_planned
                 IS DISTINCT FROM false
 
@@ -13781,6 +13782,7 @@ app.get("/management-dashboard", async (req, res) => {
 
               mt.breakdown_id IS NULL
 
+              AND pack_task.task_id IS NULL
               AND mt.is_planned = false
 
               AND te.executed_at
@@ -13795,6 +13797,9 @@ app.get("/management-dashboard", async (req, res) => {
 
       JOIN maintenance_tasks mt
         ON mt.id = te.task_id
+
+      LEFT JOIN preventive_package_visit_tasks pack_task
+        ON pack_task.task_id = mt.id
 
       JOIN assets a
         ON a.id = mt.asset_id
