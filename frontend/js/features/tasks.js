@@ -136,11 +136,11 @@ function filterByTaskType(tasks) {
   if (!Array.isArray(tasks)) return [];
 
   if (state.activeTaskTypeFilter === "planned") {
-    return tasks.filter(t => isPlannedManual(t));
+    return tasks.filter(t => !t.preventive_package_visit_id && isPlannedManual(t));
   }
 
   if (state.activeTaskTypeFilter === "preventive") {
-    return tasks.filter(t => isPreventive(t));
+    return tasks.filter(t => t.preventive_package_visit_id || isPreventive(t));
   }
 console.log("filterByTaskType():", state.activeTaskTypeFilter, "sample:", tasks?.[0]);
   // implicit ALL
@@ -2560,6 +2560,67 @@ function buildRow(task) {
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
 
+function appendPreventivePackTaskRows(tbody, tasks) {
+  const first = tasks[0];
+  const row = document.createElement("tr");
+  row.classList.add("task-preventive");
+  row.insertCell().textContent =
+    [first.machine_name || first.asset_name, first.serial_number && "SN " + first.serial_number]
+      .filter(Boolean).join(" · ");
+  row.insertCell();
+  row.insertCell();
+
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "btn-secondary";
+  toggle.textContent = (first.preventive_package_title || "Preventive Pack") +
+    " · " + tasks.length + (tasks.length === 1 ? " εργασία" : " εργασίες");
+  toggle.setAttribute("aria-expanded", "false");
+  row.insertCell().appendChild(toggle);
+
+  const interval = first.preventive_package_interval_months;
+  row.insertCell().textContent = interval
+    ? "Preventive Pack · " + interval + (interval === 1 ? " μήνας" : " μήνες")
+    : "Preventive Pack";
+  row.insertCell().textContent =
+    (first.preventive_package_cycle_due_date || "").split("-").reverse().join("/") || "—";
+  row.insertCell().innerHTML = statusPill(first);
+  row.insertCell();
+
+  tbody.appendChild(row);
+
+  const timeFormat = new Intl.DateTimeFormat("el-GR", {
+    timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+  });
+  const children = [...tasks]
+    .sort((a, b) => a.preventive_package_task_order - b.preventive_package_task_order)
+    .map(task => {
+      const child = buildRow(task);
+      child.style.display = "none";
+      child.cells[4].textContent = "Preventive Pack";
+
+      const start = new Date(task.planned_start_at);
+      const end = new Date(task.due_date);
+      if (task.planned_start_at && task.due_date &&
+          Number.isFinite(start.getTime()) && Number.isFinite(end.getTime())) {
+        const schedule = document.createElement("small");
+        schedule.textContent = timeFormat.format(start) + "–" + timeFormat.format(end);
+        child.cells[5].append(document.createElement("br"), schedule);
+      }
+
+      tbody.appendChild(child);
+      return child;
+    });
+
+  toggle.addEventListener("click", () => {
+    const expanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!expanded));
+    for (const child of children) {
+      child.style.display = expanded ? "none" : "";
+    }
+  });
+}
+
 function renderTable() {
   const tbody = document.querySelector("#tasksTable tbody");
   if (!tbody) return;
@@ -2581,7 +2642,8 @@ const filtered = source
 
 
   // 🔍 SEARCH
-  .filter(t => matchesSearch(t, q))
+  .filter(t => matchesSearch(t, q) ||
+    (t.preventive_package_title || "").toLowerCase().includes(q.toLowerCase()))
 
   // 🟨🔵 TASK TYPE FILTER (MASTER)
 .filter(t => {
@@ -2599,12 +2661,12 @@ const filtered = source
 
   // 🟢 μόνο preventive
   if (preventiveOn) {
-    return isPreventive(t);
+    return Boolean(t.preventive_package_visit_id) || isPreventive(t);
   }
 
   // 🟡 μόνο planned
   if (plannedOn) {
-    return isPlannedManual(t);
+    return !t.preventive_package_visit_id && isPlannedManual(t);
   }
 
   // ⚠ safety (αν κατά λάθος είναι και τα 2 OFF → δείξε όλα)
@@ -2717,12 +2779,30 @@ const filtered = source
   // PAGINATION
   // =====================
 
-  const totalTasks = filtered.length;
+  const displayRows = [];
+  const preventivePacks = new Map();
+  for (const task of filtered) {
+    const visitId = task.preventive_package_visit_id;
+    if (!visitId) {
+      displayRows.push({ task });
+      continue;
+    }
+
+    let tasks = preventivePacks.get(visitId);
+    if (!tasks) {
+      tasks = [];
+      preventivePacks.set(visitId, tasks);
+      displayRows.push({ tasks });
+    }
+    tasks.push(task);
+  }
+
+  const totalRows = displayRows.length;
   const pageSize = getTasksPageSize();
 
   const totalPages = Math.max(
     1,
-    Math.ceil(totalTasks / pageSize)
+    Math.ceil(totalRows / pageSize)
   );
 
     // Safety: if filters reduce the number of pages
@@ -2740,16 +2820,16 @@ const filtered = source
   const endIndex =
     Math.min(
       startIndex + pageSize,
-      totalTasks
+      totalRows
   );
 
-  const pageTasks =
-    filtered.slice(startIndex, endIndex);
-
-  // Render only current page
-  pageTasks.forEach(t =>
-    tbody.appendChild(buildRow(t))
-  );
+  for (const row of displayRows.slice(startIndex, endIndex)) {
+    if (row.tasks) {
+      appendPreventivePackTaskRows(tbody, row.tasks);
+    } else {
+      tbody.appendChild(buildRow(row.task));
+    }
+  }
 
   // =====================
   // PAGINATION UI
@@ -2769,9 +2849,9 @@ const filtered = source
 
   if (infoEl) {
     infoEl.textContent =
-      totalTasks === 0
+      totalRows === 0
         ? "Showing 0–0 of 0"
-        : `Showing ${startIndex + 1}–${endIndex} of ${totalTasks}`;
+        : `Showing ${startIndex + 1}–${endIndex} of ${totalRows}`;
   }
 
   if (pageLabel) {
