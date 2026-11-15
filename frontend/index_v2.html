@@ -6087,7 +6087,6 @@
           const saveControls = document.getElementById("preventivePackageSaveControls");
           const saveStatus = document.getElementById("preventivePackageSaveStatus");
           const closeButton = dialog.querySelector('form[method="dialog"] button');
-          const modelSelect = document.getElementById("libraryModelSelect");
           const model = "CSDX 137";
           let saving = false;
           let draftTasks = [];
@@ -6157,10 +6156,12 @@
             renderDraft();
           });
 
-          function refreshSavedPackages() {
-            if (modelSelect.value === model) {
-              modelSelect.dispatchEvent(new Event("change"));
-            }
+            function refreshSavedPackages() {
+              const modelSelect = document.getElementById("libraryModelSelect");
+
+              if (modelSelect?.value === model) {
+                modelSelect.dispatchEvent(new Event("change"));
+              }
           }
 
           dialog.addEventListener("cancel", event => {
