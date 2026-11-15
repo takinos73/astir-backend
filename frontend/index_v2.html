@@ -6029,23 +6029,31 @@
       </button>
 
             <!-- BEGIN: Preventive package pilot -->
-      <button
-        type="button"
-        id="previewPreventivePackageBtn"
-        class="btn-secondary btn-preventive">
+      <button type="button" id="previewPreventivePackageBtn" class="btn-secondary btn-preventive">
         ➕ Νέο πακέτο
       </button>
 
-      <dialog
-        id="preventivePackagePreview"
-        aria-labelledby="preventivePackagePreviewTitle">
+      <dialog id="preventivePackagePreview" aria-labelledby="preventivePackagePreviewTitle">
         <h3 id="preventivePackagePreviewTitle">ΠΑΚΕΤΟ Α — Ετήσια συντήρηση</h3>
         <p>CSDX 137 · SN 3015 · AIR STATION</p>
         <p>Πρότυπο SM‑00021 · Κάθε 12 μήνες</p>
         <p>Επόμενη προγραμματισμένη ημερομηνία <strong>01/11/2027</strong></p>
-
         <p id="preventivePackagePreviewStatus" role="status"></p>
         <ol id="preventivePackagePreviewTasks"></ol>
+
+        <fieldset id="preventivePackageDraftControls" disabled>
+          <legend>Προσθήκη στο προσχέδιο</legend>
+          <form id="preventivePackageNewTaskForm">
+            <label for="preventivePackageNewTask">Νέα εργασία</label>
+            <input id="preventivePackageNewTask" type="text" required>
+            <button type="submit" class="btn-secondary">Προσθήκη</button>
+          </form>
+          <form id="preventivePackageCopyTaskForm">
+            <label for="preventivePackageLibraryTask">Εργασία από το Library · CSDX 137</label>
+            <select id="preventivePackageLibraryTask" required></select>
+            <button type="submit" class="btn-secondary">Αντιγραφή</button>
+          </form>
+        </fieldset>
 
         <form method="dialog">
           <button type="submit" class="btn-secondary">Κλείσιμο</button>
@@ -6058,35 +6066,92 @@
           const dialog = document.getElementById("preventivePackagePreview");
           const status = document.getElementById("preventivePackagePreviewStatus");
           const list = document.getElementById("preventivePackagePreviewTasks");
+          const controls = document.getElementById("preventivePackageDraftControls");
+          const newTask = document.getElementById("preventivePackageNewTask");
+          const libraryTask = document.getElementById("preventivePackageLibraryTask");
+          const model = "CSDX 137";
+          let draftTasks = [];
+          let libraryPlans = [];
+
+          function renderDraft() {
+            const items = draftTasks.map(task => {
+              const item = document.createElement("li");
+              const context = [task.section, task.unit].filter(Boolean).join(" / ");
+              item.textContent = [task.task || "Εργασία χωρίς τίτλο", context]
+                .filter(Boolean).join(" · ");
+              return item;
+            });
+            list.replaceChildren(...items);
+            status.textContent = "Εργασίες στο προσχέδιο: " + draftTasks.length;
+          }
+
+          document.getElementById("preventivePackageNewTaskForm").addEventListener("submit", event => {
+            event.preventDefault();
+            const title = newTask.value.trim();
+            if (controls.disabled || !title) return;
+
+            draftTasks.push({ task: title });
+            newTask.value = "";
+            renderDraft();
+          });
+
+          document.getElementById("preventivePackageCopyTaskForm").addEventListener("submit", event => {
+            event.preventDefault();
+            if (controls.disabled || libraryTask.value === "") return;
+
+            const plan = libraryPlans[Number(libraryTask.value)];
+            if (!plan) return;
+
+            const { task, section, unit, duration_min, notes, impact } = plan;
+            draftTasks.push({ task, section, unit, duration_min, notes, impact });
+            libraryTask.value = "";
+            renderDraft();
+          });
 
           button.addEventListener("click", async () => {
             button.disabled = true;
+            controls.disabled = true;
+            draftTasks = [];
+            newTask.value = "";
             list.replaceChildren();
             status.textContent = "Φόρτωση εργασιών από το SM‑00021…";
             dialog.showModal();
 
             try {
               const response = await fetch("/scheduled-maintenance/21/tasks");
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-              }
+              if (!response.ok) throw new Error("HTTP " + response.status);
 
               const { tasks } = await response.json();
-              for (const task of tasks) {
-                const item = document.createElement("li");
-                item.textContent = task.task || "Εργασία χωρίς τίτλο";
-                list.appendChild(item);
-              }
+              if (!Array.isArray(tasks)) throw new Error("Invalid SM tasks response");
+              if (!dialog.open) return;
 
-              status.textContent = tasks.length
-                ? `Εργασίες στο SM‑00021: ${tasks.length}`
-                : "Το SM‑00021 δεν έχει εργασίες.";
+              draftTasks = tasks.map(task => ({ ...task }));
+              const entry = libraryData.find(item => item.model === model);
+              libraryPlans = (entry?.plans || []).filter(plan => plan.task?.trim());
+
+              libraryTask.replaceChildren(new Option(
+                libraryPlans.length ? "— Επιλογή εργασίας —" : "Δεν υπάρχουν κανόνες για CSDX 137",
+                ""
+              ));
+              libraryPlans.forEach((plan, index) => {
+                const label = [plan.task, plan.section, plan.unit].filter(Boolean).join(" · ");
+                libraryTask.add(new Option(label, String(index)));
+              });
+              libraryTask.form.querySelector("button").disabled = libraryPlans.length === 0;
+
+              renderDraft();
+              controls.disabled = false;
             } catch (error) {
-              console.error("Could not load the preventive package preview:", error);
-              status.textContent = "Δεν ήταν δυνατή η φόρτωση του SM‑00021.";
+              console.error("Could not load the preventive package draft:", error);
+              status.textContent = "Δεν ήταν δυνατή η φόρτωση του προσχεδίου.";
             } finally {
               button.disabled = false;
             }
+          });
+
+          dialog.addEventListener("close", () => {
+            draftTasks = [];
+            libraryPlans = [];
           });
         })();
       </script>
