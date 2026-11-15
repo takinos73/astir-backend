@@ -6028,7 +6028,7 @@
         ➕ Add Preventive
       </button>
 
-            <!-- BEGIN: Preventive package pilot -->
+      <!-- BEGIN: Preventive package pilot -->
       <button type="button" id="previewPreventivePackageBtn" class="btn-secondary btn-preventive">
         ➕ Νέο πακέτο
       </button>
@@ -6094,11 +6094,40 @@
           let libraryPlans = [];
 
           function renderDraft() {
-            const items = draftTasks.map(task => {
+            const items = draftTasks.map((task, index) => {
               const item = document.createElement("li");
               const context = [task.section, task.unit].filter(Boolean).join(" / ");
               item.textContent = [task.task || "Εργασία χωρίς τίτλο", context]
                 .filter(Boolean).join(" · ");
+              const actions = [
+                { text: "↑", label: "Μετακίνηση πάνω", target: index - 1 },
+                { text: "↓", label: "Μετακίνηση κάτω", target: index + 1 },
+                { text: "Αφαίρεση", label: "Αφαίρεση εργασίας", target: null }
+              ];
+
+              for (const action of actions) {
+                const control = document.createElement("button");
+                control.type = "button";
+                control.className = "btn-secondary";
+                control.textContent = action.text;
+                control.setAttribute("aria-label", action.label + ": " + task.task);
+                control.disabled = action.target !== null &&
+                  (action.target < 0 || action.target >= draftTasks.length);
+                control.addEventListener("click", () => {
+                  if (controls.disabled) return;
+
+                  const [selectedTask] = draftTasks.splice(index, 1);
+                  if (action.target !== null) {
+                    draftTasks.splice(action.target, 0, selectedTask);
+                  }
+
+                  renderDraft();
+                  const nextIndex = action.target ?? Math.min(index, draftTasks.length - 1);
+                  (list.children[nextIndex]?.querySelector("button:enabled") || newTask).focus();
+                });
+                item.append(" ", control);
+              }
+
               return item;
             });
             list.replaceChildren(...items);
@@ -6140,7 +6169,18 @@
 
           saveForm.addEventListener("submit", async event => {
             event.preventDefault();
-            if (saveControls.disabled || !hasRole("admin") || !draftTasks.length) return;
+            if (saveControls.disabled || !hasRole("admin")) return;
+            if (!draftTasks.length) {
+              saveStatus.textContent = "Πρόσθεσε τουλάχιστον μία εργασία.";
+              return;
+            }
+
+            if (newTask.value.trim() || libraryTask.value !== "") {
+              saveStatus.textContent =
+                "Πάτησε Προσθήκη ή Αντιγραφή για την εκκρεμή εργασία, ή καθάρισε το πεδίο.";
+              (newTask.value.trim() ? newTask : libraryTask).focus();
+              return;
+            }
 
             const title = saveForm.elements.title.value.trim();
             if (!title) {
@@ -6159,6 +6199,7 @@
 
             passwordInput.value = "";
             saving = true;
+            list.inert = true;
             saveControls.disabled = true;
             controls.disabled = true;
             closeButton.disabled = true;
@@ -6182,6 +6223,7 @@
                 saveStatus.textContent = result?.error || "Η αποθήκευση απορρίφθηκε.";
                 saveControls.disabled = false;
                 controls.disabled = false;
+                list.inert = false;
                 passwordInput.focus();
               } else {
                 throw new Error("HTTP " + response.status);
@@ -6198,6 +6240,7 @@
           });
 
           button.addEventListener("click", async () => {
+            list.inert = false;
             saveForm.reset();
             saveForm.hidden = !hasRole("admin");
             saveControls.disabled = true;
