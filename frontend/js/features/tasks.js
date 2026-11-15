@@ -2685,6 +2685,8 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     .sort((a, b) => a.preventive_package_task_order - b.preventive_package_task_order)
     .map(task => {
       const child = buildRow(task);
+      child.classList.remove("task-planned-manual");
+      child.classList.add("task-preventive");
       child.style.display = "none";
       child.cells[4].textContent = "Preventive Pack";
 

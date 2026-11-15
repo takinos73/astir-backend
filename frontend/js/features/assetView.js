@@ -562,8 +562,14 @@ groupedTasks.forEach(t => {
      TYPE + DUE STATE
   ===================== */
 
-  const taskType =
-    getTaskTypeMeta(t);
+  const isPreventivePackTask = Boolean(t.preventive_package_visit_id);
+  const taskType = isPreventivePackTask
+    ? { label: "Preventive Pack", className: "preventive" }
+    : getTaskTypeMeta(t);
+
+  if (isPreventivePackTask) {
+    tr.classList.add("task-preventive");
+  }
 
 
   const dueState =
@@ -770,7 +776,7 @@ groupedTasks.forEach(t => {
 
       <div>
         ${highlightAssetTaskSearch(
-          t.type || "-"
+          isPreventivePackTask ? "Preventive Pack" : (t.type || "-")
         )}
       </div>
 
