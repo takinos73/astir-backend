@@ -9,7 +9,6 @@
   const saveForm = document.getElementById("preventivePackageSaveForm");
   const saveControls = document.getElementById("preventivePackageSaveControls");
   const saveStatus = document.getElementById("preventivePackageSaveStatus");
-  const closeButton = dialog.querySelector('form[method="dialog"] button');
   const assetSelect = document.getElementById("preventivePackageAsset");
   const sourceControls = document.getElementById("preventivePackageSourceControls");
   const sourceSelect = document.getElementById("preventivePackageSource");
@@ -17,7 +16,7 @@
   const sourceStatus = document.getElementById("preventivePackageSourceStatus");
   let selectedAsset = null;
   let sourceRequest = 0;
-  let saving = false;
+  let planning = false;
   let editingTask = false;
   let draftTasks = [];
   let libraryPlans = [];
@@ -189,93 +188,45 @@
     renderDraft();
   });
 
-    function refreshPackagePlan() {
-      const modelSelect = document.getElementById("libraryModelSelect");
-
-      if (modelSelect?.value === selectedAsset?.model) {
-        modelSelect.dispatchEvent(new Event("change"));
-      }
-  }
-
-  dialog.addEventListener("cancel", event => {
-    if (saving) event.preventDefault();
-  });
-
   saveForm.addEventListener("submit", async event => {
     event.preventDefault();
-    if (saveControls.disabled || !hasRole("admin")) return;
-    if (!draftTasks.length) {
-      saveStatus.textContent = "Πρόσθεσε τουλάχιστον μία εργασία.";
-      return;
-    }
-
+    if (saveControls.disabled || !selectedAsset || !hasRole("admin")) return;
     if (libraryTask.value !== "") {
-      saveStatus.textContent =
-        "Πάτησε Αντιγραφή για την επιλεγμένη εργασία ή καθάρισε την επιλογή.";
+      saveStatus.textContent = "Πάτησε Αντιγραφή για την επιλεγμένη εργασία ή καθάρισε την επιλογή.";
       libraryTask.focus();
       return;
     }
-
     const title = saveForm.elements.title.value.trim();
-    if (!title) {
-      saveStatus.textContent = "Συμπλήρωσε τον τίτλο του πακέτου.";
+    if (!title || !draftTasks.length) {
+      saveStatus.textContent = "Συμπλήρωσε τίτλο και πρόσθεσε τουλάχιστον μία εργασία.";
       return;
     }
 
-    const passwordInput = saveForm.elements.adminPassword;
-    const requestBody = JSON.stringify({
-      asset_id: Number(selectedAsset.id),
-      next_due_date: saveForm.elements.dueDate.value,
-      title,
-      interval_months: saveForm.elements.interval.valueAsNumber,
-      admin_password: passwordInput.value,
-      tasks: draftTasks
-    });
+    function returnFromPlanner() {
+      planning = false;
+      if (!dialog.open) dialog.showModal();
+      saveForm.querySelector('button[type="submit"]').focus();
+    }
 
-    passwordInput.value = "";
-    saving = true;
-    sourceRequest++;
-    assetSelect.disabled = true;
-    sourceControls.disabled = true;
-    list.inert = true;
-    saveControls.disabled = true;
-    controls.disabled = true;
-    closeButton.disabled = true;
-    saveStatus.textContent = "Αποθήκευση πακέτου…";
+    saveStatus.textContent = "";
+    planning = true;
+    dialog.close();
 
     try {
-      const response = await fetch("/preventive-packages/with-assignment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cmms-role": "admin"
-        },
-        body: requestBody
+      const opened = await openNewScheduledMaintenanceModal({
+        asset_id: selectedAsset.id,
+        asset_model: selectedAsset.model,
+        title,
+        interval_months: saveForm.elements.interval.valueAsNumber,
+        next_due_date: saveForm.elements.dueDate.value,
+        tasks: draftTasks.map(task => ({ ...task })),
+        onClose: returnFromPlanner
       });
-
-      if (response.status === 201) {
-        saveStatus.textContent = "Το πακέτο και η ανάθεση αποθηκεύτηκαν.";
-        refreshPackagePlan();
-      } else if ([400, 401, 403].includes(response.status)) {
-        const result = await response.json().catch(() => null);
-        saveStatus.textContent = result?.error || "Η αποθήκευση απορρίφθηκε.";
-        saveControls.disabled = false;
-        controls.disabled = false;
-        list.inert = false;
-        assetSelect.disabled = false;
-        sourceControls.disabled = false;
-        passwordInput.focus();
-      } else {
-        throw new Error("HTTP " + response.status);
-      }
+      if (!opened) throw new Error("Δεν άνοιξε ο προγραμματισμός του πακέτου.");
     } catch (error) {
-      console.error("Could not confirm the package save:", error);
-      saveStatus.textContent =
-        "Η αποθήκευση δεν επιβεβαιώθηκε. Έλεγξε τα Προγραμματισμένα πακέτα πριν ξαναδοκιμάσεις.";
-      refreshPackagePlan();
-    } finally {
-      saving = false;
-      closeButton.disabled = false;
+      console.error("Could not open Preventive Pack preview:", error);
+      returnFromPlanner();
+      saveStatus.textContent = error.message || "Δεν άνοιξε ο προγραμματισμός του πακέτου.";
     }
   });
 
@@ -319,7 +270,6 @@
     selectedAsset = state.assetsData.find(asset => String(asset.id) === assetSelect.value) || null;
     draftTasks = [];
     saveStatus.textContent = "";
-    saveForm.elements.adminPassword.value = "";
     sourceSelect.replaceChildren(new Option("— Επιλογή προηγούμενου SM —", ""));
     importButton.disabled = true;
     controls.disabled = !selectedAsset;
@@ -350,7 +300,7 @@
       const response = await fetch("/scheduled-maintenance");
       if (!response.ok) throw new Error("HTTP " + response.status);
       const previous = await response.json();
-      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask && !planning)) return;
 
       for (const sm of previous) {
         if (sm.status !== "CLOSED" || sm.asset_model?.trim() !== model) continue;
@@ -361,7 +311,7 @@
       sourceStatus.textContent = sourceSelect.options.length > 1
         ? "" : "Δεν βρέθηκαν κλειστά SM για αυτό το μοντέλο.";
     } catch (error) {
-      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask && !planning)) return;
       console.error("Could not load previous SMs:", error);
       sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση προηγούμενων SM.";
     }
@@ -385,7 +335,7 @@
       if (!response.ok) throw new Error("HTTP " + response.status);
       const { tasks } = await response.json();
       if (!Array.isArray(tasks)) throw new Error("Invalid SM tasks response");
-      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask && !planning)) return;
 
       for (const { task, section, unit, duration_min, notes, impact } of tasks) {
         draftTasks.push({ task, section, unit, duration_min, notes, impact });
@@ -397,11 +347,11 @@
       importButton.disabled = true;
       renderDraft();
     } catch (error) {
-      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask && !planning)) return;
       console.error("Could not load SM tasks:", error);
       sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση των εργασιών.";
     } finally {
-      if (request === sourceRequest && (dialog.open || editingTask)) {
+      if (request === sourceRequest && (dialog.open || editingTask || planning)) {
         sourceControls.disabled = false;
         saveControls.disabled = false;
       }
@@ -409,7 +359,7 @@
   });
 
   dialog.addEventListener("close", () => {
-    if (editingTask) return;
+    if (editingTask || planning) return;
     sourceRequest++;
     saveForm.reset();
     draftTasks = [];

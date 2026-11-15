@@ -5737,7 +5737,7 @@ function renderScheduledMaintenanceSetPreview(
                   font-weight: 700;
                 "
               >
-                ${task.task || "—"}
+                ${escapeBreakdownHtml(task.task || "—")}
               </div>
 
 
@@ -5751,7 +5751,7 @@ function renderScheduledMaintenanceSetPreview(
                         font-size: 10px;
                       "
                     >
-                      ${taskMeta}
+                      ${escapeBreakdownHtml(taskMeta)}
                     </div>
                   `
                   : ""
@@ -7607,6 +7607,13 @@ function refreshScheduledMaintenanceSetCreateButton() {
   }
 
 
+  if (saveButton.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true") {
+    saveButton.disabled = true;
+    saveButton.textContent = "Μόνο προεπισκόπηση";
+    saveButton.title = "Η δημιουργία SM από πακέτο θα ενεργοποιηθεί σε επόμενο βήμα.";
+    return;
+  }
+
   /* =====================
      CURRENT MODE
   ===================== */
@@ -7698,7 +7705,10 @@ function refreshScheduledMaintenanceSetCreateButton() {
       - Does NOT modify previous SM records.
 ========================================================= */
 
-async function openNewScheduledMaintenanceModal() {
+let returnToPreventivePackDraft = null;
+
+async function openNewScheduledMaintenanceModal(packagePreview) {
+  const isPackagePreview = Boolean(packagePreview);
 
   let overlay =
     document.getElementById(
@@ -7761,7 +7771,7 @@ async function openNewScheduledMaintenanceModal() {
           "
         >
 
-          <h2 style="margin: 0;">
+          <h2 id="newSmModalHeading" style="margin: 0;">
             New Scheduled Maintenance
           </h2>
 
@@ -8168,6 +8178,9 @@ async function openNewScheduledMaintenanceModal() {
 
       overlay.style.display =
         "none";
+      const returnToDraft = returnToPreventivePackDraft;
+      returnToPreventivePackDraft = null;
+      returnToDraft?.();
 
     };
 
@@ -8536,6 +8549,15 @@ async function openNewScheduledMaintenanceModal() {
   }
 
 
+  if (overlay.dataset.packagePreview === "true") {
+    resetScheduledMaintenanceSetDraft();
+  }
+  overlay.dataset.packagePreview = String(isPackagePreview);
+  returnToPreventivePackDraft = null;
+  overlay.querySelector("#newSmModalHeading").textContent =
+    isPackagePreview ? "Προγραμματισμός Preventive Pack" : "New Scheduled Maintenance";
+  overlay.querySelector(".sm-planning-method").style.display = isPackagePreview ? "none" : "";
+
   /* =====================
      RESET NEW INCIDENT FORM
   ===================== */
@@ -8785,6 +8807,53 @@ async function openNewScheduledMaintenanceModal() {
   }
 
 
+  // Package assignments use the existing planner in read-only preview mode.
+  emptyMode.disabled = isPackagePreview;
+  setMode.disabled = isPackagePreview;
+  const sourceField = sourceSelect.closest(".field");
+  if (sourceField) sourceField.style.display = isPackagePreview ? "none" : "";
+  loadButton.style.display = isPackagePreview ? "none" : "";
+
+  if (isPackagePreview) {
+    assetSelect.value = String(packagePreview.asset_id);
+    if (assetSelect.value !== String(packagePreview.asset_id)) {
+      throw new Error("Το asset της ανάθεσης δεν είναι διαθέσιμο στον planner.");
+    }
+
+    resetScheduledMaintenanceSetDraft();
+    assetSelect.disabled = true;
+    emptyMode.checked = false;
+    setMode.checked = true;
+    setSection.style.display = "block";
+
+    document.getElementById("new-sm-title").value = packagePreview.title;
+    document.getElementById("new-sm-scheduled-start").value =
+      packagePreview.next_due_date + "T08:00";
+
+    Object.assign(scheduledMaintenanceSetDraft, {
+      sourceSmCode: "Preventive Pack",
+      sourceSmTitle: "Preventive Library",
+      targetAssetId: Number(packagePreview.asset_id),
+      targetAssetModel: packagePreview.asset_model,
+      tasks: packagePreview.tasks.map((task, index) => ({
+        sourceTaskId: null,
+        included: true,
+        sortOrder: index + 1,
+        task: task.task,
+        section: task.section || null,
+        unit: task.unit || null,
+        impact: task.impact || "normal",
+        duration_min: Number(task.duration_min) || 0,
+        notes: task.notes || null
+      }))
+    });
+
+    summary.textContent = "Preventive Pack · " + packagePreview.title +
+      " · Κάθε " + packagePreview.interval_months + " μήνες";
+    renderScheduledMaintenanceSetDraft();
+    refreshScheduledMaintenanceSetCreateButton();
+  }
+
   /* =====================
      SHOW MODAL
   ===================== */
@@ -8793,7 +8862,13 @@ async function openNewScheduledMaintenanceModal() {
     "flex";
 
 
-  assetSelect?.focus();
+  returnToPreventivePackDraft = packagePreview?.onClose || null;
+  if (isPackagePreview) {
+    document.getElementById("new-sm-scheduled-start").focus();
+  } else {
+    assetSelect?.focus();
+  }
+  return true;
 
 }
 
@@ -10036,6 +10111,12 @@ document.addEventListener(
       return;
     }
 
+
+    if (
+      event.target.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true"
+    ) {
+      return;
+    }
 
     /* =====================
        CURRENT PLANNING MODE
