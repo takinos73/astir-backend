@@ -189,7 +189,7 @@
     renderDraft();
   });
 
-    function refreshSavedPackages() {
+    function refreshPackagePlan() {
       const modelSelect = document.getElementById("libraryModelSelect");
 
       if (modelSelect?.value === selectedAsset?.model) {
@@ -255,7 +255,7 @@
 
       if (response.status === 201) {
         saveStatus.textContent = "Το πακέτο και η ανάθεση αποθηκεύτηκαν.";
-        refreshSavedPackages();
+        refreshPackagePlan();
       } else if ([400, 401, 403].includes(response.status)) {
         const result = await response.json().catch(() => null);
         saveStatus.textContent = result?.error || "Η αποθήκευση απορρίφθηκε.";
@@ -271,8 +271,8 @@
     } catch (error) {
       console.error("Could not confirm the package save:", error);
       saveStatus.textContent =
-        "Η αποθήκευση δεν επιβεβαιώθηκε. Έλεγξε τα Αποθηκευμένα πακέτα πριν ξαναδοκιμάσεις.";
-      refreshSavedPackages();
+        "Η αποθήκευση δεν επιβεβαιώθηκε. Έλεγξε τα Προγραμματισμένα πακέτα πριν ξαναδοκιμάσεις.";
+      refreshPackagePlan();
     } finally {
       saving = false;
       closeButton.disabled = false;
@@ -415,74 +415,6 @@
     draftTasks = [];
     libraryPlans = [];
   });
-})();
-
-(() => {
-  const modelSelect = document.getElementById("libraryModelSelect");
-  const section = document.getElementById("savedPreventivePackages");
-  const status = document.getElementById("savedPreventivePackagesStatus");
-  const list = document.getElementById("savedPreventivePackagesList");
-  let requestNumber = 0;
-
-  async function loadSavedPackages() {
-    const currentRequest = ++requestNumber;
-    const model = modelSelect.value.trim();
-
-    list.replaceChildren();
-    section.hidden = !model;
-    if (!model) return;
-
-    status.textContent = "Φόρτωση πακέτων…";
-
-    try {
-      const query = new URLSearchParams({ model });
-      const response = await fetch(`/preventive-packages?${query}`, {
-        cache: "no-store"
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const { packages } = await response.json();
-      if (!Array.isArray(packages)) throw new Error("Invalid packages response");
-
-      // Ignore a response if the selected model has changed.
-      if (currentRequest !== requestNumber) return;
-
-      const entries = packages.map(savedPackage => {
-        const details = document.createElement("details");
-        const summary = document.createElement("summary");
-        const tasks = document.createElement("ol");
-
-        summary.textContent =
-          `${savedPackage.title} · Κάθε ${savedPackage.interval_months} μήνες`;
-
-        for (const task of savedPackage.tasks) {
-          const item = document.createElement("li");
-          const context = [task.section, task.unit].filter(Boolean).join(" / ");
-          item.textContent = [task.task, context].filter(Boolean).join(" · ");
-          tasks.appendChild(item);
-        }
-
-        details.append(summary, tasks);
-        return details;
-      });
-
-      list.replaceChildren(...entries);
-      status.textContent = entries.length ? "" : "Δεν υπάρχουν πακέτα για αυτό το μοντέλο.";
-    } catch (error) {
-      if (currentRequest !== requestNumber) return;
-      console.error("Could not load saved preventive packages:", error);
-      status.textContent = "Δεν ήταν δυνατή η φόρτωση των πακέτων.";
-    }
-  }
-
-  modelSelect.addEventListener("change", loadSavedPackages);
-
-  // Refresh when the Library rebuilds the model dropdown.
-  const modelObserver = new MutationObserver(loadSavedPackages);
-  modelObserver.observe(modelSelect, { childList: true });
-
-  loadSavedPackages();
 })();
 
 // Scheduled preventive packages in the Library.
