@@ -6027,6 +6027,71 @@
         class="btn-secondary btn-preventive">
         ➕ Add Preventive
       </button>
+
+            <!-- BEGIN: Preventive package pilot -->
+      <button
+        type="button"
+        id="previewPreventivePackageBtn"
+        class="btn-secondary btn-preventive">
+        ➕ Νέο πακέτο
+      </button>
+
+      <dialog
+        id="preventivePackagePreview"
+        aria-labelledby="preventivePackagePreviewTitle">
+        <h3 id="preventivePackagePreviewTitle">ΠΑΚΕΤΟ Α — Ετήσια συντήρηση</h3>
+        <p>CSDX 137 · SN 3015 · AIR STATION</p>
+        <p>Πρότυπο SM‑00021 · Κάθε 12 μήνες</p>
+        <p>Επόμενη προγραμματισμένη ημερομηνία <strong>01/11/2027</strong></p>
+
+        <p id="preventivePackagePreviewStatus" role="status"></p>
+        <ol id="preventivePackagePreviewTasks"></ol>
+
+        <form method="dialog">
+          <button type="submit" class="btn-secondary">Κλείσιμο</button>
+        </form>
+      </dialog>
+
+      <script>
+        (() => {
+          const button = document.getElementById("previewPreventivePackageBtn");
+          const dialog = document.getElementById("preventivePackagePreview");
+          const status = document.getElementById("preventivePackagePreviewStatus");
+          const list = document.getElementById("preventivePackagePreviewTasks");
+
+          button.addEventListener("click", async () => {
+            button.disabled = true;
+            list.replaceChildren();
+            status.textContent = "Φόρτωση εργασιών από το SM‑00021…";
+            dialog.showModal();
+
+            try {
+              const response = await fetch("/scheduled-maintenance/21/tasks");
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+
+              const { tasks } = await response.json();
+              for (const task of tasks) {
+                const item = document.createElement("li");
+                item.textContent = task.task || "Εργασία χωρίς τίτλο";
+                list.appendChild(item);
+              }
+
+              status.textContent = tasks.length
+                ? `Εργασίες στο SM‑00021: ${tasks.length}`
+                : "Το SM‑00021 δεν έχει εργασίες.";
+            } catch (error) {
+              console.error("Could not load the preventive package preview:", error);
+              status.textContent = "Δεν ήταν δυνατή η φόρτωση του SM‑00021.";
+            } finally {
+              button.disabled = false;
+            }
+          });
+        })();
+      </script>
+      <!-- END: Preventive package pilot -->
+
     </div>
   </section>
 
