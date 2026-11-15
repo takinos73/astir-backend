@@ -111,7 +111,6 @@ function getAssetFilterLabel() {
     : machine;
 }
 
-
 function getCurrentPeriodLabel() {
   // 🟢 αν υπάρχει custom date range
   if (state.taskDateFrom || state.taskDateTo) {

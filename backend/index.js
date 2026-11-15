@@ -16889,6 +16889,93 @@ app.post("/preventive-packages", requireAdmin, async (req, res) => {
 });
 /* END: Create preventive package */
 
+/* BEGIN: Create preventive package assignment */
+app.post("/preventive-package-assignments", requireAdmin, async (req, res) => {
+  const { admin_password, package_id, asset_id, next_due_date } = req.body || {};
+  const packageId = typeof package_id === "string" ? package_id
+    : Number.isSafeInteger(package_id) ? String(package_id) : "";
+
+  if (typeof admin_password !== "string" || !admin_password) {
+    return res.status(400).json({ error: "Admin password is required." });
+  }
+
+  if (
+    !/^[1-9]\d{0,18}$/.test(packageId) ||
+    BigInt(packageId) > 9223372036854775807n ||
+    !Number.isInteger(asset_id) ||
+    asset_id < 1 ||
+    asset_id > 2147483647
+  ) {
+    return res.status(400).json({ error: "Valid package and asset IDs are required." });
+  }
+
+  if (
+    typeof next_due_date !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(next_due_date) ||
+    next_due_date.startsWith("0000")
+  ) {
+    return res.status(400).json({ error: "A valid date in YYYY-MM-DD format is required." });
+  }
+
+  // Reject dates that JavaScript would normalize, such as February 30.
+  const date = new Date(next_due_date + "T00:00:00Z");
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== next_due_date) {
+    return res.status(400).json({ error: "A valid date in YYYY-MM-DD format is required." });
+  }
+
+  try {
+    const { rows: credentials } = await pool.query(`
+      SELECT admin_password
+      FROM roles_config
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
+    const expectedPassword = credentials[0]?.admin_password;
+    if (!expectedPassword || admin_password !== expectedPassword) {
+      return res.status(401).json({ error: "Invalid Admin password." });
+    }
+
+    // Check model compatibility and create the assignment in one statement.
+    const { rows: [result] } = await pool.query(
+      `
+      WITH compatible AS (
+        SELECT p.id AS package_id, a.id AS asset_id
+        FROM preventive_packages p
+        JOIN assets a ON a.model = p.asset_model
+        WHERE p.id = $1 AND a.id = $2
+      ),
+      inserted AS (
+        INSERT INTO preventive_package_assignments (package_id, asset_id, next_due_date)
+        SELECT package_id, asset_id, $3::date
+        FROM compatible
+        ON CONFLICT (package_id, asset_id) DO NOTHING
+        RETURNING id::text, package_id::text, asset_id, next_due_date::text
+      )
+      SELECT
+        EXISTS (SELECT 1 FROM compatible) AS compatible,
+        (SELECT row_to_json(inserted) FROM inserted) AS assignment
+      `,
+      [packageId, asset_id, next_due_date]
+    );
+
+    if (!result.compatible) {
+      return res.status(400).json({ error: "Package and asset must exist and have the same model." });
+    }
+
+    if (!result.assignment) {
+      return res.status(409).json({ error: "This package is already assigned to this asset." });
+    }
+
+    return res.status(201).json({ assignment: result.assignment });
+  } catch (error) {
+    console.error("POST /preventive-package-assignments failed:", error);
+    return res.status(500).json({ error: "Could not create preventive package assignment." });
+  }
+});
+/* END: Create preventive package assignment */
+
+
 /* =====================
    CREATE PREVENTIVE (MANUAL)
 ===================== */
