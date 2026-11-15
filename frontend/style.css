@@ -3907,3 +3907,10 @@ body.cmms-authenticated[data-role="shift_foreman"]
   overscroll-behavior-y: contain;
 }
 
+/* Blur the background behind BD and SM details opened from History. */
+#breakdownDetailOverlay.history-detail-backdrop,
+#scheduledMaintenanceDetailOverlay.history-detail-backdrop {
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+

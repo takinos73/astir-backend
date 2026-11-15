@@ -380,15 +380,18 @@ function renderHistoryTable(data) {
   rows.forEach(group => {
     const h = group.execution;
 
-    if (group.parentId) {
+      if (group.parentId) {
       const tr = document.createElement("tr");
       const label = group.isBreakdown ? "Breakdown" : "Scheduled Maintenance";
       const badgeClass = group.isBreakdown
         ? "history-breakdown-reference"
         : "history-sm-reference";
+      const overlayId = group.isBreakdown
+        ? "breakdownDetailOverlay"
+        : "scheduledMaintenanceDetailOverlay";
       const openDetail = group.isBreakdown
-        ? "openBreakdownDetail"
-        : "openScheduledMaintenanceDetail";
+        ? openBreakdownDetail
+        : openScheduledMaintenanceDetail;
 
       tr.classList.add(group.isBreakdown ? "history-restoration" : "history-planned");
       tr.innerHTML = `
@@ -405,7 +408,6 @@ function renderHistoryTable(data) {
               type="button"
               class="${badgeClass} clickable-incident-reference"
               title="Open ${label} details"
-              onclick="event.stopPropagation(); ${openDetail}(${group.parentId});"
             >${group.code}</button>
             <strong class="history-event-title"></strong>
           </div>
@@ -414,8 +416,40 @@ function renderHistoryTable(data) {
         <td title="Latest matching execution">${highlightHistoryText(h.executed_by || "-")}</td>
         <td><span class="muted">—</span></td>
       `;
+
       const title = group.isBreakdown ? h.breakdown_title : h.scheduled_maintenance_title;
       tr.querySelector(".history-event-title").textContent = title?.trim() || label;
+
+      const badge = tr.querySelector(".clickable-incident-reference");
+      badge.addEventListener("click", async event => {
+        event.stopPropagation();
+
+        const overlay = document.getElementById(overlayId);
+        if (!overlay) {
+          await openDetail(group.parentId);
+          return;
+        }
+
+        const clearBlur = () => {
+          overlay.classList.remove("history-detail-backdrop");
+          observer.disconnect();
+        };
+        const observer = new MutationObserver(() => {
+          if (overlay.style.display === "none") clearBlur();
+        });
+
+        badge.disabled = true;
+        overlay.classList.add("history-detail-backdrop");
+        observer.observe(overlay, { attributes: true, attributeFilter: ["style"] });
+
+        try {
+          await openDetail(group.parentId);
+        } finally {
+          if (overlay.style.display !== "flex") clearBlur();
+          badge.disabled = false;
+        }
+      });
+
       tbody.appendChild(tr);
       return;
     }
