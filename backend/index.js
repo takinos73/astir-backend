@@ -16762,6 +16762,7 @@ app.post("/tasks", async (req, res) => {
 
 /* BEGIN: Read preventive packages */
 app.get("/preventive-packages", async (req, res) => {
+  // Read the selected asset model from the Library filter.
   const model = typeof req.query.model === "string"
     ? req.query.model.trim()
     : "";
@@ -16771,6 +16772,7 @@ app.get("/preventive-packages", async (req, res) => {
   }
 
   try {
+    // Load saved package definitions for this model, including task order.
     const { rows } = await pool.query(
       `
       SELECT id, asset_model, title, interval_months, tasks, updated_at
@@ -16788,6 +16790,104 @@ app.get("/preventive-packages", async (req, res) => {
   }
 });
 /* END: Read preventive packages */
+
+
+/* BEGIN: Create preventive package */
+app.post("/preventive-packages", requireAdmin, async (req, res) => {
+  const { admin_password, asset_model, title, interval_months, tasks } = req.body || {};
+  const model = typeof asset_model === "string" ? asset_model.trim() : "";
+  const packageTitle = typeof title === "string" ? title.trim() : "";
+
+  // Require the Admin password for server-side confirmation.
+  if (typeof admin_password !== "string" || !admin_password) {
+    return res.status(400).json({ error: "Admin password is required." });
+  }
+
+  // Validate the package definition and the PostgreSQL integer range.
+  if (
+    !model ||
+    !packageTitle ||
+    !Number.isInteger(interval_months) ||
+    interval_months < 1 ||
+    interval_months > 2147483647 ||
+    !Array.isArray(tasks) ||
+    tasks.length === 0
+  ) {
+    return res.status(400).json({
+      error: "Asset model, title, a positive interval in months and tasks are required."
+    });
+  }
+
+  // Copy the fields needed for future SM tasks and preserve the submitted order.
+  const packageTasks = [];
+  for (const item of tasks) {
+    const taskTitle = typeof item?.task === "string" ? item.task.trim() : "";
+
+    if (!taskTitle) {
+      return res.status(400).json({ error: "Every task needs a title." });
+    }
+
+    const packageTask = { task: taskTitle };
+
+    // Validate and copy optional text fields.
+    for (const field of ["section", "unit", "notes", "impact"]) {
+      const value = item[field];
+      if (value == null) continue;
+
+      if (typeof value !== "string") {
+        return res.status(400).json({ error: `Invalid task field: ${field}.` });
+      }
+
+      packageTask[field] = value.trim();
+    }
+
+    // Accept an optional estimated duration in minutes.
+    if (item.duration_min != null && item.duration_min !== "") {
+      const duration = typeof item.duration_min === "string"
+        ? Number(item.duration_min.trim())
+        : item.duration_min;
+
+      if (!Number.isFinite(duration) || duration < 0) {
+        return res.status(400).json({ error: "Invalid task duration." });
+      }
+
+      packageTask.duration_min = duration;
+    }
+
+    packageTasks.push(packageTask);
+  }
+
+  try {
+    // Check the submitted password against the current Admin configuration.
+    const { rows: credentials } = await pool.query(`
+      SELECT admin_password
+      FROM roles_config
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
+    const expectedPassword = credentials[0]?.admin_password;
+    if (!expectedPassword || admin_password !== expectedPassword) {
+      return res.status(401).json({ error: "Invalid Admin password." });
+    }
+
+    // Save the package definition and return the new record to the caller.
+    const { rows } = await pool.query(
+      `
+      INSERT INTO preventive_packages (asset_model, title, interval_months, tasks)
+      VALUES ($1, $2, $3, $4::jsonb)
+      RETURNING id, asset_model, title, interval_months, tasks, updated_at
+      `,
+      [model, packageTitle, interval_months, JSON.stringify(packageTasks)]
+    );
+
+    return res.status(201).json({ package: rows[0] });
+  } catch (error) {
+    console.error("POST /preventive-packages failed:", error);
+    return res.status(500).json({ error: "Could not create preventive package." });
+  }
+});
+/* END: Create preventive package */
 
 /* =====================
    CREATE PREVENTIVE (MANUAL)
