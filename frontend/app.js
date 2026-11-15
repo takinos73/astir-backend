@@ -407,13 +407,15 @@ function renderHistoryTable(data) {
               title="Open ${label} details"
               onclick="event.stopPropagation(); ${openDetail}(${group.parentId});"
             >${group.code}</button>
-            <strong>${label}</strong>
+            <strong class="history-event-title"></strong>
           </div>
           <small>${group.count} ${group.count === 1 ? "execution" : "executions"} · ${group.duration} min total</small>
         </td>
         <td title="Latest matching execution">${highlightHistoryText(h.executed_by || "-")}</td>
         <td><span class="muted">—</span></td>
       `;
+      const title = group.isBreakdown ? h.breakdown_title : h.scheduled_maintenance_title;
+      tr.querySelector(".history-event-title").textContent = title?.trim() || label;
       tbody.appendChild(tr);
       return;
     }

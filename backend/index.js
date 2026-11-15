@@ -19499,6 +19499,8 @@ app.get("/executions", async (req, res) => {
 
         t.breakdown_id,
         t.scheduled_maintenance_id,
+        b.title AS breakdown_title,
+        sm.title AS scheduled_maintenance_title,
 
         /* =====================================================
            MAINTENANCE REPORT SOURCE
@@ -19568,6 +19570,12 @@ app.get("/executions", async (req, res) => {
       JOIN maintenance_tasks t
         ON t.id = e.task_id
 
+      LEFT JOIN breakdowns b
+        ON b.id = t.breakdown_id
+
+      LEFT JOIN scheduled_maintenance sm
+        ON sm.id = t.scheduled_maintenance_id
+
       JOIN assets a
         ON a.id = e.asset_id
 
@@ -19630,6 +19638,7 @@ app.get("/executions", async (req, res) => {
 
   }
 });
+
 
 /* =====================
    UNDO TASK EXECUTION
