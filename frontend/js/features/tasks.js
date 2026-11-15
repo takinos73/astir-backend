@@ -2560,6 +2560,84 @@ function buildRow(task) {
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
 
+async function openPreventivePackDetail(visitId, code) {
+  const dialog = document.createElement("dialog");
+  dialog.className = "preventive-pack-detail";
+  dialog.setAttribute("aria-labelledby", "preventivePackDetailTitle");
+  dialog.innerHTML = `
+    <h3 id="preventivePackDetailTitle"></h3>
+    <p class="preventive-pack-detail-context"></p>
+    <p class="preventive-pack-detail-status" role="status">Φόρτωση επίσκεψης…</p>
+    <div class="preventive-pack-detail-table" hidden>
+      <table class="library-table">
+        <thead><tr>
+          <th scope="col">Εργασία</th>
+          <th scope="col">Έναρξη</th>
+          <th scope="col">Λήξη</th>
+          <th scope="col">Κατάσταση</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <form method="dialog"><button type="submit" class="btn-secondary">Κλείσιμο</button></form>
+  `;
+
+  const heading = dialog.querySelector("h3");
+  const status = dialog.querySelector("[role=status]");
+  heading.textContent = code + " · Preventive Pack";
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+  document.body.appendChild(dialog);
+  dialog.showModal();
+
+  try {
+    const response = await fetch("/preventive-package-visits/" + encodeURIComponent(visitId), {
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const { visit } = await response.json();
+    if (!dialog.isConnected || !dialog.open) return;
+
+    heading.textContent = code + " · " + visit.title;
+    const cycleDate = visit.cycle_due_date.split("-").reverse().join("/");
+    dialog.querySelector(".preventive-pack-detail-context").textContent =
+      [visit.asset_model, visit.serial_number && "SN " + visit.serial_number,
+        cycleDate, "Κάθε " + visit.interval_months + (visit.interval_months === 1 ? " μήνα" : " μήνες")]
+        .filter(Boolean).join(" · ");
+
+    const time = new Intl.DateTimeFormat("el-GR", {
+      timeZone: "Europe/Athens", day: "2-digit", month: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    });
+    const format = value => {
+      const date = new Date(value);
+      return value && Number.isFinite(date.getTime()) ? time.format(date) : "—";
+    };
+    const rows = dialog.querySelector("tbody");
+
+    for (const task of visit.tasks) {
+      const row = rows.insertRow();
+      const taskCell = row.insertCell();
+      taskCell.textContent = task.task;
+      const location = [task.section, task.unit].filter(Boolean).join(" / ");
+      if (location) {
+        const meta = document.createElement("small");
+        meta.textContent = location;
+        taskCell.append(document.createElement("br"), meta);
+      }
+      row.insertCell().textContent = format(task.planned_start_at);
+      row.insertCell().textContent = format(task.due_date);
+      row.insertCell().textContent = task.status || "—";
+    }
+
+    const done = visit.tasks.filter(task => task.status === "Done").length;
+    status.textContent = done + "/" + visit.tasks.length + " ολοκληρωμένες εργασίες";
+    dialog.querySelector(".preventive-pack-detail-table").hidden = !visit.tasks.length;
+  } catch (error) {
+    console.error("Could not load Preventive Pack detail:", error);
+    status.textContent = "Δεν ήταν δυνατή η φόρτωση της επίσκεψης.";
+  }
+}
+
 function appendPreventivePackTaskRows(tbody, tasks) {
   const first = tasks[0];
   const row = document.createElement("tr");
@@ -2576,7 +2654,18 @@ function appendPreventivePackTaskRows(tbody, tasks) {
   toggle.textContent = (first.preventive_package_title || "Preventive Pack") +
     " · " + tasks.length + (tasks.length === 1 ? " εργασία" : " εργασίες");
   toggle.setAttribute("aria-expanded", "false");
-  row.insertCell().appendChild(toggle);
+  const taskCell = row.insertCell();
+  if (first.preventive_package_id) {
+    const code = "PP" + String(first.preventive_package_id).padStart(4, "0");
+    const badge = document.createElement("button");
+    badge.type = "button";
+    badge.className = "preventive-pack-badge";
+    badge.textContent = code;
+    badge.title = "Άνοιγμα Preventive Pack";
+    badge.addEventListener("click", () => openPreventivePackDetail(first.preventive_package_visit_id, code));
+    taskCell.append(badge, " ");
+  }
+  taskCell.appendChild(toggle);
 
   const interval = first.preventive_package_interval_months;
   row.insertCell().textContent = interval

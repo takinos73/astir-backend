@@ -16202,6 +16202,7 @@ app.get("/tasks", async (req, res) => {
         mt.breakdown_id,
         mt.scheduled_maintenance_id,
         ppv.id::text AS preventive_package_visit_id,
+        pp.id::text AS preventive_package_id,
         pp.title AS preventive_package_title,
         pp.interval_months AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
@@ -17325,6 +17326,62 @@ app.post("/preventive-packages/schedule", requireAdmin, async (req, res) => {
   }
 });
 /* END: Schedule first preventive package visit */
+
+/* BEGIN: Read preventive package visit detail */
+app.get("/preventive-package-visits/:id", async (req, res) => {
+  const visitId = req.params.id;
+  if (!/^[1-9]\d{0,18}$/.test(visitId) || BigInt(visitId) > 9223372036854775807n) {
+    return res.status(400).json({ error: "Invalid preventive package visit ID." });
+  }
+
+  try {
+    const { rows: [visit] } = await pool.query(
+      `
+      SELECT
+        v.id::text AS id,
+        p.id::text AS package_id,
+        p.title,
+        p.interval_months,
+        asset.model AS asset_model,
+        asset.serial_number,
+        v.cycle_due_date::text,
+        v.scheduled_start_at,
+        v.scheduled_end_at,
+        v.closed_at,
+        COALESCE((
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'id', t.id,
+              'task', t.task,
+              'section', t.section,
+              'unit', t.unit,
+              'status', t.status,
+              'planned_start_at', t.planned_start_at,
+              'due_date', t.due_date
+            )
+            ORDER BY link.task_order
+          )
+          FROM preventive_package_visit_tasks link
+          JOIN maintenance_tasks t ON t.id = link.task_id
+          WHERE link.visit_id = v.id
+        ), '[]'::jsonb) AS tasks
+      FROM preventive_package_visits v
+      JOIN preventive_package_assignments a ON a.id = v.assignment_id
+      JOIN preventive_packages p ON p.id = a.package_id
+      JOIN assets asset ON asset.id = a.asset_id
+      WHERE v.id = $1::bigint
+      `,
+      [visitId]
+    );
+
+    if (!visit) return res.status(404).json({ error: "Preventive package visit not found." });
+    return res.json({ visit });
+  } catch (error) {
+    console.error("GET preventive package visit failed:", error);
+    return res.status(500).json({ error: "Could not load preventive package visit." });
+  }
+});
+/* END: Read preventive package visit detail */
 
 
 /* =====================
