@@ -7607,13 +7607,6 @@ function refreshScheduledMaintenanceSetCreateButton() {
   }
 
 
-  if (saveButton.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true") {
-    saveButton.disabled = true;
-    saveButton.textContent = "Μόνο προεπισκόπηση";
-    saveButton.title = "Η δημιουργία SM από πακέτο θα ενεργοποιηθεί σε επόμενο βήμα.";
-    return;
-  }
-
   /* =====================
      CURRENT MODE
   ===================== */
@@ -7705,8 +7698,7 @@ function refreshScheduledMaintenanceSetCreateButton() {
       - Does NOT modify previous SM records.
 ========================================================= */
 
-async function openNewScheduledMaintenanceModal(packagePreview) {
-  const isPackagePreview = Boolean(packagePreview);
+async function openNewScheduledMaintenanceModal() {
 
   let overlay =
     document.getElementById(
@@ -8544,11 +8536,6 @@ async function openNewScheduledMaintenanceModal(packagePreview) {
   }
 
 
-  if (overlay.dataset.packagePreview === "true") {
-    resetScheduledMaintenanceSetDraft();
-  }
-  overlay.dataset.packagePreview = String(isPackagePreview);
-
   /* =====================
      RESET NEW INCIDENT FORM
   ===================== */
@@ -8797,52 +8784,6 @@ async function openNewScheduledMaintenanceModal(packagePreview) {
 
   }
 
-
-  // Package assignments use the existing planner in read-only preview mode.
-  emptyMode.disabled = isPackagePreview;
-  setMode.disabled = isPackagePreview;
-  const sourceField = sourceSelect.closest(".field");
-  if (sourceField) sourceField.style.display = isPackagePreview ? "none" : "";
-  loadButton.style.display = isPackagePreview ? "none" : "";
-
-  if (isPackagePreview) {
-    assetSelect.value = String(packagePreview.asset_id);
-    if (assetSelect.value !== String(packagePreview.asset_id)) {
-      throw new Error("Το asset της ανάθεσης δεν είναι διαθέσιμο στον planner.");
-    }
-
-    resetScheduledMaintenanceSetDraft();
-    assetSelect.disabled = true;
-    emptyMode.checked = false;
-    setMode.checked = true;
-    setSection.style.display = "block";
-
-    document.getElementById("new-sm-title").value = packagePreview.title;
-    document.getElementById("new-sm-scheduled-start").value =
-      packagePreview.next_due_date + "T08:00";
-
-    Object.assign(scheduledMaintenanceSetDraft, {
-      sourceSmCode: "Preventive Package",
-      sourceSmTitle: "Preventive Library",
-      targetAssetId: Number(packagePreview.asset_id),
-      targetAssetModel: packagePreview.asset_model,
-      tasks: packagePreview.tasks.map((task, index) => ({
-        sourceTaskId: null,
-        included: true,
-        sortOrder: index + 1,
-        task: task.task,
-        section: task.section || null,
-        unit: task.unit || null,
-        impact: task.impact || "normal",
-        duration_min: Number(task.duration_min) || 0,
-        notes: task.notes || null
-      }))
-    });
-
-    summary.textContent = "Προεπισκόπηση πακέτου · " + packagePreview.title;
-    renderScheduledMaintenanceSetDraft();
-    refreshScheduledMaintenanceSetCreateButton();
-  }
 
   /* =====================
      SHOW MODAL
@@ -10095,12 +10036,6 @@ document.addEventListener(
       return;
     }
 
-
-    if (
-      event.target.closest("#newScheduledMaintenanceOverlay")?.dataset.packagePreview === "true"
-    ) {
-      return;
-    }
 
     /* =====================
        CURRENT PLANNING MODE
