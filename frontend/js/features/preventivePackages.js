@@ -224,6 +224,98 @@
   const list = document.getElementById("savedPreventivePackagesList");
   let requestNumber = 0;
 
+  function createAssignmentForm(savedPackage, model) {
+    const panel = document.createElement("details");
+    const summary = document.createElement("summary");
+    const form = document.createElement("form");
+
+    summary.textContent = "Ανάθεση σε asset";
+    form.innerHTML = `
+      <fieldset>
+        <label>Asset
+          <select name="asset" required></select>
+        </label>
+        <label>Πρώτη προγραμματισμένη ημερομηνία
+          <input name="dueDate" type="date" required>
+        </label>
+        <label>Κωδικός Admin
+          <input name="adminPassword" type="password" autocomplete="off" required>
+        </label>
+        <button type="submit" class="btn-secondary">Ανάθεση</button>
+      </fieldset>
+      <p role="status"></p>
+    `;
+
+    const assetSelect = form.elements.asset;
+    const passwordInput = form.elements.adminPassword;
+    const fields = form.querySelector("fieldset");
+    const status = form.querySelector('[role="status"]');
+    const assets = state.assetsData.filter(asset => asset.model === model);
+
+    assetSelect.add(new Option("— Επιλογή asset —", ""));
+    for (const asset of assets) {
+      const label = [asset.model, "SN " + asset.serial_number].join(" · ");
+      assetSelect.add(new Option(label, String(asset.id)));
+    }
+
+    if (!assets.length) {
+      fields.disabled = true;
+      status.textContent = "Δεν υπάρχουν διαθέσιμα assets για αυτό το μοντέλο.";
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (fields.disabled || !hasRole("admin")) return;
+
+      const payload = {
+        package_id: savedPackage.id,
+        asset_id: Number(assetSelect.value),
+        next_due_date: form.elements.dueDate.value,
+        admin_password: passwordInput.value
+      };
+
+      passwordInput.value = "";
+      fields.disabled = true;
+      status.textContent = "Αποθήκευση ανάθεσης…";
+
+      try {
+        const response = await fetch("/preventive-package-assignments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cmms-role": "admin"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status === 201) {
+          form.reset();
+          status.textContent = "Η ανάθεση αποθηκεύτηκε.";
+        } else if (response.status === 409) {
+          status.textContent = "Το πακέτο είναι ήδη ανατεθειμένο σε αυτό το asset. Η ημερομηνία διατηρήθηκε.";
+        } else if (response.status === 401) {
+          status.textContent = "Ο κωδικός Admin δεν είναι σωστός.";
+        } else if (response.status === 400 || response.status === 403) {
+          const result = await response.json().catch(() => null);
+          status.textContent = result?.error || "Η ανάθεση απορρίφθηκε.";
+        } else {
+          throw new Error("HTTP " + response.status);
+        }
+      } catch (error) {
+        console.error("Could not confirm the package assignment:", error);
+        status.textContent = "Δεν ήταν δυνατή η επιβεβαίωση της ανάθεσης.";
+      } finally {
+        fields.disabled = false;
+      }
+    });
+
+    panel.addEventListener("toggle", () => {
+      if (!panel.open) passwordInput.value = "";
+    });
+    panel.append(summary, form);
+    return panel;
+  }
+
   async function loadSavedPackages() {
     const currentRequest = ++requestNumber;
     const model = modelSelect.value.trim();
@@ -264,6 +356,9 @@
         }
 
         details.append(summary, tasks);
+        if (hasRole("admin")) {
+          details.appendChild(createAssignmentForm(savedPackage, model));
+        }
         return details;
       });
 
