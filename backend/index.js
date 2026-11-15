@@ -16201,6 +16201,12 @@ app.get("/tasks", async (req, res) => {
         mt.id,
         mt.breakdown_id,
         mt.scheduled_maintenance_id,
+        ppv.id::text AS preventive_package_visit_id,
+        pp.title AS preventive_package_title,
+        pp.interval_months AS preventive_package_interval_months,
+        ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
+        ppvt.task_order AS preventive_package_task_order,
+        mt.planned_start_at,
         mt.asset_id,
         mt.task,
         mt.status,
@@ -16260,6 +16266,15 @@ app.get("/tasks", async (req, res) => {
 
       FROM maintenance_tasks mt
 
+      LEFT JOIN preventive_package_visit_tasks ppvt
+        ON ppvt.task_id = mt.id
+      LEFT JOIN preventive_package_visits ppv
+        ON ppv.id = ppvt.visit_id
+      LEFT JOIN preventive_package_assignments ppa
+        ON ppa.id = ppv.assignment_id
+      LEFT JOIN preventive_packages pp
+        ON pp.id = ppa.package_id
+
       JOIN assets a
         ON a.id = mt.asset_id
 
@@ -16300,6 +16315,7 @@ app.get("/tasks", async (req, res) => {
 
   }
 });
+
 
 /*================================
    CREATE TASK
@@ -20050,6 +20066,11 @@ app.get("/executions", async (req, res) => {
 
         t.breakdown_id,
         t.scheduled_maintenance_id,
+        ppv.id::text AS preventive_package_visit_id,
+        pp.title AS preventive_package_title,
+        pp.interval_months AS preventive_package_interval_months,
+        ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
+        ppvt.task_order AS preventive_package_task_order,
         b.title AS breakdown_title,
         sm.title AS scheduled_maintenance_title,
 
@@ -20121,6 +20142,15 @@ app.get("/executions", async (req, res) => {
       JOIN maintenance_tasks t
         ON t.id = e.task_id
 
+      LEFT JOIN preventive_package_visit_tasks ppvt
+        ON ppvt.task_id = t.id
+      LEFT JOIN preventive_package_visits ppv
+        ON ppv.id = ppvt.visit_id
+      LEFT JOIN preventive_package_assignments ppa
+        ON ppa.id = ppv.assignment_id
+      LEFT JOIN preventive_packages pp
+        ON pp.id = ppa.package_id
+
       LEFT JOIN breakdowns b
         ON b.id = t.breakdown_id
 
@@ -20189,7 +20219,6 @@ app.get("/executions", async (req, res) => {
 
   }
 });
-
 
 /* =====================
    UNDO TASK EXECUTION
