@@ -10,7 +10,13 @@
   const saveControls = document.getElementById("preventivePackageSaveControls");
   const saveStatus = document.getElementById("preventivePackageSaveStatus");
   const closeButton = dialog.querySelector('form[method="dialog"] button');
-  const model = "CSDX 137";
+  const assetSelect = document.getElementById("preventivePackageAsset");
+  const sourceControls = document.getElementById("preventivePackageSourceControls");
+  const sourceSelect = document.getElementById("preventivePackageSource");
+  const importButton = document.getElementById("preventivePackageImport");
+  const sourceStatus = document.getElementById("preventivePackageSourceStatus");
+  let selectedAsset = null;
+  let sourceRequest = 0;
   let saving = false;
   let draftTasks = [];
   let libraryPlans = [];
@@ -82,7 +88,7 @@
     function refreshSavedPackages() {
       const modelSelect = document.getElementById("libraryModelSelect");
 
-      if (modelSelect?.value === model) {
+      if (modelSelect?.value === selectedAsset?.model) {
         modelSelect.dispatchEvent(new Event("change"));
       }
   }
@@ -114,7 +120,8 @@
 
     const passwordInput = saveForm.elements.adminPassword;
     const requestBody = JSON.stringify({
-      asset_model: model,
+      asset_id: Number(selectedAsset.id),
+      next_due_date: saveForm.elements.dueDate.value,
       title,
       interval_months: saveForm.elements.interval.valueAsNumber,
       admin_password: passwordInput.value,
@@ -123,6 +130,9 @@
 
     passwordInput.value = "";
     saving = true;
+    sourceRequest++;
+    assetSelect.disabled = true;
+    sourceControls.disabled = true;
     list.inert = true;
     saveControls.disabled = true;
     controls.disabled = true;
@@ -130,7 +140,7 @@
     saveStatus.textContent = "Αποθήκευση πακέτου…";
 
     try {
-      const response = await fetch("/preventive-packages", {
+      const response = await fetch("/preventive-packages/with-assignment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,7 +150,7 @@
       });
 
       if (response.status === 201) {
-        saveStatus.textContent = "Το πακέτο αποθηκεύτηκε.";
+        saveStatus.textContent = "Το πακέτο και η ανάθεση αποθηκεύτηκαν.";
         refreshSavedPackages();
       } else if ([400, 401, 403].includes(response.status)) {
         const result = await response.json().catch(() => null);
@@ -148,6 +158,8 @@
         saveControls.disabled = false;
         controls.disabled = false;
         list.inert = false;
+        assetSelect.disabled = false;
+        sourceControls.disabled = false;
         passwordInput.focus();
       } else {
         throw new Error("HTTP " + response.status);
@@ -163,54 +175,139 @@
     }
   });
 
-  button.addEventListener("click", async () => {
+  button.addEventListener("click", () => {
+    if (!hasRole("admin")) {
+      alert("Η δημιουργία πακέτου είναι διαθέσιμη στον Admin.");
+      return;
+    }
+
+    const assets = state.assetsData.filter(asset => asset.model?.trim() && asset.active !== false);
+    assetSelect.replaceChildren(new Option("— Επιλογή asset —", ""));
+    for (const asset of assets) {
+      assetSelect.add(new Option(asset.model + " · SN " + asset.serial_number, String(asset.id)));
+    }
+
+    selectedAsset = null;
+    draftTasks = [];
+    libraryPlans = [];
     list.inert = false;
+    list.replaceChildren();
+    newTask.value = "";
     saveForm.reset();
-    saveForm.hidden = !hasRole("admin");
+    saveForm.hidden = false;
     saveControls.disabled = true;
     saveStatus.textContent = "";
-    button.disabled = true;
     controls.disabled = true;
+    assetSelect.disabled = false;
+    sourceControls.disabled = true;
+    sourceSelect.replaceChildren(new Option("— Επιλογή προηγούμενου SM —", ""));
+    sourceStatus.textContent = "";
+    status.textContent = assets.length ? "Επίλεξε asset για να ξεκινήσεις." : "Δεν υπάρχουν διαθέσιμα assets.";
+    dialog.showModal();
+  });
+
+  assetSelect.addEventListener("change", async () => {
+    if (draftTasks.length && !confirm("Η αλλαγή asset θα καθαρίσει τη λίστα του προσχεδίου. Συνέχεια;")) {
+      assetSelect.value = selectedAsset ? String(selectedAsset.id) : "";
+      return;
+    }
+
+    const request = ++sourceRequest;
+    selectedAsset = state.assetsData.find(asset => String(asset.id) === assetSelect.value) || null;
     draftTasks = [];
     newTask.value = "";
-    list.replaceChildren();
-    status.textContent = "Φόρτωση εργασιών από το SM‑00021…";
-    dialog.showModal();
+    saveStatus.textContent = "";
+    saveForm.elements.adminPassword.value = "";
+    sourceSelect.replaceChildren(new Option("— Επιλογή προηγούμενου SM —", ""));
+    importButton.disabled = true;
+    controls.disabled = !selectedAsset;
+    saveControls.disabled = !selectedAsset;
+    sourceControls.disabled = !selectedAsset;
+    sourceStatus.textContent = "";
+
+    const entry = libraryData.find(item => item.model === selectedAsset?.model);
+    libraryPlans = (entry?.plans || []).filter(plan => plan.task?.trim());
+    libraryTask.replaceChildren(new Option(
+      libraryPlans.length ? "— Επιλογή εργασίας —" : "Δεν υπάρχουν κανόνες για αυτό το μοντέλο",
+      ""
+    ));
+    libraryPlans.forEach((plan, index) => {
+      const label = [plan.task, plan.section, plan.unit].filter(Boolean).join(" · ");
+      libraryTask.add(new Option(label, String(index)));
+    });
+    libraryTask.form.querySelector("button").disabled = !libraryPlans.length;
+    renderDraft();
+    if (!selectedAsset) {
+      status.textContent = "Επίλεξε asset για να ξεκινήσεις.";
+      return;
+    }
+
+    const model = selectedAsset.model.trim();
+    sourceStatus.textContent = "Φόρτωση προηγούμενων SM…";
+    try {
+      const response = await fetch("/scheduled-maintenance");
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const previous = await response.json();
+      if (request !== sourceRequest || !dialog.open) return;
+
+      for (const sm of previous) {
+        if (sm.status !== "CLOSED" || sm.asset_model?.trim() !== model) continue;
+        const code = "SM-" + String(sm.id).padStart(5, "0");
+        const label = [code, sm.title, "SN " + sm.asset_serial].filter(Boolean).join(" · ");
+        sourceSelect.add(new Option(label, String(sm.id)));
+      }
+      sourceStatus.textContent = sourceSelect.options.length > 1
+        ? "" : "Δεν βρέθηκαν κλειστά SM για αυτό το μοντέλο.";
+    } catch (error) {
+      if (request !== sourceRequest || !dialog.open) return;
+      console.error("Could not load previous SMs:", error);
+      sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση προηγούμενων SM.";
+    }
+  });
+
+  sourceSelect.addEventListener("change", () => {
+    importButton.disabled = !sourceSelect.value;
+  });
+
+  importButton.addEventListener("click", async () => {
+    const smId = Number(sourceSelect.value);
+    if (!Number.isSafeInteger(smId) || smId < 1 || !selectedAsset) return;
+
+    const request = ++sourceRequest;
+    sourceControls.disabled = true;
+    saveControls.disabled = true;
+    sourceStatus.textContent = "Φόρτωση εργασιών…";
 
     try {
-      const response = await fetch("/scheduled-maintenance/21/tasks");
+      const response = await fetch("/scheduled-maintenance/" + smId + "/tasks");
       if (!response.ok) throw new Error("HTTP " + response.status);
-
       const { tasks } = await response.json();
       if (!Array.isArray(tasks)) throw new Error("Invalid SM tasks response");
-      if (!dialog.open) return;
+      if (request !== sourceRequest || !dialog.open) return;
 
-      draftTasks = tasks.map(task => ({ ...task }));
-      const entry = libraryData.find(item => item.model === model);
-      libraryPlans = (entry?.plans || []).filter(plan => plan.task?.trim());
+      for (const { task, section, unit, duration_min, notes, impact } of tasks) {
+        draftTasks.push({ task, section, unit, duration_min, notes, impact });
+      }
 
-      libraryTask.replaceChildren(new Option(
-        libraryPlans.length ? "— Επιλογή εργασίας —" : "Δεν υπάρχουν κανόνες για CSDX 137",
-        ""
-      ));
-      libraryPlans.forEach((plan, index) => {
-        const label = [plan.task, plan.section, plan.unit].filter(Boolean).join(" · ");
-        libraryTask.add(new Option(label, String(index)));
-      });
-      libraryTask.form.querySelector("button").disabled = libraryPlans.length === 0;
-
+      sourceStatus.textContent = tasks.length
+        ? "Προστέθηκαν εργασίες: " + tasks.length : "Το SM δεν έχει εργασίες.";
+      sourceSelect.value = "";
+      importButton.disabled = true;
       renderDraft();
-      controls.disabled = false;
-      saveControls.disabled = saveForm.hidden;
     } catch (error) {
-      console.error("Could not load the preventive package draft:", error);
-      status.textContent = "Δεν ήταν δυνατή η φόρτωση του προσχεδίου.";
+      if (request !== sourceRequest || !dialog.open) return;
+      console.error("Could not load SM tasks:", error);
+      sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση των εργασιών.";
     } finally {
-      button.disabled = false;
+      if (request === sourceRequest && dialog.open) {
+        sourceControls.disabled = false;
+        saveControls.disabled = false;
+      }
     }
   });
 
   dialog.addEventListener("close", () => {
+    sourceRequest++;
     saveForm.reset();
     draftTasks = [];
     libraryPlans = [];
