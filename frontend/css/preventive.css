@@ -412,3 +412,55 @@
   display: none;
 }
 /* END: Preventive package composer */
+
+/* BEGIN: Scheduled preventive packages */
+#preventivePackagePlan {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #303b49;
+  border-radius: 12px;
+  background: #171b21;
+}
+
+#preventivePackagePlan h3 {
+  margin: 0 0 .85rem;
+}
+
+#preventivePackagePlanStatus {
+  margin: .5rem 0;
+  color: #b8c2cf;
+}
+
+#preventivePackagePlanStatus:empty {
+  display: none;
+}
+
+#preventivePackagePlan .preventive-package-plan-table {
+  overflow-x: auto;
+}
+
+#preventivePackagePlan .library-table {
+  text-align: left;
+}
+
+#preventivePackagePlan .library-table td {
+  vertical-align: middle;
+}
+
+#preventivePackagePlan .package-plan-interval {
+  display: inline-block;
+  padding: .2rem .55rem;
+  border: 1px solid #345273;
+  border-radius: 999px;
+  background: #202e40;
+  color: #c8ddf4;
+  white-space: nowrap;
+}
+
+#preventivePackagePlan time {
+  color: #e3edf8;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* END: Scheduled preventive packages */

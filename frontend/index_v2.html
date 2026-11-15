@@ -6121,8 +6121,26 @@
     <p id="savedPreventivePackagesStatus" role="status"></p>
     <div id="savedPreventivePackagesList"></div>
   </section>
-
   <!-- END: Saved preventive packages -->
+     <!-- BEGIN: Scheduled preventive packages -->
+  <section id="preventivePackagePlan" class="library-content" aria-labelledby="preventivePackagePlanHeading" hidden>
+    <h3 id="preventivePackagePlanHeading">Προγραμματισμένα πακέτα</h3>
+    <p id="preventivePackagePlanStatus" role="status"></p>
+    <div class="preventive-package-plan-table" hidden>
+      <table class="library-table" aria-labelledby="preventivePackagePlanHeading">
+        <thead>
+          <tr>
+            <th scope="col">Πακέτο</th>
+            <th scope="col">Asset</th>
+            <th scope="col">Συχνότητα</th>
+            <th scope="col">Επόμενη ημερομηνία</th>
+          </tr>
+        </thead>
+        <tbody id="preventivePackagePlanRows"></tbody>
+      </table>
+    </div>
+  </section>
+  <!-- END: Scheduled preventive packages -->
 
 </div>
 

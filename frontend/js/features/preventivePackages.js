@@ -388,6 +388,7 @@
         if (response.status === 201) {
           form.reset();
           status.textContent = "Η ανάθεση αποθηκεύτηκε.";
+          document.dispatchEvent(new Event("preventive-package-assignment-created"));
         } else if (response.status === 409) {
           status.textContent = "Το πακέτο είναι ήδη ανατεθειμένο σε αυτό το asset. Η ημερομηνία διατηρήθηκε.";
         } else if (response.status === 401) {
@@ -476,3 +477,80 @@
 
   loadSavedPackages();
 })();
+
+// Scheduled preventive packages in the Library.
+(() => {
+  const modelSelect = document.getElementById("libraryModelSelect");
+  const section = document.getElementById("preventivePackagePlan");
+  if (!modelSelect || !section) return;
+
+  const status = document.getElementById("preventivePackagePlanStatus");
+  const table = section.querySelector(".preventive-package-plan-table");
+  const rows = document.getElementById("preventivePackagePlanRows");
+  let currentRequest = 0;
+
+  function createAssignmentRow(assignment) {
+    const row = document.createElement("tr");
+
+    const title = document.createElement("strong");
+    title.textContent = assignment.title;
+    row.insertCell().appendChild(title);
+
+    const asset = row.insertCell();
+    asset.textContent = assignment.serial_number
+      ? assignment.asset_model + " · SN " + assignment.serial_number
+      : assignment.asset_model + " · #" + assignment.asset_id;
+
+    const interval = document.createElement("span");
+    interval.className = "package-plan-interval";
+    interval.textContent = assignment.interval_months === 1
+      ? "Κάθε μήνα" : "Κάθε " + assignment.interval_months + " μήνες";
+    row.insertCell().appendChild(interval);
+
+    const dueDate = document.createElement("time");
+    dueDate.dateTime = assignment.next_due_date;
+    const [year, month, day] = assignment.next_due_date.split("-");
+    dueDate.textContent = [day, month, year].join("/");
+    row.insertCell().appendChild(dueDate);
+
+    return row;
+  }
+
+  async function loadPackagePlan() {
+    const request = ++currentRequest;
+    const model = modelSelect.value.trim();
+    rows.replaceChildren();
+    table.hidden = true;
+    section.hidden = !model;
+    status.textContent = model ? "Φόρτωση προγραμματισμένων πακέτων…" : "";
+    if (!model) return;
+
+    try {
+      const query = new URLSearchParams({ model });
+      const response = await fetch("/preventive-package-assignments?" + query, {
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const { assignments } = await response.json();
+      if (!Array.isArray(assignments)) throw new Error("Invalid assignments response");
+      if (request !== currentRequest) return;
+
+      rows.replaceChildren(...assignments.map(createAssignmentRow));
+      table.hidden = assignments.length === 0;
+      status.textContent = assignments.length
+        ? "" : "Δεν υπάρχουν προγραμματισμένα πακέτα για αυτό το μοντέλο.";
+    } catch (error) {
+      if (request !== currentRequest) return;
+      console.error("Could not load the preventive package plan:", error);
+      status.textContent = "Δεν ήταν δυνατή η φόρτωση του προγράμματος πακέτων.";
+    }
+  }
+
+  modelSelect.addEventListener("change", loadPackagePlan);
+  document.addEventListener("preventive-package-assignment-created", loadPackagePlan);
+  const modelObserver = new MutationObserver(loadPackagePlan);
+  modelObserver.observe(modelSelect, { childList: true });
+  loadPackagePlan();
+})();
+
