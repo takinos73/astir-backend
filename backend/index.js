@@ -17047,6 +17047,44 @@ app.post("/preventive-package-assignments", requireAdmin, async (req, res) => {
 });
 /* END: Create preventive package assignment */
 
+/* BEGIN: Read preventive package assignments */
+app.get("/preventive-package-assignments", async (req, res) => {
+  const model = typeof req.query.model === "string"
+    ? req.query.model.trim()
+    : "";
+
+  if (!model) {
+    return res.status(400).json({ error: "Asset model is required." });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT
+        a.id::text AS assignment_id,
+        p.id::text AS package_id,
+        p.title,
+        p.asset_model,
+        p.interval_months,
+        asset.id AS asset_id,
+        asset.serial_number,
+        a.next_due_date::text AS next_due_date
+      FROM preventive_package_assignments a
+      JOIN preventive_packages p ON p.id = a.package_id
+      JOIN assets asset ON asset.id = a.asset_id
+      WHERE p.asset_model = $1
+      ORDER BY a.next_due_date, p.title, a.id
+      `,
+      [model]
+    );
+
+    return res.json({ assignments: rows });
+  } catch (error) {
+    console.error("GET /preventive-package-assignments failed:", error);
+    return res.status(500).json({ error: "Could not load package assignments." });
+  }
+});
+/* END: Read preventive package assignments */
 
 /* =====================
    CREATE PREVENTIVE (MANUAL)
