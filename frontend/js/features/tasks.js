@@ -13,6 +13,7 @@ const TASKS_MIN_PAGE_SIZE = 10;
 const TASKS_MAX_PAGE_SIZE = 25;
 
 let tasksCurrentPage = 1;
+let preventivePacksReadyToClose = [];
 
 function getTasksPageSize() {
   const table = document.getElementById("tasksTable");
@@ -63,8 +64,23 @@ async function loadTasks() {
   const menu = document.getElementById("assetDropdownMenu");
   if (menu) menu.classList.remove("open");
 
+  const readyVisitsRequest = fetch("/preventive-package-visits/ready-to-close", {
+    cache: "no-store"
+  }).then(async response => {
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const { visits } = await response.json();
+    if (!Array.isArray(visits)) throw new Error("Invalid ready visits response");
+    return visits.map(visit => ({ ...visit, packReadyToClose: true, status: "Done" }));
+  }).catch(error => {
+    console.error("Could not refresh preventive packs ready to close:", error);
+    return [];
+  });
+
   const res = await fetch(`${API}/tasks`);
-  state.tasksData = await res.json(); // ✅ ΜΟΝΟ ΑΥΤΟ
+  state.tasksData = await res.json();
+  const openVisitIds = new Set(state.tasksData.map(task => task.preventive_package_visit_id));
+  preventivePacksReadyToClose = (await readyVisitsRequest)
+    .filter(visit => !openVisitIds.has(visit.preventive_package_visit_id));
 
   console.log("SAMPLE TASK:", state.tasksData[0]);
 
@@ -444,7 +460,7 @@ function buildAssetDropdown() {
     new Map();
 
 
-  state.tasksData.forEach(t => {
+  [...state.tasksData, ...preventivePacksReadyToClose].forEach(t => {
 
     const assetId =
       Number(t.asset_id);
@@ -2651,8 +2667,10 @@ function appendPreventivePackTaskRows(tbody, tasks) {
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "btn-secondary";
+  const ready = first.packReadyToClose;
+  const taskCount = ready ? first.preventive_package_task_count : tasks.length;
   toggle.textContent = (first.preventive_package_title || "Preventive Pack") +
-    " · " + tasks.length + (tasks.length === 1 ? " εργασία" : " εργασίες");
+    " · " + taskCount + (taskCount === 1 ? " εργασία" : " εργασίες");
   toggle.setAttribute("aria-expanded", "false");
   const taskCell = row.insertCell();
   if (first.preventive_package_id) {
@@ -2665,7 +2683,7 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     badge.addEventListener("click", () => openPreventivePackDetail(first.preventive_package_visit_id, code));
     taskCell.append(badge, " ");
   }
-  taskCell.appendChild(toggle);
+  taskCell.appendChild(ready ? document.createTextNode(toggle.textContent) : toggle);
 
   const interval = first.preventive_package_interval_months;
   row.insertCell().textContent = interval
@@ -2673,10 +2691,13 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     : "Preventive Pack";
   row.insertCell().textContent =
     (first.preventive_package_cycle_due_date || "").split("-").reverse().join("/") || "—";
-  row.insertCell().innerHTML = statusPill(first);
+  row.insertCell().innerHTML = ready
+    ? '<span class="status-pill status-done">Έτοιμο για κλείσιμο</span>'
+    : statusPill(first);
   row.insertCell();
 
   tbody.appendChild(row);
+  if (ready) return;
 
   const timeFormat = new Intl.DateTimeFormat("el-GR", {
     timeZone: "Europe/Athens", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
@@ -2726,7 +2747,7 @@ function renderTable() {
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const source = filterByTaskType(state.tasksData);
+  const source = filterByTaskType([...state.tasksData, ...preventivePacksReadyToClose]);
 console.log("renderTable(): tasksData =", state.tasksData.length, "source(after type) =", source.length, "type =", state.activeTaskTypeFilter);
 
 const filtered = source
@@ -2850,9 +2871,11 @@ const filtered = source
   // =====================
   const countEl = document.getElementById("tasksCountLabel");
   if (countEl) {
-    const n = filtered.length;
+    const activeTasks = filtered.filter(task => !task.packReadyToClose);
+    const n = activeTasks.length;
+    const readyCount = filtered.length - n;
 
-    const totalMinutes = filtered.reduce((sum, t) => {
+    const totalMinutes = activeTasks.reduce((sum, t) => {
       return t.duration_min != null ? sum + Number(t.duration_min) : sum;
     }, 0);
 
@@ -2862,8 +2885,9 @@ const filtered = source
       label += ` • ${formatDuration(totalMinutes)}`;
     }
 
+    if (readyCount) label += " • " + readyCount + " προς κλείσιμο";
     countEl.textContent = label;
-    countEl.classList.toggle("zero", n === 0);
+    countEl.classList.toggle("zero", n === 0 && readyCount === 0);
   }
 
   // =====================

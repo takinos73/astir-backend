@@ -17332,6 +17332,47 @@ app.post("/preventive-packages/schedule", requireAdmin, async (req, res) => {
 });
 /* END: Schedule first preventive package visit */
 
+/* BEGIN: Read preventive package visits ready to close */
+app.get("/preventive-package-visits/ready-to-close", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        v.id::text AS preventive_package_visit_id,
+        p.id::text AS preventive_package_id,
+        p.title AS preventive_package_title,
+        p.interval_months AS preventive_package_interval_months,
+        v.cycle_due_date::text AS preventive_package_cycle_due_date,
+        v.scheduled_end_at AS due_date,
+        task_summary.task_count AS preventive_package_task_count,
+        asset.id AS asset_id,
+        asset.model AS machine_name,
+        asset.serial_number,
+        l.code AS line_code
+      FROM preventive_package_visits v
+      JOIN preventive_package_assignments a ON a.id = v.assignment_id
+      JOIN preventive_packages p ON p.id = a.package_id
+      JOIN assets asset ON asset.id = a.asset_id
+      LEFT JOIN lines l ON l.id = asset.line_id
+      JOIN LATERAL (
+        SELECT
+          count(*)::int AS task_count,
+          bool_and(t.status IS NOT DISTINCT FROM 'Done' AND t.deleted_at IS NULL) AS all_done
+        FROM preventive_package_visit_tasks link
+        JOIN maintenance_tasks t ON t.id = link.task_id
+        WHERE link.visit_id = v.id
+      ) task_summary ON task_summary.task_count > 0 AND task_summary.all_done
+      WHERE v.closed_at IS NULL
+      ORDER BY v.scheduled_end_at, v.id
+    `);
+
+    return res.json({ visits: rows });
+  } catch (error) {
+    console.error("GET preventive package visits ready to close failed:", error);
+    return res.status(500).json({ error: "Could not load preventive packs ready to close." });
+  }
+});
+/* END: Read preventive package visits ready to close */
+
 /* BEGIN: Read preventive package visit detail */
 app.get("/preventive-package-visits/:id", async (req, res) => {
   const visitId = req.params.id;
