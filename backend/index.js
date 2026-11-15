@@ -16791,10 +16791,9 @@ app.get("/preventive-packages", async (req, res) => {
 });
 /* END: Read preventive packages */
 
-
 /* BEGIN: Create preventive package */
-app.post("/preventive-packages", requireAdmin, async (req, res) => {
-  const { admin_password, asset_model, title, interval_months, tasks } = req.body || {};
+async function createPreventivePackage(req, res, withAssignment) {
+  const { admin_password, asset_model, title, interval_months, tasks, asset_id, next_due_date } = req.body || {};
   const model = typeof asset_model === "string" ? asset_model.trim() : "";
   const packageTitle = typeof title === "string" ? title.trim() : "";
 
@@ -16805,7 +16804,7 @@ app.post("/preventive-packages", requireAdmin, async (req, res) => {
 
   // Validate the package definition and the PostgreSQL integer range.
   if (
-    !model ||
+    (!withAssignment && !model) ||
     !packageTitle ||
     !Number.isInteger(interval_months) ||
     interval_months < 1 ||
@@ -16814,8 +16813,27 @@ app.post("/preventive-packages", requireAdmin, async (req, res) => {
     tasks.length === 0
   ) {
     return res.status(400).json({
-      error: "Asset model, title, a positive interval in months and tasks are required."
+      error: withAssignment ? "Title, a positive interval in months and tasks are required." : "Asset model, title, a positive interval in months and tasks are required."
     });
+  }
+
+  if (withAssignment) {
+    if (!Number.isInteger(asset_id) || asset_id < 1 || asset_id > 2147483647) {
+      return res.status(400).json({ error: "A valid asset ID is required." });
+    }
+
+    if (
+      typeof next_due_date !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(next_due_date) ||
+      next_due_date.startsWith("0000")
+    ) {
+      return res.status(400).json({ error: "A valid date in YYYY-MM-DD format is required." });
+    }
+
+    const date = new Date(next_due_date + "T00:00:00Z");
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== next_due_date) {
+      return res.status(400).json({ error: "A valid date in YYYY-MM-DD format is required." });
+    }
   }
 
   // Copy the fields needed for future SM tasks and preserve the submitted order.
@@ -16871,6 +16889,51 @@ app.post("/preventive-packages", requireAdmin, async (req, res) => {
       return res.status(401).json({ error: "Invalid Admin password." });
     }
 
+    if (withAssignment) {
+      // Derive the model from the selected asset and save both records atomically.
+      const { rows } = await pool.query(
+        `
+        WITH selected_asset AS (
+          SELECT id, model
+          FROM assets
+          WHERE id = $1 AND btrim(model) <> ''
+        ),
+        created_package AS (
+          INSERT INTO preventive_packages (asset_model, title, interval_months, tasks)
+          SELECT model, $2, $3, $4::jsonb
+          FROM selected_asset
+          RETURNING id, asset_model, title, interval_months, tasks, updated_at
+        ),
+        created_assignment AS (
+          INSERT INTO preventive_package_assignments (package_id, asset_id, next_due_date)
+          SELECT p.id, a.id, $5::date
+          FROM created_package p
+          CROSS JOIN selected_asset a
+          RETURNING id::text, package_id::text, asset_id, next_due_date::text
+        )
+        SELECT
+          json_build_object(
+            'id', p.id::text,
+            'asset_model', p.asset_model,
+            'title', p.title,
+            'interval_months', p.interval_months,
+            'tasks', p.tasks,
+            'updated_at', p.updated_at
+          ) AS package,
+          row_to_json(a) AS assignment
+        FROM created_package p
+        CROSS JOIN created_assignment a
+        `,
+        [asset_id, packageTitle, interval_months, JSON.stringify(packageTasks), next_due_date]
+      );
+
+      if (!rows.length) {
+        return res.status(400).json({ error: "The selected asset does not exist or has no model." });
+      }
+
+      return res.status(201).json(rows[0]);
+    }
+
     // Save the package definition and return the new record to the caller.
     const { rows } = await pool.query(
       `
@@ -16883,11 +16946,20 @@ app.post("/preventive-packages", requireAdmin, async (req, res) => {
 
     return res.status(201).json({ package: rows[0] });
   } catch (error) {
-    console.error("POST /preventive-packages failed:", error);
+    console.error("POST " + req.path + " failed:", error);
     return res.status(500).json({ error: "Could not create preventive package." });
   }
-});
+}
+
+app.post("/preventive-packages", requireAdmin, (req, res) =>
+  createPreventivePackage(req, res, false)
+);
+
+app.post("/preventive-packages/with-assignment", requireAdmin, (req, res) =>
+  createPreventivePackage(req, res, true)
+);
 /* END: Create preventive package */
+
 
 /* BEGIN: Create preventive package assignment */
 app.post("/preventive-package-assignments", requireAdmin, async (req, res) => {
