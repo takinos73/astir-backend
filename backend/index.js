@@ -17086,6 +17086,231 @@ app.get("/preventive-package-assignments", async (req, res) => {
 });
 /* END: Read preventive package assignments */
 
+/* BEGIN: Schedule first preventive package visit */
+app.post("/preventive-packages/schedule", requireAdmin, async (req, res) => {
+  const {
+    request_id, admin_password, asset_id, title, interval_months, next_due_date, tasks
+  } = req.body || {};
+  const packageTitle = typeof title === "string" ? title.trim() : "";
+
+  // The planner sends absolute UTC timestamps produced by Date.toISOString().
+  function parsePlannerTime(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) {
+      return null;
+    }
+
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date.toISOString() === value ? date : null;
+  }
+
+  if (typeof admin_password !== "string" || !admin_password) {
+    return res.status(400).json({ error: "Admin password is required." });
+  }
+
+  if (
+    typeof request_id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(request_id) ||
+    !Number.isInteger(asset_id) || asset_id < 1 || asset_id > 2147483647 ||
+    !packageTitle ||
+    !Number.isInteger(interval_months) || interval_months < 1 || interval_months > 2147483647 ||
+    typeof next_due_date !== "string" || next_due_date.startsWith("0000") ||
+    !parsePlannerTime(next_due_date + "T00:00:00.000Z") ||
+    !Array.isArray(tasks) || !tasks.length
+  ) {
+    return res.status(400).json({ error: "Valid request ID, asset, title, interval, cycle date and tasks are required." });
+  }
+
+  const scheduledTasks = [];
+  const validImpacts = ["normal", "safety", "quality", "safety_quality"];
+  let previousEnd = null;
+
+  for (const item of tasks) {
+    const task = typeof item?.task === "string" ? item.task.trim() : "";
+    if (!task) {
+      return res.status(400).json({ error: "Every task needs a title." });
+    }
+
+    const start = parsePlannerTime(item.planned_start_at);
+    const end = parsePlannerTime(item.planned_end_at);
+    const duration = item.duration_min;
+
+    if (
+      !start || !end ||
+      !Number.isInteger(duration) || duration < 0 || duration > 2147483647 ||
+      end - start !== duration * 60000 ||
+      (previousEnd && start < previousEnd)
+    ) {
+      return res.status(400).json({ error: "Invalid or overlapping schedule for task: " + task });
+    }
+
+    const fields = {};
+    for (const field of ["section", "unit", "notes", "impact"]) {
+      const value = item[field];
+      if (value != null && typeof value !== "string") {
+        return res.status(400).json({ error: "Invalid task field: " + field });
+      }
+      fields[field] = value?.trim() || null;
+    }
+
+    const impact = fields.impact?.toLowerCase() || "normal";
+    if (!validImpacts.includes(impact)) {
+      return res.status(400).json({ error: "Invalid impact for task: " + task });
+    }
+
+    scheduledTasks.push({
+      task, section: fields.section, unit: fields.unit, notes: fields.notes,
+      impact, duration_min: duration,
+      planned_start_at: start.toISOString(), planned_end_at: end.toISOString()
+    });
+    previousEnd = end;
+  }
+
+  const requestId = request_id.toLowerCase();
+  const firstStart = scheduledTasks[0].planned_start_at;
+  const lastEnd = scheduledTasks[scheduledTasks.length - 1].planned_end_at;
+  const templateTasks = scheduledTasks.map(({ planned_start_at, planned_end_at, ...task }) => task);
+  const requestPayload = JSON.stringify([asset_id, packageTitle, interval_months, next_due_date, scheduledTasks]);
+
+  let client;
+  let transactionOpen = false;
+
+  try {
+    const { rows: credentials } = await pool.query(`
+      SELECT admin_password
+      FROM roles_config
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+    if (!credentials[0]?.admin_password || admin_password !== credentials[0].admin_password) {
+      return res.status(401).json({ error: "Invalid Admin password." });
+    }
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+
+    // Serialize retries for this key before checking whether it has already committed.
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [requestId]);
+    const { rows: [existing] } = await client.query(
+      `
+      SELECT
+        v.id::text AS visit_id,
+        a.id::text AS assignment_id,
+        a.package_id::text,
+        v.cycle_due_date::text,
+        v.request_fingerprint = md5($2::text) AS same_request,
+        ARRAY(
+          SELECT link.task_id
+          FROM preventive_package_visit_tasks link
+          WHERE link.visit_id = v.id
+          ORDER BY link.task_order
+        ) AS task_ids
+      FROM preventive_package_visits v
+      JOIN preventive_package_assignments a ON a.id = v.assignment_id
+      WHERE v.request_id = $1::uuid
+      `,
+      [requestId, requestPayload]
+    );
+
+    if (existing) {
+      await client.query("COMMIT");
+      transactionOpen = false;
+      const { same_request, ...result } = existing;
+      if (!same_request) {
+        return res.status(409).json({ error: "Request ID already used with a different schedule." });
+      }
+      return res.status(200).json(result);
+    }
+
+    const { rows: [asset] } = await client.query(
+      "SELECT id, model FROM assets WHERE id = $1 AND btrim(model) <> '' FOR SHARE",
+      [asset_id]
+    );
+
+    if (!asset) {
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+      return res.status(400).json({ error: "The selected asset does not exist or has no model." });
+    }
+
+    const { rows: [savedPackage] } = await client.query(
+      `
+      INSERT INTO preventive_packages (asset_model, title, interval_months, tasks)
+      VALUES ($1, $2, $3, $4::jsonb)
+      RETURNING id::text
+      `,
+      [asset.model, packageTitle, interval_months, JSON.stringify(templateTasks)]
+    );
+
+    const { rows: [assignment] } = await client.query(
+      `
+      INSERT INTO preventive_package_assignments (package_id, asset_id, next_due_date)
+      VALUES ($1, $2, $3::date)
+      RETURNING id::text
+      `,
+      [savedPackage.id, asset.id, next_due_date]
+    );
+
+    const { rows: [visit] } = await client.query(
+      `
+      INSERT INTO preventive_package_visits (
+        assignment_id, cycle_due_date, scheduled_start_at, scheduled_end_at, request_id, request_fingerprint
+      )
+      VALUES ($1, $2::date, $3::timestamptz, $4::timestamptz, $5::uuid, md5($6::text))
+      RETURNING id::text
+      `,
+      [assignment.id, next_due_date, firstStart, lastEnd, requestId, requestPayload]
+    );
+
+    const taskIds = [];
+    for (const [index, task] of scheduledTasks.entries()) {
+      const { rows: [savedTask] } = await client.query(
+        `
+        INSERT INTO maintenance_tasks (
+          asset_id, task, section, unit, type, impact, status,
+          planned_start_at, due_date, frequency_hours, duration_min, notes, is_planned
+        )
+        VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, 0, $8, $9, true)
+        RETURNING id
+        `,
+        [
+          asset.id, task.task, task.section, task.unit, task.impact,
+          task.planned_start_at, task.planned_end_at, task.duration_min, task.notes
+        ]
+      );
+
+      await client.query(
+        "INSERT INTO preventive_package_visit_tasks (visit_id, task_id, task_order) VALUES ($1, $2, $3)",
+        [visit.id, savedTask.id, index + 1]
+      );
+      taskIds.push(savedTask.id);
+    }
+
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.status(201).json({
+      package_id: savedPackage.id,
+      assignment_id: assignment.id,
+      visit_id: visit.id,
+      cycle_due_date: next_due_date,
+      task_ids: taskIds
+    });
+  } catch (error) {
+    if (transactionOpen) {
+      await client.query("ROLLBACK").catch(rollbackError => {
+        console.error("Preventive package visit rollback failed:", rollbackError.code);
+      });
+    }
+
+    console.error("POST /preventive-packages/schedule failed:", error.code || error.name);
+    return res.status(500).json({ error: "Could not schedule preventive package." });
+  } finally {
+    client?.release();
+  }
+});
+/* END: Schedule first preventive package visit */
+
+
 /* =====================
    CREATE PREVENTIVE (MANUAL)
 ===================== */
