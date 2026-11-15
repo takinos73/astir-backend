@@ -6034,10 +6034,10 @@
       </button>
 
       <dialog id="preventivePackagePreview" aria-labelledby="preventivePackagePreviewTitle">
-        <h3 id="preventivePackagePreviewTitle">ΠΑΚΕΤΟ Α — Ετήσια συντήρηση</h3>
+        <h3 id="preventivePackagePreviewTitle">Νέο πακέτο προληπτικής συντήρησης</h3>
         <p>CSDX 137 · SN 3015 · AIR STATION</p>
         <p>Πρότυπο SM‑00021 · Κάθε 12 μήνες</p>
-        <p>Επόμενη προγραμματισμένη ημερομηνία <strong>01/11/2027</strong></p>
+        <p>Το πακέτο αποθηκεύεται για το μοντέλο CSDX 137.</p>
         <p id="preventivePackagePreviewStatus" role="status"></p>
         <ol id="preventivePackagePreviewTasks"></ol>
 
@@ -6055,6 +6055,20 @@
           </form>
         </fieldset>
 
+        <form id="preventivePackageSaveForm" hidden>
+          <fieldset id="preventivePackageSaveControls" disabled>
+            <legend>Αποθήκευση πακέτου</legend>
+            <label for="preventivePackageTitle">Τίτλος</label>
+            <input id="preventivePackageTitle" name="title" required>
+            <label for="preventivePackageInterval">Συχνότητα σε μήνες</label>
+            <input id="preventivePackageInterval" name="interval" type="number" min="1" max="2147483647" step="1" value="12" required>
+            <label for="preventivePackageAdminPassword">Κωδικός Admin</label>
+            <input id="preventivePackageAdminPassword" name="adminPassword" type="password" autocomplete="off" required>
+            <button type="submit" class="btn-secondary">Αποθήκευση</button>
+          </fieldset>
+          <p id="preventivePackageSaveStatus" role="status"></p>
+        </form>
+
         <form method="dialog">
           <button type="submit" class="btn-secondary">Κλείσιμο</button>
         </form>
@@ -6069,7 +6083,13 @@
           const controls = document.getElementById("preventivePackageDraftControls");
           const newTask = document.getElementById("preventivePackageNewTask");
           const libraryTask = document.getElementById("preventivePackageLibraryTask");
+          const saveForm = document.getElementById("preventivePackageSaveForm");
+          const saveControls = document.getElementById("preventivePackageSaveControls");
+          const saveStatus = document.getElementById("preventivePackageSaveStatus");
+          const closeButton = dialog.querySelector('form[method="dialog"] button');
+          const modelSelect = document.getElementById("libraryModelSelect");
           const model = "CSDX 137";
+          let saving = false;
           let draftTasks = [];
           let libraryPlans = [];
 
@@ -6108,7 +6128,80 @@
             renderDraft();
           });
 
+          function refreshSavedPackages() {
+            if (modelSelect.value === model) {
+              modelSelect.dispatchEvent(new Event("change"));
+            }
+          }
+
+          dialog.addEventListener("cancel", event => {
+            if (saving) event.preventDefault();
+          });
+
+          saveForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            if (saveControls.disabled || !hasRole("admin") || !draftTasks.length) return;
+
+            const title = saveForm.elements.title.value.trim();
+            if (!title) {
+              saveStatus.textContent = "Συμπλήρωσε τον τίτλο του πακέτου.";
+              return;
+            }
+
+            const passwordInput = saveForm.elements.adminPassword;
+            const requestBody = JSON.stringify({
+              asset_model: model,
+              title,
+              interval_months: saveForm.elements.interval.valueAsNumber,
+              admin_password: passwordInput.value,
+              tasks: draftTasks
+            });
+
+            passwordInput.value = "";
+            saving = true;
+            saveControls.disabled = true;
+            controls.disabled = true;
+            closeButton.disabled = true;
+            saveStatus.textContent = "Αποθήκευση πακέτου…";
+
+            try {
+              const response = await fetch("/preventive-packages", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-cmms-role": "admin"
+                },
+                body: requestBody
+              });
+
+              if (response.status === 201) {
+                saveStatus.textContent = "Το πακέτο αποθηκεύτηκε.";
+                refreshSavedPackages();
+              } else if ([400, 401, 403].includes(response.status)) {
+                const result = await response.json().catch(() => null);
+                saveStatus.textContent = result?.error || "Η αποθήκευση απορρίφθηκε.";
+                saveControls.disabled = false;
+                controls.disabled = false;
+                passwordInput.focus();
+              } else {
+                throw new Error("HTTP " + response.status);
+              }
+            } catch (error) {
+              console.error("Could not confirm the package save:", error);
+              saveStatus.textContent =
+                "Η αποθήκευση δεν επιβεβαιώθηκε. Έλεγξε τα Αποθηκευμένα πακέτα πριν ξαναδοκιμάσεις.";
+              refreshSavedPackages();
+            } finally {
+              saving = false;
+              closeButton.disabled = false;
+            }
+          });
+
           button.addEventListener("click", async () => {
+            saveForm.reset();
+            saveForm.hidden = !hasRole("admin");
+            saveControls.disabled = true;
+            saveStatus.textContent = "";
             button.disabled = true;
             controls.disabled = true;
             draftTasks = [];
@@ -6141,6 +6234,7 @@
 
               renderDraft();
               controls.disabled = false;
+              saveControls.disabled = saveForm.hidden;
             } catch (error) {
               console.error("Could not load the preventive package draft:", error);
               status.textContent = "Δεν ήταν δυνατή η φόρτωση του προσχεδίου.";
@@ -6150,12 +6244,14 @@
           });
 
           dialog.addEventListener("close", () => {
+            saveForm.reset();
             draftTasks = [];
             libraryPlans = [];
           });
         })();
       </script>
       <!-- END: Preventive package pilot -->
+
 
     </div>
   </section>
@@ -6265,7 +6361,7 @@
     })();
   </script>
   <!-- END: Saved preventive packages -->
-   
+
 </div>
 
 <!-- =====================
