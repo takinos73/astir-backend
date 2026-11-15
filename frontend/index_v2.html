@@ -6063,21 +6063,9 @@
           </form>
         </fieldset>
 
-        <form id="preventivePackageSaveForm" hidden>
-          <fieldset id="preventivePackageSaveControls" disabled>
-            <legend>Αποθήκευση πακέτου</legend>
-            <label for="preventivePackageTitle">Τίτλος</label>
-            <input id="preventivePackageTitle" name="title" required>
-            <label for="preventivePackageInterval">Συχνότητα σε μήνες</label>
-            <input id="preventivePackageInterval" name="interval" type="number" min="1" max="2147483647" step="1" value="12" required>
-            <label for="preventivePackageDueDate">Πρώτη προγραμματισμένη ημερομηνία</label>
-            <input id="preventivePackageDueDate" name="dueDate" type="date" required>
-            <label for="preventivePackageAdminPassword">Κωδικός Admin</label>
-            <input id="preventivePackageAdminPassword" name="adminPassword" type="password" autocomplete="off" required>
-            <button type="submit" class="btn-secondary">Δημιουργία πακέτου</button>
-          </fieldset>
-          <p id="preventivePackageSaveStatus" role="status"></p>
-        </form>
+        <button type="button" id="preventivePackageNewTask" class="btn-secondary">
+          + Νέα εργασία
+        </button>
 
         <form method="dialog">
           <button type="submit" class="btn-secondary">Κλείσιμο</button>

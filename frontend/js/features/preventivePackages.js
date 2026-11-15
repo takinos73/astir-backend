@@ -18,6 +18,7 @@
   let selectedAsset = null;
   let sourceRequest = 0;
   let saving = false;
+  let editingTask = false;
   let draftTasks = [];
   let libraryPlans = [];
 
@@ -62,14 +63,117 @@
     status.textContent = "Εργασίες στο προσχέδιο: " + draftTasks.length;
   }
 
-  document.getElementById("preventivePackageNewTaskForm").addEventListener("submit", event => {
-    event.preventDefault();
-    const title = newTask.value.trim();
-    if (controls.disabled || !title) return;
+  newTask.addEventListener("click", () => {
+    if (controls.disabled || !selectedAsset || editingTask) return;
 
-    draftTasks.push({ task: title });
-    newTask.value = "";
-    renderDraft();
+    const get = id => document.getElementById(id);
+    const overlay = get("addTaskOverlay");
+    if (!overlay || overlay.style.display === "flex") return;
+
+    const asset = selectedAsset;
+    const line = get("nt-line");
+    const assetField = get("nt-asset");
+    const taskField = get("nt-task");
+    const durationField = get("nt-duration");
+    const title = get("addTaskTitle");
+    const assetLabel = get("ctx-asset");
+    const locationLabel = get("ctx-location");
+    const previousLabels = [title, assetLabel, locationLabel].map(node => node.textContent);
+    const hiddenFields = [
+      get("taskPlannedType").closest(".addtask-block"),
+      get("nt-record-completed").closest(".addtask-block"),
+      get("nt-due").closest(".field"),
+      get("nt-attachments").closest(".addtask-block"),
+      get("cancelAddTask"),
+      get("saveTaskBtn")
+    ];
+
+    resetAddTaskForm();
+    resetTaskAttachments();
+    get("nt-record-completed").checked = false;
+    applyCompletedPlannedUI();
+
+    populateAddTaskLines();
+    line.value = asset.line || "";
+    line.disabled = true;
+
+    assetField.replaceChildren(new Option(
+      asset.model + " · SN " + asset.serial_number,
+      String(asset.id)
+    ));
+    assetField.disabled = true;
+    triggerChange(assetField);
+
+    title.textContent = "Νέα εργασία στο πακέτο";
+    assetLabel.textContent = asset.model + " · SN " + asset.serial_number;
+    locationLabel.textContent = asset.line || "—";
+    const previousDisplays = hiddenFields.map(node => node.style.display);
+    hiddenFields.forEach(node => { node.style.display = "none"; });
+
+    // Use draft-only buttons so the normal Create handler is never called.
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "btn-cancel";
+    cancel.textContent = "Ακύρωση";
+
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "btn-table";
+    add.textContent = "Προσθήκη στο πακέτο";
+
+    get("saveTaskBtn").parentElement.append(cancel, add);
+
+    function returnToDraft(event) {
+      if (event?.key && event.key !== "Escape") return;
+      event?.preventDefault();
+      overlay.removeEventListener("keydown", returnToDraft);
+      overlay.style.display = "none";
+      cancel.remove();
+      add.remove();
+      resetAddTaskForm();
+      resetTaskAttachments();
+      hiddenFields.forEach((node, index) => { node.style.display = previousDisplays[index]; });
+      [title, assetLabel, locationLabel].forEach((node, index) => {
+        node.textContent = previousLabels[index];
+      });
+      editingTask = false;
+      dialog.showModal();
+      newTask.focus();
+    }
+
+    cancel.addEventListener("click", returnToDraft);
+    overlay.addEventListener("keydown", returnToDraft);
+    add.addEventListener("click", () => {
+      const task = taskField.value.trim();
+      if (!task) {
+        alert("Συμπλήρωσε τον τίτλο της εργασίας.");
+        taskField.focus();
+        return;
+      }
+
+      const duration = durationField.value.trim();
+      if (durationField.validity.badInput || (duration && !durationField.checkValidity())) {
+        durationField.reportValidity();
+        return;
+      }
+
+      draftTasks.push({
+        task,
+        section: getCurrentAddTaskSection() || null,
+        unit: getCurrentAddTaskUnit() || null,
+        duration_min: duration ? Number(duration) : null,
+        impact: get("nt-impact").value || "normal",
+        notes: get("nt-notes").value.trim() || null
+      });
+
+      renderDraft();
+      returnToDraft();
+    });
+
+    editingTask = true;
+    dialog.close();
+    overlay.style.display = "flex";
+    taskField.focus();
   });
 
   document.getElementById("preventivePackageCopyTaskForm").addEventListener("submit", event => {
@@ -105,10 +209,10 @@
       return;
     }
 
-    if (newTask.value.trim() || libraryTask.value !== "") {
+    if (libraryTask.value !== "") {
       saveStatus.textContent =
-        "Πάτησε Προσθήκη ή Αντιγραφή για την εκκρεμή εργασία, ή καθάρισε το πεδίο.";
-      (newTask.value.trim() ? newTask : libraryTask).focus();
+        "Πάτησε Αντιγραφή για την επιλεγμένη εργασία ή καθάρισε την επιλογή.";
+      libraryTask.focus();
       return;
     }
 
@@ -192,7 +296,6 @@
     libraryPlans = [];
     list.inert = false;
     list.replaceChildren();
-    newTask.value = "";
     saveForm.reset();
     saveForm.hidden = false;
     saveControls.disabled = true;
@@ -215,7 +318,6 @@
     const request = ++sourceRequest;
     selectedAsset = state.assetsData.find(asset => String(asset.id) === assetSelect.value) || null;
     draftTasks = [];
-    newTask.value = "";
     saveStatus.textContent = "";
     saveForm.elements.adminPassword.value = "";
     sourceSelect.replaceChildren(new Option("— Επιλογή προηγούμενου SM —", ""));
@@ -248,7 +350,7 @@
       const response = await fetch("/scheduled-maintenance");
       if (!response.ok) throw new Error("HTTP " + response.status);
       const previous = await response.json();
-      if (request !== sourceRequest || !dialog.open) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
 
       for (const sm of previous) {
         if (sm.status !== "CLOSED" || sm.asset_model?.trim() !== model) continue;
@@ -259,7 +361,7 @@
       sourceStatus.textContent = sourceSelect.options.length > 1
         ? "" : "Δεν βρέθηκαν κλειστά SM για αυτό το μοντέλο.";
     } catch (error) {
-      if (request !== sourceRequest || !dialog.open) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
       console.error("Could not load previous SMs:", error);
       sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση προηγούμενων SM.";
     }
@@ -283,7 +385,7 @@
       if (!response.ok) throw new Error("HTTP " + response.status);
       const { tasks } = await response.json();
       if (!Array.isArray(tasks)) throw new Error("Invalid SM tasks response");
-      if (request !== sourceRequest || !dialog.open) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
 
       for (const { task, section, unit, duration_min, notes, impact } of tasks) {
         draftTasks.push({ task, section, unit, duration_min, notes, impact });
@@ -295,11 +397,11 @@
       importButton.disabled = true;
       renderDraft();
     } catch (error) {
-      if (request !== sourceRequest || !dialog.open) return;
+      if (request !== sourceRequest || (!dialog.open && !editingTask)) return;
       console.error("Could not load SM tasks:", error);
       sourceStatus.textContent = "Δεν ήταν δυνατή η φόρτωση των εργασιών.";
     } finally {
-      if (request === sourceRequest && dialog.open) {
+      if (request === sourceRequest && (dialog.open || editingTask)) {
         sourceControls.disabled = false;
         saveControls.disabled = false;
       }
@@ -307,6 +409,7 @@
   });
 
   dialog.addEventListener("close", () => {
+    if (editingTask) return;
     sourceRequest++;
     saveForm.reset();
     draftTasks = [];
