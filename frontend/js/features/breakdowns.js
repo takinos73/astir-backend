@@ -3947,6 +3947,12 @@ currentBreakdownId = id;
     );
 
 
+    const attachmentsButton = document.getElementById("bdIncidentAttachmentsBtn");
+    if (attachmentsButton) {
+      attachmentsButton.onclick = () => openIncidentAttachmentsManager("BREAKDOWN", id);
+      attachmentsButton.disabled = false;
+    }
+
     /* =====================
        OPEN MODAL
     ===================== */

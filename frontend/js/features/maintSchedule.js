@@ -305,6 +305,16 @@ async function openScheduledMaintenanceDetail(smId) {
     currentScheduledMaintenance =
       sm;
 
+    const attachmentsButton = document.getElementById("smIncidentAttachmentsBtn");
+    if (attachmentsButton) {
+      attachmentsButton.onclick = () => {
+        if (currentScheduledMaintenance === sm) {
+          openIncidentAttachmentsManager("SCHEDULED_MAINTENANCE", id);
+        }
+      };
+      attachmentsButton.disabled = false;
+    }
+
 
     /* =====================
        CREATE / REFRESH
@@ -1088,8 +1098,8 @@ title.textContent =
    - Maximum 10 MB total
 ========================================================= */
 
-let taskAttachmentManagerTaskId =
-  null;
+let attachmentManagerEntity = null;
+let attachmentManagerUploading = false;
 
 
 let taskAttachmentManagerPendingFiles =
@@ -1150,7 +1160,7 @@ function ensureTaskAttachmentManagerModal() {
 
         <div>
 
-          <h2 style="margin:0;">
+          <h2 id="taskAttachmentManagerTitle" style="margin:0;">
             Task Attachments
           </h2>
 
@@ -1304,13 +1314,13 @@ function ensureTaskAttachmentManagerModal() {
   ===================== */
 
   const closeManager = () => {
+    if (attachmentManagerUploading) return;
 
     overlay.style.display =
       "none";
 
 
-    taskAttachmentManagerTaskId =
-      null;
+    attachmentManagerEntity = null;
 
 
     taskAttachmentManagerPendingFiles =
@@ -1439,60 +1449,23 @@ function ensureTaskAttachmentManagerModal() {
       );
 
 
-      let existingCount =
-        0;
+      const entity = attachmentManagerEntity;
+      if (!entity || attachmentManagerUploading) return;
 
+      let existingCount = 0;
+      let existingBytes = 0;
 
-      let existingBytes =
-        0;
-
-
-      if (
-        Number.isInteger(
-          taskAttachmentManagerTaskId
-        )
-      ) {
-
-        try {
-
-          const response =
-            await fetch(
-              `/attachments/TASK/${taskAttachmentManagerTaskId}`
-            );
-
-
-          const result =
-            await response
-              .json()
-              .catch(() => ({}));
-
-
-          if (response.ok) {
-
-            existingCount =
-              Number(
-                result?.usage?.count || 0
-              );
-
-
-            existingBytes =
-              Number(
-                result?.usage?.total_bytes || 0
-              );
-
-          }
-
-        } catch (err) {
-
-          console.error(
-            "ATTACHMENT USAGE LOAD ERROR:",
-            err
-          );
-
-        }
-
+      try {
+        const response = await fetch(entity.url, { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const { usage } = await response.json();
+        existingCount = Number(usage?.fileCount || 0);
+        existingBytes = Number(usage?.totalBytes || 0);
+      } catch (error) {
+        console.error("ATTACHMENT USAGE LOAD ERROR:", error);
       }
 
+      if (entity !== attachmentManagerEntity || attachmentManagerUploading) return;
 
       if (
         existingCount +
@@ -1501,7 +1474,7 @@ function ensureTaskAttachmentManagerModal() {
       ) {
 
         alert(
-          "Maximum 3 attachments per task."
+          "Maximum 3 attachments per item."
         );
 
 
@@ -1581,33 +1554,23 @@ function ensureTaskAttachmentManagerModal() {
    OPEN MANAGER
 ========================================================= */
 
-async function openTaskAttachmentsManager(
-  taskId
-) {
+function openTaskAttachmentsManager(taskId) {
+  return openAttachmentManager("TASK", taskId);
+}
 
-  const id =
-    Number(
-      taskId
-    );
+function openIncidentAttachmentsManager(entityType, incidentId) {
+  if (entityType !== "BREAKDOWN" && entityType !== "SCHEDULED_MAINTENANCE") return;
+  return openAttachmentManager(entityType, incidentId);
+}
 
+async function openAttachmentManager(entityType, entityId) {
+  const id = Number(entityId);
+  if (!Number.isSafeInteger(id) || id <= 0 || attachmentManagerUploading) return;
 
-  if (
-    !Number.isInteger(id) ||
-    id <= 0
-  ) {
-
-    alert(
-      "Invalid Task ID."
-    );
-
-    return;
-
-  }
-
-
-  taskAttachmentManagerTaskId =
-    id;
-
+  attachmentManagerEntity = {
+    type: entityType,
+    url: "/attachments/" + entityType + "/" + id
+  };
 
   taskAttachmentManagerPendingFiles =
     [];
@@ -1625,8 +1588,10 @@ async function openTaskAttachmentsManager(
 
   if (reference) {
 
-    reference.textContent =
-      `Task #${id}`;
+    const prefix = entityType === "BREAKDOWN" ? "BD" : "SM";
+    reference.textContent = entityType === "TASK"
+      ? "Task #" + id
+      : prefix + "-" + String(id).padStart(5, "0");
 
   }
 
@@ -1634,10 +1599,9 @@ async function openTaskAttachmentsManager(
   renderTaskAttachmentManagerPendingFiles();
 
 
-  overlay.style.display =
-    "flex";
-
-
+  document.getElementById("taskAttachmentManagerTitle").textContent =
+    entityType === "TASK" ? "Task Attachments" : "Incident Attachments";
+  overlay.style.display = "flex";
   await loadTaskAttachmentManagerExisting();
 
 }
@@ -1649,17 +1613,8 @@ async function openTaskAttachmentsManager(
 
 async function loadTaskAttachmentManagerExisting() {
 
-  const taskId =
-    Number(
-      taskAttachmentManagerTaskId
-    );
-
-
-  if (
-    !Number.isInteger(taskId)
-  ) {
-    return;
-  }
+  const entity = attachmentManagerEntity;
+  if (!entity) return;
 
 
   const list =
@@ -1687,7 +1642,7 @@ async function loadTaskAttachmentManagerExisting() {
 
     const response =
       await fetch(
-        `/attachments/TASK/${taskId}`
+        entity.url
       );
 
 
@@ -1709,6 +1664,8 @@ async function loadTaskAttachmentManagerExisting() {
     }
 
 
+    if (entity !== attachmentManagerEntity) return;
+
     const attachments =
       Array.isArray(
         result.attachments
@@ -1724,8 +1681,8 @@ async function loadTaskAttachmentManagerExisting() {
 
       usage.textContent =
         `${attachments.length}/3 · ${formatAttachmentSize(
-          result?.usage?.total_bytes || 0
-        )} / 10 MB`;
+          result?.usage?.totalBytes || 0
+        )} / 8 MB`;
 
     }
 
@@ -1963,8 +1920,9 @@ async function loadTaskAttachmentManagerExisting() {
     );
 
 
-    list.textContent =
-      "Could not load attachments.";
+    if (entity === attachmentManagerEntity) {
+      list.textContent = "Could not load attachments.";
+    }
 
   }
 
@@ -2244,18 +2202,8 @@ function renderTaskAttachmentManagerPendingFiles() {
 
 async function uploadTaskAttachmentManagerFiles() {
 
-  const taskId =
-    Number(
-      taskAttachmentManagerTaskId
-    );
-
-
-  if (
-    !Number.isInteger(taskId) ||
-    taskId <= 0
-  ) {
-    return;
-  }
+  const entity = attachmentManagerEntity;
+  if (!entity || attachmentManagerUploading) return;
 
 
   if (
@@ -2278,6 +2226,7 @@ async function uploadTaskAttachmentManagerFiles() {
     );
 
 
+  attachmentManagerUploading = true;
   try {
 
     if (saveBtn) {
@@ -2326,7 +2275,7 @@ async function uploadTaskAttachmentManagerFiles() {
 
     const response =
       await fetch(
-        `/attachments/TASK/${taskId}`,
+        entity.url,
         {
           method:
             "POST",
@@ -2363,6 +2312,7 @@ async function uploadTaskAttachmentManagerFiles() {
 
 
     await loadTaskAttachmentManagerExisting();
+    if (entity.type !== "TASK") return;
 
 
     /*
@@ -2417,6 +2367,7 @@ async function uploadTaskAttachmentManagerFiles() {
 
 
   } finally {
+    attachmentManagerUploading = false;
 
     if (saveBtn) {
 
