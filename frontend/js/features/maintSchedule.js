@@ -1607,6 +1607,7 @@ function ensureTaskAttachmentManagerModal() {
 
       let existingCount = 0;
       let existingBytes = 0;
+      let maxFiles = entity.type === "TASK" ? 3 : 5;
 
       try {
         const response = await fetch(entity.url, { cache: "no-store" });
@@ -1614,6 +1615,7 @@ function ensureTaskAttachmentManagerModal() {
         const { usage } = await response.json();
         existingCount = Number(usage?.fileCount || 0);
         existingBytes = Number(usage?.totalBytes || 0);
+        maxFiles = Number(usage?.maxFiles) || maxFiles;
       } catch (error) {
         console.error("ATTACHMENT USAGE LOAD ERROR:", error);
       }
@@ -1623,11 +1625,11 @@ function ensureTaskAttachmentManagerModal() {
       if (
         existingCount +
         combinedFiles.length >
-        3
+        maxFiles
       ) {
 
         alert(
-          "Maximum 3 attachments per item."
+          "Maximum " + maxFiles + " attachments per item."
         );
 
 
@@ -1834,7 +1836,7 @@ async function loadTaskAttachmentManagerExisting() {
     if (usage) {
 
       usage.textContent =
-        `${attachments.length}/3 · ${formatAttachmentSize(
+        `${attachments.length}/${result?.usage?.maxFiles || (entity.type === "TASK" ? 3 : 5)} · ${formatAttachmentSize(
           result?.usage?.totalBytes || 0
         )} / 8 MB`;
 

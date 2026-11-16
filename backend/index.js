@@ -82,6 +82,13 @@ const r2Client =
 ===================================================== */
 
 const ATTACHMENT_MAX_FILES = 3;
+const INCIDENT_ATTACHMENT_MAX_FILES = 5;
+
+function getAttachmentMaxFiles(entityType) {
+  return entityType === "BREAKDOWN" || entityType === "SCHEDULED_MAINTENANCE"
+    ? INCIDENT_ATTACHMENT_MAX_FILES
+    : ATTACHMENT_MAX_FILES;
+}
 
 
 const ATTACHMENT_MAX_TOTAL_BYTES = 8 * 1024 * 1024;
@@ -156,13 +163,13 @@ const attachmentUpload =
 
     limits: {
       files:
-        ATTACHMENT_MAX_FILES,
+        INCIDENT_ATTACHMENT_MAX_FILES,
 
       /*
         Individual safety ceiling.
 
         The real rule is:
-        MAX 10 MB TOTAL per entity.
+        MAX 8 MB TOTAL per entity.
       */
       fileSize:
         ATTACHMENT_MAX_TOTAL_BYTES
@@ -450,7 +457,8 @@ async function getAttachmentUsage(
 
 function validateAttachmentCapacity(
   existingUsage,
-  files
+  files,
+  maxFiles = ATTACHMENT_MAX_FILES
 ) {
 
   const incomingFiles =
@@ -500,11 +508,11 @@ function validateAttachmentCapacity(
 
   if (
     finalFileCount >
-    ATTACHMENT_MAX_FILES
+    maxFiles
   ) {
 
     throw new Error(
-      `Maximum ${ATTACHMENT_MAX_FILES} attachments allowed`
+      `Maximum ${maxFiles} attachments allowed`
     );
 
   }
@@ -726,10 +734,20 @@ function cleanAttachmentFileName(
 
 app.post( "/attachments/:entityType/:entityId",
 
-  attachmentUpload.array(
-    "files",
-    ATTACHMENT_MAX_FILES
-  ),
+  (req, res, next) => {
+    const maxFiles = getAttachmentMaxFiles(normalizeAttachmentEntityType(req.params.entityType));
+    attachmentUpload.array("files", maxFiles)(req, res, error => {
+      if (maxFiles === INCIDENT_ATTACHMENT_MAX_FILES && error instanceof multer.MulterError) {
+        const message = error.code === "LIMIT_FILE_SIZE"
+          ? "Maximum total attachment size is 8 MB"
+          : error.field === "files" || error.code === "LIMIT_FILE_COUNT"
+            ? "Maximum " + maxFiles + " attachments allowed"
+            : error.message;
+        return res.status(400).json({ error: message });
+      }
+      return next(error);
+    });
+  },
 
   async (req, res) => {
 
@@ -1329,6 +1347,14 @@ app.post( "/attachments/:entityType/:entityId",
          CURRENT ATTACHMENT USAGE
       ===================== */
 
+      const maxFiles = getAttachmentMaxFiles(entity.entityType);
+      if (maxFiles === INCIDENT_ATTACHMENT_MAX_FILES) {
+        // Serialize simultaneous uploads before reading the remaining capacity.
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+          "cmms-attachments:" + entity.entityType + ":" + entity.entityId
+        ]);
+      }
+
       const currentUsage =
         await getAttachmentUsage(
           client,
@@ -1348,7 +1374,8 @@ app.post( "/attachments/:entityType/:entityId",
       const capacity =
         validateAttachmentCapacity(
           currentUsage,
-          files
+          files,
+          maxFiles
         );
 
 
@@ -1677,8 +1704,7 @@ app.post( "/attachments/:entityType/:entityId",
           totalBytes:
             capacity.finalTotalBytes,
 
-          maxFiles:
-            ATTACHMENT_MAX_FILES,
+          maxFiles,
 
           maxTotalBytes:
             ATTACHMENT_MAX_TOTAL_BYTES
@@ -2327,8 +2353,7 @@ app.get( "/attachments/:entityType/:entityId",
 
           totalBytes,
 
-          maxFiles:
-            ATTACHMENT_MAX_FILES,
+          maxFiles: getAttachmentMaxFiles(entity.entityType),
 
           maxTotalBytes:
             ATTACHMENT_MAX_TOTAL_BYTES
