@@ -2630,3 +2630,132 @@ input[type="radio"] {
   white-space: normal;
   word-break: normal;
 }
+
+/* Incident attachments and photo preview */
+.incident-media {
+  padding: 15px 18px;
+  margin: 0 0 16px;
+  background: #1c2430;
+  border: 1px solid #303d4e;
+  border-radius: 10px;
+}
+
+.incident-media-head,
+.incident-photo-viewer > header,
+.incident-photo-viewer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.incident-media-head {
+  flex-wrap: wrap;
+}
+
+.incident-media h3,
+.incident-photo-viewer h3 {
+  margin: 0;
+  color: #eef5ff;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.incident-media-count {
+  display: block;
+  margin-top: 2px;
+  color: #aab8ca;
+  font-size: 12px;
+}
+
+.incident-media-head .incident-media-button {
+  background: #1e344c;
+  border-color: #426482;
+  color: #d8eaff;
+}
+
+.incident-media-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.incident-media-thumbs:not(:empty) {
+  margin-top: 12px;
+}
+
+.incident-media-thumb {
+  position: relative;
+  display: grid;
+  align-content: end;
+  width: 108px;
+  max-width: 100%;
+  min-height: 78px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #405166;
+  border-radius: 7px;
+  background: #171e28;
+  color: #dbe6f4;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.incident-media-thumb img {
+  width: 100%;
+  height: 62px;
+  object-fit: cover;
+}
+
+.incident-media-thumb span {
+  display: block;
+  padding: 3px 6px;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.incident-photo-viewer {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid #406080;
+  border-radius: 12px;
+  background: #181d25;
+  color: #e8eef6;
+  color-scheme: dark;
+}
+
+.incident-photo-viewer::backdrop {
+  background: rgb(8 14 23 / 76%);
+  backdrop-filter: blur(3px);
+}
+
+.incident-photo-viewer-frame {
+  display: grid;
+  min-height: 100px;
+  margin: 12px 0;
+  place-items: center;
+  border-radius: 7px;
+  background: #111720;
+  text-align: center;
+}
+
+.incident-photo-viewer-frame [role="status"]:empty {
+  display: none;
+}
+
+.incident-photo-viewer img {
+  max-width: 100%;
+  max-height: 65dvh;
+  object-fit: contain;
+}
+
+.incident-photo-viewer [hidden],
+.incident-media [hidden] {
+  display: none;
+}

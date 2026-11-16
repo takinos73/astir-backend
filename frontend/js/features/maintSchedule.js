@@ -115,6 +115,7 @@ async function openScheduledMaintenanceDetail(smId) {
 
   // Clear the previously selected SM before loading another.
   currentScheduledMaintenance = null;
+  prepareIncidentAttachmentGallery("SCHEDULED_MAINTENANCE", id);
 
 
   const addTaskBtn =
@@ -305,15 +306,7 @@ async function openScheduledMaintenanceDetail(smId) {
     currentScheduledMaintenance =
       sm;
 
-    const attachmentsButton = document.getElementById("smIncidentAttachmentsBtn");
-    if (attachmentsButton) {
-      attachmentsButton.onclick = () => {
-        if (currentScheduledMaintenance === sm) {
-          openIncidentAttachmentsManager("SCHEDULED_MAINTENANCE", id);
-        }
-      };
-      attachmentsButton.disabled = false;
-    }
+    void loadIncidentAttachmentGallery("SCHEDULED_MAINTENANCE", id);
 
 
     /* =====================
@@ -1098,6 +1091,166 @@ title.textContent =
    - Maximum 10 MB total
 ========================================================= */
 
+const incidentAttachmentGalleries = new Map();
+
+function prepareIncidentAttachmentGallery(entityType, id) {
+  const selector = entityType === "BREAKDOWN" ? "bdIncidentMedia" : "smIncidentMedia";
+  const section = document.getElementById(selector);
+  if (!section) return;
+
+  const gallery = { id, section };
+  incidentAttachmentGalleries.set(entityType, gallery);
+  section.querySelector(".incident-media-thumbs").replaceChildren();
+  section.querySelector(".incident-media-count").textContent = "Φόρτωση αρχείων…";
+
+  const button = section.querySelector("button");
+  button.disabled = true;
+  button.onclick = () => openIncidentAttachmentsManager(entityType, id);
+}
+
+async function incidentPhotoUrl(attachmentId) {
+  const response = await fetch("/attachments/" + encodeURIComponent(attachmentId) + "/open", {
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error("Could not open attachment");
+  const { url } = await response.json();
+  if (!url) throw new Error("Attachment URL is missing");
+  return url;
+}
+
+async function loadIncidentAttachmentGallery(entityType, id) {
+  const gallery = incidentAttachmentGalleries.get(entityType);
+  if (!gallery || gallery.id !== id) return;
+
+  const { section } = gallery;
+  const button = section.querySelector("button");
+  const count = section.querySelector(".incident-media-count");
+  const thumbs = section.querySelector(".incident-media-thumbs");
+  const request = {};
+  gallery.request = request;
+  const isCurrent = () => incidentAttachmentGalleries.get(entityType) === gallery &&
+    gallery.request === request;
+  button.disabled = false;
+
+  try {
+    const response = await fetch("/attachments/" + entityType + "/" + id, { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load incident attachments");
+    const { attachments } = await response.json();
+    if (!Array.isArray(attachments)) throw new Error("Invalid attachment list");
+    if (!isCurrent()) return;
+
+    const photos = attachments.filter(file => file.mime_type?.startsWith("image/"));
+    const documents = attachments.length - photos.length;
+    const labels = [
+      photos.length && (photos.length + (photos.length === 1 ? " φωτογραφία" : " φωτογραφίες")),
+      documents && (documents + " PDF")
+    ].filter(Boolean);
+    count.textContent = labels.join(" · ") || "Δεν υπάρχουν συνημμένα.";
+
+    const previews = photos.map((photo, index) => {
+      const thumb = document.createElement("button");
+      thumb.type = "button";
+      thumb.className = "incident-media-thumb";
+      thumb.setAttribute("aria-label", "Προβολή φωτογραφίας " + photo.file_name);
+
+      const image = document.createElement("img");
+      image.alt = "";
+      image.hidden = true;
+      const caption = document.createElement("span");
+      caption.textContent = photo.file_name;
+      caption.title = photo.file_name;
+      thumb.append(image, caption);
+      thumb.addEventListener("click", () => openIncidentPhotoViewer(photos, index));
+
+      void incidentPhotoUrl(photo.id).then(url => {
+        if (!isCurrent() || !image.isConnected) return;
+        image.addEventListener("load", () => { image.hidden = false; }, { once: true });
+        image.src = url;
+      }).catch(error => console.error("Could not load incident thumbnail:", error));
+
+      return thumb;
+    });
+
+    thumbs.replaceChildren(...previews);
+  } catch (error) {
+    if (!isCurrent()) return;
+    console.error("Could not load incident gallery:", error);
+    count.textContent = "Δεν ήταν δυνατή η φόρτωση των συνημμένων.";
+  }
+}
+
+function openIncidentPhotoViewer(photos, initialIndex) {
+  const dialog = document.createElement("dialog");
+  dialog.className = "incident-photo-viewer";
+  dialog.setAttribute("aria-labelledby", "incidentPhotoName");
+  dialog.innerHTML = `
+    <header>
+      <h3 id="incidentPhotoName"></h3>
+      <form method="dialog">
+        <button type="submit" class="btn-table" aria-label="Κλείσιμο φωτογραφίας">×</button>
+      </form>
+    </header>
+    <div class="incident-photo-viewer-frame">
+      <p role="status"></p>
+      <img alt="" hidden>
+    </div>
+    <div class="incident-photo-viewer-nav">
+      <button type="button" class="btn-table" data-previous aria-label="Προηγούμενη φωτογραφία">←</button>
+      <span data-position aria-live="polite"></span>
+      <button type="button" class="btn-table" data-next aria-label="Επόμενη φωτογραφία">→</button>
+    </div>
+  `;
+  const image = dialog.querySelector("img");
+  const status = dialog.querySelector("[role=status]");
+  const previous = dialog.querySelector("[data-previous]");
+  const next = dialog.querySelector("[data-next]");
+  let index = initialIndex;
+  let request = 0;
+
+  async function showPhoto(position) {
+    const currentRequest = ++request;
+    index = (position + photos.length) % photos.length;
+    const file = photos[index];
+    const isCurrent = () => dialog.open && request === currentRequest;
+    dialog.querySelector("h3").textContent = file.file_name;
+    dialog.querySelector("[data-position]").textContent = (index + 1) + " / " + photos.length;
+    image.hidden = true;
+    image.alt = file.file_name;
+    status.textContent = "Φόρτωση φωτογραφίας…";
+
+    function showError() {
+      if (isCurrent()) status.textContent = "Δεν ήταν δυνατό να ανοίξει η φωτογραφία.";
+    }
+
+    try {
+      const url = await incidentPhotoUrl(file.id);
+      if (!isCurrent()) return;
+      image.onload = () => {
+        if (!isCurrent()) return;
+        image.hidden = false;
+        status.textContent = "";
+      };
+      image.onerror = showError;
+      image.src = url;
+    } catch (error) {
+      showError();
+    }
+  }
+
+  previous.disabled = next.disabled = photos.length < 2;
+  previous.addEventListener("click", () => showPhoto(index - 1));
+  next.addEventListener("click", () => showPhoto(index + 1));
+  dialog.addEventListener("keydown", event => {
+    if (photos.length < 2 || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    void showPhoto(index + (event.key === "ArrowLeft" ? -1 : 1));
+  });
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  void showPhoto(initialIndex);
+}
+
 let attachmentManagerEntity = null;
 let attachmentManagerUploading = false;
 
@@ -1569,6 +1722,7 @@ async function openAttachmentManager(entityType, entityId) {
 
   attachmentManagerEntity = {
     type: entityType,
+    id,
     url: "/attachments/" + entityType + "/" + id
   };
 
@@ -2312,7 +2466,10 @@ async function uploadTaskAttachmentManagerFiles() {
 
 
     await loadTaskAttachmentManagerExisting();
-    if (entity.type !== "TASK") return;
+    if (entity.type !== "TASK") {
+      void loadIncidentAttachmentGallery(entity.type, entity.id);
+      return;
+    }
 
 
     /*
