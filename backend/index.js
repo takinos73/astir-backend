@@ -4234,18 +4234,6 @@ if (initialRestorationTask) {
     );
 
 
-    /*
-      From this point forward the new attachment
-      is permanently stored in the database.
-
-      The catch block must therefore NOT delete
-      its R2 object.
-    */
-
-    transactionCommitted =
-      true;
-
-
     /* =====================
        RESPONSE
 
