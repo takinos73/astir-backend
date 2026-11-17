@@ -19530,6 +19530,149 @@ app.get( "/preventive-attachments/task/:taskId", async (req, res) => {
    - Row is locked during completion
 ===================== */
 
+/* BEGIN: Automatic Preventive Pack rollover */
+async function lockPreventivePackVisitsForTasks(client, taskIds) {
+  const { rows } = await client.query(
+    `
+    SELECT v.id::text AS id
+    FROM preventive_package_visits v
+    WHERE v.closed_at IS NULL AND EXISTS (
+      SELECT 1
+      FROM preventive_package_visit_tasks link
+      WHERE link.visit_id = v.id AND link.task_id = ANY($1::integer[])
+    )
+    ORDER BY v.id
+    FOR UPDATE OF v
+    `,
+    [taskIds]
+  );
+  return rows.map(row => row.id);
+}
+
+async function rollOverCompletedPreventivePacks(client, visitIds) {
+  const rollovers = [];
+
+  for (const visitId of visitIds) {
+    const { rows: [visit] } = await client.query(
+      `
+      SELECT
+        v.assignment_id,
+        a.asset_id,
+        p.id::text AS package_id,
+        p.tasks AS template_tasks,
+        v.cycle_due_date::text,
+        (v.cycle_due_date + make_interval(months => p.interval_months))::date::text AS next_cycle_date
+      FROM preventive_package_visits v
+      JOIN preventive_package_assignments a ON a.id = v.assignment_id
+      JOIN preventive_packages p ON p.id = a.package_id
+      WHERE v.id = $1 AND v.closed_at IS NULL
+      FOR UPDATE OF a
+      `,
+      [visitId]
+    );
+    if (!visit) continue;
+
+    const { rows: tasks } = await client.query(
+      `
+      SELECT
+        link.task_order,
+        t.task, t.section, t.unit, t.impact, t.duration_min,
+        t.status, t.deleted_at,
+        ((t.planned_start_at AT TIME ZONE 'Europe/Athens'
+          + ($2::date - $3::date) * INTERVAL '1 day')
+          AT TIME ZONE 'Europe/Athens') AS next_start_at
+      FROM preventive_package_visit_tasks link
+      JOIN maintenance_tasks t ON t.id = link.task_id
+      WHERE link.visit_id = $1
+      ORDER BY link.task_order
+      `,
+      [visitId, visit.next_cycle_date, visit.cycle_due_date]
+    );
+
+    if (!tasks.length || tasks.some(task => task.status !== "Done" || task.deleted_at)) {
+      continue;
+    }
+
+    // Move the local start dates by the cycle offset and preserve elapsed work minutes.
+    let previousEnd;
+    const scheduledTasks = tasks.map(task => {
+      const start = task.next_start_at;
+      const duration = task.duration_min;
+      if (!(start instanceof Date) || !Number.isFinite(start.getTime()) ||
+          !Number.isInteger(duration) || duration < 0) {
+        throw new Error("Preventive Pack has an invalid task schedule.");
+      }
+
+      const end = new Date(start.getTime() + duration * 60000);
+      if (previousEnd && start < previousEnd) {
+        throw new Error("The next Preventive Pack schedule overlaps after a time change.");
+      }
+      previousEnd = end;
+      return { ...task, start, end };
+    });
+
+    const { rows: [nextVisit] } = await client.query(
+      `
+      INSERT INTO preventive_package_visits (
+        assignment_id, cycle_due_date, scheduled_start_at, scheduled_end_at
+      )
+      VALUES ($1, $2::date, $3::timestamptz, $4::timestamptz)
+      ON CONFLICT (assignment_id, cycle_due_date) DO NOTHING
+      RETURNING id::text
+      `,
+      [visit.assignment_id, visit.next_cycle_date, scheduledTasks[0].start, previousEnd]
+    );
+
+    if (nextVisit) {
+      for (const task of scheduledTasks) {
+        const { rows: [nextTask] } = await client.query(
+          `
+          INSERT INTO maintenance_tasks (
+            asset_id, task, section, unit, type, impact, status,
+            planned_start_at, due_date, frequency_hours, duration_min, notes, is_planned
+          )
+          VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, 0, $8, $9, true)
+          RETURNING id
+          `,
+          [
+            visit.asset_id, task.task, task.section, task.unit, task.impact,
+            task.start, task.end, task.duration_min,
+            visit.template_tasks?.[task.task_order - 1]?.notes || null
+          ]
+        );
+
+        await client.query(
+          "INSERT INTO preventive_package_visit_tasks (visit_id, task_id, task_order) VALUES ($1, $2, $3)",
+          [nextVisit.id, nextTask.id, task.task_order]
+        );
+      }
+    }
+
+    await client.query(
+      "UPDATE preventive_package_visits SET closed_at = NOW() WHERE id = $1",
+      [visitId]
+    );
+    await client.query(
+      `
+      UPDATE preventive_package_assignments
+      SET next_due_date = $2::date, updated_at = NOW()
+      WHERE id = $1 AND next_due_date = $3::date
+      `,
+      [visit.assignment_id, visit.next_cycle_date, visit.cycle_due_date]
+    );
+
+    rollovers.push({
+      package_id: visit.package_id,
+      closed_visit_id: visitId,
+      next_cycle_due_date: visit.next_cycle_date,
+      next_scheduled_start_at: scheduledTasks[0].start.toISOString()
+    });
+  }
+
+  return rollovers;
+}
+/* END: Automatic Preventive Pack rollover */
+
 app.patch("/tasks/:id", async (req, res) => {
 
   const {
@@ -19583,6 +19726,8 @@ app.patch("/tasks/:id", async (req, res) => {
        completion requests from processing
        the same task at the same time.
     ====================== */
+
+    const preventivePackVisitIds = await lockPreventivePackVisitsForTasks(client, [id]);
 
     const taskRes =
       await client.query(
@@ -19882,12 +20027,14 @@ app.patch("/tasks/:id", async (req, res) => {
        COMMIT
     ====================== */
 
+    const rollovers = await rollOverCompletedPreventivePacks(client, preventivePackVisitIds);
     await client.query("COMMIT");
 
 
     return res.json({
       success: true,
-      rotated: hasFrequency
+      rotated: hasFrequency,
+      ...(rollovers.length ? { preventive_pack_rollovers: rollovers } : {})
     });
 
 
@@ -19957,6 +20104,7 @@ app.post("/tasks/bulk-done", async (req, res) => {
 
 
     await client.query("BEGIN");
+    const preventivePackVisitIds = await lockPreventivePackVisitsForTasks(client, taskIds);
 
     /* =====================
        1️⃣ FETCH TASKS (LOCK)
@@ -20082,8 +20230,13 @@ app.post("/tasks/bulk-done", async (req, res) => {
       }
     }
 
+    const rollovers = await rollOverCompletedPreventivePacks(client, preventivePackVisitIds);
     await client.query("COMMIT");
-    res.json({ success: true, count: tasks.length });
+    res.json({
+      success: true,
+      count: tasks.length,
+      ...(rollovers.length ? { preventive_pack_rollovers: rollovers } : {})
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
