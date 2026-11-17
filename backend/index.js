@@ -17305,7 +17305,7 @@ app.post("/preventive-packages/schedule", requireAdmin, async (req, res) => {
           asset_id, task, section, unit, type, impact, status,
           planned_start_at, due_date, frequency_hours, duration_min, notes, is_planned
         )
-        VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, 0, $8, $9, true)
+        VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, NULL, $8, $9, true)
         RETURNING id
         `,
         [
@@ -19631,7 +19631,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
             asset_id, task, section, unit, type, impact, status,
             planned_start_at, due_date, frequency_hours, duration_min, notes, is_planned
           )
-          VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, 0, $8, $9, true)
+          VALUES ($1, $2, $3, $4, 'Planned', $5, 'Planned', $6, $7, NULL, $8, $9, true)
           RETURNING id
           `,
           [
@@ -20261,6 +20261,11 @@ app.delete("/tasks/:id", async (req, res) => {
       WHERE id = $1
         AND status = 'Planned'
         AND frequency_hours IS NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM preventive_package_visit_tasks link
+          WHERE link.task_id = maintenance_tasks.id
+        )
       RETURNING id
       `,
       [id]
