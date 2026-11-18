@@ -4454,9 +4454,10 @@ window.currentMaintenanceReportsQueue =
 
     tr.innerHTML = `
       <td>
-        <strong>
+        <button type="button" class="btn-table maintenance-report-detail-btn"
+          title="Open Report Details">
           ${escapeMaintenanceReportHtml(reportCode)}
-        </strong>
+        </button>
       </td>
 
       <td>
@@ -4538,6 +4539,10 @@ window.currentMaintenanceReportsQueue =
       </td>
     `;
 
+
+    tr.querySelector(".maintenance-report-detail-btn").addEventListener("click", () => {
+      openMaintenanceReportDetail(Number(report.id));
+    });
 
     tbody.appendChild(
       tr
