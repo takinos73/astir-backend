@@ -1996,7 +1996,22 @@ async function submitMaintenanceReport() {
      SUBMIT
   ===================== */
 
+  const attachmentsInput = document.getElementById("foremanReportAttachments");
+  const files = Array.from(attachmentsInput?.files || []);
+  if (
+    files.length > getAttachmentManagerMaxFiles("MAINTENANCE_REPORT") ||
+    files.reduce((total, file) => total + file.size, 0) > 8 * 1024 * 1024
+  ) {
+    alert("Select up to 3 attachments with a combined size of 8 MB or less.");
+    return;
+  }
+  if (files.some(file => !["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type))) {
+    alert("Select only JPG, PNG, WebP or PDF attachments.");
+    return;
+  }
+
   submitBtn.disabled = true;
+  if (attachmentsInput) attachmentsInput.disabled = true;
 
 
   const originalText =
@@ -2070,11 +2085,27 @@ async function submitMaintenanceReport() {
       "Maintenance Report";
 
 
-    alert(
-      `${reportCode} submitted successfully.`
-    );
+    let message = `${reportCode} submitted successfully.`;
+    if (files.length) {
+      submitBtn.textContent = "Uploading attachments...";
+      try {
+        const reportId = Number(data?.report?.id);
+        if (!Number.isSafeInteger(reportId) || reportId <= 0) {
+          throw new Error("The server did not return the report ID.");
+        }
+        await uploadCmmsAttachments(
+          `/attachments/MAINTENANCE_REPORT/${reportId}`,
+          files,
+          reporterId
+        );
+        message += " Attachments uploaded.";
+      } catch (err) {
+        message += ` Attachments could not be uploaded: ${err.message} Open the report and use Attachments to retry.`;
+      }
+    }
 
-
+    alert(message);
+    if (attachmentsInput) attachmentsInput.value = "";
     resetMaintenanceReportForm();
     await loadProductionReports();
     closeMaintenanceReportModal();
@@ -2096,6 +2127,7 @@ async function submitMaintenanceReport() {
   } finally {
 
     submitBtn.disabled = false;
+    if (attachmentsInput) attachmentsInput.disabled = false;
 
 
     submitBtn.textContent =
@@ -8708,6 +8740,15 @@ async function openMaintenanceReportDetail(
     renderMaintenanceReportDetail(
       report
     );
+
+    if (localStorage.getItem(ROLE_STORAGE_KEY) === "shift_foreman") {
+      const attachments = document.createElement("button");
+      attachments.type = "button";
+      attachments.className = "btn-table";
+      attachments.textContent = "Attachments";
+      attachments.addEventListener("click", () => openAttachmentManager("MAINTENANCE_REPORT", id));
+      content.appendChild(attachments);
+    }
 
 
   } catch (err) {

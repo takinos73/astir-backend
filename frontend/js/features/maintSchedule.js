@@ -1251,6 +1251,10 @@ function openIncidentPhotoViewer(photos, initialIndex) {
   void showPhoto(initialIndex);
 }
 
+function getAttachmentManagerMaxFiles(entityType) {
+  return entityType === "BREAKDOWN" || entityType === "SCHEDULED_MAINTENANCE" ? 5 : 3;
+}
+
 let attachmentManagerEntity = null;
 let attachmentManagerUploading = false;
 
@@ -1607,7 +1611,7 @@ function ensureTaskAttachmentManagerModal() {
 
       let existingCount = 0;
       let existingBytes = 0;
-      let maxFiles = entity.type === "TASK" ? 3 : 5;
+      let maxFiles = getAttachmentManagerMaxFiles(entity.type);
 
       try {
         const response = await fetch(entity.url, { cache: "no-store" });
@@ -1742,9 +1746,11 @@ async function openAttachmentManager(entityType, entityId) {
     );
 
 
+  const isReport = entityType === "MAINTENANCE_REPORT";
+
   if (reference) {
 
-    const prefix = entityType === "BREAKDOWN" ? "BD" : "SM";
+    const prefix = isReport ? "MR" : entityType === "BREAKDOWN" ? "BD" : "SM";
     reference.textContent = entityType === "TASK"
       ? "Task #" + id
       : prefix + "-" + String(id).padStart(5, "0");
@@ -1756,7 +1762,8 @@ async function openAttachmentManager(entityType, entityId) {
 
 
   document.getElementById("taskAttachmentManagerTitle").textContent =
-    entityType === "TASK" ? "Task Attachments" : "Incident Attachments";
+    isReport ? "Report Attachments" : entityType === "TASK" ? "Task Attachments" : "Incident Attachments";
+  overlay.style.zIndex = isReport ? "10001" : "1400";
   overlay.style.display = "flex";
   await loadTaskAttachmentManagerExisting();
 
@@ -1836,7 +1843,7 @@ async function loadTaskAttachmentManagerExisting() {
     if (usage) {
 
       usage.textContent =
-        `${attachments.length}/${result?.usage?.maxFiles || (entity.type === "TASK" ? 3 : 5)} · ${formatAttachmentSize(
+        `${attachments.length}/${result?.usage?.maxFiles || (getAttachmentManagerMaxFiles(entity.type))} · ${formatAttachmentSize(
           result?.usage?.totalBytes || 0
         )} / 8 MB`;
 
@@ -2356,6 +2363,18 @@ function renderTaskAttachmentManagerPendingFiles() {
    UPLOAD PENDING FILES
 ========================================================= */
 
+async function uploadCmmsAttachments(url, files, uploadedById) {
+  const formData = new FormData();
+  for (const file of files) formData.append("files", file);
+  if (uploadedById) formData.append("uploaded_by_id", uploadedById);
+
+  const response = await fetch(url, { method: "POST", body: formData });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result?.error || "Attachment upload failed.");
+  }
+}
+
 async function uploadTaskAttachmentManagerFiles() {
 
   const entity = attachmentManagerEntity;
@@ -2397,68 +2416,11 @@ async function uploadTaskAttachmentManagerFiles() {
     }
 
 
-    const formData =
-      new FormData();
-
-
-    taskAttachmentManagerPendingFiles.forEach(
-      file => {
-
-        formData.append(
-          "files",
-          file
-        );
-
-      }
+    await uploadCmmsAttachments(
+      entity.url,
+      taskAttachmentManagerPendingFiles,
+      localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY)
     );
-
-
-    const uploadedById =
-      localStorage.getItem(
-        TECHNICIAN_ID_STORAGE_KEY
-      );
-
-
-    if (uploadedById) {
-
-      formData.append(
-        "uploaded_by_id",
-        uploadedById
-      );
-
-    }
-
-
-    const response =
-      await fetch(
-        entity.url,
-        {
-          method:
-            "POST",
-
-          body:
-            formData
-        }
-      );
-
-
-    const result =
-      await response
-        .json()
-        .catch(() => ({}));
-
-
-    if (
-      !response.ok
-    ) {
-
-      throw new Error(
-        result?.error ||
-        "Attachment upload failed."
-      );
-
-    }
-
 
     taskAttachmentManagerPendingFiles =
       [];
@@ -2468,6 +2430,7 @@ async function uploadTaskAttachmentManagerFiles() {
 
 
     await loadTaskAttachmentManagerExisting();
+    if (entity.type === "MAINTENANCE_REPORT") return;
     if (entity.type !== "TASK") {
       void loadIncidentAttachmentGallery(entity.type, entity.id);
       return;
