@@ -8817,13 +8817,16 @@ async function openMaintenanceReportDetail(
       report
     );
 
-    if (localStorage.getItem(ROLE_STORAGE_KEY) === "shift_foreman") {
+    const role = localStorage.getItem(ROLE_STORAGE_KEY);
+    if (role === "shift_foreman") {
       const attachments = document.createElement("button");
       attachments.type = "button";
       attachments.className = "btn-table";
       attachments.textContent = "Attachments";
       attachments.addEventListener("click", () => openAttachmentManager("MAINTENANCE_REPORT", id));
       content.appendChild(attachments);
+    } else if (role === "technician") {
+      void loadTechnicianReportAttachments(content, id);
     }
 
 
@@ -8858,6 +8861,71 @@ async function openMaintenanceReportDetail(
 
    Displays one Maintenance Report in the shared modal.
 ========================================================= */
+
+async function loadTechnicianReportAttachments(content, reportId) {
+  const section = document.createElement("section");
+  section.className = "incident-media";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Attachments";
+
+  const status = document.createElement("div");
+  status.className = "incident-media-count";
+  status.setAttribute("role", "status");
+  status.textContent = "Loading attachments…";
+
+  const items = document.createElement("div");
+  items.className = "incident-media-thumbs";
+  section.append(heading, status, items);
+  content.appendChild(section);
+
+  try {
+    const response = await fetch("/attachments/MAINTENANCE_REPORT/" + reportId, { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load report attachments.");
+    const { attachments } = await response.json();
+    if (!Array.isArray(attachments)) throw new Error("Invalid attachment list.");
+    if (!section.isConnected) return;
+
+    status.textContent = attachments.length ? "" : "No attachments.";
+    const photos = attachments.filter(file => file.mime_type?.startsWith("image/"));
+    let photoIndex = 0;
+
+    for (const file of attachments) {
+      const button = document.createElement("button");
+      button.type = "button";
+
+      if (file.mime_type?.startsWith("image/")) {
+        const index = photoIndex++;
+        button.className = "incident-media-thumb";
+        button.setAttribute("aria-label", "View photo " + file.file_name);
+
+        const image = document.createElement("img");
+        image.alt = "";
+        image.hidden = true;
+        const caption = document.createElement("span");
+        caption.textContent = file.file_name;
+        caption.title = file.file_name;
+        button.append(image, caption);
+        button.addEventListener("click", () => openIncidentPhotoViewer(photos, index));
+
+        void incidentPhotoUrl(file.id).then(url => {
+          if (!image.isConnected) return;
+          image.addEventListener("load", () => { image.hidden = false; }, { once: true });
+          image.src = url;
+        }).catch(error => console.error("Could not load report thumbnail:", error));
+      } else {
+        button.className = "btn-table";
+        button.textContent = "PDF · " + file.file_name;
+        button.addEventListener("click", () => openTaskAttachment(file.id));
+      }
+
+      items.appendChild(button);
+    }
+  } catch (error) {
+    console.error("Could not load report attachments:", error);
+    status.textContent = "Could not load attachments.";
+  }
+}
 
 function renderMaintenanceReportDetail(
   report
