@@ -1542,18 +1542,17 @@ td:first-child {
   overflow-wrap: normal;
 }
 
-
 #tab-maintenance-reports .maintenance-report-detail-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 7px 11px;
+  padding: 6px 10px;
   border: 1px solid #35506f;
   border-radius: 8px;
   background: #172233;
   color: #9fc5ff;
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 18px;
   letter-spacing: 0.35px;
