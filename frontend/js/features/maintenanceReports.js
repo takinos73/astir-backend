@@ -1758,7 +1758,97 @@ function renderProductionPreventivePriority() {
    RESET REPORT FORM
 ===================== */
 
+let foremanReportFiles = [];
+
+function renderForemanReportAttachmentPreviews() {
+  const previews = document.getElementById("foremanReportAttachmentPreviews");
+  if (!previews) return;
+
+  previews.querySelectorAll("img").forEach(image => URL.revokeObjectURL(image.src));
+  previews.replaceChildren();
+
+  foremanReportFiles.forEach((file, index) => {
+    const item = document.createElement("div");
+    item.className = "task-attachment-chip";
+
+    const preview = document.createElement("div");
+    preview.className = "task-attachment-chip-preview";
+    item.appendChild(preview);
+
+    if (file.type === "application/pdf") {
+      const badge = document.createElement("span");
+      badge.className = "task-attachment-chip-pdf";
+      badge.textContent = "PDF";
+      preview.appendChild(badge);
+
+      const name = document.createElement("span");
+      name.className = "task-attachment-chip-info task-attachment-chip-name";
+      name.textContent = file.name;
+      name.title = file.name;
+      item.appendChild(name);
+    } else {
+      const image = document.createElement("img");
+      image.className = "task-attachment-chip-thumb";
+      image.alt = file.name;
+      image.src = URL.createObjectURL(file);
+      preview.appendChild(image);
+    }
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "task-attachment-remove-btn";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", "Remove " + file.name);
+    remove.addEventListener("click", () => {
+      foremanReportFiles.splice(index, 1);
+      renderForemanReportAttachmentPreviews();
+      const buttons = previews.querySelectorAll("button");
+      const next = buttons[Math.min(index, buttons.length - 1)] ||
+        document.getElementById("chooseForemanReportAttachments");
+      next?.focus();
+    });
+    item.appendChild(remove);
+    previews.appendChild(item);
+  });
+}
+
+function setupForemanReportAttachmentPicker() {
+  const input = document.getElementById("foremanReportAttachments");
+  const choose = document.getElementById("chooseForemanReportAttachments");
+  if (!input || !choose) return;
+
+  choose.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => {
+    const files = [...foremanReportFiles];
+    for (const file of input.files) {
+      const alreadySelected = files.some(existing =>
+        existing.name === file.name && existing.size === file.size &&
+        existing.lastModified === file.lastModified && existing.type === file.type
+      );
+      if (!alreadySelected) files.push(file);
+    }
+    input.value = "";
+
+    if (
+      files.length > getAttachmentManagerMaxFiles("MAINTENANCE_REPORT") ||
+      files.reduce((total, file) => total + file.size, 0) > 8 * 1024 * 1024
+    ) {
+      alert("Select up to 3 attachments with a combined size of 8 MB or less.");
+      return;
+    }
+    if (files.some(file => !["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type))) {
+      alert("Select only JPG, PNG, WebP or PDF attachments.");
+      return;
+    }
+
+    foremanReportFiles = files;
+    renderForemanReportAttachmentPreviews();
+  });
+}
+
 function resetMaintenanceReportForm() {
+  foremanReportFiles = [];
+  renderForemanReportAttachmentPreviews();
 
   const asset =
     document.getElementById(
@@ -1996,23 +2086,10 @@ async function submitMaintenanceReport() {
      SUBMIT
   ===================== */
 
-  const attachmentsInput = document.getElementById("foremanReportAttachments");
-  const files = Array.from(attachmentsInput?.files || []);
-  if (
-    files.length > getAttachmentManagerMaxFiles("MAINTENANCE_REPORT") ||
-    files.reduce((total, file) => total + file.size, 0) > 8 * 1024 * 1024
-  ) {
-    alert("Select up to 3 attachments with a combined size of 8 MB or less.");
-    return;
-  }
-  if (files.some(file => !["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type))) {
-    alert("Select only JPG, PNG, WebP or PDF attachments.");
-    return;
-  }
-
+  const picker = document.getElementById("foremanReportAttachmentPicker");
+  const files = [...foremanReportFiles];
   submitBtn.disabled = true;
-  if (attachmentsInput) attachmentsInput.disabled = true;
-
+  if (picker) picker.disabled = true;
 
   const originalText =
     submitBtn.textContent;
@@ -2105,7 +2182,6 @@ async function submitMaintenanceReport() {
     }
 
     alert(message);
-    if (attachmentsInput) attachmentsInput.value = "";
     resetMaintenanceReportForm();
     await loadProductionReports();
     closeMaintenanceReportModal();
@@ -2127,7 +2203,7 @@ async function submitMaintenanceReport() {
   } finally {
 
     submitBtn.disabled = false;
-    if (attachmentsInput) attachmentsInput.disabled = false;
+    if (picker) picker.disabled = false;
 
 
     submitBtn.textContent =
@@ -9273,6 +9349,7 @@ document.addEventListener(
       "shift_foreman"
     ) {
 
+      setupForemanReportAttachmentPicker();
       initMaintenanceReporting();
 
     }

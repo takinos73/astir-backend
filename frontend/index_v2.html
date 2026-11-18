@@ -9442,13 +9442,15 @@
 
       </div>
 
-      <div class="field full-width">
-        <label for="foremanReportAttachments">Attachments (optional)</label>
-        <input id="foremanReportAttachments" type="file" multiple
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          aria-describedby="foremanReportAttachmentLimits">
+      <fieldset id="foremanReportAttachmentPicker" class="field full-width">
+        <legend>Attachments (optional)</legend>
+        <input id="foremanReportAttachments" type="file" multiple hidden
+          accept="image/jpeg,image/png,image/webp,application/pdf">
+        <button id="chooseForemanReportAttachments" type="button" class="btn-table"
+          aria-describedby="foremanReportAttachmentLimits">Choose files</button>
         <small id="foremanReportAttachmentLimits">Up to 3 files, 8 MB total. JPG, PNG, WebP or PDF.</small>
-      </div>
+        <div id="foremanReportAttachmentPreviews" aria-live="polite"></div>
+      </fieldset>
 
     </div>
 

@@ -5262,3 +5262,47 @@ textarea {
 .foreman-report-edit {
   margin-top: 6px;
 }
+
+#foremanReportAttachmentPicker {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+#foremanReportAttachmentPicker legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+#foremanReportAttachmentLimits {
+  display: block;
+  margin-top: 6px;
+}
+
+#foremanReportAttachmentPreviews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#foremanReportAttachmentPreviews:not(:empty) {
+  margin-top: 8px;
+}
+
+#foremanReportAttachmentPreviews .task-attachment-chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#foremanReportAttachmentPreviews .task-attachment-chip-preview {
+  width: 68px;
+  height: 68px;
+  flex-basis: 68px;
+}
+
+#foremanReportAttachmentPreviews .task-attachment-chip-info {
+  max-width: 140px;
+}
