@@ -9569,6 +9569,30 @@
 
 </div>
 
+  <dialog id="editForemanReportDialog" class="modal-box reporting-new-report-modal"
+    aria-labelledby="editForemanReportHeading">
+    <form id="editForemanReportForm">
+      <div class="reporting-modal-header">
+        <h3 id="editForemanReportHeading">Edit Production Report</h3>
+      </div>
+      <div class="reporting-form-grid">
+        <div class="field full-width">
+          <label for="editForemanReportAsset">Asset</label>
+          <select id="editForemanReportAsset" required></select>
+        </div>
+        <div class="field full-width">
+          <label for="editForemanReportTitle">Title</label>
+          <textarea id="editForemanReportTitle" rows="3" maxlength="1000"></textarea>
+        </div>
+      </div>
+      <p id="editForemanReportError" role="alert" hidden></p>
+      <div class="reporting-modal-actions">
+        <button type="button" class="btn-cancel" id="cancelEditForemanReport">Cancel</button>
+        <button type="submit" class="btn-primary reporting-submit-btn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- =========================================================
       MAINTENANCE REPORT PRINT MODAL
   ========================================================= -->

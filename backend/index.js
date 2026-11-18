@@ -24001,6 +24001,36 @@ app.get("/maintenance-reports/assets", async (req, res) => {
   }
 );
 
+async function getShiftForemanViewer(req, res) {
+  const technicianId = Number(req.query.technician_id);
+  if (!Number.isInteger(technicianId) || technicianId <= 0) {
+    res.status(400).json({ error: "Invalid Technician ID" });
+    return null;
+  }
+
+  const { rows: [user] } = await pool.query(
+    "SELECT id, name, role, active, is_user FROM technicians WHERE id = $1",
+    [technicianId]
+  );
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return null;
+  }
+  if (user.active !== true || user.is_user !== true) {
+    res.status(403).json({ error: "User is not active" });
+    return null;
+  }
+
+  const role = String(user.role || "").trim().toLowerCase().replace(/\s+/g, "_");
+  if (role !== "shift_foreman") {
+    res.status(403).json({ error: "Shift Foreman access required" });
+    return null;
+  }
+
+  return user;
+}
+
 /* =========================================================
    GET SHIFT FOREMAN MAINTENANCE REPORTS
    GET /maintenance-reports/my?technician_id=123
@@ -24025,107 +24055,8 @@ app.get( "/maintenance-reports/my", async (req, res) => {
 
     try {
 
-      /* =====================
-         VALIDATE USER
-      ===================== */
-
-      const technicianId =
-        Number(
-          req.query.technician_id
-        );
-
-
-      if (
-        !Number.isInteger(technicianId) ||
-        technicianId <= 0
-      ) {
-
-        return res.status(400).json({
-          error:
-            "Invalid Technician ID"
-        });
-
-      }
-
-
-      /* =====================
-         LOAD USER
-      ===================== */
-
-      const userResult =
-        await pool.query(
-          `
-          SELECT
-            id,
-            name,
-            role,
-            active,
-            is_user
-
-          FROM technicians
-
-          WHERE id = $1
-
-          LIMIT 1
-          `,
-          [technicianId]
-        );
-
-
-      if (
-        userResult.rows.length === 0
-      ) {
-
-        return res.status(404).json({
-          error:
-            "User not found"
-        });
-
-      }
-
-
-      const user =
-        userResult.rows[0];
-
-
-      if (
-        user.active !== true ||
-        user.is_user !== true
-      ) {
-
-        return res.status(403).json({
-          error:
-            "User is not active"
-        });
-
-      }
-
-
-      /* =====================
-         VALIDATE ROLE
-      ===================== */
-
-      const role =
-        String(
-          user.role || ""
-        )
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, "_");
-
-
-      if (
-        role !==
-        "shift_foreman"
-      ) {
-
-        return res.status(403).json({
-          error:
-            "Shift Foreman access required"
-        });
-
-      }
-
+      const user = await getShiftForemanViewer(req, res);
+      if (!user) return;
 
       /* =====================
          LOAD ALL PRODUCTION
@@ -24264,6 +24195,66 @@ app.get( "/maintenance-reports/my", async (req, res) => {
 
   }
 );
+
+app.patch("/maintenance-reports/:id/foreman-fields", async (req, res) => {
+  try {
+    if (!await getShiftForemanViewer(req, res)) return;
+
+    const reportId = Number(req.params.id);
+    if (!Number.isSafeInteger(reportId) || reportId <= 0) {
+      return res.status(400).json({ error: "Invalid Report ID" });
+    }
+
+    const body = req.body;
+    const fields = body && typeof body === "object" && !Array.isArray(body)
+      ? Object.keys(body)
+      : [];
+    if (!fields.length || fields.some(field => field !== "asset_id" && field !== "title")) {
+      return res.status(400).json({ error: "Only Asset and Title can be edited" });
+    }
+
+    const { asset_id, title } = body;
+    const hasAsset = fields.includes("asset_id");
+    const hasTitle = fields.includes("title");
+    if (hasAsset && (!Number.isSafeInteger(asset_id) || asset_id <= 0 || asset_id > 2147483647)) {
+      return res.status(400).json({ error: "Invalid Asset ID" });
+    }
+
+    const description = typeof title === "string" ? title.trim() : "";
+    if (hasTitle && (!description || description.length > 1000 || description.includes("\0"))) {
+      return res.status(400).json({ error: "Title must contain 1 to 1000 characters" });
+    }
+
+    // The Foreman table's Issue text comes from maintenance_reports.description.
+    // Converted reports still own their issue text and asset reference.
+    const result = await pool.query(
+      `
+      UPDATE maintenance_reports AS mr
+      SET asset_id = COALESCE($2::int, mr.asset_id),
+          description = COALESCE($3, mr.description)
+      WHERE mr.id = $1
+        AND (
+          $2::int IS NULL
+          OR mr.asset_id = $2
+          OR EXISTS (SELECT 1 FROM assets WHERE id = $2 AND active = true)
+        )
+      RETURNING mr.id
+      `,
+      [reportId, hasAsset ? asset_id : null, hasTitle ? description : null]
+    );
+
+    if (result.rows.length) return res.json({ id: result.rows[0].id });
+
+    const report = await pool.query("SELECT id FROM maintenance_reports WHERE id = $1", [reportId]);
+    if (!report.rows.length) {
+      return res.status(404).json({ error: "Maintenance Report not found" });
+    }
+    return res.status(400).json({ error: "Select an active Asset" });
+  } catch (err) {
+    console.error("PATCH /maintenance-reports/:id/foreman-fields ERROR:", err);
+    return res.status(500).json({ error: "Failed to update Production Report" });
+  }
+});
 
 /* =========================================================
    GET NEW MAINTENANCE REPORT COUNT

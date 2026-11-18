@@ -5245,3 +5245,20 @@ textarea {
   color:
     #d7dee8;
 }
+/* Foreman Report editor */
+#editForemanReportDialog {
+  width: min(480px, 94vw);
+  margin: auto;
+}
+
+#editForemanReportDialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+#editForemanReportError {
+  color: #fca5a5;
+}
+
+.foreman-report-edit {
+  margin-top: 6px;
+}

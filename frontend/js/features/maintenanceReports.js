@@ -1257,13 +1257,7 @@ document.addEventListener(
    LOAD REPORTING ASSETS
 ===================== */
 
-async function loadReportingAssets() {
-
-  const select =
-    document.getElementById(
-      "reportAsset"
-    );
-
+async function loadReportingAssets(select = document.getElementById("reportAsset")) {
 
   if (!select) {
     return;
@@ -2210,6 +2204,104 @@ async function loadProductionReports() {
 
 }
 
+async function openForemanReportEditor(report) {
+  const dialog = document.getElementById("editForemanReportDialog");
+  if (dialog.open) return;
+
+  const form = document.getElementById("editForemanReportForm");
+  const asset = document.getElementById("editForemanReportAsset");
+  const title = document.getElementById("editForemanReportTitle");
+  const error = document.getElementById("editForemanReportError");
+  const cancel = document.getElementById("cancelEditForemanReport");
+  const save = form.querySelector('button[type="submit"]');
+  const originalAsset = String(report.asset_id);
+  title.value = report.description ?? "";
+  const originalTitle = title.value;
+
+  const showError = message => {
+    error.textContent = message;
+    error.hidden = !message;
+  };
+
+  asset.replaceChildren(new Option("Loading Assets...", ""));
+  asset.disabled = true;
+  showError("");
+  save.disabled = true;
+  let saving = false;
+  cancel.onclick = () => dialog.close();
+  dialog.oncancel = event => {
+    if (saving) event.preventDefault();
+  };
+
+  const submit = async event => {
+    event.preventDefault();
+    if (save.disabled) return;
+
+    const changes = {};
+    if (asset.value !== originalAsset) changes.asset_id = Number(asset.value);
+    if (title.value !== originalTitle) changes.title = title.value.trim();
+    if (!Object.keys(changes).length) {
+      dialog.close();
+      return;
+    }
+    if (changes.title === "") {
+      showError("Enter a Title.");
+      title.focus();
+      return;
+    }
+
+    saving = true;
+    const assetWasDisabled = asset.disabled;
+    asset.disabled = title.disabled = cancel.disabled = save.disabled = true;
+    showError("");
+
+    try {
+      const technicianId = Number(localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY));
+      const response = await fetch(
+        `${API}/maintenance-reports/${report.id}/foreman-fields?technician_id=${technicianId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(changes)
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Failed to update Production Report.");
+
+    } catch (err) {
+      showError(err.message || "Failed to update Production Report.");
+      return;
+    } finally {
+      saving = false;
+      asset.disabled = assetWasDisabled;
+      title.disabled = cancel.disabled = save.disabled = false;
+    }
+
+    dialog.close();
+    await loadProductionReports();
+  };
+
+  form.onsubmit = submit;
+  dialog.showModal();
+
+  const loadedAssets = document.createElement("select");
+  await loadReportingAssets(loadedAssets);
+  if (!dialog.open || form.onsubmit !== submit) return;
+  asset.replaceChildren(...loadedAssets.options);
+  asset.disabled = loadedAssets.disabled;
+  // Reports can still reference an asset that has since been deactivated.
+  if (!Array.from(asset.options).some(option => option.value === originalAsset)) {
+    const label = [report.asset_name || report.asset_model || "Current Asset", report.asset_serial]
+      .filter(Boolean).join(" | ");
+    asset.add(new Option(label, originalAsset));
+  }
+  asset.value = originalAsset;
+  if (asset.disabled) {
+    showError("Could not load other Assets. You can still edit the Title.");
+  }
+  save.disabled = false;
+}
+
 /* =========================================================
    RENDER PRODUCTION REPORTS
    Compact shared Shift Foreman table
@@ -2638,10 +2730,18 @@ function renderProductionReports(reports) {
         : "";
 
 
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "btn-cancel foreman-report-edit";
+    edit.textContent = "Edit";
+    edit.setAttribute("aria-label", "Edit " + code.textContent);
+    edit.addEventListener("click", () => openForemanReportEditor(report));
+
     reportCell.append(
       code,
       reportedMeta,
-      reporter
+      reporter,
+      edit
     );
 
 
