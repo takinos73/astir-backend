@@ -4994,6 +4994,8 @@ document.getElementById("nt-line") ?.addEventListener("change", e => {
 
 function askTechnician(id) {
 
+  configureBreakdownTaskCompletion(id);
+
   // Force SINGLE mode
   state.bulkDoneMode = false;
 
@@ -5169,7 +5171,15 @@ async function completeSingleTask({
   }
 
 
+  const restoreRequested = document.getElementById("bd-restore-after-task-check")?.checked &&
+    !document.getElementById("bd-restore-after-task")?.hidden;
+  const restoreBreakdownId = restoreRequested ? Number(currentBreakdownId) : null;
   state.pendingTaskId = null;
+
+  if (restoreBreakdownId) {
+    await openBreakdownDetail(restoreBreakdownId);
+    openCloseBreakdownModal();
+  }
 
   alert("✔ Μια εργασία εκτελέστηκε");
 

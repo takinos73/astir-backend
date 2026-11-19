@@ -3910,6 +3910,7 @@ async function openBreakdownDetail(breakdownId) {
     CURRENT BREAKDOWN
   ===================== */
 
+setupBreakdownWorkspace();
 currentBreakdownId = id;
   prepareIncidentAttachmentGallery("BREAKDOWN", id);
 
@@ -3991,6 +3992,18 @@ function populateBreakdownDetail(breakdown) {
   ===================== */
 
   currentBreakdown = breakdown;
+  if (document.getElementById("breakdownDetailModal")?.dataset.compact) {
+    let timing = document.getElementById("bd-compact-timing");
+    if (!timing) {
+      timing = document.createElement("div");
+      timing.id = "bd-compact-timing";
+      timing.className = "section-subtitle";
+      document.getElementById("bd-detail-title").after(timing);
+    }
+    timing.textContent = "Started: " + formatBreakdownDate(breakdown.started_at) + " · Incident elapsed: " + formatBreakdownDowntime(breakdown);
+  }
+  const fold = document.querySelector("#bd-closure-summary")?.parentElement;
+  if (fold?.classList.contains("bd-fold")) fold.hidden = breakdown.status !== "CLOSED";
 
   if (!breakdown) return;
 
@@ -4568,6 +4581,7 @@ function renderBreakdownMachineState(data) {
     ${renderMachineStateControls(data)}
 
 
+    <details class="bd-fold"><summary>State History &amp; Times</summary>
     <div class="machine-state-totals">
 
       ${renderMachineStateTotal(
@@ -4609,6 +4623,7 @@ function renderBreakdownMachineState(data) {
 
     </div>
 
+    </details>
   `;
 
 }
@@ -8902,7 +8917,7 @@ document
    OPEN MODAL 
 ===================== */
 
-function openRestorationTaskModal() {
+async function openRestorationTaskModal() {
 
   const breakdownId =
     Number(currentBreakdownId);
@@ -9091,7 +9106,7 @@ if (
   assetId > 0
 ) {
 
-  populateRestorationSections(
+  await populateRestorationSections(
     assetId
   );
 
@@ -9101,6 +9116,9 @@ if (
      SHOW
   ===================== */
 
+  addBreakdownTitlePrefill("restoration-task");
+  addBreakdownLocationPrefill("planned");
+  configureBreakdownTaskMode("planned");
   overlay.style.display = "flex";
 
 
@@ -9798,6 +9816,8 @@ function renderRestorationTasks(tasks) {
   container.innerHTML =
     summaryHtml +
     tasksHtml;
+
+  compactBreakdownTaskRows(container);
 
   const breakdownId = currentBreakdownId;
 
@@ -11664,6 +11684,9 @@ if (startedAtEl) {
 
   if (overlay) {
 
+    addBreakdownTitlePrefill("completedCorrectiveTask");
+    addBreakdownLocationPrefill("completed");
+    configureBreakdownTaskMode("completed");
     overlay.style.display =
       "flex";
 
@@ -11986,6 +12009,7 @@ async function saveCompletedCorrectiveTask() {
     }
 
 
+    const continueToRestore = document.getElementById("bd-restore-after-new-task-check")?.checked;
     closeCompletedCorrectiveModal();
 
 
@@ -11998,6 +12022,7 @@ async function saveCompletedCorrectiveTask() {
       await loadRestorationTasks(
         breakdownId
       );
+      if (continueToRestore && Number(currentBreakdownId) === breakdownId) openCloseBreakdownModal();
 
     } catch (refreshError) {
 
@@ -12630,6 +12655,7 @@ function openCloseBreakdownModal() {
      SHOW
   ===================== */
 
+  configureBreakdownRestoreForm();
   overlay.style.display = "flex";
 
 }
@@ -12823,41 +12849,10 @@ async function closeBreakdown() {
      CLOSE CONFIRMATION
   ===================== */
 
-  let confirmationMessage;
-
-
-  if (openTasks.length > 0) {
-
-    confirmationMessage =
-      `This Breakdown still has ${openTasks.length} open Restoration Task${
-        openTasks.length === 1
-          ? ""
-          : "s"
-      }.\n\n` +
-      "Closing the Breakdown will end the downtime, " +
-      "but the open Restoration Tasks will remain pending.\n\n" +
-      "Are you sure the asset has been restored and you want to close this Breakdown?";
-
-  } else {
-
-    confirmationMessage =
-      "There are no pending Restoration Tasks.\n\n" +
-      "Please confirm that the asset has been restored " +
-      "and this Breakdown can be closed.";
-
-  }
-
-
-  const confirmed =
-    window.confirm(
-      confirmationMessage
-    );
-
-
-  if (!confirmed) {
+  if (!document.getElementById("bd-confirm-restored")?.checked) {
+    alert("Confirm that the asset is restored before closing the Breakdown.");
     return;
   }
-
 
   /* =====================
      PAYLOAD
@@ -17197,4 +17192,243 @@ async function openAssetBreakdowns(serial) {
   // Open directly on Breakdowns tab
   activateAssetTab("breakdowns");
 
+}
+
+/* Compact Breakdown workflow */
+// Existing lifecycle handlers remain the entry points for every operation.
+function setupBreakdownWorkspace() {
+  const modal = document.getElementById("breakdownDetailModal");
+  if (!modal || modal.dataset.compact) return;
+  modal.dataset.compact = "true";
+  const header = modal.querySelector(".modal-header");
+  const fault = document.getElementById("bd-detail-title");
+  if (fault.previousElementSibling?.classList.contains("breakdown-detail-label")) fault.previousElementSibling.remove();
+  header.after(fault);
+  const actions = modal.querySelector(".breakdown-detail-actions");
+  fault.after(actions);
+  const more = document.createElement("details");
+  more.className = "bd-more";
+  more.innerHTML = "<summary>More</summary>";
+  for (const id of ["printBreakdownBtn", "editBreakdownBtn", "verifyDowntimeBtn"]) {
+    more.appendChild(document.getElementById(id));
+  }
+  actions.appendChild(more);
+
+  const incident = document.createElement("details");
+  incident.className = "bd-fold";
+  incident.innerHTML = "<summary>Incident Details &amp; Times</summary>";
+  const description = document.getElementById("bd-detail-description").parentElement;
+  const times = modal.querySelector(".breakdown-detail-grid");
+  const downtime = modal.querySelector(".breakdown-downtime-summary");
+  incident.append(description, times, downtime);
+  const closure = document.getElementById("bd-closure-summary");
+  const closureFold = document.createElement("details");
+  closureFold.className = "bd-fold";
+  closureFold.innerHTML = "<summary>Closure Details</summary>";
+  closure.before(closureFold);
+  closureFold.appendChild(closure);
+  const media = document.getElementById("bdIncidentMedia");
+  const machine = document.getElementById("breakdownMachineStateContainer");
+  const tasks = modal.querySelector(".breakdown-restoration-section");
+  modal.append(machine, tasks, media, incident, closureFold);
+}
+
+function insertBreakdownText(targetId, text) {
+  const field = document.getElementById(targetId);
+  if (!text || !field) return;
+  if (field.value.trim() && !window.confirm("Replace the existing text?")) return;
+  field.value = text;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function addBreakdownTitlePrefill(inputId) {
+  const field = document.getElementById(inputId);
+  if (!field || document.getElementById(inputId + "-prefill")) return;
+  const button = document.createElement("button");
+  button.id = inputId + "-prefill";
+  button.type = "button";
+  button.className = "btn-secondary bd-prefill";
+  button.textContent = "Use BD title";
+  button.onclick = () => insertBreakdownText(inputId, currentBreakdown?.title || "");
+  field.after(button);
+}
+
+function configureBreakdownRestoreForm() {
+  const field = document.getElementById("close-breakdown-corrective-action");
+  if (!document.getElementById("bd-use-completed-work")) {
+    const button = document.createElement("button");
+    button.id = "bd-use-completed-work";
+    button.type = "button";
+    button.className = "btn-secondary bd-prefill";
+    button.textContent = "Use completed corrective tasks";
+    button.onclick = () => {
+      const text = (currentBreakdownTasks || [])
+        .filter(task => String(task.status).toUpperCase() === "DONE")
+        .map(task => task.task).filter(Boolean).join("\n");
+      if (!text) return alert("There are no completed corrective tasks.");
+      insertBreakdownText(field.id, text);
+    };
+    field.after(button);
+    const label = document.createElement("label");
+    label.className = "bd-restore-confirm";
+    label.innerHTML = '<input type="checkbox" id="bd-confirm-restored"> I confirm the asset is restored. Any open corrective tasks will remain pending.';
+    document.getElementById("confirmCloseBreakdownBtn").parentElement.before(label);
+  }
+  document.getElementById("bd-confirm-restored").checked = false;
+}
+
+function configureBreakdownTaskCompletion(taskId) {
+  const overlay = document.getElementById("modalOverlay");
+  let label = document.getElementById("bd-restore-after-task");
+  if (!label) {
+    label = document.createElement("label");
+    label.id = "bd-restore-after-task";
+    label.className = "bd-restore-confirm";
+    label.innerHTML = '<input type="checkbox" id="bd-restore-after-task-check"> Continue to Restore Breakdown after completing this task';
+    document.getElementById("confirmDone").parentElement.before(label);
+  }
+  const task = (currentBreakdownTasks || []).find(task => Number(task.id) === Number(taskId));
+  label.hidden = !task || !["OPEN", "IN_PROGRESS"].includes(currentBreakdown?.status) ||
+    document.getElementById("breakdownDetailOverlay")?.style.display !== "flex";
+  document.getElementById("bd-restore-after-task-check").checked = false;
+}
+
+function compactBreakdownTaskRows(container) {
+  container.querySelectorAll(".restoration-task-item").forEach(row => {
+    const task = (currentBreakdownTasks || []).find(task => Number(task.id) === Number(row.dataset.taskId));
+    if (task?.completed_by) {
+      const brief = document.createElement("div");
+      brief.className = "task-meta";
+      brief.textContent = task.completed_by + " · " + (task.actual_duration_min ?? "—") + " min";
+      row.querySelector(".restoration-task-main").appendChild(brief);
+    }
+    const fold = document.createElement("details");
+    fold.className = "bd-task-details";
+    fold.innerHTML = "<summary>Task details</summary>";
+    for (const node of row.querySelectorAll(".restoration-task-meta, .restoration-task-notes")) fold.appendChild(node);
+    row.appendChild(fold);
+  });
+}
+
+
+let breakdownTaskDrafts = new Map();
+let switchingBreakdownTaskMode = false;
+
+function configureBreakdownTaskMode(mode) {
+  if (!switchingBreakdownTaskMode) breakdownTaskDrafts.clear();
+  const overlayId = mode === "planned" ? "restorationTaskOverlay" : "completedCorrectiveOverlay";
+  const overlay = document.getElementById(overlayId);
+  let picker = overlay.querySelector(".bd-task-mode");
+  if (!picker) {
+    const label = document.createElement("label");
+    label.className = "bd-task-mode-label";
+    label.textContent = "Task Status";
+    picker = document.createElement("select");
+    picker.className = "bd-task-mode";
+    picker.innerHTML = '<option value="planned">Planned</option><option value="completed">Already Completed</option>';
+    label.appendChild(picker);
+    overlay.querySelector(".modal-header").after(label);
+    picker.addEventListener("change", async () => {
+      const target = picker.value;
+      const controls = [...overlay.querySelectorAll("input, select, textarea")].filter(field => field.id);
+      breakdownTaskDrafts.set(mode, controls.map(field => ({
+        id: field.id, value: field.value, checked: field.checked,
+        options: field.tagName === "SELECT" ? field.innerHTML : null,
+        display: field.style.display
+      })));
+      picker.disabled = true;
+      switchingBreakdownTaskMode = true;
+      try {
+        if (target === "completed") await openCompletedCorrectiveModal();
+        else await openRestorationTaskModal();
+        const targetOverlay = document.getElementById(target === "planned" ? "restorationTaskOverlay" : "completedCorrectiveOverlay");
+        if (targetOverlay?.style.display !== "flex") throw new Error("Could not open the selected task form.");
+        if (!breakdownTaskDrafts.has(target)) {
+          const pairs = mode === "planned"
+            ? [["restoration-task", "completedCorrectiveTask"], ["restoration-notes", "completedCorrectiveNotes"]]
+            : [["completedCorrectiveTask", "restoration-task"], ["completedCorrectiveNotes", "restoration-notes"]];
+          for (const [fromId, toId] of pairs) {
+            const from = document.getElementById(fromId);
+            const to = document.getElementById(toId);
+            if (from && to && !to.value) to.value = from.value;
+          }
+        }
+        for (const draft of breakdownTaskDrafts.get(target) || []) {
+          const field = document.getElementById(draft.id);
+          if (!field) continue;
+          if (draft.options !== null) field.innerHTML = draft.options;
+          field.value = draft.value;
+          field.checked = draft.checked;
+          field.style.display = draft.display;
+        }
+        overlay.style.display = "none";
+      } catch (error) {
+  picker.value = mode;
+        alert(error.message || "Could not switch task form.");
+      } finally {
+        switchingBreakdownTaskMode = false;
+        picker.disabled = false;
+      }
+    });
+  }
+  if (mode === "completed") {
+    let label = document.getElementById("bd-restore-after-new-task");
+    if (!label) {
+      label = document.createElement("label");
+      label.id = "bd-restore-after-new-task";
+      label.className = "bd-restore-confirm";
+      label.innerHTML = '<input type="checkbox" id="bd-restore-after-new-task-check"> Continue to Restore Breakdown after saving this task';
+      document.getElementById("saveCompletedCorrectiveBtn").parentElement.before(label);
+    }
+    document.getElementById("bd-restore-after-new-task-check").checked = false;
+  }
+
+  picker.value = mode;
+  picker.querySelector('option[value="completed"]').disabled = currentBreakdown?.status !== "IN_PROGRESS";
+  picker.parentElement.hidden = mode === "planned" && editingRestorationTaskId !== null;
+}
+
+
+function addBreakdownLocationPrefill(mode) {
+  const completed = mode === "completed";
+  const sectionId = completed ? "completedCorrectiveSection" : "restoration-section";
+  const section = document.getElementById(sectionId);
+  if (!section || document.getElementById(sectionId + "-reuse")) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = sectionId + "-reuse";
+  button.className = "btn-secondary bd-prefill";
+  button.textContent = "Use location from latest task";
+  button.onclick = () => {
+    const task = [...(currentBreakdownTasks || [])]
+      .sort((a, b) => Number(b.id) - Number(a.id))
+      .find(task => task.section && task.unit);
+    if (!task) return alert("No previous task location is available for this Breakdown.");
+    if (!confirm("Use Section / Unit from Task #" + task.id + "?")) return;
+    const sectionInput = document.getElementById("restoration-section-input");
+    if (!completed && section.style.display === "none" && sectionInput) {
+      sectionInput.value = task.section;
+    } else {
+      if (![...section.options].some(option => option.value === task.section)) {
+        return alert("The previous Section is not in the current Asset catalogue. Select a location manually.");
+      }
+      section.value = task.section;
+      section.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    const unit = document.getElementById(completed ? "completedCorrectiveUnit" : "restoration-unit");
+    const input = document.getElementById(completed ? "completedCorrectiveUnitInput" : "restoration-unit-input");
+    if ([...unit.options].some(option => option.value === task.unit)) {
+      unit.value = task.unit;
+      unit.dispatchEvent(new Event("change", { bubbles: true }));
+    } else if (input && unit.style.display === "none") {
+      input.value = task.unit;
+    } else if (input && [...unit.options].some(option => option.value === "__new__")) {
+      unit.value = "__new__";
+      unit.dispatchEvent(new Event("change", { bubbles: true }));
+      input.value = task.unit;
+    } else {
+      alert("Section selected. Select Unit from the current catalogue.");
+    }
+  };
+  section.parentElement.appendChild(button);
 }

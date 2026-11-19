@@ -2485,3 +2485,28 @@ input[type="date"] {
 }
 
 
+
+/* Compact BD workspace */
+.bd-task-mode-label { display: block; margin: 12px 0; }
+.bd-task-mode { display: block; width: 100%; margin-top: 6px; }
+#breakdownDetailModal #addCompletedCorrectiveTaskBtn { display: none !important; }
+#breakdownDetailModal .breakdown-detail-actions {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #151c26;
+  justify-content: flex-start;
+  padding: 10px 0;
+  margin: 8px 0 16px;
+}
+#breakdownDetailModal > .breakdown-detail-fault { margin-top: 12px; }
+#breakdownDetailModal .bd-more { margin-left: auto; }
+#breakdownDetailModal .bd-more[open] { display: flex; }
+#breakdownDetailModal summary { cursor: pointer; padding: 8px 0; color: #adc7e9; }
+#breakdownDetailModal .bd-fold { border-top: 1px solid #344154; padding: 8px 0; }
+#breakdownDetailModal .restoration-task-main { flex-wrap: wrap; }
+#breakdownDetailModal .restoration-task-item { padding: 10px; }
+#breakdownDetailModal .restoration-task-actions { flex-wrap: wrap; }
+.bd-prefill { margin-top: 6px; }
+.bd-restore-confirm { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0; }
+.bd-restore-confirm input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 3px; }
