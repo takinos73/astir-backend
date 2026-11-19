@@ -1171,6 +1171,8 @@ function renderBreakdownsTable(breakdowns) {
 
           <td>
             ${escapeBreakdownHtml(title)}
+            ${Number(b.work_count) === 0 && b.work_count !== null && b.work_count !== undefined
+              ? '<span class="bd-no-work">No Work recorded</span>' : ""}
           </td>
 
           <td>
@@ -1599,7 +1601,7 @@ function resetNewBreakdownForm() {
     );
 
   if (addTaskCheckbox) {
-    addTaskCheckbox.checked = true;
+    addTaskCheckbox.checked = false;
   }
 
 
@@ -1609,7 +1611,7 @@ function resetNewBreakdownForm() {
     );
 
   if (taskSection) {
-    taskSection.style.display = "block";
+    taskSection.style.display = "none";
   }
 
   const restoredInput =
@@ -3309,10 +3311,10 @@ function updateBreakdownStatusUI(breakdown) {
 
   if (addTaskBtn) {
 
-    addTaskBtn.style.display =
-      status === "CLOSED"
-        ? "none"
-        : "";
+    addTaskBtn.style.display = "";
+    addTaskBtn.textContent = status === "CLOSED"
+      ? "+ Add Corrective / Follow-up Work"
+      : "+ Add Corrective Task";
 
   }
 
@@ -3332,7 +3334,7 @@ function updateBreakdownStatusUI(breakdown) {
   if (addCompletedCorrectiveBtn) {
 
     const canAddCompletedCorrective =
-      status === "IN_PROGRESS";
+      ["IN_PROGRESS", "CLOSED"].includes(status);
 
 
     addCompletedCorrectiveBtn.style.display =
@@ -3992,6 +3994,8 @@ function populateBreakdownDetail(breakdown) {
   ===================== */
 
   currentBreakdown = breakdown;
+  const workMarker = document.getElementById("bd-work-status");
+  if (workMarker) workMarker.hidden = true;
   if (document.getElementById("breakdownDetailModal")?.dataset.compact) {
     let timing = document.getElementById("bd-compact-timing");
     if (!timing) {
@@ -7871,7 +7875,6 @@ async function createBreakdown() {
   ===================================================== */
 
   const shouldCreateInitialTask =
-    isHistorical ||
     addTaskCheckbox?.checked === true;
 
 
@@ -9359,6 +9362,11 @@ async function loadRestorationTasks(breakdownId) {
 
     currentBreakdownTasks =
       sortedTasks;
+    const listedBreakdown = breakdownsData.find(item => Number(item.id) === Number(breakdownId));
+    if (listedBreakdown) {
+      listedBreakdown.work_count = sortedTasks.length;
+      applyBreakdownFilters();
+    }
 
 
     renderRestorationTasks(
@@ -9396,6 +9404,16 @@ function renderRestorationTasks(tasks) {
 
   if (!container) return;
 
+  let workStatus = document.getElementById("bd-work-status");
+  if (!workStatus) {
+    workStatus = document.createElement("div");
+    workStatus.id = "bd-work-status";
+    workStatus.setAttribute("role", "status");
+    container.before(workStatus);
+  }
+  workStatus.className = "bd-no-work";
+  workStatus.hidden = !Array.isArray(tasks) || tasks.length > 0;
+  workStatus.textContent = "No Work recorded — use Add Corrective / Follow-up Work to add a task.";
 
   if (
     !Array.isArray(tasks) ||
@@ -11478,11 +11496,11 @@ async function openCompletedCorrectiveModal() {
 
 
   if (
-    status !== "IN_PROGRESS"
+    !["IN_PROGRESS", "CLOSED"].includes(status)
   ) {
 
     alert(
-      "Completed Corrective Tasks can only be added while the Breakdown is IN_PROGRESS."
+      "Completed Corrective Tasks require an IN_PROGRESS or CLOSED Breakdown."
     );
 
     return;
@@ -11731,16 +11749,13 @@ async function saveCompletedCorrectiveTask() {
 
 
   if (
-    String(
-      currentBreakdown?.status || ""
+    !["IN_PROGRESS", "CLOSED"].includes(
+      String(currentBreakdown?.status || "").trim().toUpperCase()
     )
-      .trim()
-      .toUpperCase() !==
-    "IN_PROGRESS"
   ) {
 
     alert(
-      "The Breakdown is no longer IN_PROGRESS."
+      "Completed Corrective Tasks require an IN_PROGRESS or CLOSED Breakdown."
     );
 
     return;
@@ -11933,7 +11948,7 @@ async function saveCompletedCorrectiveTask() {
       ).padStart(5, "0")}\n` +
       `Task: ${task}\n` +
       `Actual Duration: ${actualDuration} min\n\n` +
-      `The Breakdown will remain IN_PROGRESS.`
+      `The Breakdown will remain ${currentBreakdown.status}.`
     );
 
 
@@ -12022,7 +12037,8 @@ async function saveCompletedCorrectiveTask() {
       await loadRestorationTasks(
         breakdownId
       );
-      if (continueToRestore && Number(currentBreakdownId) === breakdownId) openCloseBreakdownModal();
+      if (continueToRestore && Number(currentBreakdownId) === breakdownId &&
+          ["OPEN", "IN_PROGRESS"].includes(currentBreakdown?.status)) openCloseBreakdownModal();
 
     } catch (refreshError) {
 
@@ -12335,17 +12351,6 @@ document
          a visible Restoration Task.
       ===================== */
 
-      if (
-        historicalCheckbox?.checked === true
-      ) {
-
-        taskSection.style.display =
-          "block";
-
-        return;
-      }
-
-
       /* =====================
          LIVE MODE
 
@@ -12374,7 +12379,7 @@ document
    - Restored At becomes required
    - Breakdown is created CLOSED
    - Historical DOWN interval is created
-   - Restoration Task is always required
+   - Restoration Task is optional
 ========================================================= */
 
 function toggleHistoricalBreakdownMode() {
@@ -12444,10 +12449,7 @@ function toggleHistoricalBreakdownMode() {
 
   if (liveTaskOption) {
 
-    liveTaskOption.style.display =
-      isHistorical
-        ? "none"
-        : "block";
+    liveTaskOption.style.display = "block";
 
   }
 
@@ -12465,27 +12467,8 @@ function toggleHistoricalBreakdownMode() {
   ===================== */
 
   if (taskSection) {
-
-    if (isHistorical) {
-
-      taskSection.style.display =
-        "block";
-
-    } else {
-
-      taskSection.style.display =
-        addTaskCheckbox?.checked === true
-          ? "block"
-          : "none";
-
-    }
-
+    taskSection.style.display = addTaskCheckbox?.checked === true ? "block" : "none";
   }
-
-
-  /* =====================
-     SAVE BUTTON TEXT
-  ===================== */
 
   if (saveBtn) {
 
@@ -17380,11 +17363,12 @@ function configureBreakdownTaskMode(mode) {
       label.innerHTML = '<input type="checkbox" id="bd-restore-after-new-task-check"> Continue to Restore Breakdown after saving this task';
       document.getElementById("saveCompletedCorrectiveBtn").parentElement.before(label);
     }
+    label.hidden = currentBreakdown?.status === "CLOSED";
     document.getElementById("bd-restore-after-new-task-check").checked = false;
   }
 
   picker.value = mode;
-  picker.querySelector('option[value="completed"]').disabled = currentBreakdown?.status !== "IN_PROGRESS";
+  picker.querySelector('option[value="completed"]').disabled = !["IN_PROGRESS", "CLOSED"].includes(currentBreakdown?.status);
   picker.parentElement.hidden = mode === "planned" && editingRestorationTaskId !== null;
 }
 

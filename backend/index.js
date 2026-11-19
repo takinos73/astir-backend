@@ -4427,18 +4427,10 @@ app.post( "/breakdowns/historical", async (req, res) => {
     must always be provided.
   ===================================================== */
 
-  if (
-    !restoration_task ||
-    typeof restoration_task !== "object"
-  ) {
-
-    return res.status(400).json({
-      error:
-        "Historical Breakdown requires a Restoration Task"
-    });
-
+  if (restoration_task !== undefined && restoration_task !== null &&
+      (typeof restoration_task !== "object" || Array.isArray(restoration_task))) {
+    return res.status(400).json({ error: "Invalid Restoration Task" });
   }
-
 
       /* =====================
          VALIDATE DATES
@@ -5255,6 +5247,8 @@ app.get("/breakdowns", async (req, res) => {
         b.corrective_action,
         b.created_at,
         b.updated_at,
+        (SELECT COUNT(*)::int FROM maintenance_tasks work
+         WHERE work.breakdown_id = b.id AND work.deleted_at IS NULL) AS work_count,
 
         /* ===============================================
            VERIFIED / CORRECTED DOWNTIME
@@ -8453,19 +8447,16 @@ app.post("/breakdowns/:id/completed-task", async (req, res) => {
       ===================== */
 
       if (
-        String(
-          breakdown.status || ""
+        !["IN_PROGRESS", "CLOSED"].includes(
+          String(breakdown.status || "").trim().toUpperCase()
         )
-          .trim()
-          .toUpperCase() !==
-        "IN_PROGRESS"
       ) {
 
         await client.query("ROLLBACK");
 
         return res.status(409).json({
           error:
-            "Completed Corrective Task can only be added to an IN_PROGRESS Breakdown"
+            "Completed Corrective Task requires an IN_PROGRESS or CLOSED Breakdown"
         });
       }
 

@@ -2510,3 +2510,17 @@ input[type="date"] {
 .bd-prefill { margin-top: 6px; }
 .bd-restore-confirm { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0; }
 .bd-restore-confirm input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 3px; }
+
+/* A BD can be recorded before its corrective work is entered. */
+.bd-no-work {
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border: 1px solid #725b2d;
+  border-radius: 6px;
+  background: #302817;
+  color: #f1cd86;
+  font-size: 12px;
+}
+.bd-no-work[hidden] { display: none; }
