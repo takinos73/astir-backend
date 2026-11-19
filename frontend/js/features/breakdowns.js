@@ -8960,27 +8960,6 @@ async function openRestorationTaskModal() {
 
   if (!overlay) return;
 
-/* =====================
-    CLOSED BREAKDOWN GUARD
-
-    A closed Breakdown may contain
-    existing follow-up tasks,
-    but no NEW Correction Tasks
-    can be created.
-  ===================== */
-
-  if (
-    String(
-      currentBreakdown?.status || ""
-    ).toUpperCase() === "CLOSED"
-  ) {
-
-    alert(
-      "This Breakdown is closed. New Correction Tasks cannot be added."
-    );
-
-    return;
-  }
   /* =====================
      RESET FIELDS
   ===================== */
