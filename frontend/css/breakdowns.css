@@ -2508,8 +2508,33 @@ input[type="date"] {
 #breakdownDetailModal .restoration-task-item { padding: 10px; }
 #breakdownDetailModal .restoration-task-actions { flex-wrap: wrap; }
 .bd-prefill { margin-top: 6px; }
-.bd-restore-confirm { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0; }
-.bd-restore-confirm input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 3px; }
+.bd-restore-confirm {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: normal;
+}
+.bd-restore-confirm[hidden] { display: none; }
+
+#closeBreakdownModal .bd-restore-confirm > input[type="checkbox"],
+#completedCorrectiveOverlay .bd-restore-confirm > input[type="checkbox"],
+#modalOverlay .bd-restore-confirm > input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  align-self: start;
+  justify-self: start;
+}
 
 /* A BD can be recorded before its corrective work is entered. */
 .bd-no-work {
