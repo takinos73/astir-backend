@@ -2500,8 +2500,72 @@ input[type="date"] {
   margin: 8px 0 16px;
 }
 #breakdownDetailModal > .breakdown-detail-fault { margin-top: 12px; }
-#breakdownDetailModal .bd-more { margin-left: auto; }
-#breakdownDetailModal .bd-more[open] { display: flex; }
+#breakdownDetailModal .breakdown-detail-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#breakdownDetailModal .bd-more {
+  margin-left: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#breakdownDetailModal .bd-more > summary {
+  width: fit-content;
+  padding: 8px 12px;
+  border: 1px solid #3d536c;
+  border-radius: 8px;
+  background: #1b293a;
+  color: #b8d5fa;
+  font-size: 13px;
+  font-weight: 600;
+}
+#breakdownDetailModal .bd-more > summary:hover { background: #26394f; }
+#breakdownDetailModal .bd-more[open] {
+  display: block;
+  padding: 10px 4px 4px 10px;
+  border: 1px solid #35465a;
+  border-radius: 10px;
+  background: #18212d;
+}
+#breakdownDetailModal .bd-more[open] > summary { margin: 0 6px 4px 0; }
+#breakdownDetailModal .bd-more > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  max-width: calc(100% - 6px);
+  box-sizing: border-box;
+  margin: 6px 6px 6px 0;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: normal;
+  transition: background .15s ease, border-color .15s ease;
+}
+#breakdownDetailModal .bd-more > #printBreakdownBtn {
+  background: #1c3047; border-color: #3b6087; color: #bedcff;
+}
+#breakdownDetailModal .bd-more > #printBreakdownBtn:hover { background: #284362; }
+#breakdownDetailModal .bd-more > #editBreakdownBtn {
+  background: #392e1c; border-color: #806437; color: #f4d28b;
+}
+#breakdownDetailModal .bd-more > #editBreakdownBtn:hover { background: #504026; }
+#breakdownDetailModal .bd-more > #verifyDowntimeBtn {
+  background: #16382f; border-color: #36785f; color: #9de5c1;
+}
+#breakdownDetailModal .bd-more > #verifyDowntimeBtn:hover { background: #214d40; }
+#breakdownDetailModal .bd-more > :is(summary, button):focus-visible {
+  outline: 2px solid #a5ceff;
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  #breakdownDetailModal .bd-more { margin-left: 0; width: 100%; }
+}
 #breakdownDetailModal summary { cursor: pointer; padding: 8px 0; color: #adc7e9; }
 #breakdownDetailModal .bd-fold { border-top: 1px solid #344154; padding: 8px 0; }
 #breakdownDetailModal .restoration-task-main { flex-wrap: wrap; }
