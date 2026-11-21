@@ -4090,12 +4090,53 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
       usage.textContent = data.attachments.length + "/5 αρχεία · " +
         formatAttachmentSize(Number(data.usage?.totalBytes || 0)) + " / 8 MB";
       list.replaceChildren();
+      const photos = data.attachments.filter(file => file.mime_type?.startsWith("image/"));
       for (const file of data.attachments) {
+        const isPhoto = file.mime_type?.startsWith("image/");
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "btn-secondary preventive-visit-file";
-        button.textContent = file.file_name;
-        button.addEventListener("click", () => openTaskAttachment(file.id));
+        button.className = "preventive-visit-file preventive-visit-preview";
+        button.setAttribute("aria-label", "Άνοιγμα " + file.file_name);
+        button.title = file.file_name;
+
+        const preview = document.createElement("span");
+        preview.className = "pp-file-preview-area";
+        const fallback = document.createElement("span");
+        fallback.className = "pp-file-preview-label";
+        fallback.textContent = isPhoto ? "Φωτογραφία" : "PDF";
+        preview.appendChild(fallback);
+
+        if (isPhoto) {
+          const image = document.createElement("img");
+          image.alt = "";
+          image.hidden = true;
+
+          preview.appendChild(image);
+          image.addEventListener("load", () => {
+            if (!image.isConnected) return;
+            image.hidden = false;
+            fallback.hidden = true;
+          }, { once: true });
+          image.addEventListener("error", () => {
+            image.hidden = true;
+            fallback.hidden = false;
+          });
+          void incidentPhotoUrl(file.id).then(url => {
+            if (dialog.isConnected && list.contains(button)) image.src = url;
+          }).catch(failure => console.error("Could not load package thumbnail:", failure));
+        }
+
+        const name = document.createElement("span");
+        name.className = "pp-file-preview-name";
+        name.textContent = file.file_name;
+        const size = document.createElement("span");
+        size.className = "pp-file-preview-size";
+        size.textContent = formatAttachmentSize(Number(file.file_size || 0));
+        button.append(preview, name, size);
+        button.addEventListener("click", () => {
+          if (isPhoto) openIncidentPhotoViewer(photos, photos.indexOf(file));
+          else openTaskAttachment(file.id);
+        });
         list.appendChild(button);
       }
       save.disabled = false;

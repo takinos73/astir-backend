@@ -1141,3 +1141,71 @@ dialog.preventive-pack-detail {
   .preventive-pack-detail .preventive-visit-documents form { grid-template-columns: 1fr; }
   .preventive-pack-detail .preventive-visit-documents form > button { justify-self: start; }
 }
+
+/* Maintenance attachment previews, using the existing BD image viewer. */
+.preventive-pack-detail .preventive-visit-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.preventive-pack-detail .preventive-visit-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #3c506b;
+  border-radius: 9px;
+  background: #1b2737;
+  color: #d7e6f7;
+  text-align: left;
+}
+.preventive-pack-detail .preventive-visit-preview:hover {
+  border-color: #729ac7;
+  background: #22344a;
+}
+.preventive-pack-detail .pp-file-preview-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 110px;
+  background: #142031;
+  border-bottom: 1px solid #34465e;
+}
+.preventive-pack-detail .pp-file-preview-area img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.preventive-pack-detail .pp-file-preview-label {
+  padding: 9px 12px;
+  border: 1px solid #6c5357;
+  border-radius: 6px;
+  background: #382830;
+  color: #efb8b8;
+  font-size: 14px;
+  font-weight: 700;
+}
+.preventive-pack-detail .pp-file-preview-name {
+  padding: 9px 10px 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+.preventive-pack-detail .pp-file-preview-size {
+  padding: 0 10px 9px;
+  color: #a2b8d1;
+  font-size: 11px;
+}
+.preventive-pack-detail .preventive-visit-preview:focus-visible {
+  outline: 2px solid #9fc5ff;
+  outline-offset: 3px;
+}
