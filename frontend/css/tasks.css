@@ -1000,3 +1000,39 @@ tr.task-restoration {
 .preventive-visit-documents small { color: #aac0d9; }
 .preventive-visit-error { color: #ffb5b5; }
 #assetTasksTable tr[hidden] { display: none; }
+
+/* Match the compact incident references in both History tables. */
+#historyTable .preventive-visit-reference,
+#assetHistoryTable .preventive-visit-reference {
+  margin-top: 3px;
+}
+#historyTable .preventive-pack-badge,
+#assetHistoryTable .preventive-pack-badge {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  min-width: 0;
+  margin: 0 0 2px;
+  padding: 4px 8px;
+  border: 1px solid rgba(96, 165, 250, .28);
+  border-radius: 5px;
+  background: rgba(59, 130, 246, .07);
+  color: #9fc5ff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+#historyTable .preventive-pack-badge:hover,
+#assetHistoryTable .preventive-pack-badge:hover {
+  background: rgba(59, 130, 246, .16);
+  border-color: rgba(96, 165, 250, .5);
+}
+#historyTable .preventive-pack-badge:focus-visible,
+#assetHistoryTable .preventive-pack-badge:focus-visible {
+  background: rgba(59, 130, 246, .16);
+  outline: 2px solid #9fc5ff;
+  outline-offset: 2px;
+}

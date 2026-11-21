@@ -4103,10 +4103,15 @@ function appendPreventiveVisitHistoryLink(row, record) {
   const code = record.preventive_package_id
     ? "PP" + String(record.preventive_package_id).padStart(4, "0")
     : "Preventive Pack";
-  button.textContent = code + " · Visit documents";
+  button.textContent = code;
+  button.title = "Open package visit and documents";
+  button.setAttribute("aria-label", code + " · Open package visit and documents");
   button.addEventListener("click", event => {
     event.stopPropagation();
     openPreventivePackDetail(record.preventive_package_visit_id, code);
   });
-  (row.querySelector(".asset-history-type-cell") || row.cells[2]).appendChild(button);
+  const reference = document.createElement("div");
+  reference.className = "preventive-visit-reference";
+  reference.appendChild(button);
+  (row.querySelector(".asset-history-type-cell") || row.cells[2]).appendChild(reference);
 }
