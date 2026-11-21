@@ -400,13 +400,23 @@
   const table = section.querySelector(".preventive-package-plan-table");
   const rows = document.getElementById("preventivePackagePlanRows");
   let currentRequest = 0;
+  const definitions = document.createElement("section");
+  definitions.className = "pp-library-definitions";
+  section.appendChild(definitions);
+  document.addEventListener("preventive-package-updated", loadPackagePlan);
 
   function createAssignmentRow(assignment) {
     const row = document.createElement("tr");
 
     const title = document.createElement("strong");
     title.textContent = assignment.title;
-    row.insertCell().appendChild(title);
+    const packageCell = row.insertCell();
+    const badge = document.createElement("button");
+    badge.type = "button";
+    badge.className = "preventive-pack-badge";
+    badge.textContent = "PP" + String(assignment.package_id).padStart(4, "0");
+    badge.addEventListener("click", () => openPreventivePackageDefinition(assignment.package_id, modelSelect.value.trim()));
+    packageCell.append(badge, " ", title);
 
     const asset = row.insertCell();
     asset.textContent = assignment.serial_number
@@ -432,6 +442,7 @@
     const request = ++currentRequest;
     const model = modelSelect.value.trim();
     rows.replaceChildren();
+    definitions.replaceChildren();
     table.hidden = true;
     section.hidden = !model;
     status.textContent = model ? "Φόρτωση προγραμματισμένων πακέτων…" : "";
@@ -439,9 +450,13 @@
 
     try {
       const query = new URLSearchParams({ model });
-      const response = await fetch("/preventive-package-assignments?" + query, {
-        cache: "no-store"
-      });
+      const [response, packageResponse] = await Promise.all([
+        fetch("/preventive-package-assignments?" + query, { cache: "no-store" }),
+        fetch("/preventive-packages?" + query, { cache: "no-store" })
+      ]);
+      if (!packageResponse.ok) throw new Error("Could not load package definitions");
+      const { packages } = await packageResponse.json();
+      if (!Array.isArray(packages)) throw new Error("Invalid package definitions");
       if (!response.ok) throw new Error("HTTP " + response.status);
 
       const { assignments } = await response.json();
@@ -449,6 +464,25 @@
       if (request !== currentRequest) return;
 
       rows.replaceChildren(...assignments.map(createAssignmentRow));
+      const heading = document.createElement("h3");
+      heading.textContent = "Πρότυπα πακέτων";
+      definitions.appendChild(heading);
+      for (const pack of packages) {
+        const entry = document.createElement("div");
+        entry.className = "pp-library-definition-row";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "preventive-pack-badge";
+        button.textContent = "PP" + String(pack.id).padStart(4, "0");
+        button.addEventListener("click", () => openPreventivePackageDefinition(pack.id, model));
+        const title = document.createElement("strong");
+        title.textContent = pack.title;
+        const meta = document.createElement("span");
+        meta.textContent = "Κάθε " + pack.interval_months + " μήνες · " + pack.tasks.length + " εργασίες";
+        entry.append(button, title, meta);
+        definitions.appendChild(entry);
+      }
+      if (!packages.length) definitions.append("Δεν υπάρχουν πρότυπα πακέτων για αυτό το μοντέλο.");
       table.hidden = assignments.length === 0;
       status.textContent = assignments.length
         ? "" : "Δεν υπάρχουν προγραμματισμένα πακέτα για αυτό το μοντέλο.";
@@ -465,3 +499,171 @@
   loadPackagePlan();
 })();
 
+
+async function openPreventivePackageDefinition(packageId, model) {
+  const existing = document.querySelector("dialog.pp-definition-view");
+  if (existing?.open) { existing.focus(); return; }
+  existing?.remove();
+  const dialog = document.createElement("dialog");
+  dialog.className = "preventive-pack-detail pp-definition-view";
+  dialog.setAttribute("aria-label", "Πρότυπο πακέτου προληπτικής συντήρησης");
+  dialog.innerHTML = `
+    <header class="pp-detail-header"><span class="pp-detail-code"></span><h3>Πρότυπο πακέτου</h3></header>
+    <div class="pp-detail-body">
+      <p class="pp-definition-model"></p>
+      <p>Οι αλλαγές εφαρμόζονται στις επόμενες επισκέψεις που δημιουργούνται.</p>
+      <form class="pp-definition-form">
+        <fieldset disabled>
+          <label>Τίτλος<input name="title" required></label>
+          <label>Συχνότητα (μήνες)<input name="interval" type="number" min="1" step="1" required></label>
+          <div class="pp-definition-tasks"></div>
+          <button type="button" class="btn-secondary pp-definition-add">+ Εργασία</button>
+        </fieldset>
+        <label class="pp-definition-password" hidden>Admin password<input name="password" type="password" autocomplete="current-password"></label>
+        <div class="pp-definition-actions">
+          <button type="button" class="btn-secondary pp-definition-edit" hidden>Edit</button>
+          <button type="submit" class="btn-primary pp-definition-save" hidden>Αποθήκευση</button>
+          <button type="button" class="btn-secondary pp-definition-cancel" hidden>Ακύρωση αλλαγών</button>
+        </div>
+      </form>
+      <p class="pp-definition-status" role="status">Φόρτωση…</p>
+    </div>
+    <form method="dialog" class="pp-detail-footer"><button type="submit" class="btn-secondary">Κλείσιμο</button></form>`;
+  document.body.appendChild(dialog);
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+  dialog.showModal();
+  const form = dialog.querySelector(".pp-definition-form");
+  const fields = form.querySelector("fieldset");
+  const status = dialog.querySelector(".pp-definition-status");
+  const title = form.elements.title;
+  const interval = form.elements.interval;
+  const password = form.elements.password;
+  const edit = dialog.querySelector(".pp-definition-edit");
+  const save = dialog.querySelector(".pp-definition-save");
+  const cancel = dialog.querySelector(".pp-definition-cancel");
+  const taskList = dialog.querySelector(".pp-definition-tasks");
+  let saved, draft = [], editing = false, saving = false;
+
+  function setEditing(value) {
+    editing = value;
+    fields.disabled = !value;
+    edit.hidden = value || !hasRole("admin");
+    save.hidden = cancel.hidden = !value;
+    dialog.querySelector(".pp-definition-password").hidden = !value;
+    password.required = value;
+    password.value = "";
+  }
+  function renderTasks() {
+    taskList.replaceChildren();
+    draft.forEach((task, index) => {
+      const section = document.createElement("section");
+      section.className = "pp-definition-task";
+      const heading = document.createElement("strong");
+      heading.textContent = "Εργασία " + (index + 1);
+      section.appendChild(heading);
+      for (const [key, labelText] of [
+        ["task", "Εργασία"], ["section", "Section"], ["unit", "Unit"],
+        ["duration_min", "Εκτιμώμενα λεπτά"], ["impact", "Impact"], ["notes", "Σημειώσεις"]
+      ]) {
+        const label = document.createElement("label");
+        label.textContent = labelText;
+        const input = document.createElement(key === "notes" ? "textarea" : key === "impact" ? "select" : "input");
+        if (key === "impact") {
+          for (const value of ["normal", "safety", "quality", "safety_quality"]) {
+            input.add(new Option(value, value));
+          }
+        }
+        if (key === "duration_min") { input.type = "number"; input.min = "0"; input.step = "1"; }
+        if (key === "task") input.required = true;
+        input.value = task[key] ?? (key === "impact" ? "normal" : "");
+        input.addEventListener("input", () => {
+          task[key] = key === "duration_min" ? (input.value === "" ? null : Number(input.value)) : input.value;
+        });
+        label.appendChild(input);
+        section.appendChild(label);
+      }
+      const actions = document.createElement("div");
+      actions.className = "pp-definition-actions";
+      for (const [text, target] of [["↑", index - 1], ["↓", index + 1], ["Αφαίρεση", null]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-secondary";
+        button.textContent = text;
+        button.setAttribute("aria-label", text + " · " + (task.task || "Εργασία " + (index + 1)));
+        button.disabled = target !== null && (target < 0 || target >= draft.length);
+        button.onclick = () => {
+          if (!editing) return;
+          const [selected] = draft.splice(index, 1);
+          if (target !== null) draft.splice(target, 0, selected);
+          renderTasks();
+        };
+        actions.appendChild(button);
+      }
+      section.appendChild(actions);
+      taskList.appendChild(section);
+    });
+  }
+  function reset() {
+    dialog.querySelector("h3").textContent = saved.title;
+    title.value = saved.title;
+    interval.value = saved.interval_months;
+    draft = JSON.parse(JSON.stringify(saved.tasks));
+    renderTasks();
+  }
+  edit.onclick = () => { setEditing(true); title.focus(); };
+  cancel.onclick = () => { reset(); setEditing(false); status.textContent = ""; };
+  dialog.querySelector(".pp-definition-add").onclick = () => {
+    if (!editing) return;
+    draft.push({ task: "", section: "", unit: "", duration_min: 0, impact: "normal", notes: "" });
+    renderTasks();
+    taskList.lastElementChild.querySelector("input").focus();
+  };
+  const blockClose = event => {
+    if (saving || (editing && !confirm("Να κλείσει το πρόχειρο χωρίς αποθήκευση;"))) event.preventDefault();
+  };
+  dialog.addEventListener("cancel", blockClose);
+  dialog.querySelector('form[method="dialog"]').addEventListener("submit", blockClose);
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (saving || !editing) return;
+    if (!draft.length) { status.textContent = "Απαιτείται τουλάχιστον μία εργασία."; return; }
+    saving = true;
+    fields.disabled = save.disabled = cancel.disabled = password.disabled = true;
+    status.textContent = "Αποθήκευση…";
+    try {
+      const response = await fetch("/preventive-packages/" + encodeURIComponent(packageId), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-cmms-role": localStorage.getItem("cmmsRole") },
+        body: JSON.stringify({
+          title: title.value.trim(), interval_months: Number(interval.value),
+          tasks: draft, version: saved.version, admin_password: password.value
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Η αποθήκευση απέτυχε.");
+      saved = data.package;
+      reset(); setEditing(false);
+      status.textContent = "Το πρότυπο αποθηκεύτηκε.";
+      document.dispatchEvent(new CustomEvent("preventive-package-updated"));
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      saving = false;
+      fields.disabled = !editing;
+      save.disabled = cancel.disabled = password.disabled = false;
+      password.value = "";
+    }
+  });
+  try {
+    const response = await fetch("/preventive-packages?" + new URLSearchParams({ model }), { cache: "no-store" });
+    if (!response.ok) throw new Error("Δεν φορτώθηκε το πακέτο.");
+    const data = await response.json();
+    saved = data.packages?.find(item => String(item.id) === String(packageId));
+    if (!saved) throw new Error("Το πακέτο δεν βρέθηκε.");
+    if (!dialog.isConnected) return;
+    dialog.querySelector(".pp-detail-code").textContent = "PP" + String(saved.id).padStart(4, "0");
+    dialog.querySelector("h3").textContent = saved.title;
+    dialog.querySelector(".pp-definition-model").textContent = saved.asset_model;
+    reset(); setEditing(false); status.textContent = "";
+  } catch (error) { status.textContent = error.message; }
+}

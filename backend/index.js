@@ -16218,8 +16218,8 @@ app.get("/tasks", async (req, res) => {
         mt.scheduled_maintenance_id,
         ppv.id::text AS preventive_package_visit_id,
         pp.id::text AS preventive_package_id,
-        pp.title AS preventive_package_title,
-        pp.interval_months AS preventive_package_interval_months,
+        COALESCE(ppv.definition_snapshot->>'title', pp.title) AS preventive_package_title,
+        COALESCE((ppv.definition_snapshot->>'interval_months')::int, pp.interval_months) AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
         ppvt.task_order AS preventive_package_task_order,
         (SELECT count(*)::int
@@ -16818,7 +16818,7 @@ app.get("/preventive-packages", async (req, res) => {
     // Load saved package definitions for this model, including task order.
     const { rows } = await pool.query(
       `
-      SELECT id, asset_model, title, interval_months, tasks, updated_at
+      SELECT id, asset_model, title, interval_months, tasks, updated_at, xmin::text AS version
       FROM preventive_packages
       WHERE asset_model = $1
       ORDER BY title, id
@@ -16833,6 +16833,61 @@ app.get("/preventive-packages", async (req, res) => {
   }
 });
 /* END: Read preventive packages */
+
+app.patch("/preventive-packages/:id", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const body = req.body || {};
+  const { title, interval_months, tasks, admin_password, version } = body;
+  if (!/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n ||
+      typeof title !== "string" || !title.trim() ||
+      !Number.isInteger(interval_months) || interval_months < 1 || interval_months > 2147483647 ||
+      !Array.isArray(tasks) || !tasks.length || !/^\d+$/.test(String(version || "")) ||
+      typeof admin_password !== "string" || !admin_password ||
+      Object.keys(body).some(key => !["title", "interval_months", "tasks", "admin_password", "version"].includes(key))) {
+    return res.status(400).json({ error: "Invalid package definition." });
+  }
+  const normalized = [];
+  for (const item of tasks) {
+    if (!item || typeof item.task !== "string" || !item.task.trim()) {
+      return res.status(400).json({ error: "Every task requires a title." });
+    }
+    const task = { task: item.task.trim() };
+    for (const field of ["section", "unit", "notes"]) {
+      if (item[field] != null && typeof item[field] !== "string") {
+        return res.status(400).json({ error: "Invalid task field: " + field });
+      }
+      task[field] = item[field]?.trim() || null;
+    }
+    task.duration_min = item.duration_min == null || item.duration_min === "" ? 0 : item.duration_min;
+    task.impact = item.impact || "normal";
+    if (!Number.isInteger(task.duration_min) || task.duration_min < 0 || task.duration_min > 2147483647 ||
+        !["normal", "safety", "quality", "safety_quality"].includes(task.impact)) {
+      return res.status(400).json({ error: "Invalid task duration or impact." });
+    }
+    normalized.push(task);
+  }
+  try {
+    const { rows: [credentials] } = await pool.query(
+      "SELECT admin_password FROM roles_config ORDER BY id DESC LIMIT 1"
+    );
+    if (!credentials?.admin_password || credentials.admin_password !== admin_password) {
+      return res.status(401).json({ error: "Invalid Admin password." });
+    }
+    const { rows: [saved] } = await pool.query(
+      `UPDATE preventive_packages SET title = $2, interval_months = $3, tasks = $4::jsonb, updated_at = NOW()
+       WHERE id = $1 AND xmin::text = $5
+       RETURNING id::text, asset_model, title, interval_months, tasks, updated_at, xmin::text AS version`,
+      [id, title.trim(), interval_months, JSON.stringify(normalized), String(version)]
+    );
+    if (!saved) return res.status(409).json({ error: "Το πακέτο άλλαξε από άλλον χρήστη. Κλείστε και ανοίξτε ξανά για την τελευταία έκδοση. Το πρόχειρο διατηρήθηκε." });
+    return res.json({ package: saved });
+  } catch (error) {
+    console.error("Update preventive package failed:", error);
+    return res.status(500).json({ error: "Δεν αποθηκεύτηκε το πακέτο." });
+  }
+});
+
+
 
 /* BEGIN: Create preventive package */
 async function createPreventivePackage(req, res, withAssignment) {
@@ -17360,8 +17415,8 @@ app.get("/preventive-package-visits/ready-to-close", async (req, res) => {
       SELECT
         v.id::text AS preventive_package_visit_id,
         p.id::text AS preventive_package_id,
-        p.title AS preventive_package_title,
-        p.interval_months AS preventive_package_interval_months,
+        COALESCE(v.definition_snapshot->>'title', p.title) AS preventive_package_title,
+        COALESCE((v.definition_snapshot->>'interval_months')::int, p.interval_months) AS preventive_package_interval_months,
         v.cycle_due_date::text AS preventive_package_cycle_due_date,
         v.scheduled_end_at AS due_date,
         task_summary.task_count AS preventive_package_task_count,
@@ -17408,8 +17463,8 @@ app.get("/preventive-package-visits/:id", async (req, res) => {
       SELECT
         v.id::text AS id,
         p.id::text AS package_id,
-        p.title,
-        p.interval_months,
+        COALESCE(v.definition_snapshot->>'title', p.title) AS title,
+        COALESCE((v.definition_snapshot->>'interval_months')::int, p.interval_months) AS interval_months,
         asset.model AS asset_model,
         asset.serial_number,
         v.cycle_due_date::text,
@@ -19571,6 +19626,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
         a.asset_id,
         p.id::text AS package_id,
         p.tasks AS template_tasks,
+        p.tasks IS DISTINCT FROM (v.definition_snapshot->'tasks') AS template_changed,
         v.cycle_due_date::text,
         (v.cycle_due_date + make_interval(months => p.interval_months))::date::text AS next_cycle_date
       FROM preventive_package_visits v
@@ -19578,6 +19634,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
       JOIN preventive_packages p ON p.id = a.package_id
       WHERE v.id = $1 AND v.closed_at IS NULL
       FOR UPDATE OF a
+      FOR SHARE OF p
       `,
       [visitId]
     );
@@ -19606,7 +19663,24 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
 
     // Move the local start dates by the cycle offset and preserve elapsed work minutes.
     let previousEnd;
-    const scheduledTasks = tasks.map(task => {
+    let sourceTasks = tasks;
+    if (visit.template_changed) {
+      if (!Array.isArray(visit.template_tasks) || !visit.template_tasks.length) {
+        throw new Error("The updated package definition has no tasks.");
+      }
+      let nextStart = tasks[0].next_start_at;
+      sourceTasks = visit.template_tasks.map((task, index) => {
+        const duration = task.duration_min == null ? 0 : Number(task.duration_min);
+        if (!Number.isInteger(duration) || duration < 0) throw new Error("Invalid package task duration.");
+        const planned = {
+          ...task, duration_min: duration, task_order: index + 1,
+          next_start_at: new Date(nextStart), impact: task.impact || "normal"
+        };
+        nextStart = new Date(nextStart.getTime() + duration * 60000);
+        return planned;
+      });
+    }
+    const scheduledTasks = sourceTasks.map(task => {
       const start = task.next_start_at;
       const duration = task.duration_min;
       if (!(start instanceof Date) || !Number.isFinite(start.getTime()) ||
@@ -20353,8 +20427,8 @@ app.get("/executions", async (req, res) => {
         t.scheduled_maintenance_id,
         ppv.id::text AS preventive_package_visit_id,
         pp.id::text AS preventive_package_id,
-        pp.title AS preventive_package_title,
-        pp.interval_months AS preventive_package_interval_months,
+        COALESCE(ppv.definition_snapshot->>'title', pp.title) AS preventive_package_title,
+        COALESCE((ppv.definition_snapshot->>'interval_months')::int, pp.interval_months) AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
         ppvt.task_order AS preventive_package_task_order,
         (SELECT count(*)::int

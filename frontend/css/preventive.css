@@ -464,3 +464,21 @@
   white-space: nowrap;
 }
 /* END: Scheduled preventive packages */
+
+.pp-library-definitions { margin-top: 20px; padding-top: 16px; border-top: 1px solid #35465a; }
+.pp-library-definition-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 0; border-bottom: 1px solid #303e50; }
+.pp-library-definition-row span { color: #a9bfd9; font-size: 12px; }
+.pp-definition-view .pp-definition-form fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.pp-definition-view label { display: grid; gap: 6px; min-width: 0; color: #a9bfd9; font-size: 12px; }
+.pp-definition-view input, .pp-definition-view select, .pp-definition-view textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid #43566f; border-radius: 6px; background: #111a25; color: #e6edf7; font: inherit; }
+.pp-definition-view .pp-definition-tasks { grid-column: 1 / -1; }
+.pp-definition-view .pp-definition-task { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; padding: 14px; border: 1px solid #35465a; border-radius: 8px; background: #1a2431; }
+.pp-definition-view .pp-definition-task > strong, .pp-definition-view .pp-definition-actions { grid-column: 1 / -1; }
+.pp-definition-view .pp-definition-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pp-definition-view .pp-definition-actions button { margin: 0; }
+.pp-definition-view .pp-definition-password { margin-top: 16px; }
+.pp-definition-view .pp-definition-status { color: #c5dcfa; }
+.pp-definition-view :disabled { opacity: .8; }
+@media(max-width: 520px) {
+  .pp-definition-view .pp-definition-form fieldset, .pp-definition-view .pp-definition-task { grid-template-columns: 1fr; }
+}
