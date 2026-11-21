@@ -1061,3 +1061,83 @@ tr.task-restoration {
   white-space: nowrap;
 }
 .preventive-pack-detail .preventive-visit-undo:disabled { opacity: .5; }
+
+/* Preventive package detail presentation */
+dialog.preventive-pack-detail {
+  width: min(920px, calc(100vw - 24px));
+  padding: 0;
+  background: #151b24;
+  border-color: #344359;
+  border-radius: 14px;
+  font-size: 13px;
+}
+.preventive-pack-detail .pp-detail-header {
+  position: relative;
+  padding: 22px 24px;
+  background: linear-gradient(115deg, #203c5e, #172b43);
+  border-bottom: 1px solid #385475;
+}
+.preventive-pack-detail .pp-detail-topline { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-right: 40px; margin-bottom: 12px; }
+.preventive-pack-detail .pp-detail-code { padding: 4px 9px; border: 1px solid #527aa2; border-radius: 6px; background: #284c73; color: #c5e1ff; font-weight: 700; letter-spacing: .4px; }
+.preventive-pack-detail .pp-detail-lifecycle { color: #a1e5ce; font-size: 12px; }
+.preventive-pack-detail .pp-detail-lifecycle.is-closed { color: #bdcbe0; }
+.preventive-pack-detail .pp-detail-header h3 { margin: 0; color: #edf4ff; font-size: 19px; line-height: 1.45; overflow-wrap: anywhere; }
+.preventive-pack-detail .pp-detail-close { position: absolute; top: 16px; right: 16px; padding: 3px 10px; border: 1px solid #4b6380; border-radius: 7px; background: #20354d; color: #d3e6ff; font-size: 21px; cursor: pointer; }
+.preventive-pack-detail .pp-detail-body { padding: 22px 24px; }
+.preventive-pack-detail .pp-detail-fields { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); gap: 12px; }
+.preventive-pack-detail .pp-detail-field { min-width: 0; padding: 12px 14px; background: #1b2431; border: 1px solid #303e50; border-radius: 8px; }
+.preventive-pack-detail .pp-detail-field > span { display: block; margin-bottom: 7px; color: #91a7c0; text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
+.preventive-pack-detail .pp-detail-field strong { display: block; color: #e5edf8; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.preventive-pack-detail .pp-detail-field small { display: block; margin-top: 4px; }
+.preventive-pack-detail .pp-detail-progress { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; padding: 17px 0 22px; }
+.preventive-pack-detail .preventive-pack-detail-status { margin: 0; color: #b5d8ff; font-size: 13px; }
+.preventive-pack-detail .pp-detail-meter { appearance: none; flex: 1; min-width: 100px; width: 100%; height: 6px; border: 0; border-radius: 6px; overflow: hidden; background: #293447; accent-color: #6ba6e8; }
+.preventive-pack-detail .pp-detail-meter::-webkit-progress-bar { background: #293447; }
+.preventive-pack-detail .pp-detail-meter::-webkit-progress-value { background: #6ba6e8; border-radius: 6px; }
+.preventive-pack-detail .pp-detail-meter::-moz-progress-bar { background: #6ba6e8; }
+.preventive-pack-detail .pp-detail-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.preventive-pack-detail .pp-detail-section-heading h4 { margin: 0; color: #edf3fa; font-size: 14px; }
+.preventive-pack-detail .pp-detail-task-count { color: #97aec8; font-size: 12px; }
+.preventive-pack-detail .library-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #303e50; border-radius: 9px; overflow: hidden; }
+.preventive-pack-detail .library-table th { padding: 10px 14px; background: #243348; color: #a9c1dd; border: 0; text-align: left; font-size: 10px; letter-spacing: .5px; }
+.preventive-pack-detail .library-table td { padding: 13px 14px; background: #19212d; border: 0; border-top: 1px solid #2a3545; vertical-align: middle; font-size: 12px; }
+.preventive-pack-detail .library-table tr:nth-child(even) td { background: #171e28; }
+.preventive-pack-detail .library-table .pp-detail-task-link { display: inline; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: #e4edf7; text-align: left; white-space: normal; line-height: 1.5; font-size: 13px; font-weight: 550; }
+.preventive-pack-detail .library-table .pp-detail-task-link:hover { color: #b4d6ff; text-decoration: underline; }
+.preventive-pack-detail .library-table small { display: inline-block; margin-top: 5px; font-size: 11px; color: #91a7c0; }
+.preventive-pack-detail .pp-detail-schedule { color: #adc2dc; font-variant-numeric: tabular-nums; }
+.preventive-pack-detail .pp-detail-task-status { display: inline-block; padding: 4px 7px; border: 1px solid #3b526e; border-radius: 5px; background: #24354b; color: #a8c9ef; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.preventive-pack-detail .pp-detail-task-status.is-done { background: #193b30; border-color: #356a54; color: #9de0b9; }
+.preventive-pack-detail .pp-detail-task-status.is-overdue { background: #3d2b20; border-color: #86603a; color: #f0c890; }
+.preventive-pack-detail .preventive-visit-undo { background: #302b20; border-color: #655637; color: #ebd298; font-size: 11px; }
+.preventive-pack-detail .preventive-visit-documents { margin: 24px 0 0; padding-top: 20px; border-color: #324054; }
+.preventive-pack-detail .preventive-visit-documents h4 { margin: 0 0 8px; color: #edf3fa; font-size: 14px; }
+.preventive-pack-detail .preventive-visit-documents > p[role=status] { color: #97aec8; font-size: 12px; }
+.preventive-pack-detail .preventive-visit-documents form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 16px; background: #1a2432; border: 1px dashed #4b6380; border-radius: 9px; }
+.preventive-pack-detail .preventive-visit-documents label { grid-column: 1 / -1; color: #cfdded; font-size: 13px; }
+.preventive-pack-detail .preventive-visit-documents input[type=file] { padding: 0; border: 0; background: transparent; color: #a8bdd7; font-size: 12px; }
+.preventive-pack-detail .preventive-visit-documents input::file-selector-button { margin-right: 10px; padding: 8px 12px; border: 1px solid #3b4f67; border-radius: 7px; background: #202d3e; color: #c8d9ed; cursor: pointer; }
+.preventive-pack-detail .preventive-visit-documents form > button { width: auto; margin: 0; padding: 8px 16px; border: 1px solid #4b7eb4; border-radius: 7px; background: #2a5686; color: #e8f3ff; font-size: 12px; font-weight: 600; }
+.preventive-pack-detail .preventive-visit-documents button:disabled { opacity: .5; }
+.preventive-pack-detail .preventive-visit-error:empty,
+.preventive-pack-detail .preventive-visit-files:empty { display: none; }
+.preventive-pack-detail .pp-detail-footer { display: flex; justify-content: flex-end; margin: 0; padding: 14px 24px; border-top: 1px solid #303e50; background: #19212c; }
+.preventive-pack-detail .pp-detail-footer button { margin: 0; padding: 8px 14px; border: 1px solid #3b4f67; border-radius: 7px; background: #202d3e; color: #c8d9ed; font-size: 12px; }
+.preventive-pack-detail [hidden] { display: none !important; }
+@media (max-width: 640px) {
+  .preventive-pack-detail .pp-detail-header,
+  .preventive-pack-detail .pp-detail-body { padding: 18px; }
+  .preventive-pack-detail .pp-detail-fields { grid-template-columns: 1fr 1fr; }
+  .preventive-pack-detail .pp-detail-field:first-child { grid-column: 1 / -1; }
+  .preventive-pack-detail .library-table,
+  .preventive-pack-detail .library-table tbody { display: block; }
+  .preventive-pack-detail .library-table thead { display: none; }
+  .preventive-pack-detail .library-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; border-top: 1px solid #2a3545; }
+  .preventive-pack-detail .library-table td { display: block; border: 0; padding: 10px; min-width: 0; }
+  .preventive-pack-detail .library-table td:first-child { grid-column: 1 / -1; }
+  .preventive-pack-detail .library-table td:nth-child(2) { grid-column: 1; font-size: 11px; }
+  .preventive-pack-detail .library-table td:nth-child(3) { grid-column: 2; }
+  .preventive-pack-detail .library-table td:nth-child(4):empty { display: none; }
+  .preventive-pack-detail .preventive-visit-documents form { grid-template-columns: 1fr; }
+  .preventive-pack-detail .preventive-visit-documents form > button { justify-self: start; }
+}

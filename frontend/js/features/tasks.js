@@ -2584,27 +2584,40 @@ async function openPreventivePackDetail(visitId, code) {
   dialog.className = "preventive-pack-detail";
   dialog.setAttribute("aria-labelledby", "preventivePackDetailTitle");
   dialog.innerHTML = `
-    <h3 id="preventivePackDetailTitle"></h3>
-    <p class="preventive-pack-detail-context"></p>
-    <p class="preventive-pack-detail-status" role="status">Φόρτωση επίσκεψης…</p>
-    <div class="preventive-pack-detail-table" hidden>
-      <table class="library-table">
-        <thead><tr>
-          <th scope="col">Εργασία</th>
-          <th scope="col">Έναρξη</th>
-          <th scope="col">Λήξη</th>
-          <th scope="col">Κατάσταση</th>
-          <th scope="col">Ενέργεια</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
+    <header class="pp-detail-header">
+      <div class="pp-detail-topline"><span class="pp-detail-code"></span><span class="pp-detail-lifecycle"></span></div>
+      <h3 id="preventivePackDetailTitle">Preventive Pack</h3>
+      <button type="button" class="pp-detail-close" aria-label="Κλείσιμο">×</button>
+    </header>
+    <div class="pp-detail-body">
+      <div class="pp-detail-fields" hidden>
+        <div class="pp-detail-field"><span>Asset</span><strong class="pp-detail-asset"></strong><small class="pp-detail-serial"></small></div>
+        <div class="pp-detail-field"><span>Ημερομηνία κύκλου</span><strong class="pp-detail-cycle"></strong></div>
+        <div class="pp-detail-field"><span>Συχνότητα</span><strong class="pp-detail-interval"></strong></div>
+      </div>
+      <div class="pp-detail-progress">
+        <p class="preventive-pack-detail-status" role="status">Φόρτωση επίσκεψης…</p>
+        <progress class="pp-detail-meter" max="1" value="0" aria-label="Ολοκλήρωση εργασιών" hidden></progress>
+      </div>
+      <div class="preventive-pack-detail-table" hidden>
+        <div class="pp-detail-section-heading"><h4>Εργασίες συντήρησης</h4><span class="pp-detail-task-count"></span></div>
+        <table class="library-table">
+          <thead><tr>
+            <th scope="col">Εργασία / Θέση</th><th scope="col">Πρόγραμμα</th>
+            <th scope="col">Κατάσταση</th><th scope="col">Ενέργεια</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
     </div>
-    <form method="dialog"><button type="submit" class="btn-secondary">Κλείσιμο</button></form>
+    <form method="dialog" class="pp-detail-footer"><button type="submit" class="btn-secondary">Κλείσιμο</button></form>
   `;
 
   const heading = dialog.querySelector("h3");
   const status = dialog.querySelector("[role=status]");
-  heading.textContent = code + " · Preventive Pack";
+  dialog.querySelector(".pp-detail-code").textContent = code;
+  dialog.querySelector(".pp-detail-close").addEventListener("click", () => {
+    if (dialog.dataset.uploading !== "true") dialog.close();
+  });
   dialog.addEventListener("close", () => dialog.remove(), { once: true });
   document.body.appendChild(dialog);
   dialog.addEventListener("cancel", event => {
@@ -2623,12 +2636,17 @@ async function openPreventivePackDetail(visitId, code) {
     const { visit } = await response.json();
     if (!dialog.isConnected || !dialog.open) return;
 
-    heading.textContent = code + " · " + visit.title;
-    const cycleDate = visit.cycle_due_date.split("-").reverse().join("/");
-    dialog.querySelector(".preventive-pack-detail-context").textContent =
-      [visit.asset_model, visit.serial_number && "SN " + visit.serial_number,
-        cycleDate, "Κάθε " + visit.interval_months + (visit.interval_months === 1 ? " μήνα" : " μήνες")]
-        .filter(Boolean).join(" · ");
+    heading.textContent = visit.title;
+    dialog.querySelector(".pp-detail-asset").textContent = visit.asset_model || "—";
+    dialog.querySelector(".pp-detail-serial").textContent = visit.serial_number ? "SN " + visit.serial_number : "";
+    dialog.querySelector(".pp-detail-cycle").textContent =
+      (visit.cycle_due_date || "").split("-").reverse().join("/") || "—";
+    dialog.querySelector(".pp-detail-interval").textContent =
+      "Κάθε " + visit.interval_months + (visit.interval_months === 1 ? " μήνα" : " μήνες");
+    dialog.querySelector(".pp-detail-fields").hidden = false;
+    const lifecycle = dialog.querySelector(".pp-detail-lifecycle");
+    lifecycle.textContent = visit.closed_at ? "Κλειστή επίσκεψη" : "Ενεργή επίσκεψη";
+    lifecycle.classList.toggle("is-closed", Boolean(visit.closed_at));
 
     const time = new Intl.DateTimeFormat("el-GR", {
       timeZone: "Europe/Athens", day: "2-digit", month: "2-digit",
@@ -2645,7 +2663,7 @@ async function openPreventivePackDetail(visitId, code) {
       const taskCell = row.insertCell();
       const taskLink = document.createElement("button");
       taskLink.type = "button";
-      taskLink.className = "btn-secondary";
+      taskLink.className = "btn-secondary pp-detail-task-link";
       taskLink.textContent = task.task;
       taskLink.addEventListener("click", () => {
         if (dialog.dataset.uploading === "true") return;
@@ -2659,9 +2677,16 @@ async function openPreventivePackDetail(visitId, code) {
         meta.textContent = location;
         taskCell.append(document.createElement("br"), meta);
       }
-      row.insertCell().textContent = format(task.planned_start_at);
-      row.insertCell().textContent = format(task.due_date);
-      row.insertCell().textContent = task.status || "—";
+      const schedule = row.insertCell();
+      schedule.className = "pp-detail-schedule";
+      schedule.textContent = format(task.planned_start_at) + " → " + format(task.due_date);
+      const statusCell = row.insertCell();
+      const pill = document.createElement("span");
+      pill.className = "pp-detail-task-status";
+      pill.classList.toggle("is-done", task.status === "Done");
+      pill.classList.toggle("is-overdue", task.status === "Overdue");
+      pill.textContent = task.status === "Done" ? "✓ Done" : task.status || "—";
+      statusCell.appendChild(pill);
       const actionCell = row.insertCell();
       if (!visit.closed_at && task.status === "Done" && task.execution_id &&
           task.prev_due_date && hasRole("admin", "planner")) {
@@ -2678,11 +2703,12 @@ async function openPreventivePackDetail(visitId, code) {
     const done = visit.tasks.filter(task => task.status === "Done").length;
     status.textContent = done + "/" + visit.tasks.length + " ολοκληρωμένες εργασίες";
     dialog.querySelector(".preventive-pack-detail-table").hidden = !visit.tasks.length;
-    const lifecycle = document.createElement("p");
-    lifecycle.textContent = visit.closed_at
-      ? "Κλειστή επέμβαση · " + format(visit.closed_at)
-      : done === visit.tasks.length && done > 0 ? "Όλες οι εργασίες ολοκληρώθηκαν · αναμένεται κλείσιμο επίσκεψης" : "Ενεργή επέμβαση";
-    status.after(lifecycle);
+    const meter = dialog.querySelector(".pp-detail-meter");
+    meter.max = Math.max(visit.tasks.length, 1);
+    meter.value = done;
+    meter.hidden = false;
+    dialog.querySelector(".pp-detail-task-count").textContent = visit.tasks.length + " εργασίες";
+    if (visit.closed_at) lifecycle.title = "Κλείσιμο: " + format(visit.closed_at);
     void addPreventiveVisitDocuments(dialog, String(visit.id));
   } catch (error) {
     console.error("Could not load Preventive Pack detail:", error);
@@ -4040,7 +4066,7 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
   retry.hidden = true;
   form.append(label, limits, save);
   section.append(heading, usage, list, form, retry, error);
-  dialog.querySelector('form[method="dialog"]').before(section);
+  dialog.querySelector(".pp-detail-body").appendChild(section);
   let uploading = false;
   let currentUsage = null;
   const endpoint = "/attachments/PREVENTIVE_VISIT/" + encodeURIComponent(visitId);
