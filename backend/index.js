@@ -17425,7 +17425,9 @@ app.get("/preventive-package-visits/:id", async (req, res) => {
               'unit', t.unit,
               'status', t.status,
               'planned_start_at', t.planned_start_at,
-              'due_date', t.due_date
+              'due_date', t.due_date,
+              'execution_id', (SELECT e.id FROM task_executions e WHERE e.task_id = t.id ORDER BY e.id DESC LIMIT 1),
+              'prev_due_date', (SELECT e.prev_due_date FROM task_executions e WHERE e.task_id = t.id ORDER BY e.id DESC LIMIT 1)
             )
             ORDER BY link.task_order
           )
@@ -20529,6 +20531,79 @@ app.get("/executions", async (req, res) => {
    - Breakdown itself is NOT modified
 ===================== */
 
+
+/* Undo one completed task in an active preventive visit. */
+app.post("/preventive-package-visits/:visitId/tasks/:taskId/undo", async (req, res) => {
+  const visitId = String(req.params.visitId);
+  const taskId = Number(req.params.taskId);
+  const executionId = Number(req.body?.execution_id);
+  const viewerId = Number(req.query.technician_id);
+  if (!/^[1-9]\d{0,18}$/.test(visitId) || BigInt(visitId) > 9223372036854775807n ||
+      !Number.isSafeInteger(taskId) || taskId <= 0 ||
+      !Number.isSafeInteger(executionId) || executionId <= 0 ||
+      !Number.isSafeInteger(viewerId) || viewerId <= 0) {
+    return res.status(400).json({ error: "Invalid visit, task, execution or user ID." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows: [viewer] } = await client.query(
+      "SELECT role, active, is_user FROM technicians WHERE id = $1", [viewerId]
+    );
+    const role = String(viewer?.role || "").trim().toLowerCase();
+    if (!viewer?.active || !viewer?.is_user || !["admin", "planner", "supervisor"].includes(role)) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Admin or Planner access required." });
+    }
+
+    // Completion and Undo take the visit lock before the task lock.
+    const { rows: [visit] } = await client.query(
+      "SELECT id, closed_at FROM preventive_package_visits WHERE id = $1 FOR UPDATE", [visitId]
+    );
+    if (!visit || visit.closed_at) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Undo is available only for an active package visit." });
+    }
+
+    const { rows: [task] } = await client.query(
+      `SELECT t.id, t.status, t.deleted_at
+       FROM maintenance_tasks t
+       JOIN preventive_package_visit_tasks link ON link.task_id = t.id
+       WHERE t.id = $1 AND link.visit_id = $2
+       FOR UPDATE OF t`, [taskId, visitId]
+    );
+    if (!task || task.deleted_at || task.status !== "Done") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "The task is no longer a completed task of this visit. Refresh the package." });
+    }
+
+    const { rows: executions } = await client.query(
+      "SELECT id, prev_due_date FROM task_executions WHERE task_id = $1 ORDER BY id DESC FOR UPDATE", [taskId]
+    );
+    if (executions.length !== 1 || Number(executions[0].id) !== executionId || !executions[0].prev_due_date) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Execution changed or its previous due date is unavailable. Refresh the package." });
+    }
+    const dueDate = executions[0].prev_due_date;
+    await client.query(
+      `UPDATE maintenance_tasks SET status = 'Planned', due_date = $2,
+       completed_at = NULL, completed_by = NULL, updated_at = NOW()
+       WHERE id = $1`, [taskId, dueDate]
+    );
+    await client.query("DELETE FROM task_executions WHERE id = $1 AND task_id = $2", [executionId, taskId]);
+    await client.query("COMMIT");
+    return res.json({ success: true, visit_id: visitId, task_id: taskId, due_date: dueDate });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Preventive visit task Undo failed:", error);
+    return res.status(500).json({ error: "Could not undo package task." });
+  } finally {
+    client.release();
+  }
+});
+
+
 app.post("/executions/:id/undo", async (req, res) => {
 
   const { id } = req.params;
@@ -20537,6 +20612,14 @@ app.post("/executions/:id/undo", async (req, res) => {
   try {
 
     await client.query("BEGIN");
+    const { rows: packageLinks } = await client.query(
+      "SELECT link.visit_id FROM preventive_package_visit_tasks link JOIN task_executions e ON e.task_id = link.task_id WHERE e.id = $1",
+      [id]
+    );
+    if (packageLinks.length) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Use Undo from the active PP Details for this task." });
+    }
 
 
     /* =====================
@@ -20735,6 +20818,10 @@ app.post("/executions/:id/undo", async (req, res) => {
 // Undo to planned
 app.patch("/tasks/:id/undo", async (req, res) => {
   try {
+    const { rows: packageLinks } = await pool.query(
+      "SELECT visit_id FROM preventive_package_visit_tasks WHERE task_id = $1", [req.params.id]
+    );
+    if (packageLinks.length) return res.status(409).json({ error: "Use Undo from the active PP Details for this task." });
     const result = await pool.query(
       `
       UPDATE maintenance_tasks

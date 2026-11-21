@@ -2594,6 +2594,7 @@ async function openPreventivePackDetail(visitId, code) {
           <th scope="col">Έναρξη</th>
           <th scope="col">Λήξη</th>
           <th scope="col">Κατάσταση</th>
+          <th scope="col">Ενέργεια</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -2606,6 +2607,12 @@ async function openPreventivePackDetail(visitId, code) {
   heading.textContent = code + " · Preventive Pack";
   dialog.addEventListener("close", () => dialog.remove(), { once: true });
   document.body.appendChild(dialog);
+  dialog.addEventListener("cancel", event => {
+    if (dialog.dataset.uploading === "true") event.preventDefault();
+  });
+  dialog.querySelector('form[method="dialog"]').addEventListener("submit", event => {
+    if (dialog.dataset.uploading === "true") event.preventDefault();
+  });
   dialog.showModal();
 
   try {
@@ -2641,6 +2648,7 @@ async function openPreventivePackDetail(visitId, code) {
       taskLink.className = "btn-secondary";
       taskLink.textContent = task.task;
       taskLink.addEventListener("click", () => {
+        if (dialog.dataset.uploading === "true") return;
         dialog.close();
         viewTask(task.id);
       });
@@ -2654,6 +2662,17 @@ async function openPreventivePackDetail(visitId, code) {
       row.insertCell().textContent = format(task.planned_start_at);
       row.insertCell().textContent = format(task.due_date);
       row.insertCell().textContent = task.status || "—";
+      const actionCell = row.insertCell();
+      if (!visit.closed_at && task.status === "Done" && task.execution_id &&
+          task.prev_due_date && hasRole("admin", "planner")) {
+        const undo = document.createElement("button");
+        undo.type = "button";
+        undo.className = "btn-secondary preventive-visit-undo";
+        undo.textContent = "↶ Undo";
+        undo.title = "Επαναφορά στην προηγούμενη προθεσμία";
+        undo.addEventListener("click", () => undoActivePreventiveVisitTask(dialog, String(visit.id), code, task));
+        actionCell.appendChild(undo);
+      }
     }
 
     const done = visit.tasks.filter(task => task.status === "Done").length;
@@ -4190,4 +4209,51 @@ function createPreventiveHistoryVisitRow(group, assetView) {
     row.insertCell().appendChild(action);
   }
   return row;
+}
+
+async function undoActivePreventiveVisitTask(dialog, visitId, code, task) {
+  if (dialog.dataset.uploading === "true") return;
+  const due = new Date(task.prev_due_date);
+  if (!Number.isFinite(due.getTime())) return;
+  if (!confirm("Undo: " + task.task + "\n\nΗ εργασία θα επιστρέψει σε Planned.\nΠροθεσμία: " +
+      due.toLocaleString("el-GR") + "\nΗ επιλεγμένη εκτέλεση θα αφαιρεθεί από το History.")) return;
+
+  const controls = [...dialog.querySelectorAll("button, input, select")].map(control => [control, control.disabled]);
+  dialog.dataset.uploading = "true";
+  for (const [control] of controls) control.disabled = true;
+  const status = dialog.querySelector(".preventive-pack-detail-status");
+  const originalStatus = status.textContent;
+  status.textContent = "Αναίρεση εκτέλεσης…";
+  let saved = false;
+  try {
+    const viewerId = localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY);
+    const response = await fetch("/preventive-package-visits/" + encodeURIComponent(visitId) +
+      "/tasks/" + task.id + "/undo?technician_id=" + encodeURIComponent(viewerId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ execution_id: task.execution_id })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Undo failed.");
+    saved = true;
+  } catch (error) {
+    status.textContent = originalStatus;
+    alert(error.message);
+  } finally {
+    dialog.dataset.uploading = "false";
+    for (const [control, disabled] of controls) control.disabled = disabled;
+  }
+  if (!saved) return;
+
+  await Promise.allSettled([loadTasks(), loadHistory(), loadCompletedKpi()]);
+  if (state.currentAssetSerial && typeof buildAssetViewData === "function") {
+    buildAssetViewData(state.currentAssetSerial);
+    const assetOverlay = document.getElementById("assetViewOverlay");
+    if (assetOverlay?.style.display !== "none") {
+      const historyVisible = document.querySelector(".asset-history-table")?.style.display !== "none";
+      if (historyVisible) renderAssetHistoryTable(state.assetHistoryTasks);
+      else renderAssetTasksTable(state.assetActiveTasks);
+    }
+  }
+  await openPreventivePackDetail(visitId, code);
 }

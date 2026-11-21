@@ -1050,3 +1050,14 @@ tr.task-restoration {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.preventive-pack-detail .preventive-visit-undo {
+  margin: 0;
+  padding: 5px 9px;
+  border: 1px solid #52749c;
+  border-radius: 6px;
+  background: #1c3047;
+  color: #bddcff;
+  white-space: nowrap;
+}
+.preventive-pack-detail .preventive-visit-undo:disabled { opacity: .5; }
