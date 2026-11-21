@@ -2577,6 +2577,9 @@ function buildRow(task) {
 // =====================
 
 async function openPreventivePackDetail(visitId, code) {
+  const previous = document.querySelector("dialog.preventive-pack-detail");
+  if (previous?.dataset.uploading === "true") { previous.focus(); return; }
+  if (previous) { previous.close(); previous.remove(); }
   const dialog = document.createElement("dialog");
   dialog.className = "preventive-pack-detail";
   dialog.setAttribute("aria-labelledby", "preventivePackDetailTitle");
@@ -2633,7 +2636,15 @@ async function openPreventivePackDetail(visitId, code) {
     for (const task of visit.tasks) {
       const row = rows.insertRow();
       const taskCell = row.insertCell();
-      taskCell.textContent = task.task;
+      const taskLink = document.createElement("button");
+      taskLink.type = "button";
+      taskLink.className = "btn-secondary";
+      taskLink.textContent = task.task;
+      taskLink.addEventListener("click", () => {
+        dialog.close();
+        viewTask(task.id);
+      });
+      taskCell.appendChild(taskLink);
       const location = [task.section, task.unit].filter(Boolean).join(" / ");
       if (location) {
         const meta = document.createElement("small");
@@ -2648,6 +2659,12 @@ async function openPreventivePackDetail(visitId, code) {
     const done = visit.tasks.filter(task => task.status === "Done").length;
     status.textContent = done + "/" + visit.tasks.length + " ολοκληρωμένες εργασίες";
     dialog.querySelector(".preventive-pack-detail-table").hidden = !visit.tasks.length;
+    const lifecycle = document.createElement("p");
+    lifecycle.textContent = visit.closed_at
+      ? "Κλειστή επέμβαση · " + format(visit.closed_at)
+      : done === visit.tasks.length && done > 0 ? "Όλες οι εργασίες ολοκληρώθηκαν · αναμένεται κλείσιμο επίσκεψης" : "Ενεργή επέμβαση";
+    status.after(lifecycle);
+    void addPreventiveVisitDocuments(dialog, String(visit.id));
   } catch (error) {
     console.error("Could not load Preventive Pack detail:", error);
     status.textContent = "Δεν ήταν δυνατή η φόρτωση της επίσκεψης.";
@@ -2684,6 +2701,13 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     taskCell.append(badge, " ");
   }
   taskCell.appendChild(ready ? document.createTextNode(toggle.textContent) : toggle);
+  if (first.preventive_package_task_count != null && first.preventive_package_done_count != null) {
+    const progress = document.createElement("small");
+    progress.className = "preventive-visit-progress";
+    progress.textContent = first.preventive_package_done_count + "/" +
+      first.preventive_package_task_count + " ολοκληρωμένες";
+    taskCell.appendChild(progress);
+  }
 
   const interval = first.preventive_package_interval_months;
   row.insertCell().textContent = interval
@@ -3901,4 +3925,188 @@ async function openTaskAttachment(
 
   }
 
+}
+
+const expandedAssetPreventiveVisits = new Set();
+
+function groupAssetPreventiveVisits(tbody, tasks) {
+  const groups = new Map();
+  for (const task of tasks) {
+    const id = task.preventive_package_visit_id;
+    if (!id) continue;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(task);
+  }
+  for (const [visitId, group] of groups) {
+    const children = [...tbody.children].filter(row => row.dataset.preventiveVisitId === String(visitId));
+    if (!children.length) continue;
+    const first = group[0];
+    const header = document.createElement("tr");
+    header.className = "task-preventive";
+    const cell = header.insertCell();
+    cell.colSpan = 7;
+    const actions = document.createElement("div");
+    actions.className = "preventive-visit-actions";
+    const code = "PP" + String(first.preventive_package_id || "").padStart(4, "0");
+    const view = document.createElement("button");
+    view.type = "button";
+    view.className = "preventive-pack-badge";
+    view.textContent = code + " · View";
+    view.addEventListener("click", () => openPreventivePackDetail(visitId, code));
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "btn-secondary";
+    const total = first.preventive_package_task_count;
+    const done = first.preventive_package_done_count;
+    toggle.textContent = (first.preventive_package_title || "Preventive Pack") +
+      (total != null && done != null ? " · " + done + "/" + total + " completed" : "");
+    const due = document.createElement("span");
+    due.textContent = "Due " + (first.preventive_package_cycle_due_date || "—");
+    actions.append(view, toggle, due);
+    cell.appendChild(actions);
+    tbody.insertBefore(header, children[0]);
+    // Preserve the task order after moving rows under their package.
+    children.sort((a, b) => Number(a.dataset.preventiveTaskOrder || 0) - Number(b.dataset.preventiveTaskOrder || 0));
+    let previous = header;
+    for (const child of children) {
+      previous.after(child);
+      previous = child;
+    }
+    const applyExpansion = () => {
+      const expanded = expandedAssetPreventiveVisits.has(String(visitId));
+      toggle.setAttribute("aria-expanded", String(expanded));
+      for (const child of children) child.hidden = !expanded;
+    };
+    toggle.addEventListener("click", () => {
+      const key = String(visitId);
+      if (expandedAssetPreventiveVisits.has(key)) expandedAssetPreventiveVisits.delete(key);
+      else expandedAssetPreventiveVisits.add(key);
+      applyExpansion();
+    });
+    applyExpansion();
+  }
+}
+
+async function addPreventiveVisitDocuments(dialog, visitId) {
+  const section = document.createElement("section");
+  section.className = "preventive-visit-documents";
+  const heading = document.createElement("h4");
+  heading.textContent = "Παραστατικά & συνημμένα επέμβασης";
+  const usage = document.createElement("p");
+  usage.setAttribute("role", "status");
+  usage.textContent = "Φόρτωση συνημμένων…";
+  const list = document.createElement("div");
+  list.className = "preventive-visit-files";
+  const form = document.createElement("form");
+  const label = document.createElement("label");
+  label.textContent = "Προσθήκη τιμολογίου, δελτίου αποστολής ή φωτογραφίας";
+  const input = document.createElement("input");
+  input.type = "file";
+  input.multiple = true;
+  input.accept = "application/pdf,image/jpeg,image/png,image/webp";
+  label.appendChild(input);
+  const limits = document.createElement("small");
+  limits.textContent = "Έως 5 αρχεία ανά επέμβαση, 8 MB συνολικά · PDF, JPG, PNG, WebP";
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.className = "btn-secondary";
+  save.textContent = "Upload";
+  const error = document.createElement("p");
+  error.className = "preventive-visit-error";
+  error.setAttribute("role", "alert");
+  const retry = document.createElement("button");
+  retry.type = "button";
+  retry.className = "btn-secondary";
+  retry.textContent = "Επαναφόρτωση συνημμένων";
+  retry.hidden = true;
+  form.append(label, limits, save);
+  section.append(heading, usage, list, form, retry, error);
+  dialog.querySelector('form[method="dialog"]').before(section);
+  let uploading = false;
+  let currentUsage = null;
+  const endpoint = "/attachments/PREVENTIVE_VISIT/" + encodeURIComponent(visitId);
+  const closeButton = dialog.querySelector('form[method="dialog"] button');
+  const stopClose = event => { if (uploading) event.preventDefault(); };
+  dialog.addEventListener("cancel", stopClose);
+  dialog.querySelector('form[method="dialog"]').addEventListener("submit", stopClose);
+
+  async function reload() {
+    save.disabled = true;
+    currentUsage = null;
+    retry.hidden = true;
+    error.textContent = "";
+    try {
+      const response = await fetch(endpoint, { cache: "no-store" });
+      if (!response.ok) throw new Error("Δεν φορτώθηκαν τα συνημμένα. Ελέγξτε τη σύνδεση και δοκιμάστε ξανά.");
+      const data = await response.json();
+      if (!Array.isArray(data.attachments)) throw new Error("Μη έγκυρη λίστα συνημμένων.");
+      if (!dialog.isConnected) return;
+      currentUsage = data.usage;
+      usage.textContent = data.attachments.length + "/5 αρχεία · " +
+        formatAttachmentSize(Number(data.usage?.totalBytes || 0)) + " / 8 MB";
+      list.replaceChildren();
+      for (const file of data.attachments) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-secondary preventive-visit-file";
+        button.textContent = file.file_name;
+        button.addEventListener("click", () => openTaskAttachment(file.id));
+        list.appendChild(button);
+      }
+      save.disabled = false;
+    } catch (failure) {
+      error.textContent = failure.message;
+      retry.hidden = false;
+    }
+  }
+  retry.addEventListener("click", reload);
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (uploading || !currentUsage || save.disabled) return;
+    const files = [...input.files];
+    if (!files.length) { error.textContent = "Επιλέξτε αρχεία."; return; }
+    if (files.some(file => !["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+      error.textContent = "Επιτρέπονται PDF, JPG, PNG και WebP."; return;
+    }
+    if (Number(currentUsage.fileCount || 0) + files.length > 5 ||
+        Number(currentUsage.totalBytes || 0) + files.reduce((sum, file) => sum + file.size, 0) > 8 * 1024 * 1024) {
+      error.textContent = "Το σύνολο ανά επέμβαση πρέπει να είναι έως 5 αρχεία και 8 MB."; return;
+    }
+    uploading = true;
+    dialog.dataset.uploading = "true";
+    input.disabled = save.disabled = closeButton.disabled = true;
+    save.textContent = "Uploading…";
+    error.textContent = "";
+    try {
+      await uploadCmmsAttachments(endpoint, files, localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY));
+      input.value = "";
+      await reload();
+    } catch (failure) {
+      error.textContent = failure.message || "Το ανέβασμα απέτυχε. Τα επιλεγμένα αρχεία διατηρήθηκαν.";
+    } finally {
+      uploading = false;
+      dialog.dataset.uploading = "false";
+      input.disabled = closeButton.disabled = false;
+      save.disabled = currentUsage === null;
+      save.textContent = "Upload";
+    }
+  });
+  await reload();
+}
+
+
+function appendPreventiveVisitHistoryLink(row, record) {
+  if (!record.preventive_package_visit_id) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "preventive-pack-badge";
+  const code = record.preventive_package_id
+    ? "PP" + String(record.preventive_package_id).padStart(4, "0")
+    : "Preventive Pack";
+  button.textContent = code + " · Visit documents";
+  button.addEventListener("click", event => {
+    event.stopPropagation();
+    openPreventivePackDetail(record.preventive_package_visit_id, code);
+  });
+  (row.querySelector(".asset-history-type-cell") || row.cells[2]).appendChild(button);
 }

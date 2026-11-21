@@ -667,6 +667,7 @@ function renderHistoryTable(data) {
       <td>${actionHtml}</td>
     `;
 
+    appendPreventiveVisitHistoryLink(tr, h);
     tbody.appendChild(tr);
   });
 

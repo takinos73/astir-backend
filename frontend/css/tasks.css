@@ -973,3 +973,30 @@ tr.task-restoration {
 .preventive-pack-detail small {
   color: #b6c3d4;
 }
+
+/* Preventive package visits and their intervention documents. */
+.preventive-visit-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px 0;
+}
+.preventive-visit-actions button { margin: 0; }
+.preventive-visit-actions span,
+.preventive-visit-progress { color: #aac0d9; font-size: 12px; }
+.preventive-visit-progress { display: block; margin-top: 5px; }
+.preventive-visit-documents {
+  margin: 18px 0;
+  padding-top: 14px;
+  border-top: 1px solid #37465a;
+}
+.preventive-visit-documents h4 { margin: 0 0 8px; }
+.preventive-visit-files { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.preventive-visit-file { max-width: 100%; overflow-wrap: anywhere; text-align: left; }
+.preventive-visit-documents form { display: grid; gap: 10px; }
+.preventive-visit-documents label { display: grid; gap: 8px; }
+.preventive-visit-documents input { width: 100%; min-width: 0; box-sizing: border-box; }
+.preventive-visit-documents small { color: #aac0d9; }
+.preventive-visit-error { color: #ffb5b5; }
+#assetTasksTable tr[hidden] { display: none; }

@@ -85,7 +85,7 @@ const ATTACHMENT_MAX_FILES = 3;
 const INCIDENT_ATTACHMENT_MAX_FILES = 5;
 
 function getAttachmentMaxFiles(entityType) {
-  return entityType === "BREAKDOWN" || entityType === "SCHEDULED_MAINTENANCE"
+  return entityType === "BREAKDOWN" || entityType === "SCHEDULED_MAINTENANCE" || entityType === "PREVENTIVE_VISIT"
     ? INCIDENT_ATTACHMENT_MAX_FILES
     : ATTACHMENT_MAX_FILES;
 }
@@ -104,6 +104,11 @@ const ATTACHMENT_ALLOWED_MIME_TYPES =
 
 
 const ATTACHMENT_ENTITY_CONFIG = {
+  PREVENTIVE_VISIT: {
+    table: "preventive_package_visits",
+    folder: "preventive-visits"
+  },
+
 
   TASK: {
     table:
@@ -323,9 +328,10 @@ async function assertAttachmentEntityExists(
 
 
   const normalizedId =
-    normalizeAttachmentEntityId(
-      entityId
-    );
+    normalizeAttachmentEntityId(entityId);
+  if (config.entityType === "PREVENTIVE_VISIT" && !Number.isSafeInteger(normalizedId)) {
+    throw new Error("Invalid attachment entity ID");
+  }
 
 
   /*
@@ -16216,6 +16222,17 @@ app.get("/tasks", async (req, res) => {
         pp.interval_months AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
         ppvt.task_order AS preventive_package_task_order,
+        (SELECT count(*)::int
+         FROM preventive_package_visit_tasks summary_link
+         JOIN maintenance_tasks summary_task ON summary_task.id = summary_link.task_id
+         WHERE summary_link.visit_id = ppv.id AND summary_task.deleted_at IS NULL
+        ) AS preventive_package_task_count,
+        (SELECT count(*)::int
+         FROM preventive_package_visit_tasks summary_link
+         JOIN maintenance_tasks summary_task ON summary_task.id = summary_link.task_id
+         WHERE summary_link.visit_id = ppv.id AND summary_task.deleted_at IS NULL
+           AND summary_task.status = 'Done'
+        ) AS preventive_package_done_count,
         mt.planned_start_at,
         mt.asset_id,
         mt.task,
@@ -17348,6 +17365,7 @@ app.get("/preventive-package-visits/ready-to-close", async (req, res) => {
         v.cycle_due_date::text AS preventive_package_cycle_due_date,
         v.scheduled_end_at AS due_date,
         task_summary.task_count AS preventive_package_task_count,
+        task_summary.task_count AS preventive_package_done_count,
         asset.id AS asset_id,
         asset.model AS machine_name,
         asset.serial_number,
@@ -20332,6 +20350,7 @@ app.get("/executions", async (req, res) => {
         t.breakdown_id,
         t.scheduled_maintenance_id,
         ppv.id::text AS preventive_package_visit_id,
+        pp.id::text AS preventive_package_id,
         pp.title AS preventive_package_title,
         pp.interval_months AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,

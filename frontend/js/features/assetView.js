@@ -429,9 +429,11 @@ function renderAssetTasksTable(tasks) {
 groupedTasks.forEach(t => {
 
   const tr =
-    document.createElement(
-      "tr"
-    );
+    document.createElement("tr");
+  if (t.preventive_package_visit_id) {
+    tr.dataset.preventiveVisitId = String(t.preventive_package_visit_id);
+    tr.dataset.preventiveTaskOrder = String(t.preventive_package_task_order || 0);
+  }
 
 
   tr.classList.add(
@@ -838,6 +840,8 @@ groupedTasks.forEach(t => {
   );
 
 });
+
+  groupAssetPreventiveVisits(tbody, groupedTasks);
 
   // 🔥 force reflow
   tasksWrap.offsetHeight;
@@ -1755,6 +1759,8 @@ function renderAssetHistoryTable(history) {
     /* =====================
        APPEND ROW
     ===================== */
+
+    appendPreventiveVisitHistoryLink(tr, e);
 
     tbody.appendChild(
       tr
