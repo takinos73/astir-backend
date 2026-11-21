@@ -482,3 +482,8 @@
 @media(max-width: 520px) {
   .pp-definition-view .pp-definition-form fieldset, .pp-definition-view .pp-definition-task { grid-template-columns: 1fr; }
 }
+
+.pp-library-archive-filter { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: #adbed3; font-size: 12px; }
+.pp-library-archive-filter input[type=checkbox] { width: 16px; height: 16px; margin: 0; }
+.pp-definition-view .pp-definition-archive-form { margin-top: 16px; padding: 14px; border: 1px solid #725c39; border-radius: 8px; background: #30291f; }
+.pp-definition-view .pp-definition-archive { color: #f0ce94; border: 1px solid #80643c; background: #352b1d; }

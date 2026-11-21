@@ -402,7 +402,13 @@
   let currentRequest = 0;
   const definitions = document.createElement("section");
   definitions.className = "pp-library-definitions";
-  section.appendChild(definitions);
+  const archiveFilter = document.createElement("label");
+  archiveFilter.className = "pp-library-archive-filter";
+  const includeArchived = document.createElement("input");
+  includeArchived.type = "checkbox";
+  archiveFilter.append(includeArchived, " Εμφάνιση αρχειοθετημένων προτύπων");
+  section.append(archiveFilter, definitions);
+  includeArchived.addEventListener("change", loadPackagePlan);
   document.addEventListener("preventive-package-updated", loadPackagePlan);
 
   function createAssignmentRow(assignment) {
@@ -452,7 +458,7 @@
       const query = new URLSearchParams({ model });
       const [response, packageResponse] = await Promise.all([
         fetch("/preventive-package-assignments?" + query, { cache: "no-store" }),
-        fetch("/preventive-packages?" + query, { cache: "no-store" })
+        fetch("/preventive-packages?" + query + (includeArchived.checked ? "&include_archived=true" : ""), { cache: "no-store" })
       ]);
       if (!packageResponse.ok) throw new Error("Could not load package definitions");
       const { packages } = await packageResponse.json();
@@ -478,7 +484,7 @@
         const title = document.createElement("strong");
         title.textContent = pack.title;
         const meta = document.createElement("span");
-        meta.textContent = "Κάθε " + pack.interval_months + " μήνες · " + pack.tasks.length + " εργασίες";
+        meta.textContent = (pack.archived_at ? "Αρχειοθετημένο · " : "") + "Κάθε " + pack.interval_months + " μήνες · " + pack.tasks.length + " εργασίες";
         entry.append(button, title, meta);
         definitions.appendChild(entry);
       }
@@ -522,8 +528,17 @@ async function openPreventivePackageDefinition(packageId, model) {
         <label class="pp-definition-password" hidden>Admin password<input name="password" type="password" autocomplete="current-password"></label>
         <div class="pp-definition-actions">
           <button type="button" class="btn-secondary pp-definition-edit" hidden>Edit</button>
+          <button type="button" class="btn-secondary pp-definition-archive" hidden>Αρχειοθέτηση</button>
           <button type="submit" class="btn-primary pp-definition-save" hidden>Αποθήκευση</button>
           <button type="button" class="btn-secondary pp-definition-cancel" hidden>Ακύρωση αλλαγών</button>
+        </div>
+      </form>
+      <form class="pp-definition-archive-form" hidden>
+        <p>Η αρχειοθέτηση σταματά τη δημιουργία επόμενων επισκέψεων. Οι υπάρχουσες εργασίες, το History και τα συνημμένα διατηρούνται.</p>
+        <label>Admin password<input type="password" required autocomplete="current-password"></label>
+        <div class="pp-definition-actions">
+          <button type="submit" class="btn-secondary">Επιβεβαίωση αρχειοθέτησης</button>
+          <button type="button" class="btn-secondary pp-definition-archive-cancel">Ακύρωση</button>
         </div>
       </form>
       <p class="pp-definition-status" role="status">Φόρτωση…</p>
@@ -542,12 +557,15 @@ async function openPreventivePackageDefinition(packageId, model) {
   const save = dialog.querySelector(".pp-definition-save");
   const cancel = dialog.querySelector(".pp-definition-cancel");
   const taskList = dialog.querySelector(".pp-definition-tasks");
+  const archive = dialog.querySelector(".pp-definition-archive");
+  const archiveForm = dialog.querySelector(".pp-definition-archive-form");
+  const archivePassword = archiveForm.querySelector('input[type="password"]');
   let saved, draft = [], editing = false, saving = false;
 
   function setEditing(value) {
     editing = value;
     fields.disabled = !value;
-    edit.hidden = value || !hasRole("admin");
+    edit.hidden = archive.hidden = value || !hasRole("admin") || Boolean(saved?.archived_at);
     save.hidden = cancel.hidden = !value;
     dialog.querySelector(".pp-definition-password").hidden = !value;
     password.required = value;
@@ -604,13 +622,45 @@ async function openPreventivePackageDefinition(packageId, model) {
     });
   }
   function reset() {
-    dialog.querySelector("h3").textContent = saved.title;
+    dialog.querySelector("h3").textContent = saved.title + (saved.archived_at ? " · Αρχειοθετημένο" : "");
     title.value = saved.title;
     interval.value = saved.interval_months;
     draft = JSON.parse(JSON.stringify(saved.tasks));
     renderTasks();
   }
-  edit.onclick = () => { setEditing(true); title.focus(); };
+  edit.onclick = () => { archiveForm.hidden = true; archivePassword.value = ""; setEditing(true); title.focus(); };
+  archive.onclick = () => { archiveForm.hidden = false; edit.disabled = true; archivePassword.focus(); };
+  dialog.querySelector(".pp-definition-archive-cancel").onclick = () => {
+    archiveForm.hidden = true; archivePassword.value = ""; edit.disabled = false;
+  };
+  archiveForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (saving || !saved || saved.archived_at) return;
+    saving = true;
+    const controls = [...dialog.querySelectorAll("button, input")].map(control => [control, control.disabled]);
+    for (const [control] of controls) control.disabled = true;
+    status.textContent = "Αρχειοθέτηση…";
+    try {
+      const response = await fetch("/preventive-packages/" + encodeURIComponent(packageId) + "/archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-cmms-role": localStorage.getItem("cmmsRole") },
+        body: JSON.stringify({ admin_password: archivePassword.value, version: saved.version })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Η αρχειοθέτηση απέτυχε.");
+      saved = data.package;
+      archiveForm.hidden = true;
+      reset(); setEditing(false);
+      status.textContent = "Το πακέτο αρχειοθετήθηκε.";
+      document.dispatchEvent(new CustomEvent("preventive-package-updated"));
+    } catch (error) { status.textContent = error.message; }
+    finally {
+      saving = false;
+      for (const [control, disabled] of controls) control.disabled = disabled;
+      archivePassword.value = "";
+      edit.disabled = false;
+    }
+  });
   cancel.onclick = () => { reset(); setEditing(false); status.textContent = ""; };
   dialog.querySelector(".pp-definition-add").onclick = () => {
     if (!editing) return;
@@ -655,7 +705,7 @@ async function openPreventivePackageDefinition(packageId, model) {
     }
   });
   try {
-    const response = await fetch("/preventive-packages?" + new URLSearchParams({ model }), { cache: "no-store" });
+    const response = await fetch("/preventive-packages?" + new URLSearchParams({ model, include_archived: "true" }), { cache: "no-store" });
     if (!response.ok) throw new Error("Δεν φορτώθηκε το πακέτο.");
     const data = await response.json();
     saved = data.packages?.find(item => String(item.id) === String(packageId));

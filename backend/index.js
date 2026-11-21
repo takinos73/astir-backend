@@ -16818,12 +16818,12 @@ app.get("/preventive-packages", async (req, res) => {
     // Load saved package definitions for this model, including task order.
     const { rows } = await pool.query(
       `
-      SELECT id, asset_model, title, interval_months, tasks, updated_at, xmin::text AS version
+      SELECT id, asset_model, title, interval_months, tasks, archived_at, updated_at, xmin::text AS version
       FROM preventive_packages
-      WHERE asset_model = $1
+      WHERE asset_model = $1 AND (archived_at IS NULL OR $2::boolean)
       ORDER BY title, id
       `,
-      [model]
+      [model, req.query.include_archived === "true"]
     );
 
     return res.json({ packages: rows });
@@ -16833,6 +16833,34 @@ app.get("/preventive-packages", async (req, res) => {
   }
 });
 /* END: Read preventive packages */
+
+
+app.post("/preventive-packages/:id/archive", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const { admin_password, version } = req.body || {};
+  if (!/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n ||
+      typeof admin_password !== "string" || !admin_password || !/^\d+$/.test(String(version || ""))) {
+    return res.status(400).json({ error: "Invalid package ID, version or password." });
+  }
+  try {
+    const { rows: [credentials] } = await pool.query("SELECT admin_password FROM roles_config ORDER BY id DESC LIMIT 1");
+    if (!credentials?.admin_password || credentials.admin_password !== admin_password) {
+      return res.status(401).json({ error: "Invalid Admin password." });
+    }
+    const { rows: [saved] } = await pool.query(
+      `UPDATE preventive_packages SET archived_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND archived_at IS NULL AND xmin::text = $2
+       RETURNING id::text, asset_model, title, interval_months, tasks, archived_at, updated_at, xmin::text AS version`,
+      [id, String(version)]
+    );
+    if (!saved) return res.status(409).json({ error: "Το πακέτο έχει ήδη αρχειοθετηθεί ή άλλαξε. Ανοίξτε ξανά την τελευταία έκδοση." });
+    return res.json({ package: saved });
+  } catch (error) {
+    console.error("Archive preventive package failed:", error);
+    return res.status(500).json({ error: "Δεν αρχειοθετήθηκε το πακέτο." });
+  }
+});
+
 
 app.patch("/preventive-packages/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
@@ -16875,8 +16903,8 @@ app.patch("/preventive-packages/:id", requireAdmin, async (req, res) => {
     }
     const { rows: [saved] } = await pool.query(
       `UPDATE preventive_packages SET title = $2, interval_months = $3, tasks = $4::jsonb, updated_at = NOW()
-       WHERE id = $1 AND xmin::text = $5
-       RETURNING id::text, asset_model, title, interval_months, tasks, updated_at, xmin::text AS version`,
+       WHERE id = $1 AND archived_at IS NULL AND xmin::text = $5
+       RETURNING id::text, asset_model, title, interval_months, tasks, archived_at, updated_at, xmin::text AS version`,
       [id, title.trim(), interval_months, JSON.stringify(normalized), String(version)]
     );
     if (!saved) return res.status(409).json({ error: "Το πακέτο άλλαξε από άλλον χρήστη. Κλείστε και ανοίξτε ξανά για την τελευταία έκδοση. Το πρόχειρο διατηρήθηκε." });
@@ -17113,7 +17141,8 @@ app.post("/preventive-package-assignments", requireAdmin, async (req, res) => {
         SELECT p.id AS package_id, a.id AS asset_id
         FROM preventive_packages p
         JOIN assets a ON a.model = p.asset_model
-        WHERE p.id = $1 AND a.id = $2
+        WHERE p.id = $1 AND a.id = $2 AND p.archived_at IS NULL
+        FOR SHARE OF p
       ),
       inserted AS (
         INSERT INTO preventive_package_assignments (package_id, asset_id, next_due_date)
@@ -17170,7 +17199,7 @@ app.get("/preventive-package-assignments", async (req, res) => {
       FROM preventive_package_assignments a
       JOIN preventive_packages p ON p.id = a.package_id
       JOIN assets asset ON asset.id = a.asset_id
-      WHERE p.asset_model = $1
+      WHERE p.asset_model = $1 AND p.archived_at IS NULL
       ORDER BY a.next_due_date, p.title, a.id
       `,
       [model]
@@ -19626,6 +19655,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
         a.asset_id,
         p.id::text AS package_id,
         p.tasks AS template_tasks,
+        p.archived_at,
         p.tasks IS DISTINCT FROM (v.definition_snapshot->'tasks') AS template_changed,
         v.cycle_due_date::text,
         (v.cycle_due_date + make_interval(months => p.interval_months))::date::text AS next_cycle_date
@@ -19658,6 +19688,11 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
     );
 
     if (!tasks.length || tasks.some(task => task.status !== "Done" || task.deleted_at)) {
+      continue;
+    }
+
+    if (visit.archived_at) {
+      await client.query("UPDATE preventive_package_visits SET closed_at = NOW() WHERE id = $1", [visitId]);
       continue;
     }
 

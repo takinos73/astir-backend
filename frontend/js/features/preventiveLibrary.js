@@ -4396,26 +4396,10 @@ function handleContextCustomInput({
 /* =====================
    PRINT PREVENTIVE PLAN (LIBRARY / MODEL)
 ===================== */
-function printPreventivePlan() {
-  console.log("PRINT CLICK HANDLER FIRED");
-
+async function printPreventivePlan() {
   const model = document.getElementById("libraryModelSelect")?.value;
-  console.log("MODEL SELECTED:", model);
-
-  if (!model) {
-    alert("Select a model first");
-    return;
-  }
-
-  const asset = state.assetsData.find(a => a.model === model);
-
-  if (!asset) {
-    alert("No asset found for selected model");
-    return;
-  }
-
-  // ♻ reuse WORKING asset print
-  printAssetPreventivePlan(asset.serial_number);
+  if (!model) { alert("Select a model first"); return; }
+  await printModelPreventivePlan(model);
 }
 /* =====================
    BUILD PREVENTIVE PLAN REPORT

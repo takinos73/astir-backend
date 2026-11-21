@@ -174,42 +174,14 @@ container.innerHTML += `
 // =====================
 // PRINT ASSET PREVENTIVE PLAN (BY SERIAL)
 // =====================
-function printAssetPreventivePlan(serial) {
-  if (!serial) {
-    alert("Missing asset serial");
-    return;
-  }
-
-  const asset = state.assetsData.find(
-    a => String(a.serial_number || "").trim() === String(serial).trim()
-  );
-
-  if (!asset) {
-    alert("Asset not found");
-    return;
-  }
-
-  const report = buildAssetPreventivePlanReport(asset.id);
-
-  if (!report || !Array.isArray(report.rules) || report.rules.length === 0) {
-    alert("No preventive plan available for this asset");
-    return;
-  }
-
-  // 1️⃣ Render print HTML into hidden container
-  renderAssetPreventivePrint(report);
-
-  // 2️⃣ Extract HTML safely
-  const container = document.getElementById("libraryPrintContainer");
-  if (!container) {
-    alert("Print container not found");
-    return;
-  }
-
-  const html = container.innerHTML;
-
-  // 3️⃣ Print via isolated iframe (NO dark UI, NO overlays)
-  printHtmlInIsolatedFrame(html);
+async function printAssetPreventivePlan(serial) {
+  const asset = state.assetsData.find(item => String(item.serial_number || "").trim() === String(serial || "").trim());
+  if (!asset) { alert("Asset not found"); return; }
+  try {
+    const report = await buildCompletePreventivePlan(asset.model, asset);
+    if (!report.count) { alert("Δεν υπάρχουν εργασίες στο πλάνο αυτού του Asset."); return; }
+    printHtmlInIsolatedFrame(renderCompletePreventivePlan(report));
+  } catch (error) { alert(error.message || "Δεν δημιουργήθηκε το πλάνο."); }
 }
 
 function getAssetPreventiveTasks(serial) {
@@ -352,3 +324,106 @@ function printHtmlInIsolatedFrame(html) {
 
 
 
+
+async function buildCompletePreventivePlan(model, asset = null) {
+  const query = new URLSearchParams({ model });
+  const [packageResponse, assignmentResponse] = await Promise.all([
+    fetch("/preventive-packages?" + query, { cache: "no-store" }),
+    fetch("/preventive-package-assignments?" + query, { cache: "no-store" })
+  ]);
+  if (!packageResponse.ok || !assignmentResponse.ok) throw new Error("Δεν φορτώθηκαν όλα τα πακέτα. Η εκτύπωση ακυρώθηκε.");
+  const [{ packages }, { assignments }] = await Promise.all([packageResponse.json(), assignmentResponse.json()]);
+  if (!Array.isArray(packages) || !Array.isArray(assignments)) throw new Error("Μη έγκυρα στοιχεία πλάνου.");
+  const assetAssignments = asset ? assignments.filter(item => Number(item.asset_id) === Number(asset.id)) : [];
+  const packageIds = new Set(assetAssignments.map(item => String(item.package_id)));
+  const includedPackages = packages.filter(pack => !pack.archived_at && (!asset || packageIds.has(String(pack.id))));
+  const assetReport = asset ? buildAssetPreventivePlanReport(asset.id) : null;
+  if (asset && !assetReport) throw new Error("Το Asset δεν είναι πλέον διαθέσιμο. Ανανεώστε την οθόνη.");
+  const rules = asset ? assetReport.rules : (libraryData.find(entry => entry.model === model)?.plans || [])
+    .filter(rule => Number(rule.frequency_hours) > 0);
+  let workload = rules.reduce((sum, rule) => sum + 8760 / Number(rule.frequency_hours) * Number(rule.duration_min || 0) / 60, 0);
+  let count = rules.length;
+  for (const pack of includedPackages) {
+    if (!Array.isArray(pack.tasks) || !Number.isInteger(pack.interval_months) || pack.interval_months <= 0) {
+      throw new Error("Το πακέτο " + pack.title + " έχει μη έγκυρα στοιχεία.");
+    }
+    count += pack.tasks.length;
+    workload += pack.tasks.reduce((sum, task) => sum + Number(task.duration_min || 0), 0) *
+      (12 / pack.interval_months) / 60;
+  }
+  return { model, asset, rules, packages: includedPackages, count, workload };
+}
+
+function renderCompletePreventivePlan(report) {
+  const container = document.createElement("div");
+  container.className = "print-only";
+  const heading = document.createElement("h1");
+  heading.textContent = "Preventive Maintenance Plan";
+  const context = document.createElement("p");
+  context.textContent = report.model + (report.asset
+    ? " · SN " + report.asset.serial_number + " · Πλάνο συγκεκριμένου Asset"
+    : " · Πλάνο μοντέλου");
+  const metrics = document.createElement("p");
+  metrics.textContent = report.count + " εργασίες · " + report.packages.length + " πακέτα · " +
+    report.workload.toLocaleString("el-GR", { maximumFractionDigits: 1 }) + " ώρες / έτος";
+  const generated = document.createElement("p");
+  generated.textContent = "ASTIR CMMS · " + new Date().toLocaleDateString("el-GR");
+  const table = document.createElement("table");
+  table.className = "print-table";
+  const header = table.createTHead().insertRow();
+  for (const label of ["Εργασία", "Section / Unit", "Συχνότητα", "Διάρκεια (min)"]) {
+    const th = document.createElement("th");
+    th.textContent = label;
+    header.appendChild(th);
+  }
+  const body = table.createTBody();
+  function group(label) {
+    const row = body.insertRow();
+    row.className = "freq-group";
+    const cell = row.insertCell(); cell.colSpan = 4; cell.textContent = label;
+  }
+  function taskRow(task, frequency) {
+    const row = body.insertRow();
+    const cell = row.insertCell();
+    cell.textContent = task.task;
+    if (task.notes) {
+      const note = document.createElement("small");
+      note.textContent = task.notes;
+      cell.append(document.createElement("br"), note);
+    }
+    if (["safety", "quality", "safety_quality"].includes(task.impact)) {
+      const impact = document.createElement("span");
+      impact.className = "print-impact print-impact-" + task.impact;
+      impact.textContent = task.impact === "safety_quality" ? "S + Q" : task.impact.toUpperCase();
+      const wrap = document.createElement("div"); wrap.className = "print-impact-wrap"; wrap.appendChild(impact); cell.appendChild(wrap);
+    }
+    row.insertCell().textContent = [task.section, task.unit].filter(Boolean).join(" / ") || "—";
+    row.insertCell().textContent = frequency;
+    row.insertCell().textContent = task.duration_min ?? "—";
+  }
+  const groupedRules = new Map();
+  for (const rule of [...report.rules].sort((a, b) => Number(a.frequency_hours) - Number(b.frequency_hours))) {
+    const frequency = Number(rule.frequency_hours);
+    if (!groupedRules.has(frequency)) groupedRules.set(frequency, []);
+    groupedRules.get(frequency).push(rule);
+  }
+  for (const [hours, rules] of groupedRules) {
+    group("Μεμονωμένες προληπτικές εργασίες · Κάθε " + hours + " ώρες");
+    for (const rule of rules) taskRow(rule, hours + " ώρες");
+  }
+  for (const pack of report.packages) {
+    group("PP" + String(pack.id).padStart(4, "0") + " · " + pack.title +
+      " · Κάθε " + pack.interval_months + " μήνες · " + pack.tasks.length + " εργασίες");
+    for (const task of pack.tasks) taskRow(task, pack.interval_months + " μήνες");
+  }
+  container.append(heading, context, metrics, generated, table);
+  return container.innerHTML;
+}
+
+async function printModelPreventivePlan(model) {
+  try {
+    const report = await buildCompletePreventivePlan(model);
+    if (!report.count) { alert("Δεν υπάρχουν εργασίες στο πλάνο αυτού του μοντέλου."); return; }
+    printHtmlInIsolatedFrame(renderCompletePreventivePlan(report));
+  } catch (error) { alert(error.message || "Δεν δημιουργήθηκε το πλάνο."); }
+}
