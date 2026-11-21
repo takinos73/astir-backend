@@ -3914,3 +3914,13 @@ body.cmms-authenticated[data-role="shift_foreman"]
   backdrop-filter: blur(3px);
 }
 
+#historyOverlay #printHistoryTableBtn {
+  margin: 0 0 0 8px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  border: 1px solid #3d536c;
+  border-radius: 8px;
+  background: #1b293a;
+  color: #c5defc;
+}
+#historyOverlay #printHistoryTableBtn:hover { background: #26394f; }

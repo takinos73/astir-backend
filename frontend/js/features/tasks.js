@@ -4229,6 +4229,9 @@ function createPreventiveHistoryVisitRow(group, assetView) {
   const record = group.first;
   const row = document.createElement("tr");
   row.className = "history-preventive";
+  row.dataset.historyPrintExecutions = String(group.records.length);
+  row.dataset.historyPrintTasks = String(group.tasks.size);
+  row.dataset.historyPrintDuration = String(group.duration);
   const date = row.insertCell();
   date.textContent = new Date(record.executed_at).toLocaleDateString("el-GR");
   date.title = new Date(record.executed_at).toLocaleString("el-GR");
@@ -4258,8 +4261,8 @@ function createPreventiveHistoryVisitRow(group, assetView) {
   name.textContent = record.preventive_package_title || "Preventive Pack";
   title.append(badge, name);
   const summary = document.createElement("small");
-  const count = record.preventive_package_task_count ?? group.tasks.size;
-  const minutes = record.preventive_package_duration_min ?? group.duration;
+  const count = group.tasks.size;
+  const minutes = group.duration;
   summary.textContent = count + " εργασίες · " + Number(minutes).toLocaleString("el-GR") + " min συνολικά";
   taskCell.append(title, summary);
   if (assetView) row.insertCell().textContent = "Preventive Pack";

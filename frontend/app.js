@@ -411,6 +411,8 @@ function renderHistoryTable(data) {
         ? openBreakdownDetail
         : openScheduledMaintenanceDetail;
 
+      tr.dataset.historyPrintExecutions = String(group.count);
+      tr.dataset.historyPrintDuration = String(group.duration);
       tr.classList.add(group.isBreakdown ? "history-restoration" : "history-planned");
       tr.innerHTML = `
         <td title="${formatDateTime(h.executed_at)}">
@@ -473,6 +475,11 @@ function renderHistoryTable(data) {
     }
     const tr = document.createElement("tr");
 
+    tr.dataset.historyPrintExecutions = "1";
+    tr.dataset.historyPrintNotes = h.notes || "";
+    if (h.duration_min !== null && h.duration_min !== undefined && Number.isFinite(Number(h.duration_min))) {
+      tr.dataset.historyPrintDuration = String(Number(h.duration_min));
+    }
     const execType = getExecutionType(h);
     tr.classList.add(`history-${execType}`);
 
