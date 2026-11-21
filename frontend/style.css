@@ -3924,3 +3924,41 @@ body.cmms-authenticated[data-role="shift_foreman"]
   color: #c5defc;
 }
 #historyOverlay #printHistoryTableBtn:hover { background: #26394f; }
+
+/* Keep History Print independent of the date picker layout. */
+#historyOverlay .history-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+#historyOverlay .history-print-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+#historyOverlay #printHistoryTableBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 14px;
+  line-height: 1;
+}
+#historyOverlay .history-date-filter {
+  min-width: 0;
+  max-width: 100%;
+}
+#historyOverlay #historyDateRange {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media(max-width: 640px) {
+  #historyOverlay .history-filter-group { flex-wrap: wrap; max-width: 100%; }
+  #historyOverlay .history-filter-group input,
+  #historyOverlay .history-filter-group select { min-width: 0; max-width: 100%; }
+}
