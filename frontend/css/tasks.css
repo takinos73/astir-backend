@@ -1209,3 +1209,25 @@ dialog.preventive-pack-detail {
   outline: 2px solid #9fc5ff;
   outline-offset: 3px;
 }
+
+/* Keep the PP reference beside the title in Asset History. */
+#assetHistoryTable .preventive-history-heading {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+#assetHistoryTable .preventive-history-heading > .preventive-pack-badge {
+  width: auto;
+  margin: 0;
+  justify-self: start;
+}
+#assetHistoryTable .preventive-history-heading > strong {
+  display: block;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
