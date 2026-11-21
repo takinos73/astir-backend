@@ -1286,7 +1286,17 @@ function renderAssetHistoryTable(history) {
      RENDER ROWS
   ===================== */
 
+  const preventiveVisits = collectPreventiveHistoryVisits(sortedHistory);
+  const renderedPreventiveVisits = new Set();
   sortedHistory.forEach(e => {
+    const visitKey = preventiveHistoryVisitKey(e);
+    if (visitKey) {
+      if (!renderedPreventiveVisits.has(visitKey)) {
+        tbody.appendChild(createPreventiveHistoryVisitRow(preventiveVisits.get(visitKey), true));
+        renderedPreventiveVisits.add(visitKey);
+      }
+      return;
+    }
 
     const tr =
       document.createElement(

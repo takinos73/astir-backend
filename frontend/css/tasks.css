@@ -1036,3 +1036,17 @@ tr.task-restoration {
   outline: 2px solid #9fc5ff;
   outline-offset: 2px;
 }
+
+#historyTable .preventive-history-heading,
+#assetHistoryTable .preventive-history-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 5px;
+}
+#historyTable .preventive-history-heading strong,
+#assetHistoryTable .preventive-history-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

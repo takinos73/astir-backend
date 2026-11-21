@@ -349,7 +349,17 @@ function renderHistoryTable(data) {
   const groups = new Map();
   const rows = [];
 
+  const preventiveVisits = collectPreventiveHistoryVisits(sortedHistory);
+  const renderedPreventiveVisits = new Set();
   sortedHistory.forEach(execution => {
+    const visitKey = preventiveHistoryVisitKey(execution);
+    if (visitKey) {
+      if (!renderedPreventiveVisits.has(visitKey)) {
+        rows.push({ preventiveVisit: preventiveVisits.get(visitKey) });
+        renderedPreventiveVisits.add(visitKey);
+      }
+      return;
+    }
     const breakdownId = Number(execution.breakdown_id);
     const smId = Number(execution.scheduled_maintenance_id);
     const isBreakdown = Number.isSafeInteger(breakdownId) && breakdownId > 0;
@@ -382,6 +392,10 @@ function renderHistoryTable(data) {
   });
 
   rows.forEach(group => {
+    if (group.preventiveVisit) {
+      tbody.appendChild(createPreventiveHistoryVisitRow(group.preventiveVisit, false));
+      return;
+    }
     const h = group.execution;
 
       if (group.parentId) {

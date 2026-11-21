@@ -20355,6 +20355,17 @@ app.get("/executions", async (req, res) => {
         pp.interval_months AS preventive_package_interval_months,
         ppv.cycle_due_date::text AS preventive_package_cycle_due_date,
         ppvt.task_order AS preventive_package_task_order,
+        (SELECT count(*)::int
+         FROM preventive_package_visit_tasks visit_link
+         JOIN maintenance_tasks visit_task ON visit_task.id = visit_link.task_id
+         WHERE visit_link.visit_id = ppv.id AND visit_task.deleted_at IS NULL
+        ) AS preventive_package_task_count,
+        (SELECT COALESCE(sum(visit_execution.duration_minutes), 0)
+         FROM preventive_package_visit_tasks visit_link
+         JOIN maintenance_tasks visit_task ON visit_task.id = visit_link.task_id
+         JOIN task_executions visit_execution ON visit_execution.task_id = visit_task.id
+         WHERE visit_link.visit_id = ppv.id AND visit_task.deleted_at IS NULL
+        ) AS preventive_package_duration_min,
         b.title AS breakdown_title,
         sm.title AS scheduled_maintenance_title,
 

@@ -3991,7 +3991,7 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
   const section = document.createElement("section");
   section.className = "preventive-visit-documents";
   const heading = document.createElement("h4");
-  heading.textContent = "Παραστατικά & συνημμένα επέμβασης";
+  heading.textContent = "Συνημμένα συντήρησης";
   const usage = document.createElement("p");
   usage.setAttribute("role", "status");
   usage.textContent = "Φόρτωση συνημμένων…";
@@ -3999,7 +3999,7 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
   list.className = "preventive-visit-files";
   const form = document.createElement("form");
   const label = document.createElement("label");
-  label.textContent = "Προσθήκη τιμολογίου, δελτίου αποστολής ή φωτογραφίας";
+  label.textContent = "Προσθήκη συνημμένων συντήρησης";
   const input = document.createElement("input");
   input.type = "file";
   input.multiple = true;
@@ -4104,8 +4104,8 @@ function appendPreventiveVisitHistoryLink(row, record) {
     ? "PP" + String(record.preventive_package_id).padStart(4, "0")
     : "Preventive Pack";
   button.textContent = code;
-  button.title = "Open package visit and documents";
-  button.setAttribute("aria-label", code + " · Open package visit and documents");
+  button.title = "Άνοιγμα επίσκεψης και συνημμένων συντήρησης";
+  button.setAttribute("aria-label", code + " · Άνοιγμα επίσκεψης και συνημμένων συντήρησης");
   button.addEventListener("click", event => {
     event.stopPropagation();
     openPreventivePackDetail(record.preventive_package_visit_id, code);
@@ -4114,4 +4114,80 @@ function appendPreventiveVisitHistoryLink(row, record) {
   reference.className = "preventive-visit-reference";
   reference.appendChild(button);
   (row.querySelector(".asset-history-type-cell") || row.cells[2]).appendChild(reference);
+}
+
+function preventiveHistoryVisitKey(record) {
+  return record.preventive_package_visit_id && !record.breakdown_id && !record.scheduled_maintenance_id
+    ? String(record.preventive_package_visit_id) : null;
+}
+
+function collectPreventiveHistoryVisits(records) {
+  const visits = new Map();
+  for (const record of records) {
+    const key = preventiveHistoryVisitKey(record);
+    if (!key) continue;
+    let group = visits.get(key);
+    if (!group) {
+      group = { visitId: key, first: record, records: [], tasks: new Set(), duration: 0, technicians: new Set() };
+      visits.set(key, group);
+    }
+    group.records.push(record);
+    group.tasks.add(record.task_id ?? record.task);
+    group.duration += Number(record.duration_min) || 0;
+    if (record.executed_by) group.technicians.add(record.executed_by);
+  }
+  return visits;
+}
+
+function createPreventiveHistoryVisitRow(group, assetView) {
+  const record = group.first;
+  const row = document.createElement("tr");
+  row.className = "history-preventive";
+  const date = row.insertCell();
+  date.textContent = new Date(record.executed_at).toLocaleDateString("el-GR");
+  date.title = new Date(record.executed_at).toLocaleString("el-GR");
+  if (!assetView) {
+    const asset = row.insertCell();
+    const name = document.createElement("strong");
+    name.textContent = record.machine || "—";
+    const context = document.createElement("small");
+    context.textContent = [record.serial_number && "SN: " + record.serial_number, record.line].filter(Boolean).join(" | ");
+    asset.append(name, document.createElement("br"), context);
+  }
+  const taskCell = row.insertCell();
+  const title = document.createElement("div");
+  title.className = "task-title preventive-history-heading";
+  const badge = document.createElement("button");
+  badge.type = "button";
+  badge.className = "preventive-pack-badge";
+  const code = record.preventive_package_id
+    ? "PP" + String(record.preventive_package_id).padStart(4, "0") : "PP";
+  badge.textContent = code;
+  badge.title = "Άνοιγμα επίσκεψης συντήρησης";
+  badge.addEventListener("click", event => {
+    event.stopPropagation();
+    openPreventivePackDetail(group.visitId, code);
+  });
+  const name = document.createElement("strong");
+  name.textContent = record.preventive_package_title || "Preventive Pack";
+  title.append(badge, name);
+  const summary = document.createElement("small");
+  const count = record.preventive_package_task_count ?? group.tasks.size;
+  const minutes = record.preventive_package_duration_min ?? group.duration;
+  summary.textContent = count + " εργασίες · " + Number(minutes).toLocaleString("el-GR") + " min συνολικά";
+  taskCell.append(title, summary);
+  if (assetView) row.insertCell().textContent = "Preventive Pack";
+  const technicians = row.insertCell();
+  technicians.textContent = [...group.technicians].join(", ") || "—";
+  technicians.title = "Τεχνικοί των εμφανιζόμενων εκτελέσεων";
+  row.insertCell().textContent = "—";
+  if (assetView) {
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "btn-secondary btn-sm";
+    action.textContent = "View";
+    action.addEventListener("click", () => openPreventivePackDetail(group.visitId, code));
+    row.insertCell().appendChild(action);
+  }
+  return row;
 }
