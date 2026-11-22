@@ -1243,7 +1243,7 @@ dialog.preventive-pack-detail {
 /* Main Tasks workspace only; dialogs and task semantics are unchanged. */
 #tab-tasks .tasks-workspace-header {
   margin: 20px 0 14px; padding: 20px 22px; border: 1px solid #365c85;
-  border-radius: 12px; background: linear-gradient(115deg,#203c5b,#182536);
+  border-radius: 12px; background: linear-gradient(115deg,#203c5b,#161c24);
 }
 #tab-tasks .tasks-workspace-header h2 {
    margin: 0; 
@@ -1251,28 +1251,28 @@ dialog.preventive-pack-detail {
    color: #edf5ff; }
 #tab-tasks .tasks-workspace-header p { margin: 7px 0 0; color: #adc3dd; font-size: 13px; }
 #tab-tasks .kpi-strip { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-bottom: 16px; }
-#tab-tasks .kpi-card { background: #1b2939; border: 1px solid #38516e; border-top: 3px solid #679fdf; border-radius: 10px; padding: 12px; }
+#tab-tasks .kpi-card { background: #1b2028; border: 1px solid #353e4c; border-top: 3px solid #679fdf; border-radius: 10px; padding: 12px; }
 #tab-tasks .kpi-card:nth-child(2) { border-top-color: #c77783; }
 #tab-tasks .kpi-card:nth-child(3) { border-top-color: #b39a59; }
 #tab-tasks .kpi-card:nth-child(4) { border-top-color: #6baf9d; }
 #tab-tasks .kpi-label { color: #acc1d9; }
-#tab-tasks .tasks-toolbar-panel { background: #182737; border: 1px solid #38516e; border-radius: 12px; }
-#tab-tasks .tasks-toolbar-primary { border-bottom-color: #36506d; }
-#tab-tasks .tasks-toolbar-row button { border-color: #405b7a; background: #22364d; color: #d2e4f8; border-radius: 8px; }
-#tab-tasks .tasks-toolbar-row button:hover { background: #2c4765; }
+#tab-tasks .tasks-toolbar-panel { background: #181e26; border: 1px solid #353e4c; border-radius: 12px; }
+#tab-tasks .tasks-toolbar-primary { border-bottom-color: #343e4b; }
+#tab-tasks .tasks-toolbar-row button { border-color: #414c5c; background: #252d38; color: #d2e4f8; border-radius: 8px; }
+#tab-tasks .tasks-toolbar-row button:hover { background: #303d4d; }
 #tab-tasks .tasks-toolbar-row button.active { background: #2d5f93; border-color: #77a9df; color: #fff; }
-#tab-tasks .task-search, #tab-tasks .asset-dropdown-btn { background: #121e2c; border-color: #405672; color: #e3edf9; }
-#tab-tasks .date-range-pill { background: #121e2c; border-color: #405672; gap: 8px; flex-wrap: nowrap; max-width: 100%; box-sizing: border-box; }
+#tab-tasks .task-search, #tab-tasks .asset-dropdown-btn { background: #151b23; border-color: #3c4757; color: #e3edf9; }
+#tab-tasks .date-range-pill { background: #151b23; border-color: #3c4757; gap: 8px; flex-wrap: nowrap; max-width: 100%; box-sizing: border-box; }
 #tab-tasks #taskDateRange { flex: 1 1 225px; width: 225px; min-width: 0; max-width: 100%; min-height: 32px; padding: 5px 0; border: 0; background: transparent; color: #dcecff; font-family: inherit; font-size: 13px; cursor: pointer; }
-#tab-tasks #clearTaskDateRange { flex: 0 0 28px; padding: 0; min-height: 28px; border: 1px solid #415a77; background: #22364d; color: #bcd4ef; font-size: 18px; }
+#tab-tasks #clearTaskDateRange { flex: 0 0 28px; padding: 0; min-height: 28px; border: 1px solid #455365; background: #252d38; color: #bcd4ef; font-size: 18px; }
 #tab-tasks .date-range-pill [hidden] { display: none !important; }
-#tab-tasks .tasks-count-label { background: #23364a; border-color: #3b5370; color: #bdd4ee; }
-#tab-tasks .table-card { border-color: #344a64; border-radius: 10px; }
-#tab-tasks #tasksTable th { background: #263950; color: #bcd2eb; border-bottom-color: #415873; }
-#tab-tasks #tasksTable tbody tr { background: #192432; }
-#tab-tasks #tasksTable tbody tr:nth-child(even) { background: #1d2a3a; }
-#tab-tasks #tasksTable tbody tr:hover { background: #23364c; }
-#tab-tasks .tasks-pagination { background: #1a293a; border-color: #38516e; border-radius: 10px; }
+#tab-tasks .tasks-count-label { background: #252e39; border-color: #414c5d; color: #bdd4ee; }
+#tab-tasks .table-card { border-color: #343f4e; border-radius: 10px; }
+#tab-tasks #tasksTable th { background: #252f3d; color: #bcd2eb; border-bottom-color: #435064; }
+#tab-tasks #tasksTable tbody tr { background: #191e26; }
+#tab-tasks #tasksTable tbody tr:nth-child(even) { background: #1e252e; }
+#tab-tasks #tasksTable tbody tr:hover { background: #293441; }
+#tab-tasks .tasks-pagination { background: #1b222c; border-color: #353e4c; border-radius: 10px; }
 #tab-tasks button:focus-visible, #tab-tasks input:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
 @media(max-width:650px) {
  #tab-tasks .tasks-workspace-header { padding: 18px; }
