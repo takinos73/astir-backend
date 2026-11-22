@@ -17496,6 +17496,7 @@ app.get("/preventive-package-visits/:id", async (req, res) => {
         COALESCE((v.definition_snapshot->>'interval_months')::int, p.interval_months) AS interval_months,
         asset.model AS asset_model,
         asset.serial_number,
+        COALESCE(visit_line.code, visit_line.name) AS asset_line,
         v.cycle_due_date::text,
         v.scheduled_start_at,
         v.scheduled_end_at,
@@ -17510,19 +17511,31 @@ app.get("/preventive-package-visits/:id", async (req, res) => {
               'status', t.status,
               'planned_start_at', t.planned_start_at,
               'due_date', t.due_date,
-              'execution_id', (SELECT e.id FROM task_executions e WHERE e.task_id = t.id ORDER BY e.id DESC LIMIT 1),
-              'prev_due_date', (SELECT e.prev_due_date FROM task_executions e WHERE e.task_id = t.id ORDER BY e.id DESC LIMIT 1)
+              'execution_id', last_execution.id,
+              'prev_due_date', last_execution.prev_due_date,
+              'executed_at', last_execution.executed_at,
+              'executed_by', last_execution.executed_by,
+              'actual_duration_min', last_execution.duration_minutes,
+              'duration_min', t.duration_min,
+              'impact', t.impact,
+              'notes', COALESCE(last_execution.notes, t.notes)
             )
             ORDER BY link.task_order
           )
           FROM preventive_package_visit_tasks link
           JOIN maintenance_tasks t ON t.id = link.task_id
+          LEFT JOIN LATERAL (
+            SELECT e.id, e.prev_due_date, e.executed_at, e.executed_by, e.duration_minutes, e.notes
+            FROM task_executions e WHERE e.task_id = t.id
+            ORDER BY e.id DESC LIMIT 1
+          ) last_execution ON TRUE
           WHERE link.visit_id = v.id
         ), '[]'::jsonb) AS tasks
       FROM preventive_package_visits v
       JOIN preventive_package_assignments a ON a.id = v.assignment_id
       JOIN preventive_packages p ON p.id = a.package_id
       JOIN assets asset ON asset.id = a.asset_id
+      LEFT JOIN lines visit_line ON visit_line.id = asset.line_id
       WHERE v.id = $1::bigint
       `,
       [visitId]

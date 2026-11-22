@@ -1231,3 +1231,11 @@ dialog.preventive-pack-detail {
   overflow-wrap: anywhere;
   line-height: 1.45;
 }
+
+.preventive-pack-detail .pp-detail-footer { gap: 10px; }
+.preventive-pack-detail .pp-detail-footer .pp-detail-print {
+  background: #1c3047;
+  border-color: #4b7eb4;
+  color: #c5dfff;
+}
+.preventive-pack-detail .pp-detail-print:disabled { opacity: .5; cursor: default; }

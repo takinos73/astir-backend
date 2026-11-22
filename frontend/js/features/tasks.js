@@ -2609,9 +2609,19 @@ async function openPreventivePackDetail(visitId, code) {
         </table>
       </div>
     </div>
-    <form method="dialog" class="pp-detail-footer"><button type="submit" class="btn-secondary">Κλείσιμο</button></form>
+    <form method="dialog" class="pp-detail-footer">
+      <button type="button" class="btn-secondary pp-detail-print" disabled>🖨 Print</button>
+      <button type="submit" class="btn-secondary">Κλείσιμο</button>
+    </form>
   `;
 
+  const printButton = dialog.querySelector(".pp-detail-print");
+  printButton.addEventListener("click", async () => {
+    if (dialog.dataset.uploading === "true") return;
+    printButton.disabled = true;
+    try { await printPreventivePackageVisit(visitId); }
+    finally { if (dialog.isConnected) printButton.disabled = dialog.dataset.uploading === "true"; }
+  });
   const heading = dialog.querySelector("h3");
   const status = dialog.querySelector("[role=status]");
   dialog.querySelector(".pp-detail-code").textContent = code;
@@ -2709,6 +2719,7 @@ async function openPreventivePackDetail(visitId, code) {
     meter.hidden = false;
     dialog.querySelector(".pp-detail-task-count").textContent = visit.tasks.length + " εργασίες";
     if (visit.closed_at) lifecycle.title = "Κλείσιμο: " + format(visit.closed_at);
+    printButton.disabled = false;
     void addPreventiveVisitDocuments(dialog, String(visit.id));
   } catch (error) {
     console.error("Could not load Preventive Pack detail:", error);
@@ -4070,7 +4081,8 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
   let uploading = false;
   let currentUsage = null;
   const endpoint = "/attachments/PREVENTIVE_VISIT/" + encodeURIComponent(visitId);
-  const closeButton = dialog.querySelector('form[method="dialog"] button');
+  const closeButton = dialog.querySelector('form[method="dialog"] button[type="submit"]');
+  const printButton = dialog.querySelector(".pp-detail-print");
   const stopClose = event => { if (uploading) event.preventDefault(); };
   dialog.addEventListener("cancel", stopClose);
   dialog.querySelector('form[method="dialog"]').addEventListener("submit", stopClose);
@@ -4161,6 +4173,7 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
     uploading = true;
     dialog.dataset.uploading = "true";
     input.disabled = save.disabled = closeButton.disabled = true;
+    if (printButton) printButton.disabled = true;
     save.textContent = "Uploading…";
     error.textContent = "";
     try {
@@ -4173,6 +4186,7 @@ async function addPreventiveVisitDocuments(dialog, visitId) {
       uploading = false;
       dialog.dataset.uploading = "false";
       input.disabled = closeButton.disabled = false;
+      if (printButton) printButton.disabled = false;
       save.disabled = currentUsage === null;
       save.textContent = "Upload";
     }
