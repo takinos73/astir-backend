@@ -622,3 +622,125 @@
   }
 
 }
+
+/* Audit Reports workspace: presentation only, all report controls retained. */
+#tab-reports .reports-header {
+  margin: 24px 0 16px;
+  padding: 22px 24px;
+  border: 1px solid #365c85;
+  border-radius: 12px;
+  background: linear-gradient(115deg, #203c5b, #182536);
+}
+#tab-reports .reports-header h2 { margin: 0; font-size: 24px; color: #edf5ff; }
+#tab-reports .reports-subtitle { margin: 7px 0 0; color: #adc3dd; font-size: 13px; }
+#tab-reports .reports-card {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 22px;
+  border: 1px solid #344a64;
+  border-radius: 12px;
+  background: #18222f;
+}
+#tab-reports .reports-grid {
+  grid-template-columns: minmax(230px,1.2fr) minmax(0,2.5fr) minmax(150px,.8fr) minmax(150px,.8fr);
+  grid-template-areas: "type period line status";
+  align-items: start;
+  gap: 20px 16px;
+  margin: 0 0 22px;
+}
+#tab-reports .reports-grid > * { min-width: 0; }
+#tab-reports .reports-grid .field { gap: 8px; }
+#tab-reports .report-period-field > label { display: block; margin-bottom: 8px; }
+#tab-reports .reports-grid label { color: #aec5df; font-size: 12px; font-weight: 600; }
+#tab-reports .reports-grid .field-right,
+#tab-reports .reports-grid .field:has(#reportStatus) { max-width: none; width: 100%; justify-self: stretch; }
+#tab-reports .reports-card select,
+#tab-reports .reports-card input:not([type="checkbox"]):not([type="hidden"]),
+#tab-reports #reportLineBtn {
+  box-sizing: border-box;
+  min-height: 42px;
+  border: 1px solid #405672;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #121c29;
+  color: #e3edf9;
+  font-family: inherit;
+  font-size: 13px;
+}
+#tab-reports .report-period-presets {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#tab-reports .report-period-btn {
+  flex: 1 1 90px;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid #3b506b;
+  border-radius: 8px;
+  background: #202f42;
+  color: #b9cde5;
+  line-height: 1.2;
+}
+#tab-reports .report-period-btn:hover { background: #2a405b; border-color: #6797cc; }
+#tab-reports .report-period-btn.active { background: #2d5f93; border-color: #77a9df; color: #fff; box-shadow: inset 0 0 0 1px #77a9df30; }
+#tab-reports #reportDateRange { flex: 1 1 120px; width: 120px; max-width: 100%; text-align: center; }
+#tab-reports .report-custom-period { max-width: none; margin-top: 8px; }
+#tab-reports .multi-select { width: 100%; }
+#tab-reports .multi-select-menu { box-sizing: border-box; width: max(210px,100%); max-width: calc(100vw - 50px); border-color: #476282; background: #1d2c3e; }
+#tab-reports .reports-preview {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 12px;
+  padding: 18px;
+  margin: 0 0 20px;
+  border: 1px solid #3e5c7e;
+  border-left: 3px solid #78a9df;
+  border-radius: 10px;
+  background: #1d2d40;
+}
+#tab-reports .preview-title { grid-column: 1 / -1; margin: 0 0 2px; font-size: 15px; color: #d8eaff; }
+#tab-reports .reports-preview > div:not(.preview-title) {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #364d68;
+  border-radius: 8px;
+  background: #152231;
+  color: #c2d6ee;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+#tab-reports .reports-actions { align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid #344a64; flex-wrap: wrap; }
+#tab-reports .reports-actions button {
+  min-height: 40px; padding: 10px 16px; border: 1px solid #45698f;
+  border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+#tab-reports #generatePdfBtn { background: #2d5f93; border-color: #6698cc; color: #fff; }
+#tab-reports #generatePdfBtn:hover:enabled { background: #3873ae; }
+#tab-reports #resetReportBtn { background: #233043; border-color: #465b76; color: #c5d6eb; }
+#tab-reports #resetReportBtn:hover:enabled { background: #30435c; }
+#tab-reports button:focus-visible,
+#tab-reports select:focus-visible,
+#tab-reports input:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
+#tab-reports button:disabled { opacity: .5; cursor: default; }
+#tab-reports #fieldTechnician { grid-column: 1 / -1; max-width: 460px; }
+#tab-reports #fieldTechnician.field-hidden { display: none; }
+@media(max-width: 1250px) {
+  #tab-reports .reports-grid { grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-areas: "type line status" "period period period"; }
+  #tab-reports .reports-preview { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(max-width: 650px) {
+  #tab-reports .reports-header { padding: 18px; }
+  #tab-reports .reports-header h2 { font-size: 21px; }
+  #tab-reports .reports-card { padding: 16px; }
+  #tab-reports .reports-grid { grid-template-columns: minmax(0,1fr); grid-template-areas: "type" "period" "line" "status"; }
+  #tab-reports .reports-preview { grid-template-columns: minmax(0,1fr); padding: 14px; }
+  #tab-reports .report-period-btn { flex-basis: 95px; }
+}
