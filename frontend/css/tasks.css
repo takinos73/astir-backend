@@ -1243,7 +1243,7 @@ dialog.preventive-pack-detail {
 /* Main Tasks workspace only; dialogs and task semantics are unchanged. */
 #tab-tasks .tasks-workspace-header {
   margin: 20px 0 14px; padding: 20px 22px; border: 1px solid #365c85;
-  border-radius: 12px; background: linear-gradient(115deg,#203c5b,#161c24);
+  border-radius: 12px; background: linear-gradient(115deg,#0b1727,#1a3452);
 }
 #tab-tasks .tasks-workspace-header h2 {
    margin: 0; 
