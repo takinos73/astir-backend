@@ -1242,13 +1242,16 @@ dialog.preventive-pack-detail {
 
 /* Main Tasks workspace only; dialogs and task semantics are unchanged. */
 #tab-tasks .tasks-workspace-header {
-  margin: 24px 0 16px; padding: 22px 24px; border: 1px solid #365c85;
+  margin: 20px 0 14px; padding: 20px 22px; border: 1px solid #365c85;
   border-radius: 12px; background: linear-gradient(115deg,#203c5b,#182536);
 }
-#tab-tasks .tasks-workspace-header h2 { margin: 0; font-size: 24px; color: #edf5ff; }
+#tab-tasks .tasks-workspace-header h2 {
+   margin: 0; 
+   font-size: 24px; 
+   color: #edf5ff; }
 #tab-tasks .tasks-workspace-header p { margin: 7px 0 0; color: #adc3dd; font-size: 13px; }
 #tab-tasks .kpi-strip { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-bottom: 16px; }
-#tab-tasks .kpi-card { background: #1b2939; border: 1px solid #38516e; border-top: 3px solid #679fdf; border-radius: 10px; padding: 15px; }
+#tab-tasks .kpi-card { background: #1b2939; border: 1px solid #38516e; border-top: 3px solid #679fdf; border-radius: 10px; padding: 12px; }
 #tab-tasks .kpi-card:nth-child(2) { border-top-color: #c77783; }
 #tab-tasks .kpi-card:nth-child(3) { border-top-color: #b39a59; }
 #tab-tasks .kpi-card:nth-child(4) { border-top-color: #6baf9d; }
