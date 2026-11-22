@@ -143,15 +143,13 @@ function renderAssetsCards() {
     </div>
   `;
 
-  // ---- Activity click → Asset History tab ----
+  // Breakdown activity opens Breakdowns; other activity retains History.
   const activityEl = card.querySelector(".activity-badge");
   if (activityEl) {
-    activityEl.addEventListener("click", e => {
+    activityEl.addEventListener("click", async e => {
       e.stopPropagation();
-      openAssetViewBySerial(a.serial_number);
-      requestAnimationFrame(() => {
-        activateAssetTab("history");
-      });
+      await openAssetViewBySerial(a.serial_number);
+      activateAssetTab(activity.is_breakdown ? "breakdowns" : "history");
     });
   }
 
