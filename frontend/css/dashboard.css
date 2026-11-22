@@ -1460,7 +1460,7 @@
 
 /* Technician Dashboard presentation, scoped to retain all existing behavior. */
 #tab-dashboard .dashboard-header {
-  box-sizing: border-box; margin: 24px 0 16px; padding: 22px 24px;
+  box-sizing: border-box; margin: 22px 0 16px; padding: 18px 20px;
   border: 1px solid #36536e; border-radius: 12px;
   background: linear-gradient(115deg,#0b1727,#172d47);
 }
