@@ -758,3 +758,29 @@
  #tab-library .library-search input { width: 100%; }
  #tab-library .library-header h2 { font-size: 20px; }
 }
+
+/* Shared frequency palette for Library group headings and row badges. */
+#tab-library .library-group-header.freq-weekly,
+#tab-library .library-frequency.freq-weekly { color: #87cb99; }
+#tab-library .library-frequency.freq-weekly { background: #20382c; border-color: #456c51; }
+#tab-library .library-group-header.freq-biweekly,
+#tab-library .library-frequency.freq-biweekly { color: #afe0a5; }
+#tab-library .library-frequency.freq-biweekly { background: #293a29; border-color: #526e48; }
+#tab-library .library-group-header.freq-monthly,
+#tab-library .library-frequency.freq-monthly { color: #86c9f5; }
+#tab-library .library-frequency.freq-monthly { background: #20394d; border-color: #426d8e; }
+#tab-library .library-group-header.freq-bimonthly,
+#tab-library .library-frequency.freq-bimonthly { color: #c2a7ee; }
+#tab-library .library-frequency.freq-bimonthly { background: #322840; border-color: #6c568c; }
+#tab-library .library-group-header.freq-quarterly,
+#tab-library .library-frequency.freq-quarterly { color: #ebcd85; }
+#tab-library .library-frequency.freq-quarterly { background: #3b321b; border-color: #7c672f; }
+#tab-library .library-group-header.freq-semiannual,
+#tab-library .library-frequency.freq-semiannual { color: #f4b77c; }
+#tab-library .library-frequency.freq-semiannual { background: #3d2d20; border-color: #89623c; }
+#tab-library .library-group-header.freq-annual,
+#tab-library .library-frequency.freq-annual { color: #f09ba8; }
+#tab-library .library-frequency.freq-annual { background: #3d252e; border-color: #87505d; }
+#tab-library .library-group-header.freq-longterm,
+#tab-library .library-frequency.freq-longterm { color: #ceb2a2; }
+#tab-library .library-frequency.freq-longterm { background: #352c28; border-color: #736054; }
