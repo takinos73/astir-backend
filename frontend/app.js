@@ -6443,6 +6443,7 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
       const toEl = document.getElementById("taskDateTo");
       if (fromEl) fromEl.value = "";
       if (toEl) toEl.value = "";
+      document.getElementById("taskDateRange")?._flatpickr?.clear(false);
 
       // UI state
       btns.forEach(b => b.classList.remove("active"));
@@ -6455,6 +6456,46 @@ getEl("printTasksBtn")?.addEventListener("click", printTasks);
 // =====================
 // TASKS – DATE RANGE HANDLER (MASTER FILTER)
 // =====================
+// A single range picker feeds the existing Tasks date filter inputs.
+(function initTasksRangePicker() {
+  const input = document.getElementById("taskDateRange");
+  const from = document.getElementById("taskDateFrom");
+  const to = document.getElementById("taskDateTo");
+  const clear = document.getElementById("clearTaskDateRange");
+  if (!input || !from || !to || !clear) return;
+  if (typeof flatpickr !== "function") return; // Keep the native date inputs as a fallback.
+  const picker = flatpickr(input, {
+    mode: "range",
+    dateFormat: "d-m-Y",
+    allowInput: false,
+    disableMobile: true,
+    onChange(dates, text, instance) {
+      if (dates.length !== 2) return;
+      from.value = instance.formatDate(dates[0], "Y-m-d");
+      to.value = instance.formatDate(dates[1], "Y-m-d");
+      onTaskDateRangeChange();
+    },
+    onClose(dates, text, instance) {
+      // An unfinished selection must not replace the currently applied range.
+      if (dates.length === 1) {
+        instance.setDate([from.value, to.value].filter(Boolean), false, "Y-m-d");
+      }
+    }
+  });
+  from.hidden = true;
+  to.hidden = true;
+  input.hidden = false;
+  clear.hidden = false;
+  document.querySelector("#tab-tasks .date-range-sep").hidden = true;
+  clear.addEventListener("click", () => {
+    picker.clear(false);
+    from.value = "";
+    to.value = "";
+    onTaskDateRangeChange();
+    input.focus();
+  });
+})();
+
 function onTaskDateRangeChange() {
   const fromVal = document.getElementById("taskDateFrom")?.value;
   const toVal = document.getElementById("taskDateTo")?.value;

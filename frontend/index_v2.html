@@ -6447,6 +6447,7 @@
   <!-- TAB: TASKS -->
   <!-- ===================== -->
   <div id="tab-tasks">
+    <header class="tasks-workspace-header"><h2>Maintenance Tasks</h2><p>Plan, track and complete maintenance work.</p></header>
 
     <!-- KPIs -->
     <section class="kpi-strip">
@@ -6576,7 +6577,9 @@
 
 
         <div class="date-range-pill">
-          <span class="date-range-label">📅</span>
+          <span class="date-range-label" aria-hidden="true">📅</span>
+          <input id="taskDateRange" type="text" placeholder="Select period" aria-label="Task due date range" readonly hidden>
+          <button id="clearTaskDateRange" type="button" aria-label="Clear task date range" title="Clear period" hidden>×</button>
 
           <input
             id="taskDateFrom"
