@@ -6043,6 +6043,7 @@
           ⓘ
         </span>
       </h2>
+      <p class="library-subtitle">Manage preventive tasks and scheduled packages.</p>
     </div>
 
     <div class="library-header-actions">
@@ -6130,6 +6131,17 @@
     </button>    
   </section>
 
+  <section class="library-overview" aria-label="Selected model summary">
+    <div><strong id="libraryTaskCount">—</strong><span>Preventive tasks</span></div>
+    <div><strong id="libraryPackageCount">—</strong><span>Active package templates</span></div>
+    <div><strong id="libraryMonthlyLoad">—</strong><span>Monthly workload · standalone tasks</span></div>
+  </section>
+  <div class="library-task-heading">
+    <h3>Preventive Tasks</h3>
+    <label class="library-search" for="libraryTaskSearch">Search tasks
+      <input id="libraryTaskSearch" type="search" placeholder="Task, section or unit…" autocomplete="off">
+    </label>
+  </div>
   <section class="library-content" id="libraryContent">
     <div class="library-empty">
       Select an asset model to view its preventive plan

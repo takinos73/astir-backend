@@ -410,7 +410,10 @@
   const includeArchived = document.createElement("input");
   includeArchived.type = "checkbox";
   archiveFilter.append(includeArchived, " Εμφάνιση αρχειοθετημένων προτύπων");
-  section.append(archiveFilter, definitions);
+  const scheduledCard = document.createElement("div");
+  scheduledCard.className = "library-scheduled-card";
+  scheduledCard.append(...section.childNodes);
+  section.append(scheduledCard, definitions, archiveFilter);
   includeArchived.addEventListener("change", loadPackagePlan);
   document.addEventListener("preventive-package-updated", loadPackagePlan);
 
@@ -452,6 +455,7 @@
     const model = modelSelect.value.trim();
     rows.replaceChildren();
     definitions.replaceChildren();
+    document.getElementById("libraryPackageCount").textContent = model ? "…" : "—";
     table.hidden = true;
     section.hidden = !model;
     status.textContent = model ? "Φόρτωση προγραμματισμένων πακέτων…" : "";
@@ -472,6 +476,7 @@
       if (!Array.isArray(assignments)) throw new Error("Invalid assignments response");
       if (request !== currentRequest) return;
 
+      document.getElementById("libraryPackageCount").textContent = packages.filter(pack => !pack.archived_at).length;
       rows.replaceChildren(...assignments.map(createAssignmentRow));
       const heading = document.createElement("h3");
       heading.textContent = "Πρότυπα πακέτων";
@@ -497,6 +502,7 @@
         ? "" : "Δεν υπάρχουν προγραμματισμένα πακέτα για αυτό το μοντέλο.";
     } catch (error) {
       if (request !== currentRequest) return;
+      document.getElementById("libraryPackageCount").textContent = "—";
       console.error("Could not load the preventive package plan:", error);
       status.textContent = "Δεν ήταν δυνατή η φόρτωση του προγράμματος πακέτων.";
     }

@@ -243,6 +243,13 @@ function renderLibraryTable() {
   const model = document.getElementById("libraryModelSelect")?.value;
   const container = document.getElementById("libraryContent");
   if (!container) return;
+  const entryForSummary = libraryData.find(e => e.model === model);
+  const summaryPlans = Array.isArray(entryForSummary?.plans) ? entryForSummary.plans : [];
+  document.getElementById("libraryTaskCount").textContent = model ? summaryPlans.length : "—";
+  document.getElementById("libraryMonthlyLoad").textContent = model
+    ? calculatePreventiveMonthlyLoad(summaryPlans).hours + " h" : "—";
+  const search = document.getElementById("libraryTaskSearch");
+  search.disabled = !summaryPlans.length;
 
   if (!model) {
     container.innerHTML = `
@@ -373,8 +380,8 @@ return `
       }
     </td>
 
-    <td class="${freq.className}">
-      ${freq.label}
+    <td>
+      <span class="library-frequency ${freq.className}">${freq.label}</span>
     </td>
 
     <td>
@@ -478,6 +485,7 @@ console.table(
   }))
 );
 applyRoleVisibility();
+filterLibraryTasks();
 
 }
 
@@ -4447,3 +4455,32 @@ if (printBtn) {
 } else {
   console.error("❌ printLibraryBtn NOT FOUND in DOM");
 }
+
+// Search affects the displayed standalone rules; Print retains the full maintenance plan.
+function filterLibraryTasks() {
+  const container = document.getElementById("libraryContent");
+  if (!container) return;
+  const query = (document.getElementById("libraryTaskSearch")?.value || "").trim().toLocaleLowerCase();
+  const groups = container.querySelectorAll(".library-group-row");
+  let visible = 0;
+  for (const group of groups) {
+    let row = group.nextElementSibling;
+    let matched = 0;
+    while (row && !row.classList.contains("library-group-row")) {
+      const text = [...row.cells].slice(0, 4).map(cell => cell.textContent).join(" ").toLocaleLowerCase();
+      const match = !query || text.includes(query);
+      row.hidden = !match;
+      if (query) row.style.display = match ? "" : "none";
+      else row.style.display = group.classList.contains("collapsed") ? "none" : "";
+      matched += Number(match);
+      row = row.nextElementSibling;
+    }
+    group.hidden = matched === 0;
+    visible += matched;
+  }
+  let empty = container.querySelector(".library-search-empty");
+  if (!empty) { empty = document.createElement("p"); empty.className = "library-search-empty"; empty.setAttribute("role", "status"); container.appendChild(empty); }
+  empty.textContent = query && groups.length && !visible ? "No matching preventive tasks." : "";
+  empty.hidden = !empty.textContent;
+}
+document.getElementById("libraryTaskSearch")?.addEventListener("input", filterLibraryTasks);
