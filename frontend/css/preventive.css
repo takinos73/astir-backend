@@ -487,3 +487,163 @@
 .pp-library-archive-filter input[type=checkbox] { width: 16px; height: 16px; margin: 0; }
 .pp-definition-view .pp-definition-archive-form { margin-top: 16px; padding: 14px; border: 1px solid #725c39; border-radius: 8px; background: #30291f; }
 .pp-definition-view .pp-definition-archive { color: #f0ce94; border: 1px solid #80643c; background: #352b1d; }
+
+/* PP composer: consistent with the visit details palette. */
+#preventivePackagePreview {
+  width: min(54rem, calc(100vw - 2rem));
+  padding: 0 24px 20px;
+  border-color: #3a506c;
+  box-shadow: 0 24px 80px #0008;
+  font-size: 14px;
+  line-height: 1.5;
+  scrollbar-color: #4a607c #151b24;
+}
+#preventivePackagePreview h3 {
+  margin: 0 -24px 22px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #42658b;
+  background: linear-gradient(115deg, #203f61, #1b2b40);
+  color: #edf5ff;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: .15px;
+}
+#preventivePackagePreview > label,
+#preventivePackagePreview fieldset label {
+  display: block;
+  color: #adc0d7;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+#preventivePackagePreview input,
+#preventivePackagePreview select {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #3b4b60;
+  border-radius: 8px;
+  background: #121c29;
+  color: #e7edf5;
+  font: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#preventivePackagePreview input:focus,
+#preventivePackagePreview select:focus {
+  outline: none;
+  border-color: #75a9e4;
+  box-shadow: 0 0 0 3px #75a9e426;
+}
+#preventivePackagePreview fieldset {
+  margin: 18px 0;
+  padding: 16px 18px 18px;
+  border: 1px solid #35465b;
+  border-radius: 12px;
+  background: #1b2533;
+  gap: 9px;
+}
+#preventivePackagePreview legend {
+  padding: 0 8px;
+  color: #c2dcfc;
+  font-size: 14px;
+  font-weight: 700;
+}
+#preventivePackagePreview #preventivePackageSourceControls {
+  background: #19222e;
+  border-left: 3px solid #526b88;
+}
+#preventivePackagePreview #preventivePackageDraftControls {
+  border-left: 3px solid #679fdf;
+}
+#preventivePackagePreview #preventivePackageSaveControls {
+  border-left: 3px solid #b19bd7;
+  margin-top: 4px;
+}
+#preventivePackagePreview #preventivePackageSourceStatus {
+  margin: 4px 0 0;
+  color: #9aacc3;
+  font-size: 12px;
+}
+#preventivePackagePreview #preventivePackagePreviewStatus {
+  margin: 20px 0 10px;
+  padding: 10px 14px;
+  border: 1px solid #365171;
+  border-radius: 8px;
+  background: #203249;
+  color: #c4dfff;
+  font-weight: 600;
+}
+#preventivePackagePreviewTasks {
+  margin: 0 0 16px;
+  padding-left: 28px;
+}
+#preventivePackagePreviewTasks:empty { display: none; }
+#preventivePackagePreviewTasks > li {
+  margin: 8px 0;
+  padding: 12px;
+  border: 1px solid #35465b;
+  border-radius: 9px;
+  background: #1e2b3b;
+  overflow-wrap: anywhere;
+}
+#preventivePackagePreviewTasks > li::marker { color: #8bb9ee; font-weight: 700; }
+#preventivePackagePreview button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #4b6483;
+  border-radius: 8px;
+  background: #233950;
+  color: #c9e2ff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+#preventivePackagePreview button:hover:enabled { background: #304f70; border-color: #709bcd; }
+#preventivePackagePreview button:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
+#preventivePackagePreview button:disabled { opacity: .45; cursor: default; }
+#preventivePackagePreviewTasks > li > button { margin: 8px 0 0 5px; padding: 5px 9px; min-height: 30px; }
+#preventivePackagePreviewTasks > li > button:last-child {
+  background: #392630; border-color: #79505b; color: #ebbec9;
+}
+#preventivePackagePreview #preventivePackageNewTask {
+  background: #285380; border-color: #608fc2; color: #f0f7ff;
+}
+#preventivePackagePreview #preventivePackageCopyTaskForm {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #35465b;
+}
+#preventivePackagePreview #preventivePackageSaveControls > button[type="submit"] {
+  justify-self: stretch;
+  margin-top: 10px;
+  min-height: 42px;
+  background: #2d5f93;
+  border-color: #6698cc;
+  color: #fff;
+  font-size: 13px;
+}
+#preventivePackagePreview #preventivePackageSaveControls > button[type="submit"]:hover:enabled { background: #3873ae; }
+#preventivePackagePreview #preventivePackageSaveStatus:not(:empty) {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid #d6ab64;
+  background: #362e22;
+  color: #f0d6ad;
+}
+#preventivePackagePreview > form[method="dialog"] {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #35465b;
+}
+#preventivePackagePreview > form[method="dialog"] button {
+  background: #222c3a; border-color: #45556a; color: #c5d0df;
+}
+@media (max-width: 540px) {
+  #preventivePackagePreview { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 0 14px 14px; }
+  #preventivePackagePreview h3 { margin: 0 -14px 18px; padding: 18px 14px; font-size: 18px; }
+  #preventivePackagePreview fieldset { padding: 12px; }
+}
