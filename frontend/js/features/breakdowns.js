@@ -17171,13 +17171,12 @@ function setupBreakdownWorkspace() {
   header.after(fault);
   const actions = modal.querySelector(".breakdown-detail-actions");
   fault.after(actions);
-  const more = document.createElement("details");
-  more.className = "bd-more";
-  more.innerHTML = "<summary>More</summary>";
+  const toolbar = document.createElement("div");
+  toolbar.className = "bd-detail-toolbar";
   for (const id of ["printBreakdownBtn", "editBreakdownBtn", "verifyDowntimeBtn"]) {
-    more.appendChild(document.getElementById(id));
+    toolbar.appendChild(document.getElementById(id));
   }
-  actions.appendChild(more);
+  actions.appendChild(toolbar);
 
   const incident = document.createElement("details");
   incident.className = "bd-fold";

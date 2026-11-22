@@ -14,8 +14,10 @@ async function printPreventivePackageVisit(visitId) {
 }
 
 function buildPreventiveVisitReport(visit, attachments) {
+
   const report = document.createElement("main");
   report.className = "report";
+
   const add = (parent, tag, className, text) => {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -23,19 +25,23 @@ function buildPreventiveVisitReport(visit, attachments) {
     parent.appendChild(element);
     return element;
   };
+
   const date = value => {
     const parsed = new Date(value);
     return value && Number.isFinite(parsed.getTime())
       ? parsed.toLocaleString("en-GB", { timeZone: "Europe/Athens", hour12: false })
       : "—";
   };
+
   const minutes = value => {
     const hours = Math.floor(value / 60), remainder = value % 60;
     return (hours ? hours + " h " : "") + remainder.toLocaleString("en-GB") + " min";
   };
+
   const size = value => Number(value || 0) < 1048576
     ? (Number(value || 0) / 1024).toFixed(1) + " KB"
     : (Number(value) / 1048576).toFixed(1) + " MB";
+    
   const code = "PP" + String(visit.package_id).padStart(4, "0");
   const header = add(report, "header", "report-header");
   const brand = add(header, "div");
