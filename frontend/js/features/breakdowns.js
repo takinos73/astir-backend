@@ -5644,6 +5644,9 @@ body {
 .breakdown-code {
   font-size: 19px;
   font-weight: 800;
+  color: #f73347;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 

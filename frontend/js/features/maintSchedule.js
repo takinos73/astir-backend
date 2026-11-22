@@ -13815,6 +13815,9 @@ body {
 .sm-code {
   font-size: 19px;
   font-weight: 800;
+  color: #b77900;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .status {
