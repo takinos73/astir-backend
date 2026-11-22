@@ -27058,109 +27058,85 @@ app.get("/api/executions/:id/print", async (req, res) => {
   }
 });
 function buildExecutionReportHTML(e) {
-
-  return `
-<!DOCTYPE html>
-<html>
+  const escape = value => String(value ?? "—").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+  const value = input => escape(input === "" || input == null ? "—" : input);
+  const executed = e.executed_at ? new Date(e.executed_at) : null;
+  const executionDate = executed && !Number.isNaN(executed.getTime())
+    ? executed.toLocaleString("en-GB", { timeZone: "Europe/Athens", hour12: false }) : "—";
+  const printed = new Date().toLocaleDateString("en-GB", { timeZone: "Europe/Athens" });
+  const field = (label, content) => `<div class="field"><div class="label">${label}</div><div class="value">${value(content)}</div></div>`;
+  return `<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Job Report #${e.execution_id}</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Report #${escape(e.execution_id)}</title>
 <style>
-  body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    color: #111;
-  }
-
-  h1 {
-    font-size: 18px;
-    margin-bottom: 4px;
-  }
-
-  .muted {
-    color: #555;
-  }
-
-  .section {
-    margin-top: 18px;
-  }
-
-  .section-title {
-    font-weight: bold;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 6px;
-    padding-bottom: 2px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  td {
-    padding: 4px 6px;
-    vertical-align: top;
-  }
-
-  .label {
-    width: 160px;
-    color: #555;
-  }
-
-  .footer {
-    margin-top: 40px;
-  }
-
-  .signature {
-    margin-top: 24px;
-  }
+  @page { size: A4 portrait; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: #17233c; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.45; }
+  .report { max-width: 186mm; margin: 0 auto; }
+  .brand-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 13px; border-bottom: 2px solid #cad7e7; }
+  .brand { font-size: 25px; line-height: 1.1; font-weight: 800; letter-spacing: -.5px; }
+  .brand span { color: #2588e8; }
+  .brand-sub { margin-top: 6px; font-size: 6px; letter-spacing: 1.2px; color: #63728b; }
+  .report-meta { text-align: right; font-size: 9px; color: #63728b; }
+  .report-meta strong { display: block; color: #21304c; font-size: 11px; }
+  .job-heading { display: flex; align-items: center; gap: 12px; margin: 17px 0 5px; }
+  h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+  .status { display: inline-block; padding: 3px 10px; border: 1px solid #79b193; border-radius: 16px; background: #f0f8f3; color: #137848; font-size: 8px; font-weight: 700; }
+  .asset-name { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+  .asset-meta { color: #63728b; font-size: 10px; margin-top: 2px; }
+  .task { margin-top: 15px; padding: 12px 14px; border: 1px solid #c9d8ea; border-left: 3px solid #6696c6; border-radius: 5px; background: #f1f5fb; }
+  .task .value { font-size: 14px; font-weight: 700; }
+  h2 { display: flex; align-items: center; gap: 10px; font-size: 11px; margin: 18px 0 8px; break-after: avoid; }
+  h2::after { content: ""; flex: 1; height: 1px; background: #c7d5e7; }
+  .grid { display: grid; gap: 8px; margin-bottom: 8px; }
+  .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field { min-width: 0; padding: 9px 11px; border: 1px solid #d0dbea; border-radius: 5px; background: #f8fafd; break-inside: avoid; }
+  .label { color: #64748b; font-size: 7px; letter-spacing: .4px; font-weight: 700; margin-bottom: 4px; }
+  .value { overflow-wrap: anywhere; white-space: pre-wrap; }
+  .notes { padding: 12px 14px; min-height: 64px; background: #f8fafd; border: 1px solid #d0dbea; border-radius: 5px; white-space: pre-wrap; overflow-wrap: anywhere; orphans: 3; widows: 3; }
+  .signatures { margin-top: 24px; break-inside: avoid; }
+  .signature { padding: 12px; border: 1px solid #ccd8e7; border-radius: 5px; }
+  .signature strong { font-size: 10px; }
+  .signature-line { margin: 30px 0 8px; border-bottom: 1px solid #718097; }
+  .signature-date { color: #63728b; font-size: 9px; }
+  .footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; padding-top: 7px; border-top: 1px solid #c7d5e7; color: #748197; font-size: 7px; break-inside: avoid; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  @media screen { body { padding: 24px; } }
 </style>
 </head>
-
 <body>
-
-<h1>JOB REPORT</h1>
-<div class="muted">
-  Execution ID: #${e.execution_id}<br/>
-  Status: Completed<br/>
-  Printed: ${new Date().toLocaleDateString()}
-</div>
-
-<div class="section">
-  <div class="section-title">ASSET</div>
-  <table>
-    <tr><td class="label">Machine</td><td>${e.machine_name}</td></tr>
-    <tr><td class="label">Serial No</td><td>${e.serial_number}</td></tr>
-    <tr><td class="label">Line</td><td>${e.line_code}</td></tr>
-    <tr><td class="label">Section</td><td>${e.section || "-"}</td></tr>
-    <tr><td class="label">Unit</td><td>${e.unit || "-"}</td></tr>
-  </table>
-</div>
-
-<div class="section">
-  <div class="section-title">EXECUTION DETAILS</div>
-  <table>
-    <tr><td class="label">Task</td><td>${e.task}</td></tr>
-    <tr><td class="label">Type</td><td>${e.type || "-"}</td></tr>
-    <tr><td class="label">Executed By</td><td>${e.executed_by || "-"}</td></tr>
-    <tr><td class="label">Execution Date</td><td>${new Date(e.executed_at).toLocaleString()}</td></tr>
-    <tr><td class="label">Notes</td><td>${e.notes || "-"}</td></tr>
-  </table>
-</div>
-
-<div class="footer">
-  <div class="signature">Technician Signature: __________________________</div>
-  <div class="signature">Supervisor Signature: __________________________</div>
-</div>
-
-<script>
-  window.onload = () => window.print();
-</script>
-
+<main class="report">
+  <header class="brand-header">
+    <div><div class="brand">ASTIR <span>CMMS</span></div><div class="brand-sub">MAINTENANCE MANAGEMENT SYSTEM</div></div>
+    <div class="report-meta"><strong>JOB EXECUTION REPORT</strong>Maintenance Detail<br>Printed: ${printed}</div>
+  </header>
+  <div class="job-heading"><h1>JOB #${escape(e.execution_id)}</h1><span class="status">COMPLETED</span></div>
+  <div class="asset-name">${value(e.machine_name)}</div>
+  <div class="asset-meta">S/N ${value(e.serial_number)} · Line ${value(e.line_code)}</div>
+  <section class="task"><div class="label">TASK</div><div class="value">${value(e.task)}</div></section>
+  <h2>ASSET &amp; LOCATION</h2>
+  <div class="grid three">${field("MACHINE", e.machine_name)}${field("SERIAL NUMBER", e.serial_number)}${field("LINE", e.line_code)}</div>
+  <div class="grid two">${field("SECTION", e.section)}${field("UNIT", e.unit)}</div>
+  <h2>EXECUTION DETAILS</h2>
+  <div class="grid two">${field("EXECUTED BY", e.executed_by)}${field("EXECUTION DATE", executionDate)}</div>
+  ${field("MAINTENANCE TYPE", e.type)}
+  <h2>NOTES</h2>
+  <div class="notes">${value(e.notes)}</div>
+  <div class="grid two signatures">
+    <div class="signature"><strong>Technician signature</strong><div class="signature-line"></div><div class="signature-date">Date:</div></div>
+    <div class="signature"><strong>Supervisor signature</strong><div class="signature-line"></div><div class="signature-date">Date:</div></div>
+  </div>
+  <footer class="footer"><span>ASTIR S.A. | CMMS</span><span>JOB #${escape(e.execution_id)}</span></footer>
+</main>
+<script>window.onload = () => window.print();</script>
 </body>
-</html>
-`;
+</html>`;
 }
 /* =====================================================
     KPIs - MTTR (Mean Time To Repair) per Asset
