@@ -686,7 +686,7 @@
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
   margin: 24px 0 16px; padding: 22px 24px;
   border: 1px solid #365c85; border-radius: 12px;
-  background: linear-gradient(115deg,#0b1727,#1a3452);
+  background: linear-gradient(115deg,#0b1727,#172d47);
 }
 #tab-library .library-header h2 { margin: 0; font-size: 24px; }
 #tab-library .library-subtitle { margin: 7px 0 0; color: #adc3dd; font-size: 13px; }
