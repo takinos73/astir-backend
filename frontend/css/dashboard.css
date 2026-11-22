@@ -1462,7 +1462,7 @@
 #tab-dashboard .dashboard-header {
   box-sizing: border-box; margin: 24px 0 16px; padding: 22px 24px;
   border: 1px solid #36536e; border-radius: 12px;
-  background: linear-gradient(115deg,#203c5b,#161c24);
+  background: linear-gradient(115deg,#0b1727,#172d47);
 }
 #tab-dashboard .dashboard-title { font-size: 25px; font-weight: 700; color: #edf5ff; }
 #tab-dashboard .dashboard-subtitle { margin-top: 5px; color: #adc0d6; font-size: 13px; }
