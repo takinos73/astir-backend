@@ -2765,7 +2765,7 @@ function ensureSmActionBar() {
       "button";
 
     printBtn.className =
-      "btn-table";
+      "btn-table sm-detail-print";
 
     printBtn.textContent =
       "🖨 Print";

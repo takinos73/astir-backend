@@ -2759,3 +2759,32 @@ input[type="radio"] {
 .incident-media [hidden] {
   display: none;
 }
+
+/* SM Details: match the BD print action. */
+#scheduledMaintenanceDetailModal .sm-detail-print {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 12px;
+  background: #1c3047;
+  border: 1px solid #3b6087;
+  border-radius: 8px;
+  color: #bedcff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+#scheduledMaintenanceDetailModal .sm-detail-print:hover { background: #284362; }
+#scheduledMaintenanceDetailModal .sm-detail-print:focus-visible {
+  outline: 2px solid #a5ceff;
+  outline-offset: 3px;
+}
+#scheduledMaintenanceDetailModal .sm-detail-print:disabled { opacity: .5; cursor: default; }
