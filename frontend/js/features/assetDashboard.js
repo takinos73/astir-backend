@@ -1027,12 +1027,14 @@ window.renderAssetDashboard = function () {
         <div class="asset-metrics">
 
           <div class="metric overdue">
-            🔴 Overdue: ${a.overdue}
+            <strong class="metric-count">${a.overdue}</strong>
+            <span class="metric-label">Overdue</span>
             <span class="trend">${a.overdueTrend || ""}</span>
           </div>
 
           <div class="metric soon">
-            🟠 Due soon: ${a.dueSoon}
+            <strong class="metric-count">${a.dueSoon}</strong>
+            <span class="metric-label">Due soon</span>
           </div>
           ${
             (Number(a.safetyOverdue) > 0 ||
