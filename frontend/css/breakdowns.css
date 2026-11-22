@@ -2600,3 +2600,55 @@ input[type="date"] {
   font-size: 12px;
 }
 .bd-no-work[hidden] { display: none; }
+
+/* BD corrective task actions: subdued colors, distinct from status badges. */
+#breakdownDetailModal .restoration-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#breakdownDetailModal .restoration-task-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px 11px;
+  border: 1px solid #48576b;
+  border-radius: 8px;
+  background: #253040;
+  color: #d7e3f2;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+#breakdownDetailModal .restoration-task-actions > button:hover { background: #344358; }
+#breakdownDetailModal .restoration-task-actions > .restoration-attachment-btn {
+  background: #1c3047; border-color: #3b6087; color: #bedcff;
+}
+#breakdownDetailModal .restoration-task-actions > .restoration-attachment-btn:hover { background: #284362; }
+#breakdownDetailModal .restoration-task-actions > .restoration-undo-btn {
+  background: #392e1c; border-color: #806437; color: #f4d28b;
+}
+#breakdownDetailModal .restoration-task-actions > .restoration-undo-btn:hover { background: #504026; }
+#breakdownDetailModal .restoration-task-actions > .restoration-complete-btn {
+  background: #16382f; border-color: #36785f; color: #9de5c1;
+}
+#breakdownDetailModal .restoration-task-actions > .restoration-complete-btn:hover { background: #214d40; }
+#breakdownDetailModal .restoration-task-actions > .restoration-delete-btn {
+  background: #39232b; border-color: #794351; color: #f1b2bd;
+}
+#breakdownDetailModal .restoration-task-actions > .restoration-delete-btn:hover { background: #50303b; }
+#breakdownDetailModal .restoration-task-actions > button:focus-visible {
+  outline: 2px solid #a5ceff;
+  outline-offset: 3px;
+}
+#breakdownDetailModal .restoration-task-actions > button:disabled {
+  opacity: .5;
+  cursor: default;
+}
