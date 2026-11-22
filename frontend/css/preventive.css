@@ -647,3 +647,36 @@
   #preventivePackagePreview h3 { margin: 0 -14px 18px; padding: 18px 14px; font-size: 18px; }
   #preventivePackagePreview fieldset { padding: 12px; }
 }
+
+/* Align draft actions independently of title length. */
+#preventivePackagePreviewTasks { counter-reset: pp-draft-row; }
+#preventivePackagePreviewTasks > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 32px 88px;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  counter-increment: pp-draft-row;
+}
+#preventivePackagePreviewTasks > li::before {
+  content: counter(pp-draft-row) ".";
+  position: absolute;
+  right: calc(100% + 8px);
+  color: #8bb9ee;
+  font-weight: 700;
+}
+#preventivePackagePreviewTasks .pp-draft-task-title { min-width: 0; overflow-wrap: anywhere; }
+#preventivePackagePreview #preventivePackagePreviewTasks > li > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px;
+  justify-self: stretch;
+}
+@media (max-width: 540px) {
+  #preventivePackagePreviewTasks > li { row-gap: 12px; }
+  #preventivePackagePreviewTasks .pp-draft-task-title { grid-column: 1 / -1; }
+  #preventivePackagePreviewTasks > li > button:first-of-type { grid-column: 2; }
+}

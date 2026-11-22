@@ -26,8 +26,11 @@
     const items = draftTasks.map((task, index) => {
       const item = document.createElement("li");
       const context = [task.section, task.unit].filter(Boolean).join(" / ");
-      item.textContent = [task.task || "Εργασία χωρίς τίτλο", context]
+      const title = document.createElement("span");
+      title.className = "pp-draft-task-title";
+      title.textContent = [task.task || "Εργασία χωρίς τίτλο", context]
         .filter(Boolean).join(" · ");
+      item.appendChild(title);
       const actions = [
         { text: "↑", label: "Μετακίνηση πάνω", target: index - 1 },
         { text: "↓", label: "Μετακίνηση κάτω", target: index + 1 },
