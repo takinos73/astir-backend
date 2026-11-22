@@ -1946,6 +1946,7 @@ document.getElementById("taskViewDoneBtn")?.addEventListener("click", () => {
 
     // Κλείσε Task View (UX καθαρό)
     document.getElementById("taskViewOverlay").style.display = "none";
+    disableAssetViewTaskFocus();
 
     // Χρησιμοποίησε ΥΠΑΡΧΟΝ flow
     askTechnician(state.currentViewedTask.id);
@@ -4349,6 +4350,12 @@ document.getElementById("saveTaskBtn") ?.addEventListener(
           addOverlay.style.zIndex =
             "";
 
+          // Restore Asset View after Add Task, unless Task Details is still visible.
+          const taskDetails = document.getElementById("taskViewOverlay");
+          if (!taskDetails || getComputedStyle(taskDetails).display === "none") {
+            disableAssetViewTaskFocus();
+          }
+
         }
 
 
@@ -4753,6 +4760,7 @@ state.lockSectionOnce = !!state.followUpSectionValue;
   // 🔹 Close Task View to save one click (UX win)
   const tv = document.getElementById("taskViewOverlay");
   if (tv) tv.style.display = "none";
+  disableAssetViewTaskFocus();
 });
 
 document.getElementById("nt-type")?.addEventListener("input", () => {
