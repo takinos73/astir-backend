@@ -2451,3 +2451,15 @@
 #managementForemanTickets .mft-footer button { padding: 8px 13px; border: 1px solid #6088b4; border-radius: 7px; background: #2a527c; color: #edf5ff; font-size: 12px; cursor: pointer; }
 #managementForemanTickets button:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
 @media(max-width:650px) { #managementForemanTickets .mft-totals { grid-template-columns: repeat(2,minmax(0,1fr)); } #managementForemanTickets .mft-outcomes { grid-template-columns: minmax(0,1fr); } #managementForemanTicketsBody { padding: 14px; } }
+
+/* Foreman Tickets participates in the standard Management widget layout. */
+#managementForemanTickets { margin: 0; container-type: inline-size; container-name: foreman-widget; }
+#managementForemanTickets .mft-header { flex-wrap: nowrap; align-items: flex-start; }
+#managementForemanTickets .management-widget-title { font-size: 19px; color: #edf5ff; }
+#managementForemanTickets .management-widget-subtitle { color: #aebfd6; }
+#managementForemanTicketsScope { display: block; margin-top: 7px; }
+#managementForemanTickets .management-widget-remove-btn { flex-shrink: 0; }
+@container foreman-widget (max-width:650px) {
+  #managementForemanTickets .mft-totals { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #managementForemanTickets .mft-outcomes { grid-template-columns: minmax(0,1fr); }
+}

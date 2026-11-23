@@ -8,6 +8,9 @@
      STATE
   ===================== */
 
+  let foremanTicketsWidgetData = null;
+  let foremanTicketsWidgetMessage = "Loading Foreman tickets…";
+
   const managementState = {
     period: "month",
     area: "all",
@@ -318,6 +321,13 @@
 
 const managementWidgetRegistry = {
 
+  foreman_tickets: {
+    key: "foreman_tickets",
+    title: "Foreman Tickets",
+    subtitle: "Production reports overview",
+    sizeClass: "management-widget-large"
+  },
+
   maintenance_mix: {
     key: "maintenance_mix",
     title: "Maintenance Mix",
@@ -560,6 +570,31 @@ function createManagementWidgetCard(widgetKey) {
     body
   );
 
+  if (widgetKey === "foreman_tickets") {
+    card.id = "managementForemanTickets";
+    header.classList.add("mft-header");
+    body.id = "managementForemanTicketsBody";
+    body.className = "management-widget-body";
+    body.setAttribute("aria-live", "polite");
+    const scope = document.createElement("span");
+    scope.id = "managementForemanTicketsScope";
+    titleWrap.appendChild(scope);
+    const footer = document.createElement("footer");
+    footer.className = "mft-footer";
+    const open = document.createElement("button");
+    open.type = "button";
+    open.textContent = "View Production Reports";
+    open.title = "Open Production Reports with its own filters";
+    const target = document.getElementById("maintenanceReportsTabBtn");
+    open.hidden = !target || target.disabled || getComputedStyle(target).display === "none";
+    open.addEventListener("click", () => {
+      const tab = document.getElementById("maintenanceReportsTabBtn");
+      if (tab && !tab.disabled && getComputedStyle(tab).display !== "none") tab.click();
+    });
+    footer.appendChild(open);
+    card.appendChild(footer);
+  }
+
   return card;
 
 }
@@ -629,6 +664,7 @@ function renderManagementWidgets() {
   renderManagementBacklogHealth();
   renderManagementMaintenanceEffort();
   renderManagementWorkloadForecast();
+  renderManagementForemanTickets();
 
 }
 
@@ -1090,7 +1126,9 @@ if (addWidgetBtn) {
 
 let foremanTicketRequest = 0;
 
-function renderManagementForemanTickets(data, message = "Unable to load Foreman tickets.") {
+function renderManagementForemanTickets(data = foremanTicketsWidgetData, message = foremanTicketsWidgetMessage) {
+  foremanTicketsWidgetData = data;
+  foremanTicketsWidgetMessage = message;
   const body = document.getElementById("managementForemanTicketsBody");
   const scope = document.getElementById("managementForemanTicketsScope");
   if (!body) return;
@@ -1203,7 +1241,7 @@ async function loadManagementDashboardData({ silent = false } = {}) {
       await response.json();
 
     if (ticketRequest === foremanTicketRequest) {
-      renderManagementForemanTickets(data?.foreman_tickets);
+      renderManagementForemanTickets(data?.foreman_tickets || null, "Unable to load Foreman tickets.");
     }
 
 
@@ -1246,7 +1284,7 @@ async function loadManagementDashboardData({ silent = false } = {}) {
 
   } catch (err) {
 
-    if (ticketRequest === foremanTicketRequest) renderManagementForemanTickets(null);
+    if (ticketRequest === foremanTicketRequest) renderManagementForemanTickets(null, "Unable to load Foreman tickets.");
 
     console.error(
       "MANAGEMENT DASHBOARD LOAD ERROR:",
@@ -3838,10 +3876,6 @@ const dailyBars =
      INIT
   ===================== */
 
-    document.getElementById("managementForemanTicketsOpen")?.addEventListener("click", () => {
-      const target = document.getElementById("maintenanceReportsTabBtn");
-      if (target && !target.disabled && getComputedStyle(target).display !== "none") target.click();
-    });
     updateScopeLabel();
     renderManagementWidgets();
     loadManagementDashboardData();
