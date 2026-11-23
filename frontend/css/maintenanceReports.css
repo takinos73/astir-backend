@@ -5342,7 +5342,7 @@ textarea {
 #maintenanceReportModalOverlay .reporting-modal-header {
   margin: 0 -22px 18px; padding: 19px 22px;
   border-bottom: 1px solid #4a678b; border-radius: 13px 13px 0 0;
-  background: linear-gradient(115deg,#24466e,#18283e);
+  background: linear-gradient(115deg,#0b1727,#172d47);
 }
 #maintenanceReportModalOverlay .reporting-modal-header h3 { font-size: 21px; line-height: 1.3; }
 #maintenanceReportModalOverlay .reporting-card-subtitle { color: #b7cbe3; line-height: 1.5; }
