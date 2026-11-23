@@ -5340,7 +5340,7 @@ textarea {
   scrollbar-color: #52657d #1e252e;
 }
 #maintenanceReportModalOverlay .reporting-modal-header {
-  margin: 0 -22px 18px; padding: 19px 22px;
+  margin: 0 -20px 16px; padding: 17px 20px;
   border-bottom: 1px solid #4a678b; border-radius: 13px 13px 0 0;
   background: linear-gradient(115deg,#0b1727,#172d47);
 }
