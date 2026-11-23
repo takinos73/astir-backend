@@ -16116,7 +16116,38 @@ const maintenanceWorkloadForecast = {
        RESPONSE
     ===================================================== */
 
+    // One source row per ticket; conversion counts follow recorded resolution_type.
+    // Failure is isolated so the existing Management widgets remain available.
+    let foremanTickets = null;
+    try {
+      const ticketResult = await pool.query(`
+        SELECT
+          COUNT(*)::int AS submitted,
+          COUNT(*) FILTER (WHERE mr.status = 'NEW')::int AS new_count,
+          COUNT(*) FILTER (WHERE mr.status = 'UNDER_REVIEW')::int AS under_review,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED')::int AS converted,
+          COUNT(*) FILTER (WHERE mr.status = 'CLOSED')::int AS closed,
+          COUNT(*) FILTER (WHERE mr.status NOT IN ('NEW','UNDER_REVIEW','CONVERTED','CLOSED') OR mr.status IS NULL)::int AS other_status,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND mr.resolution_type = 'BREAKDOWN')::int AS breakdown,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND mr.resolution_type = 'PLANNED_TASK')::int AS planned_task,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND (mr.resolution_type NOT IN ('BREAKDOWN','PLANNED_TASK') OR mr.resolution_type IS NULL))::int AS other_conversion,
+          COUNT(*) FILTER (WHERE mr.priority = 'URGENT')::int AS urgent,
+          COUNT(*) FILTER (WHERE mr.production_stopped IS TRUE)::int AS stopped
+        FROM maintenance_reports mr
+        JOIN assets a ON a.id = mr.asset_id
+        LEFT JOIN lines l ON l.id = a.line_id
+        WHERE mr.reported_at >= $1::timestamptz
+          AND mr.reported_at <= $2::timestamptz
+          AND ($3::text[] IS NULL OR UPPER(TRIM(l.name)) = ANY($3::text[]))
+      `, [fromDate.toISOString(), toDate.toISOString(), areaLines]);
+      foremanTickets = ticketResult.rows[0];
+    } catch (ticketError) {
+      console.error("Management Foreman ticket summary failed:", ticketError);
+    }
+
+
     res.json({
+      foreman_tickets: foremanTickets,
 
       period: {
         from:

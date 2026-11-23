@@ -1088,7 +1088,54 @@ if (addWidgetBtn) {
    LOAD MANAGEMENT DASHBOARD DATA
 ========================================================= */
 
+let foremanTicketRequest = 0;
+
+function renderManagementForemanTickets(data, message = "Unable to load Foreman tickets.") {
+  const body = document.getElementById("managementForemanTicketsBody");
+  const scope = document.getElementById("managementForemanTicketsScope");
+  if (!body) return;
+  if (scope) scope.textContent = scopeLabel?.textContent || "Current Management filters";
+  if (!data) {
+    body.replaceChildren();
+    const note = document.createElement("p");
+    note.className = "mft-message";
+    note.textContent = message;
+    body.appendChild(note);
+    return;
+  }
+  const count = key => Math.max(0, Math.trunc(Number(data[key]) || 0));
+  const total = count("submitted"), fresh = count("new_count"), review = count("under_review");
+  const converted = count("converted"), closed = count("closed");
+  const bd = count("breakdown"), task = count("planned_task"), other = count("other_conversion");
+  const rate = total ? (converted / total * 100).toFixed(1) + "%" : "—";
+  const percent = n => converted ? Math.min(100, n / converted * 100) : 0;
+  body.innerHTML = `
+    <div class="mft-totals">
+      <div><strong>${total}</strong><span>Submitted</span></div>
+      <div class="mft-awaiting"><strong>${fresh + review}</strong><span>Awaiting review</span><small>${fresh} New · ${review} Under review</small></div>
+      <div class="mft-converted"><strong>${converted}</strong><span>Converted</span></div>
+      <div><strong>${closed}</strong><span>Closed without conversion</span></div>
+    </div>
+    <div class="mft-outcomes">
+      <div class="mft-breakdown"><h4>Conversion breakdown</h4>
+        <div class="mft-bar" aria-hidden="true">
+          <span class="mft-bd" style="width:${percent(bd)}%"></span>
+          <span class="mft-task" style="width:${percent(task)}%"></span>
+          <span class="mft-other" style="width:${percent(other)}%"></span>
+        </div>
+        <div class="mft-legend"><span class="mft-bd-label">BD <strong>${bd}</strong></span><span class="mft-task-label">Planned Task <strong>${task}</strong></span>${other ? `<span>Other <strong>${other}</strong></span>` : ""}</div>
+      </div>
+      <div class="mft-rate"><h4>Conversion rate</h4><strong>${rate}</strong><small>${converted} of ${total} submitted tickets</small></div>
+    </div>
+    <div class="mft-flags"><span>${count("urgent")} Urgent</span><span>${count("stopped")} Production stopped</span></div>
+    ${count("other_status") ? `<p class="mft-message">${count("other_status")} tickets have another status.</p>` : ""}
+    ${total ? "" : '<p class="mft-message">No tickets submitted in this period and area.</p>'}
+    <p class="mft-note">Tickets submitted in selected period · Current outcome. Urgent and stopped are overlapping flags.</p>`;
+}
+
+
 async function loadManagementDashboardData({ silent = false } = {}) {
+  const ticketRequest = ++foremanTicketRequest;
 
   const range =
     getCurrentRange();
@@ -1098,8 +1145,10 @@ async function loadManagementDashboardData({ silent = false } = {}) {
     Custom selected but dates not applied yet.
   */
   if (!range) {
+    renderManagementForemanTickets(null, "Apply a custom period to load Foreman tickets.");
     return;
   }
+  renderManagementForemanTickets(null, "Loading Foreman tickets…");
 
 
   const maintenanceMixBody =
@@ -1153,6 +1202,10 @@ async function loadManagementDashboardData({ silent = false } = {}) {
     const data =
       await response.json();
 
+    if (ticketRequest === foremanTicketRequest) {
+      renderManagementForemanTickets(data?.foreman_tickets);
+    }
+
 
     managementDashboardData.maintenance_mix =
       data?.maintenance_mix || null;
@@ -1192,6 +1245,8 @@ async function loadManagementDashboardData({ silent = false } = {}) {
 
 
   } catch (err) {
+
+    if (ticketRequest === foremanTicketRequest) renderManagementForemanTickets(null);
 
     console.error(
       "MANAGEMENT DASHBOARD LOAD ERROR:",
@@ -3783,6 +3838,10 @@ const dailyBars =
      INIT
   ===================== */
 
+    document.getElementById("managementForemanTicketsOpen")?.addEventListener("click", () => {
+      const target = document.getElementById("maintenanceReportsTabBtn");
+      if (target && !target.disabled && getComputedStyle(target).display !== "none") target.click();
+    });
     updateScopeLabel();
     renderManagementWidgets();
     loadManagementDashboardData();

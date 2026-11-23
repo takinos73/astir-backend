@@ -2415,3 +2415,39 @@
   }
 
 }
+
+/* Management Foreman ticket summary, scoped to this card. */
+#managementForemanTickets { margin: 18px 0 22px; overflow: hidden; border: 1px solid #40536d; border-radius: 12px; background: #1e252e; color: #d9e4f2; }
+#managementForemanTickets .mft-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px 20px; background: linear-gradient(115deg,#203c5b,#161f2c); border-bottom: 1px solid #3e5877; }
+#managementForemanTickets h3 { margin: 0; font-size: 19px; color: #edf5ff; }
+#managementForemanTickets .mft-header p { margin: 4px 0 0; font-size: 12px; color: #aebfd6; }
+#managementForemanTicketsScope { max-width: 100%; font-size: 11px; color: #bbcee6; }
+#managementForemanTicketsBody { padding: 16px 20px; }
+#managementForemanTickets .mft-totals { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+#managementForemanTickets .mft-totals > div { min-width: 0; padding: 12px 14px; border: 1px solid #414d60; border-left: 3px solid #729cce; border-radius: 8px; background: #232d3a; }
+#managementForemanTickets .mft-totals > .mft-awaiting { border-left-color: #d8b361; }
+#managementForemanTickets .mft-totals > .mft-converted { border-left-color: #75b49c; }
+#managementForemanTickets .mft-totals > div:last-child { border-left-color: #9aa8bb; }
+#managementForemanTickets .mft-totals strong { display: block; font-size: 27px; line-height: 1.2; }
+#managementForemanTickets .mft-totals span { display: block; font-size: 12px; margin-top: 5px; }
+#managementForemanTickets small { display: block; font-size: 10px; color: #a2b4ca; margin-top: 5px; }
+#managementForemanTickets .mft-outcomes { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 12px; margin-top: 14px; }
+#managementForemanTickets .mft-outcomes > div { padding: 12px 14px; border: 1px solid #3d4d63; border-radius: 8px; background: #1c2735; }
+#managementForemanTickets h4 { margin: 0 0 10px; font-size: 12px; color: #c9dbef; }
+#managementForemanTickets .mft-bar { display: flex; height: 16px; overflow: hidden; background: #313c4b; border-radius: 5px; }
+#managementForemanTickets .mft-bd { background: #b65f70; }
+#managementForemanTickets .mft-task { background: #4f8fc9; }
+#managementForemanTickets .mft-other { background: #8b849c; }
+#managementForemanTickets .mft-legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 9px 0 0; font-size: 12px; }
+#managementForemanTickets .mft-bd-label { color: #eda5b1; }
+#managementForemanTickets .mft-task-label { color: #a4cfff; }
+#managementForemanTickets .mft-rate > strong { font-size: 25px; color: #edf5ff; }
+#managementForemanTickets .mft-flags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 13px; }
+#managementForemanTickets .mft-flags span { padding: 6px 10px; border: 1px solid #805264; border-radius: 7px; background: #362932; color: #eac0cb; font-size: 12px; }
+#managementForemanTickets .mft-flags span:last-child { border-color: #806a40; background: #342e24; color: #e6c88e; }
+#managementForemanTickets .mft-note { color: #96a9c0; font-size: 10px; margin: 12px 0 0; }
+#managementForemanTickets .mft-message { color: #b7c9de; font-size: 12px; }
+#managementForemanTickets .mft-footer { display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid #3a4a60; }
+#managementForemanTickets .mft-footer button { padding: 8px 13px; border: 1px solid #6088b4; border-radius: 7px; background: #2a527c; color: #edf5ff; font-size: 12px; cursor: pointer; }
+#managementForemanTickets button:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
+@media(max-width:650px) { #managementForemanTickets .mft-totals { grid-template-columns: repeat(2,minmax(0,1fr)); } #managementForemanTickets .mft-outcomes { grid-template-columns: minmax(0,1fr); } #managementForemanTicketsBody { padding: 14px; } }
