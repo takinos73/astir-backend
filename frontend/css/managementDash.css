@@ -2417,8 +2417,24 @@
 }
 
 /* Management Foreman ticket summary, scoped to this card. */
-#managementForemanTickets { margin: 16px 0 20px; overflow: hidden; border: 1px solid #40536d; border-radius: 12px; background: #1e252e; color: #d9e4f2; }
-#managementForemanTickets .mft-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px 20px; background: linear-gradient(115deg,#0b1727,#172d47); border-bottom: 1px solid #3e5877; }
+#managementForemanTickets {
+   margin: 16px 0 20px; 
+   overflow: hidden; 
+   border: 1px solid #40536d; 
+   border-radius: 12px; 
+   background: #1e252e; 
+   color: #d9e4f2; }
+
+#managementForemanTickets .mft-header { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  flex-wrap: wrap; 
+  gap: 12px; 
+  padding: 16px 20px; 
+  background: linear-gradient(115deg,#0b1727,#172d47); 
+  border-bottom: 1px solid #3e5877; }
+  
 #managementForemanTickets h3 { margin: 0; font-size: 19px; color: #edf5ff; }
 #managementForemanTickets .mft-header p { margin: 4px 0 0; font-size: 12px; color: #aebfd6; }
 #managementForemanTicketsScope { max-width: 100%; font-size: 11px; color: #bbcee6; }
