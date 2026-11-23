@@ -3772,25 +3772,8 @@ document
   );
 
 
-/* =====================
-   CLICK OUTSIDE MODAL
-===================== */
-
-document
-  .getElementById("newBreakdownOverlay")
-  ?.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target.id ===
-        "newBreakdownOverlay"
-      ) {
-        closeNewBreakdownModal();
-      }
-
-    }
-  );
+// New Breakdown is dismissed explicitly via X or Cancel.
+// Backdrop clicks must preserve the current draft.
 
   document.addEventListener(
   "click",
