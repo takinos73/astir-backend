@@ -1161,7 +1161,7 @@ function renderManagementForemanTickets(data = foremanTicketsWidgetData, message
           <span class="mft-task" style="width:${percent(task)}%"></span>
           <span class="mft-other" style="width:${percent(other)}%"></span>
         </div>
-        <div class="mft-legend"><span class="mft-bd-label">BD <strong>${bd}</strong></span><span class="mft-task-label">Planned Task <strong>${task}</strong></span>${other ? `<span>Other <strong>${other}</strong></span>` : ""}</div>
+        <div class="mft-legend"><span class="mft-bd-label">BD <strong>${bd}</strong></span><span class="mft-task-label">Task <strong>${task}</strong></span>${other ? `<span>Other <strong>${other}</strong></span>` : ""}</div>
       </div>
       <div class="mft-rate"><h4>Conversion rate</h4><strong>${rate}</strong><small>${converted} of ${total} submitted tickets</small></div>
     </div>

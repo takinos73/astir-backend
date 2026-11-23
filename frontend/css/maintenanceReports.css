@@ -5419,3 +5419,28 @@ textarea {
   #maintenanceReportModalOverlay .reporting-form-grid { grid-template-columns: minmax(0,1fr); }
   #maintenanceReportModalOverlay .reporting-modal-actions { flex-wrap: wrap; }
 }
+
+#maintenanceReportReviewOverlay .report-link-existing-btn { background: #233e59; border: 1px solid #5b83af; color: #cce3ff; }
+#maintenanceReportReviewOverlay .report-link-existing-btn[hidden] { display: none; }
+.report-existing-task-dialog { box-sizing: border-box; width: min(720px,94vw); max-height: 90dvh; margin: auto; overflow: auto; padding: 22px; border: 1px solid #4b6381; border-radius: 12px; background: #1c2531; color: #d9e5f4; font-family: inherit; }
+.report-existing-task-dialog::backdrop { background: #080d16aa; backdrop-filter: blur(3px); }
+.report-existing-task-dialog h3 { margin: 0 0 12px; color: #d2e7ff; }
+.report-existing-task-dialog p { font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-existing-task-dialog .ret-context, .report-existing-task-dialog .ret-hint { color: #a8bbd3; font-size: 12px; }
+.report-existing-task-dialog .ret-search label { display: block; margin-bottom: 7px; font-size: 12px; color: #b8cde6; }
+.report-existing-task-dialog .ret-search > div { display: flex; gap: 8px; }
+.report-existing-task-dialog input[type="search"] { min-width: 0; flex: 1; padding: 9px; border: 1px solid #475d79; border-radius: 7px; background: #131d2a; color: #e2edfa; }
+.report-existing-task-dialog button { padding: 8px 12px; border: 1px solid #567ca6; border-radius: 7px; background: #2a4b70; color: #e3f0ff; cursor: pointer; }
+.report-existing-task-dialog button:disabled { opacity: .5; cursor: default; }
+.report-existing-task-dialog .ret-list { max-height: 40vh; overflow: auto; }
+.report-existing-task-dialog .ret-task { display: flex; align-items: flex-start; gap: 10px; margin: 8px 0; padding: 12px; border: 1px solid #3c506a; border-radius: 8px; background: #212f40; cursor: pointer; }
+.report-existing-task-dialog .ret-task input { flex: 0 0 auto; accent-color: #81b0e5; }
+.report-existing-task-dialog .ret-task > span { min-width: 0; overflow-wrap: anywhere; }
+.report-existing-task-dialog .ret-task strong { display: block; font-size: 13px; }
+.report-existing-task-dialog .ret-task small { display: block; color: #a7bdd8; margin-top: 6px; line-height: 1.5; }
+.report-existing-task-dialog .ret-task:has(input:checked) { border-color: #8bb9ed; background: #294563; }
+.report-existing-task-dialog .ret-status { color: #d5c49c; }
+.report-existing-task-dialog .ret-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 14px; border-top: 1px solid #3d5069; }
+.report-existing-task-dialog :is(button,input):focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
+
+.report-task-reference { padding: 6px 10px; border: 1px solid #567ca6; border-radius: 7px; background: #233e59; color: #cce3ff; cursor: pointer; }
