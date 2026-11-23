@@ -1815,7 +1815,8 @@ function renderForemanReportAttachmentPreviews() {
 function setupForemanReportAttachmentPicker() {
   const input = document.getElementById("foremanReportAttachments");
   const choose = document.getElementById("chooseForemanReportAttachments");
-  if (!input || !choose) return;
+  if (!input || !choose || input.dataset.foremanPickerBound === "true") return;
+  input.dataset.foremanPickerBound = "true";
 
   choose.addEventListener("click", () => input.click());
   input.addEventListener("change", () => {
@@ -6506,6 +6507,9 @@ function startMaintenanceReportsBadgeRefresh() {
 ========================================================= */
 
 function openMaintenanceReportModal() {
+
+  // Also bind after an in-page login; repeated openings must not add listeners.
+  setupForemanReportAttachmentPicker();
 
   const overlay =
     document.getElementById(
