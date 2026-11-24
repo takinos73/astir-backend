@@ -9,7 +9,7 @@ import pool from "./db.js";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
-import { randomUUID, timingSafeEqual } from "crypto";
+import { randomUUID, timingSafeEqual, createHash } from "crypto";
 
 import {
   S3Client,
@@ -27343,6 +27343,14 @@ app.get("/kpis/mttr", async (req, res) => {
 const PORT = process.env.PORT || 10000;
 /* Admin ID 8 pilot. Disabled unless explicitly configured; no shared role password. */
 const mobilePilotTokens = new Map();
+const mobilePilotHash = value => createHash('sha256').update(value).digest('hex');
+const mobilePilotCookieName = '__Secure-astirMobilePilot';
+function mobilePilotCookie(req) {
+  return String(req.get('Cookie') || '').split(';').map(x=>x.trim()).find(x=>x.startsWith(mobilePilotCookieName+'='))?.slice(mobilePilotCookieName.length+1) || '';
+}
+function mobilePilotSetCookie(res, token, maxAge) {
+  res.setHeader('Set-Cookie', mobilePilotCookieName+'='+token+'; Path=/mobile-pilot-api; HttpOnly; Secure; SameSite=Strict; Max-Age='+maxAge);
+}
 const mobilePilotAttempts = new Map();
 const mobilePilotUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const mobilePilotEnabled = () => process.env.MOBILE_PILOT_ENABLED === 'true' && String(process.env.MOBILE_PILOT_ACCESS_KEY || '').length >= 24;
@@ -27357,8 +27365,14 @@ async function requireMobilePilot(req, res, next) {
   res.setHeader('Cache-Control', 'no-store');
   try {
     if (!mobilePilotEnabled()) mobilePilotError(403, 'Mobile pilot is disabled.');
-    const token = req.get('X-Mobile-Pilot-Token');
-    const session = token && mobilePilotTokens.get(token);
+    const headerToken = req.get('X-Mobile-Pilot-Token');
+    const token = headerToken || mobilePilotCookie(req);
+    let session = headerToken && mobilePilotTokens.get(token);
+    if (!session && !headerToken && /^[0-9a-f-]{72}$/i.test(token)) {
+      if (!['GET','HEAD'].includes(req.method) && req.get('Origin') !== 'https://'+req.get('Host')) mobilePilotError(403,'Open the pilot on this site to continue.');
+      const {rows} = await pool.query('SELECT expires_at FROM mobile_pilot_sessions WHERE token_hash=$1 AND owner_id=8 AND key_hash=$2 AND expires_at>NOW()',[mobilePilotHash(token),mobilePilotHash(process.env.MOBILE_PILOT_ACCESS_KEY)]);
+      if(rows.length) session={expires:new Date(rows[0].expires_at).getTime()};
+    }
     if (!session || session.expires <= Date.now()) {
       if (token) mobilePilotTokens.delete(token);
       mobilePilotError(401, 'Sign in to the mobile pilot.');
@@ -27385,26 +27399,39 @@ app.post('/mobile-pilot-api/login', async (req, res) => {
     mobilePilotAttempts.delete(peer);
     for (const [key,value] of mobilePilotTokens) if (value.expires <= now) mobilePilotTokens.delete(key);
     const token = randomUUID() + randomUUID();
-    mobilePilotTokens.set(token,{ expires: now + 8*60*60*1000 });
-    res.json({ token, user: { id:user.id,name:user.name }, expires_in:28800 });
+    const remembered=req.body?.remember===true;
+    // A remembered credential is held only in an HttpOnly cookie; the DB stores its hash.
+    const previousCookie=mobilePilotCookie(req);
+    if(previousCookie) await pool.query('DELETE FROM mobile_pilot_sessions WHERE token_hash=$1',[mobilePilotHash(previousCookie)]);
+    if(remembered){
+      await pool.query('DELETE FROM mobile_pilot_sessions WHERE expires_at<=NOW()');
+      await pool.query('INSERT INTO mobile_pilot_sessions(token_hash,owner_id,key_hash,expires_at) VALUES($1,8,$2,$3)',[mobilePilotHash(token),mobilePilotHash(expected),new Date(now+30*24*60*60*1000)]);
+      mobilePilotSetCookie(res,token,30*24*60*60);
+    }else{mobilePilotSetCookie(res,'',0);mobilePilotTokens.set(token,{expires:now+8*60*60*1000});}
+    res.json({ token:remembered?null:token, user:{id:user.id,name:user.name}, expires_in:remembered?2592000:28800 });
   } catch (error) { res.status(error.status || 500).json({ error:error.status ? error.message : 'Pilot login failed.' }); }
 });
-app.post('/mobile-pilot-api/logout', requireMobilePilot, (req,res) => { mobilePilotTokens.delete(req.get('X-Mobile-Pilot-Token')); res.json({success:true}); });
+app.post('/mobile-pilot-api/logout', requireMobilePilot, async(req,res) => {
+  try{const cookie=mobilePilotCookie(req);if(cookie)await pool.query('DELETE FROM mobile_pilot_sessions WHERE token_hash=$1',[mobilePilotHash(cookie)]);
+    mobilePilotTokens.delete(req.get('X-Mobile-Pilot-Token'));mobilePilotSetCookie(res,'',0);res.json({success:true});
+  }catch(error){res.status(500).json({error:'Sign out failed. Please retry.'});}
+});
 app.get('/mobile-pilot-api/bootstrap', requireMobilePilot, async(req,res) => {
   try {
     const {rows:assets} = await pool.query(`SELECT a.id,a.model,a.serial_number,l.code AS line FROM assets a LEFT JOIN lines l ON l.id=a.line_id WHERE a.active=true ORDER BY l.code,a.model,a.serial_number`);
     res.json({user:{id:req.mobilePilotUser.id,name:req.mobilePilotUser.name},assets});
   }catch(error){res.status(500).json({error:'Could not load assets.'});}
 });
-const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.scheduled_maintenance_id,m.created_at,
+const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.scheduled_maintenance_id,m.maintenance_task_id,m.created_at,
   a.model,a.serial_number,l.code AS line,
-  COALESCE(b.title,s.title) AS title,COALESCE(b.description,s.description) AS description,
-  COALESCE(b.status,s.status) AS incident_status,b.started_at AS incident_started_at,
-  s.scheduled_start_at,s.actual_started_at,
+  COALESCE(b.title,s.title,pt.task) AS title,COALESCE(b.description,s.description,pt.notes) AS description,
+  COALESCE(b.status,s.status,pt.status) AS incident_status,b.started_at AS incident_started_at,
+  COALESCE(s.scheduled_start_at,pt.due_date) AS scheduled_start_at,s.actual_started_at,
   w.id AS work_id,w.task_id,w.started_at AS work_started_at,w.completed_at AS work_completed_at,w.notes,
-  t.status AS task_status,t.completed_at AS task_completed_at
+  COALESCE(t.status,pt.status) AS task_status,COALESCE(t.completed_at,pt.completed_at) AS task_completed_at
   FROM mobile_pilot_incidents m JOIN assets a ON a.id=m.asset_id LEFT JOIN lines l ON l.id=a.line_id
   LEFT JOIN breakdowns b ON b.id=m.breakdown_id LEFT JOIN scheduled_maintenance s ON s.id=m.scheduled_maintenance_id
+  LEFT JOIN maintenance_tasks pt ON pt.id=m.maintenance_task_id
   LEFT JOIN mobile_pilot_work w ON w.incident_id=m.id LEFT JOIN maintenance_tasks t ON t.id=w.task_id
   WHERE m.owner_id=$1`;
 app.get('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
@@ -27420,6 +27447,12 @@ async function mobilePilotTransaction(req,res,operation){
 async function mobilePilotStartWork(client,incident,user){
   const {rows:existing}=await client.query('SELECT * FROM mobile_pilot_work WHERE incident_id=$1',[incident.id]);
   if(existing.length)return existing[0];
+  if(incident.kind==='TASK'){
+    const {rows:tasks}=await client.query('SELECT * FROM maintenance_tasks WHERE id=$1 FOR UPDATE',[incident.maintenance_task_id]);
+    const task=tasks[0];
+    if(!task || task.status!=='Planned' || Number(task.asset_id)!==Number(incident.asset_id) || task.breakdown_id || task.scheduled_maintenance_id) mobilePilotError(409,'Planned task is unavailable or has changed.');
+    const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,task.id,new Date()]);return rows[0];
+  }
   const table=incident.kind==='BD'?'breakdowns':'scheduled_maintenance';
   const parentId=incident.kind==='BD'?incident.breakdown_id:incident.scheduled_maintenance_id;
   const {rows:parents}=await client.query(`SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`,[parentId]);
@@ -27443,7 +27476,7 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
   const body=req.body||{};
   if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
   const kind=body.kind,assetId=Number(body.asset_id),title=String(body.title||'').trim(),description=String(body.description||'').trim(),at=new Date(body.incident_at);
-  if(!mobilePilotUUID.test(body.request_id||'')||!['BD','SM'].includes(kind)||!Number.isSafeInteger(assetId)||assetId<=0||!title||title.length>200||description.length>4000||typeof body.incident_at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(body.incident_at)||Number.isNaN(at.getTime())||typeof body.start_work!=='boolean')return res.status(400).json({error:'Check Asset, title and date/time.'});
+  if(!mobilePilotUUID.test(body.request_id||'')||!['BD','SM','TASK'].includes(kind)||!Number.isSafeInteger(assetId)||assetId<=0||!title||title.length>200||description.length>4000||typeof body.incident_at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(body.incident_at)||Number.isNaN(at.getTime())||typeof body.start_work!=='boolean')return res.status(400).json({error:'Check Asset, title and date/time.'});
   if(kind==='BD'&&at.getTime()>Date.now()+60000)return res.status(400).json({error:'Breakdown start cannot be in the future.'});
   const normalized={kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work};
   return mobilePilotTransaction(req,res,async client=>{
@@ -27459,13 +27492,15 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
     }
     const {rows:assets}=await client.query('SELECT id FROM assets WHERE id=$1 AND active=true FOR SHARE',[assetId]);
     if(!assets.length)mobilePilotError(409,'Asset is unavailable.');
-    let bd=null,sm=null;
+    let bd=null,sm=null,taskId=null;
     if(kind==='BD'){
       const {rows}=await client.query(`INSERT INTO breakdowns(asset_id,title,description,status,started_at,reported_by,reported_by_id,created_at,updated_at) VALUES($1,$2,$3,'OPEN',$4,$5,$6,NOW(),NOW()) RETURNING id`,[assetId,title,description||null,at,req.mobilePilotUser.name,8]);bd=rows[0].id;
-    }else{
+    }else if(kind==='SM'){
       const {rows}=await client.query(`INSERT INTO scheduled_maintenance(asset_id,title,description,status,scheduled_start_at,scheduled_end_at) VALUES($1,$2,$3,'PLANNED',$4,NULL) RETURNING id`,[assetId,title,description||null,at]);sm=rows[0].id;
+    }else{
+      const {rows}=await client.query("INSERT INTO maintenance_tasks(asset_id,task,notes,type,impact,status,due_date,frequency_hours,is_planned) VALUES($1,$2,$3,'Planned','normal','Planned',$4,0,true) RETURNING id",[assetId,title,description||null,at]);taskId=rows[0].id;
     }
-    const {rows}=await client.query('INSERT INTO mobile_pilot_incidents(id,owner_id,asset_id,kind,breakdown_id,scheduled_maintenance_id,request_body) VALUES($1,8,$2,$3,$4,$5,$6::jsonb) RETURNING *',[body.request_id,assetId,kind,bd,sm,JSON.stringify(normalized)]);
+    const {rows}=await client.query('INSERT INTO mobile_pilot_incidents(id,owner_id,asset_id,kind,breakdown_id,scheduled_maintenance_id,maintenance_task_id,request_body) VALUES($1,8,$2,$3,$4,$5,$6,$7::jsonb) RETURNING *',[body.request_id,assetId,kind,bd,sm,taskId,JSON.stringify(normalized)]);
     if(body.start_work)await mobilePilotStartWork(client,rows[0],req.mobilePilotUser);
     return{incident:rows[0]};
   });
@@ -27506,7 +27541,7 @@ async function mobilePilotPhotoOwner(req,res,next){
     if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid pilot incident.');
     const {rows}=await pool.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8',[req.params.id]);
     if(!rows.length)mobilePilotError(404,'Pilot incident not found.');
-    req.mobilePilotIncident=rows[0];req.params.entityType=rows[0].kind==='BD'?'BREAKDOWN':'SCHEDULED_MAINTENANCE';req.params.entityId=String(rows[0].breakdown_id||rows[0].scheduled_maintenance_id);next();
+    req.mobilePilotIncident=rows[0];req.params.entityType=rows[0].kind==='TASK'?'TASK':rows[0].kind==='BD'?'BREAKDOWN':'SCHEDULED_MAINTENANCE';req.params.entityId=String(rows[0].breakdown_id||rows[0].scheduled_maintenance_id||rows[0].maintenance_task_id);if(req.params.entityId==='null')mobilePilotError(409,'The linked record was removed.');next();
   }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not access photos.'});}
 }
 app.get('/mobile-pilot-api/incidents/:id/photos',requireMobilePilot,mobilePilotPhotoOwner,async(req,res)=>{
