@@ -9,7 +9,7 @@ import pool from "./db.js";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 
 import {
   S3Client,
@@ -738,6 +738,7 @@ function cleanAttachmentFileName(
    - JPG / JPEG / PNG / WEBP / PDF
 ===================================================== */
 
+let cmmsAttachmentUploadHandler;
 app.post( "/attachments/:entityType/:entityId",
 
   (req, res, next) => {
@@ -755,7 +756,7 @@ app.post( "/attachments/:entityType/:entityId",
     });
   },
 
-  async (req, res) => {
+  cmmsAttachmentUploadHandler = async (req, res) => {
 
     const client =
       await pool.connect();
@@ -19837,9 +19838,10 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
 }
 /* END: Automatic Preventive Pack rollover */
 
-app.patch("/tasks/:id", async (req, res) => {
+let cmmsCompleteTaskHandler;
+app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
 
-  const {
+  let {
     completed_by,
     completed_at,
     notes,
@@ -19919,6 +19921,27 @@ app.patch("/tasks/:id", async (req, res) => {
     const task =
       taskRes.rows[0];
 
+
+    // Pilot-only work timing. Normal desktop requests never enter this branch.
+    if (req.mobilePilotWorkId) {
+      const { rows: pilotRows } = await client.query(`
+        SELECT w.*, m.asset_id, m.breakdown_id, m.scheduled_maintenance_id
+        FROM mobile_pilot_work w JOIN mobile_pilot_incidents m ON m.id=w.incident_id
+        WHERE w.id=$1 AND w.task_id=$2 AND w.technician_id=8 AND m.owner_id=8 FOR UPDATE OF w
+      `, [req.mobilePilotWorkId, task.id]);
+      const pilotWork = pilotRows[0];
+      if (!pilotWork || Number(task.asset_id)!==Number(pilotWork.asset_id) || Number(task.breakdown_id||0)!==Number(pilotWork.breakdown_id||0) || Number(task.scheduled_maintenance_id||0)!==Number(pilotWork.scheduled_maintenance_id||0)) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({error:'Pilot task is unavailable or its incident link changed.'});
+      }
+      if (pilotWork.completed_at) { await client.query('COMMIT'); return res.json({success:true,already_completed:true}); }
+      if (completedAt < new Date(pilotWork.started_at)) {
+        await client.query('ROLLBACK'); return res.status(409).json({error:'Completion cannot precede work start.'});
+      }
+      if (req.body.actual_duration_min == null) {
+        actual_duration_min = Math.max(0,Math.round((completedAt-new Date(pilotWork.started_at))/60000));
+      }
+    }
 
     const hasFrequency =
       task.frequency_hours &&
@@ -20192,6 +20215,9 @@ app.patch("/tasks/:id", async (req, res) => {
     ====================== */
 
     const rollovers = await rollOverCompletedPreventivePacks(client, preventivePackVisitIds);
+    if (req.mobilePilotWorkId) {
+      await client.query('UPDATE mobile_pilot_work SET completed_at=$2,notes=$3 WHERE id=$1', [req.mobilePilotWorkId,completedAt,notes||null]);
+    }
     await client.query("COMMIT");
 
 
@@ -27324,4 +27350,184 @@ app.get("*", (req, res) => {
 ===================================================== */
 
 const PORT = process.env.PORT || 10000;
+/* Admin ID 8 pilot. Disabled unless explicitly configured; no shared role password. */
+const mobilePilotTokens = new Map();
+const mobilePilotAttempts = new Map();
+const mobilePilotUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const mobilePilotEnabled = () => process.env.MOBILE_PILOT_ENABLED === 'true' && String(process.env.MOBILE_PILOT_ACCESS_KEY || '').length >= 24;
+function mobilePilotError(status, message) { const error = new Error(message); error.status = status; throw error; }
+async function mobilePilotAdmin() {
+  const { rows } = await pool.query('SELECT id,name,role,active,is_user FROM technicians WHERE id = $1', [8]);
+  const user = rows[0];
+  if (!user || user.active !== true || user.is_user !== true || String(user.role).trim().toLowerCase() !== 'admin') mobilePilotError(403, 'Pilot access is unavailable.');
+  return user;
+}
+async function requireMobilePilot(req, res, next) {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    if (!mobilePilotEnabled()) mobilePilotError(403, 'Mobile pilot is disabled.');
+    const token = req.get('X-Mobile-Pilot-Token');
+    const session = token && mobilePilotTokens.get(token);
+    if (!session || session.expires <= Date.now()) {
+      if (token) mobilePilotTokens.delete(token);
+      mobilePilotError(401, 'Sign in to the mobile pilot.');
+    }
+    req.mobilePilotUser = await mobilePilotAdmin();
+    next();
+  } catch (error) { res.status(error.status || 500).json({ error: error.status ? error.message : 'Pilot access failed.' }); }
+}
+app.post('/mobile-pilot-api/login', async (req, res) => {
+  res.setHeader('Cache-Control','no-store');
+  try {
+    if (!mobilePilotEnabled()) mobilePilotError(403,'Mobile pilot is disabled.');
+    // Rate limit by socket peer; Render can share a peer, but this pilot has one user.
+    const peer = req.socket.remoteAddress || 'unknown', now = Date.now();
+    for (const [key, value] of mobilePilotAttempts) if (value.until < now) mobilePilotAttempts.delete(key);
+    const attempt = mobilePilotAttempts.get(peer) || { count: 0, until: now + 15*60*1000 };
+    if (attempt.count >= 10) mobilePilotError(429,'Too many attempts. Try again in 15 minutes.');
+    attempt.count++; mobilePilotAttempts.set(peer,attempt);
+    const supplied = typeof req.body?.access_key === 'string' ? req.body.access_key : '';
+    const expected = process.env.MOBILE_PILOT_ACCESS_KEY;
+    const a = Buffer.from(supplied), b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a,b)) mobilePilotError(401,'Invalid pilot access key.');
+    const user = await mobilePilotAdmin();
+    mobilePilotAttempts.delete(peer);
+    for (const [key,value] of mobilePilotTokens) if (value.expires <= now) mobilePilotTokens.delete(key);
+    const token = randomUUID() + randomUUID();
+    mobilePilotTokens.set(token,{ expires: now + 8*60*60*1000 });
+    res.json({ token, user: { id:user.id,name:user.name }, expires_in:28800 });
+  } catch (error) { res.status(error.status || 500).json({ error:error.status ? error.message : 'Pilot login failed.' }); }
+});
+app.post('/mobile-pilot-api/logout', requireMobilePilot, (req,res) => { mobilePilotTokens.delete(req.get('X-Mobile-Pilot-Token')); res.json({success:true}); });
+app.get('/mobile-pilot-api/bootstrap', requireMobilePilot, async(req,res) => {
+  try {
+    const {rows:assets} = await pool.query(`SELECT a.id,a.model,a.serial_number,l.code AS line FROM assets a LEFT JOIN lines l ON l.id=a.line_id WHERE a.active=true ORDER BY l.code,a.model,a.serial_number`);
+    res.json({user:{id:req.mobilePilotUser.id,name:req.mobilePilotUser.name},assets});
+  }catch(error){res.status(500).json({error:'Could not load assets.'});}
+});
+const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.scheduled_maintenance_id,m.created_at,
+  a.model,a.serial_number,l.code AS line,
+  COALESCE(b.title,s.title) AS title,COALESCE(b.description,s.description) AS description,
+  COALESCE(b.status,s.status) AS incident_status,b.started_at AS incident_started_at,
+  s.scheduled_start_at,s.actual_started_at,
+  w.id AS work_id,w.task_id,w.started_at AS work_started_at,w.completed_at AS work_completed_at,w.notes,
+  t.status AS task_status,t.completed_at AS task_completed_at
+  FROM mobile_pilot_incidents m JOIN assets a ON a.id=m.asset_id LEFT JOIN lines l ON l.id=a.line_id
+  LEFT JOIN breakdowns b ON b.id=m.breakdown_id LEFT JOIN scheduled_maintenance s ON s.id=m.scheduled_maintenance_id
+  LEFT JOIN mobile_pilot_work w ON w.incident_id=m.id LEFT JOIN maintenance_tasks t ON t.id=w.task_id
+  WHERE m.owner_id=$1`;
+app.get('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
+  try{const {rows}=await pool.query(mobilePilotItemsSQL+' ORDER BY m.created_at DESC LIMIT 100',[8]);res.json({incidents:rows});}
+  catch(error){res.status(500).json({error:'Could not load pilot work. Check that the pilot SQL has been applied.'});}
+});
+async function mobilePilotTransaction(req,res,operation){
+  let client;
+  try{client=await pool.connect();await client.query('BEGIN');const result=await operation(client);await client.query('COMMIT');res.json(result);}
+  catch(error){if(client)await client.query('ROLLBACK').catch(()=>{});console.error('Mobile pilot operation:',error.message);res.status(error.status||500).json({error:error.status?error.message:'The operation failed. Your work has not been submitted.'});}
+  finally{client?.release();}
+}
+async function mobilePilotStartWork(client,incident,user){
+  const {rows:existing}=await client.query('SELECT * FROM mobile_pilot_work WHERE incident_id=$1',[incident.id]);
+  if(existing.length)return existing[0];
+  const table=incident.kind==='BD'?'breakdowns':'scheduled_maintenance';
+  const parentId=incident.kind==='BD'?incident.breakdown_id:incident.scheduled_maintenance_id;
+  const {rows:parents}=await client.query(`SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`,[parentId]);
+  const parent=parents[0];
+  if(!parent||parent.status==='CLOSED')mobilePilotError(409,'This incident is closed or unavailable.');
+  if(incident.kind==='BD'&&!['OPEN','IN_PROGRESS'].includes(parent.status))mobilePilotError(409,'Breakdown cannot be started.');
+  if(incident.kind==='SM'&&!['PLANNED','IN_PROGRESS'].includes(parent.status))mobilePilotError(409,'Scheduled maintenance cannot be started.');
+  const now=new Date();
+  if(incident.kind==='BD'){
+    if(new Date(parent.started_at)>now)mobilePilotError(409,'Breakdown start is in the future.');
+    await client.query("UPDATE breakdowns SET status='IN_PROGRESS',updated_at=NOW() WHERE id=$1 AND status='OPEN'",[parentId]);
+  }else await client.query("UPDATE scheduled_maintenance SET status='IN_PROGRESS',actual_started_at=COALESCE(actual_started_at,$2),updated_at=NOW() WHERE id=$1",[parentId,now]);
+  const {rows:tasks}=await client.query(`INSERT INTO maintenance_tasks
+    (asset_id,task,type,impact,status,due_date,frequency_hours,is_planned,breakdown_id,scheduled_maintenance_id)
+    VALUES($1,$2,$3,'normal','Planned',$4,0,true,$5,$6) RETURNING id`,
+    [incident.asset_id,parent.title,incident.kind==='BD'?'Restoration':'Planned',now,incident.breakdown_id,incident.scheduled_maintenance_id]);
+  const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,tasks[0].id,now]);
+  return rows[0];
+}
+app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
+  const body=req.body||{};
+  if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
+  const kind=body.kind,assetId=Number(body.asset_id),title=String(body.title||'').trim(),description=String(body.description||'').trim(),at=new Date(body.incident_at);
+  if(!mobilePilotUUID.test(body.request_id||'')||!['BD','SM'].includes(kind)||!Number.isSafeInteger(assetId)||assetId<=0||!title||title.length>200||description.length>4000||typeof body.incident_at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(body.incident_at)||Number.isNaN(at.getTime())||typeof body.start_work!=='boolean')return res.status(400).json({error:'Check Asset, title and date/time.'});
+  if(kind==='BD'&&at.getTime()>Date.now()+60000)return res.status(400).json({error:'Breakdown start cannot be in the future.'});
+  const normalized={kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work};
+  return mobilePilotTransaction(req,res,async client=>{
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[body.request_id]);
+    const {rows:previous}=await client.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1',[body.request_id]);
+    if(previous.length){
+      if(previous[0].owner_id!=8||JSON.stringify(previous[0].request_body)!==JSON.stringify(normalized)){
+        // jsonb key ordering is unspecified: compare values, not serialized ordering.
+        const saved=previous[0].request_body;
+        if(previous[0].owner_id!=8||Object.keys(normalized).some(k=>saved[k]!==normalized[k]))mobilePilotError(409,'This request ID belongs to a different draft.');
+      }
+      return{incident:previous[0],replayed:true};
+    }
+    const {rows:assets}=await client.query('SELECT id FROM assets WHERE id=$1 AND active=true FOR SHARE',[assetId]);
+    if(!assets.length)mobilePilotError(409,'Asset is unavailable.');
+    let bd=null,sm=null;
+    if(kind==='BD'){
+      const {rows}=await client.query(`INSERT INTO breakdowns(asset_id,title,description,status,started_at,reported_by,reported_by_id,created_at,updated_at) VALUES($1,$2,$3,'OPEN',$4,$5,$6,NOW(),NOW()) RETURNING id`,[assetId,title,description||null,at,req.mobilePilotUser.name,8]);bd=rows[0].id;
+    }else{
+      const {rows}=await client.query(`INSERT INTO scheduled_maintenance(asset_id,title,description,status,scheduled_start_at,scheduled_end_at) VALUES($1,$2,$3,'PLANNED',$4,NULL) RETURNING id`,[assetId,title,description||null,at]);sm=rows[0].id;
+    }
+    const {rows}=await client.query('INSERT INTO mobile_pilot_incidents(id,owner_id,asset_id,kind,breakdown_id,scheduled_maintenance_id,request_body) VALUES($1,8,$2,$3,$4,$5,$6::jsonb) RETURNING *',[body.request_id,assetId,kind,bd,sm,JSON.stringify(normalized)]);
+    if(body.start_work)await mobilePilotStartWork(client,rows[0],req.mobilePilotUser);
+    return{incident:rows[0]};
+  });
+});
+app.post('/mobile-pilot-api/incidents/:id/start-work',requireMobilePilot,async(req,res)=>{
+  if(!mobilePilotUUID.test(req.params.id))return res.status(400).json({error:'Invalid pilot incident.'});
+  return mobilePilotTransaction(req,res,async client=>{
+    const {rows}=await client.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8 FOR UPDATE',[req.params.id]);
+    if(!rows.length)mobilePilotError(404,'Pilot incident not found.');
+    return{work:await mobilePilotStartWork(client,rows[0],req.mobilePilotUser)};
+  });
+});
+app.patch('/mobile-pilot-api/work/:id/notes',requireMobilePilot,async(req,res)=>{
+  if(!mobilePilotUUID.test(req.params.id)||typeof req.body?.notes!=='string'||req.body.notes.length>8000)return res.status(400).json({error:'Invalid notes.'});
+  try{const {rowCount}=await pool.query('UPDATE mobile_pilot_work SET notes=$2 WHERE id=$1 AND technician_id=8 AND completed_at IS NULL',[req.params.id,req.body.notes]);if(!rowCount)return res.status(409).json({error:'Work is closed or unavailable.'});res.json({success:true});}
+  catch(error){res.status(500).json({error:'Could not save notes.'});}
+});
+app.post('/mobile-pilot-api/work/:id/complete',requireMobilePilot,async(req,res)=>{
+  try{
+    if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid work ID.');
+    if(Object.keys(req.body||{}).some(k=>!['notes','actual_duration_min'].includes(k))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
+    const duration=req.body.actual_duration_min;
+    if(duration!=null&&(!Number.isInteger(duration)||duration<0))mobilePilotError(400,'Actual minutes must be zero or greater.');
+    const {rows}=await pool.query('SELECT * FROM mobile_pilot_work WHERE id=$1 AND technician_id=8',[req.params.id]);
+    if(!rows.length)mobilePilotError(404,'Pilot work not found.');
+    const work=rows[0];
+    if(work.completed_at)return res.json({success:true,already_completed:true});
+    if(!work.task_id)mobilePilotError(409,'The task was removed from CMMS.');
+    req.mobilePilotWorkId=work.id;
+    req.params.id=String(work.task_id);
+    req.body={technician_id:8,completed_by:req.mobilePilotUser.name,completed_at:new Date().toISOString(),notes:req.body.notes,actual_duration_min:duration};
+    // The canonical handler locks the task and commits task execution + pilot completion atomically.
+    return await cmmsCompleteTaskHandler(req,res);
+  }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not complete pilot work.'});}
+});
+async function mobilePilotPhotoOwner(req,res,next){
+  try{
+    if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid pilot incident.');
+    const {rows}=await pool.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8',[req.params.id]);
+    if(!rows.length)mobilePilotError(404,'Pilot incident not found.');
+    req.mobilePilotIncident=rows[0];req.params.entityType=rows[0].kind==='BD'?'BREAKDOWN':'SCHEDULED_MAINTENANCE';req.params.entityId=String(rows[0].breakdown_id||rows[0].scheduled_maintenance_id);next();
+  }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not access photos.'});}
+}
+app.get('/mobile-pilot-api/incidents/:id/photos',requireMobilePilot,mobilePilotPhotoOwner,async(req,res)=>{
+  try{const {rows}=await pool.query('SELECT id,file_name,mime_type,file_size FROM attachments WHERE entity_type=$1 AND entity_id=$2 ORDER BY uploaded_at',[req.params.entityType,req.params.entityId]);res.json({attachments:rows});}
+  catch(error){res.status(500).json({error:'Could not load photos.'});}
+});
+app.post('/mobile-pilot-api/incidents/:id/photos',requireMobilePilot,mobilePilotPhotoOwner,
+  (req,res,next)=>attachmentUpload.array('files',5)(req,res,error=>error?res.status(400).json({error:'Up to 5 photos, 8 MB total. JPG, PNG or WebP.'}):next()),
+  async(req,res)=>{
+    if(!req.files?.length||req.files.some(file=>!['image/jpeg','image/png','image/webp'].includes(file.mimetype)))return res.status(400).json({error:'Select JPG, PNG or WebP photos.'});
+    req.body={uploaded_by_id:8};
+    return cmmsAttachmentUploadHandler(req,res);
+  });
+
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

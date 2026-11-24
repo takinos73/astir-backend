@@ -4068,7 +4068,7 @@ tr.highlight-execution {
 #tab-assets > .assets-header {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px;
   margin: 22px 0 16px; padding: 20px 22px; border: 1px solid #36536e;
-  border-radius: 11px; background: linear-gradient(115deg,#203c5b,#161c24);
+  border-radius: 11px; background: linear-gradient(115deg,#0b1727,#172d47);
 }
 #tab-assets > .assets-header h2 { margin: 0; font-size: 24px; color: #edf5ff; }
 #tab-assets > .assets-header p { margin: 0; color: #a8bbd2; font-size: 13px; }
