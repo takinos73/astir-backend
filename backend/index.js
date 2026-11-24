@@ -7653,7 +7653,8 @@ app.get("/breakdowns/:id/machine-state", async (req, res) => {
      same database transaction.
 ========================================================= */
 
-app.patch("/breakdowns/:id/close", async (req, res) => {
+let cmmsCloseBreakdownHandler;
+app.patch("/breakdowns/:id/close", cmmsCloseBreakdownHandler = async (req, res) => {
 
   const client = await pool.connect();
 
@@ -7699,7 +7700,8 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
         id,
         status,
         started_at,
-        closed_at
+        closed_at,
+        failure_cause,root_cause,corrective_action
 
       FROM breakdowns
 
@@ -7725,6 +7727,17 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
 
 
     const breakdown = existingResult.rows[0];
+    // Pilot-only authorization is rechecked under the canonical BD lock.
+    if(req.mobilePilotCloseIncidentId){
+      const {rows:pilot}=await client.query(`SELECT m.id FROM mobile_pilot_incidents m
+        JOIN mobile_pilot_work w ON w.incident_id=m.id
+        JOIN maintenance_tasks t ON t.id=w.task_id
+        WHERE m.id=$1 AND m.owner_id=8 AND m.kind='BD' AND m.breakdown_id=$2
+          AND w.technician_id=8 AND w.completed_at IS NOT NULL
+          AND t.status='Done' AND t.deleted_at IS NULL AND t.breakdown_id=m.breakdown_id AND t.asset_id=m.asset_id`,[req.mobilePilotCloseIncidentId,breakdownId]);
+      if(!pilot.length){await client.query('ROLLBACK');return res.status(409).json({error:'Complete this pilot work before restoring the BD. The linked task must remain valid.'});}
+      if(breakdown.status==='CLOSED'){await client.query('COMMIT');return res.json({success:true,already_closed:true});}
+    }
 
 
     /* =====================
@@ -7783,6 +7796,9 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
     }
 
 
+    if(req.mobilePilotCloseIncidentId && closedAtDate.getTime()>Date.now()){
+      await client.query('ROLLBACK');return res.status(400).json({error:'Restored At cannot be in the future.'});
+    }
     if (closedAtDate < startedAtDate) {
 
       await client.query("ROLLBACK");
@@ -7912,15 +7928,15 @@ app.patch("/breakdowns/:id/close", async (req, res) => {
 
         failure_cause !== undefined
           ? String(failure_cause || "").trim() || null
-          : null,
+          : req.mobilePilotCloseIncidentId ? breakdown.failure_cause : null,
 
         root_cause !== undefined
           ? String(root_cause || "").trim() || null
-          : null,
+          : req.mobilePilotCloseIncidentId ? breakdown.root_cause : null,
 
         corrective_action !== undefined
           ? String(corrective_action || "").trim() || null
-          : null,
+          : req.mobilePilotCloseIncidentId ? breakdown.corrective_action : null,
 
         breakdownId
       ]
@@ -27419,7 +27435,7 @@ app.get('/mobile-pilot-api/bootstrap', requireMobilePilot, async(req,res) => {
 const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.scheduled_maintenance_id,m.maintenance_task_id,m.created_at,
   a.model,a.serial_number,l.code AS line,pt.section,pt.unit,
   COALESCE(b.title,s.title,pt.task) AS title,COALESCE(b.description,s.description,pt.notes) AS description,
-  COALESCE(b.status,s.status,pt.status) AS incident_status,b.started_at AS incident_started_at,
+  COALESCE(b.status,s.status,pt.status) AS incident_status,b.started_at AS incident_started_at,b.closed_at AS incident_closed_at,
   COALESCE(s.scheduled_start_at,pt.due_date) AS scheduled_start_at,s.actual_started_at,
   w.id AS work_id,w.task_id,w.started_at AS work_started_at,w.completed_at AS work_completed_at,w.notes,
   COALESCE(t.status,pt.status) AS task_status,COALESCE(t.completed_at,pt.completed_at) AS task_completed_at
@@ -27548,6 +27564,19 @@ app.post('/mobile-pilot-api/work/:id/complete',requireMobilePilot,async(req,res)
     // The canonical handler locks the task and commits task execution + pilot completion atomically.
     return await cmmsCompleteTaskHandler(req,res);
   }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not complete pilot work.'});}
+});
+app.post('/mobile-pilot-api/incidents/:id/restore',requireMobilePilot,async(req,res)=>{
+  try{
+    if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid pilot incident.');
+    if(Object.keys(req.body||{}).some(k=>!['closed_at','restored'].includes(k))||req.body?.restored!==true)mobilePilotError(400,'Confirm that the asset has been restored.');
+    const at=req.body.closed_at;
+    if(typeof at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(at)||!Number.isFinite(new Date(at).getTime()))mobilePilotError(400,'Enter Restored At with its time zone.');
+    if(new Date(at).getTime()>Date.now())mobilePilotError(400,'Restored At cannot be in the future.');
+    const {rows}=await pool.query("SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8 AND kind='BD'",[req.params.id]);
+    if(!rows.length||!rows[0].breakdown_id)mobilePilotError(404,'Pilot BD not found.');
+    req.mobilePilotCloseIncidentId=rows[0].id;req.params.id=String(rows[0].breakdown_id);req.body={closed_at:new Date(at).toISOString()};
+    return await cmmsCloseBreakdownHandler(req,res);
+  }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not restore the BD. Your completed work remains saved.'});}
 });
 async function mobilePilotPhotoOwner(req,res,next){
   try{
