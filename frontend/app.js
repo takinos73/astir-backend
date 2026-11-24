@@ -817,284 +817,40 @@ async function viewHistoryEntry(executionId) {
      BASE CONTENT
   ===================== */
 
+  // Display-only formatting; IDs and attachment loading keep their canonical source.
+  const safe=value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+  const positiveId=value=>Number.isSafeInteger(Number(value))&&Number(value)>0?String(Number(value)):'—';
+  const typeLabel=execType==='preventive'?'Preventive maintenance':execType==='restoration'?'Restoration':execType==='unplanned'?'Unplanned work':'Planned task';
+  const executedLabel=h.executed_at?new Date(h.executed_at).toLocaleString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+  const impactClass=['safety','quality','both'].includes(h.impact)?h.impact:'normal';
   el.innerHTML = `
-
-    <!-- =====================
-         ASSET HEADER
-    ====================== -->
-
-    <div class="history-asset-header ${typeClass}">
-
-      ${
-        execType === "restoration" &&
-        h.breakdown_id
-          ? `
-            <div class="history-breakdown-id">
-              BD-${String(
-                h.breakdown_id
-              ).padStart(
-                5,
-                "0"
-              )}
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="history-asset-main">
-        ${h.machine}
-      </div>
-
-
-      <div class="history-asset-sub">
-        SN: ${h.serial_number}
-        • Line ${h.line}
-      </div>
-
-    </div>
-
-
-    <!-- =====================
-         EXECUTION DETAILS
-    ====================== -->
-
-    <div class="history-details-cards">
-
-
-      <!-- =====================
-           DATE / TIME
-      ====================== -->
-
-      <div class="history-view-section">
-
-        <strong>
-          Date / Time
-        </strong>
-
-        <div>
-          ${
-            h.executed_at
-              ? new Date(
-                  h.executed_at
-                ).toLocaleString(
-                  "el-GR",
-                  {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                  }
-                )
-              : "—"
-          }
+    <div class="execution-view-record ${typeClass}">
+      <section class="execution-view-identity" aria-label="Task and asset">
+        <div class="execution-view-references">
+          <span class="execution-view-id">Task #${positiveId(h.task_id)}</span>
+          <span class="execution-view-id execution-view-id-secondary">Execution #${positiveId(h.id)}</span>
+          <span class="execution-view-kind">${safe(typeLabel)}</span>
+          ${h.breakdown_id?'<span class="execution-view-parent">BD-'+positiveId(h.breakdown_id).padStart(5,'0')+'</span>':''}
+          ${h.scheduled_maintenance_id?'<span class="execution-view-parent">SM-'+positiveId(h.scheduled_maintenance_id).padStart(5,'0')+'</span>':''}
         </div>
-
+        <h2 class="execution-view-title">${safe(h.task||'—')}</h2>
+        <div class="execution-view-asset">${safe(h.machine||'—')} <span>· SN ${safe(h.serial_number||'—')} · Line ${safe(h.line||'—')}</span></div>
+        ${h.maintenance_report_code?'<div class="task-mr-source-wrap"><span class="task-mr-source-badge">'+safe(h.maintenance_report_code)+'</span></div>':''}
+        ${h.impact&&h.impact!=='normal'?'<div class="task-impact-wrap"><span class="task-impact-badge task-impact-'+impactClass+'">'+(h.impact==='safety'?'SAFETY':h.impact==='quality'?'QUALITY':'S + Q')+'</span></div>':''}
+      </section>
+      <div class="execution-view-metrics">
+        <section class="execution-view-metric"><h4>Executed at</h4><div>${safe(executedLabel)}</div></section>
+        <section class="execution-view-metric"><h4>Service time</h4><div class="execution-view-duration">${safe(durationLabel)}</div></section>
+        <section class="execution-view-metric"><h4>Executed by</h4><div>${safe(h.executed_by||'—')}</div></section>
       </div>
-
-
-      <!-- =====================
-           SERVICE TIME
-      ====================== -->
-
-      <div class="history-view-section">
-
-        <strong>
-          Service Time
-        </strong>
-
-        <div class="history-emphasis">
-          ${durationLabel}
-        </div>
-
-      </div>
-
-
-      <!-- =====================
-           EXECUTED BY
-      ====================== -->
-
-      <div class="history-view-section history-executor-card">
-
-        <strong>
-          Executed By
-        </strong>
-
-        <div>
-          ${h.executed_by || "-"}
-        </div>
-
-      </div>
-
-
-      <!-- =====================
-           TASK
-
-           Displays:
-           - Task description
-           - Maintenance Report source badge
-           - Safety / Quality impact badge
-      ====================== -->
-
-      <div class="history-view-section history-task-card">
-
-        <strong>
-          Task
-        </strong>
-        <small style="display:block;margin-top:6px;color:#9fb4cb">Task #${Number.isSafeInteger(Number(h.task_id)) && Number(h.task_id)>0 ? Number(h.task_id) : '—'} · Execution #${Number.isSafeInteger(Number(h.id)) ? Number(h.id) : '—'}</small>
-
-
-        <!-- =====================
-             TASK DESCRIPTION
-        ====================== -->
-
-        <div>
-          ${h.task}
-        </div>
-
-
-        <!-- =====================
-             MAINTENANCE REPORT SOURCE
-
-             Visible only when this Task was originally
-             created from a Maintenance Report.
-        ====================== -->
-
-        ${
-          h.maintenance_report_code
-            ? `
-              <div class="task-mr-source-wrap">
-
-                <span
-                  class="task-mr-source-badge"
-                  title="Created from Maintenance Report ${h.maintenance_report_code}"
-                >
-                  ${h.maintenance_report_code}
-                </span>
-
-              </div>
-            `
-            : ""
-        }
-
-
-        <!-- =====================
-             SAFETY / QUALITY IMPACT
-        ====================== -->
-
-        ${
-          h.impact &&
-          h.impact !== "normal"
-            ? `
-              <div class="task-impact-wrap">
-
-                <span
-                  class="
-                    task-impact-badge
-                    task-impact-${h.impact}
-                  "
-                >
-                  ${
-                    h.impact === "safety"
-                      ? "SAFETY"
-                      : h.impact === "quality"
-                      ? "QUALITY"
-                      : "S + Q"
-                  }
-                </span>
-
-              </div>
-            `
-            : ""
-        }
-
-      </div>
-
-
-      <!-- =====================
-           SECTION / UNIT
-      ====================== -->
-
-      <div
-        class="
-          history-view-section
-          full-width
-        "
-      >
-
-        <strong>
-          Section / Unit
-        </strong>
-
-        <div>
-          ${h.section || "-"}
-          ${
-            h.unit
-              ? " / " + h.unit
-              : ""
-          }
-        </div>
-
-      </div>
-
-
-      <!-- =====================
-           NOTES
-      ====================== -->
-
-      <div
-        class="
-          history-view-section
-          full-width history-notes-card
-        "
-      >
-
-        <strong>
-          Notes
-        </strong>
-
-        <div>
-          ${h.notes || "—"}
-        </div>
-
-      </div>
-
-
-      <!-- =====================
-           ATTACHMENTS
-      ====================== -->
-
-      <div
-        class="
-          history-view-section
-          history-attachments-section
-          full-width
-        "
-      >
-
-        <strong>
-          Attachments
-        </strong>
-
-        <div
-          id="historyAttachmentsContent"
-          class="history-attachments-content"
-        >
-
-          <div class="history-attachments-loading">
-            Loading attachments...
-          </div>
-
-        </div>
-
-      </div>
-
-
+      <section class="execution-view-location" aria-label="Section and Unit">
+        <div><h4>Section</h4><div>${safe(h.section||'—')}</div></div>
+        <div><h4>Unit</h4><div>${safe(h.unit||'—')}</div></div>
+      </section>
+      <section class="execution-view-section"><h4>Maintenance notes</h4><div class="execution-view-notes${h.notes?'':' execution-view-empty'}">${safe(h.notes||'No maintenance notes recorded.')}</div></section>
+      <section class="execution-view-section"><h4>Attachments</h4><div id="historyAttachmentsContent" class="history-attachments-content"><div class="history-attachments-loading">Loading attachments...</div></div></section>
     </div>
   `;
-
 
   /* =====================
      OPEN MODAL
