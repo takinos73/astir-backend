@@ -7727,9 +7727,10 @@ app.patch("/breakdowns/:id/close", cmmsCloseBreakdownHandler = async (req, res) 
 
 
     const breakdown = existingResult.rows[0];
+    let pilotServiceSeconds=null;
     // Pilot-only authorization is rechecked under the canonical BD lock.
     if(req.mobilePilotCloseIncidentId){
-      const {rows:pilot}=await client.query(`SELECT m.id FROM mobile_pilot_incidents m
+      const {rows:pilot}=await client.query(`SELECT m.id,(SELECT e.duration_minutes FROM task_executions e WHERE e.task_id=w.task_id ORDER BY e.executed_at DESC,e.id DESC LIMIT 1) AS service_minutes FROM mobile_pilot_incidents m
         JOIN mobile_pilot_work w ON w.incident_id=m.id
         JOIN maintenance_tasks t ON t.id=w.task_id
         WHERE m.id=$1 AND m.owner_id=8 AND m.kind='BD' AND m.breakdown_id=$2
@@ -7737,6 +7738,9 @@ app.patch("/breakdowns/:id/close", cmmsCloseBreakdownHandler = async (req, res) 
           AND t.status='Done' AND t.deleted_at IS NULL AND t.breakdown_id=m.breakdown_id AND t.asset_id=m.asset_id`,[req.mobilePilotCloseIncidentId,breakdownId]);
       if(!pilot.length){await client.query('ROLLBACK');return res.status(409).json({error:'Complete this pilot work before restoring the BD. The linked task must remain valid.'});}
       if(breakdown.status==='CLOSED'){await client.query('COMMIT');return res.json({success:true,already_closed:true});}
+      const minutes=pilot[0].service_minutes;
+      if(minutes===null||minutes===undefined||!Number.isSafeInteger(Number(minutes)*60)||Number(minutes)<0){await client.query('ROLLBACK');return res.status(409).json({error:'This work has no valid service time. Review it in CMMS before closing.'});}
+      pilotServiceSeconds=Number(minutes)*60;
     }
 
 
@@ -7798,6 +7802,9 @@ app.patch("/breakdowns/:id/close", cmmsCloseBreakdownHandler = async (req, res) 
 
     if(req.mobilePilotCloseIncidentId && closedAtDate.getTime()>Date.now()){
       await client.query('ROLLBACK');return res.status(400).json({error:'Restored At cannot be in the future.'});
+    }
+    if(pilotServiceSeconds!==null&&pilotServiceSeconds>Math.floor((closedAtDate-startedAtDate)/1000)){
+      await client.query('ROLLBACK');return res.status(400).json({error:'Service time exceeds the BD incident duration. Check the work times and Restored At before closing.'});
     }
     if (closedAtDate < startedAtDate) {
 
@@ -7947,6 +7954,13 @@ app.patch("/breakdowns/:id/close", cmmsCloseBreakdownHandler = async (req, res) 
        COMMIT TRANSACTION
     ===================== */
 
+    if(pilotServiceSeconds!==null){
+      const verified=await client.query(`UPDATE breakdowns SET verified_down_seconds=$1,
+        downtime_correction_reason='Mobile pilot: downtime equals completed work service time',
+        downtime_corrected_by=$2,downtime_corrected_by_id=8,downtime_corrected_at=NOW(),updated_at=NOW()
+        WHERE id=$3 RETURNING *`,[pilotServiceSeconds,req.mobilePilotUser.name,breakdownId]);
+      result.rows[0]=verified.rows[0];
+    }
     await client.query("COMMIT");
 
 
@@ -19953,6 +19967,14 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
         return res.status(409).json({error:'Pilot task is unavailable or its incident link changed.'});
       }
       if (pilotWork.completed_at) { await client.query('COMMIT'); return res.json({success:true,already_completed:true}); }
+      if(req.mobilePilotWorkStructure){
+        const {section,unit,newUnit}=req.mobilePilotWorkStructure;
+        const {rows:locations}=newUnit
+          ?await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[task.asset_id,section])
+          :await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND BTRIM(unit)=$3 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[task.asset_id,section,unit]);
+        if(!locations.length){await client.query('ROLLBACK');return res.status(409).json({error:'Select an existing Section for this Asset and a valid Unit. New Section is not allowed.'});}
+        await client.query('UPDATE maintenance_tasks SET section=$2,unit=$3 WHERE id=$1',[task.id,section,unit]);
+      }
       const workStart=req.mobilePilotTiming?.startedAt || new Date(pilotWork.started_at);
       if (!Number.isFinite(workStart.getTime()) || completedAt < workStart) {
         await client.query('ROLLBACK'); return res.status(409).json({error:'Completion cannot precede work start.'});
@@ -27433,7 +27455,7 @@ app.get('/mobile-pilot-api/bootstrap', requireMobilePilot, async(req,res) => {
   }catch(error){res.status(500).json({error:'Could not load assets.'});}
 });
 const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.scheduled_maintenance_id,m.maintenance_task_id,m.created_at,
-  a.model,a.serial_number,l.code AS line,COALESCE(t.section,pt.section) AS section,COALESCE(t.unit,pt.unit) AS unit,t.task AS work_title,
+  a.model,a.serial_number,l.code AS line,COALESCE(t.section,pt.section) AS section,COALESCE(t.unit,pt.unit) AS unit,
   COALESCE(b.title,s.title,pt.task) AS title,COALESCE(b.description,s.description,pt.notes) AS description,
   COALESCE(b.status,s.status,pt.status) AS incident_status,b.started_at AS incident_started_at,b.closed_at AS incident_closed_at,
   COALESCE(s.scheduled_start_at,pt.due_date) AS scheduled_start_at,s.actual_started_at,
@@ -27454,13 +27476,7 @@ async function mobilePilotTransaction(req,res,operation){
   catch(error){if(client)await client.query('ROLLBACK').catch(()=>{});console.error('Mobile pilot operation:',error.message);res.status(error.status||500).json({error:error.status?error.message:'The operation failed. Your work has not been submitted.'});}
   finally{client?.release();}
 }
-function mobilePilotBDWorkInput(raw,fallbackTitle){
-  if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).some(k=>!['title','section','unit','new_unit'].includes(k)))mobilePilotError(400,'Enter Section, Unit and work title for the first BD work order.');
-  const title=typeof raw.title==='string'?raw.title.trim():fallbackTitle,section=typeof raw.section==='string'?raw.section.trim():'',unit=typeof raw.unit==='string'?raw.unit.trim():'';
-  if(!title||title.length>200||!section||section.length>500||!unit||unit.length>500||(raw.new_unit!==undefined&&typeof raw.new_unit!=='boolean'))mobilePilotError(400,'Check work title, Section and Unit.');
-  return{title,section,unit,new_unit:raw.new_unit===true};
-}
-async function mobilePilotStartWork(client,incident,user,rawWO){
+async function mobilePilotStartWork(client,incident,user){
   const {rows:existing}=await client.query('SELECT * FROM mobile_pilot_work WHERE incident_id=$1',[incident.id]);
   if(incident.kind==='TASK'){
     const {rows:tasks}=await client.query('SELECT * FROM maintenance_tasks WHERE id=$1 FOR UPDATE',[incident.maintenance_task_id]);
@@ -27478,30 +27494,21 @@ async function mobilePilotStartWork(client,incident,user,rawWO){
   if(!parent||parent.status==='CLOSED')mobilePilotError(409,'This incident is closed or unavailable.');
   if(incident.kind==='BD'&&!['OPEN','IN_PROGRESS'].includes(parent.status))mobilePilotError(409,'Breakdown cannot be started.');
   if(incident.kind==='SM'&&!['PLANNED','IN_PROGRESS'].includes(parent.status))mobilePilotError(409,'Scheduled maintenance cannot be started.');
-  let wo;
-  if(incident.kind==='BD'){
-    if(Number(parent.asset_id)!==Number(incident.asset_id))mobilePilotError(409,'The BD Asset changed. Open the full CMMS to review it.');
-    wo=mobilePilotBDWorkInput(rawWO,parent.title);
-    const {rows:matches}=wo.new_unit
-      ?await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[incident.asset_id,wo.section])
-      :await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND BTRIM(unit)=$3 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[incident.asset_id,wo.section,wo.unit]);
-    if(!matches.length)mobilePilotError(409,'Choose an existing Section for this BD Asset and a valid Unit. New Section is not allowed.');
-  }
   const now=new Date();
   if(incident.kind==='BD'){
     if(new Date(parent.started_at)>now)mobilePilotError(409,'Breakdown start is in the future.');
     await client.query("UPDATE breakdowns SET status='IN_PROGRESS',updated_at=NOW() WHERE id=$1 AND status='OPEN'",[parentId]);
   }else await client.query("UPDATE scheduled_maintenance SET status='IN_PROGRESS',actual_started_at=COALESCE(actual_started_at,$2),updated_at=NOW() WHERE id=$1",[parentId,now]);
   const {rows:tasks}=await client.query(`INSERT INTO maintenance_tasks
-    (asset_id,task,type,impact,status,due_date,frequency_hours,is_planned,breakdown_id,scheduled_maintenance_id,section,unit)
-    VALUES($1,$2,$3,'normal','Planned',$4,0,true,$5,$6,$7,$8) RETURNING id`,
-    [incident.asset_id,wo?.title||parent.title,incident.kind==='BD'?'Restoration':'Planned',now,incident.breakdown_id,incident.scheduled_maintenance_id,wo?.section||null,wo?.unit||null]);
+    (asset_id,task,type,impact,status,due_date,frequency_hours,is_planned,breakdown_id,scheduled_maintenance_id)
+    VALUES($1,$2,$3,'normal','Planned',$4,0,true,$5,$6) RETURNING id`,
+    [incident.asset_id,parent.title,incident.kind==='BD'?'Restoration':'Planned',now,incident.breakdown_id,incident.scheduled_maintenance_id]);
   const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,tasks[0].id,now]);
   return rows[0];
 }
 app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
   const body=req.body||{};
-  if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work','section','unit','new_unit','wo'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
+  if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work','section','unit','new_unit'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
   const kind=body.kind,assetId=Number(body.asset_id),title=String(body.title||'').trim(),description=String(body.description||'').trim(),at=new Date(body.incident_at);
   if(!mobilePilotUUID.test(body.request_id||'')||!['BD','SM','TASK'].includes(kind)||!Number.isSafeInteger(assetId)||assetId<=0||!title||title.length>200||description.length>4000||typeof body.incident_at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(body.incident_at)||Number.isNaN(at.getTime())||typeof body.start_work!=='boolean')return res.status(400).json({error:'Check Asset, title and date/time.'});
   if(kind==='BD'&&at.getTime()>Date.now()+60000)return res.status(400).json({error:'Breakdown start cannot be in the future.'});
@@ -27510,9 +27517,7 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
   if(kind==='TASK'&&(!unit||unit.length>500))return res.status(400).json({error:'Select a Unit for this Section.',field:'unit'});
   if(body.new_unit!==undefined&&typeof body.new_unit!=='boolean')return res.status(400).json({error:'Invalid New unit selection.'});
   if(kind!=='TASK'&&(body.section!==undefined||body.unit!==undefined||body.new_unit!==undefined))return res.status(400).json({error:'Section and Unit apply only to Planned Task.'});
-  let wo;
-  try{if(body.wo!==undefined&&!(kind==='BD'&&body.start_work))mobilePilotError(400,'WO fields apply only to BD Create & Start.');if(kind==='BD'&&body.start_work)wo=mobilePilotBDWorkInput(body.wo,title);}catch(error){return res.status(error.status||400).json({error:error.message});}
-  const normalized={...(wo?{wo}:{}),kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work,...(kind==='TASK'?{section,unit,...(body.new_unit===true?{new_unit:true}:{})}:{})};
+  const normalized={kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work,...(kind==='TASK'?{section,unit,...(body.new_unit===true?{new_unit:true}:{})}:{})};
   return mobilePilotTransaction(req,res,async client=>{
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[body.request_id]);
     const {rows:previous}=await client.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1',[body.request_id]);
@@ -27520,7 +27525,7 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
       if(previous[0].owner_id!=8||JSON.stringify(previous[0].request_body)!==JSON.stringify(normalized)){
         // jsonb key ordering is unspecified: compare values, not serialized ordering.
         const saved=previous[0].request_body;
-        if(previous[0].owner_id!=8||Object.keys(normalized).some(k=>k==='wo'?Object.keys(wo).some(field=>saved.wo?.[field]!==wo[field]):saved[k]!==normalized[k]))mobilePilotError(409,'This request ID belongs to a different draft.');
+        if(previous[0].owner_id!=8||Object.keys(normalized).some(k=>saved[k]!==normalized[k]))mobilePilotError(409,'This request ID belongs to a different draft.');
       }
       return{incident:previous[0],replayed:true};
     }
@@ -27542,7 +27547,7 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
       const {rows}=await client.query("INSERT INTO maintenance_tasks(asset_id,task,notes,type,impact,status,due_date,frequency_hours,is_planned,section,unit) VALUES($1,$2,$3,'Planned','normal','Planned',$4,NULL,true,$5,$6) RETURNING id",[assetId,title,description||null,at,section,unit]);taskId=rows[0].id;
     }
     const {rows}=await client.query('INSERT INTO mobile_pilot_incidents(id,owner_id,asset_id,kind,breakdown_id,scheduled_maintenance_id,maintenance_task_id,request_body) VALUES($1,8,$2,$3,$4,$5,$6,$7::jsonb) RETURNING *',[body.request_id,assetId,kind,bd,sm,taskId,JSON.stringify(normalized)]);
-    if(body.start_work)await mobilePilotStartWork(client,rows[0],req.mobilePilotUser,wo);
+    if(body.start_work)await mobilePilotStartWork(client,rows[0],req.mobilePilotUser);
     return{incident:rows[0]};
   });
 });
@@ -27551,8 +27556,7 @@ app.post('/mobile-pilot-api/incidents/:id/start-work',requireMobilePilot,async(r
   return mobilePilotTransaction(req,res,async client=>{
     const {rows}=await client.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8 FOR UPDATE',[req.params.id]);
     if(!rows.length)mobilePilotError(404,'Pilot incident not found.');
-    if(Object.keys(req.body||{}).some(k=>k!=='wo')||(rows[0].kind!=='BD'&&req.body?.wo!==undefined))mobilePilotError(400,'Unexpected Start work fields.');
-    return{work:await mobilePilotStartWork(client,rows[0],req.mobilePilotUser,req.body?.wo)};
+    return{work:await mobilePilotStartWork(client,rows[0],req.mobilePilotUser)};
   });
 });
 app.patch('/mobile-pilot-api/work/:id/notes',requireMobilePilot,async(req,res)=>{
@@ -27563,7 +27567,7 @@ app.patch('/mobile-pilot-api/work/:id/notes',requireMobilePilot,async(req,res)=>
 app.post('/mobile-pilot-api/work/:id/complete',requireMobilePilot,async(req,res)=>{
   try{
     if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid work ID.');
-    if(Object.keys(req.body||{}).some(k=>!['notes','work_started_at','work_ended_at'].includes(k))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
+    if(Object.keys(req.body||{}).some(k=>!['notes','work_started_at','work_ended_at','section','unit','new_unit'].includes(k))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
     const startValue=req.body.work_started_at,endValue=req.body.work_ended_at;
     const zoned=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(value)&&Number.isFinite(new Date(value).getTime());
     if(!zoned(startValue)||!zoned(endValue))mobilePilotError(400,'Enter Work Start and Work End. Refresh the pilot if the fields are missing.');
@@ -27575,6 +27579,13 @@ app.post('/mobile-pilot-api/work/:id/complete',requireMobilePilot,async(req,res)
     const work=rows[0];
     if(work.completed_at)return res.json({success:true,already_completed:true});
     if(!work.task_id)mobilePilotError(409,'The task was removed from CMMS.');
+    const {rows:incidents}=await pool.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1 AND owner_id=8',[work.incident_id]);
+    if(!incidents.length)mobilePilotError(404,'Pilot incident not found.');
+    if(incidents[0].kind==='BD'){
+      const section=typeof req.body.section==='string'?req.body.section.trim():'',unit=typeof req.body.unit==='string'?req.body.unit.trim():'';
+      if(!section||section.length>500||!unit||unit.length>500||(req.body.new_unit!==undefined&&typeof req.body.new_unit!=='boolean'))mobilePilotError(400,'Select Section and Unit for this BD work. Refresh the pilot if the fields are missing.');
+      req.mobilePilotWorkStructure={section,unit,newUnit:req.body.new_unit===true};
+    }else if(['section','unit','new_unit'].some(key=>req.body[key]!==undefined))mobilePilotError(400,'Work Section / Unit fields apply only to BD work.');
     req.mobilePilotWorkId=work.id;
     req.mobilePilotTiming={startedAt,endedAt};
     req.params.id=String(work.task_id);
