@@ -27503,7 +27503,7 @@ async function mobilePilotStartWork(client,incident,user){
     (asset_id,task,type,impact,status,due_date,frequency_hours,is_planned,breakdown_id,scheduled_maintenance_id)
     VALUES($1,$2,$3,'normal','Planned',$4,0,true,$5,$6) RETURNING id`,
     [incident.asset_id,parent.title,incident.kind==='BD'?'Restoration':'Planned',now,incident.breakdown_id,incident.scheduled_maintenance_id]);
-  const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,tasks[0].id,now]);
+  const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,tasks[0].id,incident.kind==='BD'?new Date(parent.started_at):now]);
   return rows[0];
 }
 app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
