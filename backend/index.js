@@ -19937,12 +19937,12 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
         return res.status(409).json({error:'Pilot task is unavailable or its incident link changed.'});
       }
       if (pilotWork.completed_at) { await client.query('COMMIT'); return res.json({success:true,already_completed:true}); }
-      if (completedAt < new Date(pilotWork.started_at)) {
+      const workStart=req.mobilePilotTiming?.startedAt || new Date(pilotWork.started_at);
+      if (!Number.isFinite(workStart.getTime()) || completedAt < workStart) {
         await client.query('ROLLBACK'); return res.status(409).json({error:'Completion cannot precede work start.'});
       }
-      if (req.body.actual_duration_min == null) {
-        actual_duration_min = Math.max(0,Math.round((completedAt-new Date(pilotWork.started_at))/60000));
-      }
+      // Only the private mobile wrapper supplies corrected Start/End.
+      actual_duration_min = Math.max(0,Math.round((completedAt-workStart)/60000));
     }
 
     const hasFrequency =
@@ -20218,7 +20218,7 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
 
     const rollovers = await rollOverCompletedPreventivePacks(client, preventivePackVisitIds);
     if (req.mobilePilotWorkId) {
-      await client.query('UPDATE mobile_pilot_work SET completed_at=$2,notes=$3 WHERE id=$1', [req.mobilePilotWorkId,completedAt,notes||null]);
+      await client.query('UPDATE mobile_pilot_work SET started_at=COALESCE($4,started_at),completed_at=$2,notes=$3 WHERE id=$1', [req.mobilePilotWorkId,completedAt,notes||null,req.mobilePilotTiming?.startedAt||null]);
     }
     await client.query("COMMIT");
 
@@ -27529,17 +27529,22 @@ app.patch('/mobile-pilot-api/work/:id/notes',requireMobilePilot,async(req,res)=>
 app.post('/mobile-pilot-api/work/:id/complete',requireMobilePilot,async(req,res)=>{
   try{
     if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid work ID.');
-    if(Object.keys(req.body||{}).some(k=>!['notes','actual_duration_min'].includes(k))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
-    const duration=req.body.actual_duration_min;
-    if(duration!=null&&(!Number.isInteger(duration)||duration<0))mobilePilotError(400,'Actual minutes must be zero or greater.');
+    if(Object.keys(req.body||{}).some(k=>!['notes','work_started_at','work_ended_at'].includes(k))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
+    const startValue=req.body.work_started_at,endValue=req.body.work_ended_at;
+    const zoned=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(value)&&Number.isFinite(new Date(value).getTime());
+    if(!zoned(startValue)||!zoned(endValue))mobilePilotError(400,'Enter Work Start and Work End. Refresh the pilot if the fields are missing.');
+    const startedAt=new Date(startValue),endedAt=new Date(endValue);
+    if(endedAt<startedAt)mobilePilotError(400,'Work End must be at or after Work Start.');
+    if(endedAt.getTime()>Date.now())mobilePilotError(400,'Work End cannot be in the future.');
     const {rows}=await pool.query('SELECT * FROM mobile_pilot_work WHERE id=$1 AND technician_id=8',[req.params.id]);
     if(!rows.length)mobilePilotError(404,'Pilot work not found.');
     const work=rows[0];
     if(work.completed_at)return res.json({success:true,already_completed:true});
     if(!work.task_id)mobilePilotError(409,'The task was removed from CMMS.');
     req.mobilePilotWorkId=work.id;
+    req.mobilePilotTiming={startedAt,endedAt};
     req.params.id=String(work.task_id);
-    req.body={technician_id:8,completed_by:req.mobilePilotUser.name,completed_at:new Date().toISOString(),notes:req.body.notes,actual_duration_min:duration};
+    req.body={technician_id:8,completed_by:req.mobilePilotUser.name,completed_at:endedAt.toISOString(),notes:req.body.notes};
     // The canonical handler locks the task and commits task execution + pilot completion atomically.
     return await cmmsCompleteTaskHandler(req,res);
   }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not complete pilot work.'});}
