@@ -943,6 +943,7 @@ async function viewHistoryEntry(executionId) {
         <strong>
           Task
         </strong>
+        <small style="display:block;margin-top:6px;color:#9fb4cb">Task #${Number.isSafeInteger(Number(h.task_id)) && Number(h.task_id)>0 ? Number(h.task_id) : '—'} · Execution #${Number.isSafeInteger(Number(h.id)) ? Number(h.id) : '—'}</small>
 
 
         <!-- =====================
