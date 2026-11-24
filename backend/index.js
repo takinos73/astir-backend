@@ -27477,15 +27477,16 @@ async function mobilePilotStartWork(client,incident,user){
 }
 app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
   const body=req.body||{};
-  if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work','section','unit'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
+  if(Object.keys(body).some(k=>!['request_id','kind','asset_id','title','description','incident_at','start_work','section','unit','new_unit'].includes(k)))return res.status(400).json({error:'Unexpected incident fields.'});
   const kind=body.kind,assetId=Number(body.asset_id),title=String(body.title||'').trim(),description=String(body.description||'').trim(),at=new Date(body.incident_at);
   if(!mobilePilotUUID.test(body.request_id||'')||!['BD','SM','TASK'].includes(kind)||!Number.isSafeInteger(assetId)||assetId<=0||!title||title.length>200||description.length>4000||typeof body.incident_at!=='string'||!/(Z|[+-]\d{2}:\d{2})$/i.test(body.incident_at)||Number.isNaN(at.getTime())||typeof body.start_work!=='boolean')return res.status(400).json({error:'Check Asset, title and date/time.'});
   if(kind==='BD'&&at.getTime()>Date.now()+60000)return res.status(400).json({error:'Breakdown start cannot be in the future.'});
   const section=typeof body.section==='string'?body.section.trim():'',unit=typeof body.unit==='string'?body.unit.trim():'';
   if(kind==='TASK'&&(!section||section.length>500))return res.status(400).json({error:'Select a Section for this Asset.',field:'section'});
   if(kind==='TASK'&&(!unit||unit.length>500))return res.status(400).json({error:'Select a Unit for this Section.',field:'unit'});
-  if(kind!=='TASK'&&(body.section!==undefined||body.unit!==undefined))return res.status(400).json({error:'Section and Unit apply only to Planned Task.'});
-  const normalized={kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work,...(kind==='TASK'?{section,unit}:{})};
+  if(body.new_unit!==undefined&&typeof body.new_unit!=='boolean')return res.status(400).json({error:'Invalid New unit selection.'});
+  if(kind!=='TASK'&&(body.section!==undefined||body.unit!==undefined||body.new_unit!==undefined))return res.status(400).json({error:'Section and Unit apply only to Planned Task.'});
+  const normalized={kind,asset_id:assetId,title,description,incident_at:at.toISOString(),start_work:body.start_work,...(kind==='TASK'?{section,unit,...(body.new_unit===true?{new_unit:true}:{})}:{})};
   return mobilePilotTransaction(req,res,async client=>{
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[body.request_id]);
     const {rows:previous}=await client.query('SELECT * FROM mobile_pilot_incidents WHERE id=$1',[body.request_id]);
@@ -27500,7 +27501,10 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
     const {rows:assets}=await client.query('SELECT id FROM assets WHERE id=$1 AND active=true FOR SHARE',[assetId]);
     if(!assets.length)mobilePilotError(409,'Asset is unavailable.');
     if(kind==='TASK'){
-      const {rows:matches}=await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND BTRIM(unit)=$3 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[assetId,section,unit]);
+      // New unit may extend an existing Section, never create a Section.
+      const {rows:matches}=body.new_unit===true
+        ?await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[assetId,section])
+        :await client.query("SELECT id FROM maintenance_tasks WHERE asset_id=$1 AND BTRIM(section)=$2 AND BTRIM(unit)=$3 AND deleted_at IS NULL LIMIT 1 FOR SHARE",[assetId,section,unit]);
       if(!matches.length)mobilePilotError(409,'Section / Unit is not available for this Asset. Refresh My work and select again.');
     }
     let bd=null,sm=null,taskId=null;

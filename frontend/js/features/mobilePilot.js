@@ -40,13 +40,19 @@
   }
   function populateUnits(unit=''){
     const units=[...new Set(structure.filter(x=>Number(x.asset_id)===Number(el('pilotAsset').value)&&x.section===el('pilotSection').value).map(x=>x.unit).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'el'));
-    el('pilotUnit').replaceChildren(new Option(units.length?'Select unit…':'No units — use full CMMS',''));
+    el('pilotUnit').replaceChildren(new Option('Select unit…',''));
     for(const value of units)el('pilotUnit').add(new Option(value,value));
-    el('pilotUnit').value=units.includes(unit)?unit:'';
+    const hasSection=!!el('pilotSection').value;
+    if(hasSection)el('pilotUnit').add(new Option('＋ New unit','__new__'));
+    el('pilotUnit').value=units.includes(unit)?unit:hasSection&&(unit||!units.length)?'__new__':'';
+    el('pilotNewUnit').value=units.includes(unit)?'':hasSection?unit:'';
+    updateUnitMode();
   }
-  function updateKind(){const simple=document.querySelector('[name="pilotKind"]:checked').value==='TASK';el('pilotStructure').hidden=!simple;for(const id of ['pilotSection','pilotUnit']){el(id).required=simple;el(id).disabled=!simple;}el('pilotAt').required=!simple;el('pilotTiming').hidden=simple;el('pilotDescriptionGroup').hidden=simple;el('pilotAtLabel').textContent=document.querySelector('[name="pilotKind"]:checked').value==='SM'?'Scheduled start *':'Incident started *';}
+  function currentUnit(){return el('pilotUnit').value==='__new__'?el('pilotNewUnit').value.trim():el('pilotUnit').value;}
+  function updateUnitMode(){const active=document.querySelector('[name="pilotKind"]:checked').value==='TASK'&&!!el('pilotSection').value&&el('pilotUnit').value==='__new__';el('pilotNewUnitGroup').hidden=!active;el('pilotNewUnit').disabled=!active;el('pilotNewUnit').required=active;}
+  function updateKind(){const simple=document.querySelector('[name="pilotKind"]:checked').value==='TASK';el('pilotStructure').hidden=!simple;for(const id of ['pilotSection','pilotUnit']){el(id).required=simple;el(id).disabled=!simple;}updateUnitMode();el('pilotAt').required=!simple;el('pilotTiming').hidden=simple;el('pilotDescriptionGroup').hidden=simple;el('pilotAtLabel').textContent=document.querySelector('[name="pilotKind"]:checked').value==='SM'?'Scheduled start *':'Incident started *';}
   function saveFormDraft(){
-    if(draftRequest)return;sessionStorage.setItem('astirMobilePilotForm',JSON.stringify({asset:el('pilotAsset').value,section:el('pilotSection').value,unit:el('pilotUnit').value,kind:document.querySelector('[name="pilotKind"]:checked').value,title:el('pilotTitle').value,at:el('pilotAt').value,description:el('pilotDescription').value}));}
+    if(draftRequest)return;sessionStorage.setItem('astirMobilePilotForm',JSON.stringify({asset:el('pilotAsset').value,section:el('pilotSection').value,unit:currentUnit(),kind:document.querySelector('[name="pilotKind"]:checked').value,title:el('pilotTitle').value,at:el('pilotAt').value,description:el('pilotDescription').value}));}
   
   function restoreFormDraft(){
     try{const d=JSON.parse(sessionStorage.getItem('astirMobilePilotForm')||'null');if(!d)return;el('pilotAsset').value=d.asset;populateStructure(d.section,d.unit);el('pilotTitle').value=d.title||'';el('pilotAt').value=d.at||localNow();el('pilotDescription').value=d.description||'';document.querySelector('[name="pilotKind"][value="'+(['SM','TASK'].includes(d.kind)?d.kind:'BD')+'"]').checked=true;}catch{}}
@@ -63,21 +69,22 @@
   el('pilotNew').onclick=()=>{if(busy)return;status('');if(!draftRequest){el('pilotCreateForm').reset();el('pilotAt').value=localNow();el('pilotAssetSearch').value='';el('pilotDraftFields').disabled=false;renderAssets();populateStructure();restoreFormDraft();}else{el('pilotAssetSearch').value='';renderAssets();el('pilotAsset').value=draftRequest.asset_id;populateStructure(draftRequest.section,draftRequest.unit);el('pilotTitle').value=draftRequest.title;el('pilotDescription').value=draftRequest.description;const d=new Date(draftRequest.incident_at);el('pilotAt').value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);document.querySelector('[name="pilotKind"][value="'+draftRequest.kind+'"]').checked=true;el('pilotDraftFields').disabled=true;status('Retrying the previously submitted draft safely.');}updateKind();show('pilotCreate');};
   el('pilotCreateForm').addEventListener('input',saveFormDraft);el('pilotCreateForm').addEventListener('change',saveFormDraft);
   el('pilotAssetSearch').oninput=renderAssets;
-  el('pilotAsset').onchange=()=>{populateStructure();saveFormDraft();};el('pilotSection').onchange=()=>{populateUnits();saveFormDraft();};
+  el('pilotAsset').onchange=()=>{populateStructure();saveFormDraft();};el('pilotSection').onchange=()=>{populateUnits();saveFormDraft();};el('pilotUnit').onchange=()=>{el('pilotNewUnit').value='';updateUnitMode();saveFormDraft();};
   document.querySelectorAll('[name="pilotKind"]').forEach(radio=>radio.onchange=updateKind);
   el('pilotTakePhoto').onclick=()=>el('pilotCamera').click();el('pilotChoosePhoto').onclick=()=>el('pilotFiles').click();el('pilotCamera').onchange=()=>addFiles(el('pilotCamera'));el('pilotFiles').onchange=()=>addFiles(el('pilotFiles'));
   el('pilotCreateBack').onclick=async()=>{if(busy)return;try{await refresh();show('pilotHome');status(draftRequest?'A submission may be pending. Check the list before retrying the same draft.':'');}catch(error){status(error.message);}};
   async function upload(id,selectedFiles){if(!selectedFiles.length)return;const data=new FormData();for(const file of selectedFiles)data.append('files',file);await api('/mobile-pilot-api/incidents/'+id+'/photos',{method:'POST',body:data});}
   el('pilotCreateForm').onsubmit=async event=>{
     event.preventDefault();if(busy)return;
-    if(!draftRequest){if(!el('pilotCreateForm').reportValidity())return;const at=new Date(document.querySelector('[name="pilotKind"]:checked').value==='TASK'?Date.now():el('pilotAt').value);if(Number.isNaN(at.getTime()))return status('Check the date/time.');draftRequest={request_id:crypto.randomUUID(),asset_id:Number(el('pilotAsset').value),kind:document.querySelector('[name="pilotKind"]:checked').value,title:el('pilotTitle').value.trim(),description:document.querySelector('[name="pilotKind"]:checked').value==='TASK'?'':el('pilotDescription').value.trim(),incident_at:at.toISOString(),start_work:event.submitter?.dataset.start==='true',...(document.querySelector('[name="pilotKind"]:checked').value==='TASK'?{section:el('pilotSection').value,unit:el('pilotUnit').value}:{})};sessionStorage.setItem('astirMobilePilotDraft',JSON.stringify(draftRequest));}
+    if(!draftRequest){if(!el('pilotCreateForm').reportValidity())return;const at=new Date(document.querySelector('[name="pilotKind"]:checked').value==='TASK'?Date.now():el('pilotAt').value);if(Number.isNaN(at.getTime()))return status('Check the date/time.');draftRequest={request_id:crypto.randomUUID(),asset_id:Number(el('pilotAsset').value),kind:document.querySelector('[name="pilotKind"]:checked').value,title:el('pilotTitle').value.trim(),description:document.querySelector('[name="pilotKind"]:checked').value==='TASK'?'':el('pilotDescription').value.trim(),incident_at:at.toISOString(),start_work:event.submitter?.dataset.start==='true',...(document.querySelector('[name="pilotKind"]:checked').value==='TASK'?{section:el('pilotSection').value,unit:currentUnit(),...(el('pilotUnit').value==='__new__'?{new_unit:true}:{})}:{})};sessionStorage.setItem('astirMobilePilotDraft',JSON.stringify(draftRequest));}
     busy=true;let savedId=null;el('pilotDraftFields').disabled=true;el('pilotSaveOnly').disabled=true;el('pilotSaveStart').disabled=true;status('Saving incident…');
     try{
       const result=await api('/mobile-pilot-api/incidents',{method:'POST',body:JSON.stringify(draftRequest)});const id=result.incident.id;savedId=id;
+      if(draftRequest.kind==='TASK'&&!structure.some(x=>Number(x.asset_id)===draftRequest.asset_id&&x.section===draftRequest.section&&x.unit===draftRequest.unit))structure.push({asset_id:draftRequest.asset_id,section:draftRequest.section,unit:draftRequest.unit});
       draftRequest=null;sessionStorage.removeItem('astirMobilePilotDraft');sessionStorage.removeItem('astirMobilePilotForm');
       let photoMessage='';try{await upload(id,files.map(x=>x.file));}catch(error){photoMessage='Incident saved. Photos were not confirmed: '+error.message+' Check the Photos list before retrying.';}
       clearFiles();await refresh();await openItem(id);status(photoMessage||'Incident saved.');
-    }catch(error){if(savedId){show(error.status===401?'pilotLogin':'pilotHome');status('Incident saved successfully. Sign in / refresh My work to continue. Do not create it again.');}else if(error.status&&error.status<500){draftRequest=null;sessionStorage.removeItem('astirMobilePilotDraft');el('pilotDraftFields').disabled=false;status(error.message);if(error.field==='section')el('pilotSection').focus();if(error.field==='unit')el('pilotUnit').focus();}else status(error.message+' Retry to submit the SAME draft safely, or check My work.');}
+    }catch(error){if(savedId){show(error.status===401?'pilotLogin':'pilotHome');status('Incident saved successfully. Sign in / refresh My work to continue. Do not create it again.');}else if(error.status&&error.status<500){draftRequest=null;sessionStorage.removeItem('astirMobilePilotDraft');el('pilotDraftFields').disabled=false;status(error.message);if(error.field==='section')el('pilotSection').focus();if(error.field==='unit')(el('pilotUnit').value==='__new__'?el('pilotNewUnit'):el('pilotUnit')).focus();}else status(error.message+' Retry to submit the SAME draft safely, or check My work.');}
     finally{busy=false;el('pilotSaveOnly').disabled=false;el('pilotSaveStart').disabled=false;}
   };
   async function loadPhotos(item){
