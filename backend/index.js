@@ -19922,6 +19922,8 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
       taskRes.rows[0];
 
 
+    if(task.deleted_at){await client.query('ROLLBACK');return res.status(409).json({error:'This task has been cancelled and cannot be completed.'});}
+
     // Pilot-only work timing. Normal desktop requests never enter this branch.
     if (req.mobilePilotWorkId) {
       const { rows: pilotRows } = await client.query(`
@@ -20440,41 +20442,30 @@ app.post("/tasks/bulk-done", async (req, res) => {
 /* =====================
    SOFT DELETE PLANNED MANUAL TASK
 ===================== */
-app.delete("/tasks/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `
-      UPDATE maintenance_tasks
-      SET deleted_at = NOW()
-      WHERE id = $1
-        AND status = 'Planned'
-        AND frequency_hours IS NULL
-        AND NOT EXISTS (
-          SELECT 1
-          FROM preventive_package_visit_tasks link
-          WHERE link.task_id = maintenance_tasks.id
-        )
-      RETURNING id
-      `,
-      [id]
-    );
-
-    if (!result.rows.length) {
-      return res.status(400).json({
-        error: "Task cannot be deleted"
-      });
-    }
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("DELETE TASK ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  }
+app.delete("/tasks/:id", async (req,res) => {
+  const {id}=req.params;
+  let client;
+  try{
+    client=await pool.connect();await client.query('BEGIN');
+    // Serialize with Start/Complete. No pilot records, executions or files are deleted.
+    const {rows:tasks}=await client.query('SELECT * FROM maintenance_tasks WHERE id=$1 FOR UPDATE',[id]);
+    if(!tasks.length){await client.query('ROLLBACK');return res.status(404).json({error:'Task not found'});}
+    if(tasks[0].deleted_at){await client.query('COMMIT');return res.json({success:true,already_cancelled:true});}
+    const result=await client.query(
+      `UPDATE maintenance_tasks SET deleted_at=NOW() WHERE id=$1 AND status='Planned'
+       AND (frequency_hours IS NULL OR (
+         frequency_hours=0 AND is_planned=true AND type='Planned'
+         AND breakdown_id IS NULL AND scheduled_maintenance_id IS NULL
+         AND EXISTS (SELECT 1 FROM mobile_pilot_incidents m WHERE m.kind='TASK' AND m.maintenance_task_id=maintenance_tasks.id)
+       ))
+       AND NOT EXISTS (SELECT 1 FROM task_executions e WHERE e.task_id=maintenance_tasks.id)
+       AND NOT EXISTS (SELECT 1 FROM preventive_package_visit_tasks link WHERE link.task_id=maintenance_tasks.id)
+       RETURNING id`,[id]);
+    if(!result.rows.length){await client.query('ROLLBACK');return res.status(400).json({error:'Only an unexecuted manual Planned Task can be cancelled. Completed, recurring and package tasks are protected.'});}
+    await client.query('COMMIT');res.json({success:true});
+  }catch(error){if(client)await client.query('ROLLBACK').catch(()=>{});console.error('DELETE TASK ERROR:',error.message);res.status(500).json({error:'Task cancellation failed. Please retry.'});}
+  finally{client?.release();}
 });
-
 /* =========================================================
    GET /executions — TASK EXECUTION HISTORY
 
@@ -27436,7 +27427,7 @@ const mobilePilotItemsSQL = `SELECT m.id,m.kind,m.asset_id,m.breakdown_id,m.sche
   LEFT JOIN breakdowns b ON b.id=m.breakdown_id LEFT JOIN scheduled_maintenance s ON s.id=m.scheduled_maintenance_id
   LEFT JOIN maintenance_tasks pt ON pt.id=m.maintenance_task_id
   LEFT JOIN mobile_pilot_work w ON w.incident_id=m.id LEFT JOIN maintenance_tasks t ON t.id=w.task_id
-  WHERE m.owner_id=$1`;
+  WHERE m.owner_id=$1 AND (m.kind<>'TASK' OR (pt.id IS NOT NULL AND pt.deleted_at IS NULL))`;
 app.get('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
   try{const {rows}=await pool.query(mobilePilotItemsSQL+' ORDER BY m.created_at DESC LIMIT 100',[8]);res.json({incidents:rows});}
   catch(error){res.status(500).json({error:'Could not load pilot work. Check that the pilot SQL has been applied.'});}
@@ -27449,13 +27440,15 @@ async function mobilePilotTransaction(req,res,operation){
 }
 async function mobilePilotStartWork(client,incident,user){
   const {rows:existing}=await client.query('SELECT * FROM mobile_pilot_work WHERE incident_id=$1',[incident.id]);
-  if(existing.length)return existing[0];
   if(incident.kind==='TASK'){
     const {rows:tasks}=await client.query('SELECT * FROM maintenance_tasks WHERE id=$1 FOR UPDATE',[incident.maintenance_task_id]);
     const task=tasks[0];
-    if(!task || task.status!=='Planned' || Number(task.asset_id)!==Number(incident.asset_id) || task.breakdown_id || task.scheduled_maintenance_id) mobilePilotError(409,'Planned task is unavailable or has changed.');
+    if(!task || task.deleted_at || Number(task.asset_id)!==Number(incident.asset_id) || task.breakdown_id || task.scheduled_maintenance_id) mobilePilotError(409,'Planned task is unavailable or has changed.');
+    if(existing.length)return existing[0];
+    if(task.status!=='Planned')mobilePilotError(409,'Planned task is unavailable or has changed.');
     const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,task.id,new Date()]);return rows[0];
   }
+  if(existing.length)return existing[0];
   const table=incident.kind==='BD'?'breakdowns':'scheduled_maintenance';
   const parentId=incident.kind==='BD'?incident.breakdown_id:incident.scheduled_maintenance_id;
   const {rows:parents}=await client.query(`SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`,[parentId]);
@@ -27513,7 +27506,7 @@ app.post('/mobile-pilot-api/incidents',requireMobilePilot,async(req,res)=>{
     }else if(kind==='SM'){
       const {rows}=await client.query(`INSERT INTO scheduled_maintenance(asset_id,title,description,status,scheduled_start_at,scheduled_end_at) VALUES($1,$2,$3,'PLANNED',$4,NULL) RETURNING id`,[assetId,title,description||null,at]);sm=rows[0].id;
     }else{
-      const {rows}=await client.query("INSERT INTO maintenance_tasks(asset_id,task,notes,type,impact,status,due_date,frequency_hours,is_planned,section,unit) VALUES($1,$2,$3,'Planned','normal','Planned',$4,0,true,$5,$6) RETURNING id",[assetId,title,description||null,at,section,unit]);taskId=rows[0].id;
+      const {rows}=await client.query("INSERT INTO maintenance_tasks(asset_id,task,notes,type,impact,status,due_date,frequency_hours,is_planned,section,unit) VALUES($1,$2,$3,'Planned','normal','Planned',$4,NULL,true,$5,$6) RETURNING id",[assetId,title,description||null,at,section,unit]);taskId=rows[0].id;
     }
     const {rows}=await client.query('INSERT INTO mobile_pilot_incidents(id,owner_id,asset_id,kind,breakdown_id,scheduled_maintenance_id,maintenance_task_id,request_body) VALUES($1,8,$2,$3,$4,$5,$6,$7::jsonb) RETURNING *',[body.request_id,assetId,kind,bd,sm,taskId,JSON.stringify(normalized)]);
     if(body.start_work)await mobilePilotStartWork(client,rows[0],req.mobilePilotUser);

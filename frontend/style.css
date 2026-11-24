@@ -3965,7 +3965,7 @@ body.cmms-authenticated[data-role="shift_foreman"]
 
 /* Execution Details: display-only redesign, scoped away from History tables. */
 #historyViewOverlay .history-view-box{max-width:920px;width:min(920px,calc(100vw - 32px));padding:0;background:#12171e;border:1px solid #354152;border-radius:14px;overflow-x:hidden}
-#historyViewOverlay .history-view-box>h3{margin:0;padding:24px;background:linear-gradient(115deg,#243951,#19232f);border-bottom:1px solid #3b4d63;color:#e7ecf4;font-size:21px}
+#historyViewOverlay .history-view-box>h3{margin:0;padding:24px;background:linear-gradient(115deg,#0b1727,#172d47);border-bottom:1px solid #3b4d63;color:#e7ecf4;font-size:21px}
 #historyViewOverlay #historyViewContent{display:block;padding:24px;margin:0}
 #historyViewOverlay .execution-view-record{display:grid;padding:0;gap:22px;min-width:0;color:#e7ecf4;--execution-accent:#e4bb56}
 #historyViewOverlay .execution-view-record.history-type-breakdown{--execution-accent:#ed7882;border:0;background:none}
@@ -3980,7 +3980,7 @@ body.cmms-authenticated[data-role="shift_foreman"]
 #historyViewOverlay .execution-view-asset{font-size:14px;line-height:1.6;overflow-wrap:anywhere}
 #historyViewOverlay .execution-view-asset span{color:#a6b5c7}
 #historyViewOverlay .execution-view-metrics{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:12px;min-width:0}
-#historyViewOverlay .execution-view-metric{padding:16px;background:#1b2430;border:1px solid #303f51;border-radius:8px;min-width:0;overflow-wrap:anywhere}
+#historyViewOverlay .execution-view-metric{padding:12px;background:#1b2430;border:1px solid #303f51;border-radius:8px;min-width:0;overflow-wrap:anywhere}
 #historyViewOverlay .execution-view-record h4{margin:0 0 10px;color:#a6b5c7;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px}
 #historyViewOverlay .execution-view-metric>div{font-size:15px;line-height:1.5}
 #historyViewOverlay .execution-view-metric .execution-view-duration{color:#8ebeff;font-size:23px;font-weight:600}
