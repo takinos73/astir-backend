@@ -29,6 +29,7 @@ async function loadAssets() {
 ===================== */
 
 function renderAssetsCards() {
+  const assetCardText = value => String(value == null || value === "" ? "—" : value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   
   // Hide legacy table completely
   const tableWrap = document.querySelector(".table-card.assets-scroll");
@@ -83,56 +84,35 @@ function renderAssetsCards() {
 
   if (activity) {
     activityHtml = activity.is_breakdown
-      ? `<span class="activity danger activity-badge">⚠ Breakdown · ${activity.when}</span>`
-      : `<span class="activity ok activity-badge">🕒 ${activity.when}</span>`;
+      ? `<span class="activity danger activity-badge"><span><span class="asset-register-icon" aria-hidden="true">⚠</span> Last breakdown</span><strong>${assetCardText(activity.when)}</strong></span>`
+      : `<span class="activity ok activity-badge"><span><span class="asset-register-icon" aria-hidden="true">🕒</span> Last maintenance</span><strong>${assetCardText(activity.when)}</strong></span>`;
   }
 
   const stats = getAssetTaskStats(a.id);
   const hasOverdue = stats.overdue > 0;
+  card.classList.toggle("is-idle", isIdle);
+  card.classList.toggle("is-overdue", hasOverdue);
 
   card.innerHTML = `
+    <div class="asset-register-top">
+      <span class="asset-register-line">LINE <strong>${assetCardText(a.line)}</strong></span>
+      <span class="asset-register-state ${isIdle ? "idle" : "active"}">${isIdle ? "IDLE" : "ACTIVE"}</span>
+    </div>
     <div class="asset-card-header">
-      <div class="asset-card-title">
-        ${a.model || "-"}
-        ${hasOverdue ? `<span class="asset-risk-dot"></span>` : ""}
-        ${isIdle ? `<span class="asset-status idle">Idle</span>` : ""}
-      </div>
-
-      <div class="asset-card-sn">SN: ${a.serial_number || "-"}</div>
+      <div class="asset-card-title">${assetCardText(a.model)}</div>
+      <div class="asset-card-sn">SN: ${assetCardText(a.serial_number)}</div>
     </div>
-
-    <div class="asset-card-meta">
-      Line: <strong>${a.line || "-"}</strong>
-    </div>
-
-    <div class="asset-card-preventive">
-      <span class="pill">
-        ⏱ ~${stats.workloadHours30d}h / next 30d
-      </span>
-    </div>
-
     <div class="asset-card-stats">
-      <span class="stat">
-        🛠 Active: <strong>${stats.active}</strong>
-      </span>
-
-      <span class="stat">
-        ⏰ Overdue: <strong>${stats.overdue}</strong>
-      </span>
+      <span class="stat"><span class="asset-register-icon" aria-hidden="true">🛠</span> Active <strong>${stats.active}</strong></span>
+      <span class="stat asset-register-overdue"><span class="asset-register-icon" aria-hidden="true">⏰</span> Overdue <strong>${stats.overdue}</strong></span>
     </div>
-
-    <div class="asset-card-activity">
-      ${activityHtml}
+    <div class="asset-card-preventive">
+      <span><span class="asset-register-icon" aria-hidden="true">⏱</span> Next 30 days</span>
+      <strong>~${stats.workloadHours30d} h</strong>
     </div>
-
+    <div class="asset-card-activity">${activityHtml}</div>
     <div class="asset-card-actions">
-      <button
-        class="asset-card-more"
-        type="button"
-        title="More actions">
-        ...more
-      </button>
-
+      <button class="asset-card-more" type="button" title="More actions">⋯ Actions</button>
       <div class="asset-card-menu" style="display:none;">
         <button class="asset-card-menu-item add-task">➕ Add Task</button>
         <button class="asset-card-menu-item edit">✏️ Edit</button>
@@ -142,7 +122,6 @@ function renderAssetsCards() {
       </div>
     </div>
   `;
-
   // Breakdown activity opens Breakdowns; other activity retains History.
   const activityEl = card.querySelector(".activity-badge");
   if (activityEl) {

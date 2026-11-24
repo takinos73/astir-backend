@@ -4064,3 +4064,63 @@ tr.highlight-execution {
   z-index: 2000;
 }
 
+/* Asset register: existing click/menu/bulk behavior, revised presentation. */
+#tab-assets > .assets-header {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px;
+  margin: 22px 0 16px; padding: 20px 22px; border: 1px solid #36536e;
+  border-radius: 11px; background: linear-gradient(115deg,#203c5b,#161c24);
+}
+#tab-assets > .assets-header h2 { margin: 0; font-size: 24px; color: #edf5ff; }
+#tab-assets > .assets-header p { margin: 0; color: #a8bbd2; font-size: 13px; }
+#tab-assets > .filter-group { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+#tab-assets > .filter-group .controls-row { margin: 0; padding: 0; }
+#tab-assets #assetLineFilter { min-height: 36px; padding: 7px 11px; border: 1px solid #3d4c60; border-radius: 7px; background: #19212c; color: #dce7f5; }
+#tab-assets #addAssetBtn { background: #233a53; border: 1px solid #4f739b; border-radius: 7px; color: #cfe5ff; }
+#tab-assets #setAllAssetsIdleBtn { background: #d5ad30; border: 1px solid #e2bd4e; border-radius: 7px; color: #241d0d; }
+#tab-assets #resumeAllAssetsBtn { background: #4bc88d; border: 1px solid #6cd6a4; border-radius: 7px; color: #10291e; }
+#tab-assets #assetsCardsView { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; padding: 0; }
+#tab-assets #assetsCardsView .asset-card {
+  box-sizing: border-box; position: relative; min-width: 0;
+  display: flex; flex-direction: column; gap: 0; padding: 14px 16px;
+  background: #202731; border: 1px solid #374350; border-left: 4px solid #689bd4;
+  border-radius: 9px; box-shadow: none; transform: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+#tab-assets #assetsCardsView .asset-card.is-overdue { border-left-color: #db7585; }
+#tab-assets #assetsCardsView .asset-card.is-idle { border-left-color: #d8b557; }
+#tab-assets #assetsCardsView .asset-card:hover { background: #26313e; border-top-color: #617a96; border-right-color: #617a96; border-bottom-color: #617a96; box-shadow: none; transform: none; }
+#tab-assets .asset-register-top { display: flex; justify-content: space-between; align-items: center; gap: 9px; margin-bottom: 12px; }
+#tab-assets .asset-register-line { min-width: 0; color: #a7bad1; font-size: 10px; line-height: 1.4; letter-spacing: .3px; }
+#tab-assets .asset-register-line strong { color: #c7d5e6; font-weight: 500; overflow-wrap: anywhere; }
+#tab-assets .asset-register-state { flex-shrink: 0; padding: 2px 6px; border: 1px solid #4b7565; border-radius: 5px; color: #a7d5bf; background: #23372f; font-size: 9px; font-weight: 600; }
+#tab-assets .asset-register-state.idle { color: #eed38b; border-color: #90763b; background: #3a3222; }
+#tab-assets #assetsCardsView .asset-card-header { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 78px; padding: 0 0 12px; margin: 0; border: 0; }
+#tab-assets #assetsCardsView .asset-card-title { max-width: 100%; color: #edf2f9; font-size: 17px; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+#tab-assets #assetsCardsView .asset-card-sn { max-width: 100%; margin: 0; font-size: 11px; color: #a5b8cf; white-space: normal; overflow-wrap: anywhere; }
+#tab-assets #assetsCardsView .asset-card-stats { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; margin: 0; padding: 10px 0; opacity: 1; border: 0; font-size: 11px; color: #b9c9dc; }
+#tab-assets #assetsCardsView .asset-card-stats .stat { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-width: 0; }
+#tab-assets #assetsCardsView .asset-card-stats .stat + .stat { border-left: 1px solid #455467; padding-left: 10px; }
+#tab-assets #assetsCardsView .asset-card-stats strong { font-size: 18px; line-height: 1.2; color: #edf2f9; }
+#tab-assets #assetsCardsView .asset-card-stats .asset-register-overdue strong { color: #aebfd3; }
+#tab-assets #assetsCardsView .is-overdue .asset-register-overdue strong { color: #f09daa; }
+#tab-assets .asset-register-icon { display: inline-block; flex-shrink: 0; font-size: 12px; line-height: 1; margin-right: 3px; }
+#tab-assets #assetsCardsView .asset-card-preventive { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; margin: 0; padding: 9px 0 6px; border-top: 1px solid #3c4b5c; color: #b8c9dd; font-size: 11px; }
+#tab-assets #assetsCardsView .asset-card-preventive strong { color: #dce7f5; font-size: 12px; font-weight: 600; }
+#tab-assets #assetsCardsView .asset-card-activity { margin: 0; padding: 0 0 12px; font-size: 11px; }
+#tab-assets #assetsCardsView .asset-card-activity .activity { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0; border: 0; background: transparent; border-radius: 0; font-size: 11px; line-height: 1.5; }
+#tab-assets #assetsCardsView .activity > span { min-width: 0; }
+#tab-assets #assetsCardsView .activity strong { font-weight: 500; white-space: nowrap; }
+#tab-assets #assetsCardsView .activity.ok { color: #b4c9e1; }
+#tab-assets #assetsCardsView .activity.danger { color: #e99da7; }
+#tab-assets #assetsCardsView .activity.muted { color: #92a4bb; }
+#tab-assets #assetsCardsView .activity-badge:hover { text-decoration: underline; }
+#tab-assets #assetsCardsView .asset-card-actions { position: relative; display: flex; justify-content: flex-end; margin-top: auto; padding-top: 8px; opacity: 1; border-top: 1px solid #3c4b5c; }
+#tab-assets #assetsCardsView .asset-card-more { padding: 4px 0 4px 8px; border: 0; background: transparent; color: #bdcfe4; font-size: 12px; line-height: 1.4; }
+#tab-assets #assetsCardsView .asset-card-more:hover { color: #e2efff; }
+#tab-assets #assetsCardsView .asset-card-menu { left: auto; right: 0; top: auto; bottom: calc(100% + 5px); margin: 0; transform: none; min-width: 155px; max-width: 100%; padding: 5px; background: #1b2737; border: 1px solid #4b607a; border-radius: 8px; z-index: 20; }
+#tab-assets #assetsCardsView .asset-card:has(.asset-card-menu[style*="block"]) { z-index: 2; }
+#tab-assets #assetsCardsView .asset-card-menu-item { min-height: 32px; padding: 7px 9px; border-radius: 5px; font-size: 12px; }
+#tab-assets button:focus-visible, #tab-assets select:focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
+@media(max-width:1200px) { #tab-assets #assetsCardsView { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:900px) { #tab-assets #assetsCardsView { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) { #tab-assets #assetsCardsView { grid-template-columns: minmax(0,1fr); } #tab-assets > .assets-header { padding: 16px; gap: 7px; } #tab-assets > .assets-header h2 { font-size: 21px; } }
