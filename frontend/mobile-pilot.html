@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=simple-plan-1"><script src="/js/features/mobilePilot.js?v=simple-plan-1" defer></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=task-structure-1"><script src="/js/features/mobilePilot.js?v=task-structure-1" defer></script></head>
 <body><main>
 <header><div><strong>ASTIR <span>CMMS</span></strong><small id="pilotUser">Admin mobile pilot</small></div><button id="pilotLogout" hidden>Sign out</button></header>
 <p id="pilotStatus" role="status" aria-live="polite"></p>
@@ -8,6 +8,7 @@
 <section id="pilotCreate" hidden><button class="back" id="pilotCreateBack">← My work</button><h1>New work</h1><form id="pilotCreateForm"><fieldset id="pilotDraftFields">
 <label for="pilotAssetSearch">Find asset</label><input id="pilotAssetSearch" type="search" placeholder="Model, serial or line"><label for="pilotAsset">Asset *</label><select id="pilotAsset" required></select>
 <div class="type-choice"><label><input type="radio" name="pilotKind" value="BD" checked> 🔧 Breakdown</label><label><input type="radio" name="pilotKind" value="SM"> 📅 Scheduled maintenance</label><label><input type="radio" name="pilotKind" value="TASK"> 🔵 Planned task</label></div>
+<div id="pilotStructure" hidden><label for="pilotSection">Section *</label><select id="pilotSection" aria-describedby="pilotStructureHelp" disabled></select><label for="pilotUnit">Unit *</label><select id="pilotUnit" disabled></select><p class="hint" id="pilotStructureHelp">Select Asset → Section → Unit. For a new Section / Unit, use Add Task in the full CMMS.</p></div>
 <label for="pilotTitle">Title *</label><input id="pilotTitle" maxlength="200" required>
 <div id="pilotTiming"><label for="pilotAt" id="pilotAtLabel">Incident started *</label><input id="pilotAt" type="datetime-local" required><p class="hint">Your work start is recorded separately when you choose Start work.</p>
 </div><div id="pilotDescriptionGroup"><label for="pilotDescription">Description (optional)</label><textarea id="pilotDescription" rows="3" maxlength="4000" placeholder="Describe what you observed"></textarea>
