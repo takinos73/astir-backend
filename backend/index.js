@@ -27337,15 +27337,6 @@ app.get("/kpis/mttr", async (req, res) => {
 });
 
 /* =====================================================
-   SPA fallback
-===================================================== */
-
-app.get("*", (req, res) => {
-  // change this if your entry file name differs
-  res.sendFile(path.join(frontendPath, "index_v2.html"));
-});
-
-/* =====================================================
    Listen
 ===================================================== */
 
@@ -27529,5 +27520,21 @@ app.post('/mobile-pilot-api/incidents/:id/photos',requireMobilePilot,mobilePilot
     req.body={uploaded_by_id:8};
     return cmmsAttachmentUploadHandler(req,res);
   });
+
+// Do not disguise an omitted pilot page as the normal CMMS shell.
+app.get('/mobile-pilot.html', (req,res) => {
+  res.sendFile(path.join(frontendPath,'mobile-pilot.html'), error => {
+    if (error && !res.headersSent) res.status(404).type('text').send('Mobile pilot page is not deployed. Check the three new frontend files in your commit.');
+  });
+});
+
+/* =====================================================
+   SPA fallback
+===================================================== */
+
+app.get("*", (req, res) => {
+  // change this if your entry file name differs
+  res.sendFile(path.join(frontendPath, "index_v2.html"));
+});
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
