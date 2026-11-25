@@ -159,9 +159,9 @@
   window.addEventListener('beforeunload',event=>{if(busy||files.length){event.preventDefault();event.returnValue='';}});
   try{draftRequest=JSON.parse(sessionStorage.getItem('astirMobilePilotDraft')||'null');}catch{}
   /* Existing CMMS tasks: separate from creation / BD / SM pilot work. */
-  let existingBucket='today',existingAsset=null,existingTask=null,existingEndReference=null;
+  let existingBucket='today',existingAsset=null,existingTask=null,existingStartReference=null,existingStartTouched=false;
   const existingKey=(name,id)=>'astirMobilePilotExisting:'+name+':'+id;
-  function existingCounts(counts){for(const key of ['today','overdue','in_progress'])el('pilotQueueCount_'+key).textContent=String(counts?.[key]??0);}
+  function existingCounts(counts){for(const key of ['today','overdue','in_progress'])el('pilotQueueCount_'+key).textContent=String(counts?.[key]??0);el('pilotQueueOpen_in_progress').hidden=!(counts?.in_progress>0);el('pilotQueueTab_in_progress').hidden=!(counts?.in_progress>0);}
   async function loadExistingQueue(bucket=existingBucket,assetId=null){
     const data=await api('/mobile-pilot-api/existing-tasks?bucket='+encodeURIComponent(bucket)+(assetId?'&asset_id='+Number(assetId):''));
     existingBucket=bucket;existingAsset=assetId;existingTask=null;for(const key of ['today','overdue','in_progress'])el('pilotQueueTab_'+key).setAttribute('aria-pressed',String(key===bucket));existingCounts(data.counts);show('pilotTaskQueue');
@@ -191,32 +191,37 @@
     const data=await api('/mobile-pilot-api/existing-tasks/'+Number(id));existingTask=data.task;const task=existingTask;
     el('pilotExistingTitle').textContent='Task #'+task.id+' · '+task.task;
     const facts=el('pilotExistingFacts');facts.replaceChildren();
-    for(const [label,value]of [['Asset',[task.model,'SN '+task.serial_number,task.line].filter(Boolean).join(' · ')],['Section / Unit',[task.section,task.unit].filter(Boolean).join(' / ')||'—'],['Type',Number(task.frequency_hours)>0?'Preventive':'Planned'],['Due',date(task.due_date)],['Instructions / current notes',task.notes||'—']]){const row=document.createElement('div');row.className='fact';const name=document.createElement('span'),text=document.createElement('strong');name.textContent=label;text.textContent=value;row.append(name,text);facts.append(row);}
+    for(const [label,value]of [['Asset',[task.model,'SN '+task.serial_number,task.line].filter(Boolean).join(' · ')],['Section / Unit',[task.section,task.unit].filter(Boolean).join(' / ')||'—'],['Type',Number(task.frequency_hours)>0?'Preventive':'Planned'],['Estimated service time',task.estimated_duration_min==null?'—':task.estimated_duration_min+' min'],['Due',date(task.due_date)],['Instructions / current notes',task.notes||'—']]){const row=document.createElement('div');row.className='fact';const name=document.createElement('span'),text=document.createElement('strong');name.textContent=label;text.textContent=value;row.append(name,text);facts.append(row);}
     const active=!!task.work_id,available=task.work_available!==false;
-    el('pilotExistingStart').hidden=active;el('pilotExistingControls').hidden=!active||!available;el('pilotExistingComplete').hidden=!active||!available;el('pilotExistingDismiss').hidden=!active||available;
+    el('pilotExistingControls').hidden=!available;el('pilotExistingComplete').hidden=!available;el('pilotExistingDismiss').hidden=!active||available;
     el('pilotExistingWarning').textContent=available?'':'This task changed after Start. Dismiss this session and review the current task.';
-    existingEndReference=new Date().toISOString();el('pilotExistingWorkStart').value=active?workLocal(task.work_started_at):'';el('pilotExistingWorkEnd').value=workLocal(existingEndReference);el('pilotExistingNotes').value=active?(sessionStorage.getItem(existingKey('notes',task.work_id))??task.work_notes??''):'';
-    if(active){try{const saved=JSON.parse(sessionStorage.getItem(existingKey('times',task.work_id))||'null');if(saved){el('pilotExistingWorkStart').value=saved.start;el('pilotExistingWorkEnd').value=saved.end;}}catch{}}
+    const estimate=task.estimated_duration_min;
+    existingStartReference=task.work_started_at||new Date(Date.now()-(estimate??0)*60000).toISOString();existingStartTouched=!!task.work_started_at;
+    el('pilotExistingWorkStart').value=workLocal(existingStartReference);el('pilotExistingMinutes').value='';
+    el('pilotExistingMinutes').placeholder=estimate==null?'Enter actual minutes':'Blank = estimated '+estimate+' min';
+    el('pilotExistingEstimate').textContent=estimate==null?'No estimated duration is set. Enter Service time.':'Leave blank to use the estimated '+estimate+' min.';
+    el('pilotExistingNotes').value=task.work_notes||'';
+    try{const saved=JSON.parse(sessionStorage.getItem(existingKey('close-draft',task.id))||'null');if(saved&&JSON.stringify(saved.snapshot)===JSON.stringify(task.task_snapshot)&&String(saved.last)===String(task.last_execution_id)){el('pilotExistingWorkStart').value=saved.start;el('pilotExistingMinutes').value=saved.minutes;el('pilotExistingNotes').value=saved.notes;existingStartTouched=saved.startTouched;}}catch{}
     existingDuration();el('pilotExistingFiles').value='';show('pilotExistingDetail');await existingAttachments(task.id);
   }
-  function existingTimes(){const start=workInstant(el('pilotExistingWorkStart').value,existingTask?.work_started_at),end=workInstant(el('pilotExistingWorkEnd').value,existingEndReference);if(end<start)throw Error('Work End must be at or after Work Start.');if(end>Date.now())throw Error('Work End cannot be in the future.');return{start,end,minutes:Math.round((end-start)/60000)};}
-  function existingDuration(){try{el('pilotExistingServiceTime').textContent=existingTimes().minutes+' min';}catch{el('pilotExistingServiceTime').textContent='—';}}
-  function existingSaveTimes(){if(existingTask?.work_id)sessionStorage.setItem(existingKey('times',existingTask.work_id),JSON.stringify({start:el('pilotExistingWorkStart').value,end:el('pilotExistingWorkEnd').value}));existingDuration();}
-  el('pilotExistingWorkStart').oninput=existingSaveTimes;el('pilotExistingWorkEnd').oninput=existingSaveTimes;
-  el('pilotExistingNotes').oninput=()=>{if(existingTask?.work_id)sessionStorage.setItem(existingKey('notes',existingTask.work_id),el('pilotExistingNotes').value);};
-  el('pilotExistingSaveNotes').onclick=()=>existingAction(async()=>{if(!existingTask?.work_id)return;await api('/mobile-pilot-api/existing-work/'+existingTask.work_id+'/notes',{method:'PATCH',body:JSON.stringify({notes:el('pilotExistingNotes').value})});status('Notes saved.');});
-  el('pilotExistingStart').onclick=()=>existingAction(async()=>{
-    const task=existingTask;if(!task)return;const key=existingKey('start',task.id);let request;try{request=JSON.parse(sessionStorage.getItem(key)||'null');}catch{}
-    if(!request||JSON.stringify(request.task_snapshot)!==JSON.stringify(task.task_snapshot)||String(request.last_execution_id)!==String(task.last_execution_id))request={request_id:crypto.randomUUID(),task_snapshot:task.task_snapshot,last_execution_id:task.last_execution_id};
-    sessionStorage.setItem(key,JSON.stringify(request));const saved=await api('/mobile-pilot-api/existing-tasks/'+task.id+'/start',{method:'POST',body:JSON.stringify(request)});
-    if(saved.work?.invalidated_at){sessionStorage.removeItem(key);throw Error('The old session was dismissed. Refresh the task and Start again.');}
-    sessionStorage.removeItem(key);await openExistingTask(task.id);
-  });
+  function existingTimes(){
+    const raw=el('pilotExistingMinutes').value,minutes=raw===''?existingTask?.estimated_duration_min:Number(raw);
+    if(minutes==null||!Number.isInteger(minutes)||minutes<0||!el('pilotExistingMinutes').checkValidity())throw Error('Enter Service time, or leave it blank when an estimate exists.');
+    const start=workInstant(el('pilotExistingWorkStart').value,existingStartReference),end=new Date(start.getTime()+minutes*60000);
+    if(!Number.isFinite(end.getTime())||end>Date.now())throw Error('Start plus Service time cannot finish in the future.');return{start,end,minutes,override:raw===''?null:minutes};
+  }
+  function existingDuration(){try{const time=existingTimes();el('pilotExistingServiceTime').textContent=time.minutes+' min · Finish: '+date(time.end);}catch(error){el('pilotExistingServiceTime').textContent=error.message;}}
+  function existingSaveDraft(){if(existingTask)sessionStorage.setItem(existingKey('close-draft',existingTask.id),JSON.stringify({snapshot:existingTask.task_snapshot,last:existingTask.last_execution_id,start:el('pilotExistingWorkStart').value,minutes:el('pilotExistingMinutes').value,notes:el('pilotExistingNotes').value,startTouched:existingStartTouched}));existingDuration();}
+  el('pilotExistingWorkStart').oninput=()=>{existingStartTouched=true;existingSaveDraft();};
+  el('pilotExistingMinutes').oninput=()=>{if(!existingStartTouched){const raw=el('pilotExistingMinutes').value,minutes=raw===''?existingTask?.estimated_duration_min:Number(raw);if(minutes!=null&&Number.isInteger(minutes)&&minutes>=0){existingStartReference=new Date(Date.now()-minutes*60000).toISOString();el('pilotExistingWorkStart').value=workLocal(existingStartReference);}}existingSaveDraft();};
+  el('pilotExistingNotes').oninput=existingSaveDraft;
   el('pilotExistingComplete').onclick=()=>{
     let times;try{times=existingTimes();}catch(error){status(error.message);return;}
-    const task=existingTask;if(!task?.work_id)return;const body={notes:el('pilotExistingNotes').value,work_started_at:times.start.toISOString(),work_ended_at:times.end.toISOString()};
-    return existingAction(async()=>{await api('/mobile-pilot-api/existing-work/'+task.work_id+'/complete',{method:'POST',body:JSON.stringify(body)});sessionStorage.removeItem(existingKey('times',task.work_id));sessionStorage.removeItem(existingKey('notes',task.work_id));
-      await loadExistingQueue(existingBucket,existingAsset);status('Work completed. The existing CMMS task and History were updated.');});
+    const task=existingTask;if(!task)return;
+    const payload={task_snapshot:task.task_snapshot,last_execution_id:task.last_execution_id,work_started_at:times.start.toISOString(),service_minutes:times.override,estimated_duration_min:task.estimated_duration_min??null,notes:el('pilotExistingNotes').value};
+    const key=existingKey('close-request',task.id);let saved;try{saved=JSON.parse(sessionStorage.getItem(key)||'null');}catch{}
+    if(!saved||JSON.stringify(saved.payload)!==JSON.stringify(payload))saved={request_id:crypto.randomUUID(),payload};sessionStorage.setItem(key,JSON.stringify(saved));
+    return existingAction(async()=>{await api('/mobile-pilot-api/existing-tasks/'+task.id+'/complete',{method:'POST',body:JSON.stringify({request_id:saved.request_id,...payload})});sessionStorage.removeItem(key);sessionStorage.removeItem(existingKey('close-draft',task.id));if(task.work_id){sessionStorage.removeItem(existingKey('times',task.work_id));sessionStorage.removeItem(existingKey('notes',task.work_id));}await loadExistingQueue(existingBucket,existingAsset);status('Task completed. CMMS and History updated.');});
   };
   el('pilotExistingDismiss').onclick=()=>existingAction(async()=>{const task=existingTask;await api('/mobile-pilot-api/existing-work/'+task.work_id+'/dismiss',{method:'POST'});await openExistingTask(task.id);});
   async function existingAttachments(id){

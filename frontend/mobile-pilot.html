@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=existing-work-1"><script src="/js/features/mobilePilot.js?v=existing-work-1" defer></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=direct-complete-1"><script src="/js/features/mobilePilot.js?v=direct-complete-1" defer></script></head>
 <body><main>
 <header><div><strong>ASTIR <span>CMMS</span></strong><small id="pilotUser">Admin mobile pilot</small></div><button id="pilotLogout" hidden>Sign out</button></header>
 <p id="pilotStatus" role="status" aria-live="polite"></p>
@@ -28,10 +28,10 @@
 </section>
 <section id="pilotExistingDetail" hidden>
  <button id="pilotExistingBack" class="back">← Work list</button><h1 id="pilotExistingTitle"></h1><div id="pilotExistingFacts" class="facts"></div><p id="pilotExistingWarning" class="hint"></p>
- <button id="pilotExistingStart" class="primary wide">Start Work</button><button id="pilotExistingDismiss" hidden>Dismiss changed session</button>
- <div id="pilotExistingControls" hidden><label for="pilotExistingWorkStart">Work Start</label><input id="pilotExistingWorkStart" type="datetime-local"><label for="pilotExistingWorkEnd">Work End</label><input id="pilotExistingWorkEnd" type="datetime-local"><p class="hint">Greece time · Edit Start / End before completing.</p><div class="facts">Service time <strong id="pilotExistingServiceTime" aria-live="polite">—</strong></div><label for="pilotExistingNotes">Maintenance notes</label><textarea id="pilotExistingNotes" rows="4" maxlength="8000"></textarea><button id="pilotExistingSaveNotes">Save notes</button></div>
+<button id="pilotExistingDismiss" hidden>Dismiss changed session</button>
+ <div id="pilotExistingControls" hidden><label for="pilotExistingWorkStart">Work Start</label><input id="pilotExistingWorkStart" type="datetime-local"><label for="pilotExistingMinutes">Service time (minutes)</label><input id="pilotExistingMinutes" type="number" min="0" step="1"><p id="pilotExistingEstimate" class="hint"></p><p class="hint">Greece time · Finish is calculated from Start + Service time.</p><div class="facts">Service time <strong id="pilotExistingServiceTime" aria-live="polite">—</strong></div><label for="pilotExistingNotes">Maintenance notes</label><textarea id="pilotExistingNotes" rows="4" maxlength="8000"></textarea></div>
  <h2>Attachments</h2><div id="pilotExistingAttachments" class="photos"></div><label for="pilotExistingFiles">Add photos</label><input id="pilotExistingFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple><button id="pilotExistingUpload">Upload photos</button>
- <div class="actions"><button id="pilotExistingComplete" class="primary" hidden>Save &amp; Complete</button></div>
+ <div class="actions"><button id="pilotExistingComplete" class="primary" hidden>Complete Task</button></div>
 </section>
 
 </main></body></html>
