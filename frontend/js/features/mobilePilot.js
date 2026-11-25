@@ -19,7 +19,7 @@
   function readWorkTimes(){const start=workInstant(el('pilotWorkStart').value,selected?.work_started_at),end=workInstant(el('pilotWorkEnd').value,workEndReference);if(end<start)throw Error('Work End must be at or after Work Start.');if(end>Date.now())throw Error('Work End cannot be in the future.');return{start,end,minutes:Math.round((end-start)/60000)};}
   function showServiceTime(){try{const t=readWorkTimes();el('pilotServiceTime').textContent=t.minutes+' min';}catch(error){el('pilotServiceTime').textContent=error.message;}}
   function saveWorkTimes(){if(selected?.work_id)sessionStorage.setItem('astirMobilePilotTimes:'+selected.work_id,JSON.stringify({start:el('pilotWorkStart').value,end:el('pilotWorkEnd').value}));showServiceTime();}
-  function show(id){for(const name of ['pilotLogin','pilotHome','pilotCreate','pilotDetail'])el(name).hidden=name!==id;window.scrollTo(0,0);}
+  function show(id){for(const name of ['pilotLogin','pilotHome','pilotCreate','pilotDetail','pilotTaskQueue','pilotExistingDetail'])el(name).hidden=name!==id;window.scrollTo(0,0);}
   async function api(path,options={}){
     const headers={'X-Mobile-Pilot-Token':token,...options.headers};
     if(options.body&&!(options.body instanceof FormData))headers['Content-Type']='application/json';
@@ -76,9 +76,9 @@
   function renderItems(){
     const list=el('pilotItems');list.replaceChildren();if(!items.length){list.textContent='No pilot incidents yet.';return;}for(const item of items){const card=document.createElement('article');card.className='item';const badge=document.createElement('span');badge.className='badge '+(item.kind==='BD'?'bd':item.kind==='TASK'?'task':'sm');badge.textContent=code(item);const h=document.createElement('h3');h.textContent=item.title||'Incident unavailable';const meta=document.createElement('small');meta.textContent=[item.model,item.line,'Work: '+(item.work_completed_at||item.task_status==='Done'?'Done':item.work_id?'In progress':'Not started'),item.kind==='TASK'?null:item.kind+': '+item.incident_status].filter(Boolean).join(' · ');card.append(badge,h,meta,button(item.work_id?'Continue / View':'View / Start work',()=>openItem(item.id)));list.appendChild(card);}}
   async function bootstrap(){
-    const data=await api('/mobile-pilot-api/bootstrap');assets=data.assets;structure=data.structure||[];el('pilotUser').textContent=data.user.name+' · Admin pilot';el('pilotLogout').hidden=false;await refresh();renderAssets();show('pilotHome');}
+    const data=await api('/mobile-pilot-api/bootstrap');assets=data.assets;structure=data.structure||[];el('pilotUser').textContent=data.user.name+' · Admin pilot';el('pilotLogout').hidden=false;await refresh();renderAssets();show('pilotHome');api('/mobile-pilot-api/existing-tasks?bucket=today').then(data=>existingCounts(data.counts)).catch(()=>{});}
   el('pilotLoginForm').onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;const submit=event.submitter;submit.disabled=true;status('Signing in…');try{const data=await api('/mobile-pilot-api/login',{method:'POST',body:JSON.stringify({access_key:el('pilotKey').value,remember:el('pilotRemember').checked})});token=data.token||'';if(token)sessionStorage.setItem('astirMobilePilotToken',token);else sessionStorage.removeItem('astirMobilePilotToken');el('pilotKey').value='';await bootstrap();status('');}catch(error){status(error.message);}finally{busy=false;submit.disabled=false;}};
-  el('pilotLogout').onclick=async()=>{if(busy)return;try{await api('/mobile-pilot-api/logout',{method:'POST'});}catch(error){status(error.message);return;}token='';sessionStorage.removeItem('astirMobilePilotToken');for(const k of Object.keys(sessionStorage))if(k.startsWith('astirMobilePilot'))sessionStorage.removeItem(k);items=[];assets=[];selected=null;draftRequest=null;clearFiles();el('pilotNotes').value='';el('pilotCreateForm').reset();el('pilotItems').replaceChildren();el('pilotDetailHeading').replaceChildren();el('pilotDetailFacts').replaceChildren();el('pilotSavedPhotos').replaceChildren();el('pilotLogout').hidden=true;el('pilotUser').textContent='Admin mobile pilot';status('Signed out.');show('pilotLogin');};
+  el('pilotLogout').onclick=async()=>{if(busy)return;try{await api('/mobile-pilot-api/logout',{method:'POST'});}catch(error){status(error.message);return;}token='';sessionStorage.removeItem('astirMobilePilotToken');for(const k of Object.keys(sessionStorage))if(k.startsWith('astirMobilePilot'))sessionStorage.removeItem(k);items=[];assets=[];selected=null;draftRequest=null;clearFiles();el('pilotNotes').value='';el('pilotCreateForm').reset();el('pilotItems').replaceChildren();el('pilotDetailHeading').replaceChildren();el('pilotDetailFacts').replaceChildren();el('pilotSavedPhotos').replaceChildren();el('pilotLogout').hidden=true;el('pilotUser').textContent='Admin mobile pilot';clearExistingUI();status('Signed out.');show('pilotLogin');};
   el('pilotNew').onclick=()=>{if(busy)return;status('');if(!draftRequest){el('pilotCreateForm').reset();el('pilotAt').value=localNow();el('pilotAssetSearch').value='';el('pilotDraftFields').disabled=false;renderAssets();populateStructure();restoreFormDraft();}else{el('pilotAssetSearch').value='';renderAssets();el('pilotAsset').value=draftRequest.asset_id;populateStructure(draftRequest.section,draftRequest.unit);el('pilotTitle').value=draftRequest.title;el('pilotDescription').value=draftRequest.description;const d=new Date(draftRequest.incident_at);el('pilotAt').value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);document.querySelector('[name="pilotKind"][value="'+draftRequest.kind+'"]').checked=true;el('pilotDraftFields').disabled=true;status('Retrying the previously submitted draft safely.');}updateKind();show('pilotCreate');};
   el('pilotCreateForm').addEventListener('input',saveFormDraft);el('pilotCreateForm').addEventListener('change',saveFormDraft);
   el('pilotAssetSearch').oninput=renderAssets;
@@ -158,5 +158,76 @@
   el('pilotUploadPhotos').onclick=()=>{const selectedFiles=Array.from(el('pilotMorePhotos').files||[]);if(!selectedFiles.length)return status('Select a photo first.');if(selectedFiles.length>5||selectedFiles.reduce((n,f)=>n+f.size,0)>8*1024*1024)return status('Up to 5 photos, 8 MB total.');return run(el('pilotUploadPhotos'),()=>upload(selected.id,selectedFiles));};
   window.addEventListener('beforeunload',event=>{if(busy||files.length){event.preventDefault();event.returnValue='';}});
   try{draftRequest=JSON.parse(sessionStorage.getItem('astirMobilePilotDraft')||'null');}catch{}
+  /* Existing CMMS tasks: separate from creation / BD / SM pilot work. */
+  let existingBucket='today',existingAsset=null,existingTask=null,existingEndReference=null;
+  const existingKey=(name,id)=>'astirMobilePilotExisting:'+name+':'+id;
+  function existingCounts(counts){for(const key of ['today','overdue','in_progress'])el('pilotQueueCount_'+key).textContent=String(counts?.[key]??0);}
+  async function loadExistingQueue(bucket=existingBucket,assetId=null){
+    const data=await api('/mobile-pilot-api/existing-tasks?bucket='+encodeURIComponent(bucket)+(assetId?'&asset_id='+Number(assetId):''));
+    existingBucket=bucket;existingAsset=assetId;existingTask=null;for(const key of ['today','overdue','in_progress'])el('pilotQueueTab_'+key).setAttribute('aria-pressed',String(key===bucket));existingCounts(data.counts);show('pilotTaskQueue');
+    el('pilotQueueHeading').textContent=bucket==='in_progress'?'In Progress':bucket==='overdue'?'Overdue work':'Today’s work';
+    el('pilotQueueAssetsBack').hidden=!assetId;const list=el('pilotQueueItems');list.replaceChildren();
+    const records=data.assets||data.tasks||[];
+    if(!records.length){list.textContent='No '+(bucket==='in_progress'?'active work sessions':'matching tasks')+'.';return;}
+    for(const record of records){const card=document.createElement('article');card.className='item';const h=document.createElement('h3'),meta=document.createElement('small');
+      if(data.assets){h.textContent=record.model;meta.textContent=['SN '+record.serial_number,record.line,record.task_count+' tasks'].filter(Boolean).join(' · ');card.append(h,meta,button('View tasks',()=>existingAction(()=>loadExistingQueue(bucket,record.asset_id))));}
+      else{h.textContent='Task #'+record.id+' · '+record.task;meta.textContent=[record.model,record.serial_number,record.line,[record.section,record.unit].filter(Boolean).join(' / '),'Due: '+date(record.due_date)].filter(Boolean).join(' · ');card.append(h,meta);
+        if(record.available===false){const warning=document.createElement('p');warning.className='hint';warning.textContent='Changed or completed in CMMS. This session cannot create another execution.';card.append(warning,button('Dismiss changed session',()=>existingAction(async()=>{await api('/mobile-pilot-api/existing-work/'+record.work_id+'/dismiss',{method:'POST'});await loadExistingQueue();})));}
+        else card.append(button(record.work_id?'Resume work':'View task',()=>existingAction(()=>openExistingTask(record.id))));
+      }list.append(card);
+    }
+  }
+  async function existingAction(operation){if(busy)return;busy=true;const controls=[...document.querySelectorAll('#pilotTaskQueue button,#pilotExistingDetail button,#pilotExistingDetail input,#pilotExistingDetail textarea')].map(control=>[control,control.disabled]);for(const [control]of controls)control.disabled=true;status('Loading…');try{await operation();}catch(error){status(error.message);}finally{for(const [control,disabled]of controls)control.disabled=disabled;busy=false;if(el('pilotStatus').textContent==='Loading…')status('');}}
+  for(const bucket of ['today','overdue','in_progress']){
+    el('pilotQueueOpen_'+bucket).onclick=()=>existingAction(()=>loadExistingQueue(bucket));
+    el('pilotQueueTab_'+bucket).onclick=()=>existingAction(()=>loadExistingQueue(bucket));
+  }
+  el('pilotQueueBack').onclick=()=>{if(!busy){existingTask=null;show('pilotHome');status('');}};
+  el('pilotQueueAssetsBack').onclick=()=>existingAction(()=>loadExistingQueue(existingBucket));
+  el('pilotQueueRefresh').onclick=()=>existingAction(()=>loadExistingQueue(existingBucket,existingAsset));
+  el('pilotExistingBack').onclick=()=>existingAction(()=>loadExistingQueue(existingBucket,existingAsset));
+  function clearExistingUI(){existingTask=null;el('pilotExistingFacts').replaceChildren();el('pilotExistingAttachments').replaceChildren();el('pilotQueueItems').replaceChildren();el('pilotExistingNotes').value='';}
+  async function openExistingTask(id){
+    const data=await api('/mobile-pilot-api/existing-tasks/'+Number(id));existingTask=data.task;const task=existingTask;
+    el('pilotExistingTitle').textContent='Task #'+task.id+' · '+task.task;
+    const facts=el('pilotExistingFacts');facts.replaceChildren();
+    for(const [label,value]of [['Asset',[task.model,'SN '+task.serial_number,task.line].filter(Boolean).join(' · ')],['Section / Unit',[task.section,task.unit].filter(Boolean).join(' / ')||'—'],['Type',Number(task.frequency_hours)>0?'Preventive':'Planned'],['Due',date(task.due_date)],['Instructions / current notes',task.notes||'—']]){const row=document.createElement('div');row.className='fact';const name=document.createElement('span'),text=document.createElement('strong');name.textContent=label;text.textContent=value;row.append(name,text);facts.append(row);}
+    const active=!!task.work_id,available=task.work_available!==false;
+    el('pilotExistingStart').hidden=active;el('pilotExistingControls').hidden=!active||!available;el('pilotExistingComplete').hidden=!active||!available;el('pilotExistingDismiss').hidden=!active||available;
+    el('pilotExistingWarning').textContent=available?'':'This task changed after Start. Dismiss this session and review the current task.';
+    existingEndReference=new Date().toISOString();el('pilotExistingWorkStart').value=active?workLocal(task.work_started_at):'';el('pilotExistingWorkEnd').value=workLocal(existingEndReference);el('pilotExistingNotes').value=active?(sessionStorage.getItem(existingKey('notes',task.work_id))??task.work_notes??''):'';
+    if(active){try{const saved=JSON.parse(sessionStorage.getItem(existingKey('times',task.work_id))||'null');if(saved){el('pilotExistingWorkStart').value=saved.start;el('pilotExistingWorkEnd').value=saved.end;}}catch{}}
+    existingDuration();el('pilotExistingFiles').value='';show('pilotExistingDetail');await existingAttachments(task.id);
+  }
+  function existingTimes(){const start=workInstant(el('pilotExistingWorkStart').value,existingTask?.work_started_at),end=workInstant(el('pilotExistingWorkEnd').value,existingEndReference);if(end<start)throw Error('Work End must be at or after Work Start.');if(end>Date.now())throw Error('Work End cannot be in the future.');return{start,end,minutes:Math.round((end-start)/60000)};}
+  function existingDuration(){try{el('pilotExistingServiceTime').textContent=existingTimes().minutes+' min';}catch{el('pilotExistingServiceTime').textContent='—';}}
+  function existingSaveTimes(){if(existingTask?.work_id)sessionStorage.setItem(existingKey('times',existingTask.work_id),JSON.stringify({start:el('pilotExistingWorkStart').value,end:el('pilotExistingWorkEnd').value}));existingDuration();}
+  el('pilotExistingWorkStart').oninput=existingSaveTimes;el('pilotExistingWorkEnd').oninput=existingSaveTimes;
+  el('pilotExistingNotes').oninput=()=>{if(existingTask?.work_id)sessionStorage.setItem(existingKey('notes',existingTask.work_id),el('pilotExistingNotes').value);};
+  el('pilotExistingSaveNotes').onclick=()=>existingAction(async()=>{if(!existingTask?.work_id)return;await api('/mobile-pilot-api/existing-work/'+existingTask.work_id+'/notes',{method:'PATCH',body:JSON.stringify({notes:el('pilotExistingNotes').value})});status('Notes saved.');});
+  el('pilotExistingStart').onclick=()=>existingAction(async()=>{
+    const task=existingTask;if(!task)return;const key=existingKey('start',task.id);let request;try{request=JSON.parse(sessionStorage.getItem(key)||'null');}catch{}
+    if(!request||JSON.stringify(request.task_snapshot)!==JSON.stringify(task.task_snapshot)||String(request.last_execution_id)!==String(task.last_execution_id))request={request_id:crypto.randomUUID(),task_snapshot:task.task_snapshot,last_execution_id:task.last_execution_id};
+    sessionStorage.setItem(key,JSON.stringify(request));const saved=await api('/mobile-pilot-api/existing-tasks/'+task.id+'/start',{method:'POST',body:JSON.stringify(request)});
+    if(saved.work?.invalidated_at){sessionStorage.removeItem(key);throw Error('The old session was dismissed. Refresh the task and Start again.');}
+    sessionStorage.removeItem(key);await openExistingTask(task.id);
+  });
+  el('pilotExistingComplete').onclick=()=>{
+    let times;try{times=existingTimes();}catch(error){status(error.message);return;}
+    const task=existingTask;if(!task?.work_id)return;const body={notes:el('pilotExistingNotes').value,work_started_at:times.start.toISOString(),work_ended_at:times.end.toISOString()};
+    return existingAction(async()=>{await api('/mobile-pilot-api/existing-work/'+task.work_id+'/complete',{method:'POST',body:JSON.stringify(body)});sessionStorage.removeItem(existingKey('times',task.work_id));sessionStorage.removeItem(existingKey('notes',task.work_id));
+      await loadExistingQueue(existingBucket,existingAsset);status('Work completed. The existing CMMS task and History were updated.');});
+  };
+  el('pilotExistingDismiss').onclick=()=>existingAction(async()=>{const task=existingTask;await api('/mobile-pilot-api/existing-work/'+task.work_id+'/dismiss',{method:'POST'});await openExistingTask(task.id);});
+  async function existingAttachments(id){
+    const list=el('pilotExistingAttachments');list.replaceChildren();try{
+      const [generic,preventive]=await Promise.all([api('/attachments/task/'+id),api('/preventive-attachments/task/'+id)]);
+      const files=[...(Array.isArray(generic)?generic:generic.attachments||[]).map(file=>({...file,source:'generic'})),...(preventive.attachments||[]).map(file=>({...file,source:'preventive'}))];
+      if(existingTask?.id!==id)return;if(!files.length){list.textContent='No attachments.';return;}
+      for(const file of files){const opened=await api((file.source==='generic'?'/attachments/':'/preventive-attachments/')+file.id+'/open');if(existingTask?.id!==id)return;const link=document.createElement('a');link.href=opened.url;link.target='_blank';link.rel='noopener';const name=file.file_name||file.fileName||file.original_name||'Attachment';if(String(file.mime_type||file.mimeType||'').startsWith('image/')){const image=document.createElement('img');image.src=opened.url;image.alt=name;link.append(image);}else link.textContent=name;const box=document.createElement('div');box.className='photo';box.append(link);list.append(box);}
+    }catch(error){if(existingTask?.id===id)list.textContent='Attachments unavailable: '+error.message;}
+  }
+  el('pilotExistingUpload').onclick=()=>existingAction(async()=>{const id=existingTask?.id,files=Array.from(el('pilotExistingFiles').files||[]);if(!id||!files.length)throw Error('Choose a photo first.');if(files.length>5||files.reduce((n,file)=>n+file.size,0)>8*1024*1024||files.some(file=>!['image/jpeg','image/png','image/webp'].includes(file.type)))throw Error('Up to 5 photos, 8 MB total. JPG, PNG or WebP.');const body=new FormData();for(const file of files)body.append('files',file);await api('/mobile-pilot-api/existing-tasks/'+id+'/photos',{method:'POST',body});el('pilotExistingFiles').value='';await existingAttachments(id);});
+
   bootstrap().catch(error=>{status(error.message);show('pilotLogin');});
 })();

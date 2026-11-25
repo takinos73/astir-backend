@@ -19954,6 +19954,20 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
 
     if(task.deleted_at){await client.query('ROLLBACK');return res.status(409).json({error:'This task has been cancelled and cannot be completed.'});}
 
+    // Existing-task mobile work uses the canonical task lock and execution transaction.
+    if(req.mobileExistingWorkId){
+      const {rows:workRows}=await client.query('SELECT * FROM mobile_pilot_existing_work WHERE id=$1 AND task_id=$2 AND technician_id=8 FOR UPDATE',[req.mobileExistingWorkId,task.id]);
+      const work=workRows[0];
+      if(!work||work.invalidated_at){await client.query('ROLLBACK');return res.status(409).json({error:'Existing work session is unavailable.'});}
+      if(work.completed_at){await client.query('COMMIT');return res.json({success:true,already_completed:true});}
+      const {rows:current}=await client.query(`SELECT t.id FROM maintenance_tasks t JOIN assets a ON a.id=t.asset_id
+        WHERE t.id=$1 AND ${mobileExistingEligible} AND ${mobileExistingSignature}=$2::jsonb AND ${mobileExistingLastExecution}=$3`,[task.id,JSON.stringify(work.task_snapshot),work.last_execution_id]);
+      if(!current.length){await client.query('UPDATE mobile_pilot_existing_work SET invalidated_at=NOW() WHERE id=$1',[work.id]);await client.query('COMMIT');return res.status(409).json({error:'The task changed or was executed in CMMS. No new execution was recorded. Refresh the work list.'});}
+      const start=req.mobileExistingTiming?.startedAt;
+      if(!start||!Number.isFinite(start.getTime())||completedAt<start){await client.query('ROLLBACK');return res.status(400).json({error:'Check Work Start / End.'});}
+      actual_duration_min=Math.round((completedAt-start)/60000);
+    }
+
     // Pilot-only work timing. Normal desktop requests never enter this branch.
     if (req.mobilePilotWorkId) {
       const { rows: pilotRows } = await client.query(`
@@ -20255,6 +20269,7 @@ app.patch("/tasks/:id", cmmsCompleteTaskHandler = async (req, res) => {
     ====================== */
 
     const rollovers = await rollOverCompletedPreventivePacks(client, preventivePackVisitIds);
+    if(req.mobileExistingWorkId)await client.query('UPDATE mobile_pilot_existing_work SET started_at=$2,completed_at=$3,notes=$4 WHERE id=$1',[req.mobileExistingWorkId,req.mobileExistingTiming.startedAt,completedAt,notes||null]);
     if (req.mobilePilotWorkId) {
       await client.query('UPDATE mobile_pilot_work SET started_at=COALESCE($4,started_at),completed_at=$2,notes=$3 WHERE id=$1', [req.mobilePilotWorkId,completedAt,notes||null,req.mobilePilotTiming?.startedAt||null]);
     }
@@ -27484,6 +27499,8 @@ async function mobilePilotStartWork(client,incident,user){
     if(!task || task.deleted_at || Number(task.asset_id)!==Number(incident.asset_id) || task.breakdown_id || task.scheduled_maintenance_id) mobilePilotError(409,'Planned task is unavailable or has changed.');
     if(existing.length)return existing[0];
     if(task.status!=='Planned')mobilePilotError(409,'Planned task is unavailable or has changed.');
+    const {rows:otherWork}=await client.query('SELECT id FROM mobile_pilot_existing_work WHERE task_id=$1 AND completed_at IS NULL AND invalidated_at IS NULL',[task.id]);
+    if(otherWork.length)mobilePilotError(409,'This task is already started in Today / Overdue. Resume it from In Progress.');
     const {rows}=await client.query('INSERT INTO mobile_pilot_work(id,incident_id,technician_id,task_id,started_at) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),incident.id,user.id,task.id,new Date()]);return rows[0];
   }
   if(existing.length)return existing[0];
@@ -27607,6 +27624,117 @@ app.post('/mobile-pilot-api/incidents/:id/restore',requireMobilePilot,async(req,
     return await cmmsCloseBreakdownHandler(req,res);
   }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not restore the BD. Your completed work remains saved.'});}
 });
+/* Existing CMMS work in the admin mobile pilot. No tasks are copied. */
+const mobileExistingSignature = `jsonb_build_object('asset',t.asset_id,'task',t.task,'section',t.section,'unit',t.unit,'type',t.type,'frequency',t.frequency_hours,'planned',t.is_planned,'due',t.due_date AT TIME ZONE 'UTC','completed',t.completed_at AT TIME ZONE 'UTC','notes',t.notes)`;
+const mobileExistingLastExecution = `(SELECT COALESCE(MAX(e.id),0) FROM task_executions e WHERE e.task_id=t.id)`;
+const mobileExistingEligible = `t.deleted_at IS NULL AND a.active=true AND t.status IN ('Planned','Overdue') AND t.due_date IS NOT NULL
+ AND (t.frequency_hours>0 OR (t.is_planned=true AND COALESCE(t.type,'') NOT IN ('Restoration','Correction')))
+ AND t.breakdown_id IS NULL AND t.scheduled_maintenance_id IS NULL
+ AND NOT EXISTS(SELECT 1 FROM preventive_package_visit_tasks p WHERE p.task_id=t.id)
+ AND NOT EXISTS(SELECT 1 FROM mobile_pilot_work pw WHERE pw.task_id=t.id AND pw.completed_at IS NULL)`;
+const mobileExistingFields = `t.id,t.asset_id,t.task,t.section,t.unit,t.type,t.frequency_hours,t.due_date,t.notes,t.status,a.model,a.serial_number,l.code AS line,
+ ${mobileExistingSignature} AS task_snapshot,${mobileExistingLastExecution} AS last_execution_id,
+ w.id AS work_id,w.started_at AS work_started_at,w.notes AS work_notes,
+ (w.id IS NULL OR (${mobileExistingSignature}=w.task_snapshot AND ${mobileExistingLastExecution}=w.last_execution_id)) AS work_available`;
+const mobileExistingFrom = `FROM maintenance_tasks t JOIN assets a ON a.id=t.asset_id LEFT JOIN lines l ON l.id=a.line_id
+ LEFT JOIN mobile_pilot_existing_work w ON w.task_id=t.id AND w.technician_id=8 AND w.completed_at IS NULL AND w.invalidated_at IS NULL`;
+const mobileExistingToday = `(t.due_date AT TIME ZONE 'Europe/Athens')::date=(NOW() AT TIME ZONE 'Europe/Athens')::date`;
+const mobileExistingOverdue = `(t.due_date AT TIME ZONE 'Europe/Athens')::date<(NOW() AT TIME ZONE 'Europe/Athens')::date`;
+const mobileExistingId = value => Number.isSafeInteger(Number(value)) && Number(value)>0;
+function mobileExistingJSON(value){if(value&&typeof value==='object'&&!Array.isArray(value))return JSON.stringify(Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])));return JSON.stringify(value);}
+async function mobileExistingCounts(){
+ const {rows}=await pool.query(`SELECT count(*) FILTER(WHERE ${mobileExistingToday})::int AS today,count(*) FILTER(WHERE ${mobileExistingOverdue})::int AS overdue FROM maintenance_tasks t JOIN assets a ON a.id=t.asset_id WHERE ${mobileExistingEligible}`);
+ const {rows:active}=await pool.query(`SELECT count(*)::int AS in_progress FROM mobile_pilot_existing_work w JOIN maintenance_tasks t ON t.id=w.task_id JOIN assets a ON a.id=t.asset_id WHERE w.technician_id=8 AND w.completed_at IS NULL AND w.invalidated_at IS NULL AND t.deleted_at IS NULL AND a.active=true`);
+ return{today:rows[0].today,overdue:rows[0].overdue,in_progress:active[0].in_progress};
+}
+app.get('/mobile-pilot-api/existing-tasks',requireMobilePilot,async(req,res)=>{
+ try{
+  const bucket=req.query.bucket||'today';if(!['today','overdue','in_progress'].includes(bucket))mobilePilotError(400,'Invalid work filter.');
+  const counts=await mobileExistingCounts();
+  if(bucket==='in_progress'){
+   const {rows}=await pool.query(`SELECT t.id,w.id AS work_id,t.task,t.section,t.unit,t.due_date,a.model,a.serial_number,l.code AS line,
+    (${mobileExistingEligible} AND ${mobileExistingSignature}=w.task_snapshot AND ${mobileExistingLastExecution}=w.last_execution_id) AS available
+    FROM mobile_pilot_existing_work w JOIN maintenance_tasks t ON t.id=w.task_id JOIN assets a ON a.id=t.asset_id LEFT JOIN lines l ON l.id=a.line_id
+    WHERE w.technician_id=8 AND w.completed_at IS NULL AND w.invalidated_at IS NULL AND t.deleted_at IS NULL AND a.active=true ORDER BY w.started_at DESC`);
+   return res.json({counts,tasks:rows});
+  }
+  const due=bucket==='today'?mobileExistingToday:mobileExistingOverdue;
+  if(req.query.asset_id!==undefined){
+   if(!mobileExistingId(req.query.asset_id))mobilePilotError(400,'Invalid Asset.');
+   const {rows}=await pool.query(`SELECT ${mobileExistingFields} ${mobileExistingFrom} WHERE ${mobileExistingEligible} AND ${due} AND t.asset_id=$1 ORDER BY t.due_date,t.section,t.unit,t.id`,[Number(req.query.asset_id)]);
+   return res.json({counts,tasks:rows});
+  }
+  const {rows}=await pool.query(`SELECT a.id AS asset_id,a.model,a.serial_number,l.code AS line,count(*)::int AS task_count
+   FROM maintenance_tasks t JOIN assets a ON a.id=t.asset_id LEFT JOIN lines l ON l.id=a.line_id WHERE ${mobileExistingEligible} AND ${due}
+   GROUP BY a.id,a.model,a.serial_number,l.code ORDER BY l.code,a.model,a.serial_number`);
+  res.json({counts,assets:rows});
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not load CMMS work. Check that the mobile existing-work SQL is applied.'});}
+});
+app.get('/mobile-pilot-api/existing-tasks/:id',requireMobilePilot,async(req,res)=>{
+ try{if(!mobileExistingId(req.params.id))mobilePilotError(400,'Invalid Task.');
+  const {rows}=await pool.query(`SELECT ${mobileExistingFields} ${mobileExistingFrom} WHERE t.id=$1 AND ${mobileExistingEligible}`,[Number(req.params.id)]);
+  if(!rows.length)mobilePilotError(409,'This task is no longer available in Today / Overdue. Refresh the list.');
+  res.json({task:rows[0]});
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not load task.'});}
+});
+app.post('/mobile-pilot-api/existing-tasks/:id/start',requireMobilePilot,async(req,res)=>{
+ const body=req.body||{},taskId=Number(req.params.id);
+ if(!mobileExistingId(taskId)||!mobilePilotUUID.test(body.request_id||'')||Object.keys(body).some(key=>!['request_id','task_snapshot','last_execution_id'].includes(key))||!body.task_snapshot||typeof body.task_snapshot!=='object')return res.status(400).json({error:'Refresh the task before starting.'});
+ return mobilePilotTransaction(req,res,async client=>{
+  await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[body.request_id]);
+  const {rows:replayed}=await client.query('SELECT * FROM mobile_pilot_existing_work WHERE id=$1',[body.request_id]);
+  if(replayed.length){if(replayed[0].technician_id!=8||Number(replayed[0].task_id)!==taskId)mobilePilotError(409,'Start request belongs to another task.');return{work:replayed[0],replayed:true};}
+  // Same task lock order as canonical Complete; package work is excluded below.
+  await lockPreventivePackVisitsForTasks(client,[taskId]);
+  const {rows:locked}=await client.query('SELECT id FROM maintenance_tasks WHERE id=$1 FOR UPDATE',[taskId]);if(!locked.length)mobilePilotError(404,'Task not found.');
+  const {rows}=await client.query(`SELECT ${mobileExistingFields} ${mobileExistingFrom} WHERE t.id=$1 AND ${mobileExistingEligible} AND (${mobileExistingToday} OR ${mobileExistingOverdue})`,[taskId]);
+  const task=rows[0];if(!task||mobileExistingJSON(task.task_snapshot)!==mobileExistingJSON(body.task_snapshot)||String(task.last_execution_id)!==String(body.last_execution_id))mobilePilotError(409,'Task changed or was completed. Refresh before starting.');
+  if(task.work_id){
+   if(!task.work_available)mobilePilotError(409,'An older work session needs to be dismissed from In Progress.');
+   const {rows:active}=await client.query('SELECT * FROM mobile_pilot_existing_work WHERE id=$1',[task.work_id]);return{work:active[0]};
+  }
+  const {rows:work}=await client.query(`INSERT INTO mobile_pilot_existing_work(id,task_id,technician_id,task_snapshot,last_execution_id,started_at) VALUES($1,$2,8,$3::jsonb,$4,NOW()) RETURNING *`,[body.request_id,taskId,JSON.stringify(task.task_snapshot),task.last_execution_id]);
+  return{work:work[0]};
+ });
+});
+app.patch('/mobile-pilot-api/existing-work/:id/notes',requireMobilePilot,async(req,res)=>{
+ try{if(!mobilePilotUUID.test(req.params.id)||Object.keys(req.body||{}).some(key=>key!=='notes')||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid work notes.');
+  const {rowCount}=await pool.query('UPDATE mobile_pilot_existing_work SET notes=$2 WHERE id=$1 AND technician_id=8 AND completed_at IS NULL AND invalidated_at IS NULL',[req.params.id,req.body.notes]);
+  if(!rowCount)mobilePilotError(409,'This work session is no longer active.');res.json({success:true});
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not save notes.'});}
+});
+app.post('/mobile-pilot-api/existing-work/:id/complete',requireMobilePilot,async(req,res)=>{
+ try{
+  if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid work session.');
+  if(Object.keys(req.body||{}).some(key=>!['notes','work_started_at','work_ended_at'].includes(key))||typeof req.body?.notes!=='string'||req.body.notes.length>8000)mobilePilotError(400,'Invalid completion fields.');
+  const zoned=value=>typeof value==='string'&&/(Z|[+-]\d{2}:\d{2})$/i.test(value)&&Number.isFinite(new Date(value).getTime());
+  if(!zoned(req.body.work_started_at)||!zoned(req.body.work_ended_at))mobilePilotError(400,'Enter Work Start and Work End.');
+  const startedAt=new Date(req.body.work_started_at),endedAt=new Date(req.body.work_ended_at);
+  if(endedAt<startedAt||endedAt.getTime()>Date.now())mobilePilotError(400,'Check Work Start / End. Future completion is not allowed.');
+  const {rows}=await pool.query('SELECT * FROM mobile_pilot_existing_work WHERE id=$1 AND technician_id=8',[req.params.id]);
+  const work=rows[0];if(!work)mobilePilotError(404,'Work session not found.');if(work.completed_at)return res.json({success:true,already_completed:true});if(work.invalidated_at||!work.task_id)mobilePilotError(409,'This work session is no longer available. Refresh the list.');
+  req.mobileExistingWorkId=work.id;req.mobileExistingTiming={startedAt,endedAt};req.params.id=String(work.task_id);
+  req.body={technician_id:8,completed_by:req.mobilePilotUser.name,completed_at:endedAt.toISOString(),notes:req.body.notes};
+  return await cmmsCompleteTaskHandler(req,res);
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not complete existing work.'});}
+});
+app.post('/mobile-pilot-api/existing-work/:id/dismiss',requireMobilePilot,async(req,res)=>{
+ try{if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid work session.');
+  const {rowCount}=await pool.query('UPDATE mobile_pilot_existing_work SET invalidated_at=NOW() WHERE id=$1 AND technician_id=8 AND completed_at IS NULL AND invalidated_at IS NULL',[req.params.id]);
+  if(!rowCount)mobilePilotError(409,'Work session is already closed.');res.json({success:true});
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not dismiss work session.'});}
+});
+async function mobileExistingPhotoAccess(req,res,next){
+ try{if(!mobileExistingId(req.params.id))mobilePilotError(400,'Invalid task.');
+  const {rows}=await pool.query(`SELECT t.id FROM maintenance_tasks t JOIN assets a ON a.id=t.asset_id WHERE t.id=$1 AND ${mobileExistingEligible}`,[Number(req.params.id)]);
+  if(!rows.length)mobilePilotError(409,'Task is no longer available.');
+  req.params.entityType='TASK';req.params.entityId=String(rows[0].id);next();
+ }catch(error){res.status(error.status||500).json({error:error.status?error.message:'Could not access task photos.'});}
+}
+app.post('/mobile-pilot-api/existing-tasks/:id/photos',requireMobilePilot,mobileExistingPhotoAccess,
+ (req,res,next)=>attachmentUpload.array('files',5)(req,res,error=>error?res.status(400).json({error:'Up to 5 photos, 8 MB total. JPG, PNG or WebP.'}):next()),
+ async(req,res)=>{if(!req.files?.length||req.files.some(file=>!['image/jpeg','image/png','image/webp'].includes(file.mimetype)))return res.status(400).json({error:'Select JPG, PNG or WebP photos.'});req.body={uploaded_by_id:8};return cmmsAttachmentUploadHandler(req,res);});
+
 async function mobilePilotPhotoOwner(req,res,next){
   try{
     if(!mobilePilotUUID.test(req.params.id))mobilePilotError(400,'Invalid pilot incident.');

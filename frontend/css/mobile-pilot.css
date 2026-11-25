@@ -19,3 +19,6 @@
 .task{
     color:#a8d0ff;
     border-color:#4f87b7}
+
+/* Existing CMMS Today / Overdue queue. */
+.existing-work-entry{margin:12px 0 20px;padding:16px;background:linear-gradient(115deg,#1d3048,#17202b);border:1px solid #38516e;border-radius:10px}.existing-work-entry h2{margin-top:0}#pilotQueueOpen_overdue{border-color:#90515e;color:#f1b1bb}#pilotQueueOpen_today{border-color:#4f85b9;color:#b8d8ff}#pilotQueueItems .item small,#pilotExistingFacts strong{overflow-wrap:anywhere;white-space:pre-wrap}#pilotExistingControls{margin-top:18px}#pilotExistingServiceTime{display:block;color:#8abcf3}
