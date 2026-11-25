@@ -9213,11 +9213,13 @@ function renderMaintenanceReportDetail(
         Converted to Breakdown
       </div>
 
-      <div
-        class="maintenance-report-detail-link"
+      <button
+        type="button"
+        class="maintenance-report-detail-link maintenance-report-resolution-bd"
         title="Open Breakdown details"
         onclick="
           event.stopPropagation();
+          closeMaintenanceReportDetail();
           openBreakdownDetail(${Number(report.breakdown_id)});
         "
       >
@@ -9227,7 +9229,7 @@ function renderMaintenanceReportDetail(
           5,
           "0"
         )}
-      </div>
+      </button>
     `;
 
   }
@@ -9244,7 +9246,7 @@ function renderMaintenanceReportDetail(
 
       <div>
         ${hasRole("technician", "planner", "admin")
-          ? `<button type="button" class="report-task-reference" onclick="openLinkedMaintenanceReportTask(${Number(report.id)})">Task #${Number(report.maintenance_task_id)}</button>`
+          ? `<button type="button" class="report-task-reference maintenance-report-resolution-task" onclick="event.stopPropagation(); openLinkedMaintenanceReportTask(${Number(report.id)})">Task #${Number(report.maintenance_task_id)}</button>`
           : `Task #${Number(report.maintenance_task_id)}`}
       </div>
     `;

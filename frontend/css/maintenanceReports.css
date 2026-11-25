@@ -5444,3 +5444,38 @@ textarea {
 .report-existing-task-dialog :is(button,input):focus-visible { outline: 2px solid #a5ceff; outline-offset: 3px; }
 
 .report-task-reference { padding: 6px 10px; border: 1px solid #567ca6; border-radius: 7px; background: #233e59; color: #cce3ff; cursor: pointer; }
+
+/* Resolution references: scoped to the read-only Maintenance Report detail. */
+#maintenanceReportDetailOverlay .maintenance-report-detail-link,
+#maintenanceReportDetailOverlay .maintenance-report-resolution-task {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 9px;
+  padding: 6px 11px;
+  border: 1px solid #796027;
+  border-radius: 6px;
+  background: #332a19;
+  color: #f5cf72;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  text-decoration: none;
+}
+#maintenanceReportDetailOverlay .maintenance-report-resolution-bd {
+  border-color: #783c46;
+  background: #311e26;
+  color: #ff8995;
+}
+#maintenanceReportDetailOverlay .maintenance-report-detail-link:hover,
+#maintenanceReportDetailOverlay .maintenance-report-resolution-task:hover {
+  filter: brightness(1.16);
+  text-decoration: none;
+}
+#maintenanceReportDetailOverlay .maintenance-report-detail-link:focus-visible,
+#maintenanceReportDetailOverlay .maintenance-report-resolution-task:focus-visible {
+  outline: 2px solid #92bfff;
+  outline-offset: 3px;
+}
