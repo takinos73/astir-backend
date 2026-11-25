@@ -8763,6 +8763,51 @@ function closeProductionReportsPrintModal() {
    - Admin
 ========================================================= */
 
+// One scoped child-detail session; never reopen a hidden or replaced report.
+let maintenanceReportChildSession = null;
+
+function clearMaintenanceReportChildSession() {
+  const session = maintenanceReportChildSession;
+  if (!session) return;
+  maintenanceReportChildSession = null;
+  session.observer.disconnect();
+  session.parent.style.zIndex = session.previousZIndex;
+  session.button.disabled = false;
+}
+
+async function openMaintenanceReportBreakdown(breakdownId, button) {
+  if (maintenanceReportChildSession) return;
+  const parent = document.getElementById("maintenanceReportDetailOverlay");
+  const child = document.getElementById("breakdownDetailOverlay");
+  if (!parent || !child || !button) return;
+  const session = { parent, button, previousZIndex: parent.style.zIndex };
+  session.observer = new MutationObserver(() => {
+    if (getComputedStyle(child).display === "none") {
+      if (maintenanceReportChildSession !== session) return;
+      clearMaintenanceReportChildSession();
+      if (getComputedStyle(parent).display !== "none" && button.isConnected) button.focus();
+    }
+  });
+  maintenanceReportChildSession = session;
+  // Keep the report mounted and visible underneath, without raising BD above its own child modals.
+  const childZIndex = Number.parseInt(getComputedStyle(child).zIndex, 10);
+  parent.style.zIndex = String((Number.isFinite(childZIndex) ? childZIndex : 1190) - 1);
+  button.disabled = true;
+  try {
+    await openBreakdownDetail(breakdownId);
+    if (maintenanceReportChildSession !== session) return;
+    if (getComputedStyle(child).display === "none") {
+      clearMaintenanceReportChildSession();
+      return;
+    }
+    session.observer.observe(child, { attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  } finally {
+    if (maintenanceReportChildSession === session && getComputedStyle(child).display === "none") {
+      clearMaintenanceReportChildSession();
+    }
+  }
+}
+
 async function openMaintenanceReportDetail(
   reportId
 ) {
@@ -8866,6 +8911,7 @@ async function openMaintenanceReportDetail(
      SHOW MODAL
   ===================== */
 
+  clearMaintenanceReportChildSession();
   overlay.style.display =
     "flex";
 
@@ -9219,8 +9265,7 @@ function renderMaintenanceReportDetail(
         title="Open Breakdown details"
         onclick="
           event.stopPropagation();
-          closeMaintenanceReportDetail();
-          openBreakdownDetail(${Number(report.breakdown_id)});
+          openMaintenanceReportBreakdown(${Number(report.breakdown_id)}, this);
         "
       >
         BD-${String(
@@ -9511,6 +9556,7 @@ function renderMaintenanceReportDetail(
 ========================================================= */
 
 function closeMaintenanceReportDetail() {
+  clearMaintenanceReportChildSession();
 
   const overlay =
     document.getElementById(
