@@ -2576,6 +2576,40 @@ function buildRow(task) {
 // RENDER TASKS TABLE (WITH FILTERS)
 // =====================
 
+async function showClosedPreventiveVisitUndo(dialog,visitId,code){
+ if(dialog.dataset.uploading==='true')return;
+ dialog.querySelector('.pp-closed-undo-panel')?.remove();
+ const panel=document.createElement('section');panel.className='pp-closed-undo-panel';panel.setAttribute('aria-label','Undo closed package visit');
+ const heading=document.createElement('h4');heading.textContent='Επαναφορά κλειστής επίσκεψης';const message=document.createElement('p');message.setAttribute('role','status');message.textContent='Έλεγχος επίσκεψης και επόμενου κύκλου…';panel.append(heading,message);dialog.querySelector('.pp-detail-body').append(panel);
+ try{
+  const viewer=localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY);
+  const response=await fetch('/preventive-package-visits/'+encodeURIComponent(visitId)+'/undo-preview?technician_id='+encodeURIComponent(viewer),{cache:'no-store'});
+  const plan=await response.json().catch(()=>({}));if(!response.ok)throw Error(plan.error||'Preview failed.');if(!dialog.isConnected||!dialog.open||!panel.isConnected)return;
+  if(!plan.allowed){message.textContent=plan.reason||'Απαιτείται χειροκίνητος έλεγχος.';return;}
+  message.textContent='Visit #'+plan.visit_id+': '+plan.task_ids.length+' εργασίες επιστρέφουν σε Planned στην αρχική προθεσμία '+plan.cycle_due_date+'. Αναιρούνται '+plan.execution_ids.length+' εκτελέσεις. Αφαιρείται μόνο η ανέγγιχτη επόμενη Visit #'+plan.next_visit_id+' ('+plan.next_task_ids.length+' εργασίες). Αποθηκεύεται πλήρες backup.'+'\nTask IDs: '+plan.task_ids.join(', ')+'\nExecution IDs: '+plan.execution_ids.join(', ')+'\nNext visit tasks: '+plan.next_task_ids.join(', ')+' · Cycle: '+(plan.next_cycle_due_date||'—');
+  const form=document.createElement('form');form.innerHTML='<label>Αιτία επαναφοράς<textarea name="reason" rows="2" minlength="3" maxlength="1000" required></textarea></label><label>Admin password<input name="admin_password" type="password" autocomplete="off" required></label><div class="pp-closed-undo-actions"><button type="submit" class="btn-secondary pp-closed-undo-confirm">Επιβεβαίωση Undo Visit</button><button type="button" class="btn-secondary pp-closed-undo-cancel">Ακύρωση</button></div>';
+  panel.append(form);form.querySelector('.pp-closed-undo-cancel').onclick=()=>{if(dialog.dataset.uploading!=='true')panel.remove();};
+  const requestId=crypto.randomUUID();
+  form.onsubmit=async event=>{
+   event.preventDefault();if(dialog.dataset.uploading==='true'||!form.reportValidity())return;
+   const controls=[...dialog.querySelectorAll('button,input,select,textarea')].map(control=>[control,control.disabled]);dialog.dataset.uploading='true';for(const [control]of controls)control.disabled=true;message.textContent='Επαναφορά επίσκεψης…';let saved=false,auditId='';
+   try{
+    const result=await fetch('/preventive-package-visits/'+encodeURIComponent(visitId)+'/undo-visit?technician_id='+encodeURIComponent(viewer),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:requestId,token:plan.token,reason:form.elements.reason.value.trim(),admin_password:form.elements.admin_password.value})});
+    const data=await result.json().catch(()=>({}));if(!result.ok)throw Error(data.error||'Undo failed.');saved=true;auditId=data.audit_id;form.elements.admin_password.value='';message.textContent='Η επίσκεψη επανήλθε. Backup ID: '+auditId;
+   }catch(error){message.textContent=error.message;}
+   finally{dialog.dataset.uploading='false';for(const [control,disabled]of controls)control.disabled=disabled;}
+   if(!saved)return;
+   await Promise.allSettled([loadTasks(),loadHistory(),loadCompletedKpi()]);
+   if(state.currentAssetSerial&&typeof buildAssetViewData==='function'){
+    buildAssetViewData(state.currentAssetSerial);const overlay=document.getElementById('assetViewOverlay');
+    if(overlay&&overlay.style.display!=='none'){const historyVisible=document.querySelector('.asset-history-table')?.style.display!=='none';if(historyVisible)renderAssetHistoryTable(state.assetHistoryTasks);else renderAssetTasksTable(state.assetActiveTasks);}
+   }
+   await openPreventivePackDetail(visitId,code);
+   const current=document.querySelector('dialog.preventive-pack-detail');if(current){const note=document.createElement('p');note.className='pp-closed-undo-receipt';note.textContent='Undo ολοκληρώθηκε · Backup ID: '+auditId;current.querySelector('.pp-detail-body').append(note);}
+  };
+ }catch(error){if(panel.isConnected)message.textContent=error.message;}
+}
+
 async function openPreventivePackDetail(visitId, code) {
   const previous = document.querySelector("dialog.preventive-pack-detail");
   if (previous?.dataset.uploading === "true") { previous.focus(); return; }
@@ -2719,6 +2753,9 @@ async function openPreventivePackDetail(visitId, code) {
     meter.hidden = false;
     dialog.querySelector(".pp-detail-task-count").textContent = visit.tasks.length + " εργασίες";
     if (visit.closed_at) lifecycle.title = "Κλείσιμο: " + format(visit.closed_at);
+    if(visit.closed_at&&hasRole('admin','planner')){
+      const undoVisit=document.createElement('button');undoVisit.type='button';undoVisit.className='btn-secondary pp-closed-undo-open';undoVisit.textContent='↶ Undo Visit';undoVisit.onclick=()=>showClosedPreventiveVisitUndo(dialog,String(visit.id),code);dialog.querySelector('.pp-detail-footer').prepend(undoVisit);
+    }
     printButton.disabled = false;
     void addPreventiveVisitDocuments(dialog, String(visit.id));
   } catch (error) {

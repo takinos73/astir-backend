@@ -350,6 +350,7 @@ async function assertAttachmentEntityExists(
       WHERE id = $1
 
       LIMIT 1
+      FOR KEY SHARE
       `,
       [
         normalizedId
@@ -17541,6 +17542,109 @@ app.get("/preventive-package-visits/ready-to-close", async (req, res) => {
 });
 /* END: Read preventive package visits ready to close */
 
+/* Safe closed-visit Undo. Administrative mutation requires the existing Admin password. */
+const ppUndoUUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function ppUndoError(message,status=409){const error=new Error(message);error.status=status;throw error;}
+async function ppUndoViewer(db,value,password){
+ const id=Number(value);if(!Number.isSafeInteger(id)||id<=0)ppUndoError('Invalid user.',400);
+ const {rows:[viewer]}=await db.query('SELECT id,name,role,active,is_user FROM technicians WHERE id=$1',[id]);
+ if(!viewer?.active||!viewer.is_user||!['admin','planner'].includes(String(viewer.role).trim().toLowerCase()))ppUndoError('Admin or Planner access required.',403);
+ if(password!==undefined){const {rows:[cfg]}=await db.query('SELECT admin_password FROM roles_config ORDER BY id DESC LIMIT 1');const a=Buffer.from(typeof password==='string'?password:''),b=Buffer.from(cfg?.admin_password||'');if(!b.length||a.length!==b.length||!timingSafeEqual(a,b))ppUndoError('Invalid Admin password.',403);}
+ return viewer;
+}
+async function ppUndoReferences(db,taskIds,executionIds,nextId){
+ const {rows}=await db.query(`SELECT c.conrelid::regclass::text AS child_table,c.confrelid::regclass::text AS parent_table,
+  c.confrelid='maintenance_tasks'::regclass AS is_task,c.confrelid='task_executions'::regclass AS is_execution,c.confrelid='preventive_package_visit_tasks'::regclass AS is_link,
+  c.conrelid='preventive_package_visit_tasks'::regclass AND c.confrelid IN ('maintenance_tasks'::regclass,'preventive_package_visits'::regclass) AS allowed_link,
+  string_agg(format('r.%I=t.%I',ca.attname,pa.attname),' AND ' ORDER BY k.ord) AS joins
+ FROM pg_constraint c CROSS JOIN LATERAL unnest(c.conkey,c.confkey) WITH ORDINALITY k(child_att,parent_att,ord)
+ JOIN pg_attribute ca ON ca.attrelid=c.conrelid AND ca.attnum=k.child_att
+ JOIN pg_attribute pa ON pa.attrelid=c.confrelid AND pa.attnum=k.parent_att
+ WHERE c.contype='f' AND c.confrelid IN ('maintenance_tasks'::regclass,'task_executions'::regclass,'preventive_package_visits'::regclass,'preventive_package_visit_tasks'::regclass)
+ GROUP BY c.oid,c.conrelid,c.confrelid`);
+ for(const ref of rows){const ids=ref.is_task?taskIds:ref.is_execution?executionIds:[nextId];if(!ids.length)continue;
+  const {rows:[result]}=await db.query(`SELECT EXISTS(SELECT 1 FROM ${ref.child_table} r JOIN ${ref.parent_table} t ON ${ref.joins}
+   WHERE t.${ref.is_link?'visit_id':'id'}=ANY($1::bigint[]) AND ${ref.allowed_link?'r.visit_id IS DISTINCT FROM $2::bigint':'$2::bigint IS NOT NULL'}) AS linked`,[ids,nextId]);
+  if(result.linked)ppUndoError('Other records refer to this operation ('+ref.child_table+'). Manual review required.');
+ }
+}
+async function ppUndoPlan(db,id,lock=false){
+ const {rows:[head]}=await db.query('SELECT assignment_id FROM preventive_package_visits WHERE id=$1',[id]);if(!head)ppUndoError('Visit not found.',404);
+ if(lock){
+  await db.query('SELECT id FROM preventive_package_visits WHERE assignment_id=$1 ORDER BY id FOR UPDATE',[head.assignment_id]);
+  await db.query('SELECT id FROM preventive_package_assignments WHERE id=$1 FOR UPDATE',[head.assignment_id]);
+  await db.query('SELECT p.id FROM preventive_packages p JOIN preventive_package_assignments a ON a.package_id=p.id WHERE a.id=$1 FOR SHARE OF p',[head.assignment_id]);
+ }
+ const {rows:[v]}=await db.query(`SELECT v.*,a.asset_id AS assigned_asset_id,a.next_due_date::text AS assignment_due,p.archived_at FROM preventive_package_visits v
+  JOIN preventive_package_assignments a ON a.id=v.assignment_id JOIN preventive_packages p ON p.id=a.package_id WHERE v.id=$1`,[id]);
+ if(!v?.closed_at)ppUndoError('Undo Visit requires a closed visit.');
+ if(!v.rollover_closed_state)ppUndoError('This older closed visit has no rollover backup. Manual review is required.');
+ if(v.archived_at)ppUndoError('This package is archived. Manual review is required.');
+ const {rows:children}=await db.query('SELECT * FROM preventive_package_visits WHERE rollover_parent_visit_id=$1 ORDER BY id',[id]);
+ if(children.length!==1||children[0].closed_at)ppUndoError('The automatically created next visit is missing or already closed.');
+ const child=children[0],childId=String(child.id);
+ if(!child.rollover_initial_state)ppUndoError('The next visit has no creation snapshot.');
+ const {rows:[latest]}=await db.query(`SELECT EXISTS(SELECT 1 FROM preventive_package_visits WHERE assignment_id=$1 AND id<>$2 AND closed_at IS NOT NULL
+  AND (closed_at>$3 OR (closed_at=$3 AND id>$2))) AS newer`,[v.assignment_id,id,v.closed_at]);
+ if(latest.newer)ppUndoError('Only the latest closed visit can be undone.');
+ const {rows:open}=await db.query('SELECT id FROM preventive_package_visits WHERE assignment_id=$1 AND closed_at IS NULL ORDER BY id',[v.assignment_id]);
+ if(open.length!==1||String(open[0].id)!==childId)ppUndoError('The assignment has unexpected active visits.');
+ if(lock){
+  await db.query('SELECT t.id FROM maintenance_tasks t JOIN preventive_package_visit_tasks l ON l.task_id=t.id WHERE l.visit_id=ANY($1::bigint[]) ORDER BY t.id FOR UPDATE OF t',[[id,childId]]);
+  await db.query('SELECT e.id FROM task_executions e WHERE e.task_id IN(SELECT task_id FROM preventive_package_visit_tasks WHERE visit_id=ANY($1::bigint[])) ORDER BY e.id FOR UPDATE',[[id,childId]]);
+ }
+ const {rows:[states]}=await db.query(`SELECT public.cmms_pp_visit_state($1) AS source,public.cmms_pp_visit_state($2) AS next,
+  public.cmms_pp_visit_state($1)=(SELECT rollover_closed_state FROM preventive_package_visits WHERE id=$1) AS source_matches,public.cmms_pp_visit_state($2)=(SELECT rollover_initial_state FROM preventive_package_visits WHERE id=$2) AS next_matches`,[id,childId]);
+ if(!states.source_matches)ppUndoError('The closed visit changed after completion. Manual review required.');
+ if(!states.next_matches)ppUndoError('The next visit or its tasks changed. Nothing can be removed automatically.');
+ const source=states.source,next=states.next;
+ if(next.visit.cycle_due_date!==v.assignment_due)ppUndoError('Assignment next date differs from the next visit.');
+ if(!source.tasks.length||!next.tasks.length||source.tasks.some(t=>t.status!=='Done'||t.deleted_at)||next.tasks.some(t=>t.status!=='Planned'||t.deleted_at)||next.executions.length)ppUndoError('Unexpected task state in the closed or next visit.');
+ for(const task of source.tasks){const executions=source.executions.filter(e=>String(e.task_id)===String(task.id));if(executions.length!==1||!executions[0].prev_due_date)ppUndoError('An original due date is missing or a task has multiple executions.');}
+ if([...source.tasks,...next.tasks].some(t=>String(t.asset_id)!==String(v.assigned_asset_id)))ppUndoError('A work task belongs to another Asset.');
+ const {rows:[shared]}=await db.query('SELECT EXISTS(SELECT 1 FROM preventive_package_visit_tasks WHERE task_id=ANY($1::integer[]) AND visit_id<>$2) AS shared',[source.tasks.map(t=>String(t.id)),id]);if(shared.shared)ppUndoError('A source task is linked to another visit.');
+ const taskIds=next.tasks.map(t=>String(t.id)),executionIds=source.executions.map(e=>String(e.id));
+ const {rows:[files]}=await db.query(`SELECT EXISTS(SELECT 1 FROM attachments WHERE (entity_type='PREVENTIVE_VISIT' AND entity_id=$1)
+  OR (entity_type='TASK' AND entity_id=ANY($2::bigint[]))) AS attached`,[childId,taskIds]);
+ if(files.attached)ppUndoError('The next visit or its tasks have attachments. Manual review required.');
+ await ppUndoReferences(db,taskIds,executionIds,childId);
+ const {rows:[backup]}=await db.query('SELECT public.cmms_pp_undo_state($1,$2,$3) AS state,public.cmms_pp_undo_state($1,$2,$3)::text AS state_text',[id,childId,v.assignment_id]);
+ const beforeText=backup.state_text||JSON.stringify(backup.state);
+ const token=createHash('sha256').update(beforeText).digest('hex');
+ return{visit_id:String(id),next_visit_id:childId,assignment_id:String(v.assignment_id),cycle_due_date:source.visit.cycle_due_date,
+  task_ids:source.tasks.map(t=>String(t.id)),execution_ids:executionIds,next_task_ids:taskIds,source,next,before:backup.state,before_text:beforeText,token};
+}
+app.get('/preventive-package-visits/:id/undo-preview',async(req,res)=>{
+ let client;try{if(!/^[1-9]\d{0,17}$/.test(req.params.id))ppUndoError('Invalid visit.',400);client=await pool.connect();await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');await ppUndoViewer(client,req.query.technician_id);
+  const plan=await ppUndoPlan(client,req.params.id);await client.query('COMMIT');res.json({allowed:true,visit_id:plan.visit_id,next_visit_id:plan.next_visit_id,next_cycle_due_date:plan.next.visit.cycle_due_date,cycle_due_date:plan.cycle_due_date,task_ids:plan.task_ids,execution_ids:plan.execution_ids,next_task_ids:plan.next_task_ids,token:plan.token});
+ }catch(error){if(client)await client.query('ROLLBACK').catch(()=>{});if(error.status===409)return res.json({allowed:false,reason:error.message});res.status(error.status||500).json({error:error.status?error.message:'Could not preview closed-visit Undo.'});}finally{client?.release();}
+});
+app.post('/preventive-package-visits/:id/undo-visit',async(req,res)=>{
+ let client;try{
+  const b=req.body||{},reason=typeof b.reason==='string'?b.reason.trim():'';
+  if(!/^[1-9]\d{0,17}$/.test(req.params.id)||!ppUndoUUID.test(b.request_id||'')||typeof b.token!=='string'||!/^[a-f0-9]{64}$/.test(b.token)||reason.length<3||reason.length>1000||typeof b.admin_password!=='string'||Object.keys(b).some(k=>!['request_id','token','reason','admin_password'].includes(k)))ppUndoError('Enter a reason, preview token and Admin password.',400);
+  client=await pool.connect();await client.query('BEGIN');await client.query("SET LOCAL lock_timeout='5s'");const viewer=await ppUndoViewer(client,req.query.technician_id,b.admin_password);
+  await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[b.request_id]);
+  const {rows:[replayed]}=await client.query('SELECT * FROM preventive_visit_undo_audit WHERE id=$1',[b.request_id]);
+  if(replayed){if(replayed.restored_at)ppUndoError('This Undo was rolled back. Run a new preview.');if(String(replayed.visit_id)!==req.params.id||Number(replayed.actor_id)!==Number(viewer.id)||replayed.request_token!==b.token||replayed.reason!==reason)ppUndoError('This request ID belongs to another operation.');await client.query('COMMIT');return res.json({success:true,already_applied:true,audit_id:b.request_id,visit_id:req.params.id});}
+  const plan=await ppUndoPlan(client,req.params.id,true);if(plan.token!==b.token)ppUndoError('Data changed after preview. Run a new preview.');
+  const {rowCount:restored}=await client.query(`UPDATE maintenance_tasks t SET status='Planned',due_date=e.prev_due_date,completed_at=NULL,completed_by=NULL,updated_at=NOW()
+   FROM task_executions e WHERE t.id=e.task_id AND t.id=ANY($1::integer[]) AND e.id=ANY($2::bigint[])`,[plan.task_ids,plan.execution_ids]);
+  if(restored!==plan.task_ids.length)throw Error('Unexpected restore count');
+  const {rowCount:deletedExecutions}=await client.query('DELETE FROM task_executions WHERE id=ANY($1::bigint[]) AND task_id=ANY($2::integer[])',[plan.execution_ids,plan.task_ids]);
+  if(deletedExecutions!==plan.execution_ids.length)throw Error('Unexpected execution delete count');
+  const {rowCount:links}=await client.query('DELETE FROM preventive_package_visit_tasks WHERE visit_id=$1 AND task_id=ANY($2::integer[])',[plan.next_visit_id,plan.next_task_ids]);
+  if(links!==plan.next_task_ids.length)throw Error('Unexpected link delete count');
+  const {rowCount:tasks}=await client.query('DELETE FROM maintenance_tasks WHERE id=ANY($1::integer[])',[plan.next_task_ids]);if(tasks!==plan.next_task_ids.length)throw Error('Unexpected task delete count');
+  const {rowCount:visits}=await client.query('DELETE FROM preventive_package_visits WHERE id=$1 AND rollover_parent_visit_id=$2 AND closed_at IS NULL',[plan.next_visit_id,plan.visit_id]);if(visits!==1)throw Error('Unexpected next-visit delete count');
+  await client.query('UPDATE preventive_package_visits SET closed_at=NULL,rollover_closed_state=NULL WHERE id=$1',[plan.visit_id]);
+  const {rowCount:assignments}=await client.query('UPDATE preventive_package_assignments SET next_due_date=$2::date,updated_at=NOW() WHERE id=$1 AND next_due_date=$3::date',[plan.assignment_id,plan.cycle_due_date,plan.next.visit.cycle_due_date]);if(assignments!==1)throw Error('Assignment changed');
+  const {rows:[after]}=await client.query('SELECT public.cmms_pp_undo_state($1,$2,$3) AS state',[plan.visit_id,plan.next_visit_id,plan.assignment_id]);
+  await client.query('INSERT INTO preventive_visit_undo_audit(id,visit_id,next_visit_id,actor_id,reason,request_token,before_state,after_state) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)',[b.request_id,plan.visit_id,plan.next_visit_id,viewer.id,reason,b.token,plan.before_text,after.state_text||JSON.stringify(after.state)]);
+  await client.query('COMMIT');res.json({success:true,audit_id:b.request_id,visit_id:plan.visit_id,next_visit_removed:plan.next_visit_id,restored_due:plan.cycle_due_date});
+ }catch(error){if(client)await client.query('ROLLBACK').catch(()=>{});console.error('Closed PP Undo:',error.message);res.status(error.status||500).json({error:error.status?error.message:'Undo failed. No changes committed.'});}finally{client?.release();}
+});
+
 /* BEGIN: Read preventive package visit detail */
 app.get("/preventive-package-visits/:id", async (req, res) => {
   const visitId = req.params.id;
@@ -19727,16 +19831,26 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
       `
       SELECT
         v.assignment_id,
+        a.next_due_date::text AS assignment_due_before,
         a.asset_id,
         p.id::text AS package_id,
         p.tasks AS template_tasks,
         p.archived_at,
         p.tasks IS DISTINCT FROM (v.definition_snapshot->'tasks') AS template_changed,
         v.cycle_due_date::text,
-        (v.cycle_due_date + make_interval(months => p.interval_months))::date::text AS next_cycle_date
+        done.actual_completed_at,
+        done.missing_execution_count,
+        ((done.actual_completed_at AT TIME ZONE 'Europe/Athens')::date + make_interval(months => p.interval_months))::date::text AS next_cycle_date
       FROM preventive_package_visits v
       JOIN preventive_package_assignments a ON a.id = v.assignment_id
       JOIN preventive_packages p ON p.id = a.package_id
+      LEFT JOIN LATERAL (
+        SELECT MAX(last_execution.executed_at) AS actual_completed_at,
+          count(*) FILTER(WHERE last_execution.executed_at IS NULL)::int AS missing_execution_count
+        FROM preventive_package_visit_tasks source_link
+        LEFT JOIN LATERAL (SELECT e.executed_at FROM task_executions e WHERE e.task_id=source_link.task_id ORDER BY e.id DESC LIMIT 1) last_execution ON TRUE
+        WHERE source_link.visit_id=v.id
+      ) done ON TRUE
       WHERE v.id = $1 AND v.closed_at IS NULL
       FOR UPDATE OF a
       FOR SHARE OF p
@@ -19771,6 +19885,10 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
       continue;
     }
 
+    if(!visit.actual_completed_at||visit.missing_execution_count||!visit.next_cycle_date||new Date(visit.actual_completed_at)>new Date())throw Error('PP completion needs a valid actual execution date for every task.');
+    if(visit.assignment_due_before!==visit.cycle_due_date)throw Error('The PP assignment due date differs from this cycle. Review the schedule before completing.');
+    const {rows:conflicts}=await client.query('SELECT id FROM preventive_package_visits WHERE assignment_id=$1 AND cycle_due_date=$2::date',[visit.assignment_id,visit.next_cycle_date]);
+    if(conflicts.length)throw Error('The next PP date calculated from actual completion already exists. Check execution dates; no duplicate visit was created.');
     // Move the local start dates by the cycle offset and preserve elapsed work minutes.
     let previousEnd;
     let sourceTasks = tasks;
@@ -19809,15 +19927,16 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
     const { rows: [nextVisit] } = await client.query(
       `
       INSERT INTO preventive_package_visits (
-        assignment_id, cycle_due_date, scheduled_start_at, scheduled_end_at
+        assignment_id, cycle_due_date, scheduled_start_at, scheduled_end_at,rollover_parent_visit_id
       )
-      VALUES ($1, $2::date, $3::timestamptz, $4::timestamptz)
+      VALUES ($1, $2::date, $3::timestamptz, $4::timestamptz,$5::bigint)
       ON CONFLICT (assignment_id, cycle_due_date) DO NOTHING
       RETURNING id::text
       `,
-      [visit.assignment_id, visit.next_cycle_date, scheduledTasks[0].start, previousEnd]
+      [visit.assignment_id, visit.next_cycle_date, scheduledTasks[0].start, previousEnd,visitId]
     );
 
+    if(!nextVisit)throw Error('Another PP visit already occupies the calculated next date. No rollover committed.');
     if (nextVisit) {
       for (const task of scheduledTasks) {
         const { rows: [nextTask] } = await client.query(
@@ -19843,6 +19962,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
       }
     }
 
+    await client.query('UPDATE preventive_package_visits SET rollover_initial_state=public.cmms_pp_visit_state(id) WHERE id=$1',[nextVisit.id]);
     await client.query(
       "UPDATE preventive_package_visits SET closed_at = NOW() WHERE id = $1",
       [visitId]
@@ -19856,6 +19976,7 @@ async function rollOverCompletedPreventivePacks(client, visitIds) {
       [visit.assignment_id, visit.next_cycle_date, visit.cycle_due_date]
     );
 
+    await client.query('UPDATE preventive_package_visits SET rollover_closed_state=public.cmms_pp_visit_state(id) WHERE id=$1',[visitId]);
     rollovers.push({
       package_id: visit.package_id,
       closed_visit_id: visitId,
