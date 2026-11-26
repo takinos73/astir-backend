@@ -3970,7 +3970,21 @@ currentBreakdownId = id;
    POPULATE DETAIL MODAL
 ===================== */
 
+function updateBreakdownRootCausePending(breakdown) {
+  const badge = document.getElementById("bd-root-cause-pending");
+  if (!badge) return;
+  badge.hidden = !(String(breakdown?.status || "").toUpperCase() === "CLOSED" &&
+    !String(breakdown?.root_cause || "").trim());
+}
+
+function toggleBreakdownRootCauseSkip() {
+  const skip = document.getElementById("close-breakdown-skip-root-cause");
+  const input = document.getElementById("close-breakdown-root-cause");
+  if (input) input.disabled = Boolean(skip?.checked);
+}
+
 function populateBreakdownDetail(breakdown) {
+  updateBreakdownRootCausePending(breakdown);
 
   /* =====================
      CURRENT BREAKDOWN
@@ -12538,6 +12552,9 @@ function openCloseBreakdownModal() {
 
   if (rootCause) {
     rootCause.value = "";
+    rootCause.disabled = false;
+    const skip = document.getElementById("close-breakdown-skip-root-cause");
+    if (skip) skip.checked = false;
   }
 
   if (correctiveAction) {
@@ -12815,7 +12832,7 @@ async function closeBreakdown() {
       failureCause,
 
     root_cause:
-      rootCause,
+      document.getElementById("close-breakdown-skip-root-cause")?.checked ? null : rootCause,
 
     corrective_action:
       correctiveAction

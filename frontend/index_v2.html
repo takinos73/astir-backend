@@ -3782,6 +3782,8 @@
         >
           OPEN
         </span>
+        <span id="bd-root-cause-pending" hidden
+          title="Root cause can be completed later through Edit.">Root cause pending</span>
 
       </div>
 
@@ -5037,14 +5039,21 @@
     <div class="field">
 
       <label for="close-breakdown-root-cause">
-        Root Cause
+        Root Cause (optional)
+      </label>
+      <label class="bd-root-cause-skip">
+        <input type="checkbox" id="close-breakdown-skip-root-cause"
+          onchange="toggleBreakdownRootCauseSkip()">
+        <span>Skip — complete later</span>
       </label>
 
       <textarea
         id="close-breakdown-root-cause"
+        aria-describedby="bd-root-cause-help"
         rows="3"
         placeholder="What caused the failure?"
       ></textarea>
+      <small id="bd-root-cause-help" class="bd-root-cause-help">Optional. Admin / Planner can complete this later through Edit.</small>
 
     </div>
 
@@ -6053,15 +6062,15 @@
       <button
         id="addPreventiveBtn"
         class="btn-secondary btn-preventive">
-        ➕ Add Preventive
+        ➕ Preventive Task
       </button>
 <!-- BEGIN: Preventive package pilot -->
       <button type="button" id="previewPreventivePackageBtn" class="btn-secondary btn-preventive">
-        ➕ Νέο πακέτο
+        ➕ Preventive Package
       </button>
 
       <dialog id="preventivePackagePreview" aria-labelledby="preventivePackagePreviewTitle">
-        <h3 id="preventivePackagePreviewTitle">Νέο πακέτο προληπτικής συντήρησης</h3>
+        <h3 id="preventivePackagePreviewTitle">New Preventive maintenance package</h3>
         <label for="preventivePackageAsset">Asset</label>
         <select id="preventivePackageAsset"></select>
 

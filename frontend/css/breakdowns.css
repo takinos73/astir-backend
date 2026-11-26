@@ -2652,3 +2652,40 @@ input[type="date"] {
   opacity: .5;
   cursor: default;
 }
+
+/* Root cause may be completed later through the existing BD Edit action. */
+#breakdownDetailOverlay .breakdown-detail-heading { flex-wrap: wrap; }
+#breakdownDetailOverlay #bd-root-cause-pending {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid #685737;
+  border-radius: 6px;
+  background: #2c281f;
+  color: #d9bd7d;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+#breakdownDetailOverlay #bd-root-cause-pending[hidden] { display: none; }
+#closeBreakdownOverlay .bd-root-cause-skip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  color: #bdc9d8;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+#closeBreakdownOverlay .bd-root-cause-skip input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  accent-color: #6b9dcc;
+}
+#closeBreakdownOverlay #close-breakdown-root-cause:disabled { opacity: .45; }
+#closeBreakdownOverlay .bd-root-cause-help { color: #94a5b8; font-size: 12px; }

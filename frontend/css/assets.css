@@ -4124,3 +4124,29 @@ tr.highlight-execution {
 @media(max-width:1200px) { #tab-assets #assetsCardsView { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media(max-width:900px) { #tab-assets #assetsCardsView { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:560px) { #tab-assets #assetsCardsView { grid-template-columns: minmax(0,1fr); } #tab-assets > .assets-header { padding: 16px; gap: 7px; } #tab-assets > .assets-header h2 { font-size: 21px; } }
+
+/* Asset History: BD reference badge, sized consistently with the SM reference. */
+#assetHistoryTable .asset-history-breakdown-ref {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgba(239, 83, 80, 0.38);
+  border-radius: 6px;
+  background: rgba(239, 83, 80, 0.12);
+  color: #ff8995;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+#assetHistoryTable .asset-history-breakdown-ref:hover {
+  background: rgba(239, 83, 80, 0.20);
+  border-color: rgba(239, 83, 80, 0.60);
+  color: #ffabb3;
+  text-decoration: none;
+}
