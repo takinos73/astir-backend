@@ -16160,9 +16160,9 @@ const maintenanceWorkloadForecast = {
           COUNT(*) FILTER (WHERE mr.status = 'CONVERTED')::int AS converted,
           COUNT(*) FILTER (WHERE mr.status = 'CLOSED')::int AS closed,
           COUNT(*) FILTER (WHERE mr.status NOT IN ('NEW','UNDER_REVIEW','CONVERTED','CLOSED') OR mr.status IS NULL)::int AS other_status,
-          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND mr.resolution_type = 'BREAKDOWN')::int AS breakdown,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND mr.resolution_type IN ('BREAKDOWN','EXISTING_BREAKDOWN'))::int AS breakdown,
           COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND mr.resolution_type IN ('PLANNED_TASK','EXISTING_TASK'))::int AS planned_task,
-          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND (mr.resolution_type NOT IN ('BREAKDOWN','PLANNED_TASK','EXISTING_TASK') OR mr.resolution_type IS NULL))::int AS other_conversion,
+          COUNT(*) FILTER (WHERE mr.status = 'CONVERTED' AND (mr.resolution_type NOT IN ('BREAKDOWN','EXISTING_BREAKDOWN','PLANNED_TASK','EXISTING_TASK') OR mr.resolution_type IS NULL))::int AS other_conversion,
           COUNT(*) FILTER (WHERE mr.priority = 'URGENT')::int AS urgent,
           COUNT(*) FILTER (WHERE mr.production_stopped IS TRUE)::int AS stopped
         FROM maintenance_reports mr
@@ -24324,6 +24324,7 @@ app.get("/maintenance-reports", async (req, res) => {
           mr.resolution_type,
 
           mr.breakdown_id,
+            mr.scheduled_maintenance_id,
           mr.maintenance_task_id,
 
           mr.created_at,
@@ -24571,6 +24572,7 @@ app.get( "/maintenance-reports/my", async (req, res) => {
             mr.resolution_type,
 
             mr.breakdown_id,
+            mr.scheduled_maintenance_id,
             mr.maintenance_task_id,
 
             a.name AS asset_name,
@@ -25022,6 +25024,7 @@ app.get("/maintenance-reports/:id", async (req, res) => {
             mr.resolution_type,
 
             mr.breakdown_id,
+            mr.scheduled_maintenance_id,
             mr.maintenance_task_id,
 
             mr.created_at,
@@ -26554,15 +26557,20 @@ async function getReportTaskLinkContext(client, reportId, technicianId, lockRepo
   const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
   const user = await getReportTaskLinkUser(client, technicianId);
   const { rows: reports } = await client.query(
-    `SELECT id, asset_id, status, breakdown_id, maintenance_task_id, maintenance_comment
+    `SELECT id, asset_id, status, breakdown_id, maintenance_task_id, maintenance_comment, reported_at, scheduled_maintenance_id
      FROM maintenance_reports WHERE id = $1 ${lockReport ? "FOR UPDATE" : ""}`, [reportId]
   );
   const report = reports[0];
   if (!report) fail(404, "Maintenance Report not found");
   if (report.status !== "UNDER_REVIEW") fail(409, "Only reports UNDER_REVIEW can be linked");
-  if (report.breakdown_id || report.maintenance_task_id) fail(409, "Report is already linked");
+  if (report.breakdown_id || report.maintenance_task_id || report.scheduled_maintenance_id) fail(409, "Report is already linked");
+  if (!report.reported_at) fail(409, "Report time is missing; review the report before linking a task");
   return { user, report };
 }
+
+// Same timestamp rule for the picker and the locked confirmation.
+const reportTaskLinkTimeSQL = `(CASE WHEN t.status = $$Done$$ THEN latest.executed_at
+  ELSE COALESCE(t.planned_start_at, t.due_date) END)`;
 
 app.get("/maintenance-reports/:id/linkable-tasks", async (req, res) => {
   const reportId = Number(req.params.id), technicianId = Number(req.query.technician_id);
@@ -26573,24 +26581,102 @@ app.get("/maintenance-reports/:id/linkable-tasks", async (req, res) => {
   try {
     const { report } = await getReportTaskLinkContext(pool, reportId, technicianId);
     const { rows } = await pool.query(`
-      SELECT t.id, t.task, t.section, t.unit, t.status, t.due_date,
+      SELECT t.id, t.task, t.section, t.unit, t.status, t.due_date, t.planned_start_at,
              t.breakdown_id, t.scheduled_maintenance_id,
              latest.executed_at, latest.executed_by
       FROM maintenance_tasks t
       LEFT JOIN LATERAL (
         SELECT e.executed_at, e.executed_by FROM task_executions e
-        WHERE e.task_id = t.id ORDER BY e.id DESC LIMIT 1
+        WHERE e.task_id = t.id AND e.asset_id = t.asset_id
+        ORDER BY e.executed_at DESC NULLS LAST, e.id DESC LIMIT 1
       ) latest ON TRUE
       WHERE t.asset_id = $1 AND t.deleted_at IS NULL
+        AND ${reportTaskLinkTimeSQL} >= $4::timestamptz
         AND NOT EXISTS (SELECT 1 FROM maintenance_reports linked WHERE linked.maintenance_task_id = t.id)
         AND ($2 = '' OR t.id::text = $2 OR t.task ILIKE $3 OR COALESCE(t.section,'') ILIKE $3 OR COALESCE(t.unit,'') ILIKE $3)
       ORDER BY latest.executed_at DESC NULLS LAST, t.id DESC LIMIT 51
-    `, [report.asset_id, search, '%' + search + '%']);
-    return res.json({ tasks: rows.slice(0, 50), has_more: rows.length > 50 });
+    `, [report.asset_id, search, '%' + search + '%', report.reported_at]);
+    return res.json({ tasks: rows.slice(0, 50), has_more: rows.length > 50, reported_at: report.reported_at });
   } catch (error) {
     console.error("Report linkable tasks:", error);
     return res.status(error.status || 500).json({ error: error.status ? error.message : "Could not load tasks" });
   }
+});
+
+// Read and link existing incidents without changing their lifecycle or tasks.
+const reportParentLinkKinds = Object.freeze({
+  BD: { table: 'breakdowns', column: 'breakdown_id', time: 'p.started_at', resolution: 'EXISTING_BREAKDOWN' },
+  SM: { table: 'scheduled_maintenance', column: 'scheduled_maintenance_id', time: 'COALESCE(p.actual_started_at, p.scheduled_start_at)', resolution: 'EXISTING_SM' }
+});
+
+app.get('/maintenance-reports/:id/linkable-incidents', async (req, res) => {
+  const reportId = Number(req.params.id), technicianId = Number(req.query.technician_id);
+  const kind = String(req.query.kind || ''), config = reportParentLinkKinds[kind];
+  if (!['BD', 'SM'].includes(kind) || !config || ![reportId, technicianId].every(id => Number.isSafeInteger(id) && id > 0)) {
+    return res.status(400).json({ error: 'Invalid report, user or incident type' });
+  }
+  try {
+    const { report } = await getReportTaskLinkContext(pool, reportId, technicianId);
+    const search = String(req.query.search || '').trim().slice(0, 100);
+    const { rows } = await pool.query(`
+      SELECT p.id, p.title, p.status, ${config.time} AS link_time
+      FROM ${config.table} p
+      WHERE p.asset_id = $1 AND ${config.time} >= $2::timestamptz
+        AND NOT EXISTS (SELECT 1 FROM maintenance_reports linked WHERE linked.${config.column} = p.id)
+        AND ($3 = '' OR p.id::text = $3 OR p.title ILIKE $4)
+      ORDER BY ${config.time} DESC, p.id DESC LIMIT 51
+    `, [report.asset_id, report.reported_at, search, '%' + search + '%']);
+    return res.json({ incidents: rows.slice(0, 50), has_more: rows.length > 50, reported_at: report.reported_at });
+  } catch (error) {
+    console.error('Report incident candidates:', error);
+    return res.status(error.status || 500).json({ error: error.status ? error.message : 'Could not load incidents' });
+  }
+});
+
+app.patch('/maintenance-reports/:id/link-existing-incident', async (req, res) => {
+  const allowed = ['technician_id', 'kind', 'incident_id', 'maintenance_comment'];
+  if (!req.body || Object.keys(req.body).some(key => !allowed.includes(key))) {
+    return res.status(400).json({ error: 'Only technician_id, kind, incident_id and maintenance_comment are accepted' });
+  }
+  const reportId = Number(req.params.id), technicianId = Number(req.body.technician_id), incidentId = Number(req.body.incident_id);
+  const kind = String(req.body.kind || ''), config = reportParentLinkKinds[kind];
+  if (!['BD', 'SM'].includes(kind) || !config || ![reportId, technicianId, incidentId].every(id => Number.isSafeInteger(id) && id > 0) ||
+      (req.body.maintenance_comment != null && typeof req.body.maintenance_comment !== 'string')) {
+    return res.status(400).json({ error: 'Invalid incident link request' });
+  }
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const { report, user } = await getReportTaskLinkContext(client, reportId, technicianId, true);
+    // Lock the incident so two reports cannot claim it concurrently.
+    const { rows: targets } = await client.query(`
+      SELECT p.id, p.title, p.asset_id, (${config.time} >= $2::timestamptz) AS eligible_time
+      FROM ${config.table} p WHERE p.id = $1 FOR UPDATE OF p
+    `, [incidentId, report.reported_at]);
+    const target = targets[0];
+    const reject = (status, message) => { const error = new Error(message); error.status = status; throw error; };
+    if (!target) reject(404, 'Incident is unavailable');
+    if (String(target.asset_id) !== String(report.asset_id)) reject(409, 'Incident must belong to the report Asset');
+    if (!target.eligible_time) reject(409, 'Incident must start at or after the report time. Refresh the list.');
+    const { rows: linked } = await client.query(`SELECT id FROM maintenance_reports WHERE ${config.column} = $1 LIMIT 1`, [incidentId]);
+    if (linked.length) reject(409, 'Incident is already linked to another report');
+    const comment = (req.body.maintenance_comment ?? report.maintenance_comment ?? '').trim();
+    const audit = `Linked existing ${kind}-${String(incidentId).padStart(5, '0')} by ${user.name} (${new Date().toISOString()}).`;
+    const { rows: saved } = await client.query(`
+      UPDATE maintenance_reports SET status = 'CONVERTED', resolution_type = $2,
+        breakdown_id = $3, scheduled_maintenance_id = $4, maintenance_task_id = NULL,
+        maintenance_comment = $5, reviewed_by = $6, reviewed_at = NOW(), updated_at = NOW()
+      WHERE id = $1 RETURNING *
+    `, [reportId, config.resolution, kind === 'BD' ? incidentId : null, kind === 'SM' ? incidentId : null,
+      [comment, audit].filter(Boolean).join('\n'), technicianId]);
+    await client.query('COMMIT');
+    return res.json({ report: saved[0] });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    console.error('Report link existing incident:', error);
+    return res.status(error.status || 500).json({ error: error.status ? error.message : 'Could not link incident' });
+  } finally { client?.release(); }
 });
 
 app.get("/maintenance-reports/:id/linked-task", async (req, res) => {
@@ -26644,6 +26730,18 @@ app.patch("/maintenance-reports/:id/link-existing-task", async (req, res) => {
     const reject = (status, message) => { const error = new Error(message); error.status = status; throw error; };
     if (!task || task.deleted_at) reject(404, "Task is unavailable");
     if (String(task.asset_id) !== String(report.asset_id)) reject(409, "Task must belong to the report Asset");
+    const { rows: eligible } = await client.query(
+      `SELECT t.id FROM maintenance_tasks t
+       LEFT JOIN LATERAL (
+         SELECT e.executed_at FROM task_executions e
+         WHERE e.task_id = t.id AND e.asset_id = t.asset_id
+         ORDER BY e.executed_at DESC NULLS LAST, e.id DESC LIMIT 1
+       ) latest ON TRUE
+       WHERE t.id = $1 AND t.asset_id = $2 AND t.deleted_at IS NULL
+         AND ${reportTaskLinkTimeSQL} >= $3::timestamptz`,
+      [taskId, report.asset_id, report.reported_at]
+    );
+    if (!eligible.length) reject(409, "Task must be scheduled or completed at or after the report time. Refresh the task list.");
     const { rows: linked } = await client.query(
       'SELECT id FROM maintenance_reports WHERE maintenance_task_id = $1 LIMIT 1', [taskId]
     );
@@ -26653,7 +26751,7 @@ app.patch("/maintenance-reports/:id/link-existing-task", async (req, res) => {
     const { rows: saved } = await client.query(`
       UPDATE maintenance_reports
       SET status = 'CONVERTED', resolution_type = 'EXISTING_TASK',
-          maintenance_task_id = $2, breakdown_id = NULL,
+          maintenance_task_id = $2, breakdown_id = NULL, scheduled_maintenance_id = NULL,
           maintenance_comment = $3, reviewed_by = $4,
           reviewed_at = NOW(), updated_at = NOW()
       WHERE id = $1 RETURNING *

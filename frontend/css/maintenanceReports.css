@@ -5479,3 +5479,17 @@ textarea {
   outline: 2px solid #92bfff;
   outline-offset: 3px;
 }
+
+/* Existing work selector: Task / BD / SM. */
+.report-existing-task-dialog .ret-kind {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid #496783;
+  border-radius: 7px;
+  background: #142131;
+  color: #d9e7f7;
+  font: inherit;
+}

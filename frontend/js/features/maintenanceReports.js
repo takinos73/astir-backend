@@ -3088,8 +3088,7 @@ function renderProductionReports(reports) {
     ) {
 
       if (
-        report.resolution_type ===
-        "BREAKDOWN"
+        ["BREAKDOWN", "EXISTING_BREAKDOWN"].includes(report.resolution_type)
       ) {
 
         responseText.textContent =
@@ -3098,6 +3097,10 @@ function renderProductionReports(reports) {
                 report.breakdown_id
               ).padStart(5, "0")}`
             : "Converted to Breakdown";
+
+      } else if (report.resolution_type === "EXISTING_SM") {
+        responseText.textContent = "Linked to Scheduled Maintenance SM-" + String(report.scheduled_maintenance_id).padStart(5, "0");
+
 
       } else if (
         ["PLANNED_TASK", "EXISTING_TASK"].includes(report.resolution_type)
@@ -4758,7 +4761,7 @@ function setupMaintenanceExistingTaskAction(report) {
     button.id = "linkMaintenanceExistingTaskBtn";
     button.type = "button";
     button.className = "btn-table report-link-existing-btn";
-    button.textContent = "Link Existing Task";
+    button.textContent = "Link Existing Work";
     document.getElementById("closeMaintenanceReportNoActionBtn").before(button);
   }
   button.hidden = report.status !== "UNDER_REVIEW" || !hasRole("technician", "planner", "admin");
@@ -4766,81 +4769,97 @@ function setupMaintenanceExistingTaskAction(report) {
 }
 
 function openMaintenanceExistingTaskPicker(report) {
-  if (report.status !== "UNDER_REVIEW" || !hasRole("technician", "planner", "admin")) return;
-  const previous = document.querySelector(".report-existing-task-dialog");
+  if (report.status !== 'UNDER_REVIEW' || !hasRole('technician', 'planner', 'admin')) return;
+  const previous = document.querySelector('.report-existing-task-dialog');
   if (previous) { previous.focus(); return; }
   const technicianId = Number(localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY));
-  if (!Number.isSafeInteger(technicianId) || technicianId <= 0) return alert("Maintenance user is missing.");
-  const dialog = document.createElement("dialog");
-  dialog.className = "report-existing-task-dialog";
-  dialog.setAttribute("aria-labelledby", "reportExistingTaskTitle");
-  dialog.innerHTML = `<h3 id="reportExistingTaskTitle">Link Existing Task</h3>
+  if (!Number.isSafeInteger(technicianId) || technicianId <= 0) return alert('Maintenance user is missing.');
+  const dialog = document.createElement('dialog');
+  dialog.className = 'report-existing-task-dialog';
+  dialog.setAttribute('aria-labelledby', 'reportExistingTaskTitle');
+  dialog.innerHTML = `<h3 id="reportExistingTaskTitle">Link Existing Work</h3>
     <p class="ret-context"></p>
-    <form class="ret-search"><label for="reportExistingTaskSearch">Search title, Task ID or location</label><div><input id="reportExistingTaskSearch" maxlength="100" type="search"><button type="submit">Search</button></div></form>
+    <label for="reportExistingKind">Link to</label>
+    <select id="reportExistingKind" class="ret-kind"><option value="TASK">Task</option><option value="BD">Breakdown (BD)</option><option value="SM">Scheduled Maintenance (SM)</option></select>
+    <form class="ret-search"><label for="reportExistingTaskSearch">Search title, ID or task location</label><div><input id="reportExistingTaskSearch" maxlength="100" type="search"><button type="submit">Search</button></div></form>
     <p class="ret-status" role="status"></p><div class="ret-list"></div>
-    <p class="ret-hint">Select a task from this Asset. Planned and completed tasks are available. This links the task record without changing it or its executions.</p>
+    <p class="ret-hint"></p>
     <div class="ret-actions"><button type="button" class="ret-cancel">Cancel</button><button type="button" class="ret-save" disabled>Confirm link</button></div>`;
   document.body.appendChild(dialog);
-  dialog.querySelector(".ret-context").textContent = [report.report_code || "MR-" + String(report.id).padStart(5, "0"), report.asset_model || report.asset_name, report.asset_serial].filter(Boolean).join(" · ");
-  const status = dialog.querySelector(".ret-status"), list = dialog.querySelector(".ret-list");
-  const save = dialog.querySelector(".ret-save"), cancel = dialog.querySelector(".ret-cancel");
-  const search = dialog.querySelector("input");
+  dialog.querySelector('.ret-context').textContent = [report.report_code || 'MR-' + String(report.id).padStart(5, '0'), report.asset_model || report.asset_name, report.asset_serial].filter(Boolean).join(' · ');
+  const status = dialog.querySelector('.ret-status'), list = dialog.querySelector('.ret-list'), hint = dialog.querySelector('.ret-hint');
+  const save = dialog.querySelector('.ret-save'), cancel = dialog.querySelector('.ret-cancel');
+  const search = dialog.querySelector('input'), kindSelect = dialog.querySelector('.ret-kind');
   let selected = null, saving = false, version = 0;
   const date = formatReportTaskLinkDate;
-  dialog.addEventListener("cancel", event => { if (saving) event.preventDefault(); });
-  dialog.addEventListener("close", () => { version++; dialog.remove(); }, { once: true });
+  dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+  dialog.addEventListener('close', () => { version++; dialog.remove(); }, { once: true });
   cancel.onclick = () => { if (!saving) dialog.close(); };
   async function load() {
     if (saving) return;
-    const request = ++version;
-    selected = null; save.disabled = true; list.replaceChildren(); status.textContent = "Loading tasks…";
+    const request = ++version, kind = kindSelect.value;
+    selected = null; save.disabled = true; list.replaceChildren(); status.textContent = 'Loading…'; hint.textContent = '';
     try {
       const query = new URLSearchParams({ technician_id: technicianId, search: search.value.trim() });
-      const response = await fetch(`${API}/maintenance-reports/${report.id}/linkable-tasks?${query}`, { cache: "no-store" });
+      if (kind !== 'TASK') query.set('kind', kind);
+      const endpoint = kind === 'TASK' ? 'linkable-tasks' : 'linkable-incidents';
+      const response = await fetch(`${API}/maintenance-reports/${report.id}/${endpoint}?${query}`, { cache: 'no-store' });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not load tasks");
+      if (!response.ok) throw new Error(data.error || 'Could not load work');
       if (request !== version || !dialog.isConnected) return;
-      if (!Array.isArray(data.tasks)) throw new Error("Invalid task list");
-      status.textContent = data.has_more ? "Showing 50 tasks. Search to narrow the list." : data.tasks.length ? "Select the matching task." : "No available tasks match. Tasks already linked to a report are excluded.";
-      for (const task of data.tasks) {
-        const label = document.createElement("label"); label.className = "ret-task";
-        const radio = document.createElement("input"); radio.type = "radio"; radio.name = "existingTask"; radio.value = task.id;
-        const content = document.createElement("span"), title = document.createElement("strong"), meta = document.createElement("small");
-        title.textContent = `#${task.id} · ${task.task}`;
-        meta.textContent = [task.status, task.section, task.unit, task.executed_at ? "Last completed: " + date(task.executed_at) : "Due: " + date(task.due_date), task.executed_by,
-          task.breakdown_id ? "BD-" + String(task.breakdown_id).padStart(5, "0") : null,
-          task.scheduled_maintenance_id ? "SM-" + String(task.scheduled_maintenance_id).padStart(5, "0") : null].filter(Boolean).join(" · ");
+      const items = kind === 'TASK' ? data.tasks : data.incidents;
+      if (!Array.isArray(items)) throw new Error('Invalid results');
+      hint.textContent = 'This Asset only · From ' + date(data.reported_at) + '. ' +
+        (kind === 'TASK' ? 'Completed: execution time. Pending: planned start or Due Date.' : kind === 'BD' ? 'Based on breakdown start time.' : 'Based on actual start, otherwise scheduled start.') +
+        ' Linking leaves work, times and history unchanged.';
+      status.textContent = data.has_more ? 'Showing 50 results. Search to narrow the list.' : items.length ? 'Select the matching record.' : 'No matching records from this Asset at or after the report time. Already linked records are excluded.';
+      for (const item of items) {
+        const label = document.createElement('label'); label.className = 'ret-task';
+        const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'existingTask'; radio.value = item.id;
+        const content = document.createElement('span'), title = document.createElement('strong'), meta = document.createElement('small');
+        const reference = kind === 'TASK' ? `Task #${item.id}` : `${kind}-${String(item.id).padStart(5, '0')}`;
+        title.textContent = reference + ' · ' + (kind === 'TASK' ? item.task : item.title);
+        meta.textContent = kind === 'TASK'
+          ? [item.status, item.section, item.unit, item.status === 'Done' ? 'Completed: ' + date(item.executed_at) : 'Planned: ' + date(item.planned_start_at || item.due_date),
+            item.breakdown_id ? 'BD-' + String(item.breakdown_id).padStart(5, '0') : null,
+            item.scheduled_maintenance_id ? 'SM-' + String(item.scheduled_maintenance_id).padStart(5, '0') : null].filter(Boolean).join(' · ')
+          : [item.status, 'Start: ' + date(item.link_time)].join(' · ');
         content.append(title, meta); label.append(radio, content); list.appendChild(label);
-        radio.onchange = () => { selected = task; save.disabled = false; };
+        radio.onchange = () => { selected = { kind, item, reference }; save.disabled = false; };
       }
     } catch (error) { if (request === version && dialog.isConnected) status.textContent = error.message; }
   }
-  dialog.querySelector("form").onsubmit = event => { event.preventDefault(); void load(); };
+  kindSelect.onchange = () => { search.value = ''; void load(); };
+  dialog.querySelector('form').onsubmit = event => { event.preventDefault(); void load(); };
   save.onclick = async () => {
     if (!selected || saving) return;
-    if (!confirm(`Link ${report.report_code || "this report"} to Task #${selected.id}: ${selected.task}?\nThe report will become CONVERTED. The task and its executions stay unchanged.`)) return;
+    if (!confirm(`Link ${report.report_code || 'this report'} to ${selected.reference}?\nThe report will become CONVERTED. Existing work and history stay unchanged.`)) return;
     saving = true; version++;
-    const controls = [...dialog.querySelectorAll("button,input")]; controls.forEach(control => control.disabled = true);
-    status.textContent = "Linking task…";
+    const controls = [...dialog.querySelectorAll('button,input,select')]; controls.forEach(control => control.disabled = true);
+    status.textContent = 'Linking…';
     let linked = false;
     try {
-      const response = await fetch(`${API}/maintenance-reports/${report.id}/link-existing-task`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ technician_id: technicianId, task_id: Number(selected.id), maintenance_comment: document.getElementById("maintenanceReportReviewComment")?.value || "" })
+      const task = selected.kind === 'TASK';
+      const body = { technician_id: technicianId, maintenance_comment: document.getElementById('maintenanceReportReviewComment')?.value || '' };
+      if (task) body.task_id = Number(selected.item.id);
+      else { body.kind = selected.kind; body.incident_id = Number(selected.item.id); }
+      const response = await fetch(`${API}/maintenance-reports/${report.id}/${task ? 'link-existing-task' : 'link-existing-incident'}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not link task");
+      if (!response.ok) throw new Error(data.error || 'Could not link record');
       linked = true; dialog.close(); closeMaintenanceReportReview();
       await loadMaintenanceReportsQueue();
-      if (typeof loadMaintenanceReportsBadge === "function") await loadMaintenanceReportsBadge();
-      alert(`Report linked to Task #${selected.id}.`);
+      if (typeof loadMaintenanceReportsBadge === 'function') await loadMaintenanceReportsBadge();
+      alert('Report linked to ' + selected.reference + '.');
     } catch (error) {
-      if (linked) alert("Task linked successfully. Refresh Production Reports to see the updated list.");
+      if (linked) alert('Linked successfully. Refresh Production Reports to see the updated list.');
       else { status.textContent = error.message; controls.forEach(control => control.disabled = false); }
     } finally { saving = false; }
   };
   dialog.showModal(); void load();
 }
+
 
 async function openLinkedMaintenanceReportTask(reportId) {
   const technicianId = Number(localStorage.getItem(TECHNICIAN_ID_STORAGE_KEY));
@@ -7087,8 +7106,7 @@ function printProductionReports() {
         ) {
 
           if (
-            report.resolution_type ===
-            "BREAKDOWN"
+            ["BREAKDOWN", "EXISTING_BREAKDOWN"].includes(report.resolution_type)
           ) {
 
             maintenanceResponse =
@@ -7100,6 +7118,10 @@ function printProductionReports() {
                     "0"
                   )}`
                 : "Converted to Breakdown";
+
+          } else if (report.resolution_type === "EXISTING_SM") {
+            maintenanceResponse = "Linked to Scheduled Maintenance SM-" + String(report.scheduled_maintenance_id).padStart(5, "0");
+
 
           } else if (
             ["PLANNED_TASK", "EXISTING_TASK"].includes(report.resolution_type)
@@ -8776,9 +8798,14 @@ function clearMaintenanceReportChildSession() {
 }
 
 async function openMaintenanceReportBreakdown(breakdownId, button) {
+  return openMaintenanceReportIncident("BD", breakdownId, button);
+}
+
+async function openMaintenanceReportIncident(kind, incidentId, button) {
+  if (!["BD", "SM"].includes(kind)) return;
   if (maintenanceReportChildSession) return;
   const parent = document.getElementById("maintenanceReportDetailOverlay");
-  const child = document.getElementById("breakdownDetailOverlay");
+  const child = document.getElementById(kind === "BD" ? "breakdownDetailOverlay" : "scheduledMaintenanceDetailOverlay");
   if (!parent || !child || !button) return;
   const session = { parent, button, previousZIndex: parent.style.zIndex };
   session.observer = new MutationObserver(() => {
@@ -8794,7 +8821,7 @@ async function openMaintenanceReportBreakdown(breakdownId, button) {
   parent.style.zIndex = String((Number.isFinite(childZIndex) ? childZIndex : 1190) - 1);
   button.disabled = true;
   try {
-    await openBreakdownDetail(breakdownId);
+    await (kind === "BD" ? openBreakdownDetail : openScheduledMaintenanceDetail)(incidentId);
     if (maintenanceReportChildSession !== session) return;
     if (getComputedStyle(child).display === "none") {
       clearMaintenanceReportChildSession();
@@ -9249,14 +9276,13 @@ function renderMaintenanceReportDetail(
 
 
   if (
-    report.resolution_type ===
-    "BREAKDOWN" &&
+    ["BREAKDOWN", "EXISTING_BREAKDOWN"].includes(report.resolution_type) &&
     report.breakdown_id
   ) {
 
     resolutionHtml = `
       <div>
-        Converted to Breakdown
+        ${report.resolution_type === "EXISTING_BREAKDOWN" ? "Linked to existing Breakdown" : "Converted to Breakdown"}
       </div>
 
       <button
@@ -9277,6 +9303,15 @@ function renderMaintenanceReportDetail(
       </button>
     `;
 
+  }
+
+  else if (report.resolution_type === "EXISTING_SM" && report.scheduled_maintenance_id) {
+    resolutionHtml = `<div>Linked to existing Scheduled Maintenance</div>
+      <button type="button" class="maintenance-report-resolution-task"
+        title="Open Scheduled Maintenance details"
+        onclick="event.stopPropagation(); openMaintenanceReportIncident('SM', ${Number(report.scheduled_maintenance_id)}, this)">
+        SM-${String(report.scheduled_maintenance_id).padStart(5, "0")}
+      </button>`;
   }
 
   else if (
