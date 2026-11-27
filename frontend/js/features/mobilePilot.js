@@ -19,13 +19,13 @@
   function readWorkTimes(){const start=workInstant(el('pilotWorkStart').value,selected?.work_started_at),end=workInstant(el('pilotWorkEnd').value,workEndReference);if(end<start)throw Error('Work End must be at or after Work Start.');if(end>Date.now())throw Error('Work End cannot be in the future.');return{start,end,minutes:Math.round((end-start)/60000)};}
   function showServiceTime(){try{const t=readWorkTimes();el('pilotServiceTime').textContent=t.minutes+' min';}catch(error){el('pilotServiceTime').textContent=error.message;}}
   function saveWorkTimes(){if(selected?.work_id)sessionStorage.setItem('astirMobilePilotTimes:'+selected.work_id,JSON.stringify({start:el('pilotWorkStart').value,end:el('pilotWorkEnd').value}));showServiceTime();}
-  function show(id){for(const name of ['pilotLogin','pilotHome','pilotCreate','pilotDetail','pilotTaskQueue','pilotExistingDetail'])el(name).hidden=name!==id;window.scrollTo(0,0);}
+  function show(id){for(const name of ['pilotLogin','pilotHome','pilotCreate','pilotDetail','pilotTaskQueue','pilotExistingDetail','pilotActivation','pilotAccess'])el(name).hidden=name!==id;window.scrollTo(0,0);}
   async function api(path,options={}){
     const headers={'X-Mobile-Pilot-Token':token,...options.headers};
     if(options.body&&!(options.body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch(path,{...options,headers,cache:'no-store'});
     const data=await response.json().catch(()=>({error:'Unexpected server response.'}));
-    if(!response.ok){const error=new Error(data.error||'Request failed.');error.status=response.status;error.field=data.field;if(response.status===401){token='';sessionStorage.removeItem('astirMobilePilotToken');show('pilotLogin');el('pilotLogout').hidden=true;}throw error;}
+    if(!response.ok){const error=new Error(data.error||'Request failed.');error.status=response.status;error.field=data.field;if(response.status===401){clearMobileAccessUI();token='';sessionStorage.removeItem('astirMobilePilotToken');show('pilotLogin');el('pilotLogout').hidden=true;}throw error;}
     return data;
   }
   function button(text,handler){
@@ -76,9 +76,12 @@
   function renderItems(){
     const list=el('pilotItems');list.replaceChildren();if(!items.length){list.textContent='No pilot incidents yet.';return;}for(const item of items){const card=document.createElement('article');card.className='item';const badge=document.createElement('span');badge.className='badge '+(item.kind==='BD'?'bd':item.kind==='TASK'?'task':'sm');badge.textContent=code(item);const h=document.createElement('h3');h.textContent=item.title||'Incident unavailable';const meta=document.createElement('small');meta.textContent=[item.model,item.line,'Work: '+(item.work_completed_at||item.task_status==='Done'?'Done':item.work_id?'In progress':'Not started'),item.kind==='TASK'?null:item.kind+': '+item.incident_status].filter(Boolean).join(' · ');card.append(badge,h,meta,button(item.work_id?'Continue / View':'View / Start work',()=>openItem(item.id)));list.appendChild(card);}}
   async function bootstrap(){
-    const data=await api('/mobile-pilot-api/bootstrap');assets=data.assets;structure=data.structure||[];el('pilotUser').textContent=data.user.name+' · Admin pilot';el('pilotLogout').hidden=false;await refresh();renderAssets();show('pilotHome');api('/mobile-pilot-api/existing-tasks?bucket=today').then(data=>existingCounts(data.counts)).catch(()=>{});}
+    const data=await api('/mobile-pilot-api/bootstrap');assets=data.assets;structure=data.structure||[];el('pilotUser').textContent=data.user.name+' · '+data.user.role;el('pilotManageAccess').hidden=!data.user.can_manage_access;
+    const previousUser=sessionStorage.getItem('astirMobilePilotIdentity');
+    if(previousUser!==String(data.user.id)){clearMobileAccessUI();for(const key of Object.keys(sessionStorage))if(key.startsWith('astirMobilePilot')&&key!=='astirMobilePilotToken')sessionStorage.removeItem(key);draftRequest=null;selected=null;clearFiles();clearExistingUI();}
+    sessionStorage.setItem('astirMobilePilotIdentity',String(data.user.id));el('pilotLogout').hidden=false;await refresh();renderAssets();show('pilotHome');api('/mobile-pilot-api/existing-tasks?bucket=today').then(data=>existingCounts(data.counts)).catch(()=>{});}
   el('pilotLoginForm').onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;const submit=event.submitter;submit.disabled=true;status('Signing in…');try{const data=await api('/mobile-pilot-api/login',{method:'POST',body:JSON.stringify({access_key:el('pilotKey').value,remember:el('pilotRemember').checked})});token=data.token||'';if(token)sessionStorage.setItem('astirMobilePilotToken',token);else sessionStorage.removeItem('astirMobilePilotToken');el('pilotKey').value='';await bootstrap();status('');}catch(error){status(error.message);}finally{busy=false;submit.disabled=false;}};
-  el('pilotLogout').onclick=async()=>{if(busy)return;try{await api('/mobile-pilot-api/logout',{method:'POST'});}catch(error){status(error.message);return;}token='';sessionStorage.removeItem('astirMobilePilotToken');for(const k of Object.keys(sessionStorage))if(k.startsWith('astirMobilePilot'))sessionStorage.removeItem(k);items=[];assets=[];selected=null;draftRequest=null;clearFiles();el('pilotNotes').value='';el('pilotCreateForm').reset();el('pilotItems').replaceChildren();el('pilotDetailHeading').replaceChildren();el('pilotDetailFacts').replaceChildren();el('pilotSavedPhotos').replaceChildren();el('pilotLogout').hidden=true;el('pilotUser').textContent='Admin mobile pilot';clearExistingUI();status('Signed out.');show('pilotLogin');};
+  el('pilotLogout').onclick=async()=>{if(busy)return;clearMobileAccessUI();try{await api('/mobile-pilot-api/logout',{method:'POST'});}catch(error){status(error.message);return;}token='';sessionStorage.removeItem('astirMobilePilotToken');for(const k of Object.keys(sessionStorage))if(k.startsWith('astirMobilePilot'))sessionStorage.removeItem(k);items=[];assets=[];selected=null;draftRequest=null;clearFiles();el('pilotNotes').value='';el('pilotCreateForm').reset();el('pilotItems').replaceChildren();el('pilotDetailHeading').replaceChildren();el('pilotDetailFacts').replaceChildren();el('pilotSavedPhotos').replaceChildren();el('pilotLogout').hidden=true;el('pilotUser').textContent='Mobile pilot';el('pilotManageAccess').hidden=true;clearExistingUI();status('Signed out.');show('pilotLogin');};
   el('pilotNew').onclick=()=>{if(busy)return;status('');if(!draftRequest){el('pilotCreateForm').reset();el('pilotAt').value=localNow();el('pilotAssetSearch').value='';el('pilotDraftFields').disabled=false;renderAssets();populateStructure();restoreFormDraft();}else{el('pilotAssetSearch').value='';renderAssets();el('pilotAsset').value=draftRequest.asset_id;populateStructure(draftRequest.section,draftRequest.unit);el('pilotTitle').value=draftRequest.title;el('pilotDescription').value=draftRequest.description;const d=new Date(draftRequest.incident_at);el('pilotAt').value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);document.querySelector('[name="pilotKind"][value="'+draftRequest.kind+'"]').checked=true;el('pilotDraftFields').disabled=true;status('Retrying the previously submitted draft safely.');}updateKind();show('pilotCreate');};
   el('pilotCreateForm').addEventListener('input',saveFormDraft);el('pilotCreateForm').addEventListener('change',saveFormDraft);
   el('pilotAssetSearch').oninput=renderAssets;
@@ -234,5 +237,59 @@
   }
   el('pilotExistingUpload').onclick=()=>existingAction(async()=>{const id=existingTask?.id,files=Array.from(el('pilotExistingFiles').files||[]);if(!id||!files.length)throw Error('Choose a photo first.');if(files.length>5||files.reduce((n,file)=>n+file.size,0)>8*1024*1024||files.some(file=>!['image/jpeg','image/png','image/webp'].includes(file.type)))throw Error('Up to 5 photos, 8 MB total. JPG, PNG or WebP.');const body=new FormData();for(const file of files)body.append('files',file);await api('/mobile-pilot-api/existing-tasks/'+id+'/photos',{method:'POST',body});el('pilotExistingFiles').value='';await existingAttachments(id);});
 
-  bootstrap().catch(error=>{status(error.message);show('pilotLogin');});
+  // Keep activation credentials out of URL requests, history and persistent browser storage.
+  function clearMobileAccessUI(){
+    el('pilotInviteLink').value='';el('pilotInviteResult').hidden=true;
+    el('pilotInviteExpiry').textContent='';el('pilotDevices').replaceChildren();
+  }
+  const activationParams=new URLSearchParams(location.hash.slice(1));
+  let activationToken=activationParams.get('activate')||'';
+  if(activationToken){history.replaceState(null,'',location.pathname+location.search);show('pilotActivation');}
+  el('pilotActivationForm').onsubmit=async event=>{
+    event.preventDefault();if(busy||!activationToken)return;busy=true;
+    const submit=event.submitter;submit.disabled=true;status('Activating…');
+    try{
+      await api('/mobile-pilot-api/activate',{method:'POST',body:JSON.stringify({activation_token:activationToken,device_name:el('pilotDeviceName').value.trim()||'Mobile browser'})});
+      activationToken='';token='';
+      for(const key of Object.keys(sessionStorage))if(key.startsWith('astirMobilePilot'))sessionStorage.removeItem(key);
+      draftRequest=null;selected=null;items=[];clearFiles();await bootstrap();status('This device is activated for 30 days.');
+    }catch(error){status(activationToken?error.message:'Device activated. Refresh the page to continue.');show(activationToken?'pilotActivation':'pilotLogin');}finally{busy=false;submit.disabled=false;}
+  };
+  el('pilotActivationCancel').onclick=()=>{activationToken='';bootstrap().catch(error=>{status(error.message);show('pilotLogin');});};
+  async function refreshMobileAccess(){
+    const data=await api('/mobile-pilot-api/access');
+    const selectedUser=el('pilotInviteUser').value;
+    el('pilotInviteUser').replaceChildren(new Option('Select user…',''));
+    for(const user of data.users.filter(user=>user.enabled))el('pilotInviteUser').add(new Option(user.name+' · '+user.role,user.id));
+    el('pilotInviteUser').value=selectedUser;
+    const list=el('pilotDevices');list.replaceChildren();
+    if(!data.devices.length)list.textContent='No active devices.';
+    for(const device of data.devices){
+      const card=document.createElement('article');card.className='item';
+      const heading=document.createElement('h3');heading.textContent=device.name;
+      const meta=document.createElement('p');meta.textContent=device.device_name+' · Expires '+date(device.expires_at);
+      const revoke=button('Revoke device',async()=>{
+        if(!confirm('Revoke '+device.device_name+' for '+device.name+'?'))return;
+        revoke.disabled=true;
+        try{await api('/mobile-pilot-api/access/devices/'+encodeURIComponent(device.device_id),{method:'DELETE'});await refreshMobileAccess();status('Device access revoked.');}
+        catch(error){status(error.message);}finally{revoke.disabled=false;}
+      });card.append(heading,meta,revoke);list.appendChild(card);
+    }
+  }
+  el('pilotManageAccess').onclick=async()=>{if(busy)return;show('pilotAccess');try{await refreshMobileAccess();status('');}catch(error){status(error.message);}};
+  el('pilotAccessBack').onclick=()=>{el('pilotInviteLink').value='';el('pilotInviteResult').hidden=true;show('pilotHome');status('');};
+  el('pilotDevicesRefresh').onclick=()=>refreshMobileAccess().catch(error=>status(error.message));
+  el('pilotInviteForm').onsubmit=async event=>{
+    event.preventDefault();if(busy)return;busy=true;event.submitter.disabled=true;
+    el('pilotInviteResult').hidden=true;el('pilotInviteLink').value='';
+    try{
+      const data=await api('/mobile-pilot-api/access/invitations',{method:'POST',body:JSON.stringify({technician_id:Number(el('pilotInviteUser').value)})});
+      el('pilotInviteLink').value=location.origin+'/mobile-pilot.html#activate='+encodeURIComponent(data.activation_token);
+      el('pilotInviteExpiry').textContent='For '+el('pilotInviteUser').selectedOptions[0].textContent+' · Expires '+date(data.expires_at);
+      el('pilotInviteResult').hidden=false;status('Personal link created. It can be used once.');
+    }catch(error){status(error.message);}finally{busy=false;event.submitter.disabled=false;}
+  };
+  el('pilotInviteCopy').onclick=async()=>{try{await navigator.clipboard.writeText(el('pilotInviteLink').value);status('Link copied.');}catch{el('pilotInviteLink').focus();el('pilotInviteLink').select();status('Select and copy the link.');}};
+  if(!activationToken)bootstrap().catch(error=>{status(error.message);show('pilotLogin');});
+
 })();

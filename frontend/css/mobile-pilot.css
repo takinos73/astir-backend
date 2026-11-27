@@ -22,3 +22,10 @@
 
 /* Existing CMMS Today / Overdue queue. */
 .existing-work-entry{margin:12px 0 20px;padding:16px;background:linear-gradient(115deg,#1d3048,#17202b);border:1px solid #38516e;border-radius:10px}.existing-work-entry h2{margin-top:0}#pilotQueueOpen_overdue{border-color:#90515e;color:#f1b1bb}#pilotQueueOpen_today{border-color:#4f85b9;color:#b8d8ff}#pilotQueueItems .item small,#pilotExistingFacts strong{overflow-wrap:anywhere;white-space:pre-wrap}#pilotExistingControls{margin-top:18px}#pilotExistingServiceTime{display:block;color:#8abcf3}
+
+/* Personal mobile access management uses the existing pilot visual language. */
+#pilotManageAccess { width:100%; margin-bottom:16px; border-color:#486c93; background:#1b2b40; color:#c2ddff; }
+#pilotInviteResult { margin:18px 0; padding:14px; background:#1b2b40; border:1px solid #486c93; border-radius:10px; }
+#pilotInviteLink { font-size:12px; }
+#pilotAccess .item button { border-color:#79505a; background:#33242b; color:#f2b4bd; }
+#pilotActivation .primary { width:100%; margin:12px 0; }

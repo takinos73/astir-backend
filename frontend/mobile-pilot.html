@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=direct-complete-1"><script src="/js/features/mobilePilot.js?v=direct-complete-1" defer></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="same-origin"><meta name="color-scheme" content="dark"><title>ASTIR CMMS · Mobile pilot</title><link rel="stylesheet" href="/css/mobile-pilot.css?v=personal-access-1"><script src="/js/features/mobilePilot.js?v=personal-access-1" defer></script></head>
 <body><main>
-<header><div><strong>ASTIR <span>CMMS</span></strong><small id="pilotUser">Admin mobile pilot</small></div><button id="pilotLogout" hidden>Sign out</button></header>
+<header><div><strong>ASTIR <span>CMMS</span></strong><small id="pilotUser">Mobile pilot</small></div><button id="pilotLogout" hidden>Sign out</button></header>
 <p id="pilotStatus" role="status" aria-live="polite"></p>
-<section id="pilotLogin"><h1>Mobile pilot</h1><p>Private access · Admin ID 8</p><form id="pilotLoginForm"><label for="pilotKey">Pilot access key</label><input id="pilotKey" type="password" autocomplete="off" required><label class="remember"><input id="pilotRemember" type="checkbox"> Keep me signed in for 30 days on this device</label><button class="primary" type="submit">Sign in</button></form><p class="hint">Use your separate pilot key. The normal CMMS password is not required here.</p><a href="/index_v2.html">Back to CMMS</a></section>
-<section id="pilotHome" hidden><h1>What are you working on?</h1><div class="existing-work-entry"><h2>CMMS work</h2><div class="row"><button id="pilotQueueOpen_today">Today <span id="pilotQueueCount_today">—</span></button><button id="pilotQueueOpen_overdue">Overdue <span id="pilotQueueCount_overdue">—</span></button><button id="pilotQueueOpen_in_progress">In Progress <span id="pilotQueueCount_in_progress">—</span></button></div></div><button class="primary wide" id="pilotNew">＋ New work</button><div class="section-title"><h2>My pilot work</h2><button id="pilotRefresh">Refresh</button></div><p class="hint">Work created here also appears in the full CMMS.</p><div id="pilotItems"></div></section>
+<section id="pilotLogin"><h1>Mobile pilot</h1><p>Personal mobile access</p><p class="hint">Technician / Planner: open your personal activation link. The key below is for the pilot administrator only.</p><form id="pilotLoginForm"><label for="pilotKey">Administrator access key</label><input id="pilotKey" type="password" autocomplete="off" required><label class="remember"><input id="pilotRemember" type="checkbox" checked> Keep me signed in for 30 days on this device</label><button class="primary" type="submit">Sign in</button></form><p class="hint">Use your separate pilot key. The normal CMMS password is not required here.</p><a href="/index_v2.html">Back to CMMS</a></section>
+<section id="pilotActivation" hidden>
+ <h1>Activate this device</h1>
+ <p>Your administrator has provided a personal, single-use activation link.</p>
+ <form id="pilotActivationForm">
+  <label for="pilotDeviceName">Device name</label><input id="pilotDeviceName" maxlength="80" placeholder="e.g. My phone" autocomplete="off">
+  <p class="hint">Keep me signed in for 30 days on this personal device.</p>
+  <button type="submit" class="primary">Activate this device</button>
+ </form>
+ <button id="pilotActivationCancel" type="button">Cancel</button>
+</section>
+<section id="pilotAccess" hidden>
+ <button id="pilotAccessBack" class="back">← My work</button>
+ <h1>Mobile access</h1><p class="hint">Selected pilot users only. Activation links expire in 15 minutes and work once.</p>
+ <form id="pilotInviteForm"><label for="pilotInviteUser">User</label><select id="pilotInviteUser" required></select><button type="submit" class="primary">Create activation link</button></form>
+ <div id="pilotInviteResult" hidden><label for="pilotInviteLink">Personal activation link</label><input id="pilotInviteLink" readonly><p id="pilotInviteExpiry" class="hint"></p><button type="button" id="pilotInviteCopy">Copy link</button><p class="hint">Give this link privately to the named user. Open it on their own phone.</p></div>
+ <h2>Signed-in devices</h2><button id="pilotDevicesRefresh">Refresh devices</button><div id="pilotDevices"></div>
+</section>
+
+<section id="pilotHome" hidden><h1>What are you working on?</h1><button id="pilotManageAccess" hidden>Mobile access · Users &amp; devices</button><div class="existing-work-entry"><h2>CMMS work</h2><div class="row"><button id="pilotQueueOpen_today">Today <span id="pilotQueueCount_today">—</span></button><button id="pilotQueueOpen_overdue">Overdue <span id="pilotQueueCount_overdue">—</span></button><button id="pilotQueueOpen_in_progress">In Progress <span id="pilotQueueCount_in_progress">—</span></button></div></div><button class="primary wide" id="pilotNew">＋ New work</button><div class="section-title"><h2>My pilot work</h2><button id="pilotRefresh">Refresh</button></div><p class="hint">Work created here also appears in the full CMMS.</p><div id="pilotItems"></div></section>
 <section id="pilotCreate" hidden><button class="back" id="pilotCreateBack">← My work</button><h1>New work</h1><form id="pilotCreateForm"><fieldset id="pilotDraftFields">
 <label for="pilotAssetSearch">Find asset</label><input id="pilotAssetSearch" type="search" placeholder="Model, serial or line"><label for="pilotAsset">Asset *</label><select id="pilotAsset" required></select>
 <div class="type-choice"><label><input type="radio" name="pilotKind" value="BD" checked> 🔧 Breakdown</label><label><input type="radio" name="pilotKind" value="SM"> 📅 Scheduled maintenance</label><label><input type="radio" name="pilotKind" value="TASK"> 🔵 Planned task</label></div>
