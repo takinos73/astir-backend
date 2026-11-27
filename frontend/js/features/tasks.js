@@ -2431,7 +2431,7 @@ function buildRow(task) {
       + Preventive attachment badge
     ===================== -->
 
-    <div>
+    <div class="task-row-title-clamp">
 
       ${highlight(
         task.task || "",
@@ -2568,6 +2568,8 @@ function buildRow(task) {
      RETURN COMPLETED ROW
   ===================== */
 
+  const taskTitle = tr.querySelector(".task-row-title-clamp");
+  if (taskTitle) taskTitle.title = task.task || "";
   return tr;
 
 }
@@ -2783,6 +2785,14 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     " · " + taskCount + (taskCount === 1 ? " εργασία" : " εργασίες");
   toggle.setAttribute("aria-expanded", "false");
   const taskCell = row.insertCell();
+  const heading = document.createElement("div");
+  heading.className = "task-pack-row-heading";
+  toggle.classList.add("task-pack-row-toggle");
+  toggle.title = toggle.textContent;
+  const title = document.createElement("span");
+  title.className = "task-row-title-clamp";
+  title.textContent = toggle.textContent;
+  toggle.replaceChildren(title);
   if (first.preventive_package_id) {
     const code = "PP" + String(first.preventive_package_id).padStart(4, "0");
     const badge = document.createElement("button");
@@ -2791,9 +2801,11 @@ function appendPreventivePackTaskRows(tbody, tasks) {
     badge.textContent = code;
     badge.title = "Άνοιγμα Preventive Pack";
     badge.addEventListener("click", () => openPreventivePackDetail(first.preventive_package_visit_id, code));
-    taskCell.append(badge, " ");
+    heading.appendChild(badge);
   }
-  taskCell.appendChild(ready ? document.createTextNode(toggle.textContent) : toggle);
+  if (ready) title.title = title.textContent;
+  heading.appendChild(ready ? title : toggle);
+  taskCell.appendChild(heading);
   if (first.preventive_package_task_count != null && first.preventive_package_done_count != null) {
     const progress = document.createElement("small");
     progress.className = "preventive-visit-progress";

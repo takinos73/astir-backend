@@ -1283,3 +1283,48 @@ dialog.preventive-pack-detail {
 
 /* Closed PP Undo preview: explicit administrative operation. */
 .preventive-pack-detail .pp-closed-undo-panel{margin-top:20px;padding:18px;border:1px solid #916647;border-radius:10px;background:#252326}.preventive-pack-detail .pp-closed-undo-panel h4{margin:0 0 12px;color:#efc891}.preventive-pack-detail .pp-closed-undo-panel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.preventive-pack-detail .pp-closed-undo-panel label{display:block;margin-top:12px}.preventive-pack-detail .pp-closed-undo-panel input,.preventive-pack-detail .pp-closed-undo-panel textarea{display:block;width:100%;margin-top:6px;padding:10px;background:#171e28;color:#e5edf7;border:1px solid #53677f;border-radius:6px;box-sizing:border-box;font:inherit}.preventive-pack-detail .pp-closed-undo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.preventive-pack-detail .pp-closed-undo-open,.preventive-pack-detail .pp-closed-undo-confirm{background:#422d31;border:1px solid #9a6670;color:#ffd0d5}.preventive-pack-detail .pp-closed-undo-receipt{color:#9ed9b7;font-size:12px;overflow-wrap:anywhere}
+
+/* Main Tasks only: preserve full text and actions, clamp displayed titles. */
+#tasksTable .task-row-title-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  max-height: 2.8em;
+  text-overflow: ellipsis;
+}
+#tasksTable .task-pack-row-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+#tasksTable .task-pack-row-heading > .preventive-pack-badge {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  white-space: nowrap;
+}
+#tasksTable .task-pack-row-heading > .task-row-title-clamp {
+  flex: 1;
+  min-width: 0;
+}
+#tasksTable .task-pack-row-toggle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: normal;
+}
+#tasksTable .task-pack-row-toggle:hover { color: #b7d8ff; background: transparent; }
+#tasksTable .task-pack-row-toggle:focus-visible { outline: 2px solid #85b9ef; outline-offset: 2px; }
