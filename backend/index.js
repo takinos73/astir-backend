@@ -10,6 +10,7 @@ import path from "path";
 import multer from "multer";
 import fs from "fs";
 import { randomUUID, timingSafeEqual, createHash } from "crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 import {
   S3Client,
@@ -27648,7 +27649,7 @@ const mobilePilotUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}
 const mobilePilotEnabled = () => process.env.MOBILE_PILOT_ENABLED === 'true' && String(process.env.MOBILE_PILOT_ACCESS_KEY || '').length >= 24;
 function mobilePilotError(status, message) { const error = new Error(message); error.status = status; throw error; }
 const mobilePilotAllowedIds = new Set([6,7,8,12,24]);
-const mobilePilotActorContext = new (require('node:async_hooks').AsyncLocalStorage)();
+const mobilePilotActorContext = new AsyncLocalStorage();
 function mobilePilotActorId() {
   const id = mobilePilotActorContext.getStore();
   if (!Number.isSafeInteger(id) || !mobilePilotAllowedIds.has(id)) mobilePilotError(401, 'Personal mobile session is required.');
